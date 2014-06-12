@@ -21,7 +21,82 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-#. @export
-cohortMethod <- function(connectionDetails){
+executeSql <- function(conn, dbms, sql){
+  sqlStatements = splitSql(sql)
+  progressBar <- txtProgressBar(style=3)
+  start <- Sys.time()
+  for (i in 1:length(sqlStatements)){
+    sqlStatement <- sqlStatements[i]
+    #sink(paste("c:/temp/statement_",i,".sql",sep=""))
+    #cat(sqlStatement)
+    #sink()
+    tryCatch ({   
+      #startQuery <- Sys.time()
+      dbSendUpdate(conn, sqlStatement)
+      #delta <- Sys.time() - startQuery
+      #writeLines(paste("Statement ",i,"took", delta, attr(delta,"units")))
+    } , error = function(err) {
+      writeLines(paste("Error executing SQL:",err))
+      
+      #Write error report:
+      filename <- paste(getwd(),"/errorReport.txt",sep="")
+      sink(filename)
+      error <<- err
+      cat("DBMS:\n")
+      cat(dbms)
+      cat("\n\n")
+      cat("Error:\n")
+      cat(err$message)
+      cat("\n\n")
+      cat("SQL:\n")
+      cat(sqlStatement)
+      sink()
+      
+      writeLines(paste("An error report has been created at ", filename))
+      break
+    })
+    setTxtProgressBar(progressBar, i/length(sqlStatements))
+  }
+  close(progressBar)
+  delta <- Sys.time() - start
+  writeLines(paste("Analysis took", signif(delta,3), attr(delta,"units")))
+}
+
+renderAndTranslate <- function(sqlFilename, packageName, dbms, ...){
+  pathToSql <- system.file(paste("sql/",gsub(" ","_",dbms),sep=""), sqlFilename, package=packageName)
+  mustTranslate <- !file.exists(pathToSql)
+  if (mustTranslate) # If DBMS-specific code does not exists, load SQL Server code and translate after rendering
+    pathToSql <- system.file(paste("sql/","sql_server",sep=""), sqlFilename, package=packageName)      
+  parameterizedSql <- readChar(pathToSql,file.info(pathToSql)$size)  
   
+  renderedSql <- renderSql(parameterizedSql[1], ...)$sql
+  
+  if (mustTranslate)
+    renderedSql <- translateSql(renderedSql, "sql server", dbms)$sql
+  
+  renderedSql
+}
+
+#. @export
+cohortMethod <- function(connectionDetails, cdmSchema){
+  renderedSql <- renderAndTranslate("CohortMethod.sql",
+                     packageName = "CohortMethod",
+                     dbms = connectionDetails$dbms,
+                     CDM_schema = cdmSchema)
+  
+  conn <- connect(connectionDetails)
+  
+  writeLines("Executing multiple queries. This could take a while")
+  executeSql(conn,connectionDetails$dbms,renderedSql)
+  writeLines("Done")
+  
+  sql <-"SELECT * FROM #ccd_outcome_input_for_ps"
+  sql <- translateSql(sql,"sql server",connectionDetails$dbms)$sql
+  outcomeInputForPs <- dbGetQuery.ffdf(conn,sql)
+  
+  sql <-"SELECT * FROM #ccd_covariate_input_for_ps"
+  sql <- translateSql(sql,"sql server",connectionDetails$dbms)$sql
+  covariateInputForPs <- dbGetQuery.ffdf(conn,sql)
+  
+  dummy <- dbDisconnect(conn)
 }
