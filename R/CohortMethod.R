@@ -98,5 +98,19 @@ cohortMethod <- function(connectionDetails, cdmSchema){
   sql <- translateSql(sql,"sql server",connectionDetails$dbms)$sql
   covariateInputForPs <- dbGetQuery.ffdf(conn,sql)
   
+  
+  
+  createRow <- function(data){
+    covarString = paste(paste(data$covariate_id,data$covariate_value, sep=":"),collapse=" ")
+    data.frame(stratum_id = data$stratum_id[1], row_id = data$row_id[1], covarString = covarString)
+  }
+  
+  doDdply <- function(data){
+    ddply(data, .(row_id), createRow)
+  }
+  
+  covariatesForPS <- ffdfdply(covariateInputForPs, as.character(covariateInputForPs$row_id), doDdply, trace=FALSE) 
+  
+  
   dummy <- dbDisconnect(conn)
 }

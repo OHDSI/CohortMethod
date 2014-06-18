@@ -14,11 +14,25 @@ testCode <- function(){
   
   
   df <- data.frame(stratum_id = c(1,1,1,2,2,2), row_id = c(1,1,2,3,3,4), covariate_id = c(1,2,3,1,2,3), value = c(1,1,1,1,1,1))
-  ffd <- ffdf <- as.ffdf(df)  
+  covariateInputForPs <- as.ffdf(df)  
   
   createRow <- function(data){
-    paste(data$stratum_id[1],data$row_id[1],paste(paste(data$covariate_id,data$value, sep=":"),collapse=" "),sep=" ")
+    covarString = paste(paste(data$covariate_id,data$value, sep=":"),collapse=" ")
+    data.frame(stratum_id = data$stratum_id[1], row_id = data$row_id[1], covarString = covarString)
   }
   
-  by(df, df$row_id, createRow) 
+  doDdply <- function(data){
+    ddply(data, .(row_id), createRow)
+    
+  }
+  #covariateInputForPs <- ffdfsort(covariateInputForPs,covariateInputForPs$rowid)
+  
+  
+  covariatesForPS <- ffdfdply(covariateInputForPs, as.character(covariateInputForPs$row_id), doDdply, trace=TRUE) 
+  
+  
+ by(df, as.character(df$row_id), createRow)
+  
+ 
+ ddply(df, .(row_id), createRow)
 }
