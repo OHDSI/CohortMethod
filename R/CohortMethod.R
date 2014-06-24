@@ -21,20 +21,25 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-executeSql <- function(conn, dbms, sql){
+executeSql <- function(conn, dbms, sql, profile = FALSE){
   sqlStatements = splitSql(sql)
-  progressBar <- txtProgressBar(style=3)
+  if (!profile)
+    progressBar <- txtProgressBar(style=3)
   start <- Sys.time()
   for (i in 1:length(sqlStatements)){
     sqlStatement <- sqlStatements[i]
-    #sink(paste("c:/temp/statement_",i,".sql",sep=""))
-    #cat(sqlStatement)
-    #sink()
+    if (profile){
+      sink(paste("statement_",i,".sql",sep=""))
+      cat(sqlStatement)
+      sink()
+    }
     tryCatch ({   
-      #startQuery <- Sys.time()
+      startQuery <- Sys.time()
       dbSendUpdate(conn, sqlStatement)
-      #delta <- Sys.time() - startQuery
-      #writeLines(paste("Statement ",i,"took", delta, attr(delta,"units")))
+      if (profile){
+        delta <- Sys.time() - startQuery
+        writeLines(paste("Statement ",i,"took", delta, attr(delta,"units")))
+      }
     } , error = function(err) {
       writeLines(paste("Error executing SQL:",err))
       
@@ -55,9 +60,11 @@ executeSql <- function(conn, dbms, sql){
       writeLines(paste("An error report has been created at ", filename))
       break
     })
-    setTxtProgressBar(progressBar, i/length(sqlStatements))
+    if (!profile)
+      setTxtProgressBar(progressBar, i/length(sqlStatements))
   }
-  close(progressBar)
+  if (!profile)
+    close(progressBar)
   delta <- Sys.time() - start
   writeLines(paste("Analysis took", signif(delta,3), attr(delta,"units")))
 }
@@ -92,7 +99,7 @@ cohortMethod <- function(connectionDetails, cdmSchema){
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
                                         CDM_schema = cdmSchema)
-
+  
   executeSql(conn,connectionDetails$dbms,renderedSql)
   
   

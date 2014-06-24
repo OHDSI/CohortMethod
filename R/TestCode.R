@@ -6,6 +6,7 @@ testCode <- function(){
   #setwd("c:/temp")
   #connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com")
   #cdmSchema = "cdm4_sim"
+  #cdmSchema = "CDM_Truven_MDCR"
   
   #Test on PostgreSQL
   setwd("c:/temp")
@@ -14,8 +15,14 @@ testCode <- function(){
   
   conn <- connect(connectionDetails)
   
+  renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
+                                        packageName = "CohortMethod",
+                                        dbms = connectionDetails$dbms,
+                                        CDM_schema = cdmSchema)
+  
+  
   writeLines("Executing multiple queries. This could take a while")
-  executeSql(conn,connectionDetails$dbms,renderedSql)
+  executeSql(conn,connectionDetails$dbms,renderedSql,TRUE)
   
   outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id, row_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql

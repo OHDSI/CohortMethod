@@ -1,8 +1,8 @@
-\name{dbGetCCDInput}
-\alias{dbGetCCDInput}
+\name{dbGetCcdInput}
+\alias{dbGetCcdInput}
 \title{Get data from the database and insert it in a CCD data object}
 \usage{
-dbGetCCDInput(connection, outcomeSql, covariateSql, modelType = "clr",
+dbGetCcdInput(connection, outcomeSql, covariateSql, modelType = "clr",
   addIntercept = FALSE, useOffsetCovariate = NULL,
   offsetAlreadyOnLogScale = FALSE, sortCovariates = TRUE,
   makeCovariatesDense = NULL, batchSize = 1e+05)
@@ -35,10 +35,10 @@ dbGetCCDInput(connection, outcomeSql, covariateSql, modelType = "clr",
   lead to out-of-memory errors.}
 }
 \value{
-An object of type CCDModel
+An object of type CcdModel
 }
 \description{
-\code{dbGetCCDInput} loads data from the database using two
+\code{dbGetCcdInput} loads data from the database using two
 queries, and inserts it into a CCD data object.
 }
 \details{
@@ -71,7 +71,7 @@ covariate_id
   outcomeSql <- "SELECT * FROM outcomes ORDER BY stratum_id, row_id"
   covariateSql <-"SELECT * FROM covariates ORDER BY stratum_id, row_id, covariate_id"
 
-  ccdData <- dbGetCCDInput(connection,outcomeSql,covariateSql,modelType = "clr")
+  ccdData <- dbGetCcdInput(connection,outcomeSql,covariateSql,modelType = "clr")
 
   dbDisconnect(connection)
 
