@@ -16,7 +16,7 @@ USE @CDM_schema;
 
 /*made data table that contains cohorts and end of observation period*/
 SELECT DISTINCT raw_cohorts.cohort_id,
-	raw_cohorts.person_id,
+  raw_cohorts.person_id,
 	raw_cohorts.cohort_start_date,
 	CASE 
 		WHEN raw_cohorts.cohort_end_date <= op1.observation_period_end_date
@@ -68,52 +68,61 @@ WHERE raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, op1.observat
 	AND raw_cohorts.cohort_start_date <= '@study_end_date';
 
 /* delete persons in both cohorts and apply exclusion criteria  */
-SELECT *
+SELECT pc1.cohort_id,
+  pc1.person_id,
+	pc1.cohort_start_date,
+	pc1.cohort_censor_date
 INTO #cohorts
 FROM #pre_cohorts pc1
-WHERE person_id NOT IN (
-		SELECT person_id
-		FROM (
-			SELECT person_id,
-				count(cohort_id) AS num_cohorts
-			FROM #pre_cohorts
-			GROUP BY person_id
-			) t1
-		WHERE num_cohorts = 2
-		)
-	AND NOT EXISTS (
-		SELECT *
-		FROM condition_occurrence co1
-		WHERE co1.person_id = pc1.person_id
-			AND condition_concept_id IN (
-				SELECT descendant_concept_id
-				FROM concept_ancestor
-				WHERE ancestor_concept_id IN (@exclusion_concept_id)
-				)
-			AND pc1.cohort_start_date > co1.condition_start_date
-		)
-	AND NOT EXISTS (
-		SELECT *
-		FROM procedure_occurrence po1
-		WHERE po1.person_id = pc1.person_id
-			AND procedure_concept_id IN (
-				SELECT descendant_concept_id
-				FROM concept_ancestor
-				WHERE ancestor_concept_id IN (@exclusion_concept_id)
-				)
-			AND pc1.cohort_start_date > po1.procedure_date
-		)
-	AND NOT EXISTS (
-		SELECT *
-		FROM drug_exposure de1
-		WHERE de1.person_id = pc1.person_id
-			AND drug_concept_id IN (
-				SELECT descendant_concept_id
-				FROM concept_ancestor
-				WHERE ancestor_concept_id IN (@exclusion_concept_id)
-				)
-			AND pc1.cohort_start_date > de1.drug_exposure_start_date
-		);
+LEFT JOIN (
+	SELECT person_id
+	FROM (
+		SELECT person_id,
+			count(cohort_id) AS num_cohorts
+		FROM #pre_cohorts
+		GROUP BY person_id
+		) t1
+	WHERE num_cohorts = 2
+	) both_cohorts
+	ON pc1.person_id = both_cohorts.person_id
+LEFT JOIN (
+	SELECT *
+	FROM condition_occurrence co1
+	WHERE condition_concept_id IN (
+			SELECT descendant_concept_id
+			FROM concept_ancestor
+			WHERE ancestor_concept_id IN (@exclusion_concept_id)
+			)
+	) exclude_conditions
+	ON pc1.person_id = exclude_conditions.person_id
+		AND pc1.cohort_start_date > exclude_conditions.condition_start_date
+LEFT JOIN (
+	SELECT *
+	FROM procedure_occurrence po1
+	WHERE procedure_concept_id IN (
+			SELECT descendant_concept_id
+			FROM concept_ancestor
+			WHERE ancestor_concept_id IN (@exclusion_concept_id)
+			)
+	) exclude_procedures
+	ON pc1.person_id = exclude_procedures.person_id
+		AND pc1.cohort_start_date > exclude_procedures.procedure_date
+LEFT JOIN (
+	SELECT *
+	FROM drug_exposure de1
+	WHERE drug_concept_id IN (
+			SELECT descendant_concept_id
+			FROM concept_ancestor
+			WHERE ancestor_concept_id IN (@exclusion_concept_id)
+			)
+	) exclude_drugs
+	ON pc1.person_id = exclude_drugs.person_id
+		AND pc1.cohort_start_date > exclude_drugs.drug_exposure_start_date
+WHERE both_cohorts.person_id IS NULL
+	AND exclude_conditions.person_id IS NULL
+	AND exclude_procedures.person_id IS NULL
+	AND exclude_drugs.person_id IS NULL
+;
 
 /* find covariates  */
 CREATE TABLE #covariates (
@@ -593,7 +602,7 @@ FROM (
 	FROM #cohorts
 	) t1;
 
-/**summary of number of persona nd number of events*/
+/**summary of number of person and number of events*/
 /*
 select c1.cohort_id, count(c1.person_id) as num_persons, sum(case when o1.person_id is null then 0 else num_outcomes end) as num_outcomes
 from #cohorts c1
