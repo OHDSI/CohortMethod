@@ -9,7 +9,5 @@ Description: More about what it does (maybe more than one line)
 License: Apache
 Depends:
     DatabaseConnector, SqlRender, CCD
-Imports: Rcpp (>= 0.11.2)
-LinkingTo: Rcpp
 Suggests:
     testthat
