@@ -1,3 +1,1 @@
-useDynLib(CohortMethod)
 exportPattern("^[[:alpha:]]+")
-importFrom(Rcpp, evalCpp)
