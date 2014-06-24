@@ -8,7 +8,7 @@ Maintainer: Patrick Ryan <ryan@ohdsi.org>
 Description: More about what it does (maybe more than one line)
 License: Apache
 Depends:
-    DatabaseConnector, SqlRender, ffbase, plyr
+    DatabaseConnector, SqlRender, ffbase, plyr, CCD
 Imports: Rcpp (>= 0.11.2)
 LinkingTo: Rcpp
 Suggests:

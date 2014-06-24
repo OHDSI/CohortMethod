@@ -90,27 +90,16 @@ cohortMethod <- function(connectionDetails, cdmSchema){
   executeSql(conn,connectionDetails$dbms,renderedSql)
   writeLines("Done")
   
-  sql <-"SELECT * FROM #ccd_outcome_input_for_ps"
-  sql <- translateSql(sql,"sql server",connectionDetails$dbms)$sql
-  outcomeInputForPs <- dbGetQuery.ffdf(conn,sql)
+  outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id, row_id"
+  outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
+
   
-  sql <-"SELECT * FROM #ccd_covariate_input_for_ps"
-  sql <- translateSql(sql,"sql server",connectionDetails$dbms)$sql
-  covariateInputForPs <- dbGetQuery.ffdf(conn,sql)
+  covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id, row_id, covariate_id"
+  covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
+
+  ccdData <- dbGetCCDInput(conn,outcomeSql,covariateSql,modelType = "clr")
   
-  
-  
-  createRow <- function(data){
-    covarString = paste(paste(data$covariate_id,data$covariate_value, sep=":"),collapse=" ")
-    data.frame(stratum_id = data$stratum_id[1], row_id = data$row_id[1], covarString = covarString)
-  }
-  
-  doDdply <- function(data){
-    ddply(data, .(row_id), createRow)
-  }
-  
-  covariatesForPS <- ffdfdply(covariateInputForPs, as.character(covariateInputForPs$row_id), doDdply, trace=FALSE) 
-  
-  
+  ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
+  #Todo: delete temp tables (for Oracle)
   dummy <- dbDisconnect(conn)
 }

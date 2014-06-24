@@ -509,7 +509,7 @@ GROUP BY ca1.cohort_id,
 SELECT cohort_id,
 	person_id,
 	max(outcomes.outcome_count) AS num_outcomes,
-	min(datediff(dd, cohort_start_date, outcome_date)) AS time_to_censor
+	min(datediff(dd, cohort_start_date, outcome_date)) AS time
 INTO #outcomes
 FROM (
 	SELECT c1.cohort_id,
@@ -538,8 +538,8 @@ GROUP BY cohort_id,
 --tables for propensity score fitting
 SELECT 1 AS stratum_id,
 	c1.person_id AS row_id,
-	cohort_id AS y_value,
-	0 AS time_to_censor
+	cohort_id AS y,
+	0 AS time
 INTO #ccd_outcome_input_for_ps
 FROM #cohorts c1
 ORDER BY c1.person_id;
@@ -559,12 +559,12 @@ SELECT 1 AS stratum_id,
 		WHEN o1.person_id IS NULL
 			THEN 0
 		ELSE o1.num_outcomes
-		END AS y_value,
+		END AS y,
 	CASE 
 		WHEN o1.person_id IS NULL
 			THEN datediff(dd, c1.cohort_start_date, c1.cohort_censor_date)
-		ELSE o1.time_to_censor
-		END AS time_to_censor
+		ELSE o1.time
+		END AS time
 INTO #ccd_outcome_input_for_outcome
 FROM #cohorts c1
 LEFT JOIN #outcomes o1
