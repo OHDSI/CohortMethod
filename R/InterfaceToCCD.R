@@ -181,8 +181,8 @@ dbGetCCDInput <- function(connection,
           stop(paste("No matching outcome found for stratum_id =",completeStratumId,"row_id =",completeRowId))
         }
       }
-      if (min(covarsToCcd$ROW_ID %in% batchOutcome$ROW_ID) == 0)
-        stop("Not all row_ids in covars matched to outcomes")
+      #if (min(covarsToCcd$ROW_ID %in% batchOutcome$ROW_ID) == 0)
+      #  stop("Not all row_ids in covars matched to outcomes")
       
       #Append to CCD:
       appendSqlCcdData(dataPtr,
@@ -260,6 +260,11 @@ dbGetCCDInput <- function(connection,
                      c(),
                      c())
   }
-  finalizeSqlCcdData(dataPtr)
+  finalizeSqlCcdData(dataPtr,
+                     addIntercept = addIntercept,
+                     useOffsetCovariate = useOffsetCovariate,
+                     offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
+                     sortCovariates = sortCovariates,
+                     makeCovariatesDense = makeCovariatesDense)
   dataPtr
 }

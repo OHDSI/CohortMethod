@@ -2,37 +2,31 @@ testCode <- function(){
   
   pw <- ""
   
-  setwd("c:/temp")
-  connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com")
-  cdmSchema = "cdm4_sim"
+  #Test on SQL Server
+  #setwd("c:/temp")
+  #connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com")
+  #cdmSchema = "cdm4_sim"
   
   #Test on PostgreSQL
   setwd("c:/temp")
   connectionDetails <- createConnectionDetails(dbms="postgresql", server="localhost/ohdsi", user="postgres",password=pw)
   cdmSchema = "cdm4_sim"
   
+  conn <- connect(connectionDetails)
   
+  writeLines("Executing multiple queries. This could take a while")
+  executeSql(conn,connectionDetails$dbms,renderedSql)
   
-  df <- data.frame(stratum_id = c(1,1,1,2,2,2), row_id = c(1,1,2,3,3,4), covariate_id = c(1,2,3,1,2,3), value = c(1,1,1,1,1,1))
-  covariateInputForPs <- as.ffdf(df)  
+  outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id, row_id"
+  outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
   
-  createRow <- function(data){
-    covarString = paste(paste(data$covariate_id,data$value, sep=":"),collapse=" ")
-    data.frame(stratum_id = data$stratum_id[1], row_id = data$row_id[1], covarString = covarString)
-  }
+  covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id, row_id, covariate_id"
+  covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
   
-  doDdply <- function(data){
-    ddply(data, .(row_id), createRow)
-    
-  }
-  #covariateInputForPs <- ffdfsort(covariateInputForPs,covariateInputForPs$rowid)
+  writeLines("Loading data for propensity model")
+  ccdData <- dbGetCCDInput(conn,outcomeSql,covariateSql,modelType = "clr")
   
+  writeLines("Fitting propensity model")
+  ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
   
-  covariatesForPS <- ffdfdply(covariateInputForPs, as.character(covariateInputForPs$row_id), doDdply, trace=TRUE) 
-  
-  
- by(df, as.character(df$row_id), createRow)
-  
- 
- ddply(df, .(row_id), createRow)
 }

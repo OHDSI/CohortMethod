@@ -62,44 +62,39 @@ executeSql <- function(conn, dbms, sql){
   writeLines(paste("Analysis took", signif(delta,3), attr(delta,"units")))
 }
 
-renderAndTranslate <- function(sqlFilename, packageName, dbms, ...){
-  pathToSql <- system.file(paste("sql/",gsub(" ","_",dbms),sep=""), sqlFilename, package=packageName)
-  mustTranslate <- !file.exists(pathToSql)
-  if (mustTranslate) # If DBMS-specific code does not exists, load SQL Server code and translate after rendering
-    pathToSql <- system.file(paste("sql/","sql_server",sep=""), sqlFilename, package=packageName)      
-  parameterizedSql <- readChar(pathToSql,file.info(pathToSql)$size)  
-  
-  renderedSql <- renderSql(parameterizedSql[1], ...)$sql
-  
-  if (mustTranslate)
-    renderedSql <- translateSql(renderedSql, "sql server", dbms)$sql
-  
-  renderedSql
-}
-
-#. @export
+#' @export
 cohortMethod <- function(connectionDetails, cdmSchema){
-  renderedSql <- renderAndTranslate("CohortMethod.sql",
-                     packageName = "CohortMethod",
-                     dbms = connectionDetails$dbms,
-                     CDM_schema = cdmSchema)
+  renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
+                                        packageName = "CohortMethod",
+                                        dbms = connectionDetails$dbms,
+                                        CDM_schema = cdmSchema)
   
   conn <- connect(connectionDetails)
   
   writeLines("Executing multiple queries. This could take a while")
   executeSql(conn,connectionDetails$dbms,renderedSql)
-  writeLines("Done")
   
   outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id, row_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
-
+  
   
   covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id, row_id, covariate_id"
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
-
+  
+  writeLines("Loading data for propensity model")
   ccdData <- dbGetCCDInput(conn,outcomeSql,covariateSql,modelType = "clr")
   
+  writeLines("Fitting propensity model")
   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
-  #Todo: delete temp tables (for Oracle)
+  
+  #Remove temp tables:
+  renderedSql <- loadRenderTranslateSql("CMRemoveTempTables.sql",
+                                        packageName = "CohortMethod",
+                                        dbms = connectionDetails$dbms,
+                                        CDM_schema = cdmSchema)
+
+  executeSql(conn,connectionDetails$dbms,renderedSql)
+  
+  
   dummy <- dbDisconnect(conn)
 }
