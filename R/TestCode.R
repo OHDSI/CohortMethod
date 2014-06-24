@@ -24,7 +24,7 @@ testCode <- function(){
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
   
   writeLines("Loading data for propensity model")
-  ccdData <- dbGetCCDInput(conn,outcomeSql,covariateSql,modelType = "clr")
+  ccdData <- dbGetCcdInput(conn,outcomeSql,covariateSql,modelType = "clr")
   
   writeLines("Fitting propensity model")
   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))

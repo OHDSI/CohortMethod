@@ -43,7 +43,7 @@ lastRowNotHavingThisValue <- function(column, value){
 #' Get data from the database and insert it in a CCD data object
 #'
 #' @description
-#' \code{dbGetCCDInput} loads data from the database using two queries, and inserts it into a CCD data object.
+#' \code{dbGetCcdInput} loads data from the database using two queries, and inserts it into a CCD data object.
 #' 
 #' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
 #' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
@@ -75,7 +75,7 @@ lastRowNotHavingThisValue <- function(column, value){
 #' The covariate table should be sorted by stratum_id, row_id, and covariate_id
 #' 
 #' @return              
-#' An object of type CCDModel
+#' An object of type CcdModel
 #' 
 #' @examples \dontrun{
 #'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
@@ -83,14 +83,14 @@ lastRowNotHavingThisValue <- function(column, value){
 #'   outcomeSql <- "SELECT * FROM outcomes ORDER BY stratum_id, row_id"
 #'   covariateSql <-"SELECT * FROM covariates ORDER BY stratum_id, row_id, covariate_id"
 #'   
-#'   ccdData <- dbGetCCDInput(connection,outcomeSql,covariateSql,modelType = "clr")
+#'   ccdData <- dbGetCcdInput(connection,outcomeSql,covariateSql,modelType = "clr")
 #'   
 #'   dbDisconnect(connection)
 #'   
 #'   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
 #' }
 #' @export
-dbGetCCDInput <- function(connection, 
+dbGetCcdInput <- function(connection, 
                           outcomeSql, 
                           covariateSql, 
                           modelType = "clr", 
