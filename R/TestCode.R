@@ -1,6 +1,8 @@
 testCode <- function(){
   
   pw <- ""
+  user <- "postgres"
+  server <- "localhost/ohdsi"
   
   #Test on SQL Server
   #setwd("c:/temp")
@@ -10,7 +12,7 @@ testCode <- function(){
   
   #Test on PostgreSQL
   setwd("c:/temp")
-  connectionDetails <- createConnectionDetails(dbms="postgresql", server="localhost/ohdsi", user="postgres",password=pw)
+  connectionDetails <- createConnectionDetails(dbms="postgresql", server=server, user=user, password=pw)
   cdmSchema = "cdm4_sim"
   
   conn <- connect(connectionDetails)
