@@ -77,4 +77,10 @@ testCode <- function(){
   dbSendUpdate(conn,"SET SEARCH_PATH TO cdm4_sim")
   dbSendUpdate(conn,"CREATE TEMP TABLE ccd_outcome_input_for_ps AS SELECT * FROM temp_outcomes")
   dbSendUpdate(conn,"CREATE TEMP TABLE ccd_covariate_input_for_ps AS SELECT * FROM temp_covariates")
+  
+  #cross-validation example:
+  ccdFit <- fitCcdModel(ccdData, 
+                        prior = prior("laplace", useCrossValidation = TRUE),
+                        control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
+  
 }
