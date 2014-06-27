@@ -35,8 +35,8 @@ testCode <- function(){
   writeLines("Loading data for propensity model")
   startQuery <- Sys.time()
   ccdData <- dbGetCcdInput(conn,outcomeSql,covariateSql,modelType = "lr",addIntercept=TRUE)
-  ccdelta <- Sys.time() - startQuery
-  writeLines(paste("Load took", signif(delta,3), attr(delta,"units")))
+  ccdDelta <- Sys.time() - startQuery
+  writeLines(paste("Load took", signif(ccdDelta,3), attr(ccdDelta,"units")))
   
   writeLines("Fitting propensity model")
   startQuery <- Sys.time()
@@ -67,13 +67,14 @@ testCode <- function(){
   
   
   dbDisconnect(conn)
+  return(NULL)
   
   #to store temp tables:
-  #dbSendUpdate(conn,"CREATE TABLE temp_outcomes AS SELECT * FROM ccd_outcome_input_for_ps")
-  #dbSendUpdate(conn,"CREATE TABLE temp_covariates AS SELECT * FROM ccd_covariate_input_for_ps")
+  dbSendUpdate(conn,"CREATE TABLE temp_outcomes AS SELECT * FROM ccd_outcome_input_for_ps")
+  dbSendUpdate(conn,"CREATE TABLE temp_covariates AS SELECT * FROM ccd_covariate_input_for_ps")
   
   #to restore temp tables:
-  #dbSendUpdate(conn,"SET SEARCH_PATH TO cdm4_sim")
-  #dbSendUpdate(conn,"CREATE TEMP TABLE ccd_outcome_input_for_ps AS SELECT * FROM temp_outcomes")
-  #dbSendUpdate(conn,"CREATE TEMP TABLE ccd_covariate_input_for_ps AS SELECT * FROM temp_covariates")
+  dbSendUpdate(conn,"SET SEARCH_PATH TO cdm4_sim")
+  dbSendUpdate(conn,"CREATE TEMP TABLE ccd_outcome_input_for_ps AS SELECT * FROM temp_outcomes")
+  dbSendUpdate(conn,"CREATE TEMP TABLE ccd_covariate_input_for_ps AS SELECT * FROM temp_covariates")
 }
