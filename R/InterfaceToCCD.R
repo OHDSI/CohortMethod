@@ -93,7 +93,7 @@ lastRowNotHavingThisValue <- function(column, value){
 dbGetCcdInput <- function(connection, 
                           outcomeSql, 
                           covariateSql, 
-                          modelType = "clr", 
+                          modelType = "lr", 
                           addIntercept = FALSE,
                           useOffsetCovariate = NULL,
                           offsetAlreadyOnLogScale = FALSE,
@@ -122,6 +122,8 @@ dbGetCcdInput <- function(connection,
   batchOutcome <- fetch(resultSetOutcome, batchSize)
   colnames(batchOutcome) <- toupper(colnames(batchOutcome))
   doneOutcome = (nrow(batchOutcome) != batchSize)
+  if (modelType == "lr" | modelType == "pr")
+    batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
   
   lastUsedOutcome <- 0
   spillOverCovars <- NULL
@@ -131,12 +133,12 @@ dbGetCcdInput <- function(connection,
     doneCovars = (nrow(batchCovars) != batchSize)
     colnames(batchCovars) <- toupper(colnames(batchCovars))
     lastRowId <- batchCovars$ROW_ID[nrow(batchCovars)]
-    lastStratumId <- batchCovars$STRATUM_ID[nrow(batchCovars)]
+    #lastStratumId <- batchCovars$STRATUM_ID[nrow(batchCovars)]
     
     endCompleteRow <- lastRowNotHavingThisValue(batchCovars$ROW_ID,lastRowId)
-    endCompleteStratum <- lastRowNotHavingThisValue(batchCovars$STRATUM_ID,lastStratumId)
-    if (endCompleteStratum > endCompleteRow)
-      endCompleteRow = endCompleteStratum
+    #endCompleteStratum <- lastRowNotHavingThisValue(batchCovars$STRATUM_ID,lastStratumId)
+    #if (endCompleteStratum > endCompleteRow)
+    #  endCompleteRow = endCompleteStratum
     
     if (endCompleteRow == 0){ #Entire batch is about 1 row
       if (!is.null(spillOverCovars)){
@@ -162,23 +164,28 @@ dbGetCcdInput <- function(connection,
     #Get matching outcomes:
     if (!is.null(covarsToCcd)){ # There is a complete row
       completeRowId = covarsToCcd$ROW_ID[nrow(covarsToCcd)]
-      completeStratumId = covarsToCcd$STRATUM_ID[nrow(covarsToCcd)]
-      endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+      #completeStratumId = covarsToCcd$STRATUM_ID[nrow(covarsToCcd)]
+      #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+      endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
       while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
         if (lastUsedOutcome == nrow(batchOutcome)){
           batchOutcome <- fetch(resultSetOutcome, batchSize)
           colnames(batchOutcome) <- toupper(colnames(batchOutcome))
           doneOutcome = (nrow(batchOutcome) != batchSize)
+          if (modelType == "lr" | modelType == "pr")
+            batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
         } else {      
           newBatchOutcome <- fetch(resultSetOutcome, batchSize)
           colnames(newBatchOutcome) <- toupper(colnames(newBatchOutcome))
           doneOutcome = (nrow(newBatchOutcome) != batchSize)
+          if (modelType == "lr" | modelType == "pr")
+            batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
           batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
         }
         lastUsedOutcome = 0
         endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
         if (nrow(batchOutcome) > 3*batchSize){
-          stop(paste("No matching outcome found for stratum_id =",completeStratumId,"row_id =",completeRowId))
+          stop(paste("No matching outcome found for row_id =",completeRowId))
         }
       }
       #if (min(covarsToCcd$ROW_ID %in% batchOutcome$ROW_ID) == 0)
@@ -202,23 +209,29 @@ dbGetCcdInput <- function(connection,
   covarsToCcd <- spillOverCovars
   
   completeRowId = covarsToCcd$ROW_ID[nrow(covarsToCcd)]
-  completeStratumId = covarsToCcd$STRATUM_ID[nrow(covarsToCcd)]
-  endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+  #completeStratumId = covarsToCcd$STRATUM_ID[nrow(covarsToCcd)]
+  #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+  endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
   while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
     if (lastUsedOutcome == nrow(batchOutcome)){
       batchOutcome <- fetch(resultSetOutcome, batchSize)
       colnames(batchOutcome) <- toupper(colnames(batchOutcome))
       doneOutcome = (nrow(batchOutcome) != batchSize)
+      if (modelType == "lr" | modelType == "pr")
+        batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     } else {      
       newBatchOutcome <- fetch(resultSetOutcome, batchSize)
       colnames(newBatchOutcome) <- toupper(colnames(newBatchOutcome))
       doneOutcome = (nrow(newBatchOutcome) != batchSize)
+      if (modelType == "lr" | modelType == "pr")
+        batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
       batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
     }
     lastUsedOutcome = 0
-    endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+    #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+    endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
     if (nrow(batchOutcome) > 3*batchSize){
-      stop(paste("No matching outcome found for stratum_id =",completeStratumId,"row_id =",completeRowId))
+      stop(paste("No matching outcome found for row_id =",completeRowId))
     }
   }
   
@@ -250,6 +263,8 @@ dbGetCcdInput <- function(connection,
     batchOutcome <- fetch(resultSetOutcome, batchSize)
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))
     doneOutcome = (nrow(newBatchOutcome) != batchSize)
+    if (modelType == "lr" | modelType == "pr")
+      batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     
     appendSqlCcdData(dataPtr,
                      batchOutcome$STRATUM_ID,
