@@ -1,18 +1,19 @@
 {DEFAULT @CDM_schema = 'CDM4_SIM'}
+{DEFAULT @results_schema = 'CDM4_SIM'}
 {DEFAULT @target_drug_concept_id = 755695}  /*fluoxetine*/
 {DEFAULT @comparator_drug_concept_id = 739138} /*sertraline*/
-{DEFAULT @indication_concept_id = 439926} /*malaise and fatigue*/
+{DEFAULT @indication_concept_ids = 439926} /*malaise and fatigue*/
 {DEFAULT @washout_window = 183}
 {DEFAULT @indication_lookback_window = 183}
 {DEFAULT @exposure_extension_window = 7}
-{DEFAULT @study_start_date = '11/1/2000'}
-{DEFAULT @study_end_date = '1/1/2014'}
-{DEFAULT @exclusion_concept_id = 4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019} 
+{DEFAULT @study_start_date = ''}
+{DEFAULT @study_end_date = ''}
+{DEFAULT @exclusion_concept_ids = 4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019} 
 {DEFAULT @outcome_concept_id = 194133}  /*low back pain*/
-{DEFAULT @outcome_condition_type_concept_id = 38000215,38000216,38000217,38000218,38000183,38000232}  
+{DEFAULT @outcome_condition_type_concept_ids = 38000215,38000216,38000217,38000218,38000183,38000232}  
 {DEFAULT @max_outcome_count = 1}  /*number of conditions, 1 is first occurrence*/
 
-USE @CDM_schema;
+USE @results_schema;
 
 /*made data table that contains cohorts and end of observation period*/
 SELECT DISTINCT raw_cohorts.cohort_id,
@@ -39,33 +40,35 @@ FROM (
 		de1.person_id,
 		min(de1.drug_era_start_date) AS cohort_start_date,
 		min(dateadd(dd, @exposure_extension_window, de1.drug_era_end_date)) AS cohort_end_date
-	FROM drug_era de1
-	INNER JOIN concept_ancestor ca1
+	FROM @CDM_schema.dbo.drug_era de1
+	INNER JOIN @CDM_schema.dbo.concept_ancestor ca1
 		ON de1.drug_concept_id = ca1.descendant_concept_id
 	WHERE ca1.ancestor_concept_id = @target_drug_concept_id
 		OR ca1.ancestor_concept_id = @comparator_drug_concept_id
 	GROUP BY ca1.ancestor_concept_id,
 		de1.person_id
 	) raw_cohorts
-INNER JOIN observation_period op1
+INNER JOIN @CDM_schema.dbo.observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
+{@indication_concept_ids != ''} ? {
 INNER JOIN (
 	SELECT person_id,
 		condition_start_date AS indication_date
-	FROM condition_occurrence
+	FROM @CDM_schema.dbo.condition_occurrence
 	WHERE condition_concept_id IN (
 			SELECT descendant_concept_id
-			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@indication_concept_id)
+			FROM @CDM_schema.dbo.concept_ancestor
+			WHERE ancestor_concept_id IN (@indication_concept_ids)
 			)
 	) indication
 	ON raw_cohorts.person_id = indication.person_id
+  AND raw_cohorts.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication.indication_date)
+  AND raw_cohorts.cohort_start_date >= indication.indication_date
+}
 WHERE raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, op1.observation_period_start_date)
 	AND raw_cohorts.cohort_start_date <= op1.observation_period_end_date
-	AND raw_cohorts.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication.indication_date)
-	AND raw_cohorts.cohort_start_date >= indication.indication_date
-	AND raw_cohorts.cohort_start_date >= '@study_start_date'
-	AND raw_cohorts.cohort_start_date <= '@study_end_date';
+  {@study_start_date != ''} ? {AND raw_cohorts.cohort_start_date >= '@study_start_date'}
+	{@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= '@study_end_date'};
 
 /* delete persons in both cohorts and apply exclusion criteria  */
 SELECT pc1.cohort_id,
@@ -85,43 +88,47 @@ LEFT JOIN (
 	WHERE num_cohorts = 2
 	) both_cohorts
 	ON pc1.person_id = both_cohorts.person_id
+{@exclusion_concept_ids != ''} ? {
 LEFT JOIN (
 	SELECT *
-	FROM condition_occurrence co1
+	FROM @CDM_schema.dbo.condition_occurrence co1
 	WHERE condition_concept_id IN (
 			SELECT descendant_concept_id
-			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@exclusion_concept_id)
+			FROM @CDM_schema.dbo.concept_ancestor
+			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_conditions
 	ON pc1.person_id = exclude_conditions.person_id
 		AND pc1.cohort_start_date > exclude_conditions.condition_start_date
 LEFT JOIN (
 	SELECT *
-	FROM procedure_occurrence po1
+	FROM @CDM_schema.dbo.procedure_occurrence po1
 	WHERE procedure_concept_id IN (
 			SELECT descendant_concept_id
-			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@exclusion_concept_id)
+			FROM @CDM_schema.dbo.concept_ancestor
+			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_procedures
 	ON pc1.person_id = exclude_procedures.person_id
 		AND pc1.cohort_start_date > exclude_procedures.procedure_date
 LEFT JOIN (
 	SELECT *
-	FROM drug_exposure de1
+	FROM @CDM_schema.dbo.drug_exposure de1
 	WHERE drug_concept_id IN (
 			SELECT descendant_concept_id
-			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@exclusion_concept_id)
+			FROM @CDM_schema.dbo.concept_ancestor
+			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_drugs
 	ON pc1.person_id = exclude_drugs.person_id
 		AND pc1.cohort_start_date > exclude_drugs.drug_exposure_start_date
+}
 WHERE both_cohorts.person_id IS NULL
+  {@exclusion_concept_ids != ''} ? {
 	AND exclude_conditions.person_id IS NULL
 	AND exclude_procedures.person_id IS NULL
 	AND exclude_drugs.person_id IS NULL
+  }
 ;
 
 /* find covariates  */
@@ -140,23 +147,23 @@ CREATE TABLE #concept_counts (
 SELECT DISTINCT c1.concept_id AS snomed_concept_id,
 	c2.concept_id AS meddra_concept_id
 INTO #snomed_to_all_meddra
-FROM concept c1
-INNER JOIN concept_ancestor ca1
+FROM @CDM_schema.dbo.concept c1
+INNER JOIN @CDM_schema.dbo.concept_ancestor ca1
 	ON c1.concept_id = ca1.descendant_concept_id
 		AND c1.vocabulary_id = 1
-INNER JOIN concept c2
+INNER JOIN @CDM_schema.dbo.concept c2
 	ON ca1.ancestor_concept_id = c2.concept_id
 		AND c2.vocabulary_id = 15;
 
 SELECT DISTINCT c1.concept_id AS rxnorm_concept_id,
 	c2.concept_id AS atc_concept_id
 INTO #rxnorm_to_atc
-FROM concept c1
-INNER JOIN concept_ancestor ca1
+FROM @CDM_schema.dbo.concept c1
+INNER JOIN @CDM_schema.dbo.concept_ancestor ca1
 	ON c1.concept_id = ca1.descendant_concept_id
 		AND c1.vocabulary_id = 8
 		AND c1.concept_class = 'Ingredient'
-INNER JOIN concept c2
+INNER JOIN @CDM_schema.dbo.concept c2
 	ON ca1.ancestor_concept_id = c2.concept_id
 		AND c2.vocabulary_id = 21
 		AND len(c2.concept_code) IN (
@@ -177,7 +184,7 @@ SELECT ca1.cohort_id,
 	gender_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
-INNER JOIN person p1
+INNER JOIN @CDM_schema.dbo.person p1
 	ON ca1.person_id = p1.person_id
 WHERE gender_concept_id = 8507;
 
@@ -193,7 +200,7 @@ SELECT ca1.cohort_id,
 	floor((year(ca1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10) + 1 AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
-INNER JOIN person p1
+INNER JOIN @CDM_schema.dbo.person p1
 	ON ca1.person_id = p1.person_id;
 
 --Number of distinct conditions in last 6mo
@@ -208,7 +215,7 @@ SELECT ca1.cohort_id,
 	20 AS covariate_id,
 	count(DISTINCT ce1.condition_concept_id) AS covariate_value
 FROM #cohorts ca1
-INNER JOIN condition_era ce1
+INNER JOIN @CDM_schema.dbo.condition_era ce1
 	ON ca1.person_id = ce1.person_id
 WHERE ce1.condition_era_start_date <= ca1.cohort_start_date
 	AND ce1.condition_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -227,7 +234,7 @@ SELECT ca1.cohort_id,
 	21 AS covariate_id,
 	count(DISTINCT de1.drug_concept_id) AS covariate_value
 FROM #cohorts ca1
-INNER JOIN drug_era de1
+INNER JOIN @CDM_schema.dbo.drug_era de1
 	ON ca1.person_id = de1.person_id
 WHERE de1.drug_era_start_date <= ca1.cohort_start_date
 	AND de1.drug_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -246,7 +253,7 @@ SELECT ca1.cohort_id,
 	22 AS covariate_id,
 	count(DISTINCT po1.procedure_concept_id) AS covariate_value
 FROM #cohorts ca1
-INNER JOIN procedure_occurrence po1
+INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
 	ON ca1.person_id = po1.person_id
 WHERE po1.procedure_date <= ca1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -265,7 +272,7 @@ SELECT ca1.cohort_id,
 	23 AS covariate_id,
 	count(vo1.VISIT_OCCURRENCE_ID) AS covariate_value
 FROM #cohorts ca1
-INNER JOIN visit_occurrence vo1
+INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
 	ON ca1.person_id = vo1.person_id
 WHERE vo1.visit_start_date <= ca1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -285,7 +292,7 @@ SELECT ca1.cohort_id,
 	24 AS covariate_id,
 	count(vo1.VISIT_OCCURRENCE_ID) AS covariate_value
 FROM #cohorts ca1
-INNER JOIN visit_occurrence vo1
+INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
 	ON ca1.person_id = vo1.person_id
 WHERE vo1.visit_start_date <= ca1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -305,7 +312,7 @@ SELECT ca1.cohort_id,
 	25 AS covariate_id,
 	count(vo1.VISIT_OCCURRENCE_ID) AS covariate_value
 FROM #cohorts ca1
-INNER JOIN visit_occurrence vo1
+INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
 	ON ca1.person_id = vo1.person_id
 WHERE vo1.visit_start_date <= ca1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -324,7 +331,7 @@ INSERT INTO #concept_counts (
 SELECT ce1.condition_concept_id,
 	count(ce1.person_id) AS num_records
 FROM #cohorts ca1
-INNER JOIN condition_era ce1
+INNER JOIN @CDM_schema.dbo.condition_era ce1
 	ON ca1.person_id = ce1.person_id
 WHERE ce1.condition_era_start_date <= ca1.cohort_start_date
 	AND ce1.condition_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -342,7 +349,7 @@ SELECT ca1.cohort_id,
 	ce1.condition_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
-INNER JOIN condition_era ce1
+INNER JOIN @CDM_schema.dbo.condition_era ce1
 	ON ca1.person_id = ce1.person_id
 WHERE ce1.condition_era_start_date <= ca1.cohort_start_date
 	AND ce1.condition_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -385,7 +392,7 @@ INSERT INTO #concept_counts (
 SELECT de1.drug_concept_id,
 	count(de1.person_id) AS num_records
 FROM #cohorts ca1
-INNER JOIN drug_era de1
+INNER JOIN @CDM_schema.dbo.drug_era de1
 	ON ca1.person_id = de1.person_id
 WHERE de1.drug_era_start_date <= ca1.cohort_start_date
 	AND de1.drug_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -403,7 +410,7 @@ SELECT ca1.cohort_id,
 	de1.drug_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
-INNER JOIN drug_era de1
+INNER JOIN @CDM_schema.dbo.drug_era de1
 	ON ca1.person_id = de1.person_id
 WHERE de1.drug_era_start_date < ca1.cohort_start_date
 	AND de1.drug_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -450,12 +457,12 @@ FROM #covariates ca1
 INNER JOIN (
 	SELECT c1.concept_id AS rxnorm_concept_id,
 		c2.concept_id AS atc_concept_id
-	FROM concept c1
-	INNER JOIN concept_ancestor ca1
+	FROM @CDM_schema.dbo.concept c1
+	INNER JOIN @CDM_schema.dbo.concept_ancestor ca1
 		ON c1.concept_id = ca1.descendant_concept_id
 			AND c1.vocabulary_id = 8
 			AND c1.concept_level = 2
-	INNER JOIN concept c2
+	INNER JOIN @CDM_schema.dbo.concept c2
 		ON c2.concept_id = ca1.ancestor_concept_id
 			AND c2.vocabulary_id = 21
 			AND len(c2.concept_code) IN (3)
@@ -476,9 +483,9 @@ INSERT INTO #concept_counts (
 SELECT po1.procedure_concept_id,
 	count(po1.person_id) AS num_records
 FROM #cohorts ca1
-INNER JOIN procedure_occurrence po1
+INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
 	ON ca1.person_id = po1.person_id
-INNER JOIN concept c1
+INNER JOIN @CDM_schema.dbo.concept c1
 	ON po1.procedure_concept_id = c1.concept_id
 		AND c1.vocabulary_id IN (
 			3,
@@ -500,7 +507,7 @@ SELECT ca1.cohort_id,
 	po1.procedure_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
-INNER JOIN procedure_occurrence po1
+INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
 	ON ca1.person_id = po1.person_id
 WHERE po1.procedure_date < ca1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 365, ca1.cohort_start_date)
@@ -529,14 +536,14 @@ FROM (
 			PARTITION BY c1.person_id ORDER BY co1.condition_start_date ASC
 			) AS outcome_count
 	FROM #cohorts c1
-	INNER JOIN condition_occurrence co1
+	INNER JOIN @CDM_schema.dbo.condition_occurrence co1
 		ON c1.person_id = co1.person_id
 	WHERE co1.condition_concept_id IN (
 			SELECT descendant_concept_id
-			FROM concept_ancestor
+			FROM @CDM_schema.dbo.concept_ancestor
 			WHERE ancestor_concept_id IN (@outcome_concept_id)
 			)
-		AND co1.condition_type_concept_id IN (@outcome_condition_type_concept_id)
+		AND co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 		AND co1.condition_start_date > c1.cohort_start_date
 		AND co1.condition_start_Date <= c1.cohort_censor_date
 	) outcomes

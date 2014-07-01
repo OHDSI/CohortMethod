@@ -18,7 +18,8 @@ testCode <- function(){
   renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
-                                        CDM_schema = cdmSchema)
+                                        CDM_schema = cdmSchema,
+                                        results_schema = cdmSchema)
   
   
   writeLines("Executing multiple queries. This could take a while")
@@ -33,7 +34,7 @@ testCode <- function(){
   writeLines("Loading data for propensity model")
   startQuery <- Sys.time()
   ccdData <- dbGetCcdInput(conn,outcomeSql,covariateSql,modelType = "lr",addIntercept=TRUE)
-  ccdelta <- Sys.time() - startQuery
+  delta <- Sys.time() - startQuery
   writeLines(paste("Load took", signif(delta,3), attr(delta,"units")))
   
   writeLines("Fitting propensity model")
@@ -43,19 +44,39 @@ testCode <- function(){
   writeLines(paste("Fitting took", signif(delta,3), attr(delta,"units")))
   #sum(coef(ccdFit)>0.1) 
 
-  p <- predict(ccdFit)
+  data <- predict(ccdFit)
+  data <- data.frame(propensityScore = data, row_id = as.numeric(attr(data,"names")))
   
-  #Show preference score distributions:
+  #Merge with outcome data:
   ySql <-"SELECT row_id,y FROM #ccd_outcome_input_for_ps"
   ySql <- translateSql(ySql,"sql server",connectionDetails$dbms)$sql
   y <- dbGetQuery(conn,ySql)
   colnames(y) <- tolower(colnames(y))
-  p <- data.frame(pred = p, row_id = as.numeric(attr(p,"names")))
+  
+  data <- merge(y,data,by=c("row_id"))
+  
+  
+ # m <- Match(Tr=data$y, X=data$propensityScore, replace=FALSE)
+  #MatchBalance(y~propensityScore, data=data, match.out=m)
+  
+  
+  is.numeric(data$propensityScore)
+  m_out <- matchit(y ~ propensityScore, data = data, method="nearest",distance=data$propensityScore)
+  m_out2 <- matchit(y ~ propensityScore, data = data, method="nearest")
+  plot(m_out)
+  plot(m_out,type="jitter")
+  
+  plot(m_out,type="hist")
+  head(m_out$match.matrix)
+  head(m_out2$match.matrix)
+  head(m_out$subclass)
+  #Show preference score distributions:
+  
   #compute preference score:
   prop <- sum(y$y / nrow(y))
   interm <- exp(log(p$pred/(1-p$pred)) - log(prop/(1-prop)))
   p$pref <- interm / (interm+1)
-  m <- merge(y,p,by=c("row_id"))
+  
   
   library(ggplot2)
   ggplot(m, aes(x=pref,color=as.factor(y),group=as.factor(y),fill=as.factor(y))) + 

@@ -69,12 +69,72 @@ executeSql <- function(conn, dbms, sql, profile = FALSE){
   writeLines(paste("Analysis took", signif(delta,3), attr(delta,"units")))
 }
 
+
+
+#' Trim, match or stratify persons by propensity score
+#'
+#' @description
+#' \code{trimMatchStratify} uses the provided propensity scores to trim subjects with extreme
+#' scores, and either match or stratify persons.
+#' 
+#' @param propensityScores  A data frame with three columns: \code{row_id} (person ID), \code{treat} and \code{propensityScore}.
+#' @param method			      Whether \code{matching} or \code{stratification} should be performed.
+#' @param caliper		        The caliper for matching. A caliper is the distance which is acceptable for 
+#' any match. Observations which are outside of the caliper are dropped. The caliper is interpreted to be in 
+#' standardized units. For example, caliper=.25 means that all matches not equal to or within .25 standard 
+#' deviations are dropped. A caliper of 0 means no caliper is used.
+#' @param matchRatio		    Number of persons in comparator arm to be matched to each person in the treatment arm.
+#' @param strata		        If stratification is performed, how many strata?
+#' If not specified, all analyses will be executed. See \code{data(analysesDetails)} for a list of all Achilles analyses and their Ids.
+#' @param trimFraction      This fraction will be removed from each treatment group. In the treatment group, persons
+#' with the highest propensity scores will be removed, in the comparator group person with the lowest scores will be removed.
+#' 
+#' @details
+#' 
+#' 
+#' @return Returns a date frame with two columns: \code{row_id} and \code{stratum_id} 
+#' @examples \dontrun{
+#'   
+#' }
 #' @export
-cohortMethod <- function(connectionDetails, cdmSchema){
+trimMatchStratify <- function(propensityScores, method="matching", caliper=0, matchRatio=1, strata=5,trimFraction=0.05){
+  #need to implement
+}
+
+
+#' @export
+cohortMethod <- function(connectionDetails, 
+                         cdmSchema = "CDM4_SIM",
+                         resultsSchema = "CDM4_SIM",
+                         targetDrugConceptId = 755695,
+                         comparatorDrugConceptId = 739138,
+                         indicationConceptIds = 439926,
+                         washoutWindow = 183,
+                         indicationLookbackWindow = 183,
+                         exposureExtensionWindow = 7,
+                         studyStartDate = "",
+                         studyEndDate = "",
+                         exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                         outcomeConceptId = 194133,
+                         outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
+                         maxOutcomeCount = 1){
   renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
-                                        CDM_schema = cdmSchema)
+                                        CDM_schema = cdmSchema,
+                                        results_schema = resultsSchema,
+                                        target_drug_concept_id = targetDrugConceptId,
+                                        comparator_drug_concept_ids = comparatorDrugConceptIds,
+                                        indication_concept_id = indicationConceptId,
+                                        washout_window = washoutWindow,
+                                        indication_lookback_window = indicationLookbackWindow,
+                                        exposure_extension_window = exposureExtensionWindow,
+                                        study_start_date = studyStartDate,
+                                        study_end_date = studyEndDate,
+                                        exclusion_concept_ids = exclusionConceptIds,
+                                        outcome_concept_id = outcomeConceptId,
+                                        outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
+                                        max_outcome_count = maxOutcomeCount)
   
   conn <- connect(connectionDetails)
   
