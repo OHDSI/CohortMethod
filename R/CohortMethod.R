@@ -90,7 +90,7 @@ executeSql <- function(conn, dbms, sql, profile = FALSE){
 #' with the highest propensity scores will be removed, in the comparator group person with the lowest scores will be removed.
 #' 
 #' @details
-#' 
+#' Todo
 #' 
 #' @return Returns a date frame with two columns: \code{row_id} and \code{stratum_id} 
 #' @examples \dontrun{
