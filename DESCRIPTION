@@ -8,6 +8,6 @@ Maintainer: Patrick Ryan <ryan@ohdsi.org>
 Description: More about what it does (maybe more than one line)
 License: Apache
 Depends:
-    DatabaseConnector, SqlRender, CCD
+    DatabaseConnector, SqlRender, CCD, ggplot2
 Suggests:
     testthat
