@@ -25,19 +25,20 @@
 #ifndef __RcppWrapper_cpp__
 #define __RcppWrapper_cpp__
 
-#include "Match.h"
+
 #include <Rcpp.h>
+#include "Match.h"
+
 using namespace Rcpp;
 
-// [[Rcpp::export]]
-DataFrame matchOnPs(std::vector<double> propensityScores, 
-                             std::vector<int> treatment, 
-                             std::vector<int> rowId,
-                             int maxRatio,
-                             double caliper) {
+// [[Rcpp::export(".matchOnPs")]]
+DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<int> rowId, unsigned int maxRatio, double caliper) {
+
+	using namespace ohdsi::cohortMethod;
 
 	try {
-    return DataFrame::create(_["propensityScore"] = propensityScores, _["treatment"] = treatment,_["rowId"] = rowId);
+		std::vector<int> stratumIds = Match::match(propensityScores, treatment, maxRatio, caliper);
+		return DataFrame::create(_["propensityScore"] = propensityScores, _["treatment"] = treatment, _["rowId"] = rowId, _["stratumId"] = stratumIds);
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);
 	} catch (...) {

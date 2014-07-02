@@ -25,61 +25,128 @@
 #ifndef __Match_cpp__
 #define __Match_cpp__
 
-#include <Match.h>
 #include <cmath>
+#include <iostream>
+
+#include "Match.h"
+
 //#include <queue>
 
 namespace ohdsi {
 	namespace cohortMethod {
 
-		double Match::distance(double score1, double score2) {
-			return abs(score1 - score2);
+		double Match::distance(const double score1, const double score2) {
+			return fabs(score1 - score2);
 		}
 
-		std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initializeHeap(std::vector<double> propensityScores,
-				std::vector<int> treatment) {
+		std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initializeHeap(const std::vector<double> &propensityScores,
+				const std::vector<int> &treatment, const std::vector<int> &stratumIds) {
+
 			std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap;
-			for (unsigned int i = 0; i < treatment.size() - 1; i++) {
-				if (treatment.at(i) == 1 && treatment.at(i + 1) == 0) {
-					heap.push(MatchPair(i, i + 1, distance(propensityScores.at(i), propensityScores.at(i + 1))));
-				}
-			}
-			for (unsigned int i = 1; i < treatment.size(); i++) {
-				if (treatment.at(i) == 1 && treatment.at(i - 1) == 0) {
-					heap.push(MatchPair(i, i - 1, distance(propensityScores.at(i), propensityScores.at(i - 1))));
+			for (unsigned int i = 0; i < treatment.size(); i++) {
+				if (treatment.at(i) == 1) {
+					//Look forward for unmatched comparator:
+					unsigned int cursor = i + 1;
+					while (cursor < treatment.size()) {
+						if (treatment.at(cursor) == 0 && stratumIds.at(cursor) == -1) {
+							heap.push(MatchPair(i, cursor, distance(propensityScores.at(i), propensityScores.at(cursor))));
+							break;
+						}
+						cursor++;
+					}
+					//Look back for unmatched comparator:
+					cursor = i;
+					while (cursor > 0) {
+						cursor--;
+						if (treatment.at(cursor) == 0 && stratumIds.at(cursor) == -1) {
+							heap.push(MatchPair(i, cursor, distance(propensityScores.at(i), propensityScores.at(cursor))));
+							break;
+						}
+					}
 				}
 			}
 			return heap;
 		}
 
-		std::vector<int> Match::match(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<int> rowId, int maxRatio, double caliper) {
-			std::vector<int> stratumIds(rowId.size(), -1);
+		std::vector<int> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
+				const double caliper) {
+
+			std::vector<int> stratumIds(treatment.size(), -1);
 			std::vector<unsigned int> stratumSizes;
-			std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment);
-			for (int i = 0; i < maxRatio; i++) {
+			for (unsigned int targetRatio = 1; targetRatio <= maxRatio; targetRatio++) {
+				std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
 				unsigned int matchCount = 0;
 				if (!heap.empty()) {
 					bool ranOutOfPairs = false;
 					MatchPair pair = heap.top();
-					while (!ranOutOfPairs && pair.distance < caliper && matchCount < treatment.size()) { //First time treated person is matched
-						if (stratumIds.at(pair.indexTreated) == -1 && stratumIds.at(pair.indexComparator) == -1) {
-							stratumIds.assign(pair.indexTreated, stratumSizes.size());
-							stratumIds.assign(pair.indexComparator, stratumSizes.size());
+					heap.pop();
+					while (!ranOutOfPairs && pair.distance < caliper && matchCount < treatment.size()) {
+						int stratumIdTreated = stratumIds.at(pair.indexTreated);
+						int stratumIdComparator = stratumIds.at(pair.indexComparator);
+						if (stratumIdTreated == -1 && stratumIdComparator == -1) { //First time treated person is matched, comparator is unmatched
+							int stratumId = stratumSizes.size();
+							stratumIds.at(pair.indexTreated) = stratumId;
+							stratumIds.at(pair.indexComparator) = stratumId;
 							stratumSizes.push_back(1);
+              matchCount++;
+						} else if (stratumIdTreated != -1 && stratumIdComparator == -1) { //Already have a match for treated person, comparator is unmatched
+							if (stratumSizes.at(stratumIdTreated) < targetRatio) { //We need another match for this person
+								stratumIds.at(pair.indexTreated) = stratumIdTreated;
+								stratumIds.at(pair.indexComparator) = stratumIdTreated;
+								stratumSizes.at(stratumIdTreated) = stratumSizes.at(stratumIdTreated) + 1;
+                matchCount++;
+							}
+						} else if ((stratumIdTreated == -1 || stratumSizes.at(stratumIdTreated) < targetRatio) && stratumIds.at(pair.indexComparator) != -1) {
+							//We need another match for this treated person, but this comparator is already matched
+							//Look back:
+							int candidateBack = -1;
+							unsigned int cursor = pair.indexTreated;
+							while (cursor > 0 && candidateBack == -1) {
+								cursor--;
+								if (treatment.at(cursor) == 0 && stratumIds.at(cursor) == -1) {
+									candidateBack = cursor;
+								}
+							}
+							//Look forward:
+							int candidateForward = -1;
+							cursor = pair.indexTreated;
+							while (cursor < treatment.size() && candidateForward == -1) {
+								if (treatment.at(cursor) == 0 && stratumIds.at(cursor) == -1) {
+									candidateForward = cursor;
+								}
+								cursor++;
+							}
+							if (candidateBack == -1 && candidateForward != -1) {
+								double distanceForward = distance(propensityScores.at(pair.indexTreated), propensityScores.at(candidateForward));
+								heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
+							} else if (candidateBack != -1 && candidateForward == -1) {
+								double distanceBack = distance(propensityScores.at(pair.indexTreated), propensityScores.at(candidateBack));
+								heap.push(MatchPair(pair.indexTreated, candidateBack, distanceBack));
+							} else if (candidateBack != -1 && candidateForward != -1) {
+								double distanceBack = distance(propensityScores.at(pair.indexTreated), propensityScores.at(candidateBack));
+								double distanceForward = distance(propensityScores.at(pair.indexTreated), propensityScores.at(candidateForward));
+								if (distanceBack < distanceForward) {
+									heap.push(MatchPair(pair.indexTreated, candidateBack, distanceBack));
+								} else {
+									heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
+								}
+							}
 						}
 
 						if (heap.empty()) {
 							ranOutOfPairs = true;
 						} else {
 							pair = heap.top();
+							heap.pop();
 						}
-					}
+					} //end while
+          if (matchCount == 0) { //No new matches were added this round: give up
+            break;
+          }
 				}
 			}
-
 			return stratumIds;
 		}
-
 	}
 }
 

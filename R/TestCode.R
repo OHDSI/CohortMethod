@@ -55,18 +55,7 @@ testCode <- function(){
   colnames(y) <- tolower(colnames(y))
   p <- data.frame(pred = p, row_id = as.numeric(attr(p,"names")))
   #compute preference score:
-  prop <- sum(y$y / nrow(y))
-  interm <- exp(log(p$pred/(1-p$pred)) - log(prop/(1-prop)))
-  p$pref <- interm / (interm+1)
-  m <- merge(y,p,by=c("row_id"))
-  
-  library(ggplot2)
-  ggplot(m, aes(x=pref,color=as.factor(y),group=as.factor(y),fill=as.factor(y))) + 
-    geom_density() +
-    scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-    scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5)))
-  
-  
+ 
   dbDisconnect(conn)
   return(NULL)
   

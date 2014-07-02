@@ -30,10 +30,11 @@
 									<listOptionValue builtIn="false" value="&quot;${env_var:R_LIBRARY}\Rcpp\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${env_var:R_LIBRARY}\RInside\include&quot;"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.verbose.1037578147" name="Verbose (-v)" superClass="gnu.cpp.compiler.option.other.verbose" value="false" valueType="boolean"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.2125827854" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.other.verbose.1037578147" name="Verbose (-v)" superClass="gnu.cpp.compiler.option.other.verbose" useByScannerDiscovery="false" value="false" valueType="boolean"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.2125827854" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="ECLIPSE"/>
 								</option>
+								<option id="gnu.cpp.compiler.option.dialect.std.1867181405" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" value="gnu.cpp.compiler.dialect.c++11" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1622444260" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug.2100678154" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug">
