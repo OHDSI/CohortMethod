@@ -25,7 +25,7 @@ test_that("Medium 1-on-n matching", {
   propensityScore = (1:10000)/10000
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- psMatch(data, caliper = 0, maxRatio = 3)
-  expect_equal(result$stratumId, c(0,0,0,1,1,1))
+  expect_equal(max(result$stratumId),4999)
 })
 
 test_that("Large 1-on-n matching", {
@@ -34,7 +34,7 @@ test_that("Large 1-on-n matching", {
   propensityScore = (1:100000)/100000
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- psMatch(data, caliper = 0, maxRatio = 1)
-  expect_equal(result$stratumId, c(0,0,0,1,1,1))
+  expect_equal(max(result$stratumId),49999)
 })
 
 test_that("Trimming", {
