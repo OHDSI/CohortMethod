@@ -70,17 +70,22 @@ namespace ohdsi {
 
 		std::vector<int> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
 				const double caliper) {
+      
+      int treatedCount = 0;
+      for (int i = 0; i < treatment.size();i++)
+        treatedCount += treatment.at(i);
 
+      unsigned int matchedCount = 0;
 			std::vector<int> stratumIds(treatment.size(), -1);
 			std::vector<unsigned int> stratumSizes;
 			for (unsigned int targetRatio = 1; targetRatio <= maxRatio; targetRatio++) {
 				std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
-				unsigned int matchCount = 0;
+				unsigned int matchedTreatedCount = 0;
 				if (!heap.empty()) {
 					bool ranOutOfPairs = false;
 					MatchPair pair = heap.top();
 					heap.pop();
-					while (!ranOutOfPairs && pair.distance < caliper && matchCount < treatment.size()) {
+					while (!ranOutOfPairs && pair.distance < caliper && matchedTreatedCount < treatedCount) {
 						int stratumIdTreated = stratumIds.at(pair.indexTreated);
 						int stratumIdComparator = stratumIds.at(pair.indexComparator);
 						if (stratumIdTreated == -1 && stratumIdComparator == -1) { //First time treated person is matched, comparator is unmatched
@@ -88,13 +93,15 @@ namespace ohdsi {
 							stratumIds.at(pair.indexTreated) = stratumId;
 							stratumIds.at(pair.indexComparator) = stratumId;
 							stratumSizes.push_back(1);
-              matchCount++;
+              matchedTreatedCount++;
+              matchedCount += 2;
 						} else if (stratumIdTreated != -1 && stratumIdComparator == -1) { //Already have a match for treated person, comparator is unmatched
 							if (stratumSizes.at(stratumIdTreated) < targetRatio) { //We need another match for this person
 								stratumIds.at(pair.indexTreated) = stratumIdTreated;
 								stratumIds.at(pair.indexComparator) = stratumIdTreated;
 								stratumSizes.at(stratumIdTreated) = stratumSizes.at(stratumIdTreated) + 1;
-                matchCount++;
+                matchedTreatedCount++;
+                matchedCount++;
 							}
 						} else if ((stratumIdTreated == -1 || stratumSizes.at(stratumIdTreated) < targetRatio) && stratumIds.at(pair.indexComparator) != -1) {
 							//We need another match for this treated person, but this comparator is already matched
@@ -140,7 +147,7 @@ namespace ohdsi {
 							heap.pop();
 						}
 					} //end while
-          if (matchCount == 0) { //No new matches were added this round: give up
+          if (matchedCount == treatment.size()) { //Everyone is matched: stop
             break;
           }
 				}
