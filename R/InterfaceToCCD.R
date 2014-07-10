@@ -94,7 +94,7 @@ dbGetCcdInput <- function(connection,
                           outcomeSql, 
                           covariateSql, 
                           modelType = "lr", 
-                          addIntercept = FALSE,
+                          addIntercept = TRUE,
                           useOffsetCovariate = NULL,
                           offsetAlreadyOnLogScale = FALSE,
                           sortCovariates = TRUE,
@@ -124,6 +124,8 @@ dbGetCcdInput <- function(connection,
   doneOutcome = (nrow(batchOutcome) != batchSize)
   if (modelType == "lr" | modelType == "pr")
     batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+  if (modelType == "lr" | modelType == "clr")
+    batchOutcome$TIME = 0
   
   lastUsedOutcome <- 0
   spillOverCovars <- NULL
@@ -174,16 +176,21 @@ dbGetCcdInput <- function(connection,
           doneOutcome = (nrow(batchOutcome) != batchSize)
           if (modelType == "lr" | modelType == "pr")
             batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+          if (modelType == "lr" | modelType == "clr")
+            batchOutcome$TIME = 0
         } else {      
           newBatchOutcome <- fetch(resultSetOutcome, batchSize)
           colnames(newBatchOutcome) <- toupper(colnames(newBatchOutcome))
           doneOutcome = (nrow(newBatchOutcome) != batchSize)
           if (modelType == "lr" | modelType == "pr")
-            batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+            newBatchOutcome$STRATUM_ID = newBatchOutcome$ROW_ID
+          if (modelType == "lr" | modelType == "clr")
+            newBatchOutcome$TIME = 0
           batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
         }
         lastUsedOutcome = 0
-        endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
+        endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
+        #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
         if (nrow(batchOutcome) > 3*batchSize){
           stop(paste("No matching outcome found for row_id =",completeRowId))
         }
@@ -219,12 +226,16 @@ dbGetCcdInput <- function(connection,
       doneOutcome = (nrow(batchOutcome) != batchSize)
       if (modelType == "lr" | modelType == "pr")
         batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+      if (modelType == "lr" | modelType == "clr")
+        batchOutcome$TIME = 0
     } else {      
       newBatchOutcome <- fetch(resultSetOutcome, batchSize)
       colnames(newBatchOutcome) <- toupper(colnames(newBatchOutcome))
       doneOutcome = (nrow(newBatchOutcome) != batchSize)
       if (modelType == "lr" | modelType == "pr")
-        batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+        newBatchOutcome$STRATUM_ID = newBatchOutcome$ROW_ID
+      if (modelType == "lr" | modelType == "clr")
+        newBatchOutcome$TIME = 0
       batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
     }
     lastUsedOutcome = 0
@@ -265,6 +276,8 @@ dbGetCcdInput <- function(connection,
     doneOutcome = (nrow(newBatchOutcome) != batchSize)
     if (modelType == "lr" | modelType == "pr")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+    if (modelType == "lr" | modelType == "clr")
+      batchOutcome$TIME = 0
     
     appendSqlCcdData(dataPtr,
                      batchOutcome$STRATUM_ID,

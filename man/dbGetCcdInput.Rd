@@ -4,7 +4,7 @@
 \title{Get data from the database and insert it in a CCD data object}
 \usage{
 dbGetCcdInput(connection, outcomeSql, covariateSql, modelType = "lr",
-  addIntercept = FALSE, useOffsetCovariate = NULL,
+  addIntercept = TRUE, useOffsetCovariate = NULL,
   offsetAlreadyOnLogScale = FALSE, sortCovariates = TRUE,
   makeCovariatesDense = NULL, batchSize = 1e+05)
 }

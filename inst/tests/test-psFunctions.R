@@ -29,12 +29,12 @@ test_that("Medium 1-on-n matching", {
 })
 
 test_that("Large 1-on-n matching", {
-  rowId = 1:100000
-  treatment = rep(0:1, 50000)
-  propensityScore = (1:100000)/100000
+  rowId = 1:1000000
+  treatment = rep(0:1, 500000)
+  propensityScore = (1:1000000)/1000000
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- psMatch(data, caliper = 0, maxRatio = 100)
-  expect_equal(max(result$stratumId),49999)
+  expect_equal(max(result$stratumId),499999)
 })
 
 test_that("Trimming", {
