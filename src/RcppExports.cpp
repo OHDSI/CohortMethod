@@ -6,7 +6,7 @@
 using namespace Rcpp;
 
 // matchOnPs
-DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<int> rowId, unsigned int maxRatio, double caliper);
+DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<double> rowId, unsigned int maxRatio, double caliper);
 RcppExport SEXP CohortMethod_matchOnPs(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP rowIdSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;
@@ -14,7 +14,7 @@ BEGIN_RCPP
         Rcpp::RNGScope __rngScope;
         Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP );
         Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP );
-        Rcpp::traits::input_parameter< std::vector<int> >::type rowId(rowIdSEXP );
+        Rcpp::traits::input_parameter< std::vector<double> >::type rowId(rowIdSEXP );
         Rcpp::traits::input_parameter< unsigned int >::type maxRatio(maxRatioSEXP );
         Rcpp::traits::input_parameter< double >::type caliper(caliperSEXP );
         DataFrame __result = matchOnPs(propensityScores, treatment, rowId, maxRatio, caliper);

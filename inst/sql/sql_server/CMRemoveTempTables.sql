@@ -1,15 +1,11 @@
-TRUNCATE TABLE #ccd_outcome_input_for_ps;
+TRUNCATE TABLE #cohorts;
 
-DROP TABLE #ccd_outcome_input_for_ps;
+DROP TABLE #cohorts;
 
-TRUNCATE TABLE #ccd_covariate_input_for_ps;
+TRUNCATE TABLE #covariates;
 
-DROP TABLE #ccd_covariate_input_for_ps;
+DROP TABLE #covariates;
 
-TRUNCATE TABLE #ccd_outcome_input_for_outcome;
+TRUNCATE TABLE #outcomes;
 
-DROP TABLE #ccd_outcome_input_for_outcome;
-
-TRUNCATE TABLE #ccd_covariate_input_for_outcome;
-
-DROP TABLE #ccd_covariate_input_for_outcome;
+DROP TABLE #outcomes;

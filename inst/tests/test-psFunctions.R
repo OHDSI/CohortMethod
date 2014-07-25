@@ -19,6 +19,24 @@ test_that("Simple 1-on-n matching", {
   expect_equal(result$stratumId, c(0,0,0,1,1,1))
 })
 
+test_that("Simple 1-on-n matching", {
+  rowId = 1:5
+  treatment = c(0,1,1,1,0)
+  propensityScore = rowId/5
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  result <- psMatch(data, caliper = 0, maxRatio = 100)
+  expect_equal(result$stratumId, c(1,1,0,0))
+})
+
+test_that("Simple 1-on-n matching", {
+  rowId = 1:8
+  treatment = c(0,1,0,0,0,0,1,0)
+  propensityScore = c(0,0.1,0.11,0.12,0.13,0.85,0.9,1)
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  result <- psMatch(data, caliper = 0, maxRatio = 100)
+  expect_equal(result$stratumId, c(1,0,0,0,0,1,1,1))
+})
+
 test_that("Medium 1-on-n matching", {
   rowId = 1:10000
   treatment = rep(0:1, 5000)

@@ -18,15 +18,15 @@ USE @results_schema;
 /*made data table that contains cohorts and end of observation period*/
 SELECT DISTINCT raw_cohorts.cohort_id,
   raw_cohorts.person_id,
-	raw_cohorts.cohort_start_date,
+  raw_cohorts.cohort_start_date,
 	CASE 
 		WHEN raw_cohorts.cohort_end_date <= op1.observation_period_end_date
-			AND raw_cohorts.cohort_end_date <= '@study_end_date'
+			{@study_end_date != ''} ? {AND raw_cohorts.cohort_end_date <= '@study_end_date'}
 			THEN raw_cohorts.cohort_end_date
 		WHEN raw_cohorts.cohort_end_date > op1.observation_period_end_date
-			AND op1.observation_period_end_date <= '@study_end_date'
+			{@study_end_date != ''} ? {AND op1.observation_period_end_date <= '@study_end_date'}
 			THEN op1.observation_period_end_date
-		ELSE '@study_end_date'
+		ELSE {@study_end_date != ''} ? {'@study_end_date'} : {op1.observation_period_end_date}
 		END AS cohort_censor_date
 INTO #pre_cohorts
 FROM (
@@ -133,7 +133,6 @@ WHERE both_cohorts.person_id IS NULL
 
 /* find covariates  */
 CREATE TABLE #covariates (
-	cohort_id INT,
 	person_id NUMERIC,
 	covariate_id NUMERIC,
 	covariate_value DECIMAL
@@ -174,12 +173,11 @@ INNER JOIN @CDM_schema.dbo.concept c2
 
 --gender
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	gender_concept_id AS covariate_id,
 	1 AS covariate_value
@@ -190,12 +188,11 @@ WHERE gender_concept_id = 8507;
 
 --age decile
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	floor((year(ca1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10) + 1 AS covariate_id,
 	1 AS covariate_value
@@ -205,12 +202,11 @@ INNER JOIN @CDM_schema.dbo.person p1
 
 --Number of distinct conditions in last 6mo
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	20 AS covariate_id,
 	count(DISTINCT ce1.condition_concept_id) AS covariate_value
@@ -219,17 +215,15 @@ INNER JOIN @CDM_schema.dbo.condition_era ce1
 	ON ca1.person_id = ce1.person_id
 WHERE ce1.condition_era_start_date <= ca1.cohort_start_date
 	AND ce1.condition_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
-GROUP BY ca1.cohort_id,
-	ca1.person_id;
+GROUP BY ca1.person_id;
 
 --Number of distinct drugs in last 6mo
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	21 AS covariate_id,
 	count(DISTINCT de1.drug_concept_id) AS covariate_value
@@ -238,17 +232,15 @@ INNER JOIN @CDM_schema.dbo.drug_era de1
 	ON ca1.person_id = de1.person_id
 WHERE de1.drug_era_start_date <= ca1.cohort_start_date
 	AND de1.drug_era_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
-GROUP BY ca1.cohort_id,
-	ca1.person_id;
+GROUP BY ca1.person_id;
 
 --Number of distinct procedures in last 6mo
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	22 AS covariate_id,
 	count(DISTINCT po1.procedure_concept_id) AS covariate_value
@@ -257,18 +249,15 @@ INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
 	ON ca1.person_id = po1.person_id
 WHERE po1.procedure_date <= ca1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 365, ca1.cohort_start_date)
-GROUP BY ca1.cohort_id,
-	ca1.person_id;
+GROUP BY ca1.person_id;
 
 --Number of distinct outpatient visits in last 6mo
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
-	ca1.person_id,
+SELECT 	ca1.person_id,
 	23 AS covariate_id,
 	count(vo1.VISIT_OCCURRENCE_ID) AS covariate_value
 FROM #cohorts ca1
@@ -277,18 +266,15 @@ INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
 WHERE vo1.visit_start_date <= ca1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
 	AND vo1.place_of_service_concept_id = 9202
-GROUP BY ca1.cohort_id,
-	ca1.person_id;
+GROUP BY 	ca1.person_id;
 
 --Number of distinct inpatient visits in last 6mo
 INSERT INTO #covariates (
-	cohort_id,
-	person_id,
+		person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
-	ca1.person_id,
+SELECT 	ca1.person_id,
 	24 AS covariate_id,
 	count(vo1.VISIT_OCCURRENCE_ID) AS covariate_value
 FROM #cohorts ca1
@@ -297,18 +283,15 @@ INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
 WHERE vo1.visit_start_date <= ca1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
 	AND vo1.place_of_service_concept_id = 9201
-GROUP BY ca1.cohort_id,
-	ca1.person_id;
+GROUP BY 	ca1.person_id;
 
 --Number of distinct ER visits in last 6mo
 INSERT INTO #covariates (
-	cohort_id,
-	person_id,
+		person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
-	ca1.person_id,
+SELECT 	ca1.person_id,
 	25 AS covariate_id,
 	count(vo1.VISIT_OCCURRENCE_ID) AS covariate_value
 FROM #cohorts ca1
@@ -317,8 +300,7 @@ INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
 WHERE vo1.visit_start_date <= ca1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, ca1.cohort_start_date)
 	AND vo1.place_of_service_concept_id = 9203
-GROUP BY ca1.cohort_id,
-	ca1.person_id;
+GROUP BY 	ca1.person_id;
 
 --add covariate per SNOMED condition
 DELETE
@@ -339,13 +321,11 @@ WHERE ce1.condition_era_start_date <= ca1.cohort_start_date
 GROUP BY ce1.condition_concept_id;
 
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
-	ca1.person_id,
+SELECT 	ca1.person_id,
 	ce1.condition_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
@@ -359,25 +339,24 @@ WHERE ce1.condition_era_start_date <= ca1.cohort_start_date
 		FROM #concept_counts
 		WHERE num_records > 100
 		)
-GROUP BY ca1.cohort_id,
+GROUP BY 
 	ca1.person_id,
 	ce1.condition_concept_id;
 
 --add covariate per MEDDRA concept SNOMED condition
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	stam1.meddra_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #covariates ca1
 INNER JOIN #snomed_to_all_meddra stam1
 	ON ca1.covariate_id = stam1.snomed_concept_id
-GROUP BY ca1.cohort_id,
+GROUP BY 
 	ca1.person_id,
 	stam1.meddra_concept_id;
 
@@ -400,13 +379,11 @@ WHERE de1.drug_era_start_date <= ca1.cohort_start_date
 GROUP BY de1.drug_concept_id;
 
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
-	ca1.person_id,
+SELECT 	ca1.person_id,
 	de1.drug_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohorts ca1
@@ -420,36 +397,35 @@ WHERE de1.drug_era_start_date < ca1.cohort_start_date
 		FROM #concept_counts
 		WHERE num_records > 100
 		)
-GROUP BY ca1.cohort_id,
+GROUP BY 
 	ca1.person_id,
 	de1.drug_concept_id;
 
 --add covariate per ATC class concept within RxNorm drug
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	rta1.atc_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #covariates ca1
 INNER JOIN #rxnorm_to_atc rta1
 	ON ca1.covariate_id = rta1.rxnorm_concept_id
-GROUP BY ca1.cohort_id,
+GROUP BY 
 	ca1.person_id,
 	rta1.atc_concept_id;
 
 --number of drugs within each ATC3 groupings
 INSERT INTO #covariates (
-	cohort_id,
+	
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	2000000000 + t1.atc_concept_id,
 	count(DISTINCT ca1.covariate_id)
@@ -468,7 +444,7 @@ INNER JOIN (
 			AND len(c2.concept_code) IN (3)
 	) t1
 	ON ca1.covariate_id = t1.rxnorm_concept_id
-GROUP BY ca1.cohort_id,
+GROUP BY 
 	ca1.person_id,
 	2000000000 + t1.atc_concept_id;
 
@@ -497,12 +473,11 @@ WHERE po1.procedure_date <= ca1.cohort_start_date
 GROUP BY po1.procedure_concept_id;
 
 INSERT INTO #covariates (
-	cohort_id,
 	person_id,
 	covariate_id,
 	covariate_value
 	)
-SELECT ca1.cohort_id,
+SELECT 
 	ca1.person_id,
 	po1.procedure_concept_id AS covariate_id,
 	1 AS covariate_value
@@ -517,18 +492,18 @@ WHERE po1.procedure_date < ca1.cohort_start_date
 		FROM #concept_counts
 		WHERE num_records > 100
 		)
-GROUP BY ca1.cohort_id,
+GROUP BY 
 	ca1.person_id,
 	po1.procedure_concept_id;
 
 /*   find outcomes  */
-SELECT cohort_id,
+SELECT 
 	person_id,
 	max(outcomes.outcome_count) AS num_outcomes,
-	min(datediff(dd, cohort_start_date, outcome_date)) AS time
+	min(datediff(dd, cohort_start_date, outcome_date)) AS time_to_outcome
 INTO #outcomes
 FROM (
-	SELECT c1.cohort_id,
+	SELECT 
 		c1.person_id,
 		c1.cohort_start_date,
 		co1.condition_start_date AS outcome_date,
@@ -548,87 +523,12 @@ FROM (
 		AND co1.condition_start_Date <= c1.cohort_censor_date
 	) outcomes
 WHERE outcomes.outcome_count <= @max_outcome_count
-GROUP BY cohort_id,
+GROUP BY 
 	person_id;
 
---tables for propensity score fitting
-SELECT 1 AS stratum_id,
-	c1.person_id AS row_id,
-	cohort_id AS y,
-	0 AS time
-INTO #ccd_outcome_input_for_ps
-FROM #cohorts c1
-ORDER BY c1.person_id;
-
-SELECT 1 AS stratum_id,
-	person_id AS row_id,
-	covariate_id,
-	covariate_value
-INTO #ccd_covariate_input_for_ps
-FROM #covariates
-ORDER BY person_id;
-
---tables for final outcome model   *****need to get matching variables from strata
-SELECT 1 AS stratum_id,
-	c1.person_id AS row_id,
-	CASE 
-		WHEN o1.person_id IS NULL
-			THEN 0
-		ELSE o1.num_outcomes
-		END AS y,
-	CASE 
-		WHEN o1.person_id IS NULL
-			THEN datediff(dd, c1.cohort_start_date, c1.cohort_censor_date)
-		ELSE o1.time
-		END AS time
-INTO #ccd_outcome_input_for_outcome
-FROM #cohorts c1
-LEFT JOIN #outcomes o1
-	ON c1.cohort_id = o1.cohort_id
-		AND c1.person_id = o1.person_id
-ORDER BY c1.person_id;
-
-SELECT stratum_id,
-	row_id,
-	covariate_id,
-	covariate_value
-INTO #ccd_covariate_input_for_outcome
-FROM (
-	SELECT 1 AS stratum_id,
-		person_id AS row_id,
-		covariate_id,
-		covariate_value
-	FROM #covariates
-	
-	UNION
-	
-	SELECT 1 AS stratum_id,
-		person_id AS row_id,
-		0 AS covariate_id,
-		cohort_id AS covariate_value
-	FROM #cohorts
-	) t1;
-
-/**summary of number of person and number of events*/
-/*
-select c1.cohort_id, count(c1.person_id) as num_persons, sum(case when o1.person_id is null then 0 else num_outcomes end) as num_outcomes
-from #cohorts c1
-left join #outcomes o1
-on c1.cohort_id = o1.cohort_id
-and c1.person_id = o1.person_id
-group by c1.cohort_id
-*/
 TRUNCATE TABLE #pre_cohorts;
 
 DROP TABLE #pre_cohorts;
-
-TRUNCATE TABLE #cohorts;
-
-DROP TABLE #cohorts;
-
-TRUNCATE TABLE #covariates;
-
-DROP TABLE #covariates;
 
 TRUNCATE TABLE #concept_counts;
 
@@ -641,7 +541,3 @@ DROP TABLE #snomed_to_all_meddra;
 TRUNCATE TABLE #rxnorm_to_atc;
 
 DROP TABLE #rxnorm_to_atc;
-
-TRUNCATE TABLE #outcomes;
-
-DROP TABLE #outcomes;

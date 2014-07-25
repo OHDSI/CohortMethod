@@ -32,7 +32,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export(".matchOnPs")]]
-DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<int> rowId, unsigned int maxRatio, double caliper) {
+DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<double> rowId, unsigned int maxRatio, double caliper) {
 
 	using namespace ohdsi::cohortMethod;
 

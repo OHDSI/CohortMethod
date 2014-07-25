@@ -70,18 +70,19 @@ namespace ohdsi {
 
 		std::vector<int> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
 				const double caliper) {
-      
       int treatedCount = 0;
       for (int i = 0; i < treatment.size();i++)
         treatedCount += treatment.at(i);
-
       unsigned int matchedCount = 0;
 			std::vector<int> stratumIds(treatment.size(), -1);
 			std::vector<unsigned int> stratumSizes;
 			for (unsigned int targetRatio = 1; targetRatio <= maxRatio; targetRatio++) {
 				std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
+        if (heap.empty()){
+          break;
+        }
 				unsigned int matchedTreatedCount = 0;
-				if (!heap.empty()) {
+
 					bool ranOutOfPairs = false;
 					MatchPair pair = heap.top();
 					heap.pop();
@@ -150,7 +151,9 @@ namespace ohdsi {
           if (matchedCount == treatment.size()) { //Everyone is matched: stop
             break;
           }
-				}
+          if (matchedTreatedCount == 0){ //No person was matched this round
+            break;
+          }
 			}
 			return stratumIds;
 		}

@@ -21,54 +21,6 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-executeSql <- function(conn, dbms, sql, profile = FALSE){
-  sqlStatements = splitSql(sql)
-  if (!profile)
-    progressBar <- txtProgressBar(style=3)
-  start <- Sys.time()
-  for (i in 1:length(sqlStatements)){
-    sqlStatement <- sqlStatements[i]
-    if (profile){
-      sink(paste("statement_",i,".sql",sep=""))
-      cat(sqlStatement)
-      sink()
-    }
-    tryCatch ({   
-      startQuery <- Sys.time()
-      dbSendUpdate(conn, sqlStatement)
-      if (profile){
-        delta <- Sys.time() - startQuery
-        writeLines(paste("Statement ",i,"took", delta, attr(delta,"units")))
-      }
-    } , error = function(err) {
-      writeLines(paste("Error executing SQL:",err))
-      
-      #Write error report:
-      filename <- paste(getwd(),"/errorReport.txt",sep="")
-      sink(filename)
-      error <<- err
-      cat("DBMS:\n")
-      cat(dbms)
-      cat("\n\n")
-      cat("Error:\n")
-      cat(err$message)
-      cat("\n\n")
-      cat("SQL:\n")
-      cat(sqlStatement)
-      sink()
-      
-      writeLines(paste("An error report has been created at ", filename))
-      break
-    })
-    if (!profile)
-      setTxtProgressBar(progressBar, i/length(sqlStatements))
-  }
-  if (!profile)
-    close(progressBar)
-  delta <- Sys.time() - start
-  writeLines(paste("Analysis took", signif(delta,3), attr(delta,"units")))
-}
-
 
 
 #' @export

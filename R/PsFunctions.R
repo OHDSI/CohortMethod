@@ -21,6 +21,48 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+
+
+#' Create propensity scores
+#'
+#' @description
+#' \code{psCreate} creates propensity scores
+#' 
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}
+#' @param prior             The prior used to fit the model
+#'
+#' @details
+#' todo
+#'  
+#' @examples 
+#' #todo
+#' 
+#' @export
+psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
+  if (cohortData$useFf){
+    cohortData$cohorts$y <- cohortData$cohorts$treatment
+    ccdData <- createCcdData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
+    ps <- as.ram(cohortData$cohorts[,c("y","row_id")])
+    colnames(ps) <- toupper(colnames(ps))
+    cohortData$cohorts$y <- NULL
+  } else {
+    ps <- cohortData$cohorts
+    colnames(ps) <- toupper(colnames(ps))
+    colnames(ps)[colnames(ps) == "TREATMENT"] = "Y"
+    ccdData <- createCcdData(ps,cohortData$covariates,modelType="lr")
+  }
+  ccdFit <- fitCcdModel(ccdData, 
+                        prior = prior,
+                        control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
+  pred <- predict(ccdFit)
+
+  colnames(ps)[colnames(ps) == "ROW_ID"] <- "rowId"
+  colnames(ps)[colnames(ps) == "Y"] <- "treatment"
+  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred,"names")))
+  data <- merge(data,ps,by="rowId")
+  data
+}
+
 #' Plot the propensity score distribution
 #'
 #' @description
@@ -30,7 +72,7 @@
 #' @param scale             The scale of the graph. Two scales are supported: \code{
 #' scale = "propensity"} or  \code{#' scale = "preference"}. The preference score scale is defined by Walker 
 #' et al (2013). 
-
+#'
 #' @details
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
@@ -68,8 +110,39 @@ psPlot <- function(data, scale = "preference"){
     geom_density() +
     scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
     scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
-    scale_x_continuous(label) +
+    scale_x_continuous(label,limits=c(0,1)) +
     scale_y_continuous("Density")
+}
+
+#' Compute the area under the ROC curve
+#'
+#' @description
+#' \code{psAuc} shows the area under the ROC curve os the propensity score
+#' 
+#' @param data              A data frame with at least the two columns described below
+#'
+#' @details
+#' The data frame should have a least the following two columns:
+#' \tabular{lll}{  
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#' }
+#' 
+#' @return
+#' A data frame holding the AUC and its 95% confidence interval
+#'  
+#' @examples 
+#' treatment = rep(0:1, each = 100)
+#' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+#' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
+#' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+#' psAuc(data)
+#' 
+#' @export
+psAuc <- function(data){
+  rocobj <- roc(data$treatment,data$propensityScore, algorithm=3)
+  auc <- as.numeric(ci.auc(rocobj, method="delong"))
+  data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3])
 }
 
 #' Trim persons by propensity score
@@ -113,10 +186,11 @@ psTrim <- function(data, trimFraction=0.05){
 #' @param data              A data frame with the three columns described below
 #' @param caliper		        The caliper for matching. A caliper is the distance which is acceptable for 
 #' any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.
-#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \code{
-#' caliperScale = "propensity score"} or  \code{#' caliperScale = "standardized"}. On the standardized scale, the 
+#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \code{caliperScale = "propensity score"}
+#' or  \code{caliperScale = "standardized"}. On the standardized scale, the 
 #' caliper is interpreted in standard deviations of the propensity score distribution.
-#' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm.
+#' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A 
+#' maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.
 #' 
 #' @details
 #' The data frame should have the following three columns:
@@ -143,12 +217,15 @@ psTrim <- function(data, trimFraction=0.05){
 #' cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #' 
 #' @export
-psMatch <- function(data, caliper = 0, caliperScale = "propensity score", maxRatio = 1){
+psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1){
   data <- data[order(data$propensityScore),]
   if (caliper <= 0)
     caliper = 9999
   else if (caliperScale == "standardized")
     caliper = caliper * sd(data$propensityScore)
+  if (maxRatio == 0) {
+    maxRatio = 999
+  } 
   
   result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment, data$rowId, maxRatio, caliper)
   result[result$stratumId != -1,]

@@ -3,8 +3,7 @@
 \alias{psMatch}
 \title{Match persons by propensity score}
 \usage{
-psMatch(data, caliper = 0, caliperScale = "propensity score",
-  maxRatio = 1)
+psMatch(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 }
 \arguments{
 \item{data}{A data frame with the three columns described below}
@@ -12,11 +11,12 @@ psMatch(data, caliper = 0, caliperScale = "propensity score",
 \item{caliper}{The caliper for matching. A caliper is the distance which is acceptable for
 any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.}
 
-\item{caliperScale}{The scale on which the caliper is defined. Two scales are supported: \code{
-caliperScale = "propensity score"} or  \code{#' caliperScale = "standardized"}. On the standardized scale, the
+\item{caliperScale}{The scale on which the caliper is defined. Two scales are supported: \code{caliperScale = "propensity score"}
+or  \code{caliperScale = "standardized"}. On the standardized scale, the
 caliper is interpreted in standard deviations of the propensity score distribution.}
 
-\item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each person in the treatment arm.}
+\item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A
+maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId.
