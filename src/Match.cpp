@@ -40,7 +40,7 @@ namespace ohdsi {
 		}
 
 		std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initializeHeap(const std::vector<double> &propensityScores,
-				const std::vector<int> &treatment, const std::vector<int> &stratumIds) {
+				const std::vector<int> &treatment, const std::vector<int64_t> &stratumIds) {
 
 			std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap;
 			for (unsigned int i = 0; i < treatment.size(); i++) {
@@ -68,13 +68,13 @@ namespace ohdsi {
 			return heap;
 		}
 
-		std::vector<int> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
+		std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
 				const double caliper) {
       int treatedCount = 0;
       for (int i = 0; i < treatment.size();i++)
         treatedCount += treatment.at(i);
       unsigned int matchedCount = 0;
-			std::vector<int> stratumIds(treatment.size(), -1);
+			std::vector<int64_t> stratumIds(treatment.size(), -1);
 			std::vector<unsigned int> stratumSizes;
 			for (unsigned int targetRatio = 1; targetRatio <= maxRatio; targetRatio++) {
 				std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
@@ -87,8 +87,8 @@ namespace ohdsi {
 					MatchPair pair = heap.top();
 					heap.pop();
 					while (!ranOutOfPairs && pair.distance < caliper && matchedTreatedCount < treatedCount) {
-						int stratumIdTreated = stratumIds.at(pair.indexTreated);
-						int stratumIdComparator = stratumIds.at(pair.indexComparator);
+						int64_t stratumIdTreated = stratumIds.at(pair.indexTreated);
+						int64_t stratumIdComparator = stratumIds.at(pair.indexComparator);
 						if (stratumIdTreated == -1 && stratumIdComparator == -1) { //First time treated person is matched, comparator is unmatched
 							int stratumId = stratumSizes.size();
 							stratumIds.at(pair.indexTreated) = stratumId;

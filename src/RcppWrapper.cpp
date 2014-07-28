@@ -32,13 +32,13 @@
 using namespace Rcpp;
 
 // [[Rcpp::export(".matchOnPs")]]
-DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, std::vector<double> rowId, unsigned int maxRatio, double caliper) {
+DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper) {
 
 	using namespace ohdsi::cohortMethod;
 
 	try {
-		std::vector<int> stratumIds = Match::match(propensityScores, treatment, maxRatio, caliper);
-		return DataFrame::create(_["propensityScore"] = propensityScores, _["treatment"] = treatment, _["rowId"] = rowId, _["stratumId"] = stratumIds);
+		std::vector<int64_t> stratumIds = Match::match(propensityScores, treatment, maxRatio, caliper);
+		return DataFrame::create(_["propensityScore"] = propensityScores, _["treatment"] = treatment,_["stratumId"] = stratumIds);
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);
 	} catch (...) {

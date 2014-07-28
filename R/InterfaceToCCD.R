@@ -369,10 +369,10 @@ createCcdData.ffdf <- function(outcomes,
     if (modelType == "lr" | modelType == "clr")
       y$TIME = 0
     appendSqlCcdData(dataPtr,
-                     as.integer(y$STRATUM_ID),
+                     as.numeric(y$STRATUM_ID),
                      as.numeric(y$ROW_ID),
                      as.integer(y$Y),
-                     as.integer(y$TIME),
+                     as.numeric(y$TIME),
                      x$ROW_ID,
                      x$COVARIATE_ID,
                      x$COVARIATE_VALUE
@@ -391,10 +391,10 @@ createCcdData.ffdf <- function(outcomes,
     matchedRowIds <- as.ram(matchedY$ROW_ID)
     y <- as.ram(subset(outcomes,!(ROW_ID %in% matchedRowIds)))
     appendSqlCcdData(dataPtr,
-                     as.integer(y$STRATUM_ID),
+                     as.numeric(y$STRATUM_ID),
                      as.numeric(y$ROW_ID),
                      as.integer(y$Y),
-                     as.integer(y$TIME),
+                     as.numeric(y$TIME),
                      c(),
                      c(),
                      c()

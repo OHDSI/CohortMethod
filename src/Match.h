@@ -27,6 +27,7 @@
 
 #include <queue>
 #include <vector>
+#include <cstdint>
 
 namespace ohdsi {
 	namespace cohortMethod {
@@ -49,12 +50,12 @@ namespace ohdsi {
 
 		struct Match {
 		public:
-			static std::vector<int> match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
+			static std::vector<int64_t> match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
 					const double caliper);
 		private:
 			static double distance(double score1, double score2);
 			static std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> initializeHeap(const std::vector<double> &propensityScores,
-					const std::vector<int> &treatment, const std::vector<int> &stratumIds);
+					const std::vector<int> &treatment, const std::vector<int64_t> &stratumIds);
 		};
 	}
 }

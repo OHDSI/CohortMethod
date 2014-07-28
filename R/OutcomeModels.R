@@ -21,8 +21,37 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+#' Create an outcome model, and compute the relative risk
+#'
+#' @description
+#' \code{estimateEffect} creates an outcome model, and computes the relative risk
+#' 
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{dbGetCohortData}
+#' @param strata              A data frame specifying the strata. This data frame should have at least the following columns:
+#' \code{RowId} and \code{StratumId}
+#' @param riskWindowEnd       The maximum length (in days) of the risk window.
+#' @param useCovariates       Whether to use the covariate matrix in the cohortData in the outcome model
+#' @param modelType           The type of model to be fitted. See details for options
+#' 
+#'
+#' @details
+#' The data frame should have a least the following two columns:
+#' \tabular{ll}{  
+#'   \verb{lr}      \tab Logistic regression  \cr
+#'   \verb{clr}     \tab Conditional logistic regression \cr
+#'   \verb{cox}     \tab Cox regression (conditional or unconditional, depending on whether \code{stata} is specified) \cr
+#'   \verb{pr}      \tab Poisson regression  \cr
+#'   \verb{cpr}     \tab Conditional Poisson regression \cr
+#' }
+#' 
+#' @return
+#' A data frame holding the effect estimate
+#'  
+#' @examples 
+#' todo
+#' 
 #' @export
-createOutcomeModel <- function(cohortData,
+estimateEffect <- function(cohortData,
                                strata=NULL, 
                                riskWindowEnd = 9999, 
                                useCovariates = FALSE, 
@@ -30,31 +59,79 @@ createOutcomeModel <- function(cohortData,
   outcomes <- cohortData$outcomes
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(outcomes)[colnames(outcomes) == "ROW_ID"] <- "ROWID"
-  colnames(strata) <- toupper(colnames(strata))
+  
   cohorts <- cohortData$cohorts
   colnames(cohorts) <- toupper(colnames(cohorts))
   colnames(cohorts)[colnames(cohorts) == "ROW_ID"] <- "ROWID"
+  if (!is.null(strata))
+    colnames(strata) <- toupper(colnames(strata))
+
+  data <- merge(cohorts[,c("ROWID","TIME_TO_CENSOR","TREATMENT")],outcomes,by="ROWID",all.x=TRUE)
+  data$Y[is.na(data$Y)] <- 0
+  
   if (modelType == "cox"){
-    data <- merge(cohorts[,c("ROWID","TIME_TO_CENSOR","TREATMENT")],outcomes,by="ROWID",all.x=TRUE)
-    data$Y[is.na(data$Y)] <- 0
     data$Y[data$Y != 0] <- 1
     data$TIME <- data$TIME_TO_OUTCOME
     data$TIME[is.na(data$TIME)] <- data$TIME_TO_CENSOR[is.na(data$TIME)]
     data$Y[data$TIME > riskWindowEnd] <- 0
     data$TIME[data$TIME > riskWindowEnd] <- riskWindowEnd
     data$TIME = data$TIME + 1
-    data$START <- 0
     if (useCovariates) { # To implement: CCD cox regression (stratified and unstratified)
       
     } else {
       if (is.null(strata)){ # Unstratified Cox regression
-        fit <- coxph( Surv(START, TIME, Y) ~ TREATMENT,data=data ) 
-        fit
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
+
+        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))        
       } else { # Stratified Cox regression
         data <- merge(data,strata[,c("ROWID","STRATUMID")],by="ROWID")
-        fit <- coxph( Surv(START, TIME, Y) ~ TREATMENT + strata(STRATUMID),data=data ) 
-        fit
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUMID),data=data ) 
+        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUMID),data=data, modelType = "cox")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))   
       }
     }
+  } else if (modelType == "lr" || modeltype == "clr"){
+    data$Y[data$Y != 0] <- 1
+    data$TIME <- data$TIME_TO_OUTCOME
+    data$TIME[is.na(data$TIME)] <- data$TIME_TO_CENSOR[is.na(data$TIME)]
+    data$Y[data$TIME > riskWindowEnd] <- 0
+    if (useCovariates) { # To implement: CCD logistic regression (stratified and unstratified)
+      
+    } else {
+      if (is.null(strata)){ # Unstratified logistic regression
+        fit2 <- glm(Y ~ TREATMENT, data=data,family = "binomial")
+        
+        ccdData <- createCcdDataFrame(Y ~ TREATMENT,data=data, modelType = "lr")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+      } else {# Stratified logistic regression
+        data <- merge(data,strata[,c("ROWID","STRATUMID")],by="ROWID")
+        #fit2 <- clogit(Y ~ TREATMENT + strata(STRATUMID), data=data)
+
+        ccdData <- createCcdDataFrame(Y ~ TREATMENT + strata(STRATUMID),data=data, modelType = "clr")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+      }
+    }
+  } else if (modelType == "pr" || modeltype == "cpr"){
+    if (riskWindowEnd != 9999)
+      stop("Risk window currently not supported for (conditional) Poisson regression")
+    data$TIME <- data$TIME_TO_CENSOR
+    data$TIME = data$TIME + 1
+    if (useCovariates) { # To implement: CCD Poisson regression (stratified and unstratified)
+      
+    } else {
+      if (is.null(strata)){ # Unstratified Poisson regression
+        #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)), data=data,family = "poisson")
+        
+        ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)),data=data, modelType = "pr")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+      } else {# Stratified Poisson regression
+        data <- merge(data,strata[,c("ROWID","STRATUMID")],by="ROWID")
+        #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUMID), data=data,family = "poisson")
+        
+        ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUMID),data=data, modelType = "cpr")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))  
+      }
+    }  
   }
 }

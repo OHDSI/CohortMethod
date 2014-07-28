@@ -227,7 +227,8 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
     maxRatio = 999
   } 
   
-  result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment, data$rowId, maxRatio, caliper)
+  result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment, maxRatio, caliper)
+  result$rowId <- data$rowId
   result[result$stratumId != -1,]
 }
 

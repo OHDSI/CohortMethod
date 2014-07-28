@@ -30,7 +30,7 @@ testCode <- function(){
  
   psPlot(strata) #Plot matched PS distributions
   
-  fit <- createOutcomeModel(cohortData, strata, useCovariates = FALSE,modelType = "cox")
+  fit <- estimateEffect(cohortData, strata, useCovariates = FALSE, modelType = "cox")
   
   
   
