@@ -52,21 +52,19 @@
 #' 
 #' @export
 estimateEffect <- function(cohortData,
-                               strata=NULL, 
-                               riskWindowEnd = 9999, 
-                               useCovariates = FALSE, 
-                               modelType = "cox"){
+                           strata=NULL, 
+                           riskWindowEnd = 9999, 
+                           useCovariates = FALSE, 
+                           modelType = "cox"){
   outcomes <- cohortData$outcomes
   colnames(outcomes) <- toupper(colnames(outcomes))
-  colnames(outcomes)[colnames(outcomes) == "ROW_ID"] <- "ROWID"
   
   cohorts <- cohortData$cohorts
   colnames(cohorts) <- toupper(colnames(cohorts))
-  colnames(cohorts)[colnames(cohorts) == "ROW_ID"] <- "ROWID"
   if (!is.null(strata))
     colnames(strata) <- toupper(colnames(strata))
-
-  data <- merge(cohorts[,c("ROWID","TIME_TO_CENSOR","TREATMENT")],outcomes,by="ROWID",all.x=TRUE)
+  
+  data <- merge(cohorts[,c("ROW_ID","TIME_TO_CENSOR","TREATMENT")],outcomes,by="ROW_ID",all.x=TRUE)
   data$Y[is.na(data$Y)] <- 0
   
   if (modelType == "cox"){
@@ -77,17 +75,34 @@ estimateEffect <- function(cohortData,
     data$TIME[data$TIME > riskWindowEnd] <- riskWindowEnd
     data$TIME = data$TIME + 1
     if (useCovariates) { # To implement: CCD cox regression (stratified and unstratified)
+      if (is.null(strata)){ # Unstratified Cox regression
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
+        data$STRATUM_ID <- data$ROW_ID
+        if (cohortData.useff){
+          data <- as.ffdf(data)
+          ccdData <- createCcdData.ffdf(data,cohortData$covariates,modelType="cox")
+        } else {
+          ccdData <- createCcdData(data,cohortData$covariates,modelType="cox")
+        }
+        
+        fit <- fitCcdModel(ccdData, prior=prior("laplace",0.1))        
+      } else { # Stratified Cox regression
+        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
+        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
+        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+      }
       
     } else {
       if (is.null(strata)){ # Unstratified Cox regression
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
-
+        
         ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
         fit <- fitCcdModel(ccdData, prior = prior("none"))        
       } else { # Stratified Cox regression
-        data <- merge(data,strata[,c("ROWID","STRATUMID")],by="ROWID")
-        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUMID),data=data ) 
-        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUMID),data=data, modelType = "cox")
+        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
+        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
         fit <- fitCcdModel(ccdData, prior = prior("none"))   
       }
     }
@@ -105,10 +120,10 @@ estimateEffect <- function(cohortData,
         ccdData <- createCcdDataFrame(Y ~ TREATMENT,data=data, modelType = "lr")
         fit <- fitCcdModel(ccdData, prior = prior("none"))   
       } else {# Stratified logistic regression
-        data <- merge(data,strata[,c("ROWID","STRATUMID")],by="ROWID")
-        #fit2 <- clogit(Y ~ TREATMENT + strata(STRATUMID), data=data)
-
-        ccdData <- createCcdDataFrame(Y ~ TREATMENT + strata(STRATUMID),data=data, modelType = "clr")
+        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
+        #fit2 <- clogit(Y ~ TREATMENT + strata(STRATUM_ID), data=data)
+        
+        ccdData <- createCcdDataFrame(Y ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "clr")
         fit <- fitCcdModel(ccdData, prior = prior("none"))   
       }
     }
@@ -126,10 +141,10 @@ estimateEffect <- function(cohortData,
         ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)),data=data, modelType = "pr")
         fit <- fitCcdModel(ccdData, prior = prior("none"))   
       } else {# Stratified Poisson regression
-        data <- merge(data,strata[,c("ROWID","STRATUMID")],by="ROWID")
-        #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUMID), data=data,family = "poisson")
+        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
+        #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID), data=data,family = "poisson")
         
-        ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUMID),data=data, modelType = "cpr")
+        ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID),data=data, modelType = "cpr")
         fit <- fitCcdModel(ccdData, prior = prior("none"))  
       }
     }  

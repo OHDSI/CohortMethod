@@ -146,13 +146,16 @@ dbGetCohortData <- function(connectionDetails,
   
   executeSql(conn,connectionDetails$dbms,renderedSql,progressBar = FALSE,reportTime=FALSE)
   
-  
+  colnames(outcomes) <- toupper(colnames(outcomes))
+  colnames(cohorts) <- toupper(colnames(cohorts))
+  colnames(covariates) <- toupper(colnames(covariates))
   dummy <- dbDisconnect(conn)
   result <- list(outcomes = outcomes,
                  cohorts = cohorts,
                  covariates = covariates,
                  useFf = useFf    
   )
+
   class(result) <- "cohortData"
   result
 }

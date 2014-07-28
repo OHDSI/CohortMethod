@@ -38,7 +38,7 @@ DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treat
 
 	try {
 		std::vector<int64_t> stratumIds = Match::match(propensityScores, treatment, maxRatio, caliper);
-		return DataFrame::create(_["propensityScore"] = propensityScores, _["treatment"] = treatment,_["stratumId"] = stratumIds);
+		return DataFrame::create(_["PROPENSITY_SCORE"] = propensityScores, _["TREATMENT"] = treatment,_["STRATUM_ID"] = stratumIds);
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);
 	} catch (...) {

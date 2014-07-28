@@ -42,12 +42,10 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
   if (cohortData$useFf){
     cohortData$cohorts$y <- cohortData$cohorts$treatment
     ccdData <- createCcdData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
-    ps <- as.ram(cohortData$cohorts[,c("y","row_id")])
-    colnames(ps) <- toupper(colnames(ps))
+    ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
     cohortData$cohorts$y <- NULL
   } else {
     ps <- cohortData$cohorts
-    colnames(ps) <- toupper(colnames(ps))
     colnames(ps)[colnames(ps) == "TREATMENT"] = "Y"
     ccdData <- createCcdData(ps,cohortData$covariates,modelType="lr")
   }
@@ -56,10 +54,9 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
                         control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
   pred <- predict(ccdFit)
 
-  colnames(ps)[colnames(ps) == "ROW_ID"] <- "rowId"
   colnames(ps)[colnames(ps) == "Y"] <- "treatment"
-  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred,"names")))
-  data <- merge(data,ps,by="rowId")
+  data <- data.frame(PROPENSITY_SCORE = pred, ROW_ID = as.numeric(attr(pred,"names")))
+  data <- merge(data,ps,by="ROW_ID")
   data
 }
 
@@ -77,7 +74,7 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
 #'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
 #' }
 #'  
 #' @examples 
@@ -94,19 +91,20 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
 #' 
 #' @export
 psPlot <- function(data, scale = "preference"){
+  colnames(data) <- toupper(colnames(data))
   if (scale == "preference") {
-    proportion <- sum(data$treatment) / nrow(data)
-    x <- exp(log(data$propensityScore/(1-data$propensityScore)) - log(proportion/(1-proportion)))
-    data$score <- x / (x+1)
+    proportion <- sum(data$TREATMENT) / nrow(data)
+    x <- exp(log(data$PROPENSITY_SCORE/(1-data$PROPENSITY_SCORE)) - log(proportion/(1-proportion)))
+    data$SCORE <- x / (x+1)
     label = "Preference score"
   } else {
-    data$score = data$propensityScore
+    data$SCORE = data$PROPENSITY_SCORE
     label = "Propensity score"
   }
-  data$Group <- "Treated"
-  data$Group[data$treatment == 0] <- "Comparator"
+  data$GROUP <- "Treated"
+  data$GROUP[data$TREATMENT == 0] <- "Comparator"
   
-  ggplot(data, aes(x=score,color=Group,group=Group,fill=Group)) + 
+  ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
     geom_density() +
     scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
     scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
@@ -125,7 +123,7 @@ psPlot <- function(data, scale = "preference"){
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
 #'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return
@@ -140,7 +138,8 @@ psPlot <- function(data, scale = "preference"){
 #' 
 #' @export
 psAuc <- function(data){
-  rocobj <- roc(data$treatment,data$propensityScore, algorithm=3)
+  colnames(data) <- toupper(colnames(data))
+  rocobj <- roc(data$TREATMENT,data$PROPENSITY_SCORE, algorithm=3)
   auc <- as.numeric(ci.auc(rocobj, method="delong"))
   data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3])
 }
@@ -157,9 +156,9 @@ psAuc <- function(data){
 #' @details
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
-#'   \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{row_id}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same three columns as the input.
@@ -172,9 +171,10 @@ psAuc <- function(data){
 #' 
 #' @export
 psTrim <- function(data, trimFraction=0.05){
-  cutoffTreated <- quantile(data$propensityScore[data$treatment == 1],1-trimFraction)
-  cutoffComparator <- quantile(data$propensityScore[data$treatment == 0],trimFraction)
-  data[(data$propensityScore <= cutoffTreated & data$treatment == 1) | (data$propensityScore >= cutoffComparator & data$treatment == 0),]
+  colnames(data) <- toupper(colnames(data))
+  cutoffTreated <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],1-trimFraction)
+  cutoffComparator <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 0],trimFraction)
+  data[(data$PROPENSITY_SCORE <= cutoffTreated & data$TREATMENT == 1) | (data$PROPENSITY_SCORE >= cutoffComparator & data$TREATMENT == 0),]
 }
 
 
@@ -195,9 +195,9 @@ psTrim <- function(data, trimFraction=0.05){
 #' @details
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
-#'   \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{row_id}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
@@ -218,18 +218,19 @@ psTrim <- function(data, trimFraction=0.05){
 #' 
 #' @export
 psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1){
-  data <- data[order(data$propensityScore),]
+  colnames(data) <- toupper(colnames(data))
+  data <- data[order(data$PROPENSITY_SCORE),]
   if (caliper <= 0)
     caliper = 9999
   else if (caliperScale == "standardized")
-    caliper = caliper * sd(data$propensityScore)
+    caliper = caliper * sd(data$PROPENSITY_SCORE)
   if (maxRatio == 0) {
     maxRatio = 999
   } 
   
-  result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment, maxRatio, caliper)
-  result$rowId <- data$rowId
-  result[result$stratumId != -1,]
+  result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$PROPENSITY_SCORE, data$TREATMENT, maxRatio, caliper)
+  result$ROW_ID <- data$ROW_ID
+  result[result$STRATUM_ID != -1,]
 }
 
 #' Stratify persons by propensity score
@@ -259,8 +260,9 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
 #' 
 #' @export
 psStratify <- function(data, numberOfStrata=5){
-  strata <- quantile(data$propensityScore[data$treatment == 1],(1:(numberOfStrata-1))/numberOfStrata)
-  data$stratumId <- cut(data$propensityScore,breaks=c(0,strata,1), labels = (1:numberOfStrata)-1)
+  colnames(data) <- toupper(colnames(data))
+  strata <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],(1:(numberOfStrata-1))/numberOfStrata)
+  data$stratumId <- cut(data$PROPENSITY_SCORE,breaks=c(0,strata,1), labels = (1:numberOfStrata)-1)
   data
 }
 
