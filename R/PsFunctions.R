@@ -57,7 +57,73 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
   colnames(ps)[colnames(ps) == "Y"] <- "treatment"
   data <- data.frame(PROPENSITY_SCORE = pred, ROW_ID = as.numeric(attr(pred,"names")))
   data <- merge(data,ps,by="ROW_ID")
+  attr(data,"coefficients") <- coef(ccdFit)
   data
+}
+
+#' Show the propensity model
+#'
+#' @description
+#' \code{psShowModel} shows the propensity score model
+#' 
+#' @param propensityScore       An object of type \code{cohortData} as generated using \code{dbGetCohortData}
+#' @param connectionDetails     An R object of type ConnectionDetail (details for the function that contains server info, database type, optionally username/password, port)
+#' @param cdmSchema	        		Database schema that contains the vocabulary
+#'
+#' @details
+#' Shows the coefficients and names of the covariates with non-zero coefficients
+#'  
+#' @examples 
+#' #todo
+#' 
+#' @export
+psShowModel <- function(propensityScore, connectionDetails, cdmSchema){
+  
+  cfs <- attr(propensityScore,"coefficients")
+  cfs <- cfs[cfs != 0]
+  attr(cfs,"names")[1] <- 0
+  cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
+  
+  cfs$name <- ""
+  
+  cfs$name[cfs$id == 0] <- "(Intercept)"
+  for (age in 1:11){
+    cfs$name[cfs$id == age] <- paste("Age between",(age-1)*10,"and",((age)*10)-1)
+  }
+  cfs$name[cfs$id == 20] <- "Number of distinct conditions in last 6mo"
+  cfs$name[cfs$id == 21] <- "Number of distinct drugs in last 6mo"
+  cfs$name[cfs$id == 22] <- "Number of distinct procedures in last 6mo"
+  cfs$name[cfs$id == 23] <- "Number of distinct outpatient visits in last 6mo"
+  cfs$name[cfs$id == 24] <- "Number of distinct inpatient visits in last 6mo"
+  cfs$name[cfs$id == 25] <- "Number of distinct ER visits in last 6mo"
+  
+  #Get concept names from server:
+  conceptIds <- cfs$id[cfs$id > 25 & cfs$id < 2000000000]
+  conceptIds <- c(conceptIds, (cfs$id[cfs$id > 2000000000] - 2000000000))
+  conceptIds <- unique(conceptIds)
+  
+  connectionDetails$schema = cdmSchema
+  conn <- connect(connectionDetails)
+  sql <- "SELECT concept_id AS id,concept_name FROM concept WHERE concept_id IN (@conceptIds)"
+  renderedSql <- renderSql(sql,conceptIds = conceptIds)$sql
+  conceptNames <- dbGetQuery(conn,renderedSql)
+  colnames(conceptNames) <- tolower(colnames(conceptNames))
+  dummy <- dbDisconnect(conn)
+  
+  #Add concept names to explanation:
+  cfs <- merge(cfs,conceptNames,by="id", all.x=TRUE)
+  cfs$name[!is.na(cfs$concept_name)] <- cfs$concept_name[!is.na(cfs$concept_name)]
+  cfs$concept_name <- NULL
+  
+  cfs$atc3Id <- NA
+  cfs$atc3Id[cfs$id > 2000000000] <- cfs$id[cfs$id > 2000000000] - 2000000000
+  cfs <- merge(cfs,conceptNames,by.x="atc3Id",by.y="id", all.x=TRUE)
+  cfs$name[!is.na(cfs$concept_name)] <- paste("Number of drugs in ATC3 class",cfs$concept_name[!is.na(cfs$concept_name)])
+  cfs$concept_name <- NULL
+  cfs$atc3Id <- NULL 
+  cfs <- cfs[order(-abs(cfs$coefficient)),]
+  colnames(cfs)[colnames(cfs) == "id"] <- "covariate_id"
+  cfs
 }
 
 #' Plot the propensity score distribution

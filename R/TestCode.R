@@ -24,6 +24,8 @@ testCode <- function(){
   
   psAuc(ps)
   
+  model <- psShowModel(ps,connectionDetails,cdmSchema=cdmSchema)
+  
   psPlot(ps) #Plot unmatched PS distributions
   
   strata <- psMatch(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=0)

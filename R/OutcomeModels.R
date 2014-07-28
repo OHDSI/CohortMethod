@@ -78,14 +78,23 @@ estimateEffect <- function(cohortData,
       if (is.null(strata)){ # Unstratified Cox regression
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
         data$STRATUM_ID <- data$ROW_ID
+        
+        covariates <- data[,c("ROW_ID","TREATMENT")]
+        covariates$COVARIATE_ID <- 100
+        colnames(covariates) [colnames(covariates) == "TREATMENT"] <- "COVARIATE_VALUE"
+        covariates <- rbind(covariates,cohortData$covariates)
+        covariates <- covariates[order(covariates$ROW_ID),]
         if (cohortData.useff){
           data <- as.ffdf(data)
-          ccdData <- createCcdData.ffdf(data,cohortData$covariates,modelType="cox")
+          ccdData <- createCcdData.ffdf(data,covariates,modelType="cox")
         } else {
-          ccdData <- createCcdData(data,cohortData$covariates,modelType="cox")
+          ccdData <- createCcdData(data,covariates,modelType="cox")
         }
         
-        fit <- fitCcdModel(ccdData, prior=prior("laplace",0.1))        
+        fit <- fitCcdModel(ccdData, prior=prior("laplace",0.1, exclude=100))  
+        
+        cfs <- data.frame(LOGRR = coef(fit), ROW_ID = as.numeric(attr(coef(fit),"names")))
+        cfs[cfs$ROW_ID == 100,]
       } else { # Stratified Cox regression
         data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
