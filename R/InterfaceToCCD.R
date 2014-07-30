@@ -40,103 +40,33 @@ lastRowNotHavingThisValue <- function(column, value){
   return(0)
 }
 
-dbGetCcdInput <- function(...){
-  stop("This function has been renamed to dbCreateCcdData for consistency, please use that function instead")
-}
-
-#' Get data from the database and insert it in a CCD data object
-#'
-#' @description
-#' \code{dbCreateCcdData} loads data from the database using two queries, and inserts it into a CCD data object.
-#' 
-#' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
-#' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
-#' @param modelType		  CCD model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
-#' @param addIntercept  Add an intercept to the model?
-#' @param useOffsetCovariate  Use the time variable in the model as an offset?
-#' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param sortCovariates Do the covariates still need to be sorted?
-#' @param batchSize			Number of rows to be read from each table at a time. Larger batch sizes lead to fewer calls to the 
-#' database and should be more efficient, but may lead to out-of-memory errors.
-#'
-#' @details
-#' These columns are expected in the outcome table:
-#' \tabular{lll}{  
-#'   \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{stratum_id}		\tab(integer) \tab Stratum ID for conditional regression models \cr
-#'   \verb{y}    \tab(real) \tab The outcome variable \cr
-#'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
-#' }
-#' The outcome table should be sorted by  row_id
-#' 
-#' These columns are expected in the covariates table:
-#' \tabular{lll}{  
-#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
-#'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
-#' }
-#' The covariate table should be sorted by row_id and covariate_id
-#' 
-#' @return              
-#' An object of type CcdModel
-#' 
-#' @examples \dontrun{
-#'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
-#'   connection <- connect(connectionDetails)
-#'   outcomeSql <- "SELECT * FROM outcomes ORDER BY row_id"
-#'   covariateSql <-"SELECT * FROM covariates ORDER BY row_id, covariate_id"
-#'   
-#'   ccdData <- dbGetCcdInput(connection,outcomeSql,covariateSql,modelType = "clr")
-#'   
-#'   dbDisconnect(connection)
-#'   
-#'   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
-#' }
-#' @export
-dbCreateCcdData <- function(connection, 
-                          outcomeSql, 
-                          covariateSql, 
-                          modelType = "lr", 
-                          addIntercept = TRUE,
-                          useOffsetCovariate = NULL,
-                          offsetAlreadyOnLogScale = FALSE,
-                          sortCovariates = TRUE,
-                          makeCovariatesDense = NULL,
-                          batchSize = 100000){
-  
-  # Open resultSets:
-  .jcall("java/lang/System",,"gc")
-  resultSetOutcome <- openResultSet(connection, outcomeSql,batchSize)
-  resultSetCovars <- openResultSet(connection, covariateSql,batchSize)
-  
-  exitFunction <- function(){
-    dbClearResult(resultSetOutcome)
-    dbClearResult(resultSetCovars)
-    .jcall(conn@jc,"V",method="setAutoCommit",TRUE)
-  }
-  on.exit(exitFunction())
-  
+constructCcdDataFromBatchableSources <- function(resultSetOutcome,
+                                                 resultSetCovariate,
+                                                 getOutcomeBatch,
+                                                 getCovariateBatch,
+                                                 modelType = "lr", 
+                                                 addIntercept = TRUE,
+                                                 useOffsetCovariate = NULL,
+                                                 offsetAlreadyOnLogScale = FALSE,
+                                                 sortCovariates = TRUE,
+                                                 makeCovariatesDense = NULL,
+                                                 batchSize = 100000){
   # Construct empty CCD data object:
   dataPtr <- createSqlCcdData(modelType = modelType)
   
   #Fetch data in batches:
   doneCovars <- FALSE
   doneOutcome <- FALSE
-  batchOutcome <- fetch(resultSetOutcome, batchSize)
-  colnames(batchOutcome) <- toupper(colnames(batchOutcome))
+  
+  batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
   doneOutcome = (nrow(batchOutcome) != batchSize)
-  if (modelType == "lr" | modelType == "pr")
-    batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
-  if (modelType == "lr" | modelType == "clr")
-    batchOutcome$TIME = 0
   
   lastUsedOutcome <- 0
   spillOverCovars <- NULL
   while (!doneCovars){
     #Get covars:
-    batchCovars <- fetch(resultSetCovars, batchSize)
+    batchCovars <- getCovariateBatch(resultSetCovariate,batchSize,modelType)
     doneCovars = (nrow(batchCovars) != batchSize)
-    colnames(batchCovars) <- toupper(colnames(batchCovars))
     lastRowId <- batchCovars$ROW_ID[nrow(batchCovars)]
     #lastStratumId <- batchCovars$STRATUM_ID[nrow(batchCovars)]
     
@@ -147,7 +77,8 @@ dbCreateCcdData <- function(connection,
     
     if (endCompleteRow == 0){ #Entire batch is about 1 row
       if (!is.null(spillOverCovars)){
-        if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1] & spillOverCovars$STRATUM_ID[1] == batchCovars$STRATUM_ID[1]){ #SpilloverCovars contains info on same row
+        #if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1] & spillOverCovars$STRATUM_ID[1] == batchCovars$STRATUM_ID[1]){ #SpilloverCovars contains info on same row
+        if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1]){ #SpilloverCovars contains info on same row
           spillOverCovars <- rbind(spillOverCovars,batchCovars)
           covarsToCcd <- NULL
         } else { #SplilloverCovars contains covars for a different row
@@ -174,21 +105,11 @@ dbCreateCcdData <- function(connection,
       endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
       while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
         if (lastUsedOutcome == nrow(batchOutcome)){
-          batchOutcome <- fetch(resultSetOutcome, batchSize)
-          colnames(batchOutcome) <- toupper(colnames(batchOutcome))
+          batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
           doneOutcome = (nrow(batchOutcome) != batchSize)
-          if (modelType == "lr" | modelType == "pr")
-            batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
-          if (modelType == "lr" | modelType == "clr")
-            batchOutcome$TIME = 0
         } else {      
-          newBatchOutcome <- fetch(resultSetOutcome, batchSize)
-          colnames(newBatchOutcome) <- toupper(colnames(newBatchOutcome))
+          newBatchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
           doneOutcome = (nrow(newBatchOutcome) != batchSize)
-          if (modelType == "lr" | modelType == "pr")
-            newBatchOutcome$STRATUM_ID = newBatchOutcome$ROW_ID
-          if (modelType == "lr" | modelType == "clr")
-            newBatchOutcome$TIME = 0
           batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
         }
         lastUsedOutcome = 0
@@ -224,21 +145,11 @@ dbCreateCcdData <- function(connection,
   endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
   while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
     if (lastUsedOutcome == nrow(batchOutcome)){
-      batchOutcome <- fetch(resultSetOutcome, batchSize)
-      colnames(batchOutcome) <- toupper(colnames(batchOutcome))
+      batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
       doneOutcome = (nrow(batchOutcome) != batchSize)
-      if (modelType == "lr" | modelType == "pr")
-        batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
-      if (modelType == "lr" | modelType == "clr")
-        batchOutcome$TIME = 0
     } else {      
-      newBatchOutcome <- fetch(resultSetOutcome, batchSize)
-      colnames(newBatchOutcome) <- toupper(colnames(newBatchOutcome))
+      batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
       doneOutcome = (nrow(newBatchOutcome) != batchSize)
-      if (modelType == "lr" | modelType == "pr")
-        newBatchOutcome$STRATUM_ID = newBatchOutcome$ROW_ID
-      if (modelType == "lr" | modelType == "clr")
-        newBatchOutcome$TIME = 0
       batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
     }
     lastUsedOutcome = 0
@@ -274,13 +185,9 @@ dbCreateCcdData <- function(connection,
                      c())
   }
   while (!doneOutcome){
-    batchOutcome <- fetch(resultSetOutcome, batchSize)
+    batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))
     doneOutcome = (nrow(newBatchOutcome) != batchSize)
-    if (modelType == "lr" | modelType == "pr")
-      batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
-    if (modelType == "lr" | modelType == "clr")
-      batchOutcome$TIME = 0
     
     appendSqlCcdData(dataPtr,
                      batchOutcome$STRATUM_ID,
@@ -300,6 +207,116 @@ dbCreateCcdData <- function(connection,
   dataPtr
 }
 
+dbGetCcdInput <- function(...){
+  stop("This function has been renamed to dbCreateCcdData for consistency, please use that function instead")
+}
+
+#' Get data from the database and insert it in a CCD data object
+#'
+#' @description
+#' \code{dbCreateCcdData} loads data from the database using two queries, and inserts it into a CCD data object.
+#' 
+#' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
+#' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
+#' @param modelType		  CCD model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
+#' @param addIntercept  Add an intercept to the model?
+#' @param useOffsetCovariate  Use the time variable in the model as an offset?
+#' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
+#' @param sortCovariates Do the covariates still need to be sorted?
+#' @param batchSize			Number of rows to be read from each table at a time. Larger batch sizes lead to fewer calls to the 
+#' database and should be more efficient, but may lead to out-of-memory errors.
+#'
+#' @details
+#' These columns are expected in the outcome object:
+#' \tabular{lll}{  
+#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
+#'   \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+#'   \verb{y}    \tab(real) \tab The outcome variable \cr
+#'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
+#' }
+#' The outcome table should be sorted by stratum_id and then row_id
+#' 
+#' These columns are expected in the covariates object:
+#' \tabular{lll}{  
+#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
+#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+#'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
+#'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
+#' }
+#' The covariate table should be sorted by stratum_id, row_id and covariate_id
+#'  
+#' @return              
+#' An object of type CcdModel
+#' 
+#' @examples \dontrun{
+#'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
+#'   connection <- connect(connectionDetails)
+#'   outcomeSql <- "SELECT * FROM outcomes ORDER BY row_id"
+#'   covariateSql <-"SELECT * FROM covariates ORDER BY row_id, covariate_id"
+#'   
+#'   ccdData <- dbGetCcdInput(connection,outcomeSql,covariateSql,modelType = "clr")
+#'   
+#'   dbDisconnect(connection)
+#'   
+#'   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
+#' }
+#' @export
+dbCreateCcdData <- function(connection, 
+                            outcomeSql, 
+                            covariateSql, 
+                            modelType = "lr", 
+                            addIntercept = TRUE,
+                            useOffsetCovariate = NULL,
+                            offsetAlreadyOnLogScale = FALSE,
+                            sortCovariates = TRUE,
+                            makeCovariatesDense = NULL,
+                            batchSize = 100000){
+  
+  # Open resultSets:
+  .jcall("java/lang/System",,"gc")
+  
+  resultSetOutcome <- openResultSet(connection, outcomeSql,batchSize)
+  
+  resultSetCovars <- openResultSet(connection, covariateSql,batchSize)
+  
+  exitFunction <- function(){
+    dbClearResult(resultSetOutcome)
+    dbClearResult(resultSetCovars)
+    .jcall(conn@jc,"V",method="setAutoCommit",TRUE)
+  }
+  on.exit(exitFunction())
+  
+  getOutcomeBatch <- function(resultSetOutcome, batchSize, modelType){
+    batchOutcome <- fetch(resultSetOutcome, batchSize)
+    colnames(batchOutcome) <- toupper(colnames(batchOutcome))  
+    if (modelType == "lr" | modelType == "pr")
+      batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+    if (modelType == "lr" | modelType == "clr")
+      batchOutcome$TIME = 0
+    batchOutcome
+  }
+  
+  getCovariateBatch <- function(resultSetCovariate, batchSize, modelType){
+    batchCovariate <- fetch(resultSetCovariate, batchSize)
+    colnames(batchCovariate) <- toupper(colnames(batchCovariate))  
+    batchCovariate
+  }
+  
+  constructCcdDataFromBatchableSources(resultSetOutcome,
+                                       resultSetCovars,
+                                       getOutcomeBatch,
+                                       getCovariateBatch,
+                                       modelType, 
+                                       addIntercept,
+                                       useOffsetCovariate,
+                                       offsetAlreadyOnLogScale,
+                                       sortCovariates,
+                                       makeCovariatesDense,
+                                       batchSize)
+  
+
+}
+
 
 #' Convert data from two ffdf objects into a CcdData object
 #'
@@ -308,7 +325,7 @@ dbCreateCcdData <- function(connection,
 #' 
 #' @param outcomes    A ffdf object containing the outcomes with predefined columns (see below).
 #' @param covariateSql  A ffdf object containing the covariates with predefined columns (see below).
-#' @param modelType  	  CCD model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
+#' @param modelType  	  CCD model type. Current supported types are "pr", "cpr", lr", "clr", "sccs", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
@@ -319,21 +336,22 @@ dbCreateCcdData <- function(connection,
 #' @details
 #' These columns are expected in the outcome object:
 #' \tabular{lll}{  
-#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{stratum_id}  	\tab(integer) \tab Stratum ID for conditional regression models \cr
+#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
+#'   \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
 #'   \verb{y}    \tab(real) \tab The outcome variable \cr
 #'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 #' }
-#' The outcome table should be sorted by row_id
+#' The outcome table should be sorted by stratum_id and then row_id
 #' 
 #' These columns are expected in the covariates object:
 #' \tabular{lll}{  
+#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
 #'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
 #'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
 #'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 #' }
-#' The covariate table should be sorted by row_id and covariate_id
-#' 
+#' The covariate table should be sorted by stratum_id, row_id and covariate_id
+#'  
 #' @return              
 #' An object of type CcdModel
 #' 
@@ -352,63 +370,62 @@ dbCreateCcdData <- function(connection,
 #' }
 #' @export
 createCcdData.ffdf <- function(outcomes, 
-                                  covariates,
-                                  modelType = "lr", 
-                                  addIntercept = TRUE,
-                                  useOffsetCovariate = NULL,
-                                  offsetAlreadyOnLogScale = FALSE,
-                                  sortCovariates = TRUE,
-                                  makeCovariatesDense = NULL,
-                                  batchBytes = getOption("ffbatchbytes")){
+                               covariates,
+                               modelType = "lr", 
+                               addIntercept = TRUE,
+                               useOffsetCovariate = NULL,
+                               offsetAlreadyOnLogScale = FALSE,
+                               sortCovariates = TRUE,
+                               makeCovariatesDense = NULL,
+                               batchSize = 100000){
+  colnames(outcomes) <- toupper(colnames(outcomes))  
+  colnames(covariates) <- toupper(colnames(covariates))    
+  resultSetOutcome <- new.env()
+  assign("data",outcomes,envir=resultSetOutcome)
+  assign("cursor",1,envir=resultSetOutcome)
+  resultSetCovariate <- new.env()
+  assign("data",covariates,envir=resultSetCovariate)
+  assign("cursor",1,envir=resultSetCovariate)
   
-  addToCcdData <- function(x, dataPtr,outcomes, modelType){
-    rowIds <- unique(x$ROW_ID)
-    y <- as.ram(subset(outcomes,ROW_ID %in% rowIds))
+  getOutcomeBatch <- function(resultSetOutcome, batchSize, modelType){
+    data <- get("data",envir=resultSetOutcome)
+    begin <- get("cursor",envir=resultSetOutcome)
+    end <- min((begin+batchSize-1),nrow(data))
+    if (begin > end)
+      return(data.frame())
+    hi <- as.hi(quote(begin:end))
+    batchOutcome <- data[hi,]
+    assign("cursor",end+1,envir=resultSetOutcome)
     if (modelType == "lr" | modelType == "pr")
-      y$STRATUM_ID = y$ROW_ID
+      batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     if (modelType == "lr" | modelType == "clr")
-      y$TIME = 0
-    appendSqlCcdData(dataPtr,
-                     as.numeric(y$STRATUM_ID),
-                     as.numeric(y$ROW_ID),
-                     as.integer(y$Y),
-                     as.numeric(y$TIME),
-                     x$ROW_ID,
-                     x$COVARIATE_ID,
-                     x$COVARIATE_VALUE
-    )
-    return(data.frame(ROW_ID = y$ROW_ID))
+      batchOutcome$TIME = 0
+    batchOutcome
   }
   
-  colnames(outcomes) <- toupper(colnames(outcomes))
-  colnames(covariates) <- toupper(colnames(covariates))
-  
-  dataPtr <- createSqlCcdData(modelType = modelType)
-  
-  matchedY <- ffdfdply(covariates, split=as.character(covariates$ROW_ID), FUN = function(x){addToCcdData(x, dataPtr,outcomes,modelType)}, trace=FALSE,BATCHBYTES=batchBytes)
-  
-  if (nrow(matchedY) < nrow(outcomes)){ # There are some rows without covariates that still need to be added
-    matchedRowIds <- as.ram(matchedY$ROW_ID)
-    y <- as.ram(subset(outcomes,!(ROW_ID %in% matchedRowIds)))
-    appendSqlCcdData(dataPtr,
-                     as.numeric(y$STRATUM_ID),
-                     as.numeric(y$ROW_ID),
-                     as.integer(y$Y),
-                     as.numeric(y$TIME),
-                     c(),
-                     c(),
-                     c()
-    )
+  getCovariateBatch <- function(resultSetCovariate, batchSize, modelType){
+    data <- get("data",envir=resultSetCovariate)
+    begin <- get("cursor",envir=resultSetCovariate)
+    end <- min((begin+batchSize-1),nrow(data))
+    if (begin > end)
+      return(data.frame())
+    hi <- as.hi(quote(begin:end))
+    batchCovariate <- data[hi,]
+    assign("cursor",end+1,envir=resultSetCovariate)
+    batchCovariate
   }
   
-  finalizeSqlCcdData(dataPtr,
-                     addIntercept = addIntercept,
-                     useOffsetCovariate = useOffsetCovariate,
-                     offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
-                     sortCovariates = sortCovariates,
-                     makeCovariatesDense = makeCovariatesDense)
-  
-  dataPtr
+  constructCcdDataFromBatchableSources(resultSetOutcome,
+                                       resultSetCovariate,
+                                       getOutcomeBatch,
+                                       getCovariateBatch,
+                                       modelType, 
+                                       addIntercept,
+                                       useOffsetCovariate,
+                                       offsetAlreadyOnLogScale,
+                                       sortCovariates,
+                                       makeCovariatesDense,
+                                       batchSize)
 }
 
 #' Convert data from data frames into a CcdData object
@@ -427,20 +444,21 @@ createCcdData.ffdf <- function(outcomes,
 #' @details
 #' These columns are expected in the outcome object:
 #' \tabular{lll}{  
+#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
 #'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{stratum_id}  	\tab(integer) \tab Stratum ID for conditional regression models \cr
 #'   \verb{y}    \tab(real) \tab The outcome variable \cr
 #'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 #' }
-#' The outcome table should be sorted by row_id
+#' The outcome table should be sorted by stratum_id and then row_id
 #' 
 #' These columns are expected in the covariates object:
 #' \tabular{lll}{  
+#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
 #'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
 #'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
 #'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 #' }
-#' The covariate table should be sorted by row_id and covariate_id
+#' The covariate table should be sorted by stratum_id, row_id and covariate_id
 #' 
 #' @return              
 #' An object of type CcdModel
@@ -460,13 +478,13 @@ createCcdData.ffdf <- function(outcomes,
 #' }
 #' @export
 createCcdData <- function(outcomes, 
-                             covariates,
-                             modelType = "lr", 
-                             addIntercept = TRUE,
-                             useOffsetCovariate = NULL,
-                             offsetAlreadyOnLogScale = FALSE,
-                             sortCovariates = TRUE,
-                             makeCovariatesDense = NULL){
+                          covariates,
+                          modelType = "lr", 
+                          addIntercept = TRUE,
+                          useOffsetCovariate = NULL,
+                          offsetAlreadyOnLogScale = FALSE,
+                          sortCovariates = TRUE,
+                          makeCovariatesDense = NULL){
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(covariates) <- toupper(colnames(covariates))
   

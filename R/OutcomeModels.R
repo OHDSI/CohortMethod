@@ -97,11 +97,11 @@ estimateEffect <- function(cohortData,
         cfs[cfs$ROW_ID == 100,]
       } else { # Stratified Cox regression
         data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
-        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
-        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+        fit <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
+        #Currently using coxph until Marc fixes stratifief cox
+        #ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
+        #fit2 <- fitCcdModel(ccdData, prior = prior("none"))   
       }
-      
     } else {
       if (is.null(strata)){ # Unstratified Cox regression
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
@@ -158,4 +158,5 @@ estimateEffect <- function(cohortData,
       }
     }  
   }
+  fit
 }

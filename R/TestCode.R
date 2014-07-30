@@ -10,15 +10,15 @@ testCode <- function(){
   user <- "postgres"
   server <- "localhost/ohdsi"
   cdmSchema = "cdm4_sim"
-  useFf = FALSE
+  useFf = TRUE
   
   setwd("c:/temp")
   connectionDetails <- createConnectionDetails(dbms="postgresql", server=server, user=user, password=pw, schema=cdmSchema)
 
   cohortData <- dbGetCohortData(connectionDetails,cdmSchema=cdmSchema, useFf = useFf)
-  save.cohortData(cohortData,file.path(getwd(),"simCohortData"))
+  save.cohortData(cohortData,file.path(getwd(),"simCohortDataFf"))
   
-  cohortData <- load.cohortData(file.path(getwd(),"simCohortData"))
+  cohortData <- load.cohortData(file.path(getwd(),"simCohortDataFf2"))
   
   ps <- psCreate(cohortData, prior=prior("laplace",0.1))
   
@@ -43,6 +43,30 @@ testCode <- function(){
   
   
   conn <- connect(connectionDetails)
+  dbSendUpdate(conn,"CREATE TEMP TABLE ccd_outcome_input_for_ps AS SELECT * FROM temp_outcomes")
+  dbSendUpdate(conn,"CREATE TEMP TABLE ccd_covariate_input_for_ps AS SELECT * FROM temp_covariates")
+  outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id,row_id"
+  outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
+  covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id,row_id,covariate_id"
+  covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
+
+  outcomes1 <- dbGetQuery.ffdf(conn,outcomeSql)
+  covariates1 <- dbGetQuery.ffdf(conn,covariateSql)
+  ccdData1 <- createCcdData.ffdf(outcomes1,covariates1,modelType="lr")
+  
+  outcomes2 <- dbGetQuery(conn,outcomeSql)
+  covariates2 <- dbGetQuery(conn,covariateSql)
+  ccdData2 <- createCcdData(outcomes2,covariates2,modelType="lr")
+  
+  ccdData3 <- dbCreateCcdData(conn,outcomeSql,covariateSql,modelType = "lr")
+  
+  ccdFit1 <- fitCcdModel(ccdData1, prior = prior("laplace",0.1))
+  ccdFit2 <- fitCcdModel(ccdData2, prior = prior("laplace",0.1))
+  ccdFit3 <- fitCcdModel(ccdData3, prior = prior("laplace",0.1))
+  min(coef(ccdFit1) == coef(ccdFit2))
+  min(coef(ccdFit2) == coef(ccdFit3))
+  min(coef(ccdFit1) == coef(ccdFit3))
+  
   
   ### Populate temp tables for propensity scores ###
   # Option 1: Run full query against DB:
@@ -59,9 +83,9 @@ testCode <- function(){
   
   
   ### Get PS data from temp tables ###
-  outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY row_id"
+  outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id,row_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
-  covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY row_id, covariate_id"
+  covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id,row_id,covariate_id"
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
  
   #Option 1: Load data for propensity score directly to CcdData:

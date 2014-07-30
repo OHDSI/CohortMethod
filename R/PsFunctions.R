@@ -40,7 +40,7 @@
 #' @export
 psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
   if (cohortData$useFf){
-    cohortData$cohorts$y <- cohortData$cohorts$treatment
+    cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
     ccdData <- createCcdData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
     ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
     cohortData$cohorts$y <- NULL
