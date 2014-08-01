@@ -6,14 +6,14 @@
 createCcdData.ffdf(outcomes, covariates, modelType = "lr",
   addIntercept = TRUE, useOffsetCovariate = NULL,
   offsetAlreadyOnLogScale = FALSE, sortCovariates = TRUE,
-  makeCovariatesDense = NULL, batchBytes = getOption("ffbatchbytes"))
+  makeCovariatesDense = NULL, batchSize = 1e+05)
 }
 \arguments{
 \item{outcomes}{A ffdf object containing the outcomes with predefined columns (see below).}
 
 \item{covariateSql}{A ffdf object containing the covariates with predefined columns (see below).}
 
-\item{modelType}{CCD model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"}
+\item{modelType}{CCD model type. Current supported types are "pr", "cpr", lr", "clr", "sccs", or "cox"}
 
 \item{addIntercept}{Add an intercept to the model?}
 
@@ -35,20 +35,21 @@ An object of type CcdModel
 \details{
 These columns are expected in the outcome object:
 \tabular{lll}{
-  \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-  \verb{stratum_id}  	\tab(integer) \tab Stratum ID for conditional regression models \cr
+  \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
+  \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
   \verb{y}    \tab(real) \tab The outcome variable \cr
   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 }
-The outcome table should be sorted by row_id
+The outcome table should be sorted by stratum_id and then row_id
 
 These columns are expected in the covariates object:
 \tabular{lll}{
+  \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 }
-The covariate table should be sorted by row_id and covariate_id
+The covariate table should be sorted by stratum_id, row_id and covariate_id
 }
 \examples{
 \dontrun{

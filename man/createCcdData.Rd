@@ -31,20 +31,21 @@ An object of type CcdModel
 \details{
 These columns are expected in the outcome object:
 \tabular{lll}{
+  \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-  \verb{stratum_id}  	\tab(integer) \tab Stratum ID for conditional regression models \cr
   \verb{y}    \tab(real) \tab The outcome variable \cr
   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 }
-The outcome table should be sorted by row_id
+The outcome table should be sorted by stratum_id and then row_id
 
 These columns are expected in the covariates object:
 \tabular{lll}{
+  \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 }
-The covariate table should be sorted by row_id and covariate_id
+The covariate table should be sorted by stratum_id, row_id and covariate_id
 }
 \examples{
 \dontrun{

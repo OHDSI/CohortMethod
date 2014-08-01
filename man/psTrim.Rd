@@ -22,9 +22,9 @@ Returns a date frame with the same three columns as the input.
 \details{
 The data frame should have the following three columns:
 \tabular{lll}{
-  \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-  \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-  \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+  \verb{row_id}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+  \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+  \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
 }
 }
 \examples{

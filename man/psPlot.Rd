@@ -19,7 +19,7 @@ et al (2013).}
 The data frame should have a least the following two columns:
 \tabular{lll}{
   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-  \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+  \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
 }
 }
 \examples{

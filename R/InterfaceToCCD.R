@@ -180,9 +180,9 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
                      batchOutcome$ROW_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
                      batchOutcome$Y[(lastUsedOutcome+1):nrow(batchOutcome)],
                      batchOutcome$TIME[(lastUsedOutcome+1):nrow(batchOutcome)],
-                     c(),
-                     c(),
-                     c())
+                     as.numeric(c()),
+                     as.numeric(c()),
+                     as.numeric(c()))
   }
   while (!doneOutcome){
     batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
@@ -194,9 +194,9 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
                      batchOutcome$ROW_ID,
                      batchOutcome$Y,
                      batchOutcome$TIME,
-                     c(),
-                     c(),
-                     c())
+                     as.numeric(c()),
+                     as.numeric(c()),
+                     as.numeric(c()))
   }
   finalizeSqlCcdData(dataPtr,
                      addIntercept = addIntercept,
