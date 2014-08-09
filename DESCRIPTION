@@ -8,9 +8,16 @@ Maintainer: Patrick Ryan <ryan@ohdsi.org>
 Description: More about what it does (maybe more than one line)
 License: Apache
 Depends:
-    DatabaseConnector, SqlRender, cyclops, ggplot2, Rcpp (>= 0.11.2), pROC, survival
+    DatabaseConnector,
+    SqlRender,
+    cyclops,
+    ggplot2,
+    Rcpp (>= 0.11.2),
+    pROC,
+    survival
 Suggests:
     testthat
-Imports: Rcpp (>= 0.11.2)
+Imports:
+    Rcpp (>= 0.11.2)
 LinkingTo: Rcpp
 NeedsCompilation: yes
