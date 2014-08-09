@@ -254,11 +254,11 @@ dbGetCyclopsInput <- function(...){
 #'   outcomeSql <- "SELECT * FROM outcomes ORDER BY row_id"
 #'   covariateSql <-"SELECT * FROM covariates ORDER BY row_id, covariate_id"
 #'   
-#'   ccdData <- dbGetCyclopsInput(connection,outcomeSql,covariateSql,modelType = "clr")
+#'   cyclopsData <- dbGetCyclopsInput(connection,outcomeSql,covariateSql,modelType = "clr")
 #'   
 #'   dbDisconnect(connection)
 #'   
-#'   ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
+#'   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("normal",0.01))
 #' }
 #' @export
 dbCreateCyclopsData <- function(connection, 
@@ -362,11 +362,11 @@ dbCreateCyclopsData <- function(connection,
 #'   outcomes <- dbGetQuery.ffdf(conn,"SELECT * FROM outcomes ORDER BY row_id")
 #'   covariates <- dbGetQuery.ffdf(conn,"SELECT * FROM covariates ORDER BY row_id, covariate_id")
 #'   
-#'   ccdData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
+#'   cyclopsData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
 #'   
 #'   dbDisconnect(connection)
 #'   
-#'   ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
+#'   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("normal",0.01))
 #' }
 #' @export
 createCyclopsData.ffdf <- function(outcomes, 
@@ -470,11 +470,11 @@ createCyclopsData.ffdf <- function(outcomes,
 #'   outcomes <- dbGetQuery(conn,"SELECT * FROM outcomes ORDER BY row_id")
 #'   covariates <- dbGetQuery(conn,"SELECT * FROM covariates ORDER BY row_id, covariate_id")
 #'   
-#'   ccdData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
+#'   cyclopsData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
 #'   
 #'   dbDisconnect(connection)
 #'   
-#'   ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
+#'   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("normal",0.01))
 #' }
 #' @export
 createCyclopsData <- function(outcomes, 

@@ -62,18 +62,18 @@ cohortMethod <- function(connectionDetails,
   writeLines("Executing multiple queries. This could take a while")
   executeSql(conn,connectionDetails$dbms,renderedSql)
   
-  outcomeSql <-"SELECT * FROM #ccd_outcome_input_for_ps ORDER BY stratum_id, row_id"
+  outcomeSql <-"SELECT * FROM #cyclops_outcome_input_for_ps ORDER BY stratum_id, row_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
   
   
-  covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id, row_id, covariate_id"
+  covariateSql <-"SELECT * FROM #cyclops_covariate_input_for_ps ORDER BY stratum_id, row_id, covariate_id"
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
   
   writeLines("Loading data for propensity model")
-  ccdData <- dbGetCyclopsInput(conn,outcomeSql,covariateSql,modelType = "clr")
+  cyclopsData <- dbGetCyclopsInput(conn,outcomeSql,covariateSql,modelType = "clr")
   
   writeLines("Fitting propensity model")
-  ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
+  cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("normal",0.01))
   
   #Remove temp tables:
   renderedSql <- loadRenderTranslateSql("CMRemoveTempTables.sql",

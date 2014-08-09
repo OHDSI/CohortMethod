@@ -41,23 +41,23 @@
 psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
   if (cohortData$useFf){
     cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
-    ccdData <- createCyclopsData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
+    cyclopsData <- createCyclopsData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
     ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
     cohortData$cohorts$y <- NULL
   } else {
     ps <- cohortData$cohorts
     colnames(ps)[colnames(ps) == "TREATMENT"] = "Y"
-    ccdData <- createCyclopsData(ps,cohortData$covariates,modelType="lr")
+    cyclopsData <- createCyclopsData(ps,cohortData$covariates,modelType="lr")
   }
-  ccdFit <- fitCyclopsModel(ccdData, 
+  cyclopsFit <- fitCyclopsModel(cyclopsData, 
                         prior = prior,
                         control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
-  pred <- predict(ccdFit)
+  pred <- predict(cyclopsFit)
 
   colnames(ps)[colnames(ps) == "Y"] <- "treatment"
   data <- data.frame(PROPENSITY_SCORE = pred, ROW_ID = as.numeric(attr(pred,"names")))
   data <- merge(data,ps,by="ROW_ID")
-  attr(data,"coefficients") <- coef(ccdFit)
+  attr(data,"coefficients") <- coef(cyclopsFit)
   data
 }
 
