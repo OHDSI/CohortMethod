@@ -70,10 +70,10 @@ cohortMethod <- function(connectionDetails,
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
   
   writeLines("Loading data for propensity model")
-  ccdData <- dbGetCcdInput(conn,outcomeSql,covariateSql,modelType = "clr")
+  ccdData <- dbGetCyclopsInput(conn,outcomeSql,covariateSql,modelType = "clr")
   
   writeLines("Fitting propensity model")
-  ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
+  ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
   
   #Remove temp tables:
   renderedSql <- loadRenderTranslateSql("CMRemoveTempTables.sql",

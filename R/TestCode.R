@@ -52,17 +52,17 @@ testCode <- function(){
 
   outcomes1 <- dbGetQuery.ffdf(conn,outcomeSql)
   covariates1 <- dbGetQuery.ffdf(conn,covariateSql)
-  ccdData1 <- createCcdData.ffdf(outcomes1,covariates1,modelType="lr")
+  ccdData1 <- create    Data.ffdf(outcomes1,covariates1,modelType="lr")
   
   outcomes2 <- dbGetQuery(conn,outcomeSql)
   covariates2 <- dbGetQuery(conn,covariateSql)
-  ccdData2 <- createCcdData(outcomes2,covariates2,modelType="lr")
+  ccdData2 <- createCyclopsData(outcomes2,covariates2,modelType="lr")
   
-  ccdData3 <- dbCreateCcdData(conn,outcomeSql,covariateSql,modelType = "lr")
+  ccdData3 <- dbCreateCyclopsData(conn,outcomeSql,covariateSql,modelType = "lr")
   
-  ccdFit1 <- fitCcdModel(ccdData1, prior = prior("laplace",0.1))
-  ccdFit2 <- fitCcdModel(ccdData2, prior = prior("laplace",0.1))
-  ccdFit3 <- fitCcdModel(ccdData3, prior = prior("laplace",0.1))
+  ccdFit1 <- fitCyclopsModel(ccdData1, prior = prior("laplace",0.1))
+  ccdFit2 <- fitCyclopsModel(ccdData2, prior = prior("laplace",0.1))
+  ccdFit3 <- fitCyclopsModel(ccdData3, prior = prior("laplace",0.1))
   min(coef(ccdFit1) == coef(ccdFit2))
   min(coef(ccdFit2) == coef(ccdFit3))
   min(coef(ccdFit1) == coef(ccdFit3))
@@ -88,9 +88,9 @@ testCode <- function(){
   covariateSql <-"SELECT * FROM #ccd_covariate_input_for_ps ORDER BY stratum_id,row_id,covariate_id"
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
  
-  #Option 1: Load data for propensity score directly to CcdData:
+  #Option 1: Load data for propensity score directly to CyclopsData:
   startQuery <- Sys.time()
-  ccdData <- dbCreateCcdData(conn,outcomeSql,covariateSql,modelType = "lr")
+  ccdData <- dbCreateCyclopsData(conn,outcomeSql,covariateSql,modelType = "lr")
   ccdDelta <- Sys.time() - startQuery
   writeLines(paste("Load took", signif(ccdDelta,3), attr(ccdDelta,"units")))
   
@@ -98,7 +98,7 @@ testCode <- function(){
   startQuery <- Sys.time()
   outcomes <- dbGetQuery.ffdf(conn,outcomeSql)
   covariates <- dbGetQuery.ffdf(conn,covariateSql)
-  ccdData <- createCcdData.ffdf(outcomes,covariates,modelType="lr")
+  ccdData <- createCyclopsData.ffdf(outcomes,covariates,modelType="lr")
   ccdDelta <- Sys.time() - startQuery
   writeLines(paste("Load took", signif(ccdDelta,3), attr(ccdDelta,"units")))
   save.ffdf(outcomes,covariates,dir=file.path(getwd(),"ffdb"))
@@ -108,15 +108,15 @@ testCode <- function(){
   
   #Option 3: load data from saved ffdf objects:
   load.ffdf(file.path(getwd(),"ffdb"))
-  ccdData <- createCcdData.ffdf(outcomes,covariates,modelType="lr")
+  ccdData <- createCyclopsData.ffdf(outcomes,covariates,modelType="lr")
  
   #Option 4: load data from saved data frame objects:
   load(file.path(getwd(),"df.rda"))
-  ccdData <- createCcdData(outcomes,covariates,modelType="lr")
+  ccdData <- createCyclopsData(outcomes,covariates,modelType="lr")
   
   
   ### Fit propensity score mode, and match ###
-  ccdFit <- fitCcdModel(ccdData, prior = prior("laplace",0.1))
+  ccdFit <- fitCyclopsModel(ccdData, prior = prior("laplace",0.1))
   p <- predict(ccdFit)
   if (is.null(outcomes)){
     ySql <-"SELECT row_id,y FROM #ccd_outcome_input_for_ps"
@@ -187,10 +187,10 @@ testCode <- function(){
   #Doesn't work yet:
   #outc <- y
   #cova <- data.frame(ROW_ID = y$ROW_ID, COVARIATE_ID = rep(1,nrow(y)), COVARIATE_VALUE = y$TREATMENT)
-  #ccdData <- createCcdData(outc,cova,modelType="clr", addIntercept=FALSE)
-  #fit2 <- fitCcdModel(ccdData, prior = prior("none"))
-  dp <- createCcdDataFrame(Y ~ TREATMENT + strata(STRATUM_ID),data=y, modelType = "clr")
-  fit2 <- fitCcdModel(dp, prior = prior("none"))
+  #ccdData <- createCyclopsData(outc,cova,modelType="clr", addIntercept=FALSE)
+  #fit2 <- fitCyclopsModel(ccdData, prior = prior("none"))
+  dp <- createCyclopsDataFrame(Y ~ TREATMENT + strata(STRATUM_ID),data=y, modelType = "clr")
+  fit2 <- fitCyclopsModel(dp, prior = prior("none"))
   exp(coef(fit2))
   exp(confint(fit2, c(1)))
   
@@ -207,7 +207,7 @@ testCode <- function(){
   
    
   #cross-validation example:
-  ccdFit <- fitCcdModel(ccdData, 
+  ccdFit <- fitCyclopsModel(ccdData, 
                         prior = prior("laplace", useCrossValidation = TRUE),
                         control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
   

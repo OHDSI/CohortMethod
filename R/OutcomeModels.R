@@ -86,12 +86,12 @@ estimateEffect <- function(cohortData,
         covariates <- covariates[order(covariates$ROW_ID),]
         if (cohortData.useff){
           data <- as.ffdf(data)
-          ccdData <- createCcdData.ffdf(data,covariates,modelType="cox")
+          ccdData <- createCyclopsData.ffdf(data,covariates,modelType="cox")
         } else {
-          ccdData <- createCcdData(data,covariates,modelType="cox")
+          ccdData <- createCyclopsData(data,covariates,modelType="cox")
         }
         
-        fit <- fitCcdModel(ccdData, prior=prior("laplace",0.1, exclude=100))  
+        fit <- fitCyclopsModel(ccdData, prior=prior("laplace",0.1, exclude=100))  
         
         cfs <- data.frame(LOGRR = coef(fit), ROW_ID = as.numeric(attr(coef(fit),"names")))
         cfs[cfs$ROW_ID == 100,]
@@ -99,20 +99,20 @@ estimateEffect <- function(cohortData,
         data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
         fit <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
         #Currently using coxph until Marc fixes stratifief cox
-        #ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
-        #fit2 <- fitCcdModel(ccdData, prior = prior("none"))   
+        #ccdData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
+        #fit2 <- fitCyclopsModel(ccdData, prior = prior("none"))   
       }
     } else {
       if (is.null(strata)){ # Unstratified Cox regression
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
         
-        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))        
+        ccdData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
+        fit <- fitCyclopsModel(ccdData, prior = prior("none"))        
       } else { # Stratified Cox regression
         data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
-        ccdData <- createCcdDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+        ccdData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
+        fit <- fitCyclopsModel(ccdData, prior = prior("none"))   
       }
     }
   } else if (modelType == "lr" || modeltype == "clr"){
@@ -126,14 +126,14 @@ estimateEffect <- function(cohortData,
       if (is.null(strata)){ # Unstratified logistic regression
         fit2 <- glm(Y ~ TREATMENT, data=data,family = "binomial")
         
-        ccdData <- createCcdDataFrame(Y ~ TREATMENT,data=data, modelType = "lr")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+        ccdData <- createCyclopsDataFrame(Y ~ TREATMENT,data=data, modelType = "lr")
+        fit <- fitCyclopsModel(ccdData, prior = prior("none"))   
       } else {# Stratified logistic regression
         data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
         #fit2 <- clogit(Y ~ TREATMENT + strata(STRATUM_ID), data=data)
         
-        ccdData <- createCcdDataFrame(Y ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "clr")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+        ccdData <- createCyclopsDataFrame(Y ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "clr")
+        fit <- fitCyclopsModel(ccdData, prior = prior("none"))   
       }
     }
   } else if (modelType == "pr" || modeltype == "cpr"){
@@ -147,14 +147,14 @@ estimateEffect <- function(cohortData,
       if (is.null(strata)){ # Unstratified Poisson regression
         #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)), data=data,family = "poisson")
         
-        ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)),data=data, modelType = "pr")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))   
+        ccdData <- createCyclopsDataFrame(Y ~ TREATMENT + offset(log(TIME)),data=data, modelType = "pr")
+        fit <- fitCyclopsModel(ccdData, prior = prior("none"))   
       } else {# Stratified Poisson regression
         data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
         #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID), data=data,family = "poisson")
         
-        ccdData <- createCcdDataFrame(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID),data=data, modelType = "cpr")
-        fit <- fitCcdModel(ccdData, prior = prior("none"))  
+        ccdData <- createCyclopsDataFrame(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID),data=data, modelType = "cpr")
+        fit <- fitCyclopsModel(ccdData, prior = prior("none"))  
       }
     }  
   }

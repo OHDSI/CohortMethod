@@ -41,15 +41,15 @@
 psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
   if (cohortData$useFf){
     cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
-    ccdData <- createCcdData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
+    ccdData <- createCyclopsData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
     ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
     cohortData$cohorts$y <- NULL
   } else {
     ps <- cohortData$cohorts
     colnames(ps)[colnames(ps) == "TREATMENT"] = "Y"
-    ccdData <- createCcdData(ps,cohortData$covariates,modelType="lr")
+    ccdData <- createCyclopsData(ps,cohortData$covariates,modelType="lr")
   }
-  ccdFit <- fitCcdModel(ccdData, 
+  ccdFit <- fitCyclopsModel(ccdData, 
                         prior = prior,
                         control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
   pred <- predict(ccdFit)

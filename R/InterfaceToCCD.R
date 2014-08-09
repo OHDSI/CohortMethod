@@ -1,4 +1,4 @@
-# @file InterfacecovarsToCcd.R
+# @file InterfacecovarsToCyclops.R
 #
 # Copyright 2014 Observational Health Data Sciences and Informatics
 #
@@ -40,7 +40,7 @@ lastRowNotHavingThisValue <- function(column, value){
   return(0)
 }
 
-constructCcdDataFromBatchableSources <- function(resultSetOutcome,
+constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                                                  resultSetCovariate,
                                                  getOutcomeBatch,
                                                  getCovariateBatch,
@@ -51,8 +51,8 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
                                                  sortCovariates = TRUE,
                                                  makeCovariatesDense = NULL,
                                                  batchSize = 100000){
-  # Construct empty CCD data object:
-  dataPtr <- createSqlCcdData(modelType = modelType)
+  # Construct empty Cyclops data object:
+  dataPtr <- createSqlCyclopsData(modelType = modelType)
   
   #Fetch data in batches:
   doneCovars <- FALSE
@@ -80,9 +80,9 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
         #if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1] & spillOverCovars$STRATUM_ID[1] == batchCovars$STRATUM_ID[1]){ #SpilloverCovars contains info on same row
         if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1]){ #SpilloverCovars contains info on same row
           spillOverCovars <- rbind(spillOverCovars,batchCovars)
-          covarsToCcd <- NULL
+          covarsToCyclops <- NULL
         } else { #SplilloverCovars contains covars for a different row
-          covarsToCcd <- spillOverCovars
+          covarsToCyclops <- spillOverCovars
           spillOverCovars <- batchCovars
         }
       } else {
@@ -90,17 +90,17 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
       }
     } else { #Batch is about different rows (so at least one is complete)
       if (!is.null(spillOverCovars)){
-        covarsToCcd <- rbind(spillOverCovars,batchCovars[1:endCompleteRow,])      
+        covarsToCyclops <- rbind(spillOverCovars,batchCovars[1:endCompleteRow,])      
       } else {
-        covarsToCcd <- batchCovars[1:endCompleteRow,]
+        covarsToCyclops <- batchCovars[1:endCompleteRow,]
       }
       spillOverCovars <- batchCovars[(endCompleteRow+1):nrow(batchCovars),]
     }    
     
     #Get matching outcomes:
-    if (!is.null(covarsToCcd)){ # There is a complete row
-      completeRowId = covarsToCcd$ROW_ID[nrow(covarsToCcd)]
-      #completeStratumId = covarsToCcd$STRATUM_ID[nrow(covarsToCcd)]
+    if (!is.null(covarsToCyclops)){ # There is a complete row
+      completeRowId = covarsToCyclops$ROW_ID[nrow(covarsToCyclops)]
+      #completeStratumId = covarsToCyclops$STRATUM_ID[nrow(covarsToCyclops)]
       #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
       endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
       while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
@@ -119,28 +119,28 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
           stop(paste("No matching outcome found for row_id =",completeRowId))
         }
       }
-      #if (min(covarsToCcd$ROW_ID %in% batchOutcome$ROW_ID) == 0)
+      #if (min(covarsToCyclops$ROW_ID %in% batchOutcome$ROW_ID) == 0)
       #  stop("Not all row_ids in covars matched to outcomes")
       
-      #Append to CCD:
-      appendSqlCcdData(dataPtr,
+      #Append to Cyclops:
+      appendSqlCyclopsData(dataPtr,
                        batchOutcome$STRATUM_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
                        batchOutcome$ROW_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
                        batchOutcome$Y[(lastUsedOutcome+1):endCompleteRowInOutcome],
                        batchOutcome$TIME[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                       covarsToCcd$ROW_ID,
-                       covarsToCcd$COVARIATE_ID,
-                       covarsToCcd$COVARIATE_VALUE
+                       covarsToCyclops$ROW_ID,
+                       covarsToCyclops$COVARIATE_ID,
+                       covarsToCyclops$COVARIATE_VALUE
       )
       
       lastUsedOutcome = endCompleteRowInOutcome
     }
   }
-  #End of covar batches, add spillover to CCD:
-  covarsToCcd <- spillOverCovars
+  #End of covar batches, add spillover to Cyclops:
+  covarsToCyclops <- spillOverCovars
   
-  completeRowId = covarsToCcd$ROW_ID[nrow(covarsToCcd)]
-  #completeStratumId = covarsToCcd$STRATUM_ID[nrow(covarsToCcd)]
+  completeRowId = covarsToCyclops$ROW_ID[nrow(covarsToCyclops)]
+  #completeStratumId = covarsToCyclops$STRATUM_ID[nrow(covarsToCyclops)]
   #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
   endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
   while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
@@ -160,22 +160,22 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
     }
   }
   
-  #Append to CCD:
-  appendSqlCcdData(dataPtr,
+  #Append to Cyclops:
+  appendSqlCyclopsData(dataPtr,
                    batchOutcome$STRATUM_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
                    batchOutcome$ROW_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
                    batchOutcome$Y[(lastUsedOutcome+1):endCompleteRowInOutcome],
                    batchOutcome$TIME[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                   covarsToCcd$ROW_ID,
-                   covarsToCcd$COVARIATE_ID,
-                   covarsToCcd$COVARIATE_VALUE
+                   covarsToCyclops$ROW_ID,
+                   covarsToCyclops$COVARIATE_ID,
+                   covarsToCyclops$COVARIATE_VALUE
   )
   
   lastUsedOutcome = endCompleteRowInOutcome
   
   #Add any outcomes that are left (without matching covar information):
   if (lastUsedOutcome < nrow(batchOutcome)){
-    appendSqlCcdData(dataPtr,
+    appendSqlCyclopsData(dataPtr,
                      batchOutcome$STRATUM_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
                      batchOutcome$ROW_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
                      batchOutcome$Y[(lastUsedOutcome+1):nrow(batchOutcome)],
@@ -189,7 +189,7 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))
     doneOutcome = (nrow(newBatchOutcome) != batchSize)
     
-    appendSqlCcdData(dataPtr,
+    appendSqlCyclopsData(dataPtr,
                      batchOutcome$STRATUM_ID,
                      batchOutcome$ROW_ID,
                      batchOutcome$Y,
@@ -198,7 +198,7 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
                      as.numeric(c()),
                      as.numeric(c()))
   }
-  finalizeSqlCcdData(dataPtr,
+  finalizeSqlCyclopsData(dataPtr,
                      addIntercept = addIntercept,
                      useOffsetCovariate = useOffsetCovariate,
                      offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
@@ -207,18 +207,18 @@ constructCcdDataFromBatchableSources <- function(resultSetOutcome,
   dataPtr
 }
 
-dbGetCcdInput <- function(...){
-  stop("This function has been renamed to dbCreateCcdData for consistency, please use that function instead")
+dbGetCyclopsInput <- function(...){
+  stop("This function has been renamed to dbCreateCyclopsData for consistency, please use that function instead")
 }
 
-#' Get data from the database and insert it in a CCD data object
+#' Get data from the database and insert it in a Cyclops data object
 #'
 #' @description
-#' \code{dbCreateCcdData} loads data from the database using two queries, and inserts it into a CCD data object.
+#' \code{dbCreateCyclopsData} loads data from the database using two queries, and inserts it into a Cyclops data object.
 #' 
 #' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
 #' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
-#' @param modelType		  CCD model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
+#' @param modelType		  Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
@@ -246,7 +246,7 @@ dbGetCcdInput <- function(...){
 #' The covariate table should be sorted by stratum_id, row_id and covariate_id
 #'  
 #' @return              
-#' An object of type CcdModel
+#' An object of type CyclopsModel
 #' 
 #' @examples \dontrun{
 #'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
@@ -254,14 +254,14 @@ dbGetCcdInput <- function(...){
 #'   outcomeSql <- "SELECT * FROM outcomes ORDER BY row_id"
 #'   covariateSql <-"SELECT * FROM covariates ORDER BY row_id, covariate_id"
 #'   
-#'   ccdData <- dbGetCcdInput(connection,outcomeSql,covariateSql,modelType = "clr")
+#'   ccdData <- dbGetCyclopsInput(connection,outcomeSql,covariateSql,modelType = "clr")
 #'   
 #'   dbDisconnect(connection)
 #'   
-#'   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
+#'   ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
 #' }
 #' @export
-dbCreateCcdData <- function(connection, 
+dbCreateCyclopsData <- function(connection, 
                             outcomeSql, 
                             covariateSql, 
                             modelType = "lr", 
@@ -302,7 +302,7 @@ dbCreateCcdData <- function(connection,
     batchCovariate
   }
   
-  constructCcdDataFromBatchableSources(resultSetOutcome,
+  constructCyclopsDataFromBatchableSources(resultSetOutcome,
                                        resultSetCovars,
                                        getOutcomeBatch,
                                        getCovariateBatch,
@@ -318,14 +318,14 @@ dbCreateCcdData <- function(connection,
 }
 
 
-#' Convert data from two ffdf objects into a CcdData object
+#' Convert data from two ffdf objects into a CyclopsData object
 #'
 #' @description
-#' \code{createCcdData.ffdf} loads data from two ffdf objects, and inserts it into a CCD data object.
+#' \code{createCyclopsData.ffdf} loads data from two ffdf objects, and inserts it into a Cyclops data object.
 #' 
 #' @param outcomes    A ffdf object containing the outcomes with predefined columns (see below).
 #' @param covariateSql  A ffdf object containing the covariates with predefined columns (see below).
-#' @param modelType  	  CCD model type. Current supported types are "pr", "cpr", lr", "clr", "sccs", or "cox"
+#' @param modelType  	  Cyclops model type. Current supported types are "pr", "cpr", lr", "clr", "sccs", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
@@ -353,7 +353,7 @@ dbCreateCcdData <- function(connection,
 #' The covariate table should be sorted by stratum_id, row_id and covariate_id
 #'  
 #' @return              
-#' An object of type CcdModel
+#' An object of type CyclopsModel
 #' 
 #' @examples \dontrun{
 #'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
@@ -362,14 +362,14 @@ dbCreateCcdData <- function(connection,
 #'   outcomes <- dbGetQuery.ffdf(conn,"SELECT * FROM outcomes ORDER BY row_id")
 #'   covariates <- dbGetQuery.ffdf(conn,"SELECT * FROM covariates ORDER BY row_id, covariate_id")
 #'   
-#'   ccdData <- dbGetCcdInput(connection,outcomes,covariates,modelType = "lr")
+#'   ccdData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
 #'   
 #'   dbDisconnect(connection)
 #'   
-#'   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
+#'   ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
 #' }
 #' @export
-createCcdData.ffdf <- function(outcomes, 
+createCyclopsData.ffdf <- function(outcomes, 
                                covariates,
                                modelType = "lr", 
                                addIntercept = TRUE,
@@ -415,7 +415,7 @@ createCcdData.ffdf <- function(outcomes,
     batchCovariate
   }
   
-  constructCcdDataFromBatchableSources(resultSetOutcome,
+  constructCyclopsDataFromBatchableSources(resultSetOutcome,
                                        resultSetCovariate,
                                        getOutcomeBatch,
                                        getCovariateBatch,
@@ -428,14 +428,14 @@ createCcdData.ffdf <- function(outcomes,
                                        batchSize)
 }
 
-#' Convert data from data frames into a CcdData object
+#' Convert data from data frames into a CyclopsData object
 #'
 #' @description
-#' \code{createCcdData} loads data from two data frames, and inserts it into a CCD data object.
+#' \code{createCyclopsData} loads data from two data frames, and inserts it into a Cyclops data object.
 #' 
 #' @param outcomes    A data frame containing the outcomes with predefined columns (see below).
 #' @param covariateSql  A data frame containing the covariates with predefined columns (see below).
-#' @param modelType      CCD model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
+#' @param modelType      Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
@@ -461,7 +461,7 @@ createCcdData.ffdf <- function(outcomes,
 #' The covariate table should be sorted by stratum_id, row_id and covariate_id
 #' 
 #' @return              
-#' An object of type CcdModel
+#' An object of type CyclopsModel
 #' 
 #' @examples \dontrun{
 #'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
@@ -470,14 +470,14 @@ createCcdData.ffdf <- function(outcomes,
 #'   outcomes <- dbGetQuery(conn,"SELECT * FROM outcomes ORDER BY row_id")
 #'   covariates <- dbGetQuery(conn,"SELECT * FROM covariates ORDER BY row_id, covariate_id")
 #'   
-#'   ccdData <- dbGetCcdInput(connection,outcomes,covariates,modelType = "lr")
+#'   ccdData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
 #'   
 #'   dbDisconnect(connection)
 #'   
-#'   ccdFit <- fitCcdModel(ccdData, prior = prior("normal",0.01))
+#'   ccdFit <- fitCyclopsModel(ccdData, prior = prior("normal",0.01))
 #' }
 #' @export
-createCcdData <- function(outcomes, 
+createCyclopsData <- function(outcomes, 
                           covariates,
                           modelType = "lr", 
                           addIntercept = TRUE,
@@ -494,9 +494,9 @@ createCcdData <- function(outcomes,
   if (modelType == "lr" | modelType == "clr")
     outcomes$TIME = 0
   
-  dataPtr <- createSqlCcdData(modelType = modelType)
+  dataPtr <- createSqlCyclopsData(modelType = modelType)
   
-  appendSqlCcdData(dataPtr,
+  appendSqlCyclopsData(dataPtr,
                    outcomes$STRATUM_ID,
                    outcomes$ROW_ID,
                    outcomes$Y,
@@ -506,7 +506,7 @@ createCcdData <- function(outcomes,
                    covariates$COVARIATE_VALUE
   )
   
-  finalizeSqlCcdData(dataPtr,
+  finalizeSqlCyclopsData(dataPtr,
                      addIntercept = addIntercept,
                      useOffsetCovariate = useOffsetCovariate,
                      offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
