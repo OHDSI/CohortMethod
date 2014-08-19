@@ -3,7 +3,7 @@
 \alias{psPlot}
 \title{Plot the propensity score distribution}
 \usage{
-psPlot(data, scale = "preference")
+psPlot(data, scale = "preference", type = "density", binWidth = 0.05)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
@@ -11,6 +11,13 @@ psPlot(data, scale = "preference")
 \item{scale}{The scale of the graph. Two scales are supported: \code{
 scale = "propensity"} or  \code{#' scale = "preference"}. The preference score scale is defined by Walker
 et al (2013).}
+
+\item{type}{Type of plot. Two possible values: \code{type = "density"} or \code{type = "histogram"}}
+
+\item{binWidth}{For histograms, the width of the bins}
+}
+\value{
+Returns a GGPlot2 object. Use the ggsave function to save to file.
 }
 \description{
 \code{psPlot} shows the propensity (or preference) score distribution
@@ -24,9 +31,9 @@ The data frame should have a least the following two columns:
 }
 \examples{
 treatment = rep(0:1, each = 100)
-propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
-data <- data.frame(treatment = treatment, propensityScore = propensityScore)
-data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+propensity_score = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+data <- data.frame(treatment = treatment, propensity_score = propensity_score)
+data <- data[data$propensity_score > 0 & data$propensity_score < 1,]
 psPlot(data)
 }
 \references{

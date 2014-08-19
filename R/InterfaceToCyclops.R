@@ -27,7 +27,7 @@ openResultSet <- function(conn, sql, batchSize) {
   .jcall(s,"V",method="setFetchSize",as.integer(batchSize))
   r <- .jcall(s, "Ljava/sql/ResultSet;", "executeQuery",as.character(sql)[1])
   md <- .jcall(r, "Ljava/sql/ResultSetMetaData;", "getMetaData", check=FALSE)
-  new("JDBCResult", jr=r, md=md, stat=s, pull=.jnull())
+  new("JDBCResult", jr=r, md=md, stat=s, pull=.jnull(), batchSize=batchSize, done=FALSE)
 }
 
 lastRowNotHavingThisValue <- function(column, value){
@@ -41,43 +41,33 @@ lastRowNotHavingThisValue <- function(column, value){
 }
 
 constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
-                                                 resultSetCovariate,
-                                                 getOutcomeBatch,
-                                                 getCovariateBatch,
-                                                 modelType = "lr", 
-                                                 addIntercept = TRUE,
-                                                 useOffsetCovariate = NULL,
-                                                 offsetAlreadyOnLogScale = FALSE,
-                                                 sortCovariates = TRUE,
-                                                 makeCovariatesDense = NULL,
-                                                 batchSize = 100000){
+                                                     resultSetCovariate,
+                                                     getOutcomeBatch,
+                                                     getCovariateBatch,
+                                                     isDone,
+                                                     modelType = "lr", 
+                                                     addIntercept = TRUE,
+                                                     useOffsetCovariate = NULL,
+                                                     offsetAlreadyOnLogScale = FALSE,
+                                                     sortCovariates = TRUE,
+                                                     makeCovariatesDense = NULL,
+                                                     batchSize = 100000){
   # Construct empty Cyclops data object:
   dataPtr <- createSqlCyclopsData(modelType = modelType)
   
   #Fetch data in batches:
-  doneCovars <- FALSE
-  doneOutcome <- FALSE
-  
-  batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
-  doneOutcome = (nrow(batchOutcome) != batchSize)
+  batchOutcome <- getOutcomeBatch(resultSetOutcome,modelType)
   
   lastUsedOutcome <- 0
   spillOverCovars <- NULL
-  while (!doneCovars){
+  while (!isDone(resultSetCovariate)){
     #Get covars:
-    batchCovars <- getCovariateBatch(resultSetCovariate,batchSize,modelType)
-    doneCovars = (nrow(batchCovars) != batchSize)
+    batchCovars <- getCovariateBatch(resultSetCovariate,modelType)
     lastRowId <- batchCovars$ROW_ID[nrow(batchCovars)]
-    #lastStratumId <- batchCovars$STRATUM_ID[nrow(batchCovars)]
-    
     endCompleteRow <- lastRowNotHavingThisValue(batchCovars$ROW_ID,lastRowId)
-    #endCompleteStratum <- lastRowNotHavingThisValue(batchCovars$STRATUM_ID,lastStratumId)
-    #if (endCompleteStratum > endCompleteRow)
-    #  endCompleteRow = endCompleteStratum
     
     if (endCompleteRow == 0){ #Entire batch is about 1 row
       if (!is.null(spillOverCovars)){
-        #if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1] & spillOverCovars$STRATUM_ID[1] == batchCovars$STRATUM_ID[1]){ #SpilloverCovars contains info on same row
         if (spillOverCovars$ROW_ID[1] == batchCovars$ROW_ID[1]){ #SpilloverCovars contains info on same row
           spillOverCovars <- rbind(spillOverCovars,batchCovars)
           covarsToCyclops <- NULL
@@ -100,37 +90,26 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
     #Get matching outcomes:
     if (!is.null(covarsToCyclops)){ # There is a complete row
       completeRowId = covarsToCyclops$ROW_ID[nrow(covarsToCyclops)]
-      #completeStratumId = covarsToCyclops$STRATUM_ID[nrow(covarsToCyclops)]
-      #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
       endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
-      while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
+      while (length(endCompleteRowInOutcome) == 0 & !isDone(resultSetOutcome)){
         if (lastUsedOutcome == nrow(batchOutcome)){
-          batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
-          doneOutcome = (nrow(batchOutcome) != batchSize)
+          batchOutcome <- getOutcomeBatch(resultSetOutcome,modelType)
         } else {      
-          newBatchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
-          doneOutcome = (nrow(newBatchOutcome) != batchSize)
+          newBatchOutcome <- getOutcomeBatch(resultSetOutcome,modelType)
           batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
         }
         lastUsedOutcome = 0
         endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
-        #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
-        if (nrow(batchOutcome) > 3*batchSize){
-          stop(paste("No matching outcome found for row_id =",completeRowId))
-        }
       }
-      #if (min(covarsToCyclops$ROW_ID %in% batchOutcome$ROW_ID) == 0)
-      #  stop("Not all row_ids in covars matched to outcomes")
-      
       #Append to Cyclops:
       appendSqlCyclopsData(dataPtr,
-                       batchOutcome$STRATUM_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                       batchOutcome$ROW_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                       batchOutcome$Y[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                       batchOutcome$TIME[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                       covarsToCyclops$ROW_ID,
-                       covarsToCyclops$COVARIATE_ID,
-                       covarsToCyclops$COVARIATE_VALUE
+                           batchOutcome$STRATUM_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                           batchOutcome$ROW_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                           batchOutcome$Y[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                           batchOutcome$TIME[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                           covarsToCyclops$ROW_ID,
+                           covarsToCyclops$COVARIATE_ID,
+                           covarsToCyclops$COVARIATE_VALUE
       )
       
       lastUsedOutcome = endCompleteRowInOutcome
@@ -140,35 +119,27 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
   covarsToCyclops <- spillOverCovars
   
   completeRowId = covarsToCyclops$ROW_ID[nrow(covarsToCyclops)]
-  #completeStratumId = covarsToCyclops$STRATUM_ID[nrow(covarsToCyclops)]
-  #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
   endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
-  while (length(endCompleteRowInOutcome) == 0 & !doneOutcome){
+  while (length(endCompleteRowInOutcome) == 0 & !isDone(resultSetOutcome)){
     if (lastUsedOutcome == nrow(batchOutcome)){
-      batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
-      doneOutcome = (nrow(batchOutcome) != batchSize)
+      batchOutcome <- getOutcomeBatch(resultSetOutcome,modelType)
     } else {      
-      batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
-      doneOutcome = (nrow(newBatchOutcome) != batchSize)
+      batchOutcome <- getOutcomeBatch(resultSetOutcome,modelType)
       batchOutcome <- rbind(batchOutcome[(lastUsedOutcome+1):nrow(batchOutcome),],newBatchOutcome)          
     }
     lastUsedOutcome = 0
-    #endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId & batchOutcome$STRATUM_ID == completeStratumId)
     endCompleteRowInOutcome <- which(batchOutcome$ROW_ID == completeRowId)
-    if (nrow(batchOutcome) > 3*batchSize){
-      stop(paste("No matching outcome found for row_id =",completeRowId))
-    }
   }
   
   #Append to Cyclops:
   appendSqlCyclopsData(dataPtr,
-                   batchOutcome$STRATUM_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                   batchOutcome$ROW_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                   batchOutcome$Y[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                   batchOutcome$TIME[(lastUsedOutcome+1):endCompleteRowInOutcome],
-                   covarsToCyclops$ROW_ID,
-                   covarsToCyclops$COVARIATE_ID,
-                   covarsToCyclops$COVARIATE_VALUE
+                       batchOutcome$STRATUM_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                       batchOutcome$ROW_ID[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                       batchOutcome$Y[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                       batchOutcome$TIME[(lastUsedOutcome+1):endCompleteRowInOutcome],
+                       covarsToCyclops$ROW_ID,
+                       covarsToCyclops$COVARIATE_ID,
+                       covarsToCyclops$COVARIATE_VALUE
   )
   
   lastUsedOutcome = endCompleteRowInOutcome
@@ -176,34 +147,33 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
   #Add any outcomes that are left (without matching covar information):
   if (lastUsedOutcome < nrow(batchOutcome)){
     appendSqlCyclopsData(dataPtr,
-                     batchOutcome$STRATUM_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
-                     batchOutcome$ROW_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
-                     batchOutcome$Y[(lastUsedOutcome+1):nrow(batchOutcome)],
-                     batchOutcome$TIME[(lastUsedOutcome+1):nrow(batchOutcome)],
-                     as.numeric(c()),
-                     as.numeric(c()),
-                     as.numeric(c()))
+                         batchOutcome$STRATUM_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
+                         batchOutcome$ROW_ID[(lastUsedOutcome+1):nrow(batchOutcome)],
+                         batchOutcome$Y[(lastUsedOutcome+1):nrow(batchOutcome)],
+                         batchOutcome$TIME[(lastUsedOutcome+1):nrow(batchOutcome)],
+                         as.numeric(c()),
+                         as.numeric(c()),
+                         as.numeric(c()))
   }
-  while (!doneOutcome){
-    batchOutcome <- getOutcomeBatch(resultSetOutcome,batchSize,modelType)
+  while (!isDone(resultSetOutcome)){
+    batchOutcome <- getOutcomeBatch(resultSetOutcome,modelType)
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))
-    doneOutcome = (nrow(newBatchOutcome) != batchSize)
     
     appendSqlCyclopsData(dataPtr,
-                     batchOutcome$STRATUM_ID,
-                     batchOutcome$ROW_ID,
-                     batchOutcome$Y,
-                     batchOutcome$TIME,
-                     as.numeric(c()),
-                     as.numeric(c()),
-                     as.numeric(c()))
+                         batchOutcome$STRATUM_ID,
+                         batchOutcome$ROW_ID,
+                         batchOutcome$Y,
+                         batchOutcome$TIME,
+                         as.numeric(c()),
+                         as.numeric(c()),
+                         as.numeric(c()))
   }
   finalizeSqlCyclopsData(dataPtr,
-                     addIntercept = addIntercept,
-                     useOffsetCovariate = useOffsetCovariate,
-                     offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
-                     sortCovariates = sortCovariates,
-                     makeCovariatesDense = makeCovariatesDense)
+                         addIntercept = addIntercept,
+                         useOffsetCovariate = useOffsetCovariate,
+                         offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
+                         sortCovariates = sortCovariates,
+                         makeCovariatesDense = makeCovariatesDense)
   dataPtr
 }
 
@@ -216,6 +186,7 @@ dbGetCyclopsInput <- function(...){
 #' @description
 #' \code{dbCreateCyclopsData} loads data from the database using two queries, and inserts it into a Cyclops data object.
 #' 
+#' @param connection    A connection to a database (see \code{DatabaseConnector} package).
 #' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
 #' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
 #' @param modelType		  Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
@@ -262,15 +233,15 @@ dbGetCyclopsInput <- function(...){
 #' }
 #' @export
 dbCreateCyclopsData <- function(connection, 
-                            outcomeSql, 
-                            covariateSql, 
-                            modelType = "lr", 
-                            addIntercept = TRUE,
-                            useOffsetCovariate = NULL,
-                            offsetAlreadyOnLogScale = FALSE,
-                            sortCovariates = TRUE,
-                            makeCovariatesDense = NULL,
-                            batchSize = 100000){
+                                outcomeSql, 
+                                covariateSql, 
+                                modelType = "lr", 
+                                addIntercept = TRUE,
+                                useOffsetCovariate = NULL,
+                                offsetAlreadyOnLogScale = FALSE,
+                                sortCovariates = TRUE,
+                                makeCovariatesDense = NULL,
+                                batchSize = 100000){
   
   # Open resultSets:
   .jcall("java/lang/System",,"gc")
@@ -286,8 +257,10 @@ dbCreateCyclopsData <- function(connection,
   }
   on.exit(exitFunction())
   
-  getOutcomeBatch <- function(resultSetOutcome, batchSize, modelType){
-    batchOutcome <- fetch(resultSetOutcome, batchSize)
+  getOutcomeBatch <- function(resultSetOutcome, modelType){
+    batchOutcome <- fetch(resultSetOutcome, resultSetOutcome$batchSize)
+    if (nrow(batchOutcome != resultSetOutcome$batchSize))
+    resultSetOutcome$done = TRUE
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))  
     if (modelType == "lr" | modelType == "pr")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
@@ -296,25 +269,32 @@ dbCreateCyclopsData <- function(connection,
     batchOutcome
   }
   
-  getCovariateBatch <- function(resultSetCovariate, batchSize, modelType){
-    batchCovariate <- fetch(resultSetCovariate, batchSize)
+  getCovariateBatch <- function(resultSetCovariate, modelType){
+    batchCovariate <- fetch(resultSetCovariate, resultSetCovariate$batchSize)
+    if (nrow(batchCovariate != resultSetCovariate$batchSize))
+      resultSetCovariate$done = TRUE
     colnames(batchCovariate) <- toupper(colnames(batchCovariate))  
     batchCovariate
   }
   
-  constructCyclopsDataFromBatchableSources(resultSetOutcome,
-                                       resultSetCovars,
-                                       getOutcomeBatch,
-                                       getCovariateBatch,
-                                       modelType, 
-                                       addIntercept,
-                                       useOffsetCovariate,
-                                       offsetAlreadyOnLogScale,
-                                       sortCovariates,
-                                       makeCovariatesDense,
-                                       batchSize)
+  isDone <- function(resultSet){
+    resultSet$done
+  }
   
-
+  constructCyclopsDataFromBatchableSources(resultSetOutcome,
+                                           resultSetCovars,
+                                           getOutcomeBatch,
+                                           getCovariateBatch,
+                                           isDone,
+                                           modelType, 
+                                           addIntercept,
+                                           useOffsetCovariate,
+                                           offsetAlreadyOnLogScale,
+                                           sortCovariates,
+                                           makeCovariatesDense,
+                                           batchSize)
+  
+  
 }
 
 
@@ -370,62 +350,65 @@ dbCreateCyclopsData <- function(connection,
 #' }
 #' @export
 createCyclopsData.ffdf <- function(outcomes, 
-                               covariates,
-                               modelType = "lr", 
-                               addIntercept = TRUE,
-                               useOffsetCovariate = NULL,
-                               offsetAlreadyOnLogScale = FALSE,
-                               sortCovariates = TRUE,
-                               makeCovariatesDense = NULL,
-                               batchSize = 100000){
+                                   covariates,
+                                   modelType = "lr", 
+                                   addIntercept = TRUE,
+                                   useOffsetCovariate = NULL,
+                                   offsetAlreadyOnLogScale = FALSE,
+                                   sortCovariates = TRUE,
+                                   makeCovariatesDense = NULL){
   colnames(outcomes) <- toupper(colnames(outcomes))  
   colnames(covariates) <- toupper(colnames(covariates))    
   resultSetOutcome <- new.env()
   assign("data",outcomes,envir=resultSetOutcome)
+  assign("chunks",chunk(outcomes),envir=resultSetOutcome)
   assign("cursor",1,envir=resultSetOutcome)
   resultSetCovariate <- new.env()
   assign("data",covariates,envir=resultSetCovariate)
+  assign("chunks",chunk(covariates),envir=resultSetCovariate)
   assign("cursor",1,envir=resultSetCovariate)
   
-  getOutcomeBatch <- function(resultSetOutcome, batchSize, modelType){
+  getOutcomeBatch <- function(resultSetOutcome, modelType){
     data <- get("data",envir=resultSetOutcome)
-    begin <- get("cursor",envir=resultSetOutcome)
-    end <- min((begin+batchSize-1),nrow(data))
-    if (begin > end)
-      return(data.frame())
-    hi <- as.hi(quote(begin:end))
-    batchOutcome <- data[hi,]
-    assign("cursor",end+1,envir=resultSetOutcome)
-    if (modelType == "lr" | modelType == "pr")
+    chunks <- get("chunks",envir=resultSetOutcome)
+    cursor <- get("cursor",envir=resultSetOutcome)
+    batchOutcome <- data[chunks[[cursor]],]
+    assign("cursor",cursor+1,envir=resultSetOutcome)
+    
+    if (modelType == "lr" | modelType == "pr" | modelType == "cox")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     if (modelType == "lr" | modelType == "clr")
       batchOutcome$TIME = 0
     batchOutcome
   }
   
-  getCovariateBatch <- function(resultSetCovariate, batchSize, modelType){
+  getCovariateBatch <- function(resultSetCovariate, modelType){
     data <- get("data",envir=resultSetCovariate)
-    begin <- get("cursor",envir=resultSetCovariate)
-    end <- min((begin+batchSize-1),nrow(data))
-    if (begin > end)
-      return(data.frame())
-    hi <- as.hi(quote(begin:end))
-    batchCovariate <- data[hi,]
-    assign("cursor",end+1,envir=resultSetCovariate)
+    chunks <- get("chunks",envir=resultSetCovariate)
+    cursor <- get("cursor",envir=resultSetCovariate)
+    batchCovariate <- data[chunks[[cursor]],]
+    assign("cursor",cursor+1,envir=resultSetCovariate)
     batchCovariate
   }
   
+  isDone <- function(resultSet){
+    chunks <- get("chunks",envir=resultSet)
+    cursor <- get("cursor",envir=resultSet)
+    cursor > length(chunks)
+  }
+  
   constructCyclopsDataFromBatchableSources(resultSetOutcome,
-                                       resultSetCovariate,
-                                       getOutcomeBatch,
-                                       getCovariateBatch,
-                                       modelType, 
-                                       addIntercept,
-                                       useOffsetCovariate,
-                                       offsetAlreadyOnLogScale,
-                                       sortCovariates,
-                                       makeCovariatesDense,
-                                       batchSize)
+                                           resultSetCovariate,
+                                           getOutcomeBatch,
+                                           getCovariateBatch,
+                                           isDone,
+                                           modelType, 
+                                           addIntercept,
+                                           useOffsetCovariate,
+                                           offsetAlreadyOnLogScale,
+                                           sortCovariates,
+                                           makeCovariatesDense,
+                                           0)
 }
 
 #' Convert data from data frames into a CyclopsData object
@@ -478,13 +461,13 @@ createCyclopsData.ffdf <- function(outcomes,
 #' }
 #' @export
 createCyclopsData <- function(outcomes, 
-                          covariates,
-                          modelType = "lr", 
-                          addIntercept = TRUE,
-                          useOffsetCovariate = NULL,
-                          offsetAlreadyOnLogScale = FALSE,
-                          sortCovariates = TRUE,
-                          makeCovariatesDense = NULL){
+                              covariates,
+                              modelType = "lr", 
+                              addIntercept = TRUE,
+                              useOffsetCovariate = NULL,
+                              offsetAlreadyOnLogScale = FALSE,
+                              sortCovariates = TRUE,
+                              makeCovariatesDense = NULL){
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(covariates) <- toupper(colnames(covariates))
   
@@ -497,21 +480,21 @@ createCyclopsData <- function(outcomes,
   dataPtr <- createSqlCyclopsData(modelType = modelType)
   
   appendSqlCyclopsData(dataPtr,
-                   outcomes$STRATUM_ID,
-                   outcomes$ROW_ID,
-                   outcomes$Y,
-                   outcomes$TIME,
-                   covariates$ROW_ID,
-                   covariates$COVARIATE_ID,
-                   covariates$COVARIATE_VALUE
+                       outcomes$STRATUM_ID,
+                       outcomes$ROW_ID,
+                       outcomes$Y,
+                       outcomes$TIME,
+                       covariates$ROW_ID,
+                       covariates$COVARIATE_ID,
+                       covariates$COVARIATE_VALUE
   )
   
   finalizeSqlCyclopsData(dataPtr,
-                     addIntercept = addIntercept,
-                     useOffsetCovariate = useOffsetCovariate,
-                     offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
-                     sortCovariates = sortCovariates,
-                     makeCovariatesDense = makeCovariatesDense)
+                         addIntercept = addIntercept,
+                         useOffsetCovariate = useOffsetCovariate,
+                         offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
+                         sortCovariates = sortCovariates,
+                         makeCovariatesDense = makeCovariatesDense)
   
   dataPtr
 }

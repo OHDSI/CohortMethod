@@ -22,7 +22,6 @@
 # @author Martijn Schuemie
 
 
-
 #' Create propensity scores
 #'
 #' @description
@@ -39,21 +38,15 @@
 #' 
 #' @export
 psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
-  if (cohortData$useFf){
-    cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
-    cyclopsData <- createCyclopsData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
-    ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
-    cohortData$cohorts$y <- NULL
-  } else {
-    ps <- cohortData$cohorts
-    colnames(ps)[colnames(ps) == "TREATMENT"] = "Y"
-    cyclopsData <- createCyclopsData(ps,cohortData$covariates,modelType="lr")
-  }
+  cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
+  cyclopsData <- createCyclopsData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
+  ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
+  cohortData$cohorts$y <- NULL
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
-                        prior = prior,
-                        control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
+                                prior = prior,
+                                control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
   pred <- predict(cyclopsFit)
-
+  
   colnames(ps)[colnames(ps) == "Y"] <- "treatment"
   data <- data.frame(PROPENSITY_SCORE = pred, ROW_ID = as.numeric(attr(pred,"names")))
   data <- merge(data,ps,by="ROW_ID")
@@ -66,9 +59,9 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
 #' @description
 #' \code{psShowModel} shows the propensity score model
 #' 
-#' @param propensityScore       An object of type \code{cohortData} as generated using \code{dbGetCohortData}
-#' @param connectionDetails     An R object of type ConnectionDetail (details for the function that contains server info, database type, optionally username/password, port)
-#' @param cdmSchema	        		Database schema that contains the vocabulary
+#' @param propensityScore       The propensity scores as generated using the \code{psCreate} function.
+#' @param connectionDetails     An R object of type ConnectionDetail (details for the function that contains server info, database type, optionally username/password, port).
+#' @param cdmSchema	        		Database schema that contains the vocabulary.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients
@@ -123,7 +116,15 @@ psShowModel <- function(propensityScore, connectionDetails, cdmSchema){
   cfs$atc3Id <- NULL 
   cfs <- cfs[order(-abs(cfs$coefficient)),]
   colnames(cfs)[colnames(cfs) == "id"] <- "covariate_id"
+  colnames(cfs) <- toupper(colnames(cfs))
   cfs
+}
+
+computePreferenceScore <- function(data){
+  proportion <- sum(data$TREATMENT) / nrow(data)
+  x <- exp(log(data$PROPENSITY_SCORE/(1-data$PROPENSITY_SCORE)) - log(proportion/(1-proportion)))
+  data$PREFERENCE_SCORE <- x / (x+1)
+  data
 }
 
 #' Plot the propensity score distribution
@@ -135,6 +136,11 @@ psShowModel <- function(propensityScore, connectionDetails, cdmSchema){
 #' @param scale             The scale of the graph. Two scales are supported: \code{
 #' scale = "propensity"} or  \code{#' scale = "preference"}. The preference score scale is defined by Walker 
 #' et al (2013). 
+#' @param type              Type of plot. Two possible values: \code{type = "density"} or \code{type = "histogram"}
+#' @param binWidth          For histograms, the width of the bins
+#' 
+#' @return
+#' Returns a GGPlot2 object. Use the ggsave function to save to file.
 #'
 #' @details
 #' The data frame should have a least the following two columns:
@@ -145,9 +151,9 @@ psShowModel <- function(propensityScore, connectionDetails, cdmSchema){
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
-#' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
-#' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
-#' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+#' propensity_score = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+#' data <- data.frame(treatment = treatment, propensity_score = propensity_score)
+#' data <- data[data$propensity_score > 0 & data$propensity_score < 1,]
 #' psPlot(data)
 #' 
 #' @references
@@ -156,12 +162,16 @@ psShowModel <- function(propensityScore, connectionDetails, cdmSchema){
 #' Research, 3, 11-20
 #' 
 #' @export
-psPlot <- function(data, scale = "preference"){
+psPlot <- function(data, scale = "preference", type = "density", binWidth = 0.05){
   colnames(data) <- toupper(colnames(data))
+  if (!("TREATMENT" %in% colnames(data))) 
+    stop("Missing column TREATMENT in data")
+  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
+    stop("Missing column PROPENSITY_SCORE in data")
+  
   if (scale == "preference") {
-    proportion <- sum(data$TREATMENT) / nrow(data)
-    x <- exp(log(data$PROPENSITY_SCORE/(1-data$PROPENSITY_SCORE)) - log(proportion/(1-proportion)))
-    data$SCORE <- x / (x+1)
+    data <- computePreferenceScore(data)
+    data$SCORE <- data$PREFERENCE_SCORE
     label = "Preference score"
   } else {
     data$SCORE = data$PROPENSITY_SCORE
@@ -169,13 +179,21 @@ psPlot <- function(data, scale = "preference"){
   }
   data$GROUP <- "Treated"
   data$GROUP[data$TREATMENT == 0] <- "Comparator"
-  
-  ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
-    geom_density() +
-    scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-    scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
-    scale_x_continuous(label,limits=c(0,1)) +
-    scale_y_continuous("Density")
+  if (type == "density"){
+    ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
+      geom_density() +
+      scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+      scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
+      scale_x_continuous(label,limits=c(0,1)) +
+      scale_y_continuous("Density")
+  } else {
+    ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
+      geom_histogram(binwidth = binWidth, position="identity") +
+      scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+      scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
+      scale_x_continuous(label,limits=c(0,1)) +
+      scale_y_continuous("Number of subjects")
+  }
 }
 
 #' Compute the area under the ROC curve
@@ -197,14 +215,19 @@ psPlot <- function(data, scale = "preference"){
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
-#' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
-#' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
-#' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+#' propensity_score = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+#' data <- data.frame(treatment = treatment, propensity_score = propensity_score)
+#' data <- data[data$propensity_score > 0 & data$propensity_score < 1,]
 #' psAuc(data)
 #' 
 #' @export
 psAuc <- function(data){
   colnames(data) <- toupper(colnames(data))
+  if (!("TREATMENT" %in% colnames(data))) 
+    stop("Missing column TREATMENT in data")
+  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
+    stop("Missing column PROPENSITY_SCORE in data")
+  
   rocobj <- roc(data$TREATMENT,data$PROPENSITY_SCORE, algorithm=3)
   auc <- as.numeric(ci.auc(rocobj, method="delong"))
   data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3])
@@ -215,7 +238,7 @@ psAuc <- function(data){
 #' @description
 #' \code{psTrim} uses the provided propensity scores to trim subjects with extreme scores.
 #' 
-#' @param data              A data frame with the three columns described below#' @param method    	      Whether \code{matching} or \code{stratification} should be performed.
+#' @param data              A data frame with the three columns described below
 #' @param trimFraction      This fraction will be removed from each treatment group. In the treatment group, persons
 #' with the highest propensity scores will be removed, in the comparator group person with the lowest scores will be removed.
 #' 
@@ -229,27 +252,75 @@ psAuc <- function(data){
 #' 
 #' @return Returns a date frame with the same three columns as the input.
 #' @examples 
-#' rowId = 1:2000
+#' row_id = 1:2000
 #' treatment = rep(0:1, each = 1000)
-#' propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+#' propensity_score = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
 #' result <- psTrim(data,0.05)
 #' 
 #' @export
 psTrim <- function(data, trimFraction=0.05){
   colnames(data) <- toupper(colnames(data))
+  if (!("ROW_ID" %in% colnames(data))) 
+    stop("Missing column ROW_ID in data")
+  if (!("TREATMENT" %in% colnames(data))) 
+    stop("Missing column TREATMENT in data")
+  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
+    stop("Missing column PROPENSITY_SCORE in data")
   cutoffTreated <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],1-trimFraction)
   cutoffComparator <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 0],trimFraction)
   data[(data$PROPENSITY_SCORE <= cutoffTreated & data$TREATMENT == 1) | (data$PROPENSITY_SCORE >= cutoffComparator & data$TREATMENT == 0),]
 }
 
+#' Keep only persons in clinical equipoise
+#'
+#' @description
+#' \code{psTrimToEquipoise} uses the preference score to trim subjects that are not in clinical equipoise
+#' 
+#' @param data              A data frame with at least the three columns described below
+#' @param bounds            The upper and lower bound on the preference score for keeping persons
+#' 
+#' @details
+#' The data frame should have the following three columns:
+#' \tabular{lll}{  
+#'   \verb{row_id}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+#' }
+#' 
+#' @return Returns a date frame with the same three columns as the input.
+#' @examples 
+#' row_id = 1:2000
+#' treatment = rep(0:1, each = 1000)
+#' propensity_score = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
+#' result <- psTrimToEquipoise(data)
+#'  
+#' @references
+#' Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and Schneeweiss S.
+#' (2013) A tool for assessing the feasibility of comparative effectiveness research, Comparative Effective 
+#' Research, 3, 11-20
+#' 
+#' @export
+psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
+  colnames(data) <- toupper(colnames(data))
+  if (!("ROW_ID" %in% colnames(data))) 
+    stop("Missing column ROW_ID in data")
+  if (!("TREATMENT" %in% colnames(data))) 
+    stop("Missing column TREATMENT in data")
+  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
+    stop("Missing column PROPENSITY_SCORE in data")
+  
+  data <- computePreferenceScore(data)
+  data[data$PREFERENCE_SCORE >= bounds[1] & data$PREFERENCE_SCORE <= bounds[2],]
+}
 
 #' Match persons by propensity score
 #'
 #' @description
 #' \code{psMatch} uses the provided propensity scores to match treated to comparator persons.
 #' 
-#' @param data              A data frame with the three columns described below
+#' @param data              A data frame with the three columns described below.
 #' @param caliper		        The caliper for matching. A caliper is the distance which is acceptable for 
 #' any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.
 #' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \code{caliperScale = "propensity score"}
@@ -257,9 +328,11 @@ psTrim <- function(data, trimFraction=0.05){
 #' caliper is interpreted in standard deviations of the propensity score distribution.
 #' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A 
 #' maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.
+#' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which subjects should be stratified prior to matching.
+#' No persons will be matched with persons outside of the strata identified by the values in these columns.
 #' 
 #' @details
-#' The data frame should have the following three columns:
+#' The data frame should have at least the following three columns:
 #' \tabular{lll}{  
 #'   \verb{row_id}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
@@ -272,31 +345,56 @@ psTrim <- function(data, trimFraction=0.05){
 #' Any rows that could not be matched are removed 
 #' 
 #' @examples 
-#' rowId = 1:5
+#' row_id = 1:5
 #' treatment = c(1,0,1,0,1)
-#' propensityScore = c(0,0.1,0.3,0.4,1)
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- psMatch(data, caliper = 0, maxRatio = 1)
+#' propensity_score = c(0,0.1,0.3,0.4,1)
+#' age_group =c(1,1,1,1,1) #everyone in the same age group, so will not influence the matching
+#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score, age_group = age_group)
+#' result <- psMatch(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 #' 
 #' @references
 #' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity score matching in 
 #' cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #' 
 #' @export
-psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1){
+psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, stratificationColumns = c()){
   colnames(data) <- toupper(colnames(data))
+  stratificationColumns <- toupper(stratificationColumns)
+  if (!("ROW_ID" %in% colnames(data))) 
+    stop("Missing column ROW_ID in data")
+  if (!("TREATMENT" %in% colnames(data))) 
+    stop("Missing column TREATMENT in data")
+  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
+    stop("Missing column PROPENSITY_SCORE in data")
+  
   data <- data[order(data$PROPENSITY_SCORE),]
-  if (caliper <= 0)
+  if (caliper <= 0){
     caliper = 9999
-  else if (caliperScale == "standardized")
+  } else if (caliperScale == "standardized")
     caliper = caliper * sd(data$PROPENSITY_SCORE)
   if (maxRatio == 0) {
     maxRatio = 999
   } 
-  
-  result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$PROPENSITY_SCORE, data$TREATMENT, maxRatio, caliper)
-  result$ROW_ID <- data$ROW_ID
-  result[result$STRATUM_ID != -1,]
+  if (length(stratificationColumns) == 0) {
+    result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$PROPENSITY_SCORE, data$TREATMENT, maxRatio, caliper)
+    result$ROW_ID <- data$ROW_ID
+    result[result$STRATUM_ID != -1,]
+  } else {
+    result <- data.frame()
+    interactions <- interaction(data[,stratificationColumns])
+    strata <- levels(interactions)
+    for (i in 1:length(strata)){
+      subset <- data[interactions == strata[i],]
+      subResult <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', subset$PROPENSITY_SCORE, subset$TREATMENT, maxRatio, caliper)
+      subResult$ROW_ID <- subset$ROW_ID
+      subResult[,stratificationColumns] <- subset[,stratificationColumns]
+      subResult <- subResult[subResult$STRATUM_ID != -1,]
+      if (nrow(result) != 0)
+        subResult$STRATUM_ID = subResult$STRATUM_ID + max(result$STRATUM_ID) + 1
+      result <- rbind(result,subResult)
+    }
+    result
+  }
 }
 
 #' Stratify persons by propensity score
@@ -307,31 +405,142 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
 #' @param data              A data frame with the three columns described below
 #' @param numberOfStrata    How many strata? The boundaries of the strata are automatically defined to 
 #' contain equal numbers of treated persons.
+#' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which subjects should also be 
+#' stratified in addition to stratification on propensity score.
 #' 
 #' @details
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
-#'   \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}         \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{row_id}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#'   \verb{propensity_score}    \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same columns as the input data plus one extra column: stratumId.
 #' @examples 
-#' rowId = 1:200
+#' row_id = 1:200
 #' treatment = rep(0:1, each = 100)
-#' propensityScore = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+#' propensity_score = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
+#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
 #' result <- psStratify(data,5)
 #' 
 #' @export
-psStratify <- function(data, numberOfStrata=5){
+psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
   colnames(data) <- toupper(colnames(data))
-  strata <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],(1:(numberOfStrata-1))/numberOfStrata)
-  data$stratumId <- cut(data$PROPENSITY_SCORE,breaks=c(0,strata,1), labels = (1:numberOfStrata)-1)
-  data
+  stratificationColumns <- toupper(stratificationColumns)
+  if (!("ROW_ID" %in% colnames(data))) 
+    stop("Missing column ROW_ID in data")
+  if (!("TREATMENT" %in% colnames(data))) 
+    stop("Missing column TREATMENT in data")
+  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
+    stop("Missing column PROPENSITY_SCORE in data")
+  
+  psStrata <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],(1:(numberOfStrata-1))/numberOfStrata)
+  if (length(stratificationColumns) == 0) {
+    data$STRATUM_ID <- as.integer(as.character(cut(data$PROPENSITY_SCORE,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
+    data
+  } else {
+    result <- data.frame()
+    interactions <- interaction(data[,stratificationColumns])
+    strata <- levels(interactions)
+    for (i in 1:length(strata)){
+      subset <- data[interactions == strata[i],]
+      subset$STRATUM_ID <- as.integer(as.character(cut(subset$PROPENSITY_SCORE,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
+      if (nrow(result) != 0)
+        subset$STRATUM_ID = subset$STRATUM_ID + max(result$STRATUM_ID) + 1
+      result <- rbind(result,subset)
+    }
+    result
+  }
+}
+
+quickSum <- function(data){
+  result <- NULL
+  for (i in chunk(data)){
+    dataChunk <- data[i,]
+    x <- bySum(dataChunk$COVARIATE_VALUE,as.factor(dataChunk$COVARIATE_ID))
+    COVARIATE_ID <- attr(x,"dimnames")
+    attributes(x) <- NULL
+    r <- data.frame(value = x,COVARIATE_ID = COVARIATE_ID, stringsAsFactors=FALSE)
+    colnames(r)[2] <- "COVARIATE_ID" #for some reason we lose the name when stringsAsFactors = FALSE
+    if (is.null(result)){
+      result <- r
+      colnames(result)[colnames(result) == "value"] = "SUM"
+    } else {
+      result <- merge(result,r,all=TRUE)
+      result$SUM[is.na(result$SUM)] = 0
+      result$value[is.na(result$value)] = 0
+      result$SUM = result$SUM + result$value
+      result$value <- NULL
+    }
+    
+  }
+  result$COVARIATE_ID <- as.numeric(result$COVARIATE_ID)
+  result
 }
 
 
+computeMeansPerGroup <- function(cohorts, covariates){
+  nTreated <-  sum(cohorts$TREATMENT == 1)
+  nComparator <- nrow(cohorts) - nTreated
+  t <- covariates$ROW_ID %in% cohorts$ROW_ID[cohorts$TREATMENT == 1]
+  treated <- quickSum(covariates[ffwhich(t,t == TRUE),])
+  treated$MEAN_TREATED <- treated$SUM / nTreated
+  colnames(treated)[colnames(treated) == "SUM"] <- "SUM_TREATED"
+  
+  t <- covariates$ROW_ID %in% cohorts$ROW_ID[cohorts$TREATMENT == 0]
+  comparator <- quickSum(covariates[ffwhich(t,t == TRUE),])
+  comparator$MEAN_COMPARATOR <- comparator$SUM / nComparator
+  colnames(comparator)[colnames(comparator) == "SUM"] <- "SUM_COMPARATOR"
+  
+  #result <- merge(treated[,c("COVARIATE_ID","MEAN_TREATED")],comparator[,c("COVARIATE_ID","MEAN_COMPARATOR")],by="COVARIATE_ID")
+  result <- merge(treated,comparator)
+  result$RATE <- result$MEAN_TREATED / result$MEAN_COMPARATOR
+  result
+}
+
+#' @export
+psComputeCovariateBalance <- function (strata, cohortData, model) {
+  #for every covar: prevalence in treatment and comp groups before and after matching
+  #Compute covar stats before matching:
+  covariates <- cohortData$covariates
+  colnames(covariates) <- toupper(colnames(covariates))
+  
+  cohorts <- cohortData$cohorts
+  colnames(cohorts) <- toupper(colnames(cohorts))
+  
+  beforeMatching <- computeMeansPerGroup(cohorts,covariates)
+  afterMatching <- computeMeansPerGroup(as.ffdf(strata),covariates)
+  
+  colnames(beforeMatching)[colnames(beforeMatching) == "MEAN_TREATED"] <- "BEFORE_MATCHING_MEAN_TREATED"
+  colnames(beforeMatching)[colnames(beforeMatching) == "MEAN_COMPARATOR"] <- "BEFORE_MATCHING_MEAN_COMPARATOR"
+  colnames(beforeMatching)[colnames(beforeMatching) == "SUM_TREATED"] <- "BEFORE_MATCHING_SUM_TREATED"
+  colnames(beforeMatching)[colnames(beforeMatching) == "SUM_COMPARATOR"] <- "BEFORE_MATCHING_SUM_COMPARATOR"
+  colnames(beforeMatching)[colnames(beforeMatching) == "RATE"] <- "BEFORE_MATCHING_RATE"
+  colnames(afterMatching)[colnames(afterMatching) == "MEAN_TREATED"] <- "AFTER_MATCHING_MEAN_TREATED"
+  colnames(afterMatching)[colnames(afterMatching) == "MEAN_COMPARATOR"] <- "AFTER_MATCHING_MEAN_COMPARATOR"
+  colnames(afterMatching)[colnames(afterMatching) == "SUM_TREATED"] <- "AFTER_MATCHING_SUM_TREATED"
+  colnames(afterMatching)[colnames(afterMatching) == "SUM_COMPARATOR"] <- "AFTER_MATCHING_SUM_COMPARATOR"
+  colnames(afterMatching)[colnames(afterMatching) == "RATE"] <- "AFTER_MATCHING_RATE"
+  balance <- merge(beforeMatching,afterMatching)
+  balance <- merge(balance,model)
+  balance
+}
+
+#' @export
+psPlotCovariateBalance <- function (balance, minCoefficient = 0.05, minTreatedExposed = 1000) {
+  filtered <- balance[balance$BEFORE_MATCHING_SUM_TREATED >= minTreatedExposed & abs(balance$COEFFICIENT) >= minCoefficient,]
+  data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),covariate = strtrim(rep(filtered$NAME,2),80), rate = c(filtered$BEFORE_MATCHING_RATE,filtered$AFTER_MATCHING_RATE), group = rep(c("before matching","after matching"),each=nrow(filtered)))
+  data$covariate <- factor(data$covariate, levels=rev(levels(data$covariate)) )
+  ggplot(data, aes(x=rate,y=covariate,color=group,group=group,fill=group,shape=group)) + 
+    geom_point() +
+    scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+    scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+    scale_x_continuous("mean in treated / mean in comparator") +
+    theme (
+      axis.text.y = element_text(size=5)
+    )
+  #ggsave("balance.png",width=10,height=15,dpi=200) 
+}
 
 

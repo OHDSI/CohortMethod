@@ -22,6 +22,10 @@
 # @author Martijn Schuemie
 
 
+.onLoad <- function(libname, pkgname) {
+  #Workaround for problem with ff on machines with lots of memory (see https://github.com/edwindj/ffbase/issues/37)
+  options(ffmaxbytes = min(getOption("ffmaxbytes"),.Machine$integer.max * 12))
+}
 
 #' @export
 cohortMethod <- function(connectionDetails, 

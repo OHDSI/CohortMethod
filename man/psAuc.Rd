@@ -23,9 +23,9 @@ The data frame should have a least the following two columns:
 }
 \examples{
 treatment = rep(0:1, each = 100)
-propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
-data <- data.frame(treatment = treatment, propensityScore = propensityScore)
-data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+propensity_score = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+data <- data.frame(treatment = treatment, propensity_score = propensity_score)
+data <- data[data$propensity_score > 0 & data$propensity_score < 1,]
 psAuc(data)
 }
 

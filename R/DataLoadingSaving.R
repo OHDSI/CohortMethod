@@ -89,10 +89,9 @@ dbGetCohortData <- function(connectionDetails,
                             studyStartDate = "",
                             studyEndDate = "",
                             exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
-                            outcomeConceptId = 194133,
+                            outcomeConceptIds = c(194133),
                             outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
-                            maxOutcomeCount = 1,
-                            useFf = TRUE){
+                            maxOutcomeCount = 1){
   renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
@@ -107,7 +106,7 @@ dbGetCohortData <- function(connectionDetails,
                                         study_start_date = studyStartDate,
                                         study_end_date = studyEndDate,
                                         exclusion_concept_ids = exclusionConceptIds,
-                                        outcome_concept_id = outcomeConceptId,
+                                        outcome_concept_ids = outcomeConceptIds,
                                         outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
                                         max_outcome_count = maxOutcomeCount)
   
@@ -116,7 +115,7 @@ dbGetCohortData <- function(connectionDetails,
   writeLines("Executing multiple queries. This could take a while")
   executeSql(conn,connectionDetails$dbms,renderedSql)
   
-  outcomeSql <-"SELECT person_id AS row_id,num_outcomes AS y,time_to_outcome FROM #outcomes ORDER BY person_id"
+  outcomeSql <-"SELECT person_id AS row_id,outcome_concept_id,time_to_outcome FROM #outcomes ORDER BY person_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
   
   cohortSql <-"SELECT cohort_id AS treatment, person_id AS row_id, datediff(dd, cohort_start_date, cohort_censor_date) AS time_to_censor FROM #cohorts ORDER BY person_id"
@@ -127,15 +126,9 @@ dbGetCohortData <- function(connectionDetails,
   
   writeLines("Fetching data from server")
   start <- Sys.time()
-  if (useFf){ # Use ff
-    outcomes <- dbGetQuery.ffdf(conn,outcomeSql)
-    cohorts <-  dbGetQuery.ffdf(conn,cohortSql)
-    covariates <- dbGetQuery.ffdf(conn,covariateSql)
-  } else { # Don't use ff
-    outcomes <- dbGetQueryBatchWise(conn,outcomeSql)
-    cohorts <-  dbGetQueryBatchWise(conn,cohortSql)
-    covariates <- dbGetQueryBatchWise(conn,covariateSql)
-  }
+  outcomes <- dbGetQuery.ffdf(conn,outcomeSql)
+  cohorts <-  dbGetQuery.ffdf(conn,cohortSql)
+  covariates <- dbGetQuery.ffdf(conn,covariateSql)
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
   #Remove temp tables:
@@ -152,10 +145,9 @@ dbGetCohortData <- function(connectionDetails,
   dummy <- dbDisconnect(conn)
   result <- list(outcomes = outcomes,
                  cohorts = cohorts,
-                 covariates = covariates,
-                 useFf = useFf    
+                 covariates = covariates 
   )
-
+  
   class(result) <- "cohortData"
   result
 }
@@ -168,36 +160,27 @@ save.cohortData <- function(cohortData, file){
   if (class(cohortData) != "cohortData")
     stop("Data not of class cohortData")
   
-  if (cohortData$useFf){
-    out1 <- cohortData$outcomes
-    out2 <- cohortData$cohorts
-    out3 <- cohortData$covariates
-    save.ffdf(out1,out2,out3,dir=file)
-  } else {
-    save(cohortData,file=file)
-  }
+  out1 <- cohortData$outcomes
+  out2 <- cohortData$cohorts
+  out3 <- cohortData$covariates
+  save.ffdf(out1,out2,out3,dir=file)
 }
-
-#save.cohortData(x,"c:/temp/x")
 
 load.cohortData <- function(file){
-  if (file.info(file)$isdir){ #useFf
-    e <- new.env()
-    load.ffdf(file,e)
-    result <- list(outcomes = get("out1", envir=e),
-                   cohorts = get("out2", envir=e),
-                   covariates = get("out3", envir=e),
-                   useFf = TRUE    
-    )
-    class(result) <- "cohortData"
-    rm(e)
-    result 
-  } else { #useFf
-    e <- new.env()
-    load(file,e)
-    cohortData <- get("cohortData", envir=e)
-    rm(e)
-    cohortData 
-  }
+  if (!file.exists(file))
+    stop(paste("Cannot find folder",file))
+  if (!file.info(file)$isdir)
+    stop(paste("Not a folder",file))
+  
+  
+  e <- new.env()
+  load.ffdf(file,e)
+  result <- list(outcomes = get("out1", envir=e),
+                 cohorts = get("out2", envir=e),
+                 covariates = get("out3", envir=e),
+                 useFf = TRUE    
+  )
+  class(result) <- "cohortData"
+  rm(e)
+  result 
 }
-

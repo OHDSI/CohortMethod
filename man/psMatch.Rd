@@ -3,10 +3,11 @@
 \alias{psMatch}
 \title{Match persons by propensity score}
 \usage{
-psMatch(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+psMatch(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1,
+  stratificationColumns = c())
 }
 \arguments{
-\item{data}{A data frame with the three columns described below}
+\item{data}{A data frame with the three columns described below.}
 
 \item{caliper}{The caliper for matching. A caliper is the distance which is acceptable for
 any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.}
@@ -17,6 +18,9 @@ caliper is interpreted in standard deviations of the propensity score distributi
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A
 maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.}
+
+\item{stratificationColumns}{Names of one or more columns in the \code{data} data.frame on which subjects should be stratified prior to matching.
+No persons will be matched with persons outside of the strata identified by the values in these columns.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId.
@@ -26,7 +30,7 @@ Any rows that could not be matched are removed
 \code{psMatch} uses the provided propensity scores to match treated to comparator persons.
 }
 \details{
-The data frame should have the following three columns:
+The data frame should have at least the following three columns:
 \tabular{lll}{
   \verb{row_id}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
@@ -36,11 +40,12 @@ The data frame should have the following three columns:
 This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 }
 \examples{
-rowId = 1:5
+row_id = 1:5
 treatment = c(1,0,1,0,1)
-propensityScore = c(0,0.1,0.3,0.4,1)
-data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result <- psMatch(data, caliper = 0, maxRatio = 1)
+propensity_score = c(0,0.1,0.3,0.4,1)
+age_group =c(1,1,1,1,1) #everyone in the same age group, so will not influence the matching
+data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score, age_group = age_group)
+result <- psMatch(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 }
 \references{
 Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity score matching in

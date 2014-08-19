@@ -3,8 +3,9 @@
 \alias{estimateEffect}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-estimateEffect(cohortData, strata = NULL, riskWindowEnd = 9999,
-  useCovariates = FALSE, modelType = "cox")
+estimateEffect(cohortData, strata = NULL, riskWindowStart = 0,
+  riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
+  useCovariates = TRUE, modelType = "clr")
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}}
@@ -35,6 +36,6 @@ The data frame should have a least the following two columns:
 }
 }
 \examples{
-todo
+#todo
 }
 

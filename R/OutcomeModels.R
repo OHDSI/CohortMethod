@@ -48,115 +48,111 @@
 #' A data frame holding the effect estimate
 #'  
 #' @examples 
-#' todo
+#' #todo
 #' 
 #' @export
 estimateEffect <- function(cohortData,
                            strata=NULL, 
+                           riskWindowStart = 0,
                            riskWindowEnd = 9999, 
-                           useCovariates = FALSE, 
-                           modelType = "cox"){
+                           addExposureDaysToEnd = FALSE,
+                           useCovariates = TRUE, 
+                           modelType = "clr"){
+  useStrata = (modelType == "clr" | modelType == "cpr")
+  if (useStrata & is.null(strata))
+    stop("Strata parameter missing, but analysis requires strata")
+  
   outcomes <- cohortData$outcomes
   colnames(outcomes) <- toupper(colnames(outcomes))
   
-  cohorts <- cohortData$cohorts
+  cohorts <- as.ram(cohortData$cohorts)
   colnames(cohorts) <- toupper(colnames(cohorts))
-  if (!is.null(strata))
-    colnames(strata) <- toupper(colnames(strata))
   
-  data <- merge(cohorts[,c("ROW_ID","TIME_TO_CENSOR","TREATMENT")],outcomes,by="ROW_ID",all.x=TRUE)
-  data$Y[is.na(data$Y)] <- 0
+  if (useStrata) {
+    colnames(strata) <- toupper(colnames(strata))
+    cohorts <- merge(strata,cohorts) #keeping only persons that have been matched
+  }
+  
+  if (useCovariates){
+    covariates <- cohortData$covariates
+    colnames(covariates) <- toupper(colnames(covariates))  
+    treatment <- data.frame(ROW_ID = cohorts$ROW_ID[cohorts$TREATMENT == 1],COVARIATE_ID = 100, COVARIATE_VALUE = 1)
+    covariates = ffdfappend(covariates,treatment)
+    if (useStrata) { #covariates need to be merged by stratum_id then row_id
+      covariates <- merge(covariates,as.ffdf(cohorts[c("ROW_ID","STRATUM_ID")]))    
+      covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","ROW_ID")]),]
+    } else {#covariates need to be merged by  row_id
+      covariates <- covariates[ffdforder(covariates[c("ROW_ID")]),]
+    }
+  }
+  
+  #todo: handle exposure days if addExposureDaysToEnd == TRUE
+  outcomes <- subset(outcomes, TIME_TO_OUTCOME >= riskWindowStart & TIME_TO_OUTCOME <= riskWindowEnd)  
   
   if (modelType == "cox"){
-    data$Y[data$Y != 0] <- 1
+    outcomes <- aggregate(TIME_TO_OUTCOME ~ ROW_ID,data=outcomes,min) #keep first outcome per person
+    data <- merge(cohorts,outcomes, all.x=TRUE)
+    data$Y <- 0
+    data$Y[!is.na(data$TIME_TO_OUTCOME)] <- 1
     data$TIME <- data$TIME_TO_OUTCOME
     data$TIME[is.na(data$TIME)] <- data$TIME_TO_CENSOR[is.na(data$TIME)]
-    data$Y[data$TIME > riskWindowEnd] <- 0
-    data$TIME[data$TIME > riskWindowEnd] <- riskWindowEnd
-    data$TIME = data$TIME + 1
-    if (useCovariates) { # To implement: CCD cox regression (stratified and unstratified)
-      if (is.null(strata)){ # Unstratified Cox regression
-        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
-        data$STRATUM_ID <- data$ROW_ID
-        
-        covariates <- data[,c("ROW_ID","TREATMENT")]
-        covariates$COVARIATE_ID <- 100
-        colnames(covariates) [colnames(covariates) == "TREATMENT"] <- "COVARIATE_VALUE"
-        covariates <- rbind(covariates,cohortData$covariates)
-        covariates <- covariates[order(covariates$ROW_ID),]
-        if (cohortData.useff){
-          data <- as.ffdf(data)
-          cyclopsData <- createCyclopsData.ffdf(data,covariates,modelType="cox")
-        } else {
-          cyclopsData <- createCyclopsData(data,covariates,modelType="cox")
-        }
-        
+    
+    if (useCovariates) { 
+      if (useStrata){
+        data <- data[order(data$STRATUM_ID,data$ROW_ID),]
+        #todo: stratified Cox regression using covariates
+      } else {
+        data <- data[order(data$ROW_ID),]
+        cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cox")
         fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=100))  
         
-        cfs <- data.frame(LOGRR = coef(fit), ROW_ID = as.numeric(attr(coef(fit),"names")))
-        cfs[cfs$ROW_ID == 100,]
-      } else { # Stratified Cox regression
-        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
-        fit <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
-        #Currently using coxph until Marc fixes stratifief cox
-        #cyclopsData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
-        #fit2 <- fitCyclopsModel(cyclopsData, prior = prior("none"))   
       }
-    } else {
-      if (is.null(strata)){ # Unstratified Cox regression
+      #Doesn't seem to converge
+    } else {# don't use covariates
+      
+      if (useStrata){
+        #todo: stratified Cox regression without using covariates
+        
+      } else {
+        cyclopsData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("none"))  
         #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
         
+      }
+    }
+  } else if (modelType == "lr" | modelType == "clr"){
+    data <- cohorts
+    data$Y <- 0
+    data$Y[data$ROW_ID %in% as.ram(outcomes$ROW_ID)] <- 1
+    if (useCovariates) { 
+      if (useStrata){
+        data <- data[order(data$STRATUM_ID,data$ROW_ID),]
+        cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="clr")
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1)) 
+        
+        cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("laplace", useCrossValidation = TRUE), control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
+        #Doesn't seem to converge
+      } else {
+        data <- data[order(data$ROW_ID),]
+        cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="lr")
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=100))  
+        ci <- confint(fit,parm=100)
+        #se <- getSEs(fit,100)
+        #coef(fit)[index] - 1.96*se
+        index = which(names(coef(fit)) == "100")
+        effectSize <-  data.frame(LOGRR = coef(fit)[index], LOGLB95 = ci[2], LOGUB95 = ci[3])
+      }
+    } else {# don't use covariates
+      
+      if (useStrata){
+        
+        
+      } else {
         cyclopsData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
-        fit <- fitCyclopsModel(cyclopsData, prior = prior("none"))        
-      } else { # Stratified Cox regression
-        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
-        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data ) 
-        cyclopsData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
-        fit <- fitCyclopsModel(cyclopsData, prior = prior("none"))   
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("none"))  
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
+        effectSize <-  data.frame(LOGRR = coef(fit)[1], LOGLB95 = confint(fit,parm=1)[2], LOGUB95 = confint(fit,parm=1)[3])
       }
     }
-  } else if (modelType == "lr" || modeltype == "clr"){
-    data$Y[data$Y != 0] <- 1
-    data$TIME <- data$TIME_TO_OUTCOME
-    data$TIME[is.na(data$TIME)] <- data$TIME_TO_CENSOR[is.na(data$TIME)]
-    data$Y[data$TIME > riskWindowEnd] <- 0
-    if (useCovariates) { # To implement: CCD logistic regression (stratified and unstratified)
-      
-    } else {
-      if (is.null(strata)){ # Unstratified logistic regression
-        fit2 <- glm(Y ~ TREATMENT, data=data,family = "binomial")
-        
-        cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT,data=data, modelType = "lr")
-        fit <- fitCyclopsModel(cyclopsData, prior = prior("none"))   
-      } else {# Stratified logistic regression
-        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
-        #fit2 <- clogit(Y ~ TREATMENT + strata(STRATUM_ID), data=data)
-        
-        cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "clr")
-        fit <- fitCyclopsModel(cyclopsData, prior = prior("none"))   
-      }
-    }
-  } else if (modelType == "pr" || modeltype == "cpr"){
-    if (riskWindowEnd != 9999)
-      stop("Risk window currently not supported for (conditional) Poisson regression")
-    data$TIME <- data$TIME_TO_CENSOR
-    data$TIME = data$TIME + 1
-    if (useCovariates) { # To implement: CCD Poisson regression (stratified and unstratified)
-      
-    } else {
-      if (is.null(strata)){ # Unstratified Poisson regression
-        #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)), data=data,family = "poisson")
-        
-        cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT + offset(log(TIME)),data=data, modelType = "pr")
-        fit <- fitCyclopsModel(cyclopsData, prior = prior("none"))   
-      } else {# Stratified Poisson regression
-        data <- merge(data,strata[,c("ROW_ID","STRATUM_ID")],by="ROW_ID")
-        #fit2 <- glm(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID), data=data,family = "poisson")
-        
-        cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT + offset(log(TIME)) + strata(STRATUM_ID),data=data, modelType = "cpr")
-        fit <- fitCyclopsModel(cyclopsData, prior = prior("none"))  
-      }
-    }  
   }
-  fit
 }
