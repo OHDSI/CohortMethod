@@ -155,4 +155,35 @@ estimateEffect <- function(cohortData,
       }
     }
   }
+  else if (modelType == "pr" | modelType == "cpr"){
+    outcomes <- aggregate(TIME_TO_OUTCOME ~ ROW_ID,data=outcomes,length) #count outcomes per person
+    data <- merge(cohorts,outcomes, all.x=TRUE)
+    data$Y <- data$TIME_TO_OUTCOME
+    data$Y[is.na(data$Y)] <- 0
+    data$TIME <- data$TIME_TO_CENSOR
+    if (useCovariates) { 
+      if (useStrata){
+        data <- data[order(data$STRATUM_ID,data$ROW_ID),]
+        cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cpr")
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1)) 
+        
+        cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("laplace", useCrossValidation = TRUE), control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
+        #Doesn't seem to converge
+      } else {
+        data <- data[order(data$ROW_ID),]
+        
+      }
+    } else {# don't use covariates
+      
+      if (useStrata){
+        cyclopsData <- createCyclopsDataFrame(TIME ~ TREATMENT + strata(STRATUM_ID) + offset(TIME),data=data, modelType = "pr")
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1))
+      } else {
+        
+        fit <- fitCyclopsModel(cyclopsData, prior=prior("none"))  
+        #fit2 <- coxph( Surv(TIME, Y) ~ TREATMENT,data=data ) 
+        effectSize <-  data.frame(LOGRR = coef(fit)[1], LOGLB95 = confint(fit,parm=1)[2], LOGUB95 = confint(fit,parm=1)[3])
+      }
+    }
+  }
 }
