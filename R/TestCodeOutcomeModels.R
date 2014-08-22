@@ -83,7 +83,7 @@ TestCodeOutcomeModels <- function(){
   data <- data[order(data$STRATUM_ID,data$ROW_ID),]
   
   #Fit outcome model without covariates:
-  cyclopsData <- createCyclopsDataFrame(TIME ~ TREATMENT + strata(STRATUM_ID) + offset(TIME),data=data, modelType = "cpr")
+  cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT + strata(STRATUM_ID) + offset(TIME),data=data, modelType = "cpr")
   fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1))
   #works just fine
   
