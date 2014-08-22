@@ -88,7 +88,7 @@ TestCodeOutcomeModels <- function(){
   #works just fine
   
   #Fit outcome model With covariates:
-  cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cpr")
+  cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE)
   fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1)) 
   #currently says: Warning! problem is ill-conditioned for this choice of hyperparameter. Enforcing convergence!
 
