@@ -27,7 +27,11 @@ openResultSet <- function(conn, sql, batchSize) {
   .jcall(s,"V",method="setFetchSize",as.integer(batchSize))
   r <- .jcall(s, "Ljava/sql/ResultSet;", "executeQuery",as.character(sql)[1])
   md <- .jcall(r, "Ljava/sql/ResultSetMetaData;", "getMetaData", check=FALSE)
-  new("JDBCResult", jr=r, md=md, stat=s, pull=.jnull(), batchSize=batchSize, done=FALSE)
+  rs <- new.env()
+  assign("resultSet",new("JDBCResult", jr=r, md=md, stat=s, pull=.jnull()),envir=rs)
+  assign("batchSize",batchSize,envir=rs)
+  assign("done",FALSE,envir=rs)
+  rs
 }
 
 lastRowNotHavingThisValue <- function(column, value){
@@ -50,8 +54,7 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                                                      useOffsetCovariate = NULL,
                                                      offsetAlreadyOnLogScale = FALSE,
                                                      sortCovariates = TRUE,
-                                                     makeCovariatesDense = NULL,
-                                                     batchSize = 100000){
+                                                     makeCovariatesDense = NULL){
   # Construct empty Cyclops data object:
   dataPtr <- createSqlCyclopsData(modelType = modelType)
   
@@ -177,10 +180,6 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
   dataPtr
 }
 
-dbGetCyclopsInput <- function(...){
-  stop("This function has been renamed to dbCreateCyclopsData for consistency, please use that function instead")
-}
-
 #' Get data from the database and insert it in a Cyclops data object
 #'
 #' @description
@@ -251,16 +250,16 @@ dbCreateCyclopsData <- function(connection,
   resultSetCovars <- openResultSet(connection, covariateSql,batchSize)
   
   exitFunction <- function(){
-    dbClearResult(resultSetOutcome)
-    dbClearResult(resultSetCovars)
+    dbClearResult(get("resultSet",envir=resultSetOutcome))
+    dbClearResult(get("resultSet",envir=resultSetCovars))
     .jcall(conn@jc,"V",method="setAutoCommit",TRUE)
   }
   on.exit(exitFunction())
   
-  getOutcomeBatch <- function(resultSetOutcome, modelType){
-    batchOutcome <- fetch(resultSetOutcome, resultSetOutcome$batchSize)
-    if (nrow(batchOutcome != resultSetOutcome$batchSize))
-    resultSetOutcome$done = TRUE
+  getOutcomeBatch <- function(resultSet, modelType){
+    batchOutcome <- fetch(get("resultSet",envir=resultSet), get("batchSize",envir=resultSet))
+    if (nrow(batchOutcome) != get("batchSize",envir=resultSet))
+      assign("done",TRUE,envir=resultSet)
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))  
     if (modelType == "lr" | modelType == "pr")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
@@ -269,16 +268,16 @@ dbCreateCyclopsData <- function(connection,
     batchOutcome
   }
   
-  getCovariateBatch <- function(resultSetCovariate, modelType){
-    batchCovariate <- fetch(resultSetCovariate, resultSetCovariate$batchSize)
-    if (nrow(batchCovariate != resultSetCovariate$batchSize))
-      resultSetCovariate$done = TRUE
+  getCovariateBatch <- function(resultSet, modelType){
+    batchCovariate <- fetch(get("resultSet",envir=resultSet), get("batchSize",envir=resultSet))
+    if (nrow(batchCovariate) != get("batchSize",envir=resultSet))
+      assign("done",TRUE,envir=resultSet)
     colnames(batchCovariate) <- toupper(colnames(batchCovariate))  
     batchCovariate
   }
   
   isDone <- function(resultSet){
-    resultSet$done
+    get("done",envir=resultSet)
   }
   
   constructCyclopsDataFromBatchableSources(resultSetOutcome,
@@ -291,8 +290,8 @@ dbCreateCyclopsData <- function(connection,
                                            useOffsetCovariate,
                                            offsetAlreadyOnLogScale,
                                            sortCovariates,
-                                           makeCovariatesDense,
-                                           batchSize)
+                                           makeCovariatesDense
+  )
   
   
 }
@@ -407,8 +406,7 @@ createCyclopsData.ffdf <- function(outcomes,
                                            useOffsetCovariate,
                                            offsetAlreadyOnLogScale,
                                            sortCovariates,
-                                           makeCovariatesDense,
-                                           0)
+                                           makeCovariatesDense)
 }
 
 #' Convert data from data frames into a CyclopsData object
