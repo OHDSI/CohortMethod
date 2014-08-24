@@ -80,6 +80,9 @@ TestCodeOutcomeModels <- function(){
   data$Y <- data$TIME_TO_OUTCOME
   data$Y[is.na(data$Y)] <- 0
   data$TIME <- data$TIME_TO_CENSOR
+  
+  data$TIME[which(data$TIME == 0)] <- 1 # No zero-time intervals
+  
   data <- data[order(data$STRATUM_ID,data$ROW_ID),]
   
   #Fit outcome model without covariates:
@@ -88,8 +91,10 @@ TestCodeOutcomeModels <- function(){
   #works just fine
   
   #Fit outcome model With covariates:
-  cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE)
+  cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cpr",
+                                        useOffsetCovariate=-1, # Use TIME as offset
+                                        addIntercept=FALSE)
   fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1)) 
   #currently says: Warning! problem is ill-conditioned for this choice of hyperparameter. Enforcing convergence!
-
+ # 923645
 }
