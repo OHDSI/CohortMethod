@@ -82,7 +82,7 @@ dbGetCohortData <- function(connectionDetails,
                                         dbms = connectionDetails$dbms,
                                         CDM_schema = cdmSchema)
   
-  executeSql(conn,connectionDetails$dbms,renderedSql,progressBar = FALSE,reportTime=FALSE)
+  executeSql(conn,connectionDetails$dbms,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(cohorts) <- toupper(colnames(cohorts))
