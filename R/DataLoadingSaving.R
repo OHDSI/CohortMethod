@@ -21,65 +21,10 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-executeSql <- function(conn, dbms, sql, profile = FALSE, progressBar = TRUE, reportTime = TRUE){
-  if (profile)
-    progressBar = FALSE
-  sqlStatements = splitSql(sql)
-  if (progressBar)
-    pb <- txtProgressBar(style=3)
-  start <- Sys.time()
-  for (i in 1:length(sqlStatements)){
-    sqlStatement <- sqlStatements[i]
-    if (profile){
-      sink(paste("statement_",i,".sql",sep=""))
-      cat(sqlStatement)
-      sink()
-    }
-    tryCatch ({   
-      startQuery <- Sys.time()
-      dbSendUpdate(conn, sqlStatement)
-      if (profile){
-        delta <- Sys.time() - startQuery
-        writeLines(paste("Statement ",i,"took", delta, attr(delta,"units")))
-      }
-    } , error = function(err) {
-      writeLines(paste("Error executing SQL:",err))
-      
-      #Write error report:
-      filename <- paste(getwd(),"/errorReport.txt",sep="")
-      sink(filename)
-      error <<- err
-      cat("DBMS:\n")
-      cat(dbms)
-      cat("\n\n")
-      cat("Error:\n")
-      cat(err$message)
-      cat("\n\n")
-      cat("SQL:\n")
-      cat(sqlStatement)
-      sink()
-      
-      writeLines(paste("An error report has been created at ", filename))
-      break
-    })
-    if (progressBar)
-      setTxtProgressBar(pb, i/length(sqlStatements))
-  }
-  if (progressBar)
-    close(pb)
-  if (reportTime) {
-    delta <- Sys.time() - start
-    writeLines(paste("Analysis took", signif(delta,3), attr(delta,"units")))
-  }
-  
-}
-
-
-
 #' @export
 dbGetCohortData <- function(connectionDetails, 
                             cdmSchema = "CDM4_SIM",
-                            resultsSchema = "CDM4_SIM",
+                            resultsSchema = cdmSchema,
                             targetDrugConceptId = 755695,
                             comparatorDrugConceptIds = 739138,
                             indicationConceptIds = 439926,
@@ -152,6 +97,7 @@ dbGetCohortData <- function(connectionDetails,
   result
 }
 
+#' @export
 save.cohortData <- function(cohortData, file){
   if (missing(cohortData))
     stop("Must specify cohortData")
@@ -166,6 +112,7 @@ save.cohortData <- function(cohortData, file){
   save.ffdf(out1,out2,out3,dir=file)
 }
 
+#' @export
 load.cohortData <- function(file){
   if (!file.exists(file))
     stop(paste("Cannot find folder",file))

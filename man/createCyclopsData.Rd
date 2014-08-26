@@ -4,9 +4,8 @@
 \title{Convert data from data frames into a CyclopsData object}
 \usage{
 createCyclopsData(outcomes, covariates, modelType = "lr",
-  addIntercept = TRUE, useOffsetCovariate = NULL,
-  offsetAlreadyOnLogScale = FALSE, sortCovariates = TRUE,
-  makeCovariatesDense = NULL)
+  addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
+  sortCovariates = TRUE, makeCovariatesDense = NULL)
 }
 \arguments{
 \item{outcomes}{A data frame containing the outcomes with predefined columns (see below).}

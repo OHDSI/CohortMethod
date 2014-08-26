@@ -4,9 +4,8 @@
 \title{Get data from the database and insert it in a Cyclops data object}
 \usage{
 dbCreateCyclopsData(connection, outcomeSql, covariateSql, modelType = "lr",
-  addIntercept = TRUE, useOffsetCovariate = NULL,
-  offsetAlreadyOnLogScale = FALSE, sortCovariates = TRUE,
-  makeCovariatesDense = NULL, batchSize = 1e+05)
+  addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
+  sortCovariates = TRUE, makeCovariatesDense = NULL, batchSize = 1e+05)
 }
 \arguments{
 \item{connection}{A connection to a database (see \code{DatabaseConnector} package).}

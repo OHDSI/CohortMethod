@@ -51,10 +51,14 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                                                      isDone,
                                                      modelType = "lr", 
                                                      addIntercept = TRUE,
-                                                     useOffsetCovariate = NULL,
                                                      offsetAlreadyOnLogScale = FALSE,
                                                      sortCovariates = TRUE,
                                                      makeCovariatesDense = NULL){
+  if ((modelType == "clr" | modelType == "cpr") & addIntercept){
+    warning("Intercepts are not allowed in conditional models, removing intercept",call.=FALSE)
+    addIntercept = FALSE
+  }
+  
   # Construct empty Cyclops data object:
   dataPtr <- createSqlCyclopsData(modelType = modelType)
   
@@ -171,6 +175,11 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                          as.numeric(c()),
                          as.numeric(c()))
   }
+  if (modelType == "pr" | modelType == "cpr"| modelType == "cox") 
+    useOffsetCovariate = -1 
+  else 
+    useOffsetCovariate = NULL
+  
   finalizeSqlCyclopsData(dataPtr,
                          addIntercept = addIntercept,
                          useOffsetCovariate = useOffsetCovariate,
@@ -236,7 +245,6 @@ dbCreateCyclopsData <- function(connection,
                                 covariateSql, 
                                 modelType = "lr", 
                                 addIntercept = TRUE,
-                                useOffsetCovariate = NULL,
                                 offsetAlreadyOnLogScale = FALSE,
                                 sortCovariates = TRUE,
                                 makeCovariatesDense = NULL,
@@ -261,6 +269,9 @@ dbCreateCyclopsData <- function(connection,
     if (nrow(batchOutcome) != get("batchSize",envir=resultSet))
       assign("done",TRUE,envir=resultSet)
     colnames(batchOutcome) <- toupper(colnames(batchOutcome))  
+    if (modelType == "pr" | modelType == "cpr"| modelType == "cox")
+      if (any(batchOutcome$TIME <= 0))
+        stop("Time cannot be non-positive",call.=FALSE)
     if (modelType == "lr" | modelType == "pr")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     if (modelType == "lr" | modelType == "clr")
@@ -287,7 +298,6 @@ dbCreateCyclopsData <- function(connection,
                                            isDone,
                                            modelType, 
                                            addIntercept,
-                                           useOffsetCovariate,
                                            offsetAlreadyOnLogScale,
                                            sortCovariates,
                                            makeCovariatesDense
@@ -352,7 +362,6 @@ createCyclopsData.ffdf <- function(outcomes,
                                    covariates,
                                    modelType = "lr", 
                                    addIntercept = TRUE,
-                                   useOffsetCovariate = NULL,
                                    offsetAlreadyOnLogScale = FALSE,
                                    sortCovariates = TRUE,
                                    makeCovariatesDense = NULL){
@@ -373,7 +382,9 @@ createCyclopsData.ffdf <- function(outcomes,
     cursor <- get("cursor",envir=resultSetOutcome)
     batchOutcome <- data[chunks[[cursor]],]
     assign("cursor",cursor+1,envir=resultSetOutcome)
-    
+    if (modelType == "pr" | modelType == "cpr"| modelType == "cox")
+      if (any(batchOutcome$TIME <= 0))
+        stop("Time cannot be non-positive",call.=FALSE)
     if (modelType == "lr" | modelType == "pr" | modelType == "cox")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     if (modelType == "lr" | modelType == "clr")
@@ -403,7 +414,6 @@ createCyclopsData.ffdf <- function(outcomes,
                                            isDone,
                                            modelType, 
                                            addIntercept,
-                                           useOffsetCovariate,
                                            offsetAlreadyOnLogScale,
                                            sortCovariates,
                                            makeCovariatesDense)
@@ -462,14 +472,23 @@ createCyclopsData <- function(outcomes,
                               covariates,
                               modelType = "lr", 
                               addIntercept = TRUE,
-                              useOffsetCovariate = NULL,
                               offsetAlreadyOnLogScale = FALSE,
                               sortCovariates = TRUE,
                               makeCovariatesDense = NULL){
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(covariates) <- toupper(colnames(covariates))
   
-  
+  if ((modelType == "clr" | modelType == "cpr") & addIntercept){
+    warning("Intercepts are not allowed in conditional models, removing intercept",call.=FALSE)
+    addIntercept = FALSE
+  }
+  if (modelType == "pr" | modelType == "cpr"| modelType == "cox") {
+    if (any(batchOutcome$TIME <= 0))
+      stop("Time cannot be non-positive",call.=FALSE)
+    useOffsetCovariate = -1 
+  } else {
+    useOffsetCovariate = NULL  
+  }
   if (modelType == "lr" | modelType == "pr")
     outcomes$STRATUM_ID = outcomes$ROW_ID
   if (modelType == "lr" | modelType == "clr")

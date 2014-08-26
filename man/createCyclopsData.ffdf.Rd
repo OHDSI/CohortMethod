@@ -4,9 +4,8 @@
 \title{Convert data from two ffdf objects into a CyclopsData object}
 \usage{
 createCyclopsData.ffdf(outcomes, covariates, modelType = "lr",
-  addIntercept = TRUE, useOffsetCovariate = NULL,
-  offsetAlreadyOnLogScale = FALSE, sortCovariates = TRUE,
-  makeCovariatesDense = NULL)
+  addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
+  sortCovariates = TRUE, makeCovariatesDense = NULL)
 }
 \arguments{
 \item{outcomes}{A ffdf object containing the outcomes with predefined columns (see below).}
