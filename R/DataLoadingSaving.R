@@ -58,7 +58,7 @@ dbGetCohortData <- function(connectionDetails,
   conn <- connect(connectionDetails)
   
   writeLines("Executing multiple queries. This could take a while")
-  executeSql(conn,connectionDetails$dbms,renderedSql)
+  executeSql(conn,renderedSql)
   
   outcomeSql <-"SELECT person_id AS row_id,outcome_concept_id,time_to_outcome FROM #outcomes ORDER BY person_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
@@ -82,7 +82,7 @@ dbGetCohortData <- function(connectionDetails,
                                         dbms = connectionDetails$dbms,
                                         CDM_schema = cdmSchema)
   
-  executeSql(conn,connectionDetails$dbms,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
+  executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(cohorts) <- toupper(colnames(cohorts))
