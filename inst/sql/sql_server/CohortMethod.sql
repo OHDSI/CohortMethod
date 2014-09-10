@@ -38,7 +38,7 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 
 *********************************************************************************/
 
-{DEFAULT @CDM_schema = 'CDM4_SIM'} /*CDM4_SIM  CDM_TRUVEN_MDCD*/
+{DEFAULT @cdm_schema = 'CDM4_SIM'} /*CDM4_SIM  CDM_TRUVEN_MDCD*/
 {DEFAULT @results_schema = 'scratch'}
 {DEFAULT @target_drug_concept_id = 755695}  /*fluoxetine*/
 {DEFAULT @comparator_drug_concept_id = 739138} /*sertraline*/
@@ -115,12 +115,15 @@ IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 
 create table #cohort_person
 (
+	row_id bigint,
 	cohort_id int,
 	person_id bigint,
 	cohort_start_date date,
 	cohort_end_date date,
 	observation_period_end_date date
 );
+
+
 
 
 IF OBJECT_ID('cohort_covariate', 'U') IS NOT NULL --This should only do something in Oracle
@@ -131,6 +134,7 @@ IF OBJECT_ID('tempdb..#cohort_covariate', 'U') IS NOT NULL
 
 create table #cohort_covariate
 (
+	row_id bigint,
 	cohort_id int,
 	person_id bigint,
 	covariate_id bigint,
@@ -161,6 +165,7 @@ IF OBJECT_ID('tempdb..#cohort_outcome', 'U') IS NOT NULL
 
 create table #cohort_outcome
 (
+	row_id bigint,
 	cohort_id int,
 	person_id bigint,
 	outcome_id int,
@@ -177,6 +182,7 @@ IF OBJECT_ID('tempdb..#cohort_excluded_person', 'U') IS NOT NULL
 
 create table #cohort_excluded_person
 (
+	row_id bigint,
 	cohort_id int,
 	person_id bigint,
 	outcome_id int
@@ -233,8 +239,8 @@ FROM (
 			de1.person_id,
 			min(de1.drug_era_start_date) AS cohort_start_date,
 			min(de1.drug_era_end_date) AS cohort_end_date
-		FROM @CDM_schema.dbo.drug_era de1
-		INNER JOIN @CDM_schema.dbo.concept_ancestor ca1
+		FROM @cdm_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.concept_ancestor ca1
 			ON de1.drug_concept_id = ca1.descendant_concept_id
 		WHERE ca1.ancestor_concept_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 		GROUP BY ca1.ancestor_concept_id,
@@ -252,23 +258,23 @@ FROM (
 			c1.person_id,
 			min(c1.cohort_start_date) AS cohort_start_date,
 			min(@exposure_extension_window, c1.cohort_end_date) AS cohort_end_date
-		FROM @CDM_schema.dbo.cohort c1
+		FROM @cdm_schema.dbo.cohort c1
 		WHERE c1.cohort_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 		GROUP BY c1.cohort_concept_id,
 			c1.person_id
 	}
 	
 	) raw_cohorts
-INNER JOIN @CDM_schema.dbo.observation_period op1
+INNER JOIN @cdm_schema.dbo.observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
 {@indication_concept_ids != ''} ? {
 INNER JOIN (
 	SELECT person_id,
 		condition_start_date AS indication_date
-	FROM @CDM_schema.dbo.condition_occurrence
+	FROM @cdm_schema.dbo.condition_occurrence
 	WHERE condition_concept_id IN (
 			SELECT descendant_concept_id
-			FROM @CDM_schema.dbo.concept_ancestor
+			FROM @cdm_schema.dbo.concept_ancestor
 			WHERE ancestor_concept_id IN (@indication_concept_ids)
 			)
 	) indication
@@ -285,9 +291,10 @@ WHERE raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, op1.observat
 	
 	
 /* delete persons in both cohorts and apply exclusion criteria  */
-INSERT INTO #cohort_person (cohort_id, person_id, cohort_start_date, cohort_end_date, observation_period_end_date)
-SELECT rc1.cohort_id,
-  rc1.person_id,
+INSERT INTO #cohort_person (row_id, cohort_id, person_id, cohort_start_date, cohort_end_date, observation_period_end_date)
+SELECT rc1.person_id*10+rc1.cohort_id as row_id,
+	rc1.cohort_id,
+	rc1.person_id,
 	rc1.cohort_start_date,
 	rc1.cohort_end_date,
 	rc1.observation_period_end_date
@@ -306,10 +313,10 @@ LEFT JOIN (
 {@exclusion_concept_ids != ''} ? {
 LEFT JOIN (
 	SELECT *
-	FROM @CDM_schema.dbo.condition_occurrence co1
+	FROM @cdm_schema.dbo.condition_occurrence co1
 	WHERE condition_concept_id IN (
 			SELECT descendant_concept_id
-			FROM @CDM_schema.dbo.concept_ancestor
+			FROM @cdm_schema.dbo.concept_ancestor
 			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_conditions
@@ -317,10 +324,10 @@ LEFT JOIN (
 		AND rc1.cohort_start_date > exclude_conditions.condition_start_date
 LEFT JOIN (
 	SELECT *
-	FROM @CDM_schema.dbo.procedure_occurrence po1
+	FROM @cdm_schema.dbo.procedure_occurrence po1
 	WHERE procedure_concept_id IN (
 			SELECT descendant_concept_id
-			FROM @CDM_schema.dbo.concept_ancestor
+			FROM @cdm_schema.dbo.concept_ancestor
 			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_procedures
@@ -328,10 +335,10 @@ LEFT JOIN (
 		AND rc1.cohort_start_date > exclude_procedures.procedure_date
 LEFT JOIN (
 	SELECT *
-	FROM @CDM_schema.dbo.drug_exposure de1
+	FROM @cdm_schema.dbo.drug_exposure de1
 	WHERE drug_concept_id IN (
 			SELECT descendant_concept_id
-			FROM @CDM_schema.dbo.concept_ancestor
+			FROM @cdm_schema.dbo.concept_ancestor
 			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_drugs
@@ -380,8 +387,9 @@ INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, co
 	VALUES (1, 'Exposure status', 1, @target_drug_concept_id)
 
 
-INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
-	SELECT cohort_id, 
+INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
+	SELECT row_id,
+		cohort_id, 
 		person_id, 
 		1 as covariate_id, 
 		cohort_id as covariate_value
@@ -405,28 +413,29 @@ DEMOGRAPHICS
 		2 as analysis_id,
 		p1.gender_concept_id as concept_id
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	INNER JOIN 
 		(SELECT concept_id, concept_name
-		FROM @CDM_schema.dbo.concept
+		FROM @cdm_schema.dbo.concept
 		WHERE LOWER(concept_class) = 'gender'
 		) v1
 	ON p1.gender_concept_id = v1.concept_id
 	;
  
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		gender_concept_id AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	WHERE p1.gender_concept_id in
 		(SELECT concept_id
-		FROM @CDM_schema.dbo.concept
+		FROM @cdm_schema.dbo.concept
 		WHERE LOWER(concept_class) = 'gender'
 		)
 	;
@@ -439,28 +448,29 @@ DEMOGRAPHICS
 		3 as analysis_id,
 		p1.race_concept_id as concept_id
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	INNER JOIN 
 		(SELECT concept_id, concept_name
-		FROM @CDM_schema.dbo.concept
+		FROM @cdm_schema.dbo.concept
 		WHERE LOWER(concept_class) = 'race'
 		) v1
 	ON p1.race_concept_id = v1.concept_id
 	;
  
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		race_concept_id AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	WHERE p1.race_concept_id in
 		(SELECT concept_id
-		FROM @CDM_schema.dbo.concept
+		FROM @cdm_schema.dbo.concept
 		WHERE LOWER(concept_class) = 'race'
 		)
 	;	
@@ -473,28 +483,29 @@ DEMOGRAPHICS
 		4 as analysis_id,
 		p1.ethnicity_concept_id as concept_id
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	INNER JOIN 
 		(SELECT concept_id, concept_name
-		FROM @CDM_schema.dbo.concept
+		FROM @cdm_schema.dbo.concept
 		WHERE LOWER(concept_class) = 'ethnicity'
 		) v1
 	ON p1.ethnicity_concept_id = v1.concept_id
 	;
  
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		race_concept_id AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	WHERE p1.ethnicity_concept_id in
 		(SELECT concept_id
-		FROM @CDM_schema.dbo.concept
+		FROM @cdm_schema.dbo.concept
 		WHERE LOWER(concept_class) = 'ethnicity'
 		)
 	;	
@@ -508,20 +519,21 @@ DEMOGRAPHICS
 		4 as analysis_id,
 		0 as concept_id
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	WHERE (year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) >= 0
 	AND (year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) < 100
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		FLOOR((YEAR(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10) + 10 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.person p1
+	INNER JOIN @cdm_schema.dbo.person p1
 		ON cp1.person_id = p1.person_id
 	WHERE (YEAR(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) >= 0
 	AND (YEAR(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) < 100
@@ -539,8 +551,9 @@ DEMOGRAPHICS
 	FROM #cohort_person cp1
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		YEAR(cohort_start_date) AS covariate_id,
@@ -558,8 +571,9 @@ DEMOGRAPHICS
 	FROM #cohort_person cp1
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		MONTH(cohort_start_date)+20 AS covariate_id,
@@ -593,9 +607,9 @@ CONDITION OCCURRENCE
 		101 as analysis_id,
 		co1.condition_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON co1.condition_concept_id = c1.concept_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  co1.condition_start_date <= cp1.cohort_start_date
@@ -603,14 +617,15 @@ CONDITION OCCURRENCE
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(co1.condition_concept_id AS BIGINT)*1000 + 101 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  co1.condition_start_date <= cp1.cohort_start_date
@@ -633,9 +648,9 @@ CONDITION OCCURRENCE
 		102 as analysis_id,
 		co1.condition_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON co1.condition_concept_id = c1.concept_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  co1.condition_start_date <= cp1.cohort_start_date
@@ -643,14 +658,15 @@ CONDITION OCCURRENCE
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(co1.condition_concept_id AS BIGINT)*1000 + 102 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  co1.condition_start_date <= cp1.cohort_start_date
@@ -672,9 +688,9 @@ CONDITION OCCURRENCE
 		103 as analysis_id,
 		co1.condition_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON co1.condition_concept_id = c1.concept_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND co1.condition_type_concept_id in (38000183, 38000184, 38000199, 38000200)
@@ -683,14 +699,15 @@ CONDITION OCCURRENCE
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(co1.condition_concept_id AS BIGINT)*1000 + 103 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND co1.condition_type_concept_id in (38000183, 38000184, 38000199, 38000200)
@@ -724,25 +741,26 @@ CONDITION ERA
 		201 as analysis_id,
 		ce1.condition_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_era ce1
+		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(ce1.condition_concept_id AS BIGINT)*1000 + 201 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_era ce1
+		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -763,9 +781,9 @@ CONDITION ERA
 		202 as analysis_id,
 		ce1.condition_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_era ce1
+		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -773,16 +791,17 @@ CONDITION ERA
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(ce1.condition_concept_id AS BIGINT)*1000 + 202 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_era ce1
+		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -826,9 +845,9 @@ CONDITION GROUP
 	where analysis_id > 100 and analysis_id < 300
 	) ccr1
 	inner join
-	@CDM_schema.dbo.concept_ancestor ca1
+	@cdm_schema.dbo.concept_ancestor ca1
 	on ccr1.concept_id = ca1.descendant_concept_id
-	inner join @CDM_schema.dbo.concept c1
+	inner join @cdm_schema.dbo.concept c1
 	on ca1.ancestor_concept_id = c1.concept_id
 	where c1.vocabulary_id = 15
 	and c1.concept_class <> 'System Organ Class' 
@@ -864,13 +883,14 @@ CONDITION GROUP
 		#condition_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@CDM_schema.dbo.concept c1
+		@cdm_schema.dbo.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cc1.row_id,
 		cc1.cohort_id,
 		cc1.person_id,
 		CAST(cg1.ancestor_concept_id AS BIGINT)*1000 + ccr1.analysis_id AS covariate_id,
@@ -923,28 +943,28 @@ DRUG EXPOSURE
 		401 as analysis_id,
 		de1.drug_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_exposure de1
+		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
 	
 		
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 401 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_exposure de1
+		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
@@ -964,28 +984,29 @@ DRUG EXPOSURE
 		402 as analysis_id,
 		de1.drug_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_exposure de1
+		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
 	
 		
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 402 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_exposure de1
+		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
@@ -1015,28 +1036,29 @@ DRUG ERA
 		501 as analysis_id,
 		de1.drug_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
 	
 		
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 501 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
@@ -1055,28 +1077,29 @@ DRUG ERA
 		502 as analysis_id,
 		de1.drug_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
 	
 		
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 502 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;	
@@ -1095,28 +1118,29 @@ DRUG ERA
 		503 as analysis_id,
 		de1.drug_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= cp1.cohort_start_date
 	;
 	
 		
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 503 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= cp1.cohort_start_date
 	;		
@@ -1135,27 +1159,28 @@ DRUG ERA
 		504 as analysis_id,
 		de1.drug_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 	;
 	
 		
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 504 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.drug_era de1
+		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @CDM_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 	;	
 	
@@ -1193,9 +1218,9 @@ DRUG GROUP
 	where analysis_id > 500 and analysis_id < 600
 	) ccr1
 	inner join
-	@CDM_schema.dbo.concept_ancestor ca1
+	@cdm_schema.dbo.concept_ancestor ca1
 	on ccr1.concept_id = ca1.descendant_concept_id
-	inner join @CDM_schema.dbo.concept c1
+	inner join @cdm_schema.dbo.concept c1
 	on ca1.ancestor_concept_id = c1.concept_id
 	where c1.vocabulary_id = 21
 	and len(c1.concept_code) in (1,3,5)
@@ -1226,13 +1251,14 @@ DRUG GROUP
 		#drug_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@CDM_schema.dbo.concept c1
+		@cdm_schema.dbo.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cc1.row_id,
 		cc1.cohort_id,
 		cc1.person_id,
 		CAST(cg1.ancestor_concept_id AS BIGINT)*1000 + ccr1.analysis_id AS covariate_id,
@@ -1273,14 +1299,15 @@ DRUG GROUP
 		#drug_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@CDM_schema.dbo.concept c1
+		@cdm_schema.dbo.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 		WHERE len(c1.concept_code) = 3
 	;
 
 
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
-	SELECT cc1.cohort_id,
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
+	SELECT cc1.row_id,
+		cc1.cohort_id,
 		cc1.person_id,
 		CAST(cg1.ancestor_concept_id AS BIGINT)*1000 + 601 AS covariate_id,
 		COUNT(DISTINCT ccr1.concept_id) AS covariate_value
@@ -1296,7 +1323,7 @@ DRUG GROUP
 		#drug_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@CDM_schema.dbo.concept c1
+		@cdm_schema.dbo.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	WHERE len(c1.concept_code) = 3
 	GROUP BY cc1.cohort_id,
@@ -1334,9 +1361,9 @@ PROCEDURE OCCURRENCE
 		701 as analysis_id,
 		po1.procedure_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
+		INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON po1.procedure_concept_id = c1.concept_id
 	WHERE po1.procedure_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  po1.procedure_date <= cp1.cohort_start_date
@@ -1344,14 +1371,15 @@ PROCEDURE OCCURRENCE
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(po1.procedure_concept_id AS BIGINT)*1000 + 701 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
+		INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
 	WHERE po1.procedure_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  po1.procedure_date <= cp1.cohort_start_date
@@ -1372,9 +1400,9 @@ PROCEDURE OCCURRENCE
 		702 as analysis_id,
 		po1.procedure_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
+		INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON po1.procedure_concept_id = c1.concept_id
 	WHERE po1.procedure_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  po1.procedure_date <= cp1.cohort_start_date
@@ -1382,14 +1410,15 @@ PROCEDURE OCCURRENCE
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(po1.procedure_concept_id AS BIGINT)*1000 + 702 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
+		INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
 	WHERE po1.procedure_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  po1.procedure_date <= cp1.cohort_start_date
@@ -1430,9 +1459,9 @@ PROCEDURE GROUP
 	where analysis_id > 700 and analysis_id < 800
 	) ccr1
 	inner join
-	@CDM_schema.dbo.concept_ancestor ca1
+	@cdm_schema.dbo.concept_ancestor ca1
 	on ccr1.concept_id = ca1.descendant_concept_id
-	inner join @CDM_schema.dbo.concept c1
+	inner join @cdm_schema.dbo.concept c1
 	on ca1.ancestor_concept_id = c1.concept_id
 	where c1.vocabulary_id = 1
 	and c1.concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } ) 
@@ -1461,13 +1490,14 @@ PROCEDURE GROUP
 		#procedure_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@CDM_schema.dbo.concept c1
+		@cdm_schema.dbo.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cc1.row_id,
 		cc1.cohort_id,
 		cc1.person_id,
 		CAST(cg1.ancestor_concept_id AS BIGINT)*1000 + ccr1.analysis_id AS covariate_id,
@@ -1515,9 +1545,9 @@ OBSERVATION
 		901 as analysis_id,
 		o1.observation_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON o1.observation_concept_id = c1.concept_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1525,14 +1555,15 @@ OBSERVATION
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(o1.observation_concept_id AS BIGINT)*1000 + 901 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1554,9 +1585,9 @@ OBSERVATION
 		902 as analysis_id,
 		o1.observation_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON o1.observation_concept_id = c1.concept_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1564,14 +1595,15 @@ OBSERVATION
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		CAST(o1.observation_concept_id AS BIGINT)*1000 + 902 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1602,7 +1634,7 @@ OBSERVATION
 		o1.range_high, 
 		ROW_NUMBER() OVER (PARTITION BY cp1.cohort_id, cp1.person_id, o1.observation_concept_id ORDER BY o1.observation_date desc) as rn1	
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND o1.observation_date <= cp1.cohort_start_date
@@ -1611,22 +1643,24 @@ OBSERVATION
 	AND o1.range_low >= 0
 	AND o1.range_high >= 0
 	) t1
-	LEFT JOIN @CDM_schema.dbo.concept c1
+	LEFT JOIN @cdm_schema.dbo.concept c1
 		ON t1.observation_concept_id = c1.concept_id
 	WHERE RN1 = 1
 	AND VALUE_AS_NUMBER < RANGE_LOW
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		row_id,
 		cohort_id,
 		person_id,
 		CAST(observation_concept_id AS BIGINT)*1000 + 903 AS covariate_id,
 		1 AS covariate_value
 	FROM
 	(
-	SELECT cp1.cohort_id, 
+	SELECT cp1.row_id,
+		cp1.cohort_id, 
 		cp1.person_id, 
 		o1.observation_concept_id, 
 		o1.value_as_number, 
@@ -1634,7 +1668,7 @@ OBSERVATION
 		o1.range_high, 
 		ROW_NUMBER() OVER (PARTITION BY cp1.cohort_id, cp1.person_id, o1.observation_concept_id ORDER BY o1.observation_date desc) as rn1	
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND o1.observation_date <= cp1.cohort_start_date
@@ -1671,7 +1705,7 @@ OBSERVATION
 		o1.range_high, 
 		ROW_NUMBER() OVER (PARTITION BY cp1.cohort_id, cp1.person_id, o1.observation_concept_id ORDER BY o1.observation_date desc) as rn1	
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND o1.observation_date <= cp1.cohort_start_date
@@ -1680,22 +1714,24 @@ OBSERVATION
 	AND o1.range_low >= 0
 	AND o1.range_high >= 0
 	) t1
-	LEFT JOIN @CDM_schema.dbo.concept c1
+	LEFT JOIN @cdm_schema.dbo.concept c1
 		ON t1.observation_concept_id = c1.concept_id
 	WHERE RN1 = 1
 	AND VALUE_AS_NUMBER > RANGE_HIGH
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		row_id,
 		cohort_id,
 		person_id,
 		CAST(observation_concept_id AS BIGINT)*1000 + 904 AS covariate_id,
 		1 AS covariate_value
 	FROM
 	(
-	SELECT cp1.cohort_id, 
+	SELECT cp1.row_id,
+		cp1.cohort_id, 
 		cp1.person_id, 
 		o1.observation_concept_id, 
 		o1.value_as_number, 
@@ -1703,7 +1739,7 @@ OBSERVATION
 		o1.range_high, 
 		ROW_NUMBER() OVER (PARTITION BY cp1.cohort_id, cp1.person_id, o1.observation_concept_id ORDER BY o1.observation_date desc) as rn1	
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND o1.observation_date <= cp1.cohort_start_date
@@ -1730,9 +1766,9 @@ OBSERVATION
 		905 as analysis_id,
 		o1.observation_concept_id as concept_id
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
-		LEFT JOIN @CDM_schema.dbo.concept c1
+		LEFT JOIN @cdm_schema.dbo.concept c1
 		ON o1.observation_concept_id = c1.concept_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1740,13 +1776,14 @@ OBSERVATION
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
-	SELECT cp1.cohort_id,
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
+	SELECT cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		CAST(o1.observation_concept_id AS BIGINT)*1000 + 905 AS covariate_id,
 		count(observation_id) AS covariate_value
 	FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.observation o1
+		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1773,14 +1810,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1000, 'Number of distinct conditions observed in 365d on or prior to cohort index', 1000, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1000 AS covariate_id,
 		COUNT(DISTINCT ce1.condition_concept_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.condition_era ce1
+	INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
 	WHERE ce1.condition_era_start_date <= cp1.cohort_start_date
 		AND ce1.condition_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -1794,14 +1832,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1001, 'Number of distinct drug ingredients observed in 365d on or prior to cohort index', 1001, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1001 AS covariate_id,
 		COUNT(DISTINCT de1.drug_concept_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.drug_era de1
+	INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -1815,14 +1854,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1002, 'Number of distinct procedures observed in 365d on or prior to cohort index', 1002, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1002 AS covariate_id,
 		COUNT(DISTINCT po1.procedure_concept_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.procedure_occurrence po1
+	INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
 	WHERE po1.procedure_date <= cp1.cohort_start_date
 		AND po1.procedure_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -1836,14 +1876,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1003, 'Number of distinct observations observed in 365d on or prior to cohort index', 1003, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1003 AS covariate_id,
 		COUNT(DISTINCT o1.observation_concept_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.observation o1
+	INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_date <= cp1.cohort_start_date
 		AND o1.observation_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -1857,14 +1898,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1004, 'Number of visits observed in 365d on or prior to cohort index', 1004, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1004 AS covariate_id,
 		COUNT(vo1.visit_occurrence_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
+	INNER JOIN @cdm_schema.dbo.visit_occurrence vo1
 		ON cp1.person_id = vo1.person_id
 	WHERE vo1.visit_start_date <= cp1.cohort_start_date
 		AND vo1.visit_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -1878,14 +1920,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1005, 'Number of inpatient visits observed in 365d on or prior to cohort index', 1005, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1005 AS covariate_id,
 		COUNT(vo1.visit_occurrence_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
+	INNER JOIN @cdm_schema.dbo.visit_occurrence vo1
 		ON cp1.person_id = vo1.person_id
 	WHERE vo1.visit_start_date <= cp1.cohort_start_date
 		AND vo1.visit_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -1899,14 +1942,15 @@ DATA DENSITY CONCEPT COUNTS
 	VALUES (1006, 'Number of ER visits observed in 365d on or prior to cohort index', 1006, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		1006 AS covariate_id,
 		COUNT(vo1.visit_occurrence_id) AS covariate_value
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.visit_occurrence vo1
+	INNER JOIN @cdm_schema.dbo.visit_occurrence vo1
 		ON cp1.person_id = vo1.person_id
 	WHERE vo1.visit_start_date <= cp1.cohort_start_date
 		AND vo1.visit_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
@@ -3266,24 +3310,25 @@ RISK SCORES
 	VALUES (1100, 'Charlson Index - Romano adaptation, using conditions all time on or prior to cohort index', 1100, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		row_id,
 		cohort_id,
 		person_id,
 		1100 AS covariate_id,
 		SUM(weight) AS covariate_value
 	FROM
 	(
-		SELECT DISTINCT cp1.cohort_id, cp1.person_id, cs1.diag_category_id, cs1.weight
+		SELECT DISTINCT cp1.row_id, cp1.cohort_id, cp1.person_id, cs1.diag_category_id, cs1.weight
 		FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_era ce1
+		INNER JOIN @cdm_schema.dbo.condition_era ce1
 			ON cp1.person_id = ce1.person_id
 		INNER JOIN 
 			(
 				SELECT diag_category_id, stcm1.target_concept_id
 				FROM #Charlson_codes cc1
 				INNER JOIN 
-					@CDM_schema.dbo.source_to_concept_map stcm1
+					@cdm_schema.dbo.source_to_concept_map stcm1
 					ON cc1.icd9 = stcm1.source_code
 				WHERE stcm1.source_vocabulary_id = 2
 					AND stcm1.target_vocabulary_id = 1
@@ -3331,7 +3376,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		1 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '250.5%'
@@ -3345,7 +3390,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		2 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '361%'
@@ -3360,7 +3405,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		1 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code in ('250.4','580','581','581.81','582','583')
@@ -3377,7 +3422,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		2 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code in ('585','586','593.9')
@@ -3393,7 +3438,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		1 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code in ('356.9','250.6','358.1','951.0','951.1','951.3','713.5','357.2','596.54','337.0','337.1','564.5','536.3','458.0')
@@ -3420,7 +3465,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		1 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '435%'
@@ -3433,7 +3478,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		2 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code in ('431','433','434','436')
@@ -3450,7 +3495,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		1 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '440%'
@@ -3467,7 +3512,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		2 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '410%'
@@ -3488,7 +3533,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		1 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '250.7%'
@@ -3505,7 +3550,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		2 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '785.4%'
@@ -3521,7 +3566,7 @@ RISK SCORES
 		source_code,
 		target_concept_id,
 		2 as DCSI_score
-	from @CDM_schema.dbo.SOURCE_TO_CONCEPT_MAP
+	from @cdm_schema.dbo.SOURCE_TO_CONCEPT_MAP
 	where SOURCE_VOCABULARY_ID = 2
 	and target_vocabulary_id = 1
 	and (source_code like '250.1%'
@@ -3538,17 +3583,18 @@ RISK SCORES
 	VALUES (1101, 'Diabetes Comorbidity Severity Index (DCSI), using conditions all time on or prior to cohort index', 1101, 0)
 	;
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT 
+		row_id,
 		cohort_id,
 		person_id,
 		1101 AS covariate_id,
 		SUM(max_score) AS covariate_value
 	FROM
 	(
-		SELECT cp1.cohort_id, cp1.person_id, ds1.dcsi_category, max(ds1.DCSI_score) as max_score
+		SELECT cp1.row_id, cp1.cohort_id, cp1.person_id, ds1.dcsi_category, max(ds1.DCSI_score) as max_score
 		FROM #cohort_person cp1
-		INNER JOIN @CDM_schema.dbo.condition_era ce1
+		INNER JOIN @cdm_schema.dbo.condition_era ce1
 			ON cp1.person_id = ce1.person_id
 		INNER JOIN #DCSI_scoring ds1
 			ON ce1.condition_concept_id = ds1.DCSI_concept_id
@@ -3608,8 +3654,9 @@ INTERACTION YEAR
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cc1.row_id,
 		cc1.cohort_id,
 		cc1.person_id,
 		CAST(cc1.covariate_id AS BIGINT)*10000 + CAST(YEAR(cp1.cohort_start_date) AS BIGINT) AS covariate_id,
@@ -3652,8 +3699,9 @@ INTERACTION MONTH
 	;
 	
 	
-	INSERT INTO #cohort_covariate (cohort_id, person_id, covariate_id, covariate_value)
+	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
+		cc1.row_id,
 		cc1.cohort_id,
 		cc1.person_id,
 		CAST(cc1.covariate_id AS BIGINT)*10000 + CAST(MONTH(cp1.cohort_start_date) AS BIGINT) AS covariate_id,
@@ -3732,20 +3780,21 @@ WHERE cc2.covariate_count < @delete_covariates_small_count
 
 
 
-INSERT INTO #cohort_outcome (cohort_id, person_id, outcome_id, time_to_event)
+INSERT INTO #cohort_outcome (row_id, cohort_id, person_id, outcome_id, time_to_event)
 {@outcome_table == 'CONDITION_OCCURRENCE'} ? {
-	SELECT cp1.cohort_id,
+	SELECT cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		ca1.ancestor_concept_id AS outcome_id,
 		datediff(dd, cp1.cohort_start_date, co1.condition_start_date) AS time_to_event
 	FROM #cohort_person cp1
 	INNER JOIN 
-		@CDM_schema.dbo.condition_occurrence co1
+		@cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
 	INNER JOIN (
 		SELECT descendant_concept_id,
 			ancestor_concept_id
-		FROM @CDM_schema.dbo.concept_ancestor
+		FROM @cdm_schema.dbo.concept_ancestor
 		WHERE ancestor_concept_id IN (@outcome_concept_ids)
 		) ca1
 		ON co1.condition_concept_id = descendant_concept_id
@@ -3753,24 +3802,26 @@ INSERT INTO #cohort_outcome (cohort_id, person_id, outcome_id, time_to_event)
 		co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 		AND co1.condition_start_date > cp1.cohort_start_date
 		AND co1.condition_start_date <= cp1.observation_period_end_date
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		datediff(dd, cp1.cohort_start_date, co1.condition_start_date),
 		ca1.ancestor_concept_id
 }
 {@outcome_table == 'COHORT'} ? {
-	SELECT cp1.cohort_id,
+	SELECT cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		co1.cohort_concept_id AS outcome_id,
 		datediff(dd, cp1.cohort_start_date, co1.cohort_start_date) AS time_to_event
 	FROM #cohort_person cp1
 	INNER JOIN 
-		@CDM_schema.dbo.cohort co1
+		@cdm_schema.dbo.cohort co1
 		ON cp1.person_id = co1.person_id
 	INNER JOIN (
 		SELECT descendant_concept_id,
 			ancestor_concept_id
-		FROM @CDM_schema.dbo.concept_ancestor
+		FROM @cdm_schema.dbo.concept_ancestor
 		WHERE ancestor_concept_id IN (@outcome_concept_ids)
 		) ca1
 		ON co1.condition_concept_id = descendant_concept_id
@@ -3778,7 +3829,8 @@ INSERT INTO #cohort_outcome (cohort_id, person_id, outcome_id, time_to_event)
 		co1.cohort_concept_id in (@outcome_concept_ids)
 		AND co1.cohort_start_date > cp1.cohort_start_date
 		AND co1.cohort_start_Date <= cp1.observation_period_end_date
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		datediff(dd, cp1.cohort_start_date, co1.cohort_start_date),
 		co1.cohort_concept_id
@@ -3789,18 +3841,19 @@ INSERT INTO #cohort_outcome (cohort_id, person_id, outcome_id, time_to_event)
 
 	
 ---find people to exclude from each analysis (if outcome occurs prior to index)	
-INSERT INTO #cohort_excluded_person (cohort_id, person_id, outcome_id)
+INSERT INTO #cohort_excluded_person (row_id, cohort_id, person_id, outcome_id)
 {@outcome_table == 'CONDITION_OCCURRENCE'} ? {
-	SELECT DISTINCT cp1.cohort_id,
+	SELECT DISTINCT cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		ca1.ancestor_concept_id AS outcome_id
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.condition_occurrence co1
+	INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
 	INNER JOIN (
 		SELECT descendant_concept_id,
 			ancestor_concept_id
-		FROM @CDM_schema.dbo.concept_ancestor
+		FROM @cdm_schema.dbo.concept_ancestor
 		WHERE ancestor_concept_id IN (@outcome_concept_ids)
 		) ca1
 		ON co1.condition_concept_id = descendant_concept_id
@@ -3809,11 +3862,12 @@ INSERT INTO #cohort_excluded_person (cohort_id, person_id, outcome_id)
 		AND co1.condition_start_date < cp1.cohort_start_date
 }
 {@outcome_table == 'COHORT'} ? {
-	SELECT DISTINCT cp1.cohort_id,
+	SELECT DISTINCT cp1.row_id,
+		cp1.cohort_id,
 		cp1.person_id,
 		co1.cohort_concept_id AS outcome_id
 	FROM #cohort_person cp1
-	INNER JOIN @CDM_schema.dbo.cohort co1
+	INNER JOIN @cdm_schema.dbo.cohort co1
 		ON cp1.person_id = co1.person_id
 	WHERE
 		co1.cohort_concept_id in (@outcome_concept_ids)
