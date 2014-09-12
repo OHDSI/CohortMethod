@@ -22,58 +22,100 @@
 # @author Martijn Schuemie
 
 #' @export
-dbGetCohortData <- function(connectionDetails, 
-                            cdmSchema = "CDM4_SIM",
-                            resultsSchema = cdmSchema,
+dbGetCohortData <- function(connectionDetails,
+                            cdmSchema = "CDM_TRUVEN_MDCD",
+                            resultsSchema = "scratch",
                             targetDrugConceptId = 755695,
-                            comparatorDrugConceptIds = 739138,
+                            comparatorDrugConceptId = 739138,
                             indicationConceptIds = 439926,
                             washoutWindow = 183,
                             indicationLookbackWindow = 183,
-                            exposureExtensionWindow = 7,
                             studyStartDate = "",
                             studyEndDate = "",
                             exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
-                            outcomeConceptIds = c(194133),
+                            outcomeConceptIds = 194133,
                             outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
-                            maxOutcomeCount = 1){
-  renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
+                            maxOutcomeCount = 1,
+                            exposureTable = "DRUG_ERA",
+                            outcomeTable = "CONDITION_OCCURRENCE",
+                            useCovariateDemographics = TRUE,
+                            useCovariateConditionOccurrence = TRUE,
+                            useCovariateConditionEra = FALSE,
+                            useCovariateConditionGroup = FALSE,
+                            useCovariateDrugExposure = FALSE,
+                            useCovariateDrugEra = FALSE,
+                            useCovariateDrugGroup = FALSE,
+                            useCovariateProcedureOccurrence = FALSE,
+                            useCovariateProcedureGroup = FALSE,
+                            useCovariateObservation = FALSE,
+                            useCovariateConceptCounts = FALSE,
+                            useCovariateRiskScores = FALSE,
+                            useCovariateInteractionYear = FALSE,
+                            useCovariateInteractionMonth = FALSE,
+                            excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                            deleteCovariatesSmallCount = 100){
+  renderedSql <- loadRenderTranslateSql("cohortmethod.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
-                                        CDM_schema = cdmSchema,
+                                        cdm_schema = cdmSchema,
                                         results_schema = resultsSchema,
                                         target_drug_concept_id = targetDrugConceptId,
-                                        comparator_drug_concept_ids = comparatorDrugConceptIds,
+                                        comparator_drug_concept_id = comparatorDrugConceptId,
                                         indication_concept_ids = indicationConceptIds,
                                         washout_window = washoutWindow,
                                         indication_lookback_window = indicationLookbackWindow,
-                                        exposure_extension_window = exposureExtensionWindow,
                                         study_start_date = studyStartDate,
                                         study_end_date = studyEndDate,
                                         exclusion_concept_ids = exclusionConceptIds,
                                         outcome_concept_ids = outcomeConceptIds,
                                         outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
-                                        max_outcome_count = maxOutcomeCount)
+                                        max_outcome_count = maxOutcomeCount,
+                                        exposure_table = exposureTable,
+                                        outcome_table = outcomeTable,
+                                        use_covariate_demographics = useCovariateDemographics,
+                                        use_covariate_condition_occurrence = useCovariateConditionOccurrence,
+                                        use_covariate_condition_era = useCovariateConditionEra,
+                                        use_covariate_condition_group = useCovariateConditionGroup,
+                                        use_covariate_drug_exposure = useCovariateDrugExposure,
+                                        use_covariate_drug_era = useCovariateDrugEra,
+                                        use_covariate_drug_group = useCovariateDrugGroup,
+                                        use_covariate_procedure_occurrence = useCovariateProcedureOccurrence,
+                                        use_covariate_procedure_group = useCovariateProcedureGroup,
+                                        use_covariate_observation = useCovariateObservation,
+                                        use_covariate_concept_counts = useCovariateConceptCounts,
+                                        use_covariate_risk_scores = useCovariateRiskScores,
+                                        use_covariate_interaction_year = useCovariateInteractionYear,
+                                        use_covariate_interaction_month = useCovariateInteractionMonth,
+                                        excluded_covariate_concept_ids = excludedCovariateConceptIds,
+                                        delete_covariates_small_count = deleteCovariatesSmallCount)
   
   conn <- connect(connectionDetails)
   
   writeLines("Executing multiple queries. This could take a while")
   executeSql(conn,renderedSql)
   
-  outcomeSql <-"SELECT person_id AS row_id,outcome_concept_id,time_to_outcome FROM #outcomes ORDER BY person_id"
-  outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
-  
-  cohortSql <-"SELECT cohort_id AS treatment, person_id AS row_id, datediff(dd, cohort_start_date, cohort_censor_date) AS time_to_censor FROM #cohorts ORDER BY person_id"
+  cohortSql <-"SELECT row_id, cohort_id AS treatment, person_id, datediff(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end, datediff(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end FROM #cohort_person ORDER BY row_id"
   cohortSql <- translateSql(cohortSql,"sql server",connectionDetails$dbms)$sql
   
-  covariateSql <-"SELECT person_id AS row_id,covariate_id,covariate_value FROM #covariates ORDER BY person_id,covariate_id"
+  covariateSql <-"SELECT row_id, covariate_id,covariate_value FROM #cohort_covariate ORDER BY row_id, covariate_id"
   covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
+  
+  outcomeSql <-"SELECT row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, row_id"
+  outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
+    
+  excludeSql <-"SELECT row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, row_id"
+  excludeSql <- translateSql(excludeSql,"sql server",connectionDetails$dbms)$sql
+
+  covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
+  covariateRefSql <- translateSql(covariateRefSql,"sql server",connectionDetails$dbms)$sql
   
   writeLines("Fetching data from server")
   start <- Sys.time()
   outcomes <- dbGetQuery.ffdf(conn,outcomeSql)
   cohorts <-  dbGetQuery.ffdf(conn,cohortSql)
   covariates <- dbGetQuery.ffdf(conn,covariateSql)
+  exclude <- dbGetQuery.ffdf(conn,excludeSql)
+  covariateRef <- dbGetQuery.ffdf(conn,covariateRefSql)
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
   #Remove temp tables:
@@ -87,10 +129,14 @@ dbGetCohortData <- function(connectionDetails,
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(cohorts) <- toupper(colnames(cohorts))
   colnames(covariates) <- toupper(colnames(covariates))
+  colnames(exclude) <- toupper(colnames(exclude))
+  colnames(covariateRef) <- toupper(colnames(covariateRef))
   dummy <- dbDisconnect(conn)
   result <- list(outcomes = outcomes,
                  cohorts = cohorts,
-                 covariates = covariates 
+                 covariates = covariates,
+                 exclude = exclude,
+                 covariateRef = covariateRef
   )
   
   class(result) <- "cohortData"
@@ -109,7 +155,9 @@ save.cohortData <- function(cohortData, file){
   out1 <- cohortData$outcomes
   out2 <- cohortData$cohorts
   out3 <- cohortData$covariates
-  save.ffdf(out1,out2,out3,dir=file)
+  out4 <- cohortData$exclude
+  out5 <- cohortData$covariateRef
+  save.ffdf(out1,out2,out3,out4,out5,dir=file)
 }
 
 #' @export
@@ -125,7 +173,8 @@ load.cohortData <- function(file){
   result <- list(outcomes = get("out1", envir=e),
                  cohorts = get("out2", envir=e),
                  covariates = get("out3", envir=e),
-                 useFf = TRUE    
+                 exclude = get("out4", envir=e),
+                 covariateRef = get("out5", envir=e)
   )
   class(result) <- "cohortData"
   rm(e)

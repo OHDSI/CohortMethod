@@ -3,7 +3,7 @@
 \alias{psShowModel}
 \title{Show the propensity model}
 \usage{
-psShowModel(propensityScore, connectionDetails, cdmSchema)
+psShowModel(propensityScore, cohortData)
 }
 \arguments{
 \item{propensityScore}{The propensity scores as generated using the \code{psCreate} function.}

@@ -30,7 +30,7 @@ The data frame should have a least the following two columns:
 \tabular{ll}{
   \verb{lr}      \tab Logistic regression  \cr
   \verb{clr}     \tab Conditional logistic regression \cr
-  \verb{cox}     \tab Cox regression (conditional or unconditional, depending on whether \code{stata} is specified) \cr
+  \verb{cox}     \tab Cox regression (stratified or not, depending on whether \code{stata} is specified) \cr
   \verb{pr}      \tab Poisson regression  \cr
   \verb{cpr}     \tab Conditional Poisson regression \cr
 }

@@ -127,10 +127,10 @@ create table #cohort_person
 
 
 IF OBJECT_ID('cohort_covariate', 'U') IS NOT NULL --This should only do something in Oracle
-  drop table #cohort_covariate
+  drop table #cohort_covariate;
 
 IF OBJECT_ID('tempdb..#cohort_covariate', 'U') IS NOT NULL
-  drop table #cohort_covariate
+  drop table #cohort_covariate;
 
 create table #cohort_covariate
 (
@@ -143,10 +143,10 @@ create table #cohort_covariate
 
 
 IF OBJECT_ID('cohort_covariate_ref', 'U') IS NOT NULL --This should only do something in Oracle
-  drop table #cohort_covariate_ref
+  drop table #cohort_covariate_ref;
 
 IF OBJECT_ID('tempdb..#cohort_covariate_ref', 'U') IS NOT NULL
-  drop table #cohort_covariate_ref
+  drop table #cohort_covariate_ref;
 
 create table #cohort_covariate_ref
 (
@@ -384,7 +384,7 @@ DROP TABLE #raw_cohort;
 
 --covariate for exposure status, determining which patients are in which treatment group (only those in cohort 1 will get recorded)
 INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
-	VALUES (1, 'Exposure status', 1, @target_drug_concept_id)
+	VALUES (1, 'Exposure status', 1, @target_drug_concept_id);
 
 
 INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
@@ -3724,27 +3724,21 @@ INTERACTION MONTH
 
 {@delete_covariates_small_count > 0} ? {	
 
-DELETE ccr1
-FROM #cohort_covariate_ref ccr1
-INNER JOIN 
-	(SELECT covariate_id, COUNT(person_id) AS covariate_count
+DELETE FROM #cohort_covariate_ref 
+WHERE covariate_id IN (
+  SELECT covariate_id
 	FROM #cohort_covariate
 	GROUP BY covariate_id
-	) cc2
-ON ccr1.covariate_id = cc2.covariate_id
-WHERE cc2.covariate_count < @delete_covariates_small_count
-;
+  HAVING COUNT(person_id) < @delete_covariates_small_count
+	);
 
-DELETE cc1
-FROM #cohort_covariate cc1
-INNER JOIN 
-	(SELECT covariate_id, COUNT(person_id) AS covariate_count
-	FROM #cohort_covariate
+DELETE FROM #cohort_covariate 
+WHERE covariate_id IN (
+  SELECT covariate_id
+  FROM #cohort_covariate
 	GROUP BY covariate_id
-	) cc2
-ON cc1.covariate_id = cc2.covariate_id
-WHERE cc2.covariate_count < @delete_covariates_small_count
-;		
+  HAVING COUNT(person_id) < @delete_covariates_small_count
+	);
 
 	
 

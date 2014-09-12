@@ -4,7 +4,7 @@ testCode <- function(){
 
   # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
   
-  pw <- "F1r3starter"
+  pw <- ""
   user <- "postgres"
   server <- "localhost/ohdsi"
   cdmSchema = "cdm4_sim"
@@ -26,7 +26,7 @@ testCode <- function(){
   
   psAuc(ps)
   
-  model <- psShowModel(ps,connectionDetails,cdmSchema=cdmSchema)
+  model <- psShowModel(ps,cohortData)
   
   psPlot(ps) #Plot unmatched PS distributions
   

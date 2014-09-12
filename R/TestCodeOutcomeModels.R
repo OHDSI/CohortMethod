@@ -3,11 +3,12 @@ TestCodeOutcomeModels <- function(){
   setwd("c:/temp")
   
   #Settings for running SQL against a local Postgres DB:
-  pw <- ""
+  pw <- "F1r3starter"
   dbms <- "postgresql"
   user <- "postgres"
   server <- "localhost/ohdsi"
   cdmSchema <- "cdm4_sim"
+  resultsSchema <- "scratch"
   port <- "5432"
   
   #Settings for running SQL in the IMEDS lab:
@@ -17,11 +18,21 @@ TestCodeOutcomeModels <- function(){
   server <- "omop-datasets.cqlmv7nlakap.us-east-1.redshift.amazonaws.com/truven"
   cdmSchema <- "mslr_cdm4"
   port <- "5439"
+  
+  #Settings for running SQL against JnJ Sql Server:
+  pw <- NULL
+  dbms <- "sql server"
+  user <- NULL
+  server <- "RNDUSRDHIT07"
+  cdmSchema <- "cdm4_sim"
+  resultsSchema <- "scratch"
+  port <- NULL
+  
     
   #Part one: loading the data:
   connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
   
-  cohortData <- dbGetCohortData(connectionDetails,cdmSchema=cdmSchema)
+  cohortData <- dbGetCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
   
   save.cohortData(cohortData,file.path(getwd(),"simCohortData"))
   
@@ -31,6 +42,7 @@ TestCodeOutcomeModels <- function(){
   ps <- psCreate(cohortData, prior=prior("laplace",0.1))
 
   strata <- psMatch(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=0)
+  strata <- psMatch(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=0, stratificationColumns=c("AGE"))
     
   #Part three: fit an outcome model (This should all be part of the estimateEffect function):
   riskWindowStart = 0

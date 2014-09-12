@@ -39,7 +39,7 @@
 #' @export
 psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
   cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
-  cyclopsData <- createCyclopsData.ffdf(cohortData$cohorts,cohortData$covariates,modelType="lr")
+  cyclopsData <- createCyclopsData.ffdf(cohortData$cohorts,subset(cohortData$covariates,COVARIATE_ID != 1),modelType="lr")
   ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
   cohortData$cohorts$y <- NULL
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
@@ -70,52 +70,16 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
 #' #todo
 #' 
 #' @export
-psShowModel <- function(propensityScore, connectionDetails, cdmSchema){
+psShowModel <- function(propensityScore, cohortData){
   
   cfs <- attr(propensityScore,"coefficients")
   cfs <- cfs[cfs != 0]
   attr(cfs,"names")[1] <- 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
   
-  cfs$name <- ""
-  
-  cfs$name[cfs$id == 0] <- "(Intercept)"
-  for (age in 1:11){
-    cfs$name[cfs$id == age] <- paste("Age between",(age-1)*10,"and",((age)*10)-1)
-  }
-  cfs$name[cfs$id == 20] <- "Number of distinct conditions in last 6mo"
-  cfs$name[cfs$id == 21] <- "Number of distinct drugs in last 6mo"
-  cfs$name[cfs$id == 22] <- "Number of distinct procedures in last 6mo"
-  cfs$name[cfs$id == 23] <- "Number of distinct outpatient visits in last 6mo"
-  cfs$name[cfs$id == 24] <- "Number of distinct inpatient visits in last 6mo"
-  cfs$name[cfs$id == 25] <- "Number of distinct ER visits in last 6mo"
-  
-  #Get concept names from server:
-  conceptIds <- cfs$id[cfs$id > 25 & cfs$id < 2000000000]
-  conceptIds <- c(conceptIds, (cfs$id[cfs$id > 2000000000] - 2000000000))
-  conceptIds <- unique(conceptIds)
-  
-  connectionDetails$schema = cdmSchema
-  conn <- connect(connectionDetails)
-  sql <- "SELECT concept_id AS id,concept_name FROM concept WHERE concept_id IN (@conceptIds)"
-  renderedSql <- renderSql(sql,conceptIds = conceptIds)$sql
-  conceptNames <- dbGetQuery(conn,renderedSql)
-  colnames(conceptNames) <- tolower(colnames(conceptNames))
-  dummy <- dbDisconnect(conn)
-  
-  #Add concept names to explanation:
-  cfs <- merge(cfs,conceptNames,by="id", all.x=TRUE)
-  cfs$name[!is.na(cfs$concept_name)] <- cfs$concept_name[!is.na(cfs$concept_name)]
-  cfs$concept_name <- NULL
-  
-  cfs$atc3Id <- NA
-  cfs$atc3Id[cfs$id > 2000000000] <- cfs$id[cfs$id > 2000000000] - 2000000000
-  cfs <- merge(cfs,conceptNames,by.x="atc3Id",by.y="id", all.x=TRUE)
-  cfs$name[!is.na(cfs$concept_name)] <- paste("Number of drugs in ATC3 class",cfs$concept_name[!is.na(cfs$concept_name)])
-  cfs$concept_name <- NULL
-  cfs$atc3Id <- NULL 
+  cfs <- merge(as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="COVARIATE_ID")
+  cfs <- as.ram(cfs[,c("coefficient","id","COVARIATE_NAME")])
   cfs <- cfs[order(-abs(cfs$coefficient)),]
-  colnames(cfs)[colnames(cfs) == "id"] <- "covariate_id"
   colnames(cfs) <- toupper(colnames(cfs))
   cfs
 }
