@@ -2,6 +2,8 @@ TestCodeOutcomeModels <- function(){
   library(CohortMethod)
   setwd("c:/temp")
   
+  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
+  
   #Settings for running SQL against a local Postgres DB:
   pw <- "F1r3starter"
   dbms <- "postgresql"
@@ -42,7 +44,7 @@ TestCodeOutcomeModels <- function(){
   ps <- psCreate(cohortData, prior=prior("laplace",0.1))
 
   strata <- psMatch(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=0)
-  strata <- psMatch(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=0, stratificationColumns=c("AGE"))
+  #strata <- psMatch(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=0, stratificationColumns=c("AGE"))
     
   #Part three: fit an outcome model (This should all be part of the estimateEffect function):
   riskWindowStart = 0

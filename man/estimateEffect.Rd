@@ -3,9 +3,9 @@
 \alias{estimateEffect}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-estimateEffect(cohortData, strata = NULL, riskWindowStart = 0,
-  riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
-  useCovariates = TRUE, modelType = "clr")
+estimateEffect(outcomeConceptId, cohortData, strata = NULL,
+  riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
+  useCovariates = TRUE, modelType = "cox")
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}}

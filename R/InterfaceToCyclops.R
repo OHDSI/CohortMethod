@@ -175,17 +175,19 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                          as.numeric(c()),
                          as.numeric(c()))
   }
-  if (modelType == "pr" | modelType == "cpr"| modelType == "cox") 
+  if (modelType == "pr" | modelType == "cpr") 
     useOffsetCovariate = -1 
   else 
     useOffsetCovariate = NULL
   
-  finalizeSqlCyclopsData(dataPtr,
-                         addIntercept = addIntercept,
-                         useOffsetCovariate = useOffsetCovariate,
-                         offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
-                         sortCovariates = sortCovariates,
-                         makeCovariatesDense = makeCovariatesDense)
+  if (modelType != "cox"){
+    finalizeSqlCyclopsData(dataPtr,
+                           addIntercept = addIntercept,
+                           useOffsetCovariate = useOffsetCovariate,
+                           offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
+                           sortCovariates = sortCovariates,
+                           makeCovariatesDense = makeCovariatesDense)
+  }
   dataPtr
 }
 
@@ -385,7 +387,7 @@ createCyclopsData.ffdf <- function(outcomes,
     if (modelType == "pr" | modelType == "cpr"| modelType == "cox")
       if (any(batchOutcome$TIME <= 0))
         stop("Time cannot be non-positive",call.=FALSE)
-    if (modelType == "lr" | modelType == "pr" | modelType == "cox")
+    if (modelType == "lr" | modelType == "pr" | (modelType == "cox" & is.null(batchOutcome$STRATUM_ID)))
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
     if (modelType == "lr" | modelType == "clr")
       batchOutcome$TIME = 0

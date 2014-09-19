@@ -21,14 +21,19 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+in.ff <- function(a,b){
+  ffmatch(x=a, table=b, nomatch = 0L) > 0L
+}
 
 #' Create propensity scores
 #'
 #' @description
 #' \code{psCreate} creates propensity scores
 #' 
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}
-#' @param prior             The prior used to fit the model
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
+#' creating the propensity score model.
+#' @param prior             The prior used to fit the model.
 #'
 #' @details
 #' todo
@@ -37,11 +42,20 @@
 #' #todo
 #' 
 #' @export
-psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = TRUE)){
-  cohortData$cohorts$Y <- cohortData$cohorts$TREATMENT
-  cyclopsData <- createCyclopsData.ffdf(cohortData$cohorts,subset(cohortData$covariates,COVARIATE_ID != 1),modelType="lr")
-  ps <- as.ram(cohortData$cohorts[,c("Y","ROW_ID")])
-  cohortData$cohorts$y <- NULL
+psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace", useCrossValidation = TRUE)){
+  if (is.null(outcomeConceptId)){
+    cohortSubset <- cohortData$cohorts
+    covariateSubset <- subset(cohortData$covariates,COVARIATE_ID != 1)
+  } else {
+    t <- in.ff(cohortData$cohorts$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
+    cohortSubset <- cohortData$cohort[ffwhich(t,t == FALSE),]
+    t <- in.ff(cohortData$covariates$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
+    t <- t | cohortData$covariates$COVARIATE_ID == 1
+    covariateSubset <- cohortData$covariates[ffwhich(t,t == FALSE),]
+  }
+  colnames(cohortSubset)[colnames(cohortSubset) == "TREATMENT"] <- "Y"
+  cyclopsData <- createCyclopsData.ffdf(cohortSubset,covariateSubset,modelType="lr")
+  ps <- as.ram(cohortSubset[,c("Y","ROW_ID")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = prior,
                                 control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
@@ -54,10 +68,10 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
   data
 }
 
-#' Show the propensity model
+#' Retrieves the propensity model
 #'
 #' @description
-#' \code{psShowModel} shows the propensity score model
+#' \code{psGetModel} shows the propensity score model
 #' 
 #' @param propensityScore       The propensity scores as generated using the \code{psCreate} function.
 #' @param connectionDetails     An R object of type ConnectionDetail (details for the function that contains server info, database type, optionally username/password, port).
@@ -70,7 +84,7 @@ psCreate <- function(cohortData, prior = prior("laplace", useCrossValidation = T
 #' #todo
 #' 
 #' @export
-psShowModel <- function(propensityScore, cohortData){
+psGetModel <- function(propensityScore, cohortData){
   
   cfs <- attr(propensityScore,"coefficients")
   cfs <- cfs[cfs != 0]
@@ -418,18 +432,24 @@ psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
   }
 }
 
-quickSum <- function(data){
+quickSum <- function(data,squared=FALSE){
   result <- NULL
   for (i in chunk(data)){
     dataChunk <- data[i,]
-    x <- bySum(dataChunk$COVARIATE_VALUE,as.factor(dataChunk$COVARIATE_ID))
+    if (squared)
+      x <- bySum(dataChunk$COVARIATE_VALUE^2,as.factor(dataChunk$COVARIATE_ID))
+    else
+      x <- bySum(dataChunk$COVARIATE_VALUE,as.factor(dataChunk$COVARIATE_ID))
     COVARIATE_ID <- attr(x,"dimnames")
     attributes(x) <- NULL
     r <- data.frame(value = x,COVARIATE_ID = COVARIATE_ID, stringsAsFactors=FALSE)
     colnames(r)[2] <- "COVARIATE_ID" #for some reason we lose the name when stringsAsFactors = FALSE
     if (is.null(result)){
       result <- r
-      colnames(result)[colnames(result) == "value"] = "SUM"
+      if (squared)
+        colnames(result)[colnames(result) == "value"] = "SUM_SQR"
+      else
+        colnames(result)[colnames(result) == "value"] = "SUM"
     } else {
       result <- merge(result,r,all=TRUE)
       result$SUM[is.na(result$SUM)] = 0
@@ -445,66 +465,104 @@ quickSum <- function(data){
 
 
 computeMeansPerGroup <- function(cohorts, covariates){
+  nOverall <- nrow(cohorts)
   nTreated <-  sum(cohorts$TREATMENT == 1)
-  nComparator <- nrow(cohorts) - nTreated
-  t <- covariates$ROW_ID %in% cohorts$ROW_ID[cohorts$TREATMENT == 1]
+  nComparator <- nOverall - nTreated
+  
+  t <- in.ff(covariates$ROW_ID,cohorts$ROW_ID[cohorts$TREATMENT == 1])
   treated <- quickSum(covariates[ffwhich(t,t == TRUE),])
   treated$MEAN_TREATED <- treated$SUM / nTreated
   colnames(treated)[colnames(treated) == "SUM"] <- "SUM_TREATED"
   
-  t <- covariates$ROW_ID %in% cohorts$ROW_ID[cohorts$TREATMENT == 0]
+  t <- in.ff(covariates$ROW_ID,cohorts$ROW_ID[cohorts$TREATMENT == 0])
   comparator <- quickSum(covariates[ffwhich(t,t == TRUE),])
   comparator$MEAN_COMPARATOR <- comparator$SUM / nComparator
   colnames(comparator)[colnames(comparator) == "SUM"] <- "SUM_COMPARATOR"
   
-  #result <- merge(treated[,c("COVARIATE_ID","MEAN_TREATED")],comparator[,c("COVARIATE_ID","MEAN_COMPARATOR")],by="COVARIATE_ID")
+  t <- in.ff(covariates$ROW_ID,cohorts$ROW_ID)
+  overall <- quickSum(covariates[ffwhich(t,t == TRUE),])
+  overallSqr <- quickSum(covariates[ffwhich(t,t == TRUE),],squared=TRUE)
+  overall <- merge(overall,overallSqr)
+  overall$SD <- sqrt((overall$SUM_SQR - (overall$SUM^2/nOverall))/nOverall)
+  overall <- data.frame(COVARIATE_ID = overall$COVARIATE_ID,SD = overall$SD)
+                        
   result <- merge(treated,comparator)
-  result$RATE <- result$MEAN_TREATED / result$MEAN_COMPARATOR
+  result <- merge(result,overall)
   result
 }
 
+
+#' Compute covariate balance before and after matching and trimming
+#'
+#' @description
+#' For every covariate, prevalence in treatment and comparator groups before and after matching/trimming are computed.
+#' 
+#' @param restrictedCohorts  A data frame containing the people that are remaining after matching and/or trimming.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed 
+#' when computing the balance before matching/trimming.
+#' 
+#' @details
+#' The restrictedCohorts data frame should have at least the following three columns:
+#' \tabular{lll}{  
+#'   \verb{row_id}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#' }
+#' 
+#' @return Returns a date frame describing the covariate balance before and after matching/trimming.
+#' 
 #' @export
-psComputeCovariateBalance <- function (strata, cohortData, model) {
-  #for every covar: prevalence in treatment and comp groups before and after matching
-  #Compute covar stats before matching:
-  covariates <- cohortData$covariates
-  colnames(covariates) <- toupper(colnames(covariates))
-  
-  cohorts <- cohortData$cohorts
-  colnames(cohorts) <- toupper(colnames(cohorts))
-  
+psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConceptId = NULL) {
+  colnames(restrictedCohorts) <- toupper(colnames(restrictedCohorts))
+  if (is.null(outcomeConceptId)){
+    cohorts <- cohortData$cohorts
+    covariates <- subset(cohortData$covariates,COVARIATE_ID != 1)
+  } else {
+    t <- in.ff(cohortData$cohorts$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
+    cohorts <- cohortData$cohort[ffwhich(t,t == FALSE),]
+    t <- in.ff(cohortData$covariates$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
+    t <- t | cohortData$covariates$COVARIATE_ID == 1
+    covariates <- cohortData$covariates[ffwhich(t,t == FALSE),]
+  }
+
   beforeMatching <- computeMeansPerGroup(cohorts,covariates)
-  afterMatching <- computeMeansPerGroup(as.ffdf(strata),covariates)
+  afterMatching <- computeMeansPerGroup(as.ffdf(restrictedCohorts),covariates)
   
   colnames(beforeMatching)[colnames(beforeMatching) == "MEAN_TREATED"] <- "BEFORE_MATCHING_MEAN_TREATED"
   colnames(beforeMatching)[colnames(beforeMatching) == "MEAN_COMPARATOR"] <- "BEFORE_MATCHING_MEAN_COMPARATOR"
   colnames(beforeMatching)[colnames(beforeMatching) == "SUM_TREATED"] <- "BEFORE_MATCHING_SUM_TREATED"
   colnames(beforeMatching)[colnames(beforeMatching) == "SUM_COMPARATOR"] <- "BEFORE_MATCHING_SUM_COMPARATOR"
-  colnames(beforeMatching)[colnames(beforeMatching) == "RATE"] <- "BEFORE_MATCHING_RATE"
+  colnames(beforeMatching)[colnames(beforeMatching) == "SD"] <- "BEFORE_MATCHING_SD"
   colnames(afterMatching)[colnames(afterMatching) == "MEAN_TREATED"] <- "AFTER_MATCHING_MEAN_TREATED"
   colnames(afterMatching)[colnames(afterMatching) == "MEAN_COMPARATOR"] <- "AFTER_MATCHING_MEAN_COMPARATOR"
   colnames(afterMatching)[colnames(afterMatching) == "SUM_TREATED"] <- "AFTER_MATCHING_SUM_TREATED"
   colnames(afterMatching)[colnames(afterMatching) == "SUM_COMPARATOR"] <- "AFTER_MATCHING_SUM_COMPARATOR"
-  colnames(afterMatching)[colnames(afterMatching) == "RATE"] <- "AFTER_MATCHING_RATE"
+  colnames(afterMatching)[colnames(afterMatching) == "SD"] <- "AFTER_MATCHING_SD"
   balance <- merge(beforeMatching,afterMatching)
-  balance <- merge(balance,model)
+  balance <- merge(balance,as.ram(cohortData$covariateRef))
+  balance$BEFORE_MATCHING_STD_DIFF <- (balance$BEFORE_MATCHING_MEAN_TREATED-balance$BEFORE_MATCHING_MEAN_COMPARATOR)/balance$BEFORE_MATCHING_SD
+  balance$AFTER_MATCHING_STD_DIFF <- (balance$AFTER_MATCHING_MEAN_TREATED-balance$AFTER_MATCHING_MEAN_COMPARATOR)/balance$AFTER_MATCHING_SD
+  balance$BEFORE_MATCHING_STD_DIFF[balance$BEFORE_MATCHING_SD == 0] <- 0
+  balance$AFTER_MATCHING_STD_DIFF[balance$BEFORE_MATCHING_SD == 0] <- 0
+  balance <- balance[order(-abs(balance$BEFORE_MATCHING_STD_DIFF)),]
   balance
 }
 
-#' @export
-psPlotCovariateBalance <- function (balance, minCoefficient = 0.05, minTreatedExposed = 1000) {
-  filtered <- balance[balance$BEFORE_MATCHING_SUM_TREATED >= minTreatedExposed & abs(balance$COEFFICIENT) >= minCoefficient,]
-  data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),covariate = strtrim(rep(filtered$NAME,2),80), rate = c(filtered$BEFORE_MATCHING_RATE,filtered$AFTER_MATCHING_RATE), group = rep(c("before matching","after matching"),each=nrow(filtered)))
-  data$covariate <- factor(data$covariate, levels=rev(levels(data$covariate)) )
-  ggplot(data, aes(x=rate,y=covariate,color=group,group=group,fill=group,shape=group)) + 
-    geom_point() +
-    scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-    scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-    scale_x_continuous("mean in treated / mean in comparator") +
-    theme (
-      axis.text.y = element_text(size=5)
-    )
-  #ggsave("balance.png",width=10,height=15,dpi=200) 
-}
+# psPlotCovariateBalance <- function (balance, minTreatedExposed = 1000) {
+#   filtered <- balance[balance$BEFORE_MATCHING_SUM_TREATED >= minTreatedExposed & abs(balance$COEFFICIENT) >= minCoefficient,]
+#   data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),covariate = strtrim(rep(filtered$NAME,2),80), rate = c(filtered$BEFORE_MATCHING_RATE,filtered$AFTER_MATCHING_RATE), group = rep(c("before matching","after matching"),each=nrow(filtered)))
+#   data$covariate <- factor(data$covariate, levels=rev(levels(data$covariate)) )
+#   ggplot(data, aes(x=rate,y=covariate,color=group,group=group,fill=group,shape=group)) + 
+#     geom_point() +
+#     scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+#     scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+#     scale_x_continuous("mean in treated / mean in comparator") +
+#     theme (
+#       axis.text.y = element_text(size=5)
+#     )
+#   #ggsave("balance.png",width=10,height=15,dpi=200) 
+#   plot(balance$BEFORE_MATCHING_STD_DIFF, balance$AFTER_MATCHING_STD_DIFF)
+#   identify(balance$BEFORE_MATCHING_STD_DIFF, balance$AFTER_MATCHING_STD_DIFF, labels=balance$COVARIATE_NAME)  
+# }
 
 
