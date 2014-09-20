@@ -54,7 +54,7 @@ dbGetCohortData <- function(connectionDetails,
                             useCovariateInteractionMonth = FALSE,
                             excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                             deleteCovariatesSmallCount = 100){
-  renderedSql <- loadRenderTranslateSql("cohortmethod.sql",
+  renderedSql <- loadRenderTranslateSql("cohortMethod.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
                                         cdm_schema = cdmSchema,
