@@ -1327,7 +1327,8 @@ DRUG GROUP
 		@cdm_schema.dbo.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	WHERE len(c1.concept_code) = 3
-	GROUP BY cc1.cohort_id,
+	GROUP BY cc1.row_id,
+    cc1.cohort_id,
 		cc1.person_id,
 		CAST(cg1.ancestor_concept_id AS BIGINT)*1000 + 601
 	;	
@@ -1845,7 +1846,8 @@ DATA DENSITY CONCEPT COUNTS
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+    cp1.cohort_id,
 		cp1.person_id
 	;
 
@@ -1867,7 +1869,8 @@ DATA DENSITY CONCEPT COUNTS
 		ON cp1.person_id = po1.person_id
 	WHERE po1.procedure_date <= cp1.cohort_start_date
 		AND po1.procedure_date >= dateadd(dd, -365, cp1.cohort_start_date)
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id
 	;
 
@@ -1889,7 +1892,8 @@ DATA DENSITY CONCEPT COUNTS
 		ON cp1.person_id = o1.person_id
 	WHERE o1.observation_date <= cp1.cohort_start_date
 		AND o1.observation_date >= dateadd(dd, -365, cp1.cohort_start_date)
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id
 	;
 
@@ -1911,7 +1915,8 @@ DATA DENSITY CONCEPT COUNTS
 		ON cp1.person_id = vo1.person_id
 	WHERE vo1.visit_start_date <= cp1.cohort_start_date
 		AND vo1.visit_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id
 	;
 
@@ -1934,7 +1939,8 @@ DATA DENSITY CONCEPT COUNTS
 	WHERE vo1.visit_start_date <= cp1.cohort_start_date
 		AND vo1.visit_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 		AND vo1.place_of_service_concept_id = 9201
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id
 	;
 	
@@ -1956,7 +1962,8 @@ DATA DENSITY CONCEPT COUNTS
 	WHERE vo1.visit_start_date <= cp1.cohort_start_date
 		AND vo1.visit_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 		AND vo1.place_of_service_concept_id = 9203
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id
 	;	
 	
@@ -3604,7 +3611,8 @@ RISK SCORES
 			cp1.person_id,
 			ds1.dcsi_category
 		) t1
-	GROUP BY cohort_id,
+	GROUP BY row_id,
+    cohort_id,
 		person_id
 	;	
 	
