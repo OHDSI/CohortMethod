@@ -956,7 +956,8 @@ DRUG EXPOSURE
 		
 	INSERT INTO #cohort_covariate (row_id, cohort_id, person_id, covariate_id, covariate_value)
 	SELECT DISTINCT
-		cp1.cohort_id,
+		cp1.row_id,
+    cp1.cohort_id,
 		cp1.person_id,
 		CAST(de1.drug_concept_id AS BIGINT)*1000 + 401 AS covariate_id,
 		1 AS covariate_value
