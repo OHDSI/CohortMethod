@@ -3610,7 +3610,8 @@ RISK SCORES
 		INNER JOIN #DCSI_scoring ds1
 			ON ce1.condition_concept_id = ds1.DCSI_concept_id
 		WHERE ce1.condition_era_start_date <= cp1.cohort_start_date
-		GROUP BY cp1.cohort_id,
+		GROUP BY cp1.row_id,
+      cp1.cohort_id,
 			cp1.person_id,
 			ds1.dcsi_category
 		) t1
