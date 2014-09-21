@@ -1790,7 +1790,8 @@ OBSERVATION
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
 		AND o1.observation_date >= dateadd(dd, -365, cp1.cohort_start_date)
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id,
 		CAST(o1.observation_concept_id AS BIGINT)*1000 + 905
 	;	
@@ -3348,7 +3349,8 @@ RISK SCORES
 			ON c1.diag_category_id = cs1.diag_category_id
 		WHERE ce1.condition_era_start_date <= cp1.cohort_start_date
 		) t1
-	GROUP BY cohort_id,
+	GROUP BY row_id,
+    cohort_id,
 		person_id
 	;	
 	
