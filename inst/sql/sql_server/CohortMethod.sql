@@ -1824,7 +1824,8 @@ DATA DENSITY CONCEPT COUNTS
 		ON cp1.person_id = ce1.person_id
 	WHERE ce1.condition_era_start_date <= cp1.cohort_start_date
 		AND ce1.condition_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
-	GROUP BY cp1.cohort_id,
+	GROUP BY cp1.row_id,
+  	cp1.cohort_id,
 		cp1.person_id
 	;
 
