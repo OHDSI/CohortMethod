@@ -10,6 +10,7 @@ port <- "5439"
 
 Erythromycin = 1746940
 Amoxicillin = 1713332
+MyocardialInfarction = 35205189
 
 connectionDetails <- createConnectionDetails(
                         dbms=dbms,
@@ -19,20 +20,22 @@ connectionDetails <- createConnectionDetails(
                         schema=cdmSchema,
                         port=port)
 
-
 conn <- connect(connectionDetails)
 
 setSearchPath(conn)
 
-buildCohorts(conn, Erythromycin, Amoxicillin)
+buildCohorts(conn, Erythromycin, Amoxicillin, MyocardialInfarction)
 
-getCohortSize(conn)
+# The following code has been broken by the renaming of tables in
+# BuildCohorts.sql
 
-balanceCohorts(conn)
+#getCohortSize(conn)
+
+#balanceCohorts(conn)
 
 # Takes a long time.
-buildCovariates(conn)
+#buildCovariates(conn)
 
-buildOutcomes(conn)
+#buildOutcomes(conn)
 
 dbDisconnect(conn)
