@@ -26,10 +26,10 @@ setSearchPath(conn)
 
 buildCohorts(conn, Erythromycin, Amoxicillin, MyocardialInfarction)
 
+getCohortSize(conn)
+
 # The following code has been broken by the renaming of tables in
 # BuildCohorts.sql
-
-#getCohortSize(conn)
 
 #balanceCohorts(conn)
 

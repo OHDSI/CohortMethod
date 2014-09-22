@@ -46,12 +46,14 @@ buildCohorts <- function(conn, drugA, drugB, indicator, dbms="redshift",
 
 #' @export
 getCohortSize <- function(conn) {
-  sqlPath = getSqlPath("BalanceCohortsp1.sql")
-  f = file(sqlPath)
-  sqlStatement = paste(readLines(f), collapse="\n")
-  close(f)
-
-  result = dbSendQuery(conn, sqlStatement)
+  query = "
+  SELECT
+      cohort_id, COUNT(cohort_id)
+  FROM cohort_person
+  GROUP BY cohort_id
+  ;
+  "
+  result = dbSendQuery(conn, query)
   dbFetch(result)
 }
 
