@@ -3664,6 +3664,7 @@ INTERACTION YEAR
 		#cohort_covariate_ref ccr1
 			ON cc1.covariate_id = ccr1.covariate_id
 		WHERE ccr1.analysis_id not in (5)
+    and ccr1.covariate_id > 1
 	;
 	
 	
@@ -3683,6 +3684,7 @@ INTERACTION YEAR
 		#cohort_covariate_ref ccr1
 			ON cc1.covariate_id = ccr1.covariate_id
 		WHERE ccr1.analysis_id not in (5)
+    and ccr1.covariate_id > 1
 	;
 	
 }
@@ -3709,6 +3711,7 @@ INTERACTION MONTH
 		#cohort_covariate_ref ccr1
 			ON cc1.covariate_id = ccr1.covariate_id
 		WHERE ccr1.analysis_id not in (6)
+    and ccr1.covariate_id > 1
 	;
 	
 	
@@ -3728,6 +3731,7 @@ INTERACTION MONTH
 		#cohort_covariate_ref ccr1
 			ON cc1.covariate_id = ccr1.covariate_id
 		WHERE ccr1.analysis_id not in (6)
+    and ccr1.covariate_id > 1
 	;
 	
 }
