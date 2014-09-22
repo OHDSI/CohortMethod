@@ -1,7 +1,7 @@
 library(DatabaseConnector)
 
 getSqlPath <- function(filename) {
-  sqlBaseDir = "sql/redshift/"
+  sqlBaseDir = "sql/redshift_fake/"
   system.file(paste(sqlBaseDir, filename,sep=""), package="CohortMethod")
 }
 
