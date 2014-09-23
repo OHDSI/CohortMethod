@@ -1,5 +1,11 @@
 library(DatabaseConnector)
 
+log <- function(text) {
+  f = file("/tmp/log")
+  write(text, f)
+  close(f)
+}
+
 getSqlPath <- function(filename) {
   sqlBaseDir = "sql/redshift_fake/"
   system.file(paste(sqlBaseDir, filename,sep=""), package="CohortMethod")
@@ -59,22 +65,16 @@ getCohortSize <- function(conn) {
 
 
 #' @export
-balanceCohorts <- function(conn) {
-  sqlPath = getSqlPath("BalanceCohortsp1.sql")
-  f = file(sqlPath)
-  sqlStatement = paste(readLines(f), collapse="\n")
-  close(f)
-
-  result = dbSendQuery(conn, sqlStatement)
-  limit = min(dbFetch(result))
+balanceCohorts <- function(conn, dbms="sql server") {
+  size = getCohortSize(conn)
+  limit = min(size$count)
   
-  sqlPath = getSqlPath("BalanceCohortsp2.sql")
-  f = file(sqlPath)
-  sqlStatement = paste(readLines(f), collapse="\n")
-  close(f)
-  
-  sqlStatement = sprintf(sqlStatement, limit, limit)
-  executeSql(conn, sqlStatement)
+  renderedSql <- loadRenderTranslateSql(
+                    "BalanceCohorts.sql",
+                    "CohortMethod",
+                    dbms=dbms,
+                    limit=limit)
+  executeSql(conn, renderedSql)
 }
 
 
