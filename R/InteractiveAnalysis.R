@@ -23,32 +23,6 @@ setSearchPath <- function(conn, cdmSchema="MSLR_CDM4") {
 }
 
 
-#' @export
-getCohortSize <- function(conn) {
-  query = "
-  SELECT
-      cohort_id, COUNT(cohort_id)
-  FROM cohort_person
-  GROUP BY cohort_id
-  ;
-  "
-  result = dbSendQuery(conn, query)
-  dbFetch(result)
-}
-
-
-#' @export
-balanceCohorts <- function(conn, dbms="sql server") {
-  size = getCohortSize(conn)
-  limit = min(size$count)
-  
-  renderedSql <- loadRenderTranslateSql(
-                    "BalanceCohorts.sql",
-                    "CohortMethod",
-                    dbms=dbms,
-                    limit=limit)
-  executeSql(conn, renderedSql)
-}
 
 
 #' @export

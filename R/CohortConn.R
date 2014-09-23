@@ -44,6 +44,32 @@ buildCohorts <- function(drugA, drugB, indicator,
 }
 
 
+getCohortSize <- function() {
+  query = "
+  SELECT
+      cohort_id, COUNT(cohort_id)
+  FROM cohort_person
+  GROUP BY cohort_id
+  ;
+  "
+  result = dbSendQuery(conn, query)
+  dbFetch(result)
+}
+
+
+balanceCohorts <- function() {
+  size = getCohortSize()
+  limit = min(size$count)
+  
+  renderedSql <- loadRenderTranslateSql(
+                    "BalanceCohorts.sql",
+                    "CohortMethod",
+                    dbms=dbms,
+                    limit=limit)
+  executeSql(conn, renderedSql)
+}
+
+
 #' @export
 CohortConn <- setRefClass(
                   "CohortConn",
@@ -66,6 +92,8 @@ CohortConn <- setRefClass(
                       },
                       connect = connect,
                       disconnect = disconnect,
-                      buildCohorts = buildCohorts
+                      buildCohorts = buildCohorts,
+                      getCohortSize = getCohortSize,
+                      balanceCohorts = balanceCohorts
                   )
               )
