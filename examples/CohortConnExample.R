@@ -38,6 +38,8 @@ cohortConn$connect()
 
 cohortConn$buildCohorts(Erythromycin, Amoxicillin, MyocardialInfarction)
 cohortConn$getCohortSize()
-cohortConn$balanceCohorts()
+#cohortConn$balanceCohorts()
+
+cohortConn$buildCovariates(Erythromycin)
 
 cohortConn$disconnect()

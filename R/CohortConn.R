@@ -1,5 +1,13 @@
 library(DatabaseConnector)
 
+
+mylogger <- function(text, filename="/tmp/log") {
+  f = file(filename)
+  write(text, f)
+  close(f)
+}
+
+
 oldconnect = connect
 
 connect <- function() {
@@ -70,6 +78,26 @@ balanceCohorts <- function() {
 }
 
 
+buildCovariates <- function(drugA, exclusionConceptIds = c(4027133, 4032243,
+                            4146536, 2002282, 2213572, 2005890, 43534760,
+                            21601019), excludedCovariateConceptIds =
+                            c(4027133, 4032243, 4146536, 2002282, 2213572,
+                            2005890, 43534760, 21601019),
+                            deleteCovariatesSmallCount = 100) {
+  renderedSql <- loadRenderTranslateSql(
+                    "BuildCovariates.sql",
+                    "CohortMethod",
+                    dbms=dbms,
+                    cdm_schema=cdmSchema,
+                    results_schema=cdmSchema,
+                    target_drug_concept_id=drugA,
+                    exclusion_concept_ids=exclusionConceptIds,
+                    excluded_covariate_concept_ids=excludedCovariateConceptIds,
+                    delete_covariates_small_count=deleteCovariatesSmallCount)
+  executeSql(conn, renderedSql)
+}
+
+
 #' @export
 CohortConn <- setRefClass(
                   "CohortConn",
@@ -94,6 +122,7 @@ CohortConn <- setRefClass(
                       disconnect = disconnect,
                       buildCohorts = buildCohorts,
                       getCohortSize = getCohortSize,
-                      balanceCohorts = balanceCohorts
+                      balanceCohorts = balanceCohorts,
+                      buildCovariates = buildCovariates
                   )
               )
