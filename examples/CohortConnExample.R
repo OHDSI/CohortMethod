@@ -8,7 +8,18 @@ server <- "omop-datasets.cqlmv7nlakap.us-east-1.redshift.amazonaws.com/truven"
 cdmSchema <- "mslr_cdm4"
 port <- "5439"
 
-# Drug/condition info.
+
+# Generic code for finding ingredient.
+query = "
+SELECT concept_id, concept_name, concept_class, valid_start_date
+FROM vocabulary.concept
+WHERE
+    concept_name ~* '^NAME$'
+    AND concept_class = 'Ingredient'
+;
+"
+
+# IDs of some specific drugs/conditions.
 Erythromycin = 1746940
 Amoxicillin = 1713332
 
@@ -41,5 +52,6 @@ cohortConn$getCohortSize()
 #cohortConn$balanceCohorts()
 
 cohortConn$buildCovariates(Erythromycin)
+cohortConn$getCovariateSize()
 
 cohortConn$disconnect()

@@ -52,6 +52,7 @@ buildCohorts <- function(drugA, drugB, indicator,
 }
 
 
+# TODO: Change query to use loadRenderTranslateSql.
 getCohortSize <- function() {
   query = "
   SELECT
@@ -98,6 +99,20 @@ buildCovariates <- function(drugA, exclusionConceptIds = c(4027133, 4032243,
 }
 
 
+# TODO: Change query to use loadRenderTranslateSql.
+getCovariateSize <- function() {
+  query = "
+  SELECT
+      COUNT(DISTINCT(person_id)) AS num_persons,
+      COUNT(DISTINCT(covariate_id)) AS num_covariates
+  FROM cohort_covariate
+  ;
+  "
+  result = dbSendQuery(conn, query)
+  dbFetch(result)
+}
+
+
 #' @export
 CohortConn <- setRefClass(
                   "CohortConn",
@@ -123,6 +138,7 @@ CohortConn <- setRefClass(
                       buildCohorts = buildCohorts,
                       getCohortSize = getCohortSize,
                       balanceCohorts = balanceCohorts,
-                      buildCovariates = buildCovariates
+                      buildCovariates = buildCovariates,
+                      getCovariateSize = getCovariateSize
                   )
               )
