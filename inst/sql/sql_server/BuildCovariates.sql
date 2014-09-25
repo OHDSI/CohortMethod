@@ -91,7 +91,7 @@ DEMOGRAPHICS
 		ON cp1.person_id = p1.person_id
 	INNER JOIN 
 		(SELECT concept_id, concept_name
-		FROM @cdm_schema.dbo.concept
+		FROM vocabulary.concept
 		WHERE LOWER(concept_class) = 'gender'
 		) v1
 	ON p1.gender_concept_id = v1.concept_id
@@ -109,7 +109,7 @@ DEMOGRAPHICS
 		ON cp1.person_id = p1.person_id
 	WHERE p1.gender_concept_id in
 		(SELECT concept_id
-		FROM @cdm_schema.dbo.concept
+		FROM vocabulary.concept
 		WHERE LOWER(concept_class) = 'gender'
 		)
 	;
@@ -126,7 +126,7 @@ DEMOGRAPHICS
 		ON cp1.person_id = p1.person_id
 	INNER JOIN 
 		(SELECT concept_id, concept_name
-		FROM @cdm_schema.dbo.concept
+		FROM vocabulary.concept
 		WHERE LOWER(concept_class) = 'race'
 		) v1
 	ON p1.race_concept_id = v1.concept_id
@@ -144,7 +144,7 @@ DEMOGRAPHICS
 		ON cp1.person_id = p1.person_id
 	WHERE p1.race_concept_id in
 		(SELECT concept_id
-		FROM @cdm_schema.dbo.concept
+		FROM vocabulary.concept
 		WHERE LOWER(concept_class) = 'race'
 		)
 	;	
@@ -161,7 +161,7 @@ DEMOGRAPHICS
 		ON cp1.person_id = p1.person_id
 	INNER JOIN 
 		(SELECT concept_id, concept_name
-		FROM @cdm_schema.dbo.concept
+		FROM vocabulary.concept
 		WHERE LOWER(concept_class) = 'ethnicity'
 		) v1
 	ON p1.ethnicity_concept_id = v1.concept_id
@@ -179,7 +179,7 @@ DEMOGRAPHICS
 		ON cp1.person_id = p1.person_id
 	WHERE p1.ethnicity_concept_id in
 		(SELECT concept_id
-		FROM @cdm_schema.dbo.concept
+		FROM vocabulary.concept
 		WHERE LOWER(concept_class) = 'ethnicity'
 		)
 	;	
@@ -283,7 +283,7 @@ CONDITION OCCURRENCE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON co1.condition_concept_id = c1.concept_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  co1.condition_start_date <= cp1.cohort_start_date
@@ -324,7 +324,7 @@ CONDITION OCCURRENCE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON co1.condition_concept_id = c1.concept_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  co1.condition_start_date <= cp1.cohort_start_date
@@ -364,7 +364,7 @@ CONDITION OCCURRENCE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_occurrence co1
 		ON cp1.person_id = co1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON co1.condition_concept_id = c1.concept_id
 	WHERE co1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND co1.condition_type_concept_id in (38000183, 38000184, 38000199, 38000200)
@@ -417,7 +417,7 @@ CONDITION ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -434,7 +434,7 @@ CONDITION ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -457,7 +457,7 @@ CONDITION ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -475,7 +475,7 @@ CONDITION ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.condition_era ce1
 		ON cp1.person_id = ce1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON ce1.condition_concept_id = c1.concept_id
 	WHERE ce1.condition_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
@@ -519,9 +519,9 @@ CONDITION GROUP
 	where analysis_id > 100 and analysis_id < 300
 	) ccr1
 	inner join
-	@cdm_schema.dbo.concept_ancestor ca1
+	vocabulary.concept_ancestor ca1
 	on ccr1.concept_id = ca1.descendant_concept_id
-	inner join @cdm_schema.dbo.concept c1
+	inner join vocabulary.concept c1
 	on ca1.ancestor_concept_id = c1.concept_id
 	where c1.vocabulary_id = 15
 	and c1.concept_class <> 'System Organ Class' 
@@ -557,7 +557,7 @@ CONDITION GROUP
 		#condition_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@cdm_schema.dbo.concept c1
+		vocabulary.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	;
 	
@@ -619,10 +619,10 @@ DRUG EXPOSURE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
@@ -639,7 +639,7 @@ DRUG EXPOSURE
 		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
@@ -661,10 +661,10 @@ DRUG EXPOSURE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
@@ -681,7 +681,7 @@ DRUG EXPOSURE
 		INNER JOIN @cdm_schema.dbo.drug_exposure de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_exposure_start_date <= cp1.cohort_start_date
 		AND de1.drug_exposure_start_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
@@ -713,10 +713,10 @@ DRUG ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
@@ -733,7 +733,7 @@ DRUG ERA
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
@@ -754,10 +754,10 @@ DRUG ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
@@ -774,7 +774,7 @@ DRUG ERA
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;	
@@ -795,10 +795,10 @@ DRUG ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= cp1.cohort_start_date
 	;
@@ -815,7 +815,7 @@ DRUG ERA
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 		AND de1.drug_era_end_date >= cp1.cohort_start_date
 	;		
@@ -836,10 +836,10 @@ DRUG ERA
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON de1.drug_concept_id = c1.concept_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 	;
 	
@@ -855,7 +855,7 @@ DRUG ERA
 		INNER JOIN @cdm_schema.dbo.drug_era de1
 		ON cp1.person_id = de1.person_id
 	WHERE de1.drug_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
-	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM @cdm_schema.dbo.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
+	AND de1.drug_concept_id not in (SELECT descendant_concept_id FROM vocabulary.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id))
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 	;	
 	
@@ -893,9 +893,9 @@ DRUG GROUP
 	where analysis_id > 500 and analysis_id < 600
 	) ccr1
 	inner join
-	@cdm_schema.dbo.concept_ancestor ca1
+	vocabulary.concept_ancestor ca1
 	on ccr1.concept_id = ca1.descendant_concept_id
-	inner join @cdm_schema.dbo.concept c1
+	inner join vocabulary.concept c1
 	on ca1.ancestor_concept_id = c1.concept_id
 	where c1.vocabulary_id = 21
 	and len(c1.concept_code) in (1,3,5)
@@ -926,7 +926,7 @@ DRUG GROUP
 		#drug_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@cdm_schema.dbo.concept c1
+		vocabulary.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	;
 	
@@ -974,7 +974,7 @@ DRUG GROUP
 		#drug_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@cdm_schema.dbo.concept c1
+		vocabulary.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 		WHERE len(c1.concept_code) = 3
 	;
@@ -998,7 +998,7 @@ DRUG GROUP
 		#drug_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@cdm_schema.dbo.concept c1
+		vocabulary.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	WHERE len(c1.concept_code) = 3
 	GROUP BY cc1.row_id,
@@ -1039,7 +1039,7 @@ PROCEDURE OCCURRENCE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON po1.procedure_concept_id = c1.concept_id
 	WHERE po1.procedure_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  po1.procedure_date <= cp1.cohort_start_date
@@ -1078,7 +1078,7 @@ PROCEDURE OCCURRENCE
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.procedure_occurrence po1
 		ON cp1.person_id = po1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON po1.procedure_concept_id = c1.concept_id
 	WHERE po1.procedure_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  po1.procedure_date <= cp1.cohort_start_date
@@ -1135,9 +1135,9 @@ PROCEDURE GROUP
 	where analysis_id > 700 and analysis_id < 800
 	) ccr1
 	inner join
-	@cdm_schema.dbo.concept_ancestor ca1
+	vocabulary.concept_ancestor ca1
 	on ccr1.concept_id = ca1.descendant_concept_id
-	inner join @cdm_schema.dbo.concept c1
+	inner join vocabulary.concept c1
 	on ca1.ancestor_concept_id = c1.concept_id
 	where c1.vocabulary_id = 1
 	and c1.concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } ) 
@@ -1166,7 +1166,7 @@ PROCEDURE GROUP
 		#procedure_group cg1
 		ON ccr1.concept_id = cg1.descendant_concept_id
 		INNER JOIN
-		@cdm_schema.dbo.concept c1
+		vocabulary.concept c1
 		on cg1.ancestor_concept_id = c1.concept_id
 	;
 	
@@ -1223,7 +1223,7 @@ OBSERVATION
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON o1.observation_concept_id = c1.concept_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1263,7 +1263,7 @@ OBSERVATION
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON o1.observation_concept_id = c1.concept_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
@@ -1319,7 +1319,7 @@ OBSERVATION
 	AND o1.range_low >= 0
 	AND o1.range_high >= 0
 	) t1
-	LEFT JOIN @cdm_schema.dbo.concept c1
+	LEFT JOIN vocabulary.concept c1
 		ON t1.observation_concept_id = c1.concept_id
 	WHERE RN1 = 1
 	AND VALUE_AS_NUMBER < RANGE_LOW
@@ -1390,7 +1390,7 @@ OBSERVATION
 	AND o1.range_low >= 0
 	AND o1.range_high >= 0
 	) t1
-	LEFT JOIN @cdm_schema.dbo.concept c1
+	LEFT JOIN vocabulary.concept c1
 		ON t1.observation_concept_id = c1.concept_id
 	WHERE RN1 = 1
 	AND VALUE_AS_NUMBER > RANGE_HIGH
@@ -1444,7 +1444,7 @@ OBSERVATION
 	FROM #cohort_person cp1
 		INNER JOIN @cdm_schema.dbo.observation o1
 		ON cp1.person_id = o1.person_id
-		LEFT JOIN @cdm_schema.dbo.concept c1
+		LEFT JOIN vocabulary.concept c1
 		ON o1.observation_concept_id = c1.concept_id
 	WHERE o1.observation_concept_id not in (0 {@excluded_covariate_concept_ids != ''} ? {, @excluded_covariate_concept_ids } )
 	AND  o1.observation_date <= cp1.cohort_start_date
