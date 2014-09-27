@@ -21,6 +21,30 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+getCohortSize <- function(conn) {
+  query = "
+  SELECT
+  cohort_id, COUNT(cohort_id)
+  FROM cohort_person
+  GROUP BY cohort_id
+  ;
+  "
+  result = dbSendQuery(conn, query)
+  dbFetch(result)
+}
+
+getCovariateSize <- function(conn) {
+  query = "
+  SELECT
+  COUNT(DISTINCT(person_id)) AS num_persons,
+  COUNT(DISTINCT(covariate_id)) AS num_covariates
+  FROM cohort_covariate
+  ;
+  "
+  result = dbSendQuery(conn, query)
+  dbFetch(result)
+}
+
 #' @export
 dbGetCohortData <- function(connectionDetails,
                             cdmSchema = "CDM_TRUVEN_MDCD",
@@ -93,6 +117,9 @@ dbGetCohortData <- function(connectionDetails,
   
   writeLines("Executing multiple queries. This could take a while")
   executeSql(conn,renderedSql)
+
+  cohortSize = getCohortSize(conn)
+  covariateSize = getCovariateSize(conn)
   
   cohortSql <-"SELECT row_id, cohort_id AS treatment, person_id, datediff(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end, datediff(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end FROM #cohort_person ORDER BY row_id"
   cohortSql <- translateSql(cohortSql,"sql server",connectionDetails$dbms)$sql
@@ -140,7 +167,7 @@ dbGetCohortData <- function(connectionDetails,
   )
   
   class(result) <- "cohortData"
-  result
+  list(cohortData=result, cohortSize=cohortSize, covariateSize=covariateSize)
 }
 
 #' @export
