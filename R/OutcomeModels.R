@@ -59,13 +59,20 @@ estimateEffect <- function(outcomeConceptId,
                            addExposureDaysToEnd = FALSE,
                            useCovariates = TRUE, 
                            modelType = "cox"){
-  if (modelType != "cox")
-    stop("Currently only Cox model is implemented")
+  if (!(modelType %in% c("lr","clr","pr","cpr","cox")))
+    stop("Unknown model type")
+  if (modelType != "cox" && modelType != "pr" && modelType != "cpr")
+    stop("Currently only Cox model and (conditional) Poisson regression are implemented")
+  if ((modelType == "clr" | modelType == "cpr") & is.null(strata))
+    stop("Conditional regression specified, but no strate provided")
+  
   useStrata = (modelType == "clr" | modelType == "cpr" | (modelType == "cox" & !is.null(strata)))
   
+  #Keep only outcome information for this outcome:
   outcomes <- subset(cohortData$outcomes,OUTCOME_ID == as.double(outcomeConceptId))
   colnames(outcomes) <- toupper(colnames(outcomes))
   
+  #Remove people from cohorts based on exclusion data for this outcome:
   t <- in.ff(cohortData$cohorts$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
   cohorts <- as.ram(cohortData$cohort[ffwhich(t,t == FALSE),])
   colnames(cohorts) <- toupper(colnames(cohorts))
@@ -79,6 +86,7 @@ estimateEffect <- function(outcomeConceptId,
     covariates <- cohortData$covariates
     colnames(covariates) <- toupper(colnames(covariates))  
   }
+  
   #Censor outcomes outside of risk window:
   cohorts$TIME_TO_CENSOR <- riskWindowEnd
   if (addExposureDaysToEnd)
@@ -103,32 +111,62 @@ estimateEffect <- function(outcomeConceptId,
         covariates$MINTIME <- 0-covariates$TIME
         covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","MINTIME","Y","ROW_ID")]),]
         cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cox")
-        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=1))  
-        ci <- confint(fit,parm=1)
-        return(data.frame(LOGRR=coef(fit)[names(coef(fit)) == "1"], LOGLB95 = ci[2], LOGUB95 = ci[3]))
+        treatmentVariable <- 1
       } else {
         data <- data[order(data$ROW_ID,-data$TIME,data$Y),]
         covariates <- merge(covariates,as.ffdf(data[,c("ROW_ID","Y","TIME")]))
         covariates$MINTIME <- 0-covariates$TIME
         covariates <- covariates[ffdforder(covariates[c("ROW_ID","MINTIME","Y")]),]
         cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cox")
-        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=1))  
-        ci <- confint(fit,parm=1)
-        return(data.frame(LOGRR=coef(fit)[names(coef(fit)) == "1"], LOGLB95 = ci[2], LOGUB95 = ci[3]))
+        treatmentVariable <- 1
       }
-      
-    } else {# don't use covariates  
+    } else {# don't use covariates    
       if (useStrata){
         cyclopsData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT + strata(STRATUM_ID),data=data, modelType = "cox")
-        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=1))
-        ci <- confint(fit,parm=1)
-        return(data.frame(LOGRR=coef(fit)[names(coef(fit)) == "TREATMENT"], LOGLB95 = ci[2], LOGUB95 = ci[3]))   
+        treatmentVariable <- "TREATMENT"
       } else {
         cyclopsData <- createCyclopsDataFrame(Surv(TIME, Y) ~ TREATMENT,data=data, modelType = "cox")
-        fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=1))
-        ci <- confint(fit,parm=1)
-        return(data.frame(LOGRR=coef(fit)[names(coef(fit)) == "TREATMENT"], LOGLB95 = ci[2], LOGUB95 = ci[3]))        
+        treatmentVariable <- "TREATMENT"
       }
     }
   }
+  
+  if (modelType == "pr" | modelType == "cpr"){
+    outcomes <- as.ram(outcomes)
+    outcomes$Y <- 1
+    outcomes <- aggregate(Y ~ ROW_ID + STRATUM_ID,data=outcomes,sum) #count outcome per person
+    data <- merge(cohorts[,c("TREATMENT","ROW_ID","STRATUM_ID","TIME_TO_CENSOR")],outcomes, all.x=TRUE)
+    data$Y[is.na(data$Y)] <- 0
+    colnames(data)[colnames(data) == "TIME_TO_CENSOR"] <- "TIME"
+    data <- data[data$TIME > 0,]
+    
+    if (useCovariates) { 
+      if (useStrata){
+        data <- data[order(data$STRATUM_ID,data$TIME,data$Y,data$ROW_ID),]
+        covariates <- merge(covariates,as.ffdf(data[,c("ROW_ID","Y","TIME","STRATUM_ID")]))
+        covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","TIME","Y","ROW_ID")]),]
+        cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE)
+        treatmentVariable <- 1
+      } else {
+        data <- data[order(data$ROW_ID,data$TIME,data$Y),]
+        covariates <- merge(covariates,as.ffdf(data[,c("ROW_ID","Y","TIME")]))
+        covariates <- covariates[ffdforder(covariates[c("ROW_ID","TIME","Y")]),]
+        cyclopsData <- createCyclopsData.ffdf(as.ffdf(data),covariates,modelType="pr")
+        treatmentVariable <- 1
+      }
+      
+    } else {# don't use covariates  
+      data$LOGTIME <- log(data$TIME)
+      if (useStrata){
+        cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT + strata(STRATUM_ID) + offset(LOGTIME),data=data, modelType = "cpr")
+        treatmentVariable <- "TREATMENT"
+      } else {
+        cyclopsData <- createCyclopsDataFrame(Y ~ TREATMENT + offset(LOGTIME),data=data, modelType = "pr")
+        treatmentVariable <- "TREATMENT"
+      }
+    }
+  }
+  fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=treatmentVariable))  
+  ci <- confint(fit,parm=treatmentVariable)
+  return(data.frame(LOGRR=coef(fit)[names(coef(fit)) == treatmentVariable], LOGLB95 = ci[2], LOGUB95 = ci[3]))
 }
