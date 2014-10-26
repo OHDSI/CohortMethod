@@ -208,6 +208,7 @@ getOutcomSummaryStatistics <- function(data,
   km <- NULL
   
   if (plot && modelType == "cox") {
+    require(plyr)
     km <- .ggkm(survfit(Surv(TIME, Y) ~ TREATMENT, data), 
                 pval = FALSE, 
                 timeby = timeBy, 
