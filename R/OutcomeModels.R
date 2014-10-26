@@ -190,7 +190,7 @@ estimateEffect <- function(outcomeConceptId,
   return(NULL)
 }
 
-getOutcomSummaryStatistics <- function(data,
+getOutcomeSummaryStatistics <- function(data,
                      modelType = "cox",
                      plot = FALSE,
                      timeBy = 1000) {
