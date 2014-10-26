@@ -58,6 +58,8 @@ estimateEffect <- function(outcomeConceptId,
                            riskWindowEnd = 9999, 
                            addExposureDaysToEnd = FALSE,
                            useCovariates = TRUE, 
+                           fitModel = TRUE,
+                           returnOutcomeData = FALSE,
                            modelType = "cox"){
   if (!(modelType %in% c("lr","clr","pr","cpr","cox")))
     stop("Unknown model type")
@@ -166,7 +168,55 @@ estimateEffect <- function(outcomeConceptId,
       }
     }
   }
-  fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1, exclude=treatmentVariable))  
-  ci <- confint(fit,parm=treatmentVariable)
-  return(data.frame(LOGRR=coef(fit)[names(coef(fit)) == treatmentVariable], LOGLB95 = ci[2], LOGUB95 = ci[3]))
+  
+  df <- NULL
+  if (fitModel) {
+    fit <- fitCyclopsModel(cyclopsData, prior=prior("laplace",0.1,  exclude=treatmentVariable))  
+    ci <- confint(fit,parm=treatmentVariable)
+    df <- data.frame(LOGRR=coef(fit)[names(coef(fit)) == treatmentVariable], LOGLB95 = ci[2], LOGUB95 = ci[3])
+  }
+  
+  if (fitModel) {
+    if (returnOutcomeData) {
+        return(list(estimates = df, data = data))
+    } else {
+        return(df)
+    }
+  } else {
+    if (returnOutcomeData) {
+      return(data)
+    }
+  }
+  return(NULL)
+}
+
+getOutcomeSummaryStatistics <- function(data,
+                     modelType = "cox",
+                     plot = FALSE,
+                     timeBy = 1000) {
+  labels <- c("Comparator", "Treated")
+  
+  patientTable <- table(data$TREATMENT)
+  eventTable <- table(data$TREATMENT, data$Y)
+  timeTable <- aggregate(TIME ~ TREATMENT, FUN = sum, data = data)[,2]
+  
+  tmp <- matrix(0, nrow=3, ncol=2)
+  tmp[1,] <- patientTable
+  tmp[2,] <- eventTable[,2]
+  tmp[3,] <- timeTable
+  
+  km <- NULL
+  
+  if (plot && modelType == "cox") {
+    require(plyr)
+    km <- .ggkm(survfit(Surv(TIME, Y) ~ TREATMENT, data), 
+                pval = FALSE, 
+                timeby = timeBy, 
+                ystratalabs=c("Comparator","Treated"), return = TRUE)  
+  }
+  
+  return (list(info = data.frame(Comparator = tmp[,1], 
+                                 Treated = tmp[,2],
+                                 row.names = c("Patients","Events","Time")),
+               plot = km))
 }
