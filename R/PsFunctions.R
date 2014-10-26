@@ -446,19 +446,21 @@ quickSum <- function(data,squared=FALSE){
     colnames(r)[2] <- "COVARIATE_ID" #for some reason we lose the name when stringsAsFactors = FALSE
     if (is.null(result)){
       result <- r
-      if (squared)
-        colnames(result)[colnames(result) == "value"] = "SUM_SQR"
-      else
-        colnames(result)[colnames(result) == "value"] = "SUM"
+      colnames(result)[colnames(result) == "value"] = "S"
     } else {
       result <- merge(result,r,all=TRUE)
-      result$SUM[is.na(result$SUM)] = 0
+      result$S[is.na(result$S)] = 0
       result$value[is.na(result$value)] = 0
-      result$SUM = result$SUM + result$value
+      result$S = result$S + result$value
       result$value <- NULL
     }
     
   }
+  if (squared)
+    colnames(result)[colnames(result) == "S"] = "SUM_SQR"
+  else
+    colnames(result)[colnames(result) == "S"] = "SUM"
+  
   result$COVARIATE_ID <- as.numeric(result$COVARIATE_ID)
   result
 }

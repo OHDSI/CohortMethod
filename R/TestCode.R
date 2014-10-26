@@ -38,8 +38,8 @@ testCode <- function(){
   
   psPlot(psTrimmed) #Plot trimmed PS distributions
   
-  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
-  
+  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=0)
+
   psPlot(strata) #Plot matched PS distributions
   
   balance <- psComputeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)

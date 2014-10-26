@@ -10,7 +10,7 @@ psPlotCovariateBalance(balance, topSumTreatedBeforeMatching = 0,
 \item{balance}{A data frame created by the \code{psComputeCovariateBalance} funcion.}
 
 \item{topSumTreatedBeforeMatching}{The number of covariates to be shown. Only the covariates with
-the highest sum in the treated group before matching are shown.}
+the highest sum before matching across treated and comparator groups are shown.}
 
 \item{type}{The type of plot. Options are \code{type = "rowpervariable"} or \code{type = "xy"}}
 }

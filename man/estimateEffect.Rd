@@ -5,7 +5,8 @@
 \usage{
 estimateEffect(outcomeConceptId, cohortData, strata = NULL,
   riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
-  useCovariates = TRUE, modelType = "cox")
+  useCovariates = TRUE, fitModel = TRUE, returnOutcomeData = FALSE,
+  modelType = "cox")
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}}
