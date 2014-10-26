@@ -485,7 +485,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
   overall <- merge(overall,overallSqr)
   overall$SD <- sqrt((overall$SUM_SQR - (overall$SUM^2/nOverall))/nOverall)
   overall <- data.frame(COVARIATE_ID = overall$COVARIATE_ID,SD = overall$SD)
-                        
+  
   result <- merge(treated,comparator)
   result <- merge(result,overall)
   result
@@ -524,7 +524,7 @@ psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeCon
     t <- t | cohortData$covariates$COVARIATE_ID == 1
     covariates <- cohortData$covariates[ffwhich(t,t == FALSE),]
   }
-
+  
   beforeMatching <- computeMeansPerGroup(cohorts,covariates)
   afterMatching <- computeMeansPerGroup(as.ffdf(restrictedCohorts),covariates)
   
@@ -548,21 +548,49 @@ psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeCon
   balance
 }
 
-# psPlotCovariateBalance <- function (balance, minTreatedExposed = 1000) {
-#   filtered <- balance[balance$BEFORE_MATCHING_SUM_TREATED >= minTreatedExposed & abs(balance$COEFFICIENT) >= minCoefficient,]
-#   data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),covariate = strtrim(rep(filtered$NAME,2),80), rate = c(filtered$BEFORE_MATCHING_RATE,filtered$AFTER_MATCHING_RATE), group = rep(c("before matching","after matching"),each=nrow(filtered)))
-#   data$covariate <- factor(data$covariate, levels=rev(levels(data$covariate)) )
-#   ggplot(data, aes(x=rate,y=covariate,color=group,group=group,fill=group,shape=group)) + 
-#     geom_point() +
-#     scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-#     scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-#     scale_x_continuous("mean in treated / mean in comparator") +
-#     theme (
-#       axis.text.y = element_text(size=5)
-#     )
-#   #ggsave("balance.png",width=10,height=15,dpi=200) 
-#   plot(balance$BEFORE_MATCHING_STD_DIFF, balance$AFTER_MATCHING_STD_DIFF)
-#   identify(balance$BEFORE_MATCHING_STD_DIFF, balance$AFTER_MATCHING_STD_DIFF, labels=balance$COVARIATE_NAME)  
-# }
-
-
+#' Create a plot of the covariate balance
+#'
+#' @description
+#' Create a plot of the covariate balance. Requires running \code{psComputeCovariateBalance} first.
+#' 
+#' @param balance  A data frame created by the \code{psComputeCovariateBalance} funcion.
+#' @param topSumTreatedBeforeMatching        The number of covariates to be shown. Only the covariates with
+#' the highest sum before matching across treated and comparator groups are shown.
+#' @param type    The type of plot. Options are \code{type = "rowpervariable"} or \code{type = "xy"}
+#'
+#' @return A plot showing the covariate imbalance before and after matching
+#' 
+#' @export
+psPlotCovariateBalance <- function (balance, topSumTreatedBeforeMatching = 0, type="xy") {
+  filtered <- balance
+  filtered$BEFORE_MATCHING_SUM  = filtered$BEFORE_MATCHING_SUM_TREATED + filtered$AFTER_MATCHING_SUM_TREATED
+  if (topSumTreatedBeforeMatching > 0){
+    filtered <- filtered[order(-filtered$BEFORE_MATCHING_SUM),]
+    filtered <- filtered[1:topSumTreatedBeforeMatching,]
+  }
+  if (type == "xy"){
+    limits=c(min(c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF)),max(c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF)))
+    ggplot(filtered, aes(x=BEFORE_MATCHING_STD_DIFF,y=AFTER_MATCHING_STD_DIFF,size=BEFORE_MATCHING_SUM)) + 
+      geom_point(color = rgb(0,0,0.8,alpha=0.4)) +
+      geom_abline(a = 1) + 
+      geom_hline(yintercept = 0) + 
+      scale_x_continuous("Before matching",limits=limits) +
+      scale_y_continuous("After matching",limits=limits) +
+      scale_size_continuous("Sum before matching")
+      #scale_size_continuous("Sum",trans="log")
+    
+  } else {
+    data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),covariate = rep(filtered$COVARIATE_NAME,2), rate = c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF), group = rep(c("before matching","after matching"),each=nrow(filtered)))
+    data$covariate <- factor(data$covariate, levels=rev(levels(data$covariate)) )
+    ggplot(data, aes(x=rate,y=covariate,color=group,group=group,fill=group,shape=group)) + 
+      geom_point() +
+      geom_vline(xintercept = 0) + 
+      scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+      scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+      scale_x_continuous("mean in treated / mean in comparator") +
+      theme (
+        axis.text.y = element_text(size=5)
+      )
+  }
+  #ggsave("balance.png",width=9,height=5,dpi=200) 
+}

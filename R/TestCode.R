@@ -38,11 +38,13 @@ testCode <- function(){
   
   psPlot(psTrimmed) #Plot trimmed PS distributions
   
-  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=0)
+  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
   
   psPlot(strata) #Plot matched PS distributions
   
   balance <- psComputeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+  
+  psPlotCovariateBalance(balance)
   
   #Part three: Fit the outcome model:
   effect <- estimateEffect(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 9999,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox")
