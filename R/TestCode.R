@@ -1,6 +1,6 @@
 
 testCode <- function(){
-  ### Test code for Patrick ###
+  ### Test code ###
   library(CohortMethod)
   setwd("c:/temp")
   
@@ -31,23 +31,26 @@ testCode <- function(){
   psAuc(ps)
   
   model <- psGetModel(ps,cohortData)
-  
-  psPlot(ps) #Plot unmatched PS distributions
+  psPlot(ps)
+  #psPlot(ps,fileName = "ps.png") #Plot unmatched PS distributions
   
   psTrimmed <- psTrimToEquipoise(ps)
   
-  psPlot(psTrimmed) #Plot trimmed PS distributions
+  psPlot(psTrimmed,ps) #Plot trimmed PS distributions
   
-  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=0)
+  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
 
-  psPlot(strata) #Plot matched PS distributions
+  psPlot(strata,ps) #Plot matched PS distributions
   
   balance <- psComputeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
   
-  psPlotCovariateBalance(balance)
+  psPlotCovariateBalanceScatterPlot(balance,fileName = "balanceScatterplot.png")
+  
+  psPlotCovariateBalanceTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
   #Part three: Fit the outcome model:
   effect <- estimateEffect(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 9999,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox")
   effect
   
+
 }

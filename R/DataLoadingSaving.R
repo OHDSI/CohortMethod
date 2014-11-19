@@ -140,7 +140,7 @@ dbGetCohortData <- function(connectionDetails,
   )
   
   class(result) <- "cohortData"
-  result
+  return(result)
 }
 
 #' @export
@@ -178,5 +178,5 @@ load.cohortData <- function(file){
   )
   class(result) <- "cohortData"
   rm(e)
-  result 
+  return(result)
 }

@@ -22,13 +22,13 @@
 # @author Martijn Schuemie
 
 in.ff <- function(a,b){
-  ffmatch(x=a, table=b, nomatch = 0L) > 0L
+  return(ffmatch(x=a, table=b, nomatch = 0L) > 0L)
 }
 
 #' Create propensity scores
 #'
 #' @description
-#' \code{psCreate} creates propensity scores
+#' \code{psCreate} creates propensity scores using a regularized logistic regression.
 #' 
 #' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
@@ -36,7 +36,7 @@ in.ff <- function(a,b){
 #' @param prior             The prior used to fit the model.
 #'
 #' @details
-#' todo
+#' \code{psCreate} creates propensity scores using a regularized logistic regression.
 #'  
 #' @examples 
 #' #todo
@@ -65,10 +65,10 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
   data <- data.frame(PROPENSITY_SCORE = pred, ROW_ID = as.numeric(attr(pred,"names")))
   data <- merge(data,ps,by="ROW_ID")
   attr(data,"coefficients") <- coef(cyclopsFit)
-  data
+  return(data)
 }
 
-#' Retrieves the propensity model
+#' Get the propensity model
 #'
 #' @description
 #' \code{psGetModel} shows the propensity score model
@@ -78,14 +78,13 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
 #' @param cdmSchema	        		Database schema that contains the vocabulary.
 #'
 #' @details
-#' Shows the coefficients and names of the covariates with non-zero coefficients
+#' Shows the coefficients and names of the covariates with non-zero coefficients.
 #'  
 #' @examples 
 #' #todo
 #' 
 #' @export
 psGetModel <- function(propensityScore, cohortData){
-  
   cfs <- attr(propensityScore,"coefficients")
   cfs <- cfs[cfs != 0]
   attr(cfs,"names")[1] <- 0
@@ -95,14 +94,17 @@ psGetModel <- function(propensityScore, cohortData){
   cfs <- as.ram(cfs[,c("coefficient","id","COVARIATE_NAME")])
   cfs <- cfs[order(-abs(cfs$coefficient)),]
   colnames(cfs) <- toupper(colnames(cfs))
-  cfs
+  return(cfs)
 }
 
-computePreferenceScore <- function(data){
-  proportion <- sum(data$TREATMENT) / nrow(data)
+computePreferenceScore <- function(data, unfilteredData = NULL){
+  if (is.null(unfilteredData))
+    proportion <- sum(data$TREATMENT) / nrow(data)
+  else #Proportion may have changed, but we still want to use the old proportion
+    proportion <- sum(unfilteredData$TREATMENT) / nrow(unfilteredData)
   x <- exp(log(data$PROPENSITY_SCORE/(1-data$PROPENSITY_SCORE)) - log(proportion/(1-proportion)))
   data$PREFERENCE_SCORE <- x / (x+1)
-  data
+  return(data)
 }
 
 #' Plot the propensity score distribution
@@ -111,15 +113,17 @@ computePreferenceScore <- function(data){
 #' \code{psPlot} shows the propensity (or preference) score distribution
 #' 
 #' @param data              A data frame with at least the two columns described below
+#' @param unfilteredData    To be used when computing preference scores on data from which subjects have
+#' already been removed, e.g. through trimming and/or matching. This data frame should have the same 
+#' structure as \code{data}.
 #' @param scale             The scale of the graph. Two scales are supported: \code{
-#' scale = "propensity"} or  \code{#' scale = "preference"}. The preference score scale is defined by Walker 
+#' scale = "propensity"} or  \code{scale = "preference"}. The preference score scale is defined by Walker 
 #' et al (2013). 
 #' @param type              Type of plot. Two possible values: \code{type = "density"} or \code{type = "histogram"}
 #' @param binWidth          For histograms, the width of the bins
+#' @param fileName        Name of the file where the plot should be saved, for example 'plot.png'. See 
+#' the function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
-#' @return
-#' Returns a GGPlot2 object. Use the ggsave function to save to file.
-#'
 #' @details
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
@@ -140,15 +144,23 @@ computePreferenceScore <- function(data){
 #' Research, 3, 11-20
 #' 
 #' @export
-psPlot <- function(data, scale = "preference", type = "density", binWidth = 0.05){
+psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "density", binWidth = 0.05, fileName=NULL){
+  require(ggplot2)
   colnames(data) <- toupper(colnames(data))
   if (!("TREATMENT" %in% colnames(data))) 
     stop("Missing column TREATMENT in data")
   if (!("PROPENSITY_SCORE" %in% colnames(data))) 
     stop("Missing column PROPENSITY_SCORE in data")
+  if (!is.null(unfilteredData)){
+    colnames(unfilteredData) <- toupper(colnames(unfilteredData))
+    if (!("TREATMENT" %in% colnames(unfilteredData))) 
+      stop("Missing column TREATMENT in unfilteredData")
+    if (!("PROPENSITY_SCORE" %in% colnames(unfilteredData))) 
+      stop("Missing column PROPENSITY_SCORE in unfilteredData")   
+  }
   
   if (scale == "preference") {
-    data <- computePreferenceScore(data)
+    data <- computePreferenceScore(data,unfilteredData)
     data$SCORE <- data$PREFERENCE_SCORE
     label = "Preference score"
   } else {
@@ -158,20 +170,23 @@ psPlot <- function(data, scale = "preference", type = "density", binWidth = 0.05
   data$GROUP <- "Treated"
   data$GROUP[data$TREATMENT == 0] <- "Comparator"
   if (type == "density"){
-    ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
+    plot = ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
       geom_density() +
       scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
       scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
       scale_x_continuous(label,limits=c(0,1)) +
       scale_y_continuous("Density")
   } else {
-    ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
+    plot = ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
       geom_histogram(binwidth = binWidth, position="identity") +
       scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
       scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
       scale_x_continuous(label,limits=c(0,1)) +
       scale_y_continuous("Number of subjects")
   }
+  if (!is.null(fileName))
+    ggsave(fileName,plot,width=5,height=3.5,dpi=400) 
+  return(plot)
 }
 
 #' Compute the area under the ROC curve
@@ -200,6 +215,7 @@ psPlot <- function(data, scale = "preference", type = "density", binWidth = 0.05
 #' 
 #' @export
 psAuc <- function(data){
+  require(pROC)
   colnames(data) <- toupper(colnames(data))
   if (!("TREATMENT" %in% colnames(data))) 
     stop("Missing column TREATMENT in data")
@@ -208,7 +224,7 @@ psAuc <- function(data){
   
   rocobj <- roc(data$TREATMENT,data$PROPENSITY_SCORE, algorithm=3)
   auc <- as.numeric(ci.auc(rocobj, method="delong"))
-  data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3])
+  return(data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3]))
 }
 
 #' Trim persons by propensity score
@@ -247,7 +263,8 @@ psTrim <- function(data, trimFraction=0.05){
     stop("Missing column PROPENSITY_SCORE in data")
   cutoffTreated <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],1-trimFraction)
   cutoffComparator <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 0],trimFraction)
-  data[(data$PROPENSITY_SCORE <= cutoffTreated & data$TREATMENT == 1) | (data$PROPENSITY_SCORE >= cutoffComparator & data$TREATMENT == 0),]
+  result <- data[(data$PROPENSITY_SCORE <= cutoffTreated & data$TREATMENT == 1) | (data$PROPENSITY_SCORE >= cutoffComparator & data$TREATMENT == 0),]
+  return(result)
 }
 
 #' Keep only persons in clinical equipoise
@@ -290,7 +307,7 @@ psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
     stop("Missing column PROPENSITY_SCORE in data")
   
   data <- computePreferenceScore(data)
-  data[data$PREFERENCE_SCORE >= bounds[1] & data$PREFERENCE_SCORE <= bounds[2],]
+  return(data[data$PREFERENCE_SCORE >= bounds[1] & data$PREFERENCE_SCORE <= bounds[2],])
 }
 
 #' Match persons by propensity score
@@ -356,7 +373,7 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
   if (length(stratificationColumns) == 0) {
     result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$PROPENSITY_SCORE, data$TREATMENT, maxRatio, caliper)
     result$ROW_ID <- data$ROW_ID
-    result[result$STRATUM_ID != -1,]
+    return(result[result$STRATUM_ID != -1,])
   } else {
     result <- data.frame()
     interactions <- interaction(data[,stratificationColumns])
@@ -371,7 +388,7 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
         subResult$STRATUM_ID = subResult$STRATUM_ID + max(result$STRATUM_ID) + 1
       result <- rbind(result,subResult)
     }
-    result
+    return(result)
   }
 }
 
@@ -416,7 +433,7 @@ psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
   psStrata <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],(1:(numberOfStrata-1))/numberOfStrata)
   if (length(stratificationColumns) == 0) {
     data$STRATUM_ID <- as.integer(as.character(cut(data$PROPENSITY_SCORE,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
-    data
+    return(data)
   } else {
     result <- data.frame()
     interactions <- interaction(data[,stratificationColumns])
@@ -428,7 +445,7 @@ psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
         subset$STRATUM_ID = subset$STRATUM_ID + max(result$STRATUM_ID) + 1
       result <- rbind(result,subset)
     }
-    result
+    return(result)
   }
 }
 
@@ -454,7 +471,6 @@ quickSum <- function(data,squared=FALSE){
       result$S = result$S + result$value
       result$value <- NULL
     }
-    
   }
   if (squared)
     colnames(result)[colnames(result) == "S"] = "SUM_SQR"
@@ -462,7 +478,7 @@ quickSum <- function(data,squared=FALSE){
     colnames(result)[colnames(result) == "S"] = "SUM"
   
   result$COVARIATE_ID <- as.numeric(result$COVARIATE_ID)
-  result
+  return(result)
 }
 
 
@@ -490,7 +506,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
   
   result <- merge(treated,comparator)
   result <- merge(result,overall)
-  result
+  return(result)
 }
 
 
@@ -547,52 +563,83 @@ psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeCon
   balance$BEFORE_MATCHING_STD_DIFF[balance$BEFORE_MATCHING_SD == 0] <- 0
   balance$AFTER_MATCHING_STD_DIFF[balance$BEFORE_MATCHING_SD == 0] <- 0
   balance <- balance[order(-abs(balance$BEFORE_MATCHING_STD_DIFF)),]
-  balance
+  return(balance)
 }
 
-#' Create a plot of the covariate balance
+#' Create a scatterplot of the covariate balance
 #'
 #' @description
-#' Create a plot of the covariate balance. Requires running \code{psComputeCovariateBalance} first.
+#' Create a scatterplot of the covariate balance, showing all variables with balance before and after 
+#' matching on the x and y axis respectively. Requires running \code{psComputeCovariateBalance} first.
 #' 
 #' @param balance  A data frame created by the \code{psComputeCovariateBalance} funcion.
-#' @param topSumTreatedBeforeMatching        The number of covariates to be shown. Only the covariates with
-#' the highest sum before matching across treated and comparator groups are shown.
-#' @param type    The type of plot. Options are \code{type = "rowpervariable"} or \code{type = "xy"}
-#'
-#' @return A plot showing the covariate imbalance before and after matching
+#' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
+#' function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
 #' @export
-psPlotCovariateBalance <- function (balance, topSumTreatedBeforeMatching = 0, type="xy") {
-  filtered <- balance
-  filtered$BEFORE_MATCHING_SUM  = filtered$BEFORE_MATCHING_SUM_TREATED + filtered$AFTER_MATCHING_SUM_TREATED
-  if (topSumTreatedBeforeMatching > 0){
-    filtered <- filtered[order(-filtered$BEFORE_MATCHING_SUM),]
-    filtered <- filtered[1:topSumTreatedBeforeMatching,]
-  }
-  if (type == "xy"){
-    limits=c(min(c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF)),max(c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF)))
-    ggplot(filtered, aes(x=BEFORE_MATCHING_STD_DIFF,y=AFTER_MATCHING_STD_DIFF,size=BEFORE_MATCHING_SUM)) + 
-      geom_point(color = rgb(0,0,0.8,alpha=0.4)) +
-      geom_abline(a = 1) + 
-      geom_hline(yintercept = 0) + 
-      scale_x_continuous("Before matching",limits=limits) +
-      scale_y_continuous("After matching",limits=limits) +
-      scale_size_continuous("Sum before matching")
-      #scale_size_continuous("Sum",trans="log")
-    
-  } else {
-    data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),covariate = rep(filtered$COVARIATE_NAME,2), rate = c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF), group = rep(c("before matching","after matching"),each=nrow(filtered)))
-    data$covariate <- factor(data$covariate, levels=rev(levels(data$covariate)) )
-    ggplot(data, aes(x=rate,y=covariate,color=group,group=group,fill=group,shape=group)) + 
-      geom_point() +
-      geom_vline(xintercept = 0) + 
-      scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-      scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-      scale_x_continuous("mean in treated / mean in comparator") +
-      theme (
-        axis.text.y = element_text(size=5)
-      )
-  }
-  #ggsave("balance.png",width=9,height=5,dpi=200) 
+psPlotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
+  require(ggplot2)
+  balance$BEFORE_MATCHING_STD_DIFF <- abs(balance$BEFORE_MATCHING_STD_DIFF)
+  balance$AFTER_MATCHING_STD_DIFF <- abs(balance$AFTER_MATCHING_STD_DIFF)
+  limits=c(0,max(c(balance$BEFORE_MATCHING_STD_DIFF,balance$AFTER_MATCHING_STD_DIFF)))
+  plot <- ggplot(balance, aes(x=BEFORE_MATCHING_STD_DIFF,y=AFTER_MATCHING_STD_DIFF)) + 
+    geom_point(color = rgb(0,0,0.8,alpha=0.3)) +
+    geom_abline(a = 1) + 
+    geom_hline(yintercept = 0) + 
+    ggtitle("Standardized difference of mean") +
+    scale_x_continuous("Before matching",limits=limits) +
+    scale_y_continuous("After matching",limits=limits)
+  if (!is.null(fileName))
+    ggsave(fileName,plot,width=4,height=4,dpi=400) 
+  return(plot)
+}  
+
+#' Plot variables with largest imbalance
+#'
+#' @description
+#' Create a plot showing those variables having the largest imbalance before matching, and
+#' those variables having the largest imbalance after matching. Requires running 
+#' \code{psComputeCovariateBalance} first.
+#' 
+#' @param balance  A data frame created by the \code{psComputeCovariateBalance} funcion.
+#' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
+#' function \code{ggsave} in the ggplot2 package for supported file formats.
+#' 
+#' @export
+psPlotCovariateBalanceTopVariables <- function(balance, n = 20, fileName=NULL) {
+  require(ggplot2)
+  topBefore <- balance[order(-abs(balance$BEFORE_MATCHING_STD_DIFF)),]
+  topBefore <- topBefore[1:n,]
+  topBefore$facet <- paste("Top",n,"before matching")
+  topAfter <- balance[order(-abs(balance$AFTER_MATCHING_STD_DIFF)),]
+  topAfter <- topAfter[1:n,]
+  topAfter$facet <- paste("Top",n,"after matching")
+  filtered <- rbind(topBefore,topAfter)
+  
+  data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),
+                     covariate = rep(filtered$COVARIATE_NAME,2), 
+                     difference = c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF), 
+                     group = rep(c("before matching","after matching"),each=nrow(filtered)),
+                     facet = rep(filtered$facet,2),
+                     rowId = rep(nrow(filtered):1,2))
+  data$facet <- factor(data$facet, levels = rev(levels(data$facet)))
+  data$group <- factor(data$group, levels = rev(levels(data$group)))
+  plot <- ggplot(data, aes(x=difference,y=rowId,color=group,group=group,fill=group,shape=group)) + 
+    geom_point() +
+    geom_vline(xintercept = 0) + 
+    scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+    scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+    scale_x_continuous("Standardized difference of mean") +
+    scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$COVARIATE_NAME) +
+    facet_grid(facet ~ ., scales="free", space="free") +
+    theme (
+      axis.text.y = element_text(size=7),
+      axis.title.y = element_blank(),
+      legend.position="top",
+      legend.title = element_blank()
+    )
+  if (!is.null(fileName))
+    ggsave(fileName,plot,width=10,height=max(2+n*0.2,5),dpi=400) 
+  return(plot)
 }
+

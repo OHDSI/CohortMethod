@@ -11,12 +11,13 @@ Depends:
     DatabaseConnector,
     SqlRender,
     Cyclops,
-    ggplot2,
     Rcpp (>= 0.11.2),
-    pROC,
     survival,
     ff,
     ffbase
+Imports:
+    ggplot2,
+    pROC
 Suggests:
     testthat
 Imports:

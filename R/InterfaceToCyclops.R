@@ -31,7 +31,7 @@ openResultSet <- function(conn, sql, batchSize) {
   assign("resultSet",new("JDBCResult", jr=r, md=md, stat=s, pull=.jnull()),envir=rs)
   assign("batchSize",batchSize,envir=rs)
   assign("done",FALSE,envir=rs)
-  rs
+  return(rs)
 }
 
 lastRowNotHavingThisValue <- function(column, value){
@@ -188,7 +188,7 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                            sortCovariates = sortCovariates,
                            makeCovariatesDense = makeCovariatesDense)
   }
-  dataPtr
+  return(dataPtr)
 }
 
 #' Get data from the database and insert it in a Cyclops data object
@@ -293,7 +293,7 @@ dbCreateCyclopsData <- function(connection,
     get("done",envir=resultSet)
   }
   
-  constructCyclopsDataFromBatchableSources(resultSetOutcome,
+  result <- constructCyclopsDataFromBatchableSources(resultSetOutcome,
                                            resultSetCovars,
                                            getOutcomeBatch,
                                            getCovariateBatch,
@@ -304,8 +304,7 @@ dbCreateCyclopsData <- function(connection,
                                            sortCovariates,
                                            makeCovariatesDense
   )
-  
-  
+  return(result)
 }
 
 
@@ -409,7 +408,7 @@ createCyclopsData.ffdf <- function(outcomes,
     cursor > length(chunks)
   }
   
-  constructCyclopsDataFromBatchableSources(resultSetOutcome,
+  result <- constructCyclopsDataFromBatchableSources(resultSetOutcome,
                                            resultSetCovariate,
                                            getOutcomeBatch,
                                            getCovariateBatch,
@@ -419,6 +418,7 @@ createCyclopsData.ffdf <- function(outcomes,
                                            offsetAlreadyOnLogScale,
                                            sortCovariates,
                                            makeCovariatesDense)
+  return(result)
 }
 
 #' Convert data from data frames into a CyclopsData object
@@ -515,7 +515,7 @@ createCyclopsData <- function(outcomes,
                          sortCovariates = sortCovariates,
                          makeCovariatesDense = makeCovariatesDense)
   
-  dataPtr
+  return(dataPtr)
 }
 
 
