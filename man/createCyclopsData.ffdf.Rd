@@ -39,7 +39,8 @@ These columns are expected in the outcome object:
   \verb{y}    \tab(real) \tab The outcome variable \cr
   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 }
-The outcome table should be sorted by stratum_id and then row_id
+The outcome table should be sorted by stratum_id and then row_id, except for Cox regression when
+the table should be sorted by stratum_id, -time, y, and row_id.
 
 These columns are expected in the covariates object:
 \tabular{lll}{
@@ -48,21 +49,33 @@ These columns are expected in the covariates object:
   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 }
-The covariate table should be sorted by stratum_id, row_id and covariate_id
+The covariate table should be sorted by stratum_id, row_id and covariate_id except for Cox regression when
+the table should be sorted by stratum_id, -time, y, and row_id.
 }
 \examples{
-\dontrun{
-  connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
-  connection <- connect(connectionDetails)
+#Convert infert dataset to Cyclops format:
+covariates <- data.frame(stratum_id = rep(infert$stratum,2),
+                         row_id = rep(1:nrow(infert),2),
+                         covariate_id = rep(1:2,each=nrow(infert)),
+                         covariate_value = c(infert$spontaneous,infert$induced))
+outcomes <- data.frame(stratum_id = infert$stratum,
+                       row_id = 1:nrow(infert),
+                       y = infert$case)
+#Make sparse:
+covariates <- covariates[covariates$covariate_value != 0,]
 
-  outcomes <- dbGetQuery.ffdf(conn,"SELECT * FROM outcomes ORDER BY row_id")
-  covariates <- dbGetQuery.ffdf(conn,"SELECT * FROM covariates ORDER BY row_id, covariate_id")
+#Sort:
+covariates <- covariates[order(covariates$stratum_id,covariates$row_id,covariates$covariate_id),]
+outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
 
-  cyclopsData <- dbGetCyclopsInput(connection,outcomes,covariates,modelType = "lr")
+#Convert to ffdf:
+covariates <- as.ffdf(covariates)
+outcomes <- as.ffdf(outcomes)
 
-  dbDisconnect(connection)
+#Create Cyclops data object:
+cyclopsData <- createCyclopsData.ffdf(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
 
-  cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("normal",0.01))
-}
+#Fit model:
+fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))
 }
 

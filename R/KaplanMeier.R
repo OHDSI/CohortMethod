@@ -1,103 +1,35 @@
 
 #' Create a Kaplan-Meier plot using ggplot2
 #'
-#' @param sfit: a survfit object
-#' @param table: logical: Create a table graphic below the K-M plot, indicating at-risk numbers?
-#' @param returns logical: if TRUE, return an arrangeGrob object
-#' @param xlabs: x-axis label
-#' @param ylabs: y-axis label
-#' @param ystratalabs: The strata labels. Default = levels(summary(sfit)$strata)
-#' @param ystrataname: The legend name. Default = "Strata"
-#' @param timeby numeric: control the granularity along the time-axis
-#' @param main plot title
-#' @param pval logical: add the pvalue to the plot?
-#' @param marks logical: should censoring marks be added?
-#' @param shape: what shape should the censoring marks be, default is a vertical line
-#' @param legend logical: should a legend be added to the plot?
-#' 
-#' @return a ggplot is made. if return=TRUE, then an arrangeGlob object
-#' is returned
-#' @author Abhijit Dasgupta with contributions by Gil Tomas
+#' @author Adapted from Abhijit Dasgupta with contributions by Gil Tomas
 #' \url{http://statbandit.wordpress.com/2011/03/08/an-enhanced-kaplan-meier-plot/}
 #' slight adjustment to cope with none strata calls (e.g. Surv(time,event)~1), 
 #' option to remove the legend and also draw marks at censoring locations by Nadieh Bremer
-#' 
-#' @examples
-#'  library(survival)
-#'  data(colon)
-#'  fit <- survfit(Surv(time,status)~rx, data=colon)
-#'  ggkm(fit, timeby=500)
-
 .ggkm <- function(sfit,
-                 table = TRUE,
-                 returns = FALSE,
-                 xlabs = "Time",
-                 ylabs = "Survival Probability",
-                 xlims = c(0,max(sfit$time)),
-                 ylims = c(0,1),
-                 ystratalabs = NULL,
-                 ystrataname = NULL,
-                 timeby = 100,
-                 main = "Kaplan-Meier Plot",
-                 pval = TRUE,
-                 marks = FALSE,
-                 shape = 3,
-                 legend = TRUE,
-                 subs = NULL,
-                 ...) {
+                 marks = TRUE,
+                 legend = FALSE,
+                 labelsInGraph = TRUE) {
   
-  #############
-  # libraries #
-  #############
+  require(ggplot2)
+  require(survival)
+  require(plyr)
   
-  #Check if the following packages have been installed. If not, install them
-  if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2")
-  if (!"survival" %in% installed.packages()) install.packages("survival")
-  if (!"gridExtra" %in% installed.packages()) install.packages("gridExtra")
-  if (!"reshape" %in% installed.packages()) install.packages("reshape")
-  
-  suppressPackageStartupMessages(library(ggplot2, warn.conflicts=FALSE))
-  suppressPackageStartupMessages(library(survival, warn.conflicts=FALSE))
-  suppressPackageStartupMessages(library(gridExtra, warn.conflicts=FALSE))
-  suppressPackageStartupMessages(library(reshape, warn.conflicts=FALSE))
+  ystratalabs=c("Comparator","Treated")
+  xlabs = "Time in days"
+  ylabs = "Survival Probability"
+  xlims = c(0,max(sfit$time))
+  ylims = c(0,1)
+  main = "Kaplan-Meier Plot"
   
   #################################
   # sorting the use of subsetting #
   #################################
   
-  times <- seq(0, max(sfit$time), by = timeby)
-  
-  if(is.null(subs)){
-    if(length(levels(summary(sfit)$strata)) == 0) {
-      subs1 <- 1
-      subs2 <- 1:length(summary(sfit,censored=T)$time)
-      subs3 <- 1:length(summary(sfit,times = times,extend = TRUE)$time)
-    } else {
-      subs1 <- 1:length(levels(summary(sfit)$strata))
-      subs2 <- 1:length(summary(sfit,censored=T)$strata)
-      subs3 <- 1:length(summary(sfit,times = times,extend = TRUE)$strata)
-    }
-  } else{
-    for(i in 1:length(subs)){
-      if(i==1){
-        ssvar <- paste("(?=.*\\b=",subs[i],sep="")
-      }
-      if(i==length(subs)){
-        ssvar <- paste(ssvar,"\\b)(?=.*\\b=",subs[i],"\\b)",sep="")
-      }
-      if(!i %in% c(1, length(subs))){
-        ssvar <- paste(ssvar,"\\b)(?=.*\\b=",subs[i],sep="")
-      }
-      if(i==1 & i==length(subs)){
-        ssvar <- paste("(?=.*\\b=",subs[i],"\\b)",sep="")
-      }
-    }
-    subs1 <- which(regexpr(ssvar,levels(summary(sfit)$strata), perl=T)!=-1)
-    subs2 <- which(regexpr(ssvar,summary(sfit,censored=T)$strata, perl=T)!=-1)
-    subs3 <- which(regexpr(ssvar,summary(sfit,times = times,extend = TRUE)$strata, perl=T)!=-1)
+  if(length(levels(summary(sfit)$strata)) == 0) {
+    subs2 <- 1:length(summary(sfit,censored=T)$time)
+  } else {
+    subs2 <- 1:length(summary(sfit,censored=T)$strata)
   }
-  
-  if(!is.null(subs)) pval <- FALSE
   
   ##################################
   # data manipulation pre-plotting #
@@ -113,7 +45,6 @@
   
   if(is.null(ystrataname)) ystrataname <- "Strata"
   m <- max(nchar(ystratalabs))
-  times <- seq(0, max(sfit$time), by = timeby)
   
   if(length(levels(summary(sfit)$strata)) == 0) {
     Factor <- factor(rep("All",length(subs2)))
@@ -145,104 +76,44 @@
   # specifying plot parameteres etc #
   ###################################
   
-  p <- ggplot( .df, aes(time, surv)) +
-    geom_step(aes(linetype = strata), size = 0.7) +
-    theme_bw() +
-    theme(axis.title.x = element_text(vjust = 0.5)) +
-    scale_x_continuous(xlabs, breaks = times, limits = xlims) +
+  p <- ggplot( .df, aes(time, surv,linetype = strata,color = strata)) +
+    geom_step(size=1) +
+    scale_color_manual(values=c(rgb(0,0,0.8,alpha=0.5),rgb(0.8,0,0,alpha=0.5)),guide=FALSE) +
+    scale_x_continuous(xlabs, limits = xlims) +
     scale_y_continuous(ylabs, limits = ylims) +
-    theme(panel.grid.minor = element_blank()) +
-    # MOVE LEGEND HERE BELOW [first is x dim, second is y dim]
-    theme(legend.position = c(ifelse(m < 10, .85, .75),ifelse(d < 4, .85, .8))) +
-    theme(legend.key = element_rect(colour = NA)) +
-    theme(panel.border = element_blank()) +
     labs(linetype = ystrataname) +
-    theme(plot.margin = unit(c(0, 1, .5,ifelse(m < 10, 1.5, 2.5)),"lines")) +
-    ggtitle(main)
+    ggtitle(main) +
+    theme(legend.title = element_blank())
   
   #Removes the legend: 
-  if(legend == FALSE) 
+  if(legend == FALSE) {
     p <- p + theme(legend.position="none")
+  }
+  
+  if (labelsInGraph == TRUE){
+    labelX = .90*(xlims[2]-xlims[1]) + xlims[1]
+    delta <- abs(.df$time-labelX)
+    nearestComparatorRow <- which(delta == min(delta[.df$strata == "Comparator"]) & .df$strata == "Comparator")[1]
+    nearestTreatedRow <- which(delta == min(delta[.df$strata == "Treated"]) & .df$strata == "Treated")[1]
+    
+    yComparator <- .df$surv[nearestComparatorRow]
+    yTreated <- .df$surv[nearestTreatedRow]
+    if (yComparator > yTreated){
+      yComparator <- min(yComparator + .1,1)
+      yTreated <- max(yTreated - .1,0)
+    } else{
+      yComparator <- max(yComparator - .1,0)
+      yTreated <- min(yTreated + .1,1)
+    }
+    
+    p <- p + annotate("text",x = labelX, y = yComparator,label = "Comparator", hjust = 1)
+    p <- p + annotate("text",x = labelX, y = yTreated,label = "Treated", hjust = 1)
+  }
   
   #Add censoring marks to the line:
   if(marks == TRUE)
-    p <- p + geom_point(data = subset(.df, n.censor >= 1), aes(x = time, y = surv), shape = shape)
+    p <- p + geom_point(data = subset(.df, n.censor >= 1), aes(x = time, y = surv), shape = "|")
   
-  ## Create a blank plot for place-holding
-  blank.pic <- ggplot(.df, aes(time, surv)) +
-    geom_blank() + theme_bw() +
-    theme(axis.text.x = element_blank(),axis.text.y = element_blank(),
-          axis.title.x = element_blank(),axis.title.y = element_blank(),
-          axis.ticks = element_blank(),
-          panel.grid.major = element_blank(),panel.border = element_blank())
-  
-  #####################
-  # p-value placement #
-  #####################a
-  
-  if(length(levels(summary(sfit)$strata)) == 0) pval <- FALSE
-  
-  if(pval == TRUE) {
-    sdiff <- survdiff(eval(sfit$call$formula), data = eval(sfit$call$data))
-    pvalue <- pchisq(sdiff$chisq,length(sdiff$n) - 1,lower.tail = FALSE)
-    pvaltxt <- ifelse(pvalue < 0.0001,"p < 0.0001",paste("p =", signif(pvalue, 3)))
-    # MOVE P-VALUE LEGEND HERE BELOW [set x and y]
-    p <- p + annotate("text",x = 150, y = 0.1,label = pvaltxt)
-  }#if
-  
-  ###################################################
-  # Create table graphic to include at-risk numbers #
-  ###################################################
-  
-  if(length(levels(summary(sfit)$strata)) == 0) {
-    Factor <- factor(rep("All",length(subs3)))
-  } else {
-    Factor <- factor(summary(sfit,times = times,extend = TRUE)$strata[subs3])
-  }
-  
-  if(table) {
-    risk.data <- data.frame(
-      strata = Factor,
-      time = summary(sfit,times = times,extend = TRUE)$time[subs3],
-      n.risk = summary(sfit,times = times,extend = TRUE)$n.risk[subs3]
-    )
-    risk.data$strata <- factor(risk.data$strata, levels=rev(levels(risk.data$strata)))
-    
-    data.table <- ggplot(risk.data,aes(x = time, y = strata, label = format(n.risk, nsmall = 0))) +
-      geom_text(size = 3.5) + theme_bw() +
-      scale_y_discrete(breaks = as.character(levels(risk.data$strata)),
-                       labels = rev(ystratalabs)) +
-      scale_x_continuous("Numbers at risk", limits = xlims) +
-      theme(axis.title.x = element_text(size = 10, vjust = 1),
-            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-            panel.border = element_blank(),axis.text.x = element_blank(),
-            axis.ticks = element_blank(),axis.text.y = element_text(face = "bold",hjust = 1))
-    
-    data.table <- data.table +
-      theme(legend.position = "none") + xlab(NULL) + ylab(NULL)
-    
-    # ADJUST POSITION OF TABLE FOR AT RISK
-    data.table <- data.table +
-      theme(plot.margin = unit(c(-1.5, 1, 0.1, ifelse(m < 10, 2.5, 3.5) - 0.15 * m), "lines"))
-    
-    #######################
-    # Plotting the graphs #
-    #######################
-    
-    grid.arrange(p, blank.pic, data.table, clip = FALSE, nrow = 3,
-                 ncol = 1, heights = unit(c(2, .1, .25),c("null", "null", "null")))
-    
-    if(returns) {
-      a <- arrangeGrob(p, blank.pic, data.table, clip = FALSE, nrow = 3,
-                       ncol = 1, heights = unit(c(2, .1, .25), c("null", "null", "null")))
-      return(a)
-    }#if
-  } else {
-    if(returns) return(p)
-  }#else
+  return(p)
 }
-
-##################################################################################################
-##################################################################################################
-##################################################################################################
 

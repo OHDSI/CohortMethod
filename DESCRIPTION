@@ -17,10 +17,9 @@ Depends:
     ffbase
 Imports:
     ggplot2,
-    pROC
+    pROC,
+    plyr
 Suggests:
     testthat
-Imports:
-    Rcpp (>= 0.11.2)
 LinkingTo: Rcpp
 NeedsCompilation: yes

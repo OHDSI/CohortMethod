@@ -74,8 +74,7 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
 #' \code{psGetModel} shows the propensity score model
 #' 
 #' @param propensityScore       The propensity scores as generated using the \code{psCreate} function.
-#' @param connectionDetails     An R object of type ConnectionDetail (details for the function that contains server info, database type, optionally username/password, port).
-#' @param cdmSchema	        		Database schema that contains the vocabulary.
+#' @param cohortData            An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -87,7 +86,7 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
 psGetModel <- function(propensityScore, cohortData){
   cfs <- attr(propensityScore,"coefficients")
   cfs <- cfs[cfs != 0]
-  attr(cfs,"names")[1] <- 0
+  #attr(cfs,"names")[1] <- 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
   
   cfs <- merge(as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="COVARIATE_ID")

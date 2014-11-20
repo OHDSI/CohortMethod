@@ -8,9 +8,7 @@ psGetModel(propensityScore, cohortData)
 \arguments{
 \item{propensityScore}{The propensity scores as generated using the \code{psCreate} function.}
 
-\item{connectionDetails}{An R object of type ConnectionDetail (details for the function that contains server info, database type, optionally username/password, port).}
-
-\item{cdmSchema}{Database schema that contains the vocabulary.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}.}
 }
 \description{
 \code{psGetModel} shows the propensity score model

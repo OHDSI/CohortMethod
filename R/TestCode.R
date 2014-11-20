@@ -30,9 +30,9 @@ testCode <- function(){
    
   psAuc(ps)
   
-  model <- psGetModel(ps,cohortData)
+  propensityModel <- psGetModel(ps,cohortData)
+  
   psPlot(ps)
-  #psPlot(ps,fileName = "ps.png") #Plot unmatched PS distributions
   
   psTrimmed <- psTrimToEquipoise(ps)
   
@@ -49,8 +49,15 @@ testCode <- function(){
   psPlotCovariateBalanceTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
   #Part three: Fit the outcome model:
-  effect <- estimateEffect(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 9999,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox")
-  effect
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox")
   
+  plotKaplanMeier(outcomeModel)
+  
+  fullOutcomeModel <- getFullOutcomeModel(outcomeModel,cohortData)
 
+  summary(outcomeModel)
+  
+  coef(outcomeModel)
+  
+  confint(outcomeModel)
 }
