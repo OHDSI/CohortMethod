@@ -41,10 +41,10 @@ namespace ohdsi {
 			if (nrows == 1){
 				return true;
 			}
-			NumericVector columns[ncols];
+			std::vector<NumericVector> columns(ncols);
       
       for (unsigned int column=0; column<ncols; column++){
-        columns[column] = dataFrame[indexes.at(column)];
+        columns[column] = dataFrame[indexes.at(column)]; // TODO Check that this does not make a copy        
       }
 
 			for(unsigned int row=1; row<nrows; row++) {
