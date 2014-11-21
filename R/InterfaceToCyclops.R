@@ -52,7 +52,6 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                                                      modelType = "lr", 
                                                      addIntercept = TRUE,
                                                      offsetAlreadyOnLogScale = FALSE,
-                                                     sortCovariates = TRUE,
                                                      makeCovariatesDense = NULL){
   if ((modelType == "clr" | modelType == "cpr") & addIntercept){
     warning("Intercepts are not allowed in conditional models, removing intercept",call.=FALSE)
@@ -185,7 +184,6 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
                            addIntercept = addIntercept,
                            useOffsetCovariate = useOffsetCovariate,
                            offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
-                           sortCovariates = sortCovariates,
                            makeCovariatesDense = makeCovariatesDense)
   }
   return(dataPtr)
@@ -199,11 +197,10 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #' @param connection    A connection to a database (see \code{DatabaseConnector} package).
 #' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
 #' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
-#' @param modelType		  Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
+#' @param modelType  	  Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param sortCovariates Do the covariates still need to be sorted?
 #' @param batchSize			Number of rows to be read from each table at a time. Larger batch sizes lead to fewer calls to the 
 #' database and should be more efficient, but may lead to out-of-memory errors.
 #'
@@ -211,11 +208,12 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #' These columns are expected in the outcome object:
 #' \tabular{lll}{  
 #'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-#'   \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
 #'   \verb{y}    \tab(real) \tab The outcome variable \cr
 #'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 #' }
-#' The outcome table should be sorted by stratum_id and then row_id
+#' The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
+#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #' 
 #' These columns are expected in the covariates object:
 #' \tabular{lll}{  
@@ -224,7 +222,8 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
 #'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 #' }
-#' The covariate table should be sorted by stratum_id, row_id and covariate_id
+#' The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
+#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #'  
 #' @return              
 #' An object of type CyclopsModel
@@ -248,7 +247,6 @@ dbCreateCyclopsData <- function(connection,
                                 modelType = "lr", 
                                 addIntercept = TRUE,
                                 offsetAlreadyOnLogScale = FALSE,
-                                sortCovariates = TRUE,
                                 makeCovariatesDense = NULL,
                                 batchSize = 100000){
   
@@ -276,6 +274,8 @@ dbCreateCyclopsData <- function(connection,
         stop("Time cannot be non-positive",call.=FALSE)
     if (modelType == "lr" | modelType == "pr")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+    if (modelType == "cox" & is.null(batchOutcome$STRATUM_ID))
+      batchOutcome$STRATUM_ID = 0	  
     if (modelType == "lr" | modelType == "clr")
       batchOutcome$TIME = 0
     batchOutcome
@@ -301,7 +301,6 @@ dbCreateCyclopsData <- function(connection,
                                                      modelType, 
                                                      addIntercept,
                                                      offsetAlreadyOnLogScale,
-                                                     sortCovariates,
                                                      makeCovariatesDense
   )
   return(result)
@@ -319,7 +318,6 @@ dbCreateCyclopsData <- function(connection,
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param sortCovariates Do the covariates still need to be sorted?
 #' @param batchBytes			Number of bytes to be read from the ffdf objects at a time. Larger batch sizes lead to fewer conversion calls
 #' and should be more efficient, but may lead to out-of-memory errors.
 #'
@@ -327,12 +325,12 @@ dbCreateCyclopsData <- function(connection,
 #' These columns are expected in the outcome object:
 #' \tabular{lll}{  
 #'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-#'   \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
 #'   \verb{y}    \tab(real) \tab The outcome variable \cr
 #'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 #' }
-#' The outcome table should be sorted by stratum_id and then row_id, except for Cox regression when
-#' the table should be sorted by stratum_id, -time, y, and row_id.
+#' The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
+#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #' 
 #' These columns are expected in the covariates object:
 #' \tabular{lll}{  
@@ -341,8 +339,8 @@ dbCreateCyclopsData <- function(connection,
 #'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
 #'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 #' }
-#' The covariate table should be sorted by stratum_id, row_id and covariate_id except for Cox regression when
-#' the table should be sorted by stratum_id, -time, y, and row_id.
+#' The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
+#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #'  
 #' @return              
 #' An object of type CyclopsModel
@@ -380,7 +378,6 @@ createCyclopsData.ffdf <- function(outcomes,
                                    modelType = "lr", 
                                    addIntercept = TRUE,
                                    offsetAlreadyOnLogScale = FALSE,
-                                   sortCovariates = TRUE,
                                    makeCovariatesDense = NULL){
   colnames(outcomes) <- toupper(colnames(outcomes))  
   colnames(covariates) <- toupper(colnames(covariates))    
@@ -402,8 +399,10 @@ createCyclopsData.ffdf <- function(outcomes,
     if (modelType == "pr" | modelType == "cpr"| modelType == "cox")
       if (any(batchOutcome$TIME <= 0))
         stop("Time cannot be non-positive",call.=FALSE)
-    if (modelType == "lr" | modelType == "pr" | (modelType == "cox" & is.null(batchOutcome$STRATUM_ID)))
+    if (modelType == "lr" | modelType == "pr")
       batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
+    if (modelType == "cox" & is.null(batchOutcome$STRATUM_ID))
+      batchOutcome$STRATUM_ID = 0
     if (modelType == "lr" | modelType == "clr")
       batchOutcome$TIME = 0
     batchOutcome
@@ -432,7 +431,6 @@ createCyclopsData.ffdf <- function(outcomes,
                                                      modelType, 
                                                      addIntercept,
                                                      offsetAlreadyOnLogScale,
-                                                     sortCovariates,
                                                      makeCovariatesDense)
   return(result)
 }
@@ -448,7 +446,6 @@ createCyclopsData.ffdf <- function(outcomes,
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param sortCovariates Do the covariates still need to be sorted?
 #'
 #' @details
 #' These columns are expected in the outcome object:
@@ -458,8 +455,8 @@ createCyclopsData.ffdf <- function(outcomes,
 #'   \verb{y}    \tab(real) \tab The outcome variable \cr
 #'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 #' }
-#' The outcome table should be sorted by stratum_id and then row_id except for Cox regression when
-#' the table should be sorted by stratum_id, -time, y, and row_id.
+#' The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
+#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #' 
 #' These columns are expected in the covariates object:
 #' \tabular{lll}{  
@@ -468,8 +465,8 @@ createCyclopsData.ffdf <- function(outcomes,
 #'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
 #'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 #' }
-#' The covariate table should be sorted by stratum_id, row_id and covariate_id except for Cox regression when
-#' the table should be sorted by stratum_id, -time, y, and row_id.
+#' The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
+#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #' 
 #' @return              
 #' An object of type CyclopsModel
@@ -502,7 +499,6 @@ createCyclopsData <- function(outcomes,
                               modelType = "lr", 
                               addIntercept = TRUE,
                               offsetAlreadyOnLogScale = FALSE,
-                              sortCovariates = TRUE,
                               makeCovariatesDense = NULL){
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(covariates) <- toupper(colnames(covariates))
@@ -517,6 +513,8 @@ createCyclopsData <- function(outcomes,
   
   if (modelType == "lr" | modelType == "pr")
     outcomes$STRATUM_ID = outcomes$ROW_ID
+  if (modelType == "cox" & is.null(outcomes$STRATUM_ID))
+    outcomes$STRATUM_ID = 0	
   if (modelType == "lr" | modelType == "clr")
     outcomes$TIME = 0
   
@@ -532,16 +530,17 @@ createCyclopsData <- function(outcomes,
                        covariates$COVARIATE_VALUE
   )
   
-  if (modelType == "pr" | modelType == "cpr"){ 
+  if (modelType == "pr" | modelType == "cpr") 
+    useOffsetCovariate = -1 
+  else 
+    useOffsetCovariate = NULL
+  
+  if (modelType != "cox"){
     finalizeSqlCyclopsData(dataPtr,
                            addIntercept = addIntercept,
-                           useOffsetCovariate = -1,
+                           useOffsetCovariate = useOffsetCovariate,
                            offsetAlreadyOnLogScale = offsetAlreadyOnLogScale,
-                           sortCovariates = sortCovariates,
                            makeCovariatesDense = makeCovariatesDense)
-  } else if (modelType != "cox")
-    finalizeSqlCyclopsData(dataPtr)
+  }
   return(dataPtr)
 }
-
-

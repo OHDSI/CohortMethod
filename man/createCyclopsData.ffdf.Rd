@@ -5,7 +5,7 @@
 \usage{
 createCyclopsData.ffdf(outcomes, covariates, modelType = "lr",
   addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
-  sortCovariates = TRUE, makeCovariatesDense = NULL)
+  makeCovariatesDense = NULL)
 }
 \arguments{
 \item{outcomes}{A ffdf object containing the outcomes with predefined columns (see below).}
@@ -15,8 +15,6 @@ createCyclopsData.ffdf(outcomes, covariates, modelType = "lr",
 \item{addIntercept}{Add an intercept to the model?}
 
 \item{offsetAlreadyOnLogScale}{Is the time variable already on a log scale?}
-
-\item{sortCovariates}{Do the covariates still need to be sorted?}
 
 \item{covariateSql}{A ffdf object containing the covariates with predefined columns (see below).}
 
@@ -35,12 +33,12 @@ An object of type CyclopsModel
 These columns are expected in the outcome object:
 \tabular{lll}{
   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-  \verb{row_id}    \tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+  \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
   \verb{y}    \tab(real) \tab The outcome variable \cr
   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 }
-The outcome table should be sorted by stratum_id and then row_id, except for Cox regression when
-the table should be sorted by stratum_id, -time, y, and row_id.
+The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
+the table should be sorted by stratum_id (if present), -time, y, and row_id.
 
 These columns are expected in the covariates object:
 \tabular{lll}{
@@ -49,8 +47,8 @@ These columns are expected in the covariates object:
   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 }
-The covariate table should be sorted by stratum_id, row_id and covariate_id except for Cox regression when
-the table should be sorted by stratum_id, -time, y, and row_id.
+The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
+the table should be sorted by stratum_id (if present), -time, y, and row_id.
 }
 \examples{
 #Convert infert dataset to Cyclops format:

@@ -20,6 +20,7 @@ Imports:
     pROC,
     plyr
 Suggests:
-    testthat
+    testthat,
+    gnm
 LinkingTo: Rcpp
 NeedsCompilation: yes

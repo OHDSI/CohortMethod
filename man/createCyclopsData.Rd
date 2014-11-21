@@ -5,7 +5,7 @@
 \usage{
 createCyclopsData(outcomes, covariates, modelType = "lr",
   addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
-  sortCovariates = TRUE, makeCovariatesDense = NULL)
+  makeCovariatesDense = NULL)
 }
 \arguments{
 \item{outcomes}{A data frame containing the outcomes with predefined columns (see below).}
@@ -15,8 +15,6 @@ createCyclopsData(outcomes, covariates, modelType = "lr",
 \item{addIntercept}{Add an intercept to the model?}
 
 \item{offsetAlreadyOnLogScale}{Is the time variable already on a log scale?}
-
-\item{sortCovariates}{Do the covariates still need to be sorted?}
 
 \item{covariateSql}{A data frame containing the covariates with predefined columns (see below).}
 
@@ -36,8 +34,8 @@ These columns are expected in the outcome object:
   \verb{y}    \tab(real) \tab The outcome variable \cr
   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 }
-The outcome table should be sorted by stratum_id and then row_id except for Cox regression when
-the table should be sorted by stratum_id, -time, y, and row_id.
+The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
+the table should be sorted by stratum_id (if present), -time, y, and row_id.
 
 These columns are expected in the covariates object:
 \tabular{lll}{
@@ -46,8 +44,8 @@ These columns are expected in the covariates object:
   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 }
-The covariate table should be sorted by stratum_id, row_id and covariate_id except for Cox regression when
-the table should be sorted by stratum_id, -time, y, and row_id.
+The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
+the table should be sorted by stratum_id (if present), -time, y, and row_id.
 }
 \examples{
 #Convert infert dataset to Cyclops format:
