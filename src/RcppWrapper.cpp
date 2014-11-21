@@ -28,6 +28,7 @@
 
 #include <Rcpp.h>
 #include "Match.h"
+#include "IsSorted.h"
 
 using namespace Rcpp;
 
@@ -45,6 +46,14 @@ DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treat
 		::Rf_error("c++ exception (unknown reason)");
 	}
 	return DataFrame::create();
+}
+
+// [[Rcpp::export("isSorted")]]
+bool isSorted(const DataFrame& dataFrame,const std::vector<std::string>& indexes,const std::vector<bool>& ascending){
+  
+  using namespace ohdsi::cohortMethod;
+  
+  return IsSorted::isSorted(dataFrame,indexes,ascending);
 }
 
 #endif // __RcppWrapper_cpp__

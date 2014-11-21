@@ -1,0 +1,16 @@
+<!--
+%\VignetteEngine{knitr}
+%\VignetteIndexEntry{Single studies using CohortMethod}
+-->
+
+```{r, echo = FALSE, message = FALSE}
+library(CohortMethod)
+knitr::opts_chunk$set(
+  comment = "#>",
+  error = FALSE,
+  tidy = FALSE)
+options(dplyr.print_min = 4L, dplyr.print_max = 4L)
+```
+
+# Single studies using CohortMethod
+

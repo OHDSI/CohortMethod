@@ -23,3 +23,20 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
+// isSorted
+bool isSorted(const DataFrame& dataFrame, const std::vector<std::string>& indexes, const std::vector<bool>& ascending);
+RcppExport SEXP CohortMethod_isSorted(SEXP dataFrameSEXP, SEXP indexesSEXP, SEXP ascendingSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< const DataFrame& >::type dataFrame(dataFrameSEXP );
+        Rcpp::traits::input_parameter< const std::vector<std::string>& >::type indexes(indexesSEXP );
+        Rcpp::traits::input_parameter< const std::vector<bool>& >::type ascending(ascendingSEXP );
+        bool __result = isSorted(dataFrame, indexes, ascending);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}

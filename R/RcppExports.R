@@ -5,3 +5,7 @@
     .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', propensityScores, treatment, maxRatio, caliper)
 }
 
+isSorted <- function(dataFrame, indexes, ascending) {
+    .Call('CohortMethod_isSorted', PACKAGE = 'CohortMethod', dataFrame, indexes, ascending)
+}
+
