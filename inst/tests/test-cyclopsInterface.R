@@ -63,7 +63,7 @@ test_that("Test data.frame to data for stratified cox", {
                       x=c(0,2,1,1,1,0,0),
                       sex=c(0,0,0,0,1,1,1))
   
-  gold <- coxph(Surv(time, status) ~ x + strata(sex), test1)
+  gold <- coxph(Surv(time, status) ~ x + strata(sex), test1, method="breslow")
   
   cyclopsDataFormula <- createCyclopsDataFrame(Surv(time, status) ~ x + strata(sex), data=test1,modelType="cox")
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
@@ -102,7 +102,7 @@ test_that("Test data.frame to data for stratified cox using lung dataset ", {
   test <- lung
   test[is.na(test)] <- 0 # Don't want to bother with missing values
  
-  gold <- coxph(Surv(time, status) ~ age + ph.ecog + ph.karno + pat.karno + meal.cal + wt.loss + strata(sex), test)
+  gold <- coxph(Surv(time, status) ~ age + ph.ecog + ph.karno + pat.karno + meal.cal + wt.loss + strata(sex), test, method="breslow")
   
   cyclopsDataFormula <- createCyclopsDataFrame(Surv(time, status) ~ age + ph.ecog + ph.karno + pat.karno + meal.cal + wt.loss + strata(sex), data=test,modelType="cox")
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
@@ -132,7 +132,6 @@ test_that("Test data.frame to data for stratified cox using lung dataset ", {
   
   tolerance <- 1E-4
   expect_equal(as.vector(coef(fit)), as.vector(coef(fitFormula)), tolerance = tolerance)
-  tolerance <- 1E-2
   expect_equal(as.vector(coef(fit)), as.vector(coef(gold)), tolerance = tolerance)
 })
 
@@ -143,7 +142,7 @@ test_that("Test ffdf to data for stratified cox", {
                       x=c(0,2,1,1,1,0,0),
                       sex=c(0,0,0,0,1,1,1))
   
-  gold <- coxph(Surv(time, status) ~ x + strata(sex), test1)
+  gold <- coxph(Surv(time, status) ~ x + strata(sex), test1, method="breslow")
   
   cyclopsDataFormula <- createCyclopsDataFrame(Surv(time, status) ~ x + strata(sex), data=test1,modelType="cox")
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
@@ -186,7 +185,7 @@ test_that("Test ffdf to data for stratified cox using lung dataset", {
   test <- lung
   test[is.na(test)] <- 0 # Don't want to bother with missing values
   
-  gold <- coxph(Surv(time, status) ~ age + ph.ecog + ph.karno + pat.karno + meal.cal + wt.loss + strata(sex), test)
+  gold <- coxph(Surv(time, status) ~ age + ph.ecog + ph.karno + pat.karno + meal.cal + wt.loss + strata(sex), test, method="breslow")
   
   cyclopsDataFormula <- createCyclopsDataFrame(Surv(time, status) ~ age + ph.ecog + ph.karno + pat.karno + meal.cal + wt.loss + strata(sex), data=test,modelType="cox")
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
@@ -220,6 +219,5 @@ test_that("Test ffdf to data for stratified cox using lung dataset", {
   
   tolerance <- 1E-4
   expect_equal(as.vector(coef(fit)), as.vector(coef(fitFormula)), tolerance = tolerance)
-  tolerance <- 1E-2
   expect_equal(as.vector(coef(fit)), as.vector(coef(gold)), tolerance = tolerance)
 })
