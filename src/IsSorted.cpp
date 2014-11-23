@@ -44,11 +44,10 @@ namespace ohdsi {
 			std::vector<NumericVector> columns(ncols);
       
       for (unsigned int column=0; column<ncols; column++){
-        columns[column] = dataFrame[indexes.at(column)]; // TODO Check that this does not make a copy        
+        columns[column] = dataFrame[indexes.at(column)]; // Checked: this does not make a copy of the data, it just copies the pointer       
       }
 
 			for(unsigned int row=1; row<nrows; row++) {
-				//for(std::vector<NumericVector>::iterator column = columns.begin(); column != columns.end(); ++column) {
         for (unsigned int column=0; column<ncols; column++){
           if (ascending.at(column)){
             if (columns[column][row] > columns[column][row-1]){
