@@ -5,7 +5,7 @@
 \usage{
 createCyclopsData(outcomes, covariates, modelType = "lr",
   addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
-  makeCovariatesDense = NULL)
+  makeCovariatesDense = NULL, checkSorting = TRUE)
 }
 \arguments{
 \item{outcomes}{A data frame containing the outcomes with predefined columns (see below).}
@@ -15,6 +15,8 @@ createCyclopsData(outcomes, covariates, modelType = "lr",
 \item{addIntercept}{Add an intercept to the model?}
 
 \item{offsetAlreadyOnLogScale}{Is the time variable already on a log scale?}
+
+\item{checkSorting}{Check if the data is sorted appropriately, and if not, sort.}
 
 \item{covariateSql}{A data frame containing the covariates with predefined columns (see below).}
 

@@ -14,8 +14,8 @@ test_that("Test data.frame to data for lr", {
   covariates <- covariates[covariates$covariate_value != 0,]
   
   #Sort:
-  covariates <- covariates[order(covariates$row_id,covariates$covariate_id),]
-  outcomes <- outcomes[order(outcomes$row_id),]
+ # covariates <- covariates[order(covariates$row_id,covariates$covariate_id),]
+ # outcomes <- outcomes[order(outcomes$row_id),]
   
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "lr",addIntercept = TRUE)
@@ -55,8 +55,8 @@ test_that("Test unstratified cox using lung dataset ", {
   covariates <- covariates[covariates$covariate_value != 0,]
   
   #Sort:
-  covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
-  outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
+ # covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
+ # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cox")
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
@@ -97,8 +97,8 @@ test_that("Test poisson regression", {
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
   
   #Sort:
-  covariates <- covariates[order(covariates$row_id),]
-  outcomes <- outcomes[order(outcomes$row_id),]
+ # covariates <- covariates[order(covariates$row_id),]
+ # outcomes <- outcomes[order(outcomes$row_id),]
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "pr",addIntercept = TRUE)
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  

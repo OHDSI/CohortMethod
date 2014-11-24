@@ -17,9 +17,8 @@ test_that("Test clr", {
   covariates <- covariates[covariates$covariate_value != 0,]
   
   #Sort:
-  covariates <- covariates[order(covariates$stratum_id,covariates$row_id,covariates$covariate_id),]
-  outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
-  
+  #covariates <- covariates[order(covariates$stratum_id,covariates$row_id,covariates$covariate_id),]
+  #outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
@@ -59,8 +58,8 @@ test_that("Test stratified cox", {
   covariates <- covariates[covariates$covariate_value != 0,]
   
   #Sort:
-  covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
-  outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
+  #covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
+ # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cox")
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
@@ -100,8 +99,8 @@ test_that("Test stratified cox using lung dataset ", {
   covariates <- covariates[covariates$covariate_value != 0,]
   
   #Sort:
-  covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
-  outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
+ # covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
+ # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cox")
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
@@ -144,8 +143,8 @@ test_that("Test conditional poisson regression", {
   
   
   #Sort:
-  covariates <- covariates[order(covariates$stratum_id,covariates$row_id),]
-  outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
+  #covariates <- covariates[order(covariates$stratum_id,covariates$row_id),]
+  #outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
   
   cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cpr",addIntercept = FALSE)
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  

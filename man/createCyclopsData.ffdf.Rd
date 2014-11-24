@@ -5,23 +5,22 @@
 \usage{
 createCyclopsData.ffdf(outcomes, covariates, modelType = "lr",
   addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
-  makeCovariatesDense = NULL)
+  makeCovariatesDense = NULL, checkSorting = TRUE)
 }
 \arguments{
 \item{outcomes}{A ffdf object containing the outcomes with predefined columns (see below).}
 
-\item{modelType}{Cyclops model type. Current supported types are "pr", "cpr", lr", "clr", "sccs", or "cox"}
+\item{covariates}{A ffdf object containing the covariates with predefined columns (see below).}
+
+\item{modelType}{Cyclops model type. Current supported types are "pr", "cpr", lr", "clr", or "cox"}
 
 \item{addIntercept}{Add an intercept to the model?}
 
 \item{offsetAlreadyOnLogScale}{Is the time variable already on a log scale?}
 
-\item{covariateSql}{A ffdf object containing the covariates with predefined columns (see below).}
+\item{checkSorting}{Check if the data is sorted appropriately, and if not, sort.}
 
 \item{useOffsetCovariate}{Use the time variable in the model as an offset?}
-
-\item{batchBytes}{Number of bytes to be read from the ffdf objects at a time. Larger batch sizes lead to fewer conversion calls
-and should be more efficient, but may lead to out-of-memory errors.}
 }
 \value{
 An object of type CyclopsModel

@@ -38,15 +38,15 @@
 #' True or false
 #' 
 #' @examples 
-#'  x <- data.frame(a = runif(1000),b = runif(1000))
-#'  x <- round(x,digits=2)
-#'  isSorted(x,c("a","b"))
+#' x <- data.frame(a = runif(1000),b = runif(1000))
+#' x <- round(x,digits=2)
+#' isSorted(x,c("a","b"))
 #'  
-#'  x <- x[order(x$a,x$b),]
-#'  isSorted(x,c("a","b"))
+#' x <- x[order(x$a,x$b),]
+#' isSorted(x,c("a","b"))
 #'  
-#'  x <- x[order(x$a,-x$b),]
-#'  isSorted(x,c("a","b"),c(TRUE,FALSE))
+#' x <- x[order(x$a,-x$b),]
+#' isSorted(x,c("a","b"),c(TRUE,FALSE))
 #' @export
 isSorted <- function(data,columnNames,ascending=rep(TRUE,length(columnNames))){
   UseMethod("isSorted") 
@@ -64,21 +64,8 @@ isSorted.ffdf <- function(data,columnNames,ascending=rep(TRUE,length(columnNames
   chunks <- chunk(data)
   for (i in chunk(data))
     if (!isSorted(data[i,,drop=FALSE],columnNames,ascending))
-        return(FALSE)
+      return(FALSE)
   return(TRUE)
-}
-
-openResultSet <- function(conn, sql, batchSize) {
-  .jcall(conn@jc,"V",method="setAutoCommit",FALSE)
-  s <- .jcall(conn@jc, "Ljava/sql/Statement;", "createStatement")
-  .jcall(s,"V",method="setFetchSize",as.integer(batchSize))
-  r <- .jcall(s, "Ljava/sql/ResultSet;", "executeQuery",as.character(sql)[1])
-  md <- .jcall(r, "Ljava/sql/ResultSetMetaData;", "getMetaData", check=FALSE)
-  rs <- new.env()
-  assign("resultSet",new("JDBCResult", jr=r, md=md, stat=s, pull=.jnull()),envir=rs)
-  assign("batchSize",batchSize,envir=rs)
-  assign("done",FALSE,envir=rs)
-  return(rs)
 }
 
 lastRowNotHavingThisValue <- function(column, value){
@@ -236,137 +223,18 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
   return(dataPtr)
 }
 
-#' Get data from the database and insert it in a Cyclops data object
-#'
-#' @description
-#' \code{dbCreateCyclopsData} loads data from the database using two queries, and inserts it into a Cyclops data object.
-#' 
-#' @param connection    A connection to a database (see \code{DatabaseConnector} package).
-#' @param outcomeSql    A SQL select statement that returns a dataset of outcomes with predefined columns (see below).
-#' @param covariateSql  A SQL select statement that returns a dataset of covariates with predefined columns (see below).
-#' @param modelType  	  Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
-#' @param addIntercept  Add an intercept to the model?
-#' @param useOffsetCovariate  Use the time variable in the model as an offset?
-#' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param batchSize			Number of rows to be read from each table at a time. Larger batch sizes lead to fewer calls to the 
-#' database and should be more efficient, but may lead to out-of-memory errors.
-#'
-#' @details
-#' These columns are expected in the outcome object:
-#' \tabular{lll}{  
-#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{y}    \tab(real) \tab The outcome variable \cr
-#'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
-#' }
-#' The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
-#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
-#' 
-#' These columns are expected in the covariates object:
-#' \tabular{lll}{  
-#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
-#'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
-#' }
-#' The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
-#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
-#'  
-#' @return              
-#' An object of type CyclopsModel
-#' 
-#' @examples \dontrun{
-#'   connectionDetails <- createConnectionDetails(dbms="sql server", server="RNDUSRDHIT07.jnj.com", schema="test")
-#'   connection <- connect(connectionDetails)
-#'   outcomeSql <- "SELECT * FROM outcomes ORDER BY row_id"
-#'   covariateSql <-"SELECT * FROM covariates ORDER BY row_id, covariate_id"
-#'   
-#'   cyclopsData <- dbGetCyclopsInput(connection,outcomeSql,covariateSql,modelType = "clr")
-#'   
-#'   dbDisconnect(connection)
-#'   
-#'   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior("normal",0.01))
-#' }
-#' @export
-dbCreateCyclopsData <- function(connection, 
-                                outcomeSql, 
-                                covariateSql, 
-                                modelType = "lr", 
-                                addIntercept = TRUE,
-                                offsetAlreadyOnLogScale = FALSE,
-                                makeCovariatesDense = NULL,
-                                batchSize = 100000){
-  
-  # Open resultSets:
-  .jcall("java/lang/System",,"gc")
-  
-  resultSetOutcome <- openResultSet(connection, outcomeSql,batchSize)
-  
-  resultSetCovars <- openResultSet(connection, covariateSql,batchSize)
-  
-  exitFunction <- function(){
-    dbClearResult(get("resultSet",envir=resultSetOutcome))
-    dbClearResult(get("resultSet",envir=resultSetCovars))
-    .jcall(conn@jc,"V",method="setAutoCommit",TRUE)
-  }
-  on.exit(exitFunction())
-  
-  getOutcomeBatch <- function(resultSet, modelType){
-    batchOutcome <- fetch(get("resultSet",envir=resultSet), get("batchSize",envir=resultSet))
-    if (nrow(batchOutcome) != get("batchSize",envir=resultSet))
-      assign("done",TRUE,envir=resultSet)
-    colnames(batchOutcome) <- toupper(colnames(batchOutcome))  
-    if (modelType == "pr" | modelType == "cpr"| modelType == "cox")
-      if (any(batchOutcome$TIME <= 0))
-        stop("Time cannot be non-positive",call.=FALSE)
-    if (modelType == "lr" | modelType == "pr")
-      batchOutcome$STRATUM_ID = batchOutcome$ROW_ID
-    if (modelType == "cox" & is.null(batchOutcome$STRATUM_ID))
-      batchOutcome$STRATUM_ID = 0	  
-    if (modelType == "lr" | modelType == "clr")
-      batchOutcome$TIME = 0
-    batchOutcome
-  }
-  
-  getCovariateBatch <- function(resultSet, modelType){
-    batchCovariate <- fetch(get("resultSet",envir=resultSet), get("batchSize",envir=resultSet))
-    if (nrow(batchCovariate) != get("batchSize",envir=resultSet))
-      assign("done",TRUE,envir=resultSet)
-    colnames(batchCovariate) <- toupper(colnames(batchCovariate))  
-    batchCovariate
-  }
-  
-  isDone <- function(resultSet){
-    get("done",envir=resultSet)
-  }
-  
-  result <- constructCyclopsDataFromBatchableSources(resultSetOutcome,
-                                                     resultSetCovars,
-                                                     getOutcomeBatch,
-                                                     getCovariateBatch,
-                                                     isDone,
-                                                     modelType, 
-                                                     addIntercept,
-                                                     offsetAlreadyOnLogScale,
-                                                     makeCovariatesDense
-  )
-  return(result)
-}
-
-
 #' Convert data from two ffdf objects into a CyclopsData object
 #'
 #' @description
 #' \code{createCyclopsData.ffdf} loads data from two ffdf objects, and inserts it into a Cyclops data object.
 #' 
 #' @param outcomes    A ffdf object containing the outcomes with predefined columns (see below).
-#' @param covariateSql  A ffdf object containing the covariates with predefined columns (see below).
-#' @param modelType  	  Cyclops model type. Current supported types are "pr", "cpr", lr", "clr", "sccs", or "cox"
+#' @param covariates  A ffdf object containing the covariates with predefined columns (see below).
+#' @param modelType  	  Cyclops model type. Current supported types are "pr", "cpr", lr", "clr", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param batchBytes			Number of bytes to be read from the ffdf objects at a time. Larger batch sizes lead to fewer conversion calls
-#' and should be more efficient, but may lead to out-of-memory errors.
+#' @param checkSorting  Check if the data is sorted appropriately, and if not, sort. 
 #'
 #' @details
 #' These columns are expected in the outcome object:
@@ -425,9 +293,57 @@ createCyclopsData.ffdf <- function(outcomes,
                                    modelType = "lr", 
                                    addIntercept = TRUE,
                                    offsetAlreadyOnLogScale = FALSE,
-                                   makeCovariatesDense = NULL){
+                                   makeCovariatesDense = NULL,
+                                   checkSorting = TRUE){
   colnames(outcomes) <- toupper(colnames(outcomes))  
   colnames(covariates) <- toupper(colnames(covariates))    
+  
+  if (checkSorting){
+    if (modelType == "lr" | modelType == "pr"){
+      if (!isSorted(outcomes,c("ROW_ID"))){
+        writeLines("Sorting outcomes by row_id")
+        rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
+        outcomes <- outcomes[ffdforder(outcomes[c("ROW_ID")]),]
+      }
+      if (!isSorted(covariates,c("ROW_ID"))){
+        writeLines("Sorting covariates by row_id")
+        rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
+        covariates <- covariates[ffdforder(covariates[c("ROW_ID")]),]
+      }  
+    }
+    if (modelType == "clr" | modelType == "cpr"){
+      if (!isSorted(outcomes,c("STRATUM_ID","ROW_ID"))){
+        writeLines("Sorting outcomes by stratum_id and row_id")
+        rownames(outcomes) <- NULL #Needs to be null or the ordering of ffdf will fail
+        outcomes <- outcomes[ffdforder(outcomes[c("STRATUM_ID","ROW_ID")]),]
+      }
+      if (!isSorted(covariates,c("STRATUM_ID","ROW_ID"))){
+        writeLines("Sorting covariates by stratum_id and row_id")
+        rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
+        covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","ROW_ID")]),]
+      }      
+    }
+    if (modelType == "cox"){
+      if (!isSorted(outcomes,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
+        writeLines("Sorting outcomes by stratum_id, time (descending), y, and row_id")
+        rownames(outcomes) <- NULL #Needs to be null or the ordering of ffdf will fail
+        outcomes$MINTIME = 0-outcomes$TIME
+        outcomes <- outcomes[ffdforder(outcomes[c("STRATUM_ID","MINTIME","Y","ROW_ID")]),]
+      }
+      if (is.null(covariates$TIME) | is.null(covariates$Y)){ # If time or y not present, add to check if sorted
+        covariates$TIME = NULL
+        covariates$Y = NULL
+        covariates <- merge(covariates,outcomes,by=c("STRATUM_ID","ROW_ID"))
+      }
+      if (!isSorted(covariates,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
+        writeLines("Sorting covariates by stratum_id, time (descending), y, and row_id")
+        rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
+        covariates$MINTIME = 0-covariates$TIME
+        covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","MINTIME","Y","ROW_ID")]),]
+      }      
+    }
+  }
+  
   resultSetOutcome <- new.env()
   assign("data",outcomes,envir=resultSetOutcome)
   assign("chunks",chunk(outcomes),envir=resultSetOutcome)
@@ -493,6 +409,7 @@ createCyclopsData.ffdf <- function(outcomes,
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
+#' @param checkSorting  Check if the data is sorted appropriately, and if not, sort.
 #'
 #' @details
 #' These columns are expected in the outcome object:
@@ -546,7 +463,8 @@ createCyclopsData <- function(outcomes,
                               modelType = "lr", 
                               addIntercept = TRUE,
                               offsetAlreadyOnLogScale = FALSE,
-                              makeCovariatesDense = NULL){
+                              makeCovariatesDense = NULL,
+                              checkSorting = TRUE){
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(covariates) <- toupper(colnames(covariates))
   
@@ -557,25 +475,74 @@ createCyclopsData <- function(outcomes,
   if (modelType == "pr" | modelType == "cpr") 
     if (any(outcomes$TIME <= 0))
       stop("Time cannot be non-positive",call.=FALSE)
-  
-  if (modelType == "lr" | modelType == "pr")
-    outcomes$STRATUM_ID = outcomes$ROW_ID
   if (modelType == "cox" & is.null(outcomes$STRATUM_ID))
     outcomes$STRATUM_ID = 0	
   if (modelType == "lr" | modelType == "clr")
     outcomes$TIME = 0
   
+  if (checkSorting){
+    if (modelType == "lr" | modelType == "pr"){
+      if (!isSorted(outcomes,c("ROW_ID"))){
+        writeLines("Sorting outcomes by row_id")
+        outcomes <- outcomes[order(outcomes$ROW_ID),]
+      }
+      if (!isSorted(covariates,c("ROW_ID"))){
+        writeLines("Sorting covariates by row_id")
+        covariates <- covariates[order(covariates$ROW_ID),]
+      }   
+    }
+    
+    if (modelType == "clr" | modelType == "cpr"){
+      if (!isSorted(outcomes,c("STRATUM_ID","ROW_ID"))){
+        writeLines("Sorting outcomes by stratum_id and row_id")
+        outcomes <- outcomes[order(outcomes$STRATUM_ID,outcomes$ROW_ID),]
+      }
+      if (!isSorted(covariates,c("STRATUM_ID","ROW_ID"))){
+        writeLines("Sorting covariates by stratum_id and row_id")
+        covariates <- covariates[order(covariates$STRATUM_ID,covariates$ROW_ID),]
+      }      
+    }
+    if (modelType == "cox"){
+      if (!isSorted(outcomes,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
+        writeLines("Sorting outcomes by stratum_id, time (descending), y, and row_id")
+        outcomes <- outcomes[order(outcomes$STRATUM_ID,-outcomes$TIME,outcomes$Y,outcomes$ROW_ID),]
+      }
+      if (is.null(covariates$TIME) | is.null(covariates$Y)){ # If time or y not present, add to check if sorted
+        covariates$TIME = NULL
+        covariates$Y = NULL
+        covariates <- merge(covariates,outcomes,by=c("STRATUM_ID","ROW_ID"))
+      }
+      if (!isSorted(covariates,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
+        writeLines("Sorting covariates by stratum_id, time (descending), y, and row_id")
+        covariates <- covariates[order(covariates$STRATUM_ID,-covariates$TIME,covariates$Y,covariates$ROW_ID),]
+      }      
+    }
+  }
+  
   dataPtr <- createSqlCyclopsData(modelType = modelType)
   
-  appendSqlCyclopsData(dataPtr,
-                       outcomes$STRATUM_ID,
-                       outcomes$ROW_ID,
-                       outcomes$Y,
-                       outcomes$TIME,
-                       covariates$ROW_ID,
-                       covariates$COVARIATE_ID,
-                       covariates$COVARIATE_VALUE
-  )
+  if (modelType == "lr" | modelType == "pr"){
+    appendSqlCyclopsData(dataPtr,
+                         outcomes$ROW_ID,
+                         outcomes$ROW_ID,
+                         outcomes$Y,
+                         outcomes$TIME,
+                         covariates$ROW_ID,
+                         covariates$COVARIATE_ID,
+                         covariates$COVARIATE_VALUE
+    )
+  } else {
+    appendSqlCyclopsData(dataPtr,
+                         outcomes$STRATUM_ID,
+                         outcomes$ROW_ID,
+                         outcomes$Y,
+                         outcomes$TIME,
+                         covariates$ROW_ID,
+                         covariates$COVARIATE_ID,
+                         covariates$COVARIATE_VALUE
+    )
+  }
+  
   
   if (modelType == "pr" | modelType == "cpr") 
     useOffsetCovariate = -1 
