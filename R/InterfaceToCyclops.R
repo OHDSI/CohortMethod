@@ -21,6 +21,53 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+#' Check if data is sorted by one or more columns
+#'
+#' @description
+#' \code{isSorted} checks wether data is sorted by one or more specified columns.
+#' 
+#' @param data            Either a data.frame of ffdf object.
+#' @param columnNames     Vector of one or more column names.
+#' @param ascending       Logical vector indicating the data should be sorted ascending or descending 
+#' according the specified columns.
+#'
+#' @details
+#' This function currently only supports checking for sorting on numeric values.
+#' 
+#' @return              
+#' True or false
+#' 
+#' @examples 
+#'  x <- data.frame(a = runif(1000),b = runif(1000))
+#'  x <- round(x,digits=2)
+#'  isSorted(x,c("a","b"))
+#'  
+#'  x <- x[order(x$a,x$b),]
+#'  isSorted(x,c("a","b"))
+#'  
+#'  x <- x[order(x$a,-x$b),]
+#'  isSorted(x,c("a","b"),c(TRUE,FALSE))
+#' @export
+isSorted <- function(data,columnNames,ascending=rep(TRUE,length(columnNames))){
+  UseMethod("isSorted") 
+}
+
+isSorted.data.frame <- function(data,columnNames,ascending=rep(TRUE,length(columnNames))){
+  return(.isSorted(data,columnNames,ascending))
+}
+
+isSorted.ffdf <- function(data,columnNames,ascending=rep(TRUE,length(columnNames))){
+  if (nrow(data)>100000){ #If data is big, first check on a small subset. If that aready fails, we're done
+    if (!isSorted(data[ri(1,1000),,drop=FALSE],columnNames,ascending))
+      return(FALSE)
+  }
+  chunks <- chunk(data)
+  for (i in chunk(data))
+    if (!isSorted(data[i,,drop=FALSE],columnNames,ascending))
+        return(FALSE)
+  return(TRUE)
+}
+
 openResultSet <- function(conn, sql, batchSize) {
   .jcall(conn@jc,"V",method="setAutoCommit",FALSE)
   s <- .jcall(conn@jc, "Ljava/sql/Statement;", "createStatement")

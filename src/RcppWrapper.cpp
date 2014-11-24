@@ -48,7 +48,7 @@ DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treat
 	return DataFrame::create();
 }
 
-// [[Rcpp::export("isSorted")]]
+// [[Rcpp::export(".isSorted")]]
 bool isSorted(const DataFrame& dataFrame,const std::vector<std::string>& indexes,const std::vector<bool>& ascending){
   
   using namespace ohdsi::cohortMethod;
