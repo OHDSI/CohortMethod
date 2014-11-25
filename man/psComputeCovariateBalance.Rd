@@ -23,7 +23,7 @@ For every covariate, prevalence in treatment and comparator groups before and af
 \details{
 The restrictedCohorts data frame should have at least the following three columns:
 \tabular{lll}{
-  \verb{row_id}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+  \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
 }
 }

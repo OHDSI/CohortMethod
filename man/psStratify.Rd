@@ -23,16 +23,16 @@ Returns a date frame with the same columns as the input data plus one extra colu
 \details{
 The data frame should have the following three columns:
 \tabular{lll}{
-  \verb{row_id}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+  \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-  \verb{propensity_score}    \tab(real)    \tab Propensity score \cr
+  \verb{propensityScore}    \tab(real)    \tab Propensity score \cr
 }
 }
 \examples{
-row_id = 1:200
+rowId = 1:200
 treatment = rep(0:1, each = 100)
-propensity_score = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
-data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
+propensityScore = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
+data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 result <- psStratify(data,5)
 }
 

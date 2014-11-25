@@ -21,6 +21,14 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+snakeCaseToCamelCase <- function(string){
+  string <- tolower(string)
+  for(letter in letters){
+    string = gsub(paste("_",letter,sep=""),toupper(letter),string)
+  }
+  return(string)
+}
+
 #' @export
 dbGetCohortData <- function(connectionDetails,
                             cdmSchema = "CDM_TRUVEN_MDCD",
@@ -126,11 +134,11 @@ dbGetCohortData <- function(connectionDetails,
   
   executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
-  colnames(outcomes) <- toupper(colnames(outcomes))
-  colnames(cohorts) <- toupper(colnames(cohorts))
-  colnames(covariates) <- toupper(colnames(covariates))
-  colnames(exclude) <- toupper(colnames(exclude))
-  colnames(covariateRef) <- toupper(colnames(covariateRef))
+  colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
+  colnames(cohorts) <- snakeCaseToCamelCase(colnames(cohorts))
+  colnames(covariates) <- snakeCaseToCamelCase(colnames(covariates))
+  colnames(exclude) <- snakeCaseToCamelCase(colnames(exclude))
+  colnames(covariateRef) <- snakeCaseToCamelCase(colnames(covariateRef))
   dummy <- dbDisconnect(conn)
   result <- list(outcomes = outcomes,
                  cohorts = cohorts,

@@ -33,37 +33,37 @@ An object of type cyclopsData
 \details{
 These columns are expected in the outcome object:
 \tabular{lll}{
-  \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-  \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+  \verb{stratumId}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
+  \verb{rowId}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
   \verb{y}    \tab(real) \tab The outcome variable \cr
   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 }
 
 These columns are expected in the covariates object:
 \tabular{lll}{
-  \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-  \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-  \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
-  \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
+  \verb{stratumId}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
+  \verb{rowId}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
+  \verb{covariateId}    \tab(integer) \tab A numeric identifier of a covariate  \cr
+  \verb{covariateValue}    \tab(real) \tab The value of the specified covariate \cr
 }
 
-Note: If checkSorting is turned off, the outcome table should be sorted by stratum_id (if present)
-and then row_id except for Cox regression when the table should be sorted by
-stratum_id (if present), -time, y, and row_id. The covariate table should be sorted by stratum_id
-(if present), row_id and covariate_id except for Cox regression when the table should be sorted by
-stratum_id (if present), -time, y, and row_id.
+Note: If checkSorting is turned off, the outcome table should be sorted by stratumId (if present)
+and then rowId except for Cox regression when the table should be sorted by
+stratumId (if present), -time, y, and rowId. The covariate table should be sorted by stratumId
+(if present), rowId and covariateId except for Cox regression when the table should be sorted by
+stratumId (if present), -time, y, and rowId.
 }
 \examples{
 #Convert infert dataset to Cyclops format:
-covariates <- data.frame(stratum_id = rep(infert$stratum,2),
-                         row_id = rep(1:nrow(infert),2),
-                         covariate_id = rep(1:2,each=nrow(infert)),
-                         covariate_value = c(infert$spontaneous,infert$induced))
-outcomes <- data.frame(stratum_id = infert$stratum,
-                       row_id = 1:nrow(infert),
+covariates <- data.frame(stratumId = rep(infert$stratum,2),
+                         rowId = rep(1:nrow(infert),2),
+                         covariateId = rep(1:2,each=nrow(infert)),
+                         covariateValue = c(infert$spontaneous,infert$induced))
+outcomes <- data.frame(stratumId = infert$stratum,
+                       rowId = 1:nrow(infert),
                        y = infert$case)
 #Make sparse:
-covariates <- covariates[covariates$covariate_value != 0,]
+covariates <- covariates[covariates$covariateValue != 0,]
 
 #Create Cyclops data object:
 cyclopsData <- convertToCyclopsDataObject(outcomes,covariates,modelType = "clr",addIntercept = FALSE)

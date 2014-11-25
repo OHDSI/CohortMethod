@@ -19,16 +19,16 @@ Returns a date frame with the same three columns as the input.
 \details{
 The data frame should have the following three columns:
 \tabular{lll}{
-  \verb{row_id}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+  \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-  \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+  \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 }
 }
 \examples{
-row_id = 1:2000
+rowId = 1:2000
 treatment = rep(0:1, each = 1000)
-propensity_score = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
-data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
+propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 result <- psTrimToEquipoise(data)
 }
 \references{

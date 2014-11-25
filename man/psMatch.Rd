@@ -32,19 +32,19 @@ Any rows that could not be matched are removed
 \details{
 The data frame should have at least the following three columns:
 \tabular{lll}{
-  \verb{row_id}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+  \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-  \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+  \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 }
 
 This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 }
 \examples{
-row_id = 1:5
+rowId = 1:5
 treatment = c(1,0,1,0,1)
-propensity_score = c(0,0.1,0.3,0.4,1)
+propensityScore = c(0,0.1,0.3,0.4,1)
 age_group =c(1,1,1,1,1) #everyone in the same age group, so will not influence the matching
-data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score, age_group = age_group)
+data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, age_group = age_group)
 result <- psMatch(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 }
 \references{

@@ -5,17 +5,17 @@ test_that("Test data.frame to data for lr", {
   gold <- glm(case ~ spontaneous + induced, data=infert, family="binomial")    
   
   #Convert infert dataset to Cyclops format:
-  covariates <- data.frame(row_id = rep(1:nrow(infert),2),
-                           covariate_id = rep(1:2,each=nrow(infert)),
-                           covariate_value = c(infert$spontaneous,infert$induced))
-  outcomes <- data.frame(row_id = 1:nrow(infert),
+  covariates <- data.frame(rowId = rep(1:nrow(infert),2),
+                           covariateId = rep(1:2,each=nrow(infert)),
+                           covariateValue = c(infert$spontaneous,infert$induced))
+  outcomes <- data.frame(rowId = 1:nrow(infert),
                          y = infert$case)
   #Make sparse:
-  covariates <- covariates[covariates$covariate_value != 0,]
+  covariates <- covariates[covariates$covariateValue != 0,]
   
   #Sort:
-  # covariates <- covariates[order(covariates$row_id,covariates$covariate_id),]
-  # outcomes <- outcomes[order(outcomes$row_id),]
+  # covariates <- covariates[order(covariates$rowId,covariates$covariateId),]
+  # outcomes <- outcomes[order(outcomes$rowId),]
   
   cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "lr",addIntercept = TRUE)
   fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  
@@ -40,23 +40,23 @@ test_that("Test unstratified cox using lung dataset ", {
   
   #Convert to data.frames for Cyclops:
   nCovars = 6
-  covariates <- data.frame(stratum_id = 0,
-                           row_id = rep(1:nrow(test),nCovars),
-                           covariate_id = rep(1:nCovars,each = nrow(test)),
-                           covariate_value = c(test$age,test$ph.ecog,test$ph.karno,test$pat.karno,test$meal.cal,test$wt.loss),
+  covariates <- data.frame(stratumId = 0,
+                           rowId = rep(1:nrow(test),nCovars),
+                           covariateId = rep(1:nCovars,each = nrow(test)),
+                           covariateValue = c(test$age,test$ph.ecog,test$ph.karno,test$pat.karno,test$meal.cal,test$wt.loss),
                            time = rep(test$time,nCovars),
                            y = rep(test$status-1,nCovars))
-  outcomes <- data.frame(stratum_id = 0,
-                         row_id = 1:nrow(test),
+  outcomes <- data.frame(stratumId = 0,
+                         rowId = 1:nrow(test),
                          y = test$status-1,
                          time = test$time)
   
   #Make sparse:
-  covariates <- covariates[covariates$covariate_value != 0,]
+  covariates <- covariates[covariates$covariateValue != 0,]
   
   #Sort:
-  # covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
-  # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
+  # covariates <- covariates[order(covariates$stratumId,-covariates$time,covariates$y,covariates$rowId),]
+  # outcomes <- outcomes[order(outcomes$stratumId,-outcomes$time,outcomes$y,outcomes$rowId),]
   
   cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cox")
   fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  
@@ -77,17 +77,17 @@ test_that("Test poisson regression", {
   outcomes <- sim$outcomes
   
   #Convert to data format for gnm:
-  ncovars <- max(covariates$covariate_id)
+  ncovars <- max(covariates$covariateId)
   nrows <- nrow(outcomes)
   m <- matrix(0,nrows,ncovars)
   for (i in 1:nrow(covariates)){
-    m[covariates$row_id[i],covariates$covariate_id[i]] <- 1
+    m[covariates$rowId[i],covariates$covariateId[i]] <- 1
   }
   data <- as.data.frame(m)
   
-  data$row_id <- 1:nrow(data)
+  data$rowId <- 1:nrow(data)
   data <- merge(data,outcomes)
-  data <- data[order(data$stratum_id,data$row_id),]
+  data <- data[order(data$stratumId,data$rowId),]
   formula <- as.formula(paste(c("y ~ V1",paste("V",2:ncovars,sep="")),collapse=" + "))
   
   gold <- gnm(formula, family=poisson, offset=log(time), data = data)
@@ -96,8 +96,8 @@ test_that("Test poisson regression", {
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
   
   #Sort:
-  # covariates <- covariates[order(covariates$row_id),]
-  # outcomes <- outcomes[order(outcomes$row_id),]
+  # covariates <- covariates[order(covariates$rowId),]
+  # outcomes <- outcomes[order(outcomes$rowId),]
   
   cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "pr",addIntercept = TRUE)
   fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  

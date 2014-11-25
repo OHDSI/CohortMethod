@@ -45,25 +45,25 @@ in.ff <- function(a,b){
 psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace", useCrossValidation = TRUE)){
   if (is.null(outcomeConceptId)){
     cohortSubset <- cohortData$cohorts
-    covariateSubset <- subset(cohortData$covariates,COVARIATE_ID != 1)
+    covariateSubset <- subset(cohortData$covariates,covariateId != 1)
   } else {
-    t <- in.ff(cohortData$cohorts$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
     cohortSubset <- cohortData$cohort[ffwhich(t,t == FALSE),]
-    t <- in.ff(cohortData$covariates$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
-    t <- t | cohortData$covariates$COVARIATE_ID == 1
+    t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- t | cohortData$covariates$covariateId == 1
     covariateSubset <- cohortData$covariates[ffwhich(t,t == FALSE),]
   }
-  colnames(cohortSubset)[colnames(cohortSubset) == "TREATMENT"] <- "Y"
+  colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
   cyclopsData <- convertToCyclopsDataObject(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
-  ps <- as.ram(cohortSubset[,c("Y","ROW_ID")])
+  ps <- as.ram(cohortSubset[,c("y","rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = prior,
                                 control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
   pred <- predict(cyclopsFit)
   
-  colnames(ps)[colnames(ps) == "Y"] <- "treatment"
-  data <- data.frame(PROPENSITY_SCORE = pred, ROW_ID = as.numeric(attr(pred,"names")))
-  data <- merge(data,ps,by="ROW_ID")
+  colnames(ps)[colnames(ps) == "y"] <- "treatment"
+  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred,"names")))
+  data <- merge(data,ps,by="rowId")
   attr(data,"coefficients") <- coef(cyclopsFit)
   return(data)
 }
@@ -88,20 +88,19 @@ psGetModel <- function(propensityScore, cohortData){
   cfs <- cfs[cfs != 0]
   attr(cfs,"names")[1] <- 0 #Rename intercept to 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
-  cfs <- merge(as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="COVARIATE_ID")
-  cfs <- as.ram(cfs[,c("coefficient","id","COVARIATE_NAME")])
+  cfs <- merge(as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="covariateId")
+  cfs <- as.ram(cfs[,c("coefficient","id","covariateName")])
   cfs <- cfs[order(-abs(cfs$coefficient)),]
-  colnames(cfs) <- toupper(colnames(cfs))
   return(cfs)
 }
 
 computePreferenceScore <- function(data, unfilteredData = NULL){
   if (is.null(unfilteredData))
-    proportion <- sum(data$TREATMENT) / nrow(data)
+    proportion <- sum(data$treatment) / nrow(data)
   else #Proportion may have changed, but we still want to use the old proportion
-    proportion <- sum(unfilteredData$TREATMENT) / nrow(unfilteredData)
-  x <- exp(log(data$PROPENSITY_SCORE/(1-data$PROPENSITY_SCORE)) - log(proportion/(1-proportion)))
-  data$PREFERENCE_SCORE <- x / (x+1)
+    proportion <- sum(unfilteredData$treatment) / nrow(unfilteredData)
+  x <- exp(log(data$propensityScore/(1-data$propensityScore)) - log(proportion/(1-proportion)))
+  data$preferenceScore <- x / (x+1)
   return(data)
 }
 
@@ -126,14 +125,14 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
 #'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 #' }
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
-#' propensity_score = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
-#' data <- data.frame(treatment = treatment, propensity_score = propensity_score)
-#' data <- data[data$propensity_score > 0 & data$propensity_score < 1,]
+#' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+#' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
+#' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
 #' psPlot(data)
 #' 
 #' @references
@@ -144,29 +143,27 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' @export
 psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "density", binWidth = 0.05, fileName=NULL){
   require(ggplot2)
-  colnames(data) <- toupper(colnames(data))
-  if (!("TREATMENT" %in% colnames(data))) 
-    stop("Missing column TREATMENT in data")
-  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
-    stop("Missing column PROPENSITY_SCORE in data")
+  if (!("treatment" %in% colnames(data))) 
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data))) 
+    stop("Missing column propensityScore in data")
   if (!is.null(unfilteredData)){
-    colnames(unfilteredData) <- toupper(colnames(unfilteredData))
-    if (!("TREATMENT" %in% colnames(unfilteredData))) 
-      stop("Missing column TREATMENT in unfilteredData")
-    if (!("PROPENSITY_SCORE" %in% colnames(unfilteredData))) 
-      stop("Missing column PROPENSITY_SCORE in unfilteredData")   
+    if (!("treatment" %in% colnames(unfilteredData))) 
+      stop("Missing column treatment in unfilteredData")
+    if (!("propensityScore" %in% colnames(unfilteredData))) 
+      stop("Missing column propensityScore in unfilteredData")   
   }
   
   if (scale == "preference") {
     data <- computePreferenceScore(data,unfilteredData)
-    data$SCORE <- data$PREFERENCE_SCORE
+    data$SCORE <- data$preferenceScore
     label = "Preference score"
   } else {
-    data$SCORE = data$PROPENSITY_SCORE
+    data$SCORE = data$propensityScore
     label = "Propensity score"
   }
   data$GROUP <- "Treated"
-  data$GROUP[data$TREATMENT == 0] <- "Comparator"
+  data$GROUP[data$treatment == 0] <- "Comparator"
   if (type == "density"){
     plot = ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
       geom_density() +
@@ -198,7 +195,7 @@ psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
 #'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return
@@ -206,21 +203,20 @@ psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
-#' propensity_score = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
-#' data <- data.frame(treatment = treatment, propensity_score = propensity_score)
-#' data <- data[data$propensity_score > 0 & data$propensity_score < 1,]
+#' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+#' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
+#' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
 #' psAuc(data)
 #' 
 #' @export
 psAuc <- function(data){
-  require(pROC)
-  colnames(data) <- toupper(colnames(data))
-  if (!("TREATMENT" %in% colnames(data))) 
-    stop("Missing column TREATMENT in data")
-  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
-    stop("Missing column PROPENSITY_SCORE in data")
+  require(pROC,quietly=TRUE)
+  if (!("treatment" %in% colnames(data))) 
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data))) 
+    stop("Missing column propensityScore in data")
   
-  rocobj <- roc(data$TREATMENT,data$PROPENSITY_SCORE, algorithm=3)
+  rocobj <- roc(data$treatment,data$propensityScore, algorithm=3)
   auc <- as.numeric(ci.auc(rocobj, method="delong"))
   return(data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3]))
 }
@@ -237,31 +233,30 @@ psAuc <- function(data){
 #' @details
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
-#'   \verb{row_id}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same three columns as the input.
 #' @examples 
-#' row_id = 1:2000
+#' rowId = 1:2000
 #' treatment = rep(0:1, each = 1000)
-#' propensity_score = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
-#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
+#' propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 #' result <- psTrim(data,0.05)
 #' 
 #' @export
 psTrim <- function(data, trimFraction=0.05){
-  colnames(data) <- toupper(colnames(data))
-  if (!("ROW_ID" %in% colnames(data))) 
-    stop("Missing column ROW_ID in data")
-  if (!("TREATMENT" %in% colnames(data))) 
-    stop("Missing column TREATMENT in data")
-  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
-    stop("Missing column PROPENSITY_SCORE in data")
-  cutoffTreated <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],1-trimFraction)
-  cutoffComparator <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 0],trimFraction)
-  result <- data[(data$PROPENSITY_SCORE <= cutoffTreated & data$TREATMENT == 1) | (data$PROPENSITY_SCORE >= cutoffComparator & data$TREATMENT == 0),]
+  if (!("rowId" %in% colnames(data))) 
+    stop("Missing column rowId in data")
+  if (!("treatment" %in% colnames(data))) 
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data))) 
+    stop("Missing column propensityScore in data")
+  cutoffTreated <- quantile(data$propensityScore[data$treatment == 1],1-trimFraction)
+  cutoffComparator <- quantile(data$propensityScore[data$treatment == 0],trimFraction)
+  result <- data[(data$propensityScore <= cutoffTreated & data$treatment == 1) | (data$propensityScore >= cutoffComparator & data$treatment == 0),]
   return(result)
 }
 
@@ -276,17 +271,17 @@ psTrim <- function(data, trimFraction=0.05){
 #' @details
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
-#'   \verb{row_id}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same three columns as the input.
 #' @examples 
-#' row_id = 1:2000
+#' rowId = 1:2000
 #' treatment = rep(0:1, each = 1000)
-#' propensity_score = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
-#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
+#' propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 #' result <- psTrimToEquipoise(data)
 #'  
 #' @references
@@ -296,16 +291,15 @@ psTrim <- function(data, trimFraction=0.05){
 #' 
 #' @export
 psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
-  colnames(data) <- toupper(colnames(data))
-  if (!("ROW_ID" %in% colnames(data))) 
-    stop("Missing column ROW_ID in data")
-  if (!("TREATMENT" %in% colnames(data))) 
-    stop("Missing column TREATMENT in data")
-  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
-    stop("Missing column PROPENSITY_SCORE in data")
+  if (!("rowId" %in% colnames(data))) 
+    stop("Missing column rowId in data")
+  if (!("treatment" %in% colnames(data))) 
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data))) 
+    stop("Missing column propensityScore in data")
   
   data <- computePreferenceScore(data)
-  return(data[data$PREFERENCE_SCORE >= bounds[1] & data$PREFERENCE_SCORE <= bounds[2],])
+  return(data[data$preferenceScore >= bounds[1] & data$preferenceScore <= bounds[2],])
 }
 
 #' Match persons by propensity score
@@ -327,9 +321,9 @@ psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
 #' @details
 #' The data frame should have at least the following three columns:
 #' \tabular{lll}{  
-#'   \verb{row_id}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensity_score}   \tab(real)    \tab Propensity score \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
@@ -338,11 +332,11 @@ psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
 #' Any rows that could not be matched are removed 
 #' 
 #' @examples 
-#' row_id = 1:5
+#' rowId = 1:5
 #' treatment = c(1,0,1,0,1)
-#' propensity_score = c(0,0.1,0.3,0.4,1)
+#' propensityScore = c(0,0.1,0.3,0.4,1)
 #' age_group =c(1,1,1,1,1) #everyone in the same age group, so will not influence the matching
-#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score, age_group = age_group)
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, age_group = age_group)
 #' result <- psMatch(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 #' 
 #' @references
@@ -351,39 +345,37 @@ psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
 #' 
 #' @export
 psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, stratificationColumns = c()){
-  colnames(data) <- toupper(colnames(data))
-  stratificationColumns <- toupper(stratificationColumns)
-  if (!("ROW_ID" %in% colnames(data))) 
-    stop("Missing column ROW_ID in data")
-  if (!("TREATMENT" %in% colnames(data))) 
-    stop("Missing column TREATMENT in data")
-  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
-    stop("Missing column PROPENSITY_SCORE in data")
+  if (!("rowId" %in% colnames(data))) 
+    stop("Missing column rowId in data")
+  if (!("treatment" %in% colnames(data))) 
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data))) 
+    stop("Missing column propensityScore in data")
   
-  data <- data[order(data$PROPENSITY_SCORE),]
+  data <- data[order(data$propensityScore),]
   if (caliper <= 0){
     caliper = 9999
   } else if (caliperScale == "standardized")
-    caliper = caliper * sd(data$PROPENSITY_SCORE)
+    caliper = caliper * sd(data$propensityScore)
   if (maxRatio == 0) {
     maxRatio = 999
   } 
   if (length(stratificationColumns) == 0) {
-    result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$PROPENSITY_SCORE, data$TREATMENT, maxRatio, caliper)
-    result$ROW_ID <- data$ROW_ID
-    return(result[result$STRATUM_ID != -1,])
+    result <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment, maxRatio, caliper)
+    result$rowId <- data$rowId
+    return(result[result$stratumId != -1,])
   } else {
     result <- data.frame()
     interactions <- interaction(data[,stratificationColumns])
     strata <- levels(interactions)
     for (i in 1:length(strata)){
       subset <- data[interactions == strata[i],]
-      subResult <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', subset$PROPENSITY_SCORE, subset$TREATMENT, maxRatio, caliper)
-      subResult$ROW_ID <- subset$ROW_ID
+      subResult <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', subset$propensityScore, subset$treatment, maxRatio, caliper)
+      subResult$rowId <- subset$rowId
       subResult[,stratificationColumns] <- subset[,stratificationColumns]
-      subResult <- subResult[subResult$STRATUM_ID != -1,]
+      subResult <- subResult[subResult$stratumId != -1,]
       if (nrow(result) != 0)
-        subResult$STRATUM_ID = subResult$STRATUM_ID + max(result$STRATUM_ID) + 1
+        subResult$stratumId = subResult$stratumId + max(result$stratumId) + 1
       result <- rbind(result,subResult)
     }
     return(result)
@@ -404,33 +396,31 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
 #' @details
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
-#'   \verb{row_id}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensity_score}    \tab(real)    \tab Propensity score \cr
+#'   \verb{propensityScore}    \tab(real)    \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same columns as the input data plus one extra column: stratumId.
 #' @examples 
-#' row_id = 1:200
+#' rowId = 1:200
 #' treatment = rep(0:1, each = 100)
-#' propensity_score = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
-#' data <- data.frame(row_id = row_id, treatment = treatment, propensity_score = propensity_score)
+#' propensityScore = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 #' result <- psStratify(data,5)
 #' 
 #' @export
 psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
-  colnames(data) <- toupper(colnames(data))
-  stratificationColumns <- toupper(stratificationColumns)
-  if (!("ROW_ID" %in% colnames(data))) 
-    stop("Missing column ROW_ID in data")
-  if (!("TREATMENT" %in% colnames(data))) 
-    stop("Missing column TREATMENT in data")
-  if (!("PROPENSITY_SCORE" %in% colnames(data))) 
-    stop("Missing column PROPENSITY_SCORE in data")
+  if (!("rowId" %in% colnames(data))) 
+    stop("Missing column rowId in data")
+  if (!("treatment" %in% colnames(data))) 
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data))) 
+    stop("Missing column propensityScore in data")
   
-  psStrata <- quantile(data$PROPENSITY_SCORE[data$TREATMENT == 1],(1:(numberOfStrata-1))/numberOfStrata)
+  psStrata <- quantile(data$propensityScore[data$treatment == 1],(1:(numberOfStrata-1))/numberOfStrata)
   if (length(stratificationColumns) == 0) {
-    data$STRATUM_ID <- as.integer(as.character(cut(data$PROPENSITY_SCORE,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
+    data$stratumId <- as.integer(as.character(cut(data$propensityScore,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
     return(data)
   } else {
     result <- data.frame()
@@ -438,9 +428,9 @@ psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
     strata <- levels(interactions)
     for (i in 1:length(strata)){
       subset <- data[interactions == strata[i],]
-      subset$STRATUM_ID <- as.integer(as.character(cut(subset$PROPENSITY_SCORE,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
+      subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
       if (nrow(result) != 0)
-        subset$STRATUM_ID = subset$STRATUM_ID + max(result$STRATUM_ID) + 1
+        subset$stratumId = subset$stratumId + max(result$stratumId) + 1
       result <- rbind(result,subset)
     }
     return(result)
@@ -452,16 +442,16 @@ quickSum <- function(data,squared=FALSE){
   for (i in chunk(data)){
     dataChunk <- data[i,]
     if (squared)
-      x <- bySum(dataChunk$COVARIATE_VALUE^2,as.factor(dataChunk$COVARIATE_ID))
+      x <- bySum(dataChunk$covariateValue^2,as.factor(dataChunk$covariateId))
     else
-      x <- bySum(dataChunk$COVARIATE_VALUE,as.factor(dataChunk$COVARIATE_ID))
-    COVARIATE_ID <- attr(x,"dimnames")
+      x <- bySum(dataChunk$covariateValue,as.factor(dataChunk$covariateId))
+    covariateId <- attr(x,"dimnames")
     attributes(x) <- NULL
-    r <- data.frame(value = x,COVARIATE_ID = COVARIATE_ID, stringsAsFactors=FALSE)
-    colnames(r)[2] <- "COVARIATE_ID" #for some reason we lose the name when stringsAsFactors = FALSE
+    r <- data.frame(value = x,covariateId = covariateId, stringsAsFactors=FALSE)
+    colnames(r)[2] <- "covariateId" #for some reason we lose the name when stringsAsFactors = FALSE
     if (is.null(result)){
       result <- r
-      colnames(result)[colnames(result) == "value"] = "S"
+      colnames(result)[colnames(result) == "value"] = "s"
     } else {
       result <- merge(result,r,all=TRUE)
       result$S[is.na(result$S)] = 0
@@ -471,36 +461,36 @@ quickSum <- function(data,squared=FALSE){
     }
   }
   if (squared)
-    colnames(result)[colnames(result) == "S"] = "SUM_SQR"
+    colnames(result)[colnames(result) == "s"] = "sumSqr"
   else
-    colnames(result)[colnames(result) == "S"] = "SUM"
+    colnames(result)[colnames(result) == "s"] = "sum"
   
-  result$COVARIATE_ID <- as.numeric(result$COVARIATE_ID)
+  result$covariateId <- as.numeric(result$covariateId)
   return(result)
 }
 
 
 computeMeansPerGroup <- function(cohorts, covariates){
   nOverall <- nrow(cohorts)
-  nTreated <-  sum(cohorts$TREATMENT == 1)
+  nTreated <-  sum(cohorts$treatment == 1)
   nComparator <- nOverall - nTreated
   
-  t <- in.ff(covariates$ROW_ID,cohorts$ROW_ID[cohorts$TREATMENT == 1])
+  t <- in.ff(covariates$rowId,cohorts$rowId[cohorts$treatment == 1])
   treated <- quickSum(covariates[ffwhich(t,t == TRUE),])
-  treated$MEAN_TREATED <- treated$SUM / nTreated
-  colnames(treated)[colnames(treated) == "SUM"] <- "SUM_TREATED"
+  treated$meanTreated <- treated$sum / nTreated
+  colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
   
-  t <- in.ff(covariates$ROW_ID,cohorts$ROW_ID[cohorts$TREATMENT == 0])
+  t <- in.ff(covariates$rowId,cohorts$rowId[cohorts$treatment == 0])
   comparator <- quickSum(covariates[ffwhich(t,t == TRUE),])
-  comparator$MEAN_COMPARATOR <- comparator$SUM / nComparator
-  colnames(comparator)[colnames(comparator) == "SUM"] <- "SUM_COMPARATOR"
+  comparator$meanComparator <- comparator$sum / nComparator
+  colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   
-  t <- in.ff(covariates$ROW_ID,cohorts$ROW_ID)
+  t <- in.ff(covariates$rowId,cohorts$rowId)
   overall <- quickSum(covariates[ffwhich(t,t == TRUE),])
   overallSqr <- quickSum(covariates[ffwhich(t,t == TRUE),],squared=TRUE)
   overall <- merge(overall,overallSqr)
-  overall$SD <- sqrt((overall$SUM_SQR - (overall$SUM^2/nOverall))/nOverall)
-  overall <- data.frame(COVARIATE_ID = overall$COVARIATE_ID,SD = overall$SD)
+  overall$sd <- sqrt((overall$sumSqr - (overall$sum^2/nOverall))/nOverall)
+  overall <- data.frame(covariateId = overall$covariateId,sd = overall$sd)
   
   result <- merge(treated,comparator)
   result <- merge(result,overall)
@@ -521,7 +511,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' @details
 #' The restrictedCohorts data frame should have at least the following three columns:
 #' \tabular{lll}{  
-#'   \verb{row_id}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
 #' }
 #' 
@@ -529,38 +519,37 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' 
 #' @export
 psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConceptId = NULL) {
-  colnames(restrictedCohorts) <- toupper(colnames(restrictedCohorts))
   if (is.null(outcomeConceptId)){
     cohorts <- cohortData$cohorts
-    covariates <- subset(cohortData$covariates,COVARIATE_ID != 1)
+    covariates <- subset(cohortData$covariates,covariateId != 1)
   } else {
-    t <- in.ff(cohortData$cohorts$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
     cohorts <- cohortData$cohort[ffwhich(t,t == FALSE),]
-    t <- in.ff(cohortData$covariates$ROW_ID ,cohortData$exclude$ROW_ID[cohortData$exclude$OUTCOME_ID == outcomeConceptId])
-    t <- t | cohortData$covariates$COVARIATE_ID == 1
+    t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- t | cohortData$covariates$covariateId == 1
     covariates <- cohortData$covariates[ffwhich(t,t == FALSE),]
   }
   
   beforeMatching <- computeMeansPerGroup(cohorts,covariates)
   afterMatching <- computeMeansPerGroup(as.ffdf(restrictedCohorts),covariates)
   
-  colnames(beforeMatching)[colnames(beforeMatching) == "MEAN_TREATED"] <- "BEFORE_MATCHING_MEAN_TREATED"
-  colnames(beforeMatching)[colnames(beforeMatching) == "MEAN_COMPARATOR"] <- "BEFORE_MATCHING_MEAN_COMPARATOR"
-  colnames(beforeMatching)[colnames(beforeMatching) == "SUM_TREATED"] <- "BEFORE_MATCHING_SUM_TREATED"
-  colnames(beforeMatching)[colnames(beforeMatching) == "SUM_COMPARATOR"] <- "BEFORE_MATCHING_SUM_COMPARATOR"
-  colnames(beforeMatching)[colnames(beforeMatching) == "SD"] <- "BEFORE_MATCHING_SD"
-  colnames(afterMatching)[colnames(afterMatching) == "MEAN_TREATED"] <- "AFTER_MATCHING_MEAN_TREATED"
-  colnames(afterMatching)[colnames(afterMatching) == "MEAN_COMPARATOR"] <- "AFTER_MATCHING_MEAN_COMPARATOR"
-  colnames(afterMatching)[colnames(afterMatching) == "SUM_TREATED"] <- "AFTER_MATCHING_SUM_TREATED"
-  colnames(afterMatching)[colnames(afterMatching) == "SUM_COMPARATOR"] <- "AFTER_MATCHING_SUM_COMPARATOR"
-  colnames(afterMatching)[colnames(afterMatching) == "SD"] <- "AFTER_MATCHING_SD"
+  colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
+  colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
+  colnames(beforeMatching)[colnames(beforeMatching) == "sumTreated"] <- "beforeMatchingSumTreated"
+  colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingsumComparator"
+  colnames(beforeMatching)[colnames(beforeMatching) == "sd"] <- "beforeMatchingSd"
+  colnames(afterMatching)[colnames(afterMatching) == "meanTreated"] <- "afterMatchingMeanTreated"
+  colnames(afterMatching)[colnames(afterMatching) == "meanComparator"] <- "afterMatchingMeanComparator"
+  colnames(afterMatching)[colnames(afterMatching) == "sumTreated"] <- "afterMatchingSumTreated"
+  colnames(afterMatching)[colnames(afterMatching) == "sumComparator"] <- "afterMatchingSumComparator"
+  colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
   balance <- merge(beforeMatching,afterMatching)
   balance <- merge(balance,as.ram(cohortData$covariateRef))
-  balance$BEFORE_MATCHING_STD_DIFF <- (balance$BEFORE_MATCHING_MEAN_TREATED-balance$BEFORE_MATCHING_MEAN_COMPARATOR)/balance$BEFORE_MATCHING_SD
-  balance$AFTER_MATCHING_STD_DIFF <- (balance$AFTER_MATCHING_MEAN_TREATED-balance$AFTER_MATCHING_MEAN_COMPARATOR)/balance$AFTER_MATCHING_SD
-  balance$BEFORE_MATCHING_STD_DIFF[balance$BEFORE_MATCHING_SD == 0] <- 0
-  balance$AFTER_MATCHING_STD_DIFF[balance$BEFORE_MATCHING_SD == 0] <- 0
-  balance <- balance[order(-abs(balance$BEFORE_MATCHING_STD_DIFF)),]
+  balance$beforeMatchingStdDiff <- (balance$beforeMatchingMeanTreated-balance$beforeMatchingMeanComparator)/balance$beforeMatchingSd
+  balance$afterMatchingStdDiff <- (balance$afterMatchingMeanTreated-balance$afterMatchingMeanComparator)/balance$afterMatchingSd
+  balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
+  balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
+  balance <- balance[order(-abs(balance$beforeMatchingStdDiff)),]
   return(balance)
 }
 
@@ -577,10 +566,10 @@ psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeCon
 #' @export
 psPlotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
   require(ggplot2)
-  balance$BEFORE_MATCHING_STD_DIFF <- abs(balance$BEFORE_MATCHING_STD_DIFF)
-  balance$AFTER_MATCHING_STD_DIFF <- abs(balance$AFTER_MATCHING_STD_DIFF)
-  limits=c(0,max(c(balance$BEFORE_MATCHING_STD_DIFF,balance$AFTER_MATCHING_STD_DIFF)))
-  plot <- ggplot(balance, aes(x=BEFORE_MATCHING_STD_DIFF,y=AFTER_MATCHING_STD_DIFF)) + 
+  balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
+  balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
+  limits=c(0,max(c(balance$beforeMatchingStdDiff,balance$afterMatchingStdDiff)))
+  plot <- ggplot(balance, aes(x=beforeMatchingStdDiff,y=afterMatchingStdDiff)) + 
     geom_point(color = rgb(0,0,0.8,alpha=0.3)) +
     geom_abline(a = 1) + 
     geom_hline(yintercept = 0) + 
@@ -606,17 +595,17 @@ psPlotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
 #' @export
 psPlotCovariateBalanceTopVariables <- function(balance, n = 20, fileName=NULL) {
   require(ggplot2)
-  topBefore <- balance[order(-abs(balance$BEFORE_MATCHING_STD_DIFF)),]
+  topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)),]
   topBefore <- topBefore[1:n,]
   topBefore$facet <- paste("Top",n,"before matching")
-  topAfter <- balance[order(-abs(balance$AFTER_MATCHING_STD_DIFF)),]
+  topAfter <- balance[order(-abs(balance$afterMatchingStdDiff)),]
   topAfter <- topAfter[1:n,]
   topAfter$facet <- paste("Top",n,"after matching")
   filtered <- rbind(topBefore,topAfter)
   
-  data <- data.frame(covariate_id = rep(filtered$COVARIATE_ID,2),
-                     covariate = rep(filtered$COVARIATE_NAME,2), 
-                     difference = c(filtered$BEFORE_MATCHING_STD_DIFF,filtered$AFTER_MATCHING_STD_DIFF), 
+  data <- data.frame(covariateId = rep(filtered$covariateId,2),
+                     covariate = rep(filtered$covariateName,2), 
+                     difference = c(filtered$beforeMatchingStdDiff,filtered$afterMatchingStdDiff), 
                      group = rep(c("before matching","after matching"),each=nrow(filtered)),
                      facet = rep(filtered$facet,2),
                      rowId = rep(nrow(filtered):1,2))
@@ -628,7 +617,7 @@ psPlotCovariateBalanceTopVariables <- function(balance, n = 20, fileName=NULL) {
     scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
     scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
     scale_x_continuous("Standardized difference of mean") +
-    scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$COVARIATE_NAME) +
+    scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$covariateName) +
     facet_grid(facet ~ ., scales="free", space="free") +
     theme (
       axis.text.y = element_text(size=7),
