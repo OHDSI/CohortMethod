@@ -20,6 +20,7 @@
   xlims = c(0,max(sfit$time))
   ylims = c(0,1)
   main = "Kaplan-Meier Plot"
+  ystrataname <- "Strata"
   
   #################################
   # sorting the use of subsetting #
@@ -43,7 +44,6 @@
     if(is.null(ystratalabs)) ystratalabs <- as.character(sub("group=*","",names(sfit$strata)))
   }
   
-  if(is.null(ystrataname)) ystrataname <- "Strata"
   m <- max(nchar(ystratalabs))
   
   if(length(levels(summary(sfit)$strata)) == 0) {

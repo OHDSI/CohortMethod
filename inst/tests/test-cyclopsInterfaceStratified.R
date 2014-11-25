@@ -20,11 +20,11 @@ test_that("Test clr", {
   #covariates <- covariates[order(covariates$stratum_id,covariates$row_id,covariates$covariate_id),]
   #outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
   
-  cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
-  fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
+  cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "clr",addIntercept = FALSE)
+  fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  
   
-  cyclopsDataFfdf <- createCyclopsData.ffdf(as.ffdf(outcomes),as.ffdf(covariates),modelType = "clr",addIntercept = FALSE)
-  fitFfdf <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
+  cyclopsData <- convertToCyclopsDataObject(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
+  fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
   
   tolerance <- 1E-4
   expect_equal(as.vector(coef(fit)), as.vector(coef(gold)), tolerance = tolerance)
@@ -59,13 +59,13 @@ test_that("Test stratified cox", {
   
   #Sort:
   #covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
- # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
+  # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
   
-  cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cox")
+  cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cox")
+  fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  
+  
+  cyclopsData <- convertToCyclopsDataObject(outcomes,covariates,modelType = "cox")
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
-  
-  cyclopsDataFfdf <- createCyclopsData.ffdf(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cox")
-  fitFfdf <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
   
   tolerance <- 1E-4
   expect_equal(as.vector(coef(fit)), as.vector(coef(fitFormula)), tolerance = tolerance)
@@ -99,15 +99,14 @@ test_that("Test stratified cox using lung dataset ", {
   covariates <- covariates[covariates$covariate_value != 0,]
   
   #Sort:
- # covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
- # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
+  # covariates <- covariates[order(covariates$stratum_id,-covariates$time,covariates$y,covariates$row_id),]
+  # outcomes <- outcomes[order(outcomes$stratum_id,-outcomes$time,outcomes$y,outcomes$row_id),]
   
-  cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cox")
+  cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cox")
+  fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  
+  
+  cyclopsData <- convertToCyclopsDataObject(outcomes,covariates,modelType = "cox")
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
-  
-  cyclopsDataFfdf <- createCyclopsData.ffdf(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cox")
-  fitFfdf <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
-  
   
   tolerance <- 1E-4
   expect_equal(as.vector(coef(fit)), as.vector(coef(fitFormula)), tolerance = tolerance)
@@ -134,9 +133,9 @@ test_that("Test conditional poisson regression", {
   data <- merge(data,outcomes)
   data <- data[order(data$stratum_id,data$row_id),]
   formula <- as.formula(paste(c("y ~ V1",paste("V",2:ncovars,sep="")),collapse=" + "))
- 
+  
   gold <- gnm(formula, family=poisson, offset=log(time), eliminate=as.factor(stratum_id), data = data)
-
+  
   formula <- as.formula(paste(c("y ~ V1",paste("V",2:ncovars,sep=""),"strata(stratum_id)"),collapse=" + "))
   cyclopsDataFormula <- createCyclopsDataFrame(formula, offset=log(time), data=data,modelType="cpr")
   fitFormula <- fitCyclopsModel(cyclopsDataFormula)
@@ -146,12 +145,11 @@ test_that("Test conditional poisson regression", {
   #covariates <- covariates[order(covariates$stratum_id,covariates$row_id),]
   #outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
   
-  cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "cpr",addIntercept = FALSE)
+  cyclopsDataFfdf <- convertToCyclopsDataObject(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cpr",addIntercept = FALSE)
+  fitFfdf <- fitCyclopsModel(cyclopsDataFfdf,prior = prior("none"))  
+  
+  cyclopsData <- convertToCyclopsDataObject(outcomes,covariates,modelType = "cpr",addIntercept = FALSE)
   fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
-  
-  cyclopsDataFfdf <- createCyclopsData.ffdf(as.ffdf(outcomes),as.ffdf(covariates),modelType = "cpr",addIntercept = FALSE)
-  fitFfdf <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
-  
   
   tolerance <- 1E-4
   expect_equal(as.vector(sort(coef(fit))), as.vector(sort(coef(fitFormula))), tolerance = tolerance)

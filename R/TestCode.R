@@ -49,7 +49,7 @@ testCode <- function(){
   psPlotCovariateBalanceTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
   #Part three: Fit the outcome model:
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox")
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=prior("laplace",0.1))
   
   plotKaplanMeier(outcomeModel)
   

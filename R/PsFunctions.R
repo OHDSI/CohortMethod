@@ -54,7 +54,7 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
     covariateSubset <- cohortData$covariates[ffwhich(t,t == FALSE),]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "TREATMENT"] <- "Y"
-  cyclopsData <- createCyclopsData.ffdf(cohortSubset,covariateSubset,modelType="lr")
+  cyclopsData <- convertToCyclopsDataObject(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
   ps <- as.ram(cohortSubset[,c("Y","ROW_ID")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = prior,
@@ -86,9 +86,8 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
 psGetModel <- function(propensityScore, cohortData){
   cfs <- attr(propensityScore,"coefficients")
   cfs <- cfs[cfs != 0]
-  #attr(cfs,"names")[1] <- 0
+  attr(cfs,"names")[1] <- 0 #Rename intercept to 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
-  
   cfs <- merge(as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="COVARIATE_ID")
   cfs <- as.ram(cfs[,c("coefficient","id","COVARIATE_NAME")])
   cfs <- cfs[order(-abs(cfs$coefficient)),]

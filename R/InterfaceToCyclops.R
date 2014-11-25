@@ -223,18 +223,19 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
   return(dataPtr)
 }
 
-#' Convert data from two ffdf objects into a CyclopsData object
+#' Convert data from two data frames or ffdf objects into a CyclopsData object
 #'
 #' @description
-#' \code{createCyclopsData.ffdf} loads data from two ffdf objects, and inserts it into a Cyclops data object.
+#' \code{convertToCyclopsDataObject} loads data from two data frames or ffdf objects, and inserts it into a Cyclops data object.
 #' 
-#' @param outcomes    A ffdf object containing the outcomes with predefined columns (see below).
-#' @param covariates  A ffdf object containing the covariates with predefined columns (see below).
+#' @param outcomes    A data frame or ffdf object containing the outcomes with predefined columns (see below).
+#' @param covariates  A data frame or ffdf object containing the covariates with predefined columns (see below).
 #' @param modelType  	  Cyclops model type. Current supported types are "pr", "cpr", lr", "clr", or "cox"
 #' @param addIntercept  Add an intercept to the model?
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
 #' @param checkSorting  Check if the data is sorted appropriately, and if not, sort. 
+#' @param quiet         If true, (warning) messages are surpressed.
 #'
 #' @details
 #' These columns are expected in the outcome object:
@@ -244,8 +245,6 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #'   \verb{y}    \tab(real) \tab The outcome variable \cr
 #'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
 #' }
-#' The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
-#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
 #' 
 #' These columns are expected in the covariates object:
 #' \tabular{lll}{  
@@ -254,11 +253,15 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
 #'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
 #' }
-#' The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
-#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
+#' 
+#' Note: If checkSorting is turned off, the outcome table should be sorted by stratum_id (if present) 
+#' and then row_id except for Cox regression when the table should be sorted by 
+#' stratum_id (if present), -time, y, and row_id. The covariate table should be sorted by stratum_id 
+#' (if present), row_id and covariate_id except for Cox regression when the table should be sorted by 
+#' stratum_id (if present), -time, y, and row_id.
 #'  
 #' @return              
-#' An object of type CyclopsModel
+#' An object of type cyclopsData
 #' 
 #' @examples 
 #' #Convert infert dataset to Cyclops format:
@@ -272,60 +275,72 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #' #Make sparse:
 #' covariates <- covariates[covariates$covariate_value != 0,]
 #' 
-#' #Sort:
-#' covariates <- covariates[order(covariates$stratum_id,covariates$row_id,covariates$covariate_id),]
-#' outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
-#' 
-#' #Convert to ffdf:
-#' covariates <- as.ffdf(covariates)
-#' outcomes <- as.ffdf(outcomes)
-#'
 #' #Create Cyclops data object:
-#' cyclopsData <- createCyclopsData.ffdf(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
+#' cyclopsData <- convertToCyclopsDataObject(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
 #' 
 #' #Fit model:
 #' fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
 #' 
-#' 
 #' @export
-createCyclopsData.ffdf <- function(outcomes, 
-                                   covariates,
-                                   modelType = "lr", 
-                                   addIntercept = TRUE,
-                                   offsetAlreadyOnLogScale = FALSE,
-                                   makeCovariatesDense = NULL,
-                                   checkSorting = TRUE){
+convertToCyclopsDataObject <- function(outcomes, 
+                                       covariates,
+                                       modelType = "lr", 
+                                       addIntercept = TRUE,
+                                       offsetAlreadyOnLogScale = FALSE,
+                                       makeCovariatesDense = NULL,
+                                       checkSorting = TRUE,
+                                       quiet = FALSE){
+  UseMethod("convertToCyclopsDataObject") 
+}
+
+convertToCyclopsDataObject.ffdf <- function(outcomes, 
+                                            covariates,
+                                            modelType = "lr", 
+                                            addIntercept = TRUE,
+                                            offsetAlreadyOnLogScale = FALSE,
+                                            makeCovariatesDense = NULL,
+                                            checkSorting = TRUE,
+                                            quiet = FALSE){
   colnames(outcomes) <- toupper(colnames(outcomes))  
   colnames(covariates) <- toupper(colnames(covariates))    
   
   if (checkSorting){
     if (modelType == "lr" | modelType == "pr"){
       if (!isSorted(outcomes,c("ROW_ID"))){
-        writeLines("Sorting outcomes by row_id")
+        if(!quiet)
+          writeLines("Sorting outcomes by row_id")
         rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
         outcomes <- outcomes[ffdforder(outcomes[c("ROW_ID")]),]
       }
       if (!isSorted(covariates,c("ROW_ID"))){
-        writeLines("Sorting covariates by row_id")
+        if(!quiet)
+          writeLines("Sorting covariates by row_id")
         rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
         covariates <- covariates[ffdforder(covariates[c("ROW_ID")]),]
       }  
     }
     if (modelType == "clr" | modelType == "cpr"){
       if (!isSorted(outcomes,c("STRATUM_ID","ROW_ID"))){
-        writeLines("Sorting outcomes by stratum_id and row_id")
+        if(!quiet)
+          writeLines("Sorting outcomes by stratum_id and row_id")
         rownames(outcomes) <- NULL #Needs to be null or the ordering of ffdf will fail
         outcomes <- outcomes[ffdforder(outcomes[c("STRATUM_ID","ROW_ID")]),]
       }
       if (!isSorted(covariates,c("STRATUM_ID","ROW_ID"))){
-        writeLines("Sorting covariates by stratum_id and row_id")
+        if(!quiet)
+          writeLines("Sorting covariates by stratum_id and row_id")
         rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
         covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","ROW_ID")]),]
       }      
     }
     if (modelType == "cox"){
+      if (is.null(outcomes$STRATUM_ID)){
+        outcomes$STRATUM_ID = 0  
+        covariates$STRATUM_ID = 0
+      }
       if (!isSorted(outcomes,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
-        writeLines("Sorting outcomes by stratum_id, time (descending), y, and row_id")
+        if(!quiet)
+          writeLines("Sorting outcomes by stratum_id, time (descending), y, and row_id")
         rownames(outcomes) <- NULL #Needs to be null or the ordering of ffdf will fail
         outcomes$MINTIME = 0-outcomes$TIME
         outcomes <- outcomes[ffdforder(outcomes[c("STRATUM_ID","MINTIME","Y","ROW_ID")]),]
@@ -336,7 +351,8 @@ createCyclopsData.ffdf <- function(outcomes,
         covariates <- merge(covariates,outcomes,by=c("STRATUM_ID","ROW_ID"))
       }
       if (!isSorted(covariates,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
-        writeLines("Sorting covariates by stratum_id, time (descending), y, and row_id")
+        if(!quiet)
+          writeLines("Sorting covariates by stratum_id, time (descending), y, and row_id")
         rownames(covariates) <- NULL #Needs to be null or the ordering of ffdf will fail
         covariates$MINTIME = 0-covariates$TIME
         covariates <- covariates[ffdforder(covariates[c("STRATUM_ID","MINTIME","Y","ROW_ID")]),]
@@ -398,78 +414,20 @@ createCyclopsData.ffdf <- function(outcomes,
   return(result)
 }
 
-#' Convert data from data frames into a CyclopsData object
-#'
-#' @description
-#' \code{createCyclopsData} loads data from two data frames, and inserts it into a Cyclops data object.
-#' 
-#' @param outcomes    A data frame containing the outcomes with predefined columns (see below).
-#' @param covariateSql  A data frame containing the covariates with predefined columns (see below).
-#' @param modelType      Cyclops model type. Current supported types are "ls", "pr", "lr", "clr", "sccs", or "cox"
-#' @param addIntercept  Add an intercept to the model?
-#' @param useOffsetCovariate  Use the time variable in the model as an offset?
-#' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
-#' @param checkSorting  Check if the data is sorted appropriately, and if not, sort.
-#'
-#' @details
-#' These columns are expected in the outcome object:
-#' \tabular{lll}{  
-#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{y}    \tab(real) \tab The outcome variable \cr
-#'   \verb{time}    \tab(real) \tab For models that use time (e.g. Poisson or Cox regression) this contains time (e.g. number of days) \cr
-#' }
-#' The outcome table should be sorted by stratum_id (if present) and then row_id except for Cox regression when
-#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
-#' 
-#' These columns are expected in the covariates object:
-#' \tabular{lll}{  
-#'   \verb{stratum_id}    \tab(integer) \tab (optional) Stratum ID for conditional regression models \cr
-#'   \verb{row_id}  	\tab(integer) \tab Row ID is used to link multiple covariates (x) to a single outcome (y) \cr
-#'   \verb{covariate_id}    \tab(integer) \tab A numeric identifier of a covariate  \cr
-#'   \verb{covariate_value}    \tab(real) \tab The value of the specified covariate \cr
-#' }
-#' The covariate table should be sorted by stratum_id (if present), row_id and covariate_id except for Cox regression when
-#' the table should be sorted by stratum_id (if present), -time, y, and row_id.
-#' 
-#' @return              
-#' An object of type CyclopsModel
-#' 
-#' @examples
-#' #Convert infert dataset to Cyclops format:
-#' covariates <- data.frame(stratum_id = rep(infert$stratum,2),
-#'                          row_id = rep(1:nrow(infert),2),
-#'                          covariate_id = rep(1:2,each=nrow(infert)),
-#'                          covariate_value = c(infert$spontaneous,infert$induced))
-#' outcomes <- data.frame(stratum_id = infert$stratum,
-#'                        row_id = 1:nrow(infert),
-#'                        y = infert$case)
-#' #Make sparse:
-#' covariates <- covariates[covariates$covariate_value != 0,]
-#' 
-#' #Sort:
-#' covariates <- covariates[order(covariates$stratum_id,covariates$row_id,covariates$covariate_id),]
-#' outcomes <- outcomes[order(outcomes$stratum_id,outcomes$row_id),]
-#'
-#' #Create Cyclops data object:
-#' cyclopsData <- createCyclopsData(outcomes,covariates,modelType = "clr",addIntercept = FALSE)
-#' 
-#' #Fit model:
-#' fit <- fitCyclopsModel(cyclopsData,prior = prior("none"))  
-#' 
-#' @export
-createCyclopsData <- function(outcomes, 
-                              covariates,
-                              modelType = "lr", 
-                              addIntercept = TRUE,
-                              offsetAlreadyOnLogScale = FALSE,
-                              makeCovariatesDense = NULL,
-                              checkSorting = TRUE){
+convertToCyclopsDataObject.data.frame <- function(outcomes, 
+                                                  covariates,
+                                                  modelType = "lr", 
+                                                  addIntercept = TRUE,
+                                                  offsetAlreadyOnLogScale = FALSE,
+                                                  makeCovariatesDense = NULL,
+                                                  checkSorting = TRUE,
+                                                  quiet = FALSE){
   colnames(outcomes) <- toupper(colnames(outcomes))
   colnames(covariates) <- toupper(colnames(covariates))
   
   if ((modelType == "clr" | modelType == "cpr") & addIntercept){
-    warning("Intercepts are not allowed in conditional models, removing intercept",call.=FALSE)
+    if(!quiet)
+      warning("Intercepts are not allowed in conditional models, removing intercept",call.=FALSE)
     addIntercept = FALSE
   }
   if (modelType == "pr" | modelType == "cpr") 
@@ -483,28 +441,33 @@ createCyclopsData <- function(outcomes,
   if (checkSorting){
     if (modelType == "lr" | modelType == "pr"){
       if (!isSorted(outcomes,c("ROW_ID"))){
-        writeLines("Sorting outcomes by row_id")
+        if(!quiet)
+          writeLines("Sorting outcomes by row_id")
         outcomes <- outcomes[order(outcomes$ROW_ID),]
       }
       if (!isSorted(covariates,c("ROW_ID"))){
-        writeLines("Sorting covariates by row_id")
+        if(!quiet)
+          writeLines("Sorting covariates by row_id")
         covariates <- covariates[order(covariates$ROW_ID),]
       }   
     }
     
     if (modelType == "clr" | modelType == "cpr"){
       if (!isSorted(outcomes,c("STRATUM_ID","ROW_ID"))){
-        writeLines("Sorting outcomes by stratum_id and row_id")
+        if(!quiet)
+          writeLines("Sorting outcomes by stratum_id and row_id")
         outcomes <- outcomes[order(outcomes$STRATUM_ID,outcomes$ROW_ID),]
       }
       if (!isSorted(covariates,c("STRATUM_ID","ROW_ID"))){
-        writeLines("Sorting covariates by stratum_id and row_id")
+        if(!quiet)
+          writeLines("Sorting covariates by stratum_id and row_id")
         covariates <- covariates[order(covariates$STRATUM_ID,covariates$ROW_ID),]
       }      
     }
     if (modelType == "cox"){
       if (!isSorted(outcomes,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
-        writeLines("Sorting outcomes by stratum_id, time (descending), y, and row_id")
+        if(!quiet)
+          writeLines("Sorting outcomes by stratum_id, time (descending), y, and row_id")
         outcomes <- outcomes[order(outcomes$STRATUM_ID,-outcomes$TIME,outcomes$Y,outcomes$ROW_ID),]
       }
       if (is.null(covariates$TIME) | is.null(covariates$Y)){ # If time or y not present, add to check if sorted
@@ -513,7 +476,8 @@ createCyclopsData <- function(outcomes,
         covariates <- merge(covariates,outcomes,by=c("STRATUM_ID","ROW_ID"))
       }
       if (!isSorted(covariates,c("STRATUM_ID","TIME","Y","ROW_ID"),c(TRUE,FALSE,TRUE,TRUE))){
-        writeLines("Sorting covariates by stratum_id, time (descending), y, and row_id")
+        if(!quiet)
+          writeLines("Sorting covariates by stratum_id, time (descending), y, and row_id")
         covariates <- covariates[order(covariates$STRATUM_ID,-covariates$TIME,covariates$Y,covariates$ROW_ID),]
       }      
     }
