@@ -164,7 +164,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #' @param useCovariates       Whether to use the covariate matrix in the cohortData in the outcome model.
 #' @param fitModel            If false, the model will not be fit, and only summary statistics are available.
 #' @param modelType           The type of model to be fitted. See details for options.
-#' 
+#' @param prior               The prior used to fit the model. See \code{?prior} for details.
 #'
 #' @details
 #' The model type can be one of these:

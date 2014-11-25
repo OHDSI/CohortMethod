@@ -110,10 +110,10 @@ dbGetCohortData <- function(connectionDetails,
   
   outcomeSql <-"SELECT row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, row_id"
   outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
-    
+  
   excludeSql <-"SELECT row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, row_id"
   excludeSql <- translateSql(excludeSql,"sql server",connectionDetails$dbms)$sql
-
+  
   covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
   covariateRefSql <- translateSql(covariateRefSql,"sql server",connectionDetails$dbms)$sql
   
@@ -140,19 +140,43 @@ dbGetCohortData <- function(connectionDetails,
   colnames(exclude) <- snakeCaseToCamelCase(colnames(exclude))
   colnames(covariateRef) <- snakeCaseToCamelCase(colnames(covariateRef))
   dummy <- dbDisconnect(conn)
+  metaData <- list(sql = renderedSql,
+                   targetDrugConceptId = targetDrugConceptId,
+                   comparatorDrugConceptId = comparatorDrugConceptId,
+                   outcomeConceptIds = outcomeConceptIds,
+                   call = match.call()
+  )
+  
+  
   result <- list(outcomes = outcomes,
                  cohorts = cohorts,
                  covariates = covariates,
                  exclude = exclude,
-                 covariateRef = covariateRef
+                 covariateRef = covariateRef,
+                 metaData = metaData
   )
   
   class(result) <- "cohortData"
   return(result)
 }
 
+#' Save the cohort data to folder
+#'
+#' @description
+#' \code{saveCohortData} saves an object of type CohortData to folder.
+#' 
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param file                The name of the folder where the data will be written. The folder should
+#' not yet exist.
+#' 
+#' @details
+#' The data will be written to a set of files in the folder specified by the user.
+#'  
+#' @examples 
+#' #todo
+#' 
 #' @export
-save.cohortData <- function(cohortData, file){
+saveCohortData <- function(cohortData, file){
   if (missing(cohortData))
     stop("Must specify cohortData")
   if (missing(file))
@@ -166,25 +190,92 @@ save.cohortData <- function(cohortData, file){
   out4 <- cohortData$exclude
   out5 <- cohortData$covariateRef
   save.ffdf(out1,out2,out3,out4,out5,dir=file)
+  metaData <- cohortData$metaData
+  save(metaData,file=file.path(file,"metaData.Rdata"))
 }
 
+#' Load the cohort data from a folder
+#'
+#' @description
+#' \code{loadCohortData} loads an object of type CohortData from a folder in the file system.
+#' 
+#' @param file                The name of the folder containing the data.
+#' 
+#' @details
+#' The data will be written to a set of files in the folder specified by the user.
+#' 
+#' @return
+#' An object of class cohortData.
+#'  
+#' @examples 
+#' #todo
+#' 
 #' @export
-load.cohortData <- function(file){
+loadCohortData <- function(file){
   if (!file.exists(file))
     stop(paste("Cannot find folder",file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder",file))
   
-  
-  e <- new.env()
+  e <- new.env()  
   load.ffdf(file,e)
+  load(file.path(file,"metaData.Rdata"),e)
   result <- list(outcomes = get("out1", envir=e),
                  cohorts = get("out2", envir=e),
                  covariates = get("out3", envir=e),
                  exclude = get("out4", envir=e),
-                 covariateRef = get("out5", envir=e)
+                 covariateRef = get("out5", envir=e),
+                 metaData = mget("metaData",envir=e,ifnotfound=list(NULL))[[1]] #For backwards compatibility
   )
   class(result) <- "cohortData"
   rm(e)
   return(result)
+}
+
+print.cohortData <- function(cohortData){
+  writeLines("CohortData object")
+  writeLines("")
+  writeLines(paste("Treatment concept ID:",cohortData$metaData$targetDrugConceptId))
+  writeLines(paste("Comparator concept ID:",cohortData$metaData$comparatorDrugConceptId))
+  writeLines(paste("Outcome concept ID(s):",paste(cohortData$metaData$outcomeConceptIds,collapse=",")))
+}
+
+summary.cohortData <- function(cohortData){
+  treatedPersons = sum(cohortData$cohorts$treatment)  
+  comparatorPersons = nrow(cohortData$cohorts)-treatedPersons
+  outcomeCounts = data.frame(outcomeConceptId = cohortData$metaData$outcomeConceptIds, eventCount = 0, personCount = 0)
+  for (i in 1:nrow(outcomeCounts)){
+    outcomeCounts$eventCount[i] = sum(cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i])
+    outcomeCounts$personCount[i] = length(unique(cohortData$outcomes$rowId[cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i]]) )   
+  }
+  
+  result <- list(metaData = cohortData$metaData,
+                 treatedPersons = treatedPersons,
+                 comparatorPersons = comparatorPersons,
+                 outcomeCounts = outcomeCounts,
+                 covariateCount = nrow(cohortData$covariateRef),
+                 covariateValueCount = nrow(cohortData$covariates)                 
+  )
+  class(result) <- "summary.cohortData"
+  return(result)
+}
+
+print.summary.cohortData <- function(data){
+  writeLines("CohortData object summary")
+  writeLines("")
+  writeLines(paste("Treatment concept ID:",data$metaData$targetDrugConceptId))
+  writeLines(paste("Comparator concept ID:",data$metaData$comparatorDrugConceptId))
+  writeLines(paste("Outcome concept ID(s):",paste(data$metaData$outcomeConceptIds,collapse=",")))
+  writeLines("")
+  writeLines(paste("Treated persons:",paste(data$treatedPersons)))
+  writeLines(paste("Comparator persons:",paste(data$comparatorPersons)))
+  writeLines("")
+  writeLines("Outcome counts:")
+  rownames(data$outcomeCounts) <- rep("",nrow(data$outcomeCounts))
+  colnames(data$outcomeCounts) <- c("Concept ID","Event count","Person count")
+  printCoefmat(data$outcomeCounts)
+  writeLines("")
+  writeLines("Covariates:")
+  writeLines(paste("Number of covariates:",data$covariateCount))
+  writeLines(paste("Number of non-zero covariate values:",data$covariateValueCount)) 
 }

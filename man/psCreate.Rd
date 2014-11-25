@@ -12,7 +12,7 @@ psCreate(cohortData, outcomeConceptId = NULL, prior = prior("laplace",
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 creating the propensity score model.}
 
-\item{prior}{The prior used to fit the model.}
+\item{prior}{The prior used to fit the model. See \code{?prior} for details.}
 }
 \description{
 \code{psCreate} creates propensity scores using a regularized logistic regression.

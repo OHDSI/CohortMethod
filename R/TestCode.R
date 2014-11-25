@@ -21,9 +21,11 @@ testCode <- function(){
   
   cohortData <- dbGetCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
   
-  save.cohortData(cohortData,file.path(getwd(),"mdcrCohortData"))
+  saveCohortData(cohortData,"mdcrCohortData")
+    
+  cohortData <- loadCohortData(file.path(getwd(),"test/mdcrCohortData")) #need to fix: shouldn't need absolute path
   
-  cohortData <- load.cohortData(file.path(getwd(),"mdcrCohortData"))
+  summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
   ps <- psCreate(cohortData, outcomeConceptId = 194133, prior=prior("laplace",0.1))

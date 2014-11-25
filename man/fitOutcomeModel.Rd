@@ -21,6 +21,8 @@ fitOutcomeModel(outcomeConceptId, cohortData, strata = NULL,
 \item{fitModel}{If false, the model will not be fit, and only summary statistics are available.}
 
 \item{modelType}{The type of model to be fitted. See details for options.}
+
+\item{prior}{The prior used to fit the model. See \code{?prior} for details.}
 }
 \value{
 An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and \code{confint}

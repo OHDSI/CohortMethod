@@ -33,7 +33,7 @@ in.ff <- function(a,b){
 #' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 #' creating the propensity score model.
-#' @param prior             The prior used to fit the model.
+#' @param prior             The prior used to fit the model. See \code{?prior} for details.
 #'
 #' @details
 #' \code{psCreate} creates propensity scores using a regularized logistic regression.
