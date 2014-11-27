@@ -193,22 +193,31 @@ fitOutcomeModel <- function(outcomeConceptId,
                             useCovariates = TRUE, 
                             fitModel = TRUE,
                             modelType = "cox",
-                            prior = prior("laplace", useCrossValidation = TRUE)){
+                            regressionPrior = prior("laplace", useCrossValidation = TRUE),
+                            crossValidationControl = control(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
   dataObject <- createDataForModelFit(outcomeConceptId,cohortData,strata,riskWindowStart,riskWindowEnd,addExposureDaysToEnd,useCovariates,modelType)
   
   treatmentEstimate <- NULL
   coefficients <- NULL
   fit <- NULL
+  priorVariance <- NULL
   if (fitModel) {
-    prior$exclude = dataObject$treatmentVariable 
-    fit <- fitCyclopsModel(dataObject$cyclopsData, prior=prior)  
+    regressionPrior$exclude = dataObject$treatmentVariable 
+    fit <- fitCyclopsModel(dataObject$cyclopsData, 
+                           prior=regressionPrior,
+                           control = crossValidationControl)  
     coefficients <- coef(fit)
     logRr <- coef(fit)[names(coef(fit)) == dataObject$treatmentVariable]
     ci <- confint(fit,parm=dataObject$treatmentVariable)
     seLogRr <- (ci[3] - logRr)/qnorm(.975)
     treatmentEstimate <- data.frame(logRr=logRr, logLb95 = ci[2], logUb95 = ci[3], seLogRr = seLogRr)
+    priorVariance <- fit$variance
   }
-  outcomeModel <- list(modelType = modelType, coefficients = coefficients, treatmentEstimate = treatmentEstimate, data = dataObject$data)
+  outcomeModel <- list(modelType = modelType, 
+                       coefficients = coefficients,
+                       priorVariance = priorVariance,
+                       treatmentEstimate = treatmentEstimate, 
+                       data = dataObject$data)
   class(outcomeModel) <- "outcomeModel"
   return(outcomeModel)
 }
@@ -239,6 +248,7 @@ summary.outcomeModel <- function(outcomeModel){
     result <- list(modelType = outcomeModel$modelType,
                    counts = counts, 
                    model = model,
+                   priorVariance = outcomeModel$priorVariance,
                    coefficients = outcomeModel$treatmentEstimate)
   }
   class(result) <- "summary.outcomeModel"
@@ -267,6 +277,8 @@ print.summary.outcomeModel <- function(data){
     colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr","seLogRr")
     rownames(output) <- "treatment"
     printCoefmat(output)
+    writeLines("")
+    writeLines(paste("Prior variance:",data$priorVariance))
   }
 }
 
@@ -289,6 +301,8 @@ print.outcomeModel <- function(outcomeModel){
   
   colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr","seLogRr")
   rownames(output) <- "treatment"
+  writeLines("")
+  writeLines(paste("Prior variance:",outcomeModel$priorVariance))
   printCoefmat(output)
 }
 

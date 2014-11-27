@@ -6,7 +6,9 @@
 fitOutcomeModel(outcomeConceptId, cohortData, strata = NULL,
   riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
   useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
-  prior = prior("laplace", useCrossValidation = TRUE))
+  regressionPrior = prior("laplace", useCrossValidation = TRUE),
+  crossValidationControl = control(lowerLimit = 0.01, upperLimit = 10, fold =
+  5, noiseLevel = "quiet"))
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}.}

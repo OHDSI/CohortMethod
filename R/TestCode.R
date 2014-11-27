@@ -23,12 +23,13 @@ testCode <- function(){
   
   saveCohortData(cohortData,"mdcrCohortData")
     
-  cohortData <- loadCohortData(file.path(getwd(),"test/mdcrCohortData")) #need to fix: shouldn't need absolute path
+  cohortData <- loadCohortData("mdcrCohortData") 
   
   summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
-  ps <- psCreate(cohortData, outcomeConceptId = 194133, prior=prior("laplace",0.1))
+  ps <- psCreate(cohortData, outcomeConceptId = 194133, regressionPrior=prior("laplace",0.1))
+  #ps <- psCreate(cohortData,outcomeConceptId = 194133)
    
   psAuc(ps)
   
@@ -62,4 +63,7 @@ testCode <- function(){
   coef(outcomeModel)
   
   confint(outcomeModel)
+  
+  #Generate PDF (set working directory back to package path):
+  shell("R CMD Rd2pdf ./")
 }

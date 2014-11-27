@@ -29,9 +29,54 @@ snakeCaseToCamelCase <- function(string){
   return(string)
 }
 
+#' Get the cohort data from the server
+#'
+#' @description
+#' Todo: add description
+#'
+#' @details
+#' Todo: add details
+#'
+#' @param connectionDetails  	An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
+#' @param cdmSchema 		
+#' @param resultsSchema 		
+#' @param targetDrugConceptId 		
+#' @param comparatorDrugConceptId 		
+#' @param indicationConceptIds 		
+#' @param washoutWindow 		
+#' @param indicationLookbackWindow 		
+#' @param studyStartDate 		
+#' @param studyEndDate 		
+#' @param exclusionConceptIds 		
+#' @param outcomeConceptIds 		
+#' @param outcomeConditionTypeConceptIds 		
+#' @param maxOutcomeCount 		
+#' @param exposureTable 		
+#' @param outcomeTable 		
+#' @param useCovariateDemographics 		
+#' @param useCovariateConditionOccurrence 		
+#' @param useCovariateConditionEra 		
+#' @param useCovariateConditionGroup 		
+#' @param useCovariateDrugExposure 		
+#' @param useCovariateDrugEra 		
+#' @param useCovariateDrugGroup 		
+#' @param useCovariateProcedureOccurrence 		
+#' @param useCovariateProcedureGroup 		
+#' @param useCovariateObservation 		
+#' @param useCovariateConceptCounts 		
+#' @param useCovariateRiskScores 		
+#' @param useCovariateInteractionYear 		
+#' @param useCovariateInteractionMonth 		
+#' @param excludedCovariateConceptIds 		
+#' @param deleteCovariatesSmallCount 		
+#' 
+#' @return
+#' Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,
+#' and baseline covariates.
+#'
 #' @export
 dbGetCohortData <- function(connectionDetails,
-                            cdmSchema = "CDM_TRUVEN_MDCD",
+                            cdmSchema = "CDM4_SIM",
                             resultsSchema = "scratch",
                             targetDrugConceptId = 755695,
                             comparatorDrugConceptId = 739138,
@@ -217,9 +262,12 @@ loadCohortData <- function(file){
   if (!file.info(file)$isdir)
     stop(paste("Not a folder",file))
   
+  temp <- setwd(file)
+  absolutePath <- setwd(temp)
+  
   e <- new.env()  
-  load.ffdf(file,e)
-  load(file.path(file,"metaData.Rdata"),e)
+  load.ffdf(absolutePath,e)
+  load(file.path(absolutePath,"metaData.Rdata"),e)
   result <- list(outcomes = get("out1", envir=e),
                  cohorts = get("out2", envir=e),
                  covariates = get("out3", envir=e),

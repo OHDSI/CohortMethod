@@ -33,7 +33,7 @@ in.ff <- function(a,b){
 #' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 #' creating the propensity score model.
-#' @param prior             The prior used to fit the model. See \code{?prior} for details.
+#' @param regressionPrior   The prior used to fit the model. See \code{?prior} for details.
 #'
 #' @details
 #' \code{psCreate} creates propensity scores using a regularized logistic regression.
@@ -42,7 +42,10 @@ in.ff <- function(a,b){
 #' #todo
 #' 
 #' @export
-psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace", useCrossValidation = TRUE)){
+psCreate <- function(cohortData, 
+                     outcomeConceptId = NULL, 
+                     regressionPrior = prior("laplace", useCrossValidation = TRUE),
+                     crossValidationControl = control(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
   if (is.null(outcomeConceptId)){
     cohortSubset <- cohortData$cohorts
     covariateSubset <- subset(cohortData$covariates,covariateId != 1)
@@ -57,14 +60,16 @@ psCreate <- function(cohortData, outcomeConceptId = NULL, prior = prior("laplace
   cyclopsData <- convertToCyclopsDataObject(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
   ps <- as.ram(cohortSubset[,c("y","rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
-                                prior = prior,
-                                control = control(cvType = "auto", cvRepetitions = 2, noiseLevel = "quiet"))
+                                prior = regressionPrior,
+                                control = crossValidationControl)
+  print(cyclopsFit$variance)
   pred <- predict(cyclopsFit)
   
   colnames(ps)[colnames(ps) == "y"] <- "treatment"
   data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred,"names")))
   data <- merge(data,ps,by="rowId")
   attr(data,"coefficients") <- coef(cyclopsFit)
+  attr(data,"priorVariance") <- cyclopsFit$variance
   return(data)
 }
 

@@ -3,8 +3,10 @@
 \alias{psCreate}
 \title{Create propensity scores}
 \usage{
-psCreate(cohortData, outcomeConceptId = NULL, prior = prior("laplace",
-  useCrossValidation = TRUE))
+psCreate(cohortData, outcomeConceptId = NULL,
+  regressionPrior = prior("laplace", useCrossValidation = TRUE),
+  crossValidationControl = control(lowerLimit = 0.01, upperLimit = 10, fold =
+  5, noiseLevel = "quiet"))
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}.}
@@ -12,7 +14,7 @@ psCreate(cohortData, outcomeConceptId = NULL, prior = prior("laplace",
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 creating the propensity score model.}
 
-\item{prior}{The prior used to fit the model. See \code{?prior} for details.}
+\item{regressionPrior}{The prior used to fit the model. See \code{?prior} for details.}
 }
 \description{
 \code{psCreate} creates propensity scores using a regularized logistic regression.
