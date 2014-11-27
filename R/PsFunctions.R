@@ -62,7 +62,6 @@ psCreate <- function(cohortData,
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = regressionPrior,
                                 control = crossValidationControl)
-  print(cyclopsFit$variance)
   pred <- predict(cyclopsFit)
   
   colnames(ps)[colnames(ps) == "y"] <- "treatment"

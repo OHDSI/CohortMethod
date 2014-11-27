@@ -37,13 +37,11 @@ createDataForModelFitCox <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
-      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
+     result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
       outcomes$stratumId <- NULL
-      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
@@ -69,32 +67,73 @@ createDataForModelFitPoisson <- function(useStrata,
                                          outcomes) {
   outcomes <- as.ram(outcomes)
   outcomes$y <- 1
-  outcomes <- aggregate(Y ~ rowId + stratumId,data=outcomes,sum) #count outcome per person
-  data <- merge(cohorts[,c("treatment","rowId","stratumId","timeToCensor")],outcomes, all.x=TRUE)
+  outcomes <- aggregate(y ~ rowId,data=outcomes,sum) #count outcome per person
+  if (useStrata) {
+    data <- merge(cohorts[,c("treatment","rowId","stratumId","timeToCensor")],outcomes, all.x=TRUE)  
+  } else {
+    data <- merge(cohorts[,c("treatment","rowId","timeToCensor")],outcomes, all.x=TRUE)  
+  }
   data$y[is.na(data$y)] <- 0
   colnames(data)[colnames(data) == "timeToCensor"] <- "time"
   data <- data[data$time > 0,]
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
-      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
-      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="pr",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
   } else {# don't use covariates  
-    data$LOGtime <- log(data$time)
+    data$logTime <- log(data$time)
     if (useStrata){
-      result$cyclopsData <- createCyclopsDataFrame(y ~ treatment + strata(stratumId) + offset(LOGtime),data=data, modelType = "cpr")
+      result$cyclopsData <- createCyclopsDataFrame(y ~ treatment + strata(stratumId) + offset(logTime),data=data, modelType = "cpr")
       result$data <- data
       result$treatmentVariable <-"treatment"
     } else {
-      result$cyclopsData <- createCyclopsDataFrame(y ~ treatment + offset(LOGtime),data=data, modelType = "pr")
+      result$cyclopsData <- createCyclopsDataFrame(y ~ treatment + offset(logTime),data=data, modelType = "pr")
+      result$data <- data
+      result$treatmentVariable <-"treatment"
+    }
+  }
+  return(result)
+}
+
+createDataForModelFitLogistic <- function(useStrata,
+                                          useCovariates,
+                                          cohorts,
+                                          covariates,
+                                          outcomes) {
+  outcomes <- as.ram(outcomes)
+  outcomes$y <- 1
+  outcomes <- aggregate(y ~ rowId,data=outcomes,max) #Keep one outcome per person
+  if (useStrata) {
+    data <- merge(cohorts[,c("treatment","rowId","stratumId")],outcomes, all.x=TRUE)  
+  } else {
+    data <- merge(cohorts[,c("treatment","rowId")],outcomes, all.x=TRUE)  
+  }
+  data$y[is.na(data$y)] <- 0
+  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
+  if (useCovariates) { 
+    if (useStrata){
+      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
+      result$data <- data
+      result$treatmentVariable <- 1
+    } else {
+      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="lr",addIntercept=TRUE,quiet=TRUE)
+      result$data <- data
+      result$treatmentVariable <- 1
+    }
+  } else {# don't use covariates  
+    if (useStrata){
+      result$cyclopsData <- createCyclopsDataFrame(y ~ treatment,data=data, modelType = "clr")
+      result$data <- data
+      result$treatmentVariable <-"treatment"
+    } else {
+      result$cyclopsData <- createCyclopsDataFrame(y ~ treatment,data=data, modelType = "lr")
       result$data <- data
       result$treatmentVariable <-"treatment"
     }
@@ -112,8 +151,6 @@ createDataForModelFit <- function(outcomeConceptId,
                                   modelType = "cox"){
   if (!(modelType %in% c("lr","clr","pr","cpr","cox")))
     stop("Unknown model type")
-  if (modelType != "cox" && modelType != "pr" && modelType != "cpr")
-    stop("Currently only Cox model and (conditional) Poisson regression are implemented")
   if ((modelType == "clr" | modelType == "cpr") & is.null(strata))
     stop("Conditional regression specified, but no strate provided")
   
@@ -126,9 +163,8 @@ createDataForModelFit <- function(outcomeConceptId,
   t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
   cohorts <- as.ram(cohortData$cohort[ffwhich(t,t == FALSE),])
   
-  if (useStrata) {
+  if (!is.null(strata))
     cohorts <- merge(strata,cohorts) #keeping only persons that have been matched
-  }
   
   if (useCovariates){
     covariates <- cohortData$covariates
@@ -149,8 +185,11 @@ createDataForModelFit <- function(outcomeConceptId,
   if (modelType == "pr" | modelType == "cpr"){
     return(createDataForModelFitPoisson(useStrata,useCovariates,cohorts,covariates,outcomes))
   }
+  
+  if (modelType == "lr" | modelType == "clr"){
+    return(createDataForModelFitLogistic(useStrata,useCovariates,cohorts,covariates,outcomes))
+  }
 }
-
 
 #' Create an outcome model, and compute the relative risk
 #'
@@ -158,8 +197,9 @@ createDataForModelFit <- function(outcomeConceptId,
 #' \code{fitOutcomeModel} creates an outcome model, and computes the relative risk
 #' 
 #' @param cohortData          An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
-#' @param strata              A data frame specifying the strata. This data frame should have at least the following columns:
-#' \code{RowId} and \code{StratumId}.
+#' @param strata              A data frame specifying the (matched and/or trimmed) subpopulation to be 
+#' used in the study, as well as their strata (for conditional models). This data frame should have at 
+#' least a \code{RowId}, and a \code{StratumId} when including stratification.
 #' @param riskWindowEnd       The maximum length (in days) of the risk window.
 #' @param useCovariates       Whether to use the covariate matrix in the cohortData in the outcome model.
 #' @param fitModel            If false, the model will not be fit, and only summary statistics are available.
@@ -223,16 +263,28 @@ fitOutcomeModel <- function(outcomeConceptId,
 }
 
 summary.outcomeModel <- function(outcomeModel){
-  patientTable <- table(outcomeModel$data$treatment)
-  eventTable <- table(outcomeModel$data$treatment, outcomeModel$data$y)
-  timeTable <- aggregate(time ~ treatment, FUN = sum, data = outcomeModel$data)[,2]
+  if (outcomeModel$modelType == "clr" || outcomeModel$modelType == "lr"){
+    patientTable <- table(outcomeModel$data$treatment)
+    eventTable <- table(outcomeModel$data$treatment, outcomeModel$data$y)
+    
+    counts <- matrix(0, nrow=2, ncol=2)
+    counts[1,] <- patientTable
+    counts[2,] <- eventTable[,2]
+    colnames(counts) <- c("Comparator","Treated")
+    rownames(counts) <- c("Nr. of persons","Nr. of events")
+  } else {
+    patientTable <- table(outcomeModel$data$treatment)
+    eventTable <- table(outcomeModel$data$treatment, outcomeModel$data$y)
+    timeTable <- aggregate(time ~ treatment, FUN = sum, data = outcomeModel$data)[,2]
+    
+    counts <- matrix(0, nrow=3, ncol=2)
+    counts[1,] <- patientTable
+    counts[2,] <- eventTable[,2]
+    counts[3,] <- timeTable
+    colnames(counts) <- c("Comparator","Treated")
+    rownames(counts) <- c("Nr. of persons","Nr. of events","Person time (days)")
+  }
   
-  counts <- matrix(0, nrow=3, ncol=2)
-  counts[1,] <- patientTable
-  counts[2,] <- eventTable[,2]
-  counts[3,] <- timeTable
-  colnames(counts) <- c("Comparator","Treated")
-  rownames(counts) <- c("Nr. of persons","Nr. of events","Person time (days)")
   
   if (is.null(outcomeModel$coefficients)){
     result <- list(modelType = outcomeModel$modelType,

@@ -234,6 +234,7 @@ constructCyclopsDataFromBatchableSources <- function(resultSetOutcome,
 #' @param useOffsetCovariate  Use the time variable in the model as an offset?
 #' @param offsetAlreadyOnLogScale Is the time variable already on a log scale?
 #' @param checkSorting  Check if the data is sorted appropriately, and if not, sort. 
+#' @param checkRowIds   Check if all rowIds in the covariates appear in the outcomes.
 #' @param quiet         If true, (warning) messages are surpressed.
 #'
 #' @details
@@ -288,6 +289,7 @@ convertToCyclopsDataObject <- function(outcomes,
                                        offsetAlreadyOnLogScale = FALSE,
                                        makeCovariatesDense = NULL,
                                        checkSorting = TRUE,
+                                       checkRowIds = TRUE,
                                        quiet = FALSE){
   UseMethod("convertToCyclopsDataObject") 
 }
@@ -299,6 +301,7 @@ convertToCyclopsDataObject.ffdf <- function(outcomes,
                                             offsetAlreadyOnLogScale = FALSE,
                                             makeCovariatesDense = NULL,
                                             checkSorting = TRUE,
+                                            checkRowIds = TRUE,
                                             quiet = FALSE){
   if (checkSorting){
     if (modelType == "lr" | modelType == "pr"){
@@ -353,6 +356,15 @@ convertToCyclopsDataObject.ffdf <- function(outcomes,
         covariates$minTime = 0-covariates$time
         covariates <- covariates[ffdforder(covariates[c("stratumId","minTime","y","rowId")]),]
       }      
+    }
+  }
+  if (checkRowIds){
+    mapping <- ffmatch(covariates$rowId,outcomes$rowId)
+    if (any(is.na(mapping))){
+      if(!quiet)
+        writeLines("Removing covariate values with rowIds that are not in outcomes")
+      covariateRowsWithMapping <- ffwhich(mapping, !is.na(mapping))
+      covariates <- covariates[covariateRowsWithMapping,]
     }
   }
   
@@ -417,6 +429,7 @@ convertToCyclopsDataObject.data.frame <- function(outcomes,
                                                   offsetAlreadyOnLogScale = FALSE,
                                                   makeCovariatesDense = NULL,
                                                   checkSorting = TRUE,
+                                                  checkRowIds = TRUE,
                                                   quiet = FALSE){
   if ((modelType == "clr" | modelType == "cpr") & addIntercept){
     if(!quiet)
@@ -475,7 +488,15 @@ convertToCyclopsDataObject.data.frame <- function(outcomes,
       }      
     }
   }
-  
+  if (checkRowIds){
+    mapping <- match(covariates$rowId,outcomes$rowId)
+    if (any(is.na(mapping))){
+      if(!quiet)
+        writeLines("Removing covariate values with rowIds that are not in outcomes")
+      covariateRowsWithMapping <- which(!is.na(mapping))
+      covariates <- covariates[covariateRowsWithMapping,]
+    }
+  }
   dataPtr <- createSqlCyclopsData(modelType = modelType)
   
   if (modelType == "lr" | modelType == "pr"){

@@ -13,8 +13,9 @@ fitOutcomeModel(outcomeConceptId, cohortData, strata = NULL,
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}.}
 
-\item{strata}{A data frame specifying the strata. This data frame should have at least the following columns:
-\code{RowId} and \code{StratumId}.}
+\item{strata}{A data frame specifying the (matched and/or trimmed) subpopulation to be
+used in the study, as well as their strata (for conditional models). This data frame should have at
+least a \code{RowId}, and a \code{StratumId} when including stratification.}
 
 \item{riskWindowEnd}{The maximum length (in days) of the risk window.}
 

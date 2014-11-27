@@ -5,7 +5,8 @@
 \usage{
 convertToCyclopsDataObject(outcomes, covariates, modelType = "lr",
   addIntercept = TRUE, offsetAlreadyOnLogScale = FALSE,
-  makeCovariatesDense = NULL, checkSorting = TRUE, quiet = FALSE)
+  makeCovariatesDense = NULL, checkSorting = TRUE, checkRowIds = TRUE,
+  quiet = FALSE)
 }
 \arguments{
 \item{outcomes}{A data frame or ffdf object containing the outcomes with predefined columns (see below).}
@@ -19,6 +20,8 @@ convertToCyclopsDataObject(outcomes, covariates, modelType = "lr",
 \item{offsetAlreadyOnLogScale}{Is the time variable already on a log scale?}
 
 \item{checkSorting}{Check if the data is sorted appropriately, and if not, sort.}
+
+\item{checkRowIds}{Check if all rowIds in the covariates appear in the outcomes.}
 
 \item{quiet}{If true, (warning) messages are surpressed.}
 
