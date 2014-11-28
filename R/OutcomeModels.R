@@ -37,11 +37,13 @@ createDataForModelFitCox <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
-     result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
+      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
+      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
       outcomes$stratumId <- NULL
+      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
@@ -79,10 +81,12 @@ createDataForModelFitPoisson <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
+      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
+      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="pr",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
@@ -119,10 +123,16 @@ createDataForModelFitLogistic <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
+      covariates <- merge(covariates,as.ffdf(data[,c("rowId","stratumId")]))
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
+      #Restrict covariates to those of people in data: (can't use merge cause only 1 column to match)
+      #mapping <- ffmatch(covariates$rowId,as.ff(data[,c("rowId")]))
+      #covariateRowsWithMapping <- ffwhich(mapping, !is.na(mapping))
+      #covariates <- covariates[covariateRowsWithMapping,]
+      
       result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="lr",addIntercept=TRUE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
@@ -156,12 +166,14 @@ createDataForModelFit <- function(outcomeConceptId,
   
   useStrata = (modelType == "clr" | modelType == "cpr" | (modelType == "cox" & !is.null(strata)))
   
-  #Keep only outcome information for this outcome:
-  outcomes <- subset(cohortData$outcomes,outcomeId == as.double(outcomeConceptId))
-  
-  #Remove people from cohorts based on exclusion data for this outcome:
-  t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
-  cohorts <- as.ram(cohortData$cohort[ffwhich(t,t == FALSE),])
+  if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
+    outcomes <- cohortData$outcomes
+    cohorts <- as.ram(cohortData$cohort)
+  } else {
+    outcomes <- subset(cohortData$outcomes,outcomeId == as.double(outcomeConceptId))
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    cohorts <- as.ram(cohortData$cohort[ffwhich(t,t == FALSE),])
+  }
   
   if (!is.null(strata))
     cohorts <- merge(strata,cohorts) #keeping only persons that have been matched
@@ -190,6 +202,7 @@ createDataForModelFit <- function(outcomeConceptId,
     return(createDataForModelFitLogistic(useStrata,useCovariates,cohorts,covariates,outcomes))
   }
 }
+
 
 #' Create an outcome model, and compute the relative risk
 #'

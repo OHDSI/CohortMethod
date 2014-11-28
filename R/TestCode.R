@@ -1,4 +1,3 @@
-
 testCode <- function(){
   ### Test code ###
   library(CohortMethod)
@@ -51,8 +50,6 @@ testCode <- function(){
   
   psPlotCovariateBalanceTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
-  
-  cohortData <- loadCohortData("mdcrCohortData") 
   
   #Part three: Fit the outcome model:
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", regressionPrior=prior("laplace",0.1))

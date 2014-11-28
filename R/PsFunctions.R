@@ -46,7 +46,7 @@ psCreate <- function(cohortData,
                      outcomeConceptId = NULL, 
                      regressionPrior = prior("laplace", useCrossValidation = TRUE),
                      crossValidationControl = control(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
-  if (is.null(outcomeConceptId)){
+  if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohortSubset <- cohortData$cohorts
     covariateSubset <- subset(cohortData$covariates,covariateId != 1)
   } else {
@@ -523,7 +523,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' 
 #' @export
 psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConceptId = NULL) {
-  if (is.null(outcomeConceptId)){
+  if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohorts <- cohortData$cohorts
     covariates <- subset(cohortData$covariates,covariateId != 1)
   } else {
