@@ -22,7 +22,7 @@
 #' \code{createCohortDataSimulationProfile} creates a profile based on the provided cohortData object,
 #' which can be used to generate simulated data that has similar characteristics.
 #'
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
 #'
 #' @details
 #' The output of this function is an object that can be used by the \code{simulateCohortData} function
@@ -40,17 +40,17 @@ createCohortDataSimulationProfile <- function(cohortData){
   #covariatePrevalence <- covariatePrevalence[order(names(covariatePrevalence),]
   
   writeLines("Computing propensity model")
-  propensityScore <- psCreate(cohortData, regressionPrior=prior("laplace",0.1))
+  propensityScore <- createPs(cohortData, prior=createPrior("laplace",0.1))
   propensityModel <- attr(propensityScore,"coefficients")
   
   writeLines("Fitting outcome model(s)")
-  psTrimmed <- psTrimToEquipoise(propensityScore)
-  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
+  psTrimmed <- trimByPsToEquipoise(propensityScore)
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
   
   outcomeModels <- vector("list", length(cohortData$metaData$outcomeConceptIds))
   for (i in 1:length(cohortData$metaData$outcomeConceptIds)){
     outcomeConceptId = cohortData$metaData$outcomeConceptIds[i]
-    outcomeModel <- fitOutcomeModel(outcomeConceptId, cohortData, strata, useCovariates = TRUE, modelType = "pr",regressionPrior=prior("laplace",0.1))
+    outcomeModel <- fitOutcomeModel(outcomeConceptId, cohortData, strata, useCovariates = TRUE, modelType = "pr", prior=createPrior("laplace",0.1))
     outcomeModels[[i]] <- outcomeModel$coefficients
   }
   
@@ -69,7 +69,7 @@ createCohortDataSimulationProfile <- function(cohortData){
                  propensityModel = propensityModel,
                  outcomeModels = outcomeModels,
                  metaData = cohortData$metaData,
-                 covariateRef = cohortData$covariateRef,
+                 covariateRef = as.ram(cohortData$covariateRef),
                  cohortEndRate = 1/exp(coef(fitCohortEnd)),
                  obsEndRate = 1/exp(coef(fitObsEnd))
   )
@@ -178,7 +178,7 @@ simulateCohortData <- function(cohortDataSimulationProfile, n=10000){
                  cohorts = as.ffdf(cohorts),
                  covariates = as.ffdf(covariates),
                  exclude = NULL,
-                 covariateRef = cohortDataSimulationProfile$covariateRef,
+                 covariateRef = as.ffdf(cohortDataSimulationProfile$covariateRef),
                  metaData = cohortDataSimulationProfile$metaData
   )
   

@@ -4,7 +4,7 @@ testSimCode <- function(){
   
   # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
   
-  cohortData <- loadCohortData("mdcrCohortData") 
+  cohortData <- loadCohortDataObject("mdcrCohortData") 
   cohortDataSimulationProfile <- createCohortDataSimulationProfile(cohortData)
   save(cohortDataSimulationProfile,file="sim.Rdata")
   
@@ -13,7 +13,7 @@ testSimCode <- function(){
   
   summary(cohortData)
   
-  ps <- psCreate(cohortData, outcomeConceptId = 194133, regressionPrior=prior("laplace",0.1))
+  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
   
   coefs <- attr(ps,"coefficients")
   coefs <- coefs[order(names(coefs))]
@@ -25,33 +25,33 @@ testSimCode <- function(){
   head(coefs)
   head(cohortDataSimulationProfile$propensityModel)
   
-  psAuc(ps)
+  computePsAuc(ps)
   
-  propensityModel <- psGetModel(ps,cohortData)
+  propensityModel <- getPsModel(ps,cohortData)
   
   head(propensityModel)
   
-  psPlot(ps)
+  plotPs(ps)
   
-  psTrimmed <- psTrimToEquipoise(ps)
+  psTrimmed <- trimByPsToEquipoise(ps)
   
-  psPlot(psTrimmed,ps) #Plot trimmed PS distributions
+  plotPs(psTrimmed,ps) #Plot trimmed PS distributions
   
-  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
   
-  psPlot(strata,ps) #Plot matched PS distributions
+  plotPs(strata,ps) #Plot matched PS distributions
   
-  balance <- psComputeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
   
-  psPlotCovariateBalanceScatterPlot(balance,fileName = "balanceScatterplot.png")
+  plotCovariateBalanceScatterPlot(balance,fileName = "balanceScatterplot.png")
   
-  psPlotCovariateBalanceTopVariables(balance,fileName = "balanceTopVarPlot.png")
+  plotCovariateBalanceOfTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 9999,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", regressionPrior=prior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 9999,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
   
   plotKaplanMeier(outcomeModel)
   
-  fullOutcomeModel <- getFullOutcomeModel(outcomeModel,cohortData)
+  fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
   
   summary(outcomeModel)
   

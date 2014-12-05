@@ -209,7 +209,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #' @description
 #' \code{fitOutcomeModel} creates an outcome model, and computes the relative risk
 #' 
-#' @param cohortData          An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
 #' @param strata              A data frame specifying the (matched and/or trimmed) subpopulation to be 
 #' used in the study, as well as their strata (for conditional models). This data frame should have at 
 #' least a \code{RowId}, and a \code{StratumId} when including stratification.
@@ -246,8 +246,8 @@ fitOutcomeModel <- function(outcomeConceptId,
                             useCovariates = TRUE, 
                             fitModel = TRUE,
                             modelType = "cox",
-                            regressionPrior = prior("laplace", useCrossValidation = TRUE),
-                            crossValidationControl = control(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
+                            prior = createPrior("laplace", useCrossValidation = TRUE),
+                            control = createControl(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
   dataObject <- createDataForModelFit(outcomeConceptId,cohortData,strata,riskWindowStart,riskWindowEnd,addExposureDaysToEnd,useCovariates,modelType)
   
   treatmentEstimate <- NULL
@@ -255,10 +255,10 @@ fitOutcomeModel <- function(outcomeConceptId,
   fit <- NULL
   priorVariance <- NULL
   if (fitModel) {
-    regressionPrior$exclude = dataObject$treatmentVariable 
+    prior$exclude = dataObject$treatmentVariable 
     fit <- fitCyclopsModel(dataObject$cyclopsData, 
-                           prior=regressionPrior,
-                           control = crossValidationControl)  
+                           prior = prior,
+                           control = control)  
     coefficients <- coef(fit)
     logRr <- coef(fit)[names(coef(fit)) == dataObject$treatmentVariable]
     ci <- confint(fit,parm=dataObject$treatmentVariable)
@@ -371,14 +371,14 @@ print.outcomeModel <- function(outcomeModel){
   printCoefmat(output)
 }
 
-#' Get the full outcome model
+#' Get the outcome model
 #'
 #' @description
 #' \code{getFullOutcomeModel} shows the full outcome model, so showing the betas of all variables
 #' included in the outcome model, not just the treatment variable.
 #' 
 #' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.
-#' @param cohortData          An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -387,7 +387,7 @@ print.outcomeModel <- function(outcomeModel){
 #' #todo
 #' 
 #' @export
-getFullOutcomeModel <- function(outcomeModel,cohortData){
+getOutcomeModel <- function(outcomeModel,cohortData){
   cfs <- outcomeModel$coefficients
   cfs <- cfs[cfs != 0]
   #attr(cfs,"names")[1] <- 0
@@ -404,7 +404,7 @@ getFullOutcomeModel <- function(outcomeModel,cohortData){
 #' @description
 #' \code{plotKaplanMeier} creates the Kaplain-Meier survival plot
 #' 
-#' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.
+#' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{fitOutcomeModel} function.
 #' @param censorMarks         Whether or not to include censor marks in the plot.
 #' @param legend              Whether or not to include a legend in the plot.
 #' @param labelsInGraph       If true, the labels identifying the two curves will be added to the graph.

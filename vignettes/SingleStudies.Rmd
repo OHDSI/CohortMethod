@@ -1,3 +1,13 @@
+---
+title: "Single studies using CohortMethod"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+---
 <!--
 %\VignetteEngine{knitr}
 %\VignetteIndexEntry{Single studies using CohortMethod}
@@ -6,11 +16,29 @@
 ```{r, echo = FALSE, message = FALSE}
 library(CohortMethod)
 knitr::opts_chunk$set(
+  cache=FALSE,
   comment = "#>",
   error = FALSE,
   tidy = FALSE)
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 ```
+# Introduction
 
-# Single studies using CohortMethod
 
+# Preparing the cohorts
+
+
+# Preparing the outcome(s)
+
+
+```
+SELECT * FROM
+condition_occurrence
+INNER JOIN 
+visit_occurrence
+ON 
+condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
+WHERE 
+  condition_concept_id IN (SELECT descendant_concept_id FROM concept_ancestor WHERE ancestor_concept_id = 192671)
+AND
+visit_occurrence.place_of_service_concept_id IN ()
+```

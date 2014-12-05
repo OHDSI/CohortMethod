@@ -6,7 +6,7 @@
 createCohortDataSimulationProfile(cohortData)
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.}
 }
 \value{
 An object of type \code{cohortDataSimulationProfile}.

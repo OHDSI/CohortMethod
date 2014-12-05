@@ -6,12 +6,12 @@
 fitOutcomeModel(outcomeConceptId, cohortData, strata = NULL,
   riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
   useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
-  regressionPrior = prior("laplace", useCrossValidation = TRUE),
-  crossValidationControl = control(lowerLimit = 0.01, upperLimit = 10, fold =
-  5, noiseLevel = "quiet"))
+  prior = createPrior("laplace", useCrossValidation = TRUE),
+  control = createControl(lowerLimit = 0.01, upperLimit = 10, fold = 5,
+  noiseLevel = "quiet"))
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{dbGetCohortData}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.}
 
 \item{strata}{A data frame specifying the (matched and/or trimmed) subpopulation to be
 used in the study, as well as their strata (for conditional models). This data frame should have at

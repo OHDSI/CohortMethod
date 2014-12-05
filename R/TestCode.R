@@ -18,47 +18,47 @@ testCode <- function(){
   #Part one: loading the data:
   connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
   
-  cohortData <- dbGetCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
+  cohortData <- getDbCohortDataObject(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
   
-  saveCohortData(cohortData,"mdcrCohortData")
+  saveCohortDataObject(cohortData,"mdcrCohortData")
     
-  cohortData <- loadCohortData("mdcrCohortData") 
+  cohortData <- loadCohortDataObject("mdcrCohortData") 
   
   summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
-  ps <- psCreate(cohortData, outcomeConceptId = 194133, regressionPrior=prior("laplace",0.1))
+  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
   #ps <- psCreate(cohortData,outcomeConceptId = 194133)
    
-  psAuc(ps)
+  computePsAuc(ps)
   
-  propensityModel <- psGetModel(ps,cohortData)
+  propensityModel <- getPsModel(ps,cohortData)
   
-  psPlot(ps)
+  plotPs(ps)
   
-  psTrimmed <- psTrimToEquipoise(ps)
+  psTrimmed <- trimByPsToEquipoise(ps)
   
-  psPlot(psTrimmed,ps) #Plot trimmed PS distributions
+  plotPs(psTrimmed,ps) #Plot trimmed PS distributions
   
-  strata <- psMatch(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
 
-  psPlot(strata,ps) #Plot matched PS distributions
+  plotPs(strata,ps) #Plot matched PS distributions
   
-  balance <- psComputeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
   
-  psPlotCovariateBalanceScatterPlot(balance,fileName = "balanceScatterplot.png")
+  plotCovariateBalanceScatterPlot(balance,fileName = "balanceScatterplot.png")
   
-  psPlotCovariateBalanceTopVariables(balance,fileName = "balanceTopVarPlot.png")
+  plotCovariateBalanceOfTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
   
   #Part three: Fit the outcome model:
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", regressionPrior=prior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
   
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "clr", regressionPrior=prior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "clr", prior=createPrior("laplace",0.1))
   
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "pr", regressionPrior=prior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "pr", prior=createPrior("laplace",0.1))
  
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "lr", regressionPrior=prior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "lr", prior=createPrior("laplace",0.1))
   
   plotKaplanMeier(outcomeModel)
   

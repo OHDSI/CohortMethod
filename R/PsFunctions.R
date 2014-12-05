@@ -28,24 +28,26 @@ in.ff <- function(a,b){
 #' Create propensity scores
 #'
 #' @description
-#' \code{psCreate} creates propensity scores using a regularized logistic regression.
+#' \code{createPs} creates propensity scores using a regularized logistic regression.
 #' 
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 #' creating the propensity score model.
-#' @param regressionPrior   The prior used to fit the model. See \code{?prior} for details.
+#' @param prior   The prior used to fit the model. See \code{?createPrior} in the Cyclops package for details.
+#' @param control The control object used to control the cross-validation used to determine the 
+#' hyperparameters of the prior (if applicable). See \code{?createControl} in the Cyclops package for details.
 #'
 #' @details
-#' \code{psCreate} creates propensity scores using a regularized logistic regression.
+#' \code{createPs} creates propensity scores using a regularized logistic regression.
 #'  
 #' @examples 
 #' #todo
 #' 
 #' @export
-psCreate <- function(cohortData, 
+createPs <- function(cohortData, 
                      outcomeConceptId = NULL, 
-                     regressionPrior = prior("laplace", useCrossValidation = TRUE),
-                     crossValidationControl = control(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
+                     prior = createPrior("laplace", useCrossValidation = TRUE),
+                     control = createControl(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohortSubset <- cohortData$cohorts
     covariateSubset <- subset(cohortData$covariates,covariateId != 1)
@@ -60,8 +62,8 @@ psCreate <- function(cohortData,
   cyclopsData <- convertToCyclopsDataObject(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
   ps <- as.ram(cohortSubset[,c("y","rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
-                                prior = regressionPrior,
-                                control = crossValidationControl)
+                                prior = prior,
+                                control = control)
   pred <- predict(cyclopsFit)
   
   colnames(ps)[colnames(ps) == "y"] <- "treatment"
@@ -75,10 +77,10 @@ psCreate <- function(cohortData,
 #' Get the propensity model
 #'
 #' @description
-#' \code{psGetModel} shows the propensity score model
+#' \code{getPsModel} shows the propensity score model
 #' 
-#' @param propensityScore       The propensity scores as generated using the \code{psCreate} function.
-#' @param cohortData            An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param propensityScore       The propensity scores as generated using the \code{createPs} function.
+#' @param cohortData            An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -87,7 +89,7 @@ psCreate <- function(cohortData,
 #' #todo
 #' 
 #' @export
-psGetModel <- function(propensityScore, cohortData){
+getPsModel <- function(propensityScore, cohortData){
   cfs <- attr(propensityScore,"coefficients")
   cfs <- cfs[cfs != 0]
   attr(cfs,"names")[1] <- 0 #Rename intercept to 0
@@ -111,7 +113,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' Plot the propensity score distribution
 #'
 #' @description
-#' \code{psPlot} shows the propensity (or preference) score distribution
+#' \code{plotPs} shows the propensity (or preference) score distribution
 #' 
 #' @param data              A data frame with at least the two columns described below
 #' @param unfilteredData    To be used when computing preference scores on data from which subjects have
@@ -137,7 +139,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
 #' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
 #' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
-#' psPlot(data)
+#' plotPs(data)
 #' 
 #' @references
 #' Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and Schneeweiss S.
@@ -145,7 +147,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' Research, 3, 11-20
 #' 
 #' @export
-psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "density", binWidth = 0.05, fileName=NULL){
+plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "density", binWidth = 0.05, fileName=NULL){
   require(ggplot2)
   if (!("treatment" %in% colnames(data))) 
     stop("Missing column treatment in data")
@@ -191,7 +193,7 @@ psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' Compute the area under the ROC curve
 #'
 #' @description
-#' \code{psAuc} shows the area under the ROC curve os the propensity score
+#' \code{computePsAuc} computes the area under the ROC curve of the propensity score
 #' 
 #' @param data              A data frame with at least the two columns described below
 #'
@@ -203,17 +205,17 @@ psPlot <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' }
 #' 
 #' @return
-#' A data frame holding the AUC and its 95% confidence interval
+#' A data frame holding the AUC and its 95 percent confidence interval
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
 #' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
 #' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
 #' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
-#' psAuc(data)
+#' computePsAuc(data)
 #' 
 #' @export
-psAuc <- function(data){
+computePsAuc <- function(data){
   require(pROC,quietly=TRUE)
   if (!("treatment" %in% colnames(data))) 
     stop("Missing column treatment in data")
@@ -228,7 +230,7 @@ psAuc <- function(data){
 #' Trim persons by propensity score
 #'
 #' @description
-#' \code{psTrim} uses the provided propensity scores to trim subjects with extreme scores.
+#' \code{trimByPs} uses the provided propensity scores to trim subjects with extreme scores.
 #' 
 #' @param data              A data frame with the three columns described below
 #' @param trimFraction      This fraction will be removed from each treatment group. In the treatment group, persons
@@ -248,10 +250,10 @@ psAuc <- function(data){
 #' treatment = rep(0:1, each = 1000)
 #' propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- psTrim(data,0.05)
+#' result <- trimByPs(data,0.05)
 #' 
 #' @export
-psTrim <- function(data, trimFraction=0.05){
+trimByPs <- function(data, trimFraction=0.05){
   if (!("rowId" %in% colnames(data))) 
     stop("Missing column rowId in data")
   if (!("treatment" %in% colnames(data))) 
@@ -267,7 +269,7 @@ psTrim <- function(data, trimFraction=0.05){
 #' Keep only persons in clinical equipoise
 #'
 #' @description
-#' \code{psTrimToEquipoise} uses the preference score to trim subjects that are not in clinical equipoise
+#' \code{trimByPsToEquipoise} uses the preference score to trim subjects that are not in clinical equipoise
 #' 
 #' @param data              A data frame with at least the three columns described below
 #' @param bounds            The upper and lower bound on the preference score for keeping persons
@@ -286,7 +288,7 @@ psTrim <- function(data, trimFraction=0.05){
 #' treatment = rep(0:1, each = 1000)
 #' propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- psTrimToEquipoise(data)
+#' result <- trimByPsToEquipoise(data)
 #'  
 #' @references
 #' Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and Schneeweiss S.
@@ -294,7 +296,7 @@ psTrim <- function(data, trimFraction=0.05){
 #' Research, 3, 11-20
 #' 
 #' @export
-psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
+trimByPsToEquipoise <- function(data,bounds=c(0.25,0.75)){
   if (!("rowId" %in% colnames(data))) 
     stop("Missing column rowId in data")
   if (!("treatment" %in% colnames(data))) 
@@ -309,7 +311,7 @@ psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
 #' Match persons by propensity score
 #'
 #' @description
-#' \code{psMatch} uses the provided propensity scores to match treated to comparator persons.
+#' \code{matchOnPs} uses the provided propensity scores to match treated to comparator persons.
 #' 
 #' @param data              A data frame with the three columns described below.
 #' @param caliper		        The caliper for matching. A caliper is the distance which is acceptable for 
@@ -341,14 +343,14 @@ psTrimToEquipoise <- function(data,bounds=c(0.25,0.75)){
 #' propensityScore = c(0,0.1,0.3,0.4,1)
 #' age_group =c(1,1,1,1,1) #everyone in the same age group, so will not influence the matching
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, age_group = age_group)
-#' result <- psMatch(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
+#' result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 #' 
 #' @references
 #' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity score matching in 
 #' cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #' 
 #' @export
-psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, stratificationColumns = c()){
+matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, stratificationColumns = c()){
   if (!("rowId" %in% colnames(data))) 
     stop("Missing column rowId in data")
   if (!("treatment" %in% colnames(data))) 
@@ -389,7 +391,8 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
 #' Stratify persons by propensity score
 #'
 #' @description
-#' \code{psStratify} uses the provided propensity scores to stratify persons. 
+#' \code{stratifyByPs} uses the provided propensity scores to stratify persons. Additional stratification variables for 
+#' stratifications can also be used.
 #' 
 #' @param data              A data frame with the three columns described below
 #' @param numberOfStrata    How many strata? The boundaries of the strata are automatically defined to 
@@ -411,10 +414,10 @@ psMatch <- function(data, caliper = 0.25, caliperScale = "standardized", maxRati
 #' treatment = rep(0:1, each = 100)
 #' propensityScore = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- psStratify(data,5)
+#' result <- stratifyByPs(data,5)
 #' 
 #' @export
-psStratify <- function(data, numberOfStrata=5, stratificationColumns = c()){
+stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
   if (!("rowId" %in% colnames(data))) 
     stop("Missing column rowId in data")
   if (!("treatment" %in% colnames(data))) 
@@ -508,12 +511,12 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' For every covariate, prevalence in treatment and comparator groups before and after matching/trimming are computed.
 #' 
 #' @param restrictedCohorts  A data frame containing the people that are remaining after matching and/or trimming.
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{dbGetCohortData}.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed 
 #' when computing the balance before matching/trimming.
 #' 
 #' @details
-#' The restrictedCohorts data frame should have at least the following three columns:
+#' The restrictedCohorts data frame should have at least the following columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
@@ -522,7 +525,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' @return Returns a date frame describing the covariate balance before and after matching/trimming.
 #' 
 #' @export
-psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConceptId = NULL) {
+computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConceptId = NULL) {
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohorts <- cohortData$cohorts
     covariates <- subset(cohortData$covariates,covariateId != 1)
@@ -561,14 +564,14 @@ psComputeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeCon
 #'
 #' @description
 #' Create a scatterplot of the covariate balance, showing all variables with balance before and after 
-#' matching on the x and y axis respectively. Requires running \code{psComputeCovariateBalance} first.
+#' matching on the x and y axis respectively. Requires running \code{computeCovariateBalance} first.
 #' 
-#' @param balance  A data frame created by the \code{psComputeCovariateBalance} funcion.
+#' @param balance  A data frame created by the \code{computeCovariateBalance} funcion.
 #' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
 #' function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
 #' @export
-psPlotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
+plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
   require(ggplot2)
   balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
   balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
@@ -590,14 +593,14 @@ psPlotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
 #' @description
 #' Create a plot showing those variables having the largest imbalance before matching, and
 #' those variables having the largest imbalance after matching. Requires running 
-#' \code{psComputeCovariateBalance} first.
+#' \code{computeCovariateBalance} first.
 #' 
-#' @param balance  A data frame created by the \code{psComputeCovariateBalance} funcion.
+#' @param balance  A data frame created by the \code{computeCovariateBalance} funcion.
 #' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
 #' function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
 #' @export
-psPlotCovariateBalanceTopVariables <- function(balance, n = 20, fileName=NULL) {
+plotCovariateBalanceOfTopVariables <- function(balance, n = 20, fileName=NULL) {
   require(ggplot2)
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)),]
   topBefore <- topBefore[1:n,]

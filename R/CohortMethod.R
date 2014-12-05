@@ -28,6 +28,6 @@
 }
 
 #' @export
-cohortMethod <- function(){
-  #todo: implement function
+runCohortMethod <- function(){
+  #todo: implement function that will call all other functions needed to run a cohort method study
 }

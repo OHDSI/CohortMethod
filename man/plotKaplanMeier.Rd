@@ -7,7 +7,7 @@ plotKaplanMeier(outcomeModel, censorMarks = FALSE, legend = FALSE,
   labelsInGraph = TRUE, fileName = NULL)
 }
 \arguments{
-\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.}
+\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he \code{fitOutcomeModel} function.}
 
 \item{censorMarks}{Whether or not to include censor marks in the plot.}
 
