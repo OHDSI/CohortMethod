@@ -62,7 +62,7 @@ testCode <- function(){
   
   plotKaplanMeier(outcomeModel)
   
-  fullOutcomeModel <- getFullOutcomeModel(outcomeModel,cohortData)
+  fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
 
   summary(outcomeModel)
   

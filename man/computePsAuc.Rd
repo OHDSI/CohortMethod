@@ -9,7 +9,7 @@ computePsAuc(data)
 \item{data}{A data frame with at least the two columns described below}
 }
 \value{
-A data frame holding the AUC and its 95% confidence interval
+A data frame holding the AUC and its 95 percent confidence interval
 }
 \description{
 \code{computePsAuc} computes the area under the ROC curve of the propensity score
