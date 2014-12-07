@@ -51,7 +51,9 @@ snakeCaseToCamelCase <- function(string){
 #' @param outcomeConceptIds 		
 #' @param outcomeConditionTypeConceptIds 		
 #' @param maxOutcomeCount 		
+#' @param exposureSchema   	
 #' @param exposureTable 		
+#' @param outcomeSchema
 #' @param outcomeTable 		
 #' @param useCovariateDemographics 		
 #' @param useCovariateConditionOccurrence 		
@@ -89,7 +91,9 @@ getDbCohortDataObject <- function(connectionDetails,
                             outcomeConceptIds = 194133,
                             outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
                             maxOutcomeCount = 1,
+                            exposureSchema = "CDM4_SIM",
                             exposureTable = "DRUG_ERA",
+                            outcomeSchema = "CDM4_SIM",
                             outcomeTable = "CONDITION_OCCURRENCE",
                             useCovariateDemographics = TRUE,
                             useCovariateConditionOccurrence = TRUE,
@@ -123,7 +127,9 @@ getDbCohortDataObject <- function(connectionDetails,
                                         outcome_concept_ids = outcomeConceptIds,
                                         outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
                                         max_outcome_count = maxOutcomeCount,
+                                        exposure_schema = exposureSchema,
                                         exposure_table = exposureTable,
+                                        outcome_schema = outcomeSchema,
                                         outcome_table = outcomeTable,
                                         use_covariate_demographics = useCovariateDemographics,
                                         use_covariate_condition_occurrence = useCovariateConditionOccurrence,
