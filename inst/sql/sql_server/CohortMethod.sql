@@ -38,40 +38,42 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 
 *********************************************************************************/
 
-{DEFAULT @cdm_schema = 'CDM4_SIM'} /*CDM4_SIM  CDM_TRUVEN_MDCD*/
-{DEFAULT @results_schema = 'scratch'}
-{DEFAULT @target_drug_concept_id = 755695}  /*fluoxetine*/
-{DEFAULT @comparator_drug_concept_id = 739138} /*sertraline*/
-{DEFAULT @indication_concept_ids = 439926} /*malaise and fatigue*/
-{DEFAULT @washout_window = 183}
-{DEFAULT @indication_lookback_window = 183}
-{DEFAULT @study_start_date = ''}
-{DEFAULT @study_end_date = ''}
-{DEFAULT @exclusion_concept_ids = 4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019} 
-{DEFAULT @outcome_concept_ids = 194133}  /*low back pain*/
-{DEFAULT @outcome_condition_type_concept_ids = 38000215,38000216,38000217,38000218,38000183,38000232}    /*condition type only applies if @outcome_table = CONDITION_OCCURRENCE*/
-{DEFAULT @max_outcome_count = 1}  /*number of conditions, 1 is first occurrence*/
+{DEFAULT @cdm_schema = 'CDM4_SIM'} /*cdm_schema: @cdm_schema*/
+{DEFAULT @results_schema = 'scratch'} /*results_schema: @results_schema*/
+{DEFAULT @target_drug_concept_id = ''}  /*target_drug_concept_id: @target_drug_concept_id*/
+{DEFAULT @comparator_drug_concept_id = ''} /*comparator_drug_concept_id: @comparator_drug_concept_id*/
+{DEFAULT @indication_concept_ids = ''} /*indication_concept_ids: @indication_concept_ids*/
+{DEFAULT @washout_window = 183} /*washout_window: @washout_window*/
+{DEFAULT @indication_lookback_window = 183} /*indication_lookback_window: @indication_lookback_window*/
+{DEFAULT @study_start_date = ''} /*study_start_date: @study_start_date*/
+{DEFAULT @study_end_date = ''} /*study_end_date: @study_end_date*/
+{DEFAULT @exclusion_concept_ids = ''}  /*exclusion_concept_ids: @exclusion_concept_ids*/
+{DEFAULT @outcome_concept_ids = ''}  /*outcome_concept_ids: @outcome_concept_ids*/
+{DEFAULT @outcome_condition_type_concept_ids = ''}    /*outcome_condition_type_concept_ids: @outcome_condition_type_concept_ids*/ /*condition type only applies if @outcome_table = CONDITION_OCCURRENCE*/
+{DEFAULT @max_outcome_count = 1}  /*max_outcome_count: @max_outcome_count*/ /*number of conditions, 1 is first occurrence*/
 
-{DEFAULT @exposure_table = 'DRUG_ERA'}  /*the table that contains the exposure information (DRUG_ERA or COHORT)*/
-{DEFAULT @outcome_table = 'CONDITION_OCCURRENCE'}   /*the table that contains the outcome information (CONDITION_OCCURRENCE or COHORT)*/
+{DEFAULT @exposure_schema = 'CDM4_SIM'} /*exposure_schema: @exposure_schema*/
+{DEFAULT @exposure_table = 'DRUG_ERA'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (DRUG_ERA or COHORT)*/
+{DEFAULT @outcome_schema = 'CDM4_SIM'} /*outcome_schema: @outcome_schema*/
+{DEFAULT @outcome_table = 'CONDITION_OCCURRENCE'}   /*outcome_table: @outcome_table*/ /*the table that contains the outcome information (CONDITION_OCCURRENCE or COHORT)*/
 
-{DEFAULT @use_covariate_demographics = TRUE}
-{DEFAULT @use_covariate_condition_occurrence = TRUE}
-{DEFAULT @use_covariate_condition_era = FALSE}
-{DEFAULT @use_covariate_condition_group = FALSE}
-{DEFAULT @use_covariate_drug_exposure = FALSE}
-{DEFAULT @use_covariate_drug_era = FALSE}
-{DEFAULT @use_covariate_drug_group = FALSE}
-{DEFAULT @use_covariate_procedure_occurrence = FALSE}
-{DEFAULT @use_covariate_procedure_group = FALSE}
-{DEFAULT @use_covariate_observation = FALSE}
-{DEFAULT @use_covariate_concept_counts = FALSE}
-{DEFAULT @use_covariate_risk_scores = FALSE}
-{DEFAULT @use_covariate_interaction_year = FALSE}  
-{DEFAULT @use_covariate_interaction_month = FALSE}
+{DEFAULT @use_covariate_demographics = TRUE} /*use_covariate_demographics: @use_covariate_demographics*/
+{DEFAULT @use_covariate_condition_occurrence = TRUE} /*use_covariate_condition_occurrence: @use_covariate_condition_occurrence*/
+{DEFAULT @use_covariate_condition_era = FALSE} /*use_covariate_condition_era: @use_covariate_condition_era*/
+{DEFAULT @use_covariate_condition_group = FALSE} /*use_covariate_condition_group: @use_covariate_condition_group*/
+{DEFAULT @use_covariate_drug_exposure = FALSE} /*use_covariate_drug_exposure: @use_covariate_drug_exposure*/
+{DEFAULT @use_covariate_drug_era = FALSE} /*use_covariate_drug_era: @use_covariate_drug_era*/
+{DEFAULT @use_covariate_drug_group = FALSE} /*use_covariate_drug_group: @use_covariate_drug_group*/
+{DEFAULT @use_covariate_procedure_occurrence = FALSE} /*use_covariate_procedure_occurrence: @use_covariate_procedure_occurrence*/
+{DEFAULT @use_covariate_procedure_group = FALSE} /*use_covariate_procedure_group: @use_covariate_procedure_group*/
+{DEFAULT @use_covariate_observation = FALSE} /*use_covariate_observation: @use_covariate_observation*/
+{DEFAULT @use_covariate_concept_counts = FALSE} /*use_covariate_concept_counts: @use_covariate_concept_counts*/
+{DEFAULT @use_covariate_risk_scores = FALSE} /*use_covariate_risk_scores: @use_covariate_risk_scores*/
+{DEFAULT @use_covariate_interaction_year = FALSE} /*use_covariate_interaction_year: @use_covariate_interaction_year*/
+{DEFAULT @use_covariate_interaction_month = FALSE} /*use_covariate_interaction_month: @use_covariate_interaction_month*/
 
-{DEFAULT @excluded_covariate_concept_ids = 4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019} 
-{DEFAULT @delete_covariates_small_count = 100}
+{DEFAULT @excluded_covariate_concept_ids = ''} /*excluded_covariate_concept_ids: @excluded_covariate_concept_ids*/
+{DEFAULT @delete_covariates_small_count = 100} /*delete_covariates_small_count: @delete_covariates_small_count*/
 
 USE @results_schema;
 
@@ -247,21 +249,21 @@ FROM (
 			de1.person_id
 	}
 	
-	{@exposure_table == 'COHORT'} ? {
+	{@exposure_table <> 'DRUG_ERA'} ? {
 		SELECT CASE 
-				WHEN c1.cohort_concept_id = @target_drug_concept_id
+				WHEN c1.cohort_definition_id = @target_drug_concept_id
 					THEN 1
-				WHEN c1.cohort_concept_id = @comparator_drug_concept_id
+				WHEN c1.cohort_definition_id = @comparator_drug_concept_id
 					THEN 0
 				ELSE - 1
 				END AS cohort_id,
-			c1.person_id,
+			c1.subject_id as person_id,
 			min(c1.cohort_start_date) AS cohort_start_date,
-			min(@exposure_extension_window, c1.cohort_end_date) AS cohort_end_date
-		FROM @cdm_schema.dbo.cohort c1
-		WHERE c1.cohort_id in (@target_drug_concept_id,@comparator_drug_concept_id)
-		GROUP BY c1.cohort_concept_id,
-			c1.person_id
+			min(c1.cohort_end_date) AS cohort_end_date
+		FROM @exposure_schema.dbo.@exposure_table c1
+		WHERE c1.cohort_definition_id in (@target_drug_concept_id,@comparator_drug_concept_id)
+		GROUP BY c1.cohort_definition_id,
+			c1.subject_id
 	}
 	
 	) raw_cohorts
@@ -3819,32 +3821,25 @@ INSERT INTO #cohort_outcome (row_id, cohort_id, person_id, outcome_id, time_to_e
 		datediff(dd, cp1.cohort_start_date, co1.condition_start_date),
 		ca1.ancestor_concept_id
 }
-{@outcome_table == 'COHORT'} ? {
+{@outcome_table <> 'CONDITION_OCCURRENCE'} ? {
 	SELECT cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
-		co1.cohort_concept_id AS outcome_id,
+		co1.cohort_definition_id AS outcome_id,
 		datediff(dd, cp1.cohort_start_date, co1.cohort_start_date) AS time_to_event
 	FROM #cohort_person cp1
 	INNER JOIN 
-		@cdm_schema.dbo.cohort co1
-		ON cp1.person_id = co1.person_id
-	INNER JOIN (
-		SELECT descendant_concept_id,
-			ancestor_concept_id
-		FROM @cdm_schema.dbo.concept_ancestor
-		WHERE ancestor_concept_id IN (@outcome_concept_ids)
-		) ca1
-		ON co1.condition_concept_id = descendant_concept_id
+		@outcome_schema.dbo.@outcome_table co1
+		ON cp1.person_id = co1.subject_id
 	WHERE
-		co1.cohort_concept_id in (@outcome_concept_ids)
+		co1.cohort_definition_id in (@outcome_concept_ids)
 		AND co1.cohort_start_date > cp1.cohort_start_date
 		AND co1.cohort_start_Date <= cp1.observation_period_end_date
 	GROUP BY cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
 		datediff(dd, cp1.cohort_start_date, co1.cohort_start_date),
-		co1.cohort_concept_id
+		co1.cohort_definition_id
 }
 ;
 
@@ -3872,16 +3867,16 @@ INSERT INTO #cohort_excluded_person (row_id, cohort_id, person_id, outcome_id)
 		co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 		AND co1.condition_start_date < cp1.cohort_start_date
 }
-{@outcome_table == 'COHORT'} ? {
+{@outcome_table <> 'CONDITION_OCCURRENCE'} ? {
 	SELECT DISTINCT cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
-		co1.cohort_concept_id AS outcome_id
+		co1.cohort_definition_id AS outcome_id
 	FROM #cohort_person cp1
-	INNER JOIN @cdm_schema.dbo.cohort co1
-		ON cp1.person_id = co1.person_id
+	INNER JOIN @outcome_schema.dbo.@outcome_table co1
+		ON cp1.person_id = co1.subject_id
 	WHERE
-		co1.cohort_concept_id in (@outcome_concept_ids)
+		co1.cohort_definition_id in (@outcome_concept_ids)
 		AND co1.cohort_start_date < cp1.cohort_start_date
 }
 
