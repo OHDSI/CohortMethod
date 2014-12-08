@@ -9,7 +9,7 @@ computeCovariateBalance(restrictedCohorts, cohortData,
 \arguments{
 \item{restrictedCohorts}{A data frame containing the people that are remaining after matching and/or trimming.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed
 when computing the balance before matching/trimming.}

@@ -11,7 +11,7 @@ fitOutcomeModel(outcomeConceptId, cohortData, strata = NULL,
   noiseLevel = "quiet"))
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 
 \item{strata}{A data frame specifying the (matched and/or trimmed) subpopulation to be
 used in the study, as well as their strata (for conditional models). This data frame should have at

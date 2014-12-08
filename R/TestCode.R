@@ -18,11 +18,11 @@ testCode <- function(){
   #Part one: loading the data:
   connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
   
-  cohortData <- getDbCohortDataObject(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
+  cohortData <- getDbCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
   
-  saveCohortDataObject(cohortData,"mdcrCohortData")
+  saveCohortData(cohortData,"mdcrCohortData")
     
-  cohortData <- loadCohortDataObject("mdcrCohortData") 
+  cohortData <- loadCohortData("mdcrCohortData") 
   
   summary(cohortData)
   
@@ -69,7 +69,4 @@ testCode <- function(){
   coef(outcomeModel)
   
   confint(outcomeModel)
-  
-  #Generate PDF (set working directory back to package path):
-  shell("R CMD Rd2pdf ./")
 }

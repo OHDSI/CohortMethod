@@ -30,7 +30,7 @@ in.ff <- function(a,b){
 #' @description
 #' \code{createPs} creates propensity scores using a regularized logistic regression.
 #' 
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 #' creating the propensity score model.
 #' @param prior   The prior used to fit the model. See \code{?createPrior} in the Cyclops package for details.
@@ -59,7 +59,7 @@ createPs <- function(cohortData,
     covariateSubset <- cohortData$covariates[ffwhich(t,t == FALSE),]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
-  cyclopsData <- convertToCyclopsDataObject(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
+  cyclopsData <- convertToCyclopsData(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
   ps <- as.ram(cohortSubset[,c("y","rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = prior,
@@ -80,7 +80,7 @@ createPs <- function(cohortData,
 #' \code{getPsModel} shows the propensity score model
 #' 
 #' @param propensityScore       The propensity scores as generated using the \code{createPs} function.
-#' @param cohortData            An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData            An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -511,7 +511,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' For every covariate, prevalence in treatment and comparator groups before and after matching/trimming are computed.
 #' 
 #' @param restrictedCohorts  A data frame containing the people that are remaining after matching and/or trimming.
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed 
 #' when computing the balance before matching/trimming.
 #' 

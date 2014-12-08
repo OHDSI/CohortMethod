@@ -4,7 +4,7 @@ testSimCode <- function(){
   
   # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
   
-  cohortData <- loadCohortDataObject("mdcrCohortData") 
+  cohortData <- loadCohortData("mdcrCohortData") 
   cohortDataSimulationProfile <- createCohortDataSimulationProfile(cohortData)
   save(cohortDataSimulationProfile,file="sim.Rdata")
   

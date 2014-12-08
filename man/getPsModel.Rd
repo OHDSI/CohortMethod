@@ -8,7 +8,7 @@ getPsModel(propensityScore, cohortData)
 \arguments{
 \item{propensityScore}{The propensity scores as generated using the \code{createPs} function.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 }
 \description{
 \code{getPsModel} shows the propensity score model

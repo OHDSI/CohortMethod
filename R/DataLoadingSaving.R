@@ -77,7 +77,7 @@ snakeCaseToCamelCase <- function(string){
 #' and baseline covariates.
 #'
 #' @export
-getDbCohortDataObject <- function(connectionDetails,
+getDbCohortData <- function(connectionDetails,
                             cdmSchema = "CDM4_SIM",
                             resultsSchema = "scratch",
                             targetDrugConceptId = 755695,
@@ -91,10 +91,10 @@ getDbCohortDataObject <- function(connectionDetails,
                             outcomeConceptIds = 194133,
                             outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
                             maxOutcomeCount = 1,
-                            exposureSchema = "CDM4_SIM",
-                            exposureTable = "DRUG_ERA",
-                            outcomeSchema = "CDM4_SIM",
-                            outcomeTable = "CONDITION_OCCURRENCE",
+                            exposureSchema = cdmSchema,
+                            exposureTable = "drug_era",
+                            outcomeSchema = cdmSchema,
+                            outcomeTable = "condition_occurrence",
                             useCovariateDemographics = TRUE,
                             useCovariateConditionOccurrence = TRUE,
                             useCovariateConditionEra = FALSE,
@@ -214,9 +214,9 @@ getDbCohortDataObject <- function(connectionDetails,
 #' Save the cohort data to folder
 #'
 #' @description
-#' \code{saveCohortDataObject} saves an object of type cohortData to folder.
+#' \code{saveCohortData} saves an object of type cohortData to folder.
 #' 
-#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #' @param file                The name of the folder where the data will be written. The folder should
 #' not yet exist.
 #' 
@@ -227,7 +227,7 @@ getDbCohortDataObject <- function(connectionDetails,
 #' #todo
 #' 
 #' @export
-saveCohortDataObject <- function(cohortData, file){
+saveCohortData <- function(cohortData, file){
   if (missing(cohortData))
     stop("Must specify cohortData")
   if (missing(file))
@@ -248,7 +248,7 @@ saveCohortDataObject <- function(cohortData, file){
 #' Load the cohort data from a folder
 #'
 #' @description
-#' \code{loadCohortDataObject} loads an object of type cohortData from a folder in the file system.
+#' \code{loadCohortData} loads an object of type cohortData from a folder in the file system.
 #' 
 #' @param file                The name of the folder containing the data.
 #' 
@@ -262,7 +262,7 @@ saveCohortDataObject <- function(cohortData, file){
 #' #todo
 #' 
 #' @export
-loadCohortDataObject <- function(file){
+loadCohortData <- function(file){
   if (!file.exists(file))
     stop(paste("Cannot find folder",file))
   if (!file.info(file)$isdir)

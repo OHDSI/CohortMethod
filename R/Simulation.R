@@ -22,7 +22,7 @@
 #' \code{createCohortDataSimulationProfile} creates a profile based on the provided cohortData object,
 #' which can be used to generate simulated data that has similar characteristics.
 #'
-#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #'
 #' @details
 #' The output of this function is an object that can be used by the \code{simulateCohortData} function

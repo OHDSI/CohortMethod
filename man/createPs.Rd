@@ -8,7 +8,7 @@ createPs(cohortData, outcomeConceptId = NULL, prior = createPrior("laplace",
   upperLimit = 10, fold = 5, noiseLevel = "quiet"))
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 creating the propensity score model.}

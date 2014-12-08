@@ -38,13 +38,13 @@ createDataForModelFitCox <- function(useStrata,
   if (useCovariates) { 
     if (useStrata){
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
+      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
       outcomes$stratumId <- NULL
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
+      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
@@ -82,12 +82,12 @@ createDataForModelFitPoisson <- function(useStrata,
   if (useCovariates) { 
     if (useStrata){
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
+      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="pr",quiet=TRUE)
+      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="pr",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
@@ -124,7 +124,7 @@ createDataForModelFitLogistic <- function(useStrata,
   if (useCovariates) { 
     if (useStrata){
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","stratumId")]))
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
+      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
@@ -133,7 +133,7 @@ createDataForModelFitLogistic <- function(useStrata,
       #covariateRowsWithMapping <- ffwhich(mapping, !is.na(mapping))
       #covariates <- covariates[covariateRowsWithMapping,]
       
-      result$cyclopsData <- convertToCyclopsDataObject(as.ffdf(data),covariates,modelType="lr",addIntercept=TRUE,quiet=TRUE)
+      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="lr",addIntercept=TRUE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
@@ -209,7 +209,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #' @description
 #' \code{fitOutcomeModel} creates an outcome model, and computes the relative risk
 #' 
-#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #' @param strata              A data frame specifying the (matched and/or trimmed) subpopulation to be 
 #' used in the study, as well as their strata (for conditional models). This data frame should have at 
 #' least a \code{RowId}, and a \code{StratumId} when including stratification.
@@ -378,7 +378,7 @@ print.outcomeModel <- function(outcomeModel){
 #' included in the outcome model, not just the treatment variable.
 #' 
 #' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.
-#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortDataObject}.
+#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
