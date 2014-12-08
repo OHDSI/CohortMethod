@@ -22,7 +22,10 @@
 # @author Martijn Schuemie
 
 in.ff <- function(a,b){
-  return(ffbase::ffmatch(x=a, table=b, nomatch = 0L) > 0L)
+  if (length(b) == 0)
+    return(as.ff(rep(FALSE,length(a))))
+  else
+    return(ffbase::ffmatch(x=a, table=b, nomatch = 0L) > 0L)
 }
 
 #' Create propensity scores

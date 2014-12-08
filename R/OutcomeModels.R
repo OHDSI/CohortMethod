@@ -164,6 +164,9 @@ createDataForModelFit <- function(outcomeConceptId,
                                   modelType = "cox"){
   if (!(modelType %in% c("lr","clr","pr","cpr","cox")))
     stop("Unknown model type")
+  if (!any(cohortData$outcomes$outcomeId == outcomeConceptId))
+    stop("Outcome concept ID has no events. Cannot fit model.")
+  
   if ((modelType == "lr" | modelType == "pr"))
     useStrata = FALSE
   if ((modelType == "clr" | modelType == "cpr"))

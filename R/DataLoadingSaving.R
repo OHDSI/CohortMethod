@@ -325,9 +325,11 @@ print.summary.cohortData <- function(data){
   writeLines(paste("Comparator persons:",paste(data$comparatorPersons)))
   writeLines("")
   writeLines("Outcome counts:")
-  #rownames(data$outcomeCounts) <- rep("",nrow(data$outcomeCounts))
-  colnames(data$outcomeCounts) <- c("Concept ID","Event count","Person count")
-  printCoefmat(data$outcomeCounts)
+  outcomeCounts <- data$outcomeCounts
+  rownames(outcomeCounts) <- outcomeCounts$outcomeConceptId
+  outcomeCounts$outcomeConceptId <- NULL
+  colnames(outcomeCounts) <- c("Event count","Person count")
+  printCoefmat(outcomeCounts)
   writeLines("")
   writeLines("Covariates:")
   writeLines(paste("Number of covariates:",data$covariateCount))
