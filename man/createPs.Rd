@@ -13,10 +13,10 @@ createPs(cohortData, outcomeConceptId = NULL, prior = createPrior("laplace",
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 creating the propensity score model.}
 
-\item{prior}{The prior used to fit the model. See \code{?createPrior} in the Cyclops package for details.}
+\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.}
 
 \item{control}{The control object used to control the cross-validation used to determine the
-hyperparameters of the prior (if applicable). See \code{?createControl} in the Cyclops package for details.}
+hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.}
 }
 \description{
 \code{createPs} creates propensity scores using a regularized logistic regression.

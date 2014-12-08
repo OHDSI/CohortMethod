@@ -3,19 +3,23 @@
 \alias{fitOutcomeModel}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-fitOutcomeModel(outcomeConceptId, cohortData, strata = NULL,
-  riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
-  useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
-  prior = createPrior("laplace", useCrossValidation = TRUE),
-  control = createControl(lowerLimit = 0.01, upperLimit = 10, fold = 5,
+fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
+  useStrata = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
+  addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
+  modelType = "cox", prior = createPrior("laplace", useCrossValidation =
+  TRUE), control = createControl(lowerLimit = 0.01, upperLimit = 10, fold = 5,
   noiseLevel = "quiet"))
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 
-\item{strata}{A data frame specifying the (matched and/or trimmed) subpopulation to be
+\item{subPopulation}{A data frame specifying the (matched and/or trimmed) subpopulation to be
 used in the study, as well as their strata (for conditional models). This data frame should have at
 least a \code{RowId}, and a \code{StratumId} when including stratification.}
+
+\item{useStrata}{Specifically for Cox regressions: specify whether to use the strata defined in
+\code{subPopulation} in the analysis. For Poisson regression and logistic regression, this is implied in
+'clr' and 'cpr'.}
 
 \item{riskWindowEnd}{The maximum length (in days) of the risk window.}
 
@@ -25,7 +29,10 @@ least a \code{RowId}, and a \code{StratumId} when including stratification.}
 
 \item{modelType}{The type of model to be fitted. See details for options.}
 
-\item{prior}{The prior used to fit the model. See \code{?prior} for details.}
+\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.}
+
+\item{control}{The control object used to control the cross-validation used to determine the
+hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.}
 }
 \value{
 An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and \code{confint}

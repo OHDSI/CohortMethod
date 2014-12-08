@@ -18,6 +18,9 @@ plotKaplanMeier(outcomeModel, censorMarks = FALSE, legend = FALSE,
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
 the function \code{ggsave} in the ggplot2 package for supported file formats.}
 }
+\value{
+A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
+}
 \description{
 \code{plotKaplanMeier} creates the Kaplain-Meier survival plot
 }

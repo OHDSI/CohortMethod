@@ -22,7 +22,7 @@
 # @author Martijn Schuemie
 
 in.ff <- function(a,b){
-  return(ffmatch(x=a, table=b, nomatch = 0L) > 0L)
+  return(ffbase::ffmatch(x=a, table=b, nomatch = 0L) > 0L)
 }
 
 #' Create propensity scores
@@ -33,9 +33,9 @@ in.ff <- function(a,b){
 #' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 #' creating the propensity score model.
-#' @param prior   The prior used to fit the model. See \code{?createPrior} in the Cyclops package for details.
+#' @param prior   The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.
 #' @param control The control object used to control the cross-validation used to determine the 
-#' hyperparameters of the prior (if applicable). See \code{?createControl} in the Cyclops package for details.
+#' hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.
 #'
 #' @details
 #' \code{createPs} creates propensity scores using a regularized logistic regression.
@@ -50,17 +50,17 @@ createPs <- function(cohortData,
                      control = createControl(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohortSubset <- cohortData$cohorts
-    covariateSubset <- subset(cohortData$covariates,covariateId != 1)
+    covariateSubset <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
   } else {
     t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
-    cohortSubset <- cohortData$cohort[ffwhich(t,t == FALSE),]
+    cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == FALSE),]
     t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
     t <- t | cohortData$covariates$covariateId == 1
-    covariateSubset <- cohortData$covariates[ffwhich(t,t == FALSE),]
+    covariateSubset <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
   cyclopsData <- convertToCyclopsData(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
-  ps <- as.ram(cohortSubset[,c("y","rowId")])
+  ps <- ff::as.ram(cohortSubset[,c("y","rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = prior,
                                 control = control)
@@ -103,7 +103,7 @@ getPsModel <- function(propensityScore, cohortData){
 computePreferenceScore <- function(data, unfilteredData = NULL){
   if (is.null(unfilteredData))
     proportion <- sum(data$treatment) / nrow(data)
-  else #Proportion may have changed, but we still want to use the old proportion
+  else # Proportion may have changed, but we still want to use the old proportion
     proportion <- sum(unfilteredData$treatment) / nrow(unfilteredData)
   x <- exp(log(data$propensityScore/(1-data$propensityScore)) - log(proportion/(1-proportion)))
   data$preferenceScore <- x / (x+1)
@@ -133,6 +133,8 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
 #'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
 #' }
+#' 
+#' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
@@ -148,7 +150,6 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' 
 #' @export
 plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "density", binWidth = 0.05, fileName=NULL){
-  require(ggplot2)
   if (!("treatment" %in% colnames(data))) 
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data))) 
@@ -171,22 +172,22 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
   data$GROUP <- "Treated"
   data$GROUP[data$treatment == 0] <- "Comparator"
   if (type == "density"){
-    plot = ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
-      geom_density() +
-      scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-      scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
-      scale_x_continuous(label,limits=c(0,1)) +
-      scale_y_continuous("Density")
+    plot = ggplot2::ggplot(data, ggplot2::aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
+      ggplot2::geom_density() +
+      ggplot2::scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+      ggplot2::scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
+      ggplot2::scale_x_continuous(label,limits=c(0,1)) +
+      ggplot2::scale_y_continuous("Density")
   } else {
-    plot = ggplot(data, aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
-      geom_histogram(binwidth = binWidth, position="identity") +
-      scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-      scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
-      scale_x_continuous(label,limits=c(0,1)) +
-      scale_y_continuous("Number of subjects")
+    plot = ggplot2::ggplot(data, ggplot2::aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
+      ggplot2::geom_histogram(binwidth = binWidth, position="identity") +
+      ggplot2::scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+      ggplot2::scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
+      ggplot2::scale_x_continuous(label,limits=c(0,1)) +
+      ggplot2::scale_y_continuous("Number of subjects")
   }
   if (!is.null(fileName))
-    ggsave(fileName,plot,width=5,height=3.5,dpi=400) 
+    ggplot2::ggsave(fileName,plot,width=5,height=3.5,dpi=400) 
   return(plot)
 }
 
@@ -216,14 +217,14 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' 
 #' @export
 computePsAuc <- function(data){
-  require(pROC,quietly=TRUE)
   if (!("treatment" %in% colnames(data))) 
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data))) 
     stop("Missing column propensityScore in data")
   
-  rocobj <- roc(data$treatment,data$propensityScore, algorithm=3)
-  auc <- as.numeric(ci.auc(rocobj, method="delong"))
+  # Functions roc and ci.auc are in the pROC package:
+  rocobj <- pROC::roc.default(data$treatment,data$propensityScore, algorithm=3)
+  auc <- as.numeric(pROC::ci.auc.roc(rocobj, method="delong"))
   return(data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3]))
 }
 
@@ -446,7 +447,7 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
 
 quickSum <- function(data,squared=FALSE){
   result <- NULL
-  for (i in chunk(data)){
+  for (i in bit::chunk(data)){
     dataChunk <- data[i,]
     if (squared)
       x <- bySum(dataChunk$covariateValue^2,as.factor(dataChunk$covariateId))
@@ -528,13 +529,13 @@ computeMeansPerGroup <- function(cohorts, covariates){
 computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConceptId = NULL) {
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohorts <- cohortData$cohorts
-    covariates <- subset(cohortData$covariates,covariateId != 1)
+    covariates <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
   } else {
     t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
-    cohorts <- cohortData$cohort[ffwhich(t,t == FALSE),]
+    cohorts <- cohortData$cohort[ffbase::ffwhich(t,t == FALSE),]
     t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
     t <- t | cohortData$covariates$covariateId == 1
-    covariates <- cohortData$covariates[ffwhich(t,t == FALSE),]
+    covariates <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
   }
   
   beforeMatching <- computeMeansPerGroup(cohorts,covariates)
@@ -566,25 +567,26 @@ computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConce
 #' Create a scatterplot of the covariate balance, showing all variables with balance before and after 
 #' matching on the x and y axis respectively. Requires running \code{computeCovariateBalance} first.
 #' 
+#' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
+#'
 #' @param balance  A data frame created by the \code{computeCovariateBalance} funcion.
 #' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
 #' function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
 #' @export
 plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
-  require(ggplot2)
   balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
   balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
   limits=c(0,max(c(balance$beforeMatchingStdDiff,balance$afterMatchingStdDiff)))
-  plot <- ggplot(balance, aes(x=beforeMatchingStdDiff,y=afterMatchingStdDiff)) + 
-    geom_point(color = rgb(0,0,0.8,alpha=0.3)) +
-    geom_abline(a = 1) + 
-    geom_hline(yintercept = 0) + 
-    ggtitle("Standardized difference of mean") +
-    scale_x_continuous("Before matching",limits=limits) +
-    scale_y_continuous("After matching",limits=limits)
+  plot <- ggplot2::ggplot(balance, ggplot2::aes(x=beforeMatchingStdDiff,y=afterMatchingStdDiff)) + 
+    ggplot2::geom_point(color = rgb(0,0,0.8,alpha=0.3)) +
+    ggplot2::geom_abline(a = 1) + 
+    ggplot2::geom_hline(yintercept = 0) + 
+    ggplot2::ggtitle("Standardized difference of mean") +
+    ggplot2::scale_x_continuous("Before matching",limits=limits) +
+    ggplot2::scale_y_continuous("After matching",limits=limits)
   if (!is.null(fileName))
-    ggsave(fileName,plot,width=4,height=4,dpi=400) 
+    ggplot2::ggsave(fileName,plot,width=4,height=4,dpi=400) 
   return(plot)
 }  
 
@@ -595,13 +597,14 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
 #' those variables having the largest imbalance after matching. Requires running 
 #' \code{computeCovariateBalance} first.
 #' 
+#' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
+#'
 #' @param balance  A data frame created by the \code{computeCovariateBalance} funcion.
 #' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
 #' function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
 #' @export
 plotCovariateBalanceOfTopVariables <- function(balance, n = 20, fileName=NULL) {
-  require(ggplot2)
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)),]
   topBefore <- topBefore[1:n,]
   topBefore$facet <- paste("Top",n,"before matching")
@@ -618,22 +621,22 @@ plotCovariateBalanceOfTopVariables <- function(balance, n = 20, fileName=NULL) {
                      rowId = rep(nrow(filtered):1,2))
   data$facet <- factor(data$facet, levels = rev(levels(data$facet)))
   data$group <- factor(data$group, levels = rev(levels(data$group)))
-  plot <- ggplot(data, aes(x=difference,y=rowId,color=group,group=group,fill=group,shape=group)) + 
-    geom_point() +
-    geom_vline(xintercept = 0) + 
-    scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-    scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
-    scale_x_continuous("Standardized difference of mean") +
-    scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$covariateName) +
-    facet_grid(facet ~ ., scales="free", space="free") +
-    theme (
-      axis.text.y = element_text(size=7),
-      axis.title.y = element_blank(),
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x=difference,y=rowId,color=group,group=group,fill=group,shape=group)) + 
+    ggplot2::geom_point() +
+    ggplot2::geom_vline(xintercept = 0) + 
+    ggplot2::scale_fill_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+    ggplot2::scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) +
+    ggplot2::scale_x_continuous("Standardized difference of mean") +
+    ggplot2::scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$covariateName) +
+    ggplot2::facet_grid(facet ~ ., scales="free", space="free") +
+    ggplot2::theme (
+      axis.text.y = ggplot2::element_text(size=7),
+      axis.title.y = ggplot2::element_blank(),
       legend.position="top",
-      legend.title = element_blank()
+      legend.title = ggplot2::element_blank()
     )
   if (!is.null(fileName))
-    ggsave(fileName,plot,width=10,height=max(2+n*0.2,5),dpi=400) 
+    ggplot2::ggsave(fileName,plot,width=10,height=max(2+n*0.2,5),dpi=400) 
   return(plot)
 }
 

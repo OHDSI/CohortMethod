@@ -8,6 +8,8 @@ TestCodePatrick <- function(){
   resultsSchema <- "scratch"
   port <- NULL
   
+  connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
+  
   
   cohortData <- getDbCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema,
                                       targetDrugConceptId = 1,

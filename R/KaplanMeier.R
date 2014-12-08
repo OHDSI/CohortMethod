@@ -1,19 +1,33 @@
+# @file KaplanMeier.R
+#
+# Copyright 2014 Observational Health Data Sciences and Informatics
+#
+# This file is part of CohortMethod
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-#' Create a Kaplan-Meier plot using ggplot2
-#'
-#' @author Adapted from Abhijit Dasgupta with contributions by Gil Tomas
-#' \url{http://statbandit.wordpress.com/2011/03/08/an-enhanced-kaplan-meier-plot/}
-#' slight adjustment to cope with none strata calls (e.g. Surv(time,event)~1), 
-#' option to remove the legend and also draw marks at censoring locations by Nadieh Bremer
+
+# Create a Kaplan-Meier plot using ggplot2
+#
+# @author Adapted from Abhijit Dasgupta with contributions by Gil Tomas
+# \url{http://statbandit.wordpress.com/2011/03/08/an-enhanced-kaplan-meier-plot/}
+# slight adjustment to cope with none strata calls (e.g. Surv(time,event)~1), 
+# option to remove the legend and also draw marks at censoring locations by Nadieh Bremer
 .ggkm <- function(sfit,
                  marks = TRUE,
                  legend = FALSE,
                  labelsInGraph = TRUE) {
-  
-  require(ggplot2)
-  require(survival)
-  require(plyr)
-  
+    
   ystratalabs=c("Comparator","Treated")
   xlabs = "Time in days"
   ylabs = "Survival Probability"
@@ -69,25 +83,25 @@
   zeros <- data.frame(time = 0, surv = 1,
                       strata = factor(ystratalabs, levels=levels(.df$strata)),
                       upper = 1, lower = 1)
-  .df <- rbind.fill(zeros, .df)
+  .df <- plyr::rbind.fill(zeros, .df)
   d <- length(levels(.df$strata))
   
   ###################################
   # specifying plot parameteres etc #
   ###################################
   
-  p <- ggplot( .df, aes(time, surv,linetype = strata,color = strata)) +
-    geom_step(size=1) +
-    scale_color_manual(values=c(rgb(0,0,0.8,alpha=0.5),rgb(0.8,0,0,alpha=0.5)),guide=FALSE) +
-    scale_x_continuous(xlabs, limits = xlims) +
-    scale_y_continuous(ylabs, limits = ylims) +
-    labs(linetype = ystrataname) +
-    ggtitle(main) +
-    theme(legend.title = element_blank())
+  p <- ggplot2::ggplot( .df, ggplot2::aes(time, surv,linetype = strata,color = strata)) +
+    ggplot2::geom_step(size=1) +
+    ggplot2::scale_color_manual(values=c(rgb(0,0,0.8,alpha=0.5),rgb(0.8,0,0,alpha=0.5)),guide=FALSE) +
+    ggplot2::scale_x_continuous(xlabs, limits = xlims) +
+    ggplot2::scale_y_continuous(ylabs, limits = ylims) +
+    ggplot2::labs(linetype = ystrataname) +
+    ggplot2::ggtitle(main) +
+    ggplot2::theme(legend.title = ggplot2::element_blank())
   
   #Removes the legend: 
   if(legend == FALSE) {
-    p <- p + theme(legend.position="none")
+    p <- p + ggplot2::theme(legend.position="none")
   }
   
   if (labelsInGraph == TRUE){
@@ -106,13 +120,13 @@
       yTreated <- min(yTreated + .1,1)
     }
     
-    p <- p + annotate("text",x = labelX, y = yComparator,label = "Comparator", hjust = 1)
-    p <- p + annotate("text",x = labelX, y = yTreated,label = "Treated", hjust = 1)
+    p <- p + ggplot2::annotate("text",x = labelX, y = yComparator,label = "Comparator", hjust = 1)
+    p <- p + ggplot2::annotate("text",x = labelX, y = yTreated,label = "Treated", hjust = 1)
   }
   
   #Add censoring marks to the line:
   if(marks == TRUE)
-    p <- p + geom_point(data = subset(.df, n.censor >= 1), aes(x = time, y = surv), shape = "|")
+    p <- p + ggplot2::geom_point(data = subset(.df, n.censor >= 1), ggplot2::aes(x = time, y = surv), shape = "|")
   
   return(p)
 }

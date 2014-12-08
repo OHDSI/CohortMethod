@@ -60,6 +60,15 @@ testCode <- function(){
  
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "lr", prior=createPrior("laplace",0.1))
   
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "clr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "pr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "lr", prior=createPrior("laplace",0.1))
+  
+  
   plotKaplanMeier(outcomeModel)
   
   fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)

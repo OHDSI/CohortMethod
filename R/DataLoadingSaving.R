@@ -111,7 +111,7 @@ getDbCohortData <- function(connectionDetails,
                             useCovariateInteractionMonth = FALSE,
                             excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                             deleteCovariatesSmallCount = 100){
-  renderedSql <- loadRenderTranslateSql("CohortMethod.sql",
+  renderedSql <- SqlRender::loadRenderTranslateSql("CohortMethod.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
                                         cdm_schema = cdmSchema,
@@ -148,49 +148,49 @@ getDbCohortData <- function(connectionDetails,
                                         excluded_covariate_concept_ids = excludedCovariateConceptIds,
                                         delete_covariates_small_count = deleteCovariatesSmallCount)
   
-  conn <- connect(connectionDetails)
+  conn <- DatabaseConnector::connect(connectionDetails)
   
   writeLines("Executing multiple queries. This could take a while")
-  executeSql(conn,renderedSql)
+  DatabaseConnector::executeSql(conn,renderedSql)
   
   cohortSql <-"SELECT row_id, cohort_id AS treatment, person_id, datediff(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end, datediff(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end FROM #cohort_person ORDER BY row_id"
-  cohortSql <- translateSql(cohortSql,"sql server",connectionDetails$dbms)$sql
+  cohortSql <- SqlRender::translateSql(cohortSql,"sql server",connectionDetails$dbms)$sql
   
   covariateSql <-"SELECT row_id, covariate_id,covariate_value FROM #cohort_covariate ORDER BY row_id, covariate_id"
-  covariateSql <- translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
+  covariateSql <- SqlRender::translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
   
   outcomeSql <-"SELECT row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, row_id"
-  outcomeSql <- translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
+  outcomeSql <- SqlRender::translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
   
   excludeSql <-"SELECT row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, row_id"
-  excludeSql <- translateSql(excludeSql,"sql server",connectionDetails$dbms)$sql
+  excludeSql <- SqlRender::translateSql(excludeSql,"sql server",connectionDetails$dbms)$sql
   
   covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
-  covariateRefSql <- translateSql(covariateRefSql,"sql server",connectionDetails$dbms)$sql
+  covariateRefSql <- SqlRender::translateSql(covariateRefSql,"sql server",connectionDetails$dbms)$sql
   
   writeLines("Fetching data from server")
   start <- Sys.time()
-  outcomes <- dbGetQuery.ffdf(conn,outcomeSql)
-  cohorts <-  dbGetQuery.ffdf(conn,cohortSql)
-  covariates <- dbGetQuery.ffdf(conn,covariateSql)
-  exclude <- dbGetQuery.ffdf(conn,excludeSql)
-  covariateRef <- dbGetQuery.ffdf(conn,covariateRefSql)
+  outcomes <- DatabaseConnector::dbGetQuery.ffdf(conn,outcomeSql)
+  cohorts <-  DatabaseConnector::dbGetQuery.ffdf(conn,cohortSql)
+  covariates <- DatabaseConnector::dbGetQuery.ffdf(conn,covariateSql)
+  exclude <- DatabaseConnector::dbGetQuery.ffdf(conn,excludeSql)
+  covariateRef <- DatabaseConnector::dbGetQuery.ffdf(conn,covariateRefSql)
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
   #Remove temp tables:
-  renderedSql <- loadRenderTranslateSql("CMRemoveTempTables.sql",
+  renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
                                         packageName = "CohortMethod",
                                         dbms = connectionDetails$dbms,
                                         CDM_schema = cdmSchema)
   
-  executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
+  DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
   colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
   colnames(cohorts) <- snakeCaseToCamelCase(colnames(cohorts))
   colnames(covariates) <- snakeCaseToCamelCase(colnames(covariates))
   colnames(exclude) <- snakeCaseToCamelCase(colnames(exclude))
   colnames(covariateRef) <- snakeCaseToCamelCase(colnames(covariateRef))
-  dummy <- dbDisconnect(conn)
+  dummy <- RJDBC::dbDisconnect(conn)
   metaData <- list(sql = renderedSql,
                    targetDrugConceptId = targetDrugConceptId,
                    comparatorDrugConceptId = comparatorDrugConceptId,
@@ -240,7 +240,7 @@ saveCohortData <- function(cohortData, file){
   out3 <- cohortData$covariates
   out4 <- cohortData$exclude
   out5 <- cohortData$covariateRef
-  save.ffdf(out1,out2,out3,out4,out5,dir=file)
+  ffbase::save.ffdf(out1,out2,out3,out4,out5,dir=file)
   metaData <- cohortData$metaData
   save(metaData,file=file.path(file,"metaData.Rdata"))
 }
@@ -295,12 +295,12 @@ print.cohortData <- function(cohortData){
 }
 
 summary.cohortData <- function(cohortData){
-  treatedPersons = sum(cohortData$cohorts$treatment)  
+  treatedPersons = ffbase::sum.ff(cohortData$cohorts$treatment)  
   comparatorPersons = nrow(cohortData$cohorts)-treatedPersons
   outcomeCounts = data.frame(outcomeConceptId = cohortData$metaData$outcomeConceptIds, eventCount = 0, personCount = 0)
   for (i in 1:nrow(outcomeCounts)){
-    outcomeCounts$eventCount[i] = sum(cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i])
-    outcomeCounts$personCount[i] = length(unique(cohortData$outcomes$rowId[cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i]]) )   
+    outcomeCounts$eventCount[i] = ffbase::sum.ff(cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i])
+    outcomeCounts$personCount[i] = length(ffbase::unique.ff(cohortData$outcomes$rowId[cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i]]) )   
   }
   
   result <- list(metaData = cohortData$metaData,
@@ -325,7 +325,7 @@ print.summary.cohortData <- function(data){
   writeLines(paste("Comparator persons:",paste(data$comparatorPersons)))
   writeLines("")
   writeLines("Outcome counts:")
-  rownames(data$outcomeCounts) <- rep("",nrow(data$outcomeCounts))
+  #rownames(data$outcomeCounts) <- rep("",nrow(data$outcomeCounts))
   colnames(data$outcomeCounts) <- c("Concept ID","Event count","Person count")
   printCoefmat(data$outcomeCounts)
   writeLines("")

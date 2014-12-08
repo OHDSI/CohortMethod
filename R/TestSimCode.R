@@ -9,12 +9,13 @@ testSimCode <- function(){
   save(cohortDataSimulationProfile,file="sim.Rdata")
   
   load("sim.Rdata")
-  cohortData <- simulateCohortData(cohortDataSimulationProfile, n=10000)
+  cohortData <- simulateCohortData(cohortDataSimulationProfile, n=1000)
   
   summary(cohortData)
   
   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
-  
+  #ps <- createPs(cohortData, outcomeConceptId = 194133)
+   
   coefs <- attr(ps,"coefficients")
   coefs <- coefs[order(names(coefs))]
   cohortDataSimulationProfile$propensityModel <- cohortDataSimulationProfile$propensityModel[order(names(cohortDataSimulationProfile$propensityModel))]
@@ -47,7 +48,30 @@ testSimCode <- function(){
   
   plotCovariateBalanceOfTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 9999,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "clr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "pr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "lr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
+
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "clr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "pr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "lr", prior=createPrior("laplace",0.1))
+
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,useStrata=FALSE,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "clr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "pr", prior=createPrior("laplace",0.1))
+  
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "lr", prior=createPrior("laplace",0.1))
+  
   
   plotKaplanMeier(outcomeModel)
   
