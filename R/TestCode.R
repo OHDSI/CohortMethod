@@ -27,10 +27,11 @@ testCode <- function(){
   summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
-  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
-  #ps <- psCreate(cohortData,outcomeConceptId = 194133)
+  ps2 <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
+  ps <- createPs(cohortData,outcomeConceptId = 194133,control=createControl(noiseLevel = "silent"))
    
   computePsAuc(ps)
+  computePsAuc(ps2)
   
   propensityModel <- getPsModel(ps,cohortData)
   

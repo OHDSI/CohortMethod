@@ -42,11 +42,10 @@ createDataForModelFitCox <- function(useStrata,
       result$data <- data
       result$treatmentVariable <- 1
     } else {
-      outcomes$stratumId <- NULL
+      data$stratumId <- NULL
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
       result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
-      result$data$stratumId <- NULL
       result$treatmentVariable <- 1
     }
   } else {# don't use covariates    
@@ -178,7 +177,7 @@ createDataForModelFit <- function(outcomeConceptId,
   if (useStrata)
     writeLines("Fitting stratified model")
   else 
-    writeLines("Fitting stratified model")
+    writeLines("Fitting unstratified model")
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     outcomes <- cohortData$outcomes
     cohorts <- ff::as.ram(cohortData$cohort)
@@ -226,7 +225,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #' @param subPopulation       A data frame specifying the (matched and/or trimmed) subpopulation to be 
 #' used in the study, as well as their strata (for conditional models). This data frame should have at 
 #' least a \code{RowId}, and a \code{StratumId} when including stratification.
-#' @param useStrata           Specifically for Cox regressions: specify whether to use the strata defined in 
+#' @param stratifiedCox           Specifically for Cox regressions: specify whether to use the strata defined in 
 #' \code{subPopulation} in the analysis. For Poisson regression and logistic regression, this is implied in 
 #' 'clr' and 'cpr'.
 #' @param riskWindowEnd       The maximum length (in days) of the risk window.
@@ -258,7 +257,7 @@ createDataForModelFit <- function(outcomeConceptId,
 fitOutcomeModel <- function(outcomeConceptId,
                             cohortData,
                             subPopulation=NULL, 
-                            useStrata=TRUE,
+                            stratifiedCox=TRUE,
                             riskWindowStart = 0,
                             riskWindowEnd = 9999, 
                             addExposureDaysToEnd = FALSE,
@@ -267,7 +266,7 @@ fitOutcomeModel <- function(outcomeConceptId,
                             modelType = "cox",
                             prior = createPrior("laplace", useCrossValidation = TRUE),
                             control = createControl(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
-  dataObject <- createDataForModelFit(outcomeConceptId,cohortData,subPopulation,useStrata,riskWindowStart,riskWindowEnd,addExposureDaysToEnd,useCovariates,modelType)
+  dataObject <- createDataForModelFit(outcomeConceptId,cohortData,subPopulation,stratifiedCox,riskWindowStart,riskWindowEnd,addExposureDaysToEnd,useCovariates,modelType)
   
   treatmentEstimate <- NULL
   coefficients <- NULL

@@ -2,7 +2,7 @@ CohortMethod
 ===========
 
 Introduction
-========
+============
 CohortMethod is an R package for performing new-user cohort studies in an observational database in the OMOP Common Data Model.
 
 Features
@@ -35,7 +35,7 @@ CohortMethod is an R package, with some functions implemented in C++.
 
 System Requirements
 ============
-Requires R (version 3.1.0 or higher). Installation on Windows requires [RTools](http://cran.r-project.org/bin/windows/Rtools/).
+Requires R (version 3.1.0 or higher). Installation on Windows requires [RTools](http://cran.r-project.org/bin/windows/Rtools/). Libraries used in CohortMethod require Java.
 
 Dependencies
 ============
@@ -46,7 +46,9 @@ Dependencies
 Getting Started
 ===============
 1. On Windows, make sure [RTools](http://cran.r-project.org/bin/windows/Rtools/) is installed.
-2. In R, use the following commands to download and install CohortMethod:
+2. The DatabaseConnector and SqlRender packages require Java. Java can be downloaded from
+<a href="http://www.java.com" target="_blank">http://www.java.com</a>.
+3. In R, use the following commands to download and install CohortMethod:
 
   ```r
   install.packages("devtools")
@@ -65,7 +67,7 @@ Getting Involved
  
 License
 =======
-WhiteRabbit is licensed under Apache License 2.0
+CohortMethod is licensed under Apache License 2.0
 
 Development
 ===========

@@ -4,7 +4,7 @@
 \title{Create an outcome model, and compute the relative risk}
 \usage{
 fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
-  useStrata = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
+  stratifiedCox = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
   TRUE), control = createControl(lowerLimit = 0.01, upperLimit = 10, fold = 5,
@@ -17,7 +17,7 @@ fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
 used in the study, as well as their strata (for conditional models). This data frame should have at
 least a \code{RowId}, and a \code{StratumId} when including stratification.}
 
-\item{useStrata}{Specifically for Cox regressions: specify whether to use the strata defined in
+\item{stratifiedCox}{Specifically for Cox regressions: specify whether to use the strata defined in
 \code{subPopulation} in the analysis. For Poisson regression and logistic regression, this is implied in
 'clr' and 'cpr'.}
 
