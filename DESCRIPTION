@@ -1,11 +1,19 @@
 Package: CohortMethod
 Type: Package
-Title: What the package does (short line)
+Title: New-user cohort method with large scale propensity and outcome models
 Version: 0.1.0
 Date: 2014-12-05
 Author: Patrick Ryan, Marc Suchard, Martijn Schuemie
 Maintainer: Patrick Ryan <ryan@ohdsi.org>
-Description: More about what it does (maybe more than one line)
+Description: CohortMethod is an R package for performing new-user cohort studies in an 
+  observational database in the OMOP Common Data Model. It extracts the necessary data 
+  from a database in OMOP Common Data Model format, and uses a large set of covariates 
+  for both the propensity and outcome model, including for example all drugs, diagnoses, 
+  procedures, as well as age, comorbidity indexes, etc. Large scale regularized regression
+  is used to fit the propensity and outcome models. Functions are included for trimming, 
+  stratifying and matching on propensity scores, as well as diagnostic functions, such as
+  propensity score distribution plots and plots showing covariate balance before and after 
+  matching and/or trimming. Supported outcome models are (conditional) logistic regression, (conditional) Poisson regression, and (conditional) Cox regression.
 License: Apache
 VignetteBuilder: knitr
 Depends:
