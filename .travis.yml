@@ -9,6 +9,7 @@ before_install:
 
 install:
   - ./travis-tool.sh install_deps
+  - ./travis-tools.sh install_github OHDSI/Cyclops OHDSI/DatabaseConnector OHDSI/SqlRender
 
 script: ./travis-tool.sh run_tests
 
@@ -16,6 +17,9 @@ on_failure:
   - ./travis-tool.sh dump_logs
 
 notifications:
+  recipients:
+    - msuchard@gmail.com
+    - schuemie@ohdsi.org
   email:
     on_success: change
     on_failure: change
