@@ -16,6 +16,9 @@ on_failure:
   - ./travis-tool.sh dump_logs
 
 notifications:
+  recipients:
+    - msuchard@gmail.com
+    - schuemie@ohdsi.org
   email:
     on_success: change
     on_failure: change
