@@ -9,7 +9,7 @@ before_install:
 
 install:
   - ./travis-tool.sh install_deps
-  - ./travis-tools.sh install_github OHDSI/Cyclops OHDSI/DatabaseConnector OHDSI/SqlRender
+  - ./travis-tool.sh install_github OHDSI/Cyclops OHDSI/DatabaseConnector OHDSI/SqlRender
 
 script: ./travis-tool.sh run_tests
 
