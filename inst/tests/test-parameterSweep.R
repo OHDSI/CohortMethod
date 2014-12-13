@@ -1,12 +1,12 @@
-# library("testthat")
-# 
-# # This is a broad, shallow sweep of all functionality. It checks whether the code produces 
-# # an output (and does not throw an error) under a wide range of parameter settings 
-# 
-# data(cohortDataSimulationProfile)
-# sampleSize <- 1000
-# cohortData <- simulateCohortData(cohortDataSimulationProfile, n=sampleSize)
-# 
+library("testthat")
+
+# This is a broad, shallow sweep of all functionality. It checks whether the code produces 
+# an output (and does not throw an error) under a wide range of parameter settings 
+
+data(cohortDataSimulationProfile)
+sampleSize <- 1000
+cohortData <- simulateCohortData(cohortDataSimulationProfile, n=sampleSize)
+
 # test_that("CohortData functions", {
 #   s <- summary(cohortData)
 #   expect_is(s,"summary.cohortData")
