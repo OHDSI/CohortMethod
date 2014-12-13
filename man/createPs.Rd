@@ -3,9 +3,9 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortData, outcomeConceptId = NULL, prior = createPrior("laplace",
-  useCrossValidation = TRUE), control = createControl(lowerLimit = 0.01,
-  upperLimit = 10, fold = 5, noiseLevel = "quiet"))
+createPs(cohortData, outcomeConceptId = NULL, excludeCovariateIds = NULL,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+  control = createControl(noiseLevel = "silent"))
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
@@ -25,6 +25,8 @@ hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createCon
 \code{createPs} creates propensity scores using a regularized logistic regression.
 }
 \examples{
-#todo
+data(cohortDataSimulationProfile)
+cohortData <- simulateCohortData(cohortDataSimulationProfile, n=1000)
+ps <- createPs(cohortData)
 }
 

@@ -15,9 +15,17 @@ testCode <- function(){
   resultsSchema <- "scratch"
   port <- NULL
   
+  pw <- NULL
+  dbms <- "pdw"
+  user <- NULL
+  server <- "JRDUSHITAPS01"
+  cdmSchema <- "CDM_Truven_MDCR"
+  resultsSchema <- "CDM_Truven_MDCR"
+  port <- 17001
+  
   #Part one: loading the data:
   connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
-  
+   
   cohortData <- getDbCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
   
   saveCohortData(cohortData,"mdcrCohortData")
@@ -28,9 +36,9 @@ testCode <- function(){
   
   #Part two: Creating propensity scores, and match people on propensity score:
   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
-  #ps <- createPs(cohortData,outcomeConceptId = 194133,control=createControl(noiseLevel = "silent"))
+  ps <- createPs(cohortData,outcomeConceptId = 194133)
    
-  x <- computePsAuc(ps)
+  computePsAuc(ps)
   #computePsAuc(ps2)
   
   propensityModel <- getPsModel(ps,cohortData)

@@ -51,8 +51,11 @@ in.ff <- function(a,b){
 #' @export
 createPs <- function(cohortData, 
                      outcomeConceptId = NULL, 
-                     prior = createPrior("laplace", useCrossValidation = TRUE),
-                     control = createControl(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
+                     excludeCovariateIds = NULL,
+                     prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+                     control = createControl(noiseLevel = "silent")){
+  #Todo: exclude excluded covariate IDs
+  
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohortSubset <- cohortData$cohorts
     covariateSubset <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
@@ -75,7 +78,7 @@ createPs <- function(cohortData,
   data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred,"names")))
   data <- merge(data,ps,by="rowId")
   attr(data,"coefficients") <- coef(cyclopsFit)
-  attr(data,"priorVariance") <- cyclopsFit$variance
+  attr(data,"priorVariance") <- cyclopsFit$variance[1]
   return(data)
 }
 

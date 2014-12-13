@@ -112,41 +112,41 @@ getDbCohortData <- function(connectionDetails,
                             excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                             deleteCovariatesSmallCount = 100){
   renderedSql <- SqlRender::loadRenderTranslateSql("CohortMethod.sql",
-                                        packageName = "CohortMethod",
-                                        dbms = connectionDetails$dbms,
-                                        cdm_schema = cdmSchema,
-                                        results_schema = resultsSchema,
-                                        target_drug_concept_id = targetDrugConceptId,
-                                        comparator_drug_concept_id = comparatorDrugConceptId,
-                                        indication_concept_ids = indicationConceptIds,
-                                        washout_window = washoutWindow,
-                                        indication_lookback_window = indicationLookbackWindow,
-                                        study_start_date = studyStartDate,
-                                        study_end_date = studyEndDate,
-                                        exclusion_concept_ids = exclusionConceptIds,
-                                        outcome_concept_ids = outcomeConceptIds,
-                                        outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
-                                        max_outcome_count = maxOutcomeCount,
-                                        exposure_schema = exposureSchema,
-                                        exposure_table = exposureTable,
-                                        outcome_schema = outcomeSchema,
-                                        outcome_table = outcomeTable,
-                                        use_covariate_demographics = useCovariateDemographics,
-                                        use_covariate_condition_occurrence = useCovariateConditionOccurrence,
-                                        use_covariate_condition_era = useCovariateConditionEra,
-                                        use_covariate_condition_group = useCovariateConditionGroup,
-                                        use_covariate_drug_exposure = useCovariateDrugExposure,
-                                        use_covariate_drug_era = useCovariateDrugEra,
-                                        use_covariate_drug_group = useCovariateDrugGroup,
-                                        use_covariate_procedure_occurrence = useCovariateProcedureOccurrence,
-                                        use_covariate_procedure_group = useCovariateProcedureGroup,
-                                        use_covariate_observation = useCovariateObservation,
-                                        use_covariate_concept_counts = useCovariateConceptCounts,
-                                        use_covariate_risk_scores = useCovariateRiskScores,
-                                        use_covariate_interaction_year = useCovariateInteractionYear,
-                                        use_covariate_interaction_month = useCovariateInteractionMonth,
-                                        excluded_covariate_concept_ids = excludedCovariateConceptIds,
-                                        delete_covariates_small_count = deleteCovariatesSmallCount)
+                                                   packageName = "CohortMethod",
+                                                   dbms = connectionDetails$dbms,
+                                                   cdm_schema = cdmSchema,
+                                                   results_schema = resultsSchema,
+                                                   target_drug_concept_id = targetDrugConceptId,
+                                                   comparator_drug_concept_id = comparatorDrugConceptId,
+                                                   indication_concept_ids = indicationConceptIds,
+                                                   washout_window = washoutWindow,
+                                                   indication_lookback_window = indicationLookbackWindow,
+                                                   study_start_date = studyStartDate,
+                                                   study_end_date = studyEndDate,
+                                                   exclusion_concept_ids = exclusionConceptIds,
+                                                   outcome_concept_ids = outcomeConceptIds,
+                                                   outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
+                                                   max_outcome_count = maxOutcomeCount,
+                                                   exposure_schema = exposureSchema,
+                                                   exposure_table = exposureTable,
+                                                   outcome_schema = outcomeSchema,
+                                                   outcome_table = outcomeTable,
+                                                   use_covariate_demographics = useCovariateDemographics,
+                                                   use_covariate_condition_occurrence = useCovariateConditionOccurrence,
+                                                   use_covariate_condition_era = useCovariateConditionEra,
+                                                   use_covariate_condition_group = useCovariateConditionGroup,
+                                                   use_covariate_drug_exposure = useCovariateDrugExposure,
+                                                   use_covariate_drug_era = useCovariateDrugEra,
+                                                   use_covariate_drug_group = useCovariateDrugGroup,
+                                                   use_covariate_procedure_occurrence = useCovariateProcedureOccurrence,
+                                                   use_covariate_procedure_group = useCovariateProcedureGroup,
+                                                   use_covariate_observation = useCovariateObservation,
+                                                   use_covariate_concept_counts = useCovariateConceptCounts,
+                                                   use_covariate_risk_scores = useCovariateRiskScores,
+                                                   use_covariate_interaction_year = useCovariateInteractionYear,
+                                                   use_covariate_interaction_month = useCovariateInteractionMonth,
+                                                   excluded_covariate_concept_ids = excludedCovariateConceptIds,
+                                                   delete_covariates_small_count = deleteCovariatesSmallCount)
   
   conn <- DatabaseConnector::connect(connectionDetails)
   
@@ -178,13 +178,13 @@ getDbCohortData <- function(connectionDetails,
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
   #Remove temp tables:
-  renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
-                                        packageName = "CohortMethod",
-                                        dbms = connectionDetails$dbms,
-                                        CDM_schema = cdmSchema)
-  
-  DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
-  
+  if (connectionDetails$dbms == "oracle"){
+    renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
+                                                     packageName = "CohortMethod",
+                                                     dbms = connectionDetails$dbms)
+    
+    DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE,profile=TRUE)
+  }
   colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
   colnames(cohorts) <- snakeCaseToCamelCase(colnames(cohorts))
   colnames(covariates) <- snakeCaseToCamelCase(colnames(covariates))
@@ -335,3 +335,4 @@ print.summary.cohortData <- function(data){
   writeLines(paste("Number of covariates:",data$covariateCount))
   writeLines(paste("Number of non-zero covariate values:",data$covariateValueCount)) 
 }
+

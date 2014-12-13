@@ -23,15 +23,13 @@ knitr::opts_chunk$set(
 ```
 # Introduction
 
-This vignette describes how you can use the CohortMethod package to perform a single new-user cohort study. It starts by describing how you can define the exposure, comparator, and outcome cohorts, and details how the analysis is performed to produce a single estimate of the average treatment effect.
-
-As an example, we will perform a study evaluating the effect of coxibs versus non-selective NSAIDs on hospitalization due to GI bleeding.
+This vignette describes how you can use the CohortMethod package to perform a single new-user cohort study. We will walk through all the steps needed to perform an examplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective NSAIDs on GI bleeding-related hospitalization.
 
 # Installation instructions
 
 Before installing the CohortMethod package make sure you have Java and RTools installed. Java can be downloaded from [www.java.com](http://www.java.com). RTools can be downloaded from [CRAN](http://cran.r-project.org/bin/windows/Rtools/).
 
-The CohortMethod package is maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in the repository. These can be downloaded and installed from within R using the `devtools` package:
+The CohortMethod package is maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All these packages can be downloaded and installed from within R using the `devtools` package:
 
 ```{r tidy=TRUE,eval=FALSE}
 install.packages("devtools")
@@ -58,7 +56,7 @@ cdmSchema <- "MY_CDM_DATA"
 resultsSchema <- "MY_RESULTS"
 ```
 
-The last two lines define the cdmSchema and resultSchema variables, which we'll be using later.
+The last two lines define the cdmSchema and resultSchema variables, which we'll use later to tell R where the data in CDM format lives, and where we want to write intermediate and result tables.
 
 # Preparing the exposures and outcome(s)
 

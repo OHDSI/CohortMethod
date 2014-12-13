@@ -12,7 +12,7 @@
   
   
 Authors:   Patrick Ryan, Martijn Schuemie
-Last update date:  7 September 2014
+Last update date:  13 December 2014
 
 Parameterized SQL to create cohorts, covariates, and outcomes datasets to be used as input in fitting large-scale analytics
   
@@ -49,13 +49,13 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 {DEFAULT @study_end_date = ''} /*study_end_date: @study_end_date*/
 {DEFAULT @exclusion_concept_ids = ''}  /*exclusion_concept_ids: @exclusion_concept_ids*/
 {DEFAULT @outcome_concept_ids = ''}  /*outcome_concept_ids: @outcome_concept_ids*/
-{DEFAULT @outcome_condition_type_concept_ids = ''}    /*outcome_condition_type_concept_ids: @outcome_condition_type_concept_ids*/ /*condition type only applies if @outcome_table = CONDITION_OCCURRENCE*/
+{DEFAULT @outcome_condition_type_concept_ids = ''}    /*outcome_condition_type_concept_ids: @outcome_condition_type_concept_ids*/ /*condition type only applies if @outcome_table = condition_occurrence*/
 {DEFAULT @max_outcome_count = 1}  /*max_outcome_count: @max_outcome_count*/ /*number of conditions, 1 is first occurrence*/
 
 {DEFAULT @exposure_schema = 'CDM4_SIM'} /*exposure_schema: @exposure_schema*/
-{DEFAULT @exposure_table = 'DRUG_ERA'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (DRUG_ERA or COHORT)*/
+{DEFAULT @exposure_table = 'drug_era'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
 {DEFAULT @outcome_schema = 'CDM4_SIM'} /*outcome_schema: @outcome_schema*/
-{DEFAULT @outcome_table = 'CONDITION_OCCURRENCE'}   /*outcome_table: @outcome_table*/ /*the table that contains the outcome information (CONDITION_OCCURRENCE or COHORT)*/
+{DEFAULT @outcome_table = 'condition_occurrence'}   /*outcome_table: @outcome_table*/ /*the table that contains the outcome information (condition_occurrence or COHORT)*/
 
 {DEFAULT @use_covariate_demographics = TRUE} /*use_covariate_demographics: @use_covariate_demographics*/
 {DEFAULT @use_covariate_condition_occurrence = TRUE} /*use_covariate_condition_occurrence: @use_covariate_condition_occurrence*/
@@ -99,15 +99,6 @@ IF OBJECT_ID('raw_cohort', 'U') IS NOT NULL --This should only do something in O
 IF OBJECT_ID('tempdb..#raw_cohort', 'U') IS NOT NULL
   drop table #raw_cohort;
 
-create table #raw_cohort
-(
-	cohort_id int,
-	person_id bigint,
-	cohort_start_date date,
-	cohort_end_date date,
-	observation_period_end_date date
-);
-
 
 IF OBJECT_ID('cohort_person', 'U') IS NOT NULL --This should only do something in Oracle
   drop table cohort_person;
@@ -115,21 +106,8 @@ IF OBJECT_ID('cohort_person', 'U') IS NOT NULL --This should only do something i
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
   drop table #cohort_person;
 
-create table #cohort_person
-(
-	row_id bigint,
-	cohort_id int,
-	person_id bigint,
-	cohort_start_date date,
-	cohort_end_date date,
-	observation_period_end_date date
-);
-
-
-
-
 IF OBJECT_ID('cohort_covariate', 'U') IS NOT NULL --This should only do something in Oracle
-  drop table #cohort_covariate;
+  drop table cohort_covariate;
 
 IF OBJECT_ID('tempdb..#cohort_covariate', 'U') IS NOT NULL
   drop table #cohort_covariate;
@@ -143,9 +121,8 @@ create table #cohort_covariate
 	covariate_value float
 );
 
-
 IF OBJECT_ID('cohort_covariate_ref', 'U') IS NOT NULL --This should only do something in Oracle
-  drop table #cohort_covariate_ref;
+  drop table cohort_covariate_ref;
 
 IF OBJECT_ID('tempdb..#cohort_covariate_ref', 'U') IS NOT NULL
   drop table #cohort_covariate_ref;
@@ -191,10 +168,6 @@ create table #cohort_excluded_person
 );
 
 
-
-
-
-
 /********************************************************************************
 
 
@@ -211,7 +184,7 @@ create table #cohort_excluded_person
 
 
 /*made data table that contains cohorts and end of observation period*/
-INSERT INTO #raw_cohort (cohort_id, person_id, cohort_start_date, cohort_end_date, observation_period_end_date)
+
 SELECT DISTINCT raw_cohorts.cohort_id,
   raw_cohorts.person_id,
   raw_cohorts.cohort_start_date,
@@ -229,8 +202,10 @@ SELECT DISTINCT raw_cohorts.cohort_id,
 		END
   } : {op1.observation_period_end_date}
   AS observation_period_end_date
+INTO
+#raw_cohort 
 FROM (
-	{@exposure_table == 'DRUG_ERA'} ? {
+	{@exposure_table == 'drug_era'} ? {
 		SELECT CASE 
 				WHEN ca1.ancestor_concept_id = @target_drug_concept_id
 					THEN 1
@@ -247,9 +222,7 @@ FROM (
 		WHERE ca1.ancestor_concept_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 		GROUP BY ca1.ancestor_concept_id,
 			de1.person_id
-	}
-	
-	{@exposure_table <> 'DRUG_ERA'} ? {
+	} : {
 		SELECT CASE 
 				WHEN c1.cohort_definition_id = @target_drug_concept_id
 					THEN 1
@@ -293,13 +266,14 @@ WHERE raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, op1.observat
 	
 	
 /* delete persons in both cohorts and apply exclusion criteria  */
-INSERT INTO #cohort_person (row_id, cohort_id, person_id, cohort_start_date, cohort_end_date, observation_period_end_date)
 SELECT rc1.person_id*10+rc1.cohort_id as row_id,
 	rc1.cohort_id,
 	rc1.person_id,
 	rc1.cohort_start_date,
 	rc1.cohort_end_date,
 	rc1.observation_period_end_date
+INTO
+  #cohort_person 
 FROM #raw_cohort rc1
 LEFT JOIN (
 	SELECT person_id
@@ -3794,7 +3768,7 @@ WHERE covariate_id IN (
 
 
 INSERT INTO #cohort_outcome (row_id, cohort_id, person_id, outcome_id, time_to_event)
-{@outcome_table == 'CONDITION_OCCURRENCE'} ? {
+{@outcome_table == 'condition_occurrence'} ? {
 	SELECT cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
@@ -3820,8 +3794,7 @@ INSERT INTO #cohort_outcome (row_id, cohort_id, person_id, outcome_id, time_to_e
 		cp1.person_id,
 		datediff(dd, cp1.cohort_start_date, co1.condition_start_date),
 		ca1.ancestor_concept_id
-}
-{@outcome_table <> 'CONDITION_OCCURRENCE'} ? {
+} : {
 	SELECT cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
@@ -3848,7 +3821,7 @@ INSERT INTO #cohort_outcome (row_id, cohort_id, person_id, outcome_id, time_to_e
 	
 ---find people to exclude from each analysis (if outcome occurs prior to index)	
 INSERT INTO #cohort_excluded_person (row_id, cohort_id, person_id, outcome_id)
-{@outcome_table == 'CONDITION_OCCURRENCE'} ? {
+{@outcome_table == 'condition_occurrence'} ? {
 	SELECT DISTINCT cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
@@ -3866,8 +3839,7 @@ INSERT INTO #cohort_excluded_person (row_id, cohort_id, person_id, outcome_id)
 	WHERE
 		co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 		AND co1.condition_start_date < cp1.cohort_start_date
-}
-{@outcome_table <> 'CONDITION_OCCURRENCE'} ? {
+} : {
 	SELECT DISTINCT cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
