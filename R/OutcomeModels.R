@@ -280,14 +280,21 @@ fitOutcomeModel <- function(outcomeConceptId,
     fit <- fitCyclopsModel(dataObject$cyclopsData, 
                            prior = prior,
                            control = control)  
-    coefficients <- coef(fit)
-    logRr <- coef(fit)[names(coef(fit)) == dataObject$treatmentVariable]
-    ci <- confint(fit,parm=dataObject$treatmentVariable)
-    seLogRr <- (ci[3] - logRr)/qnorm(.975)
-    treatmentEstimate <- data.frame(logRr=logRr, logLb95 = ci[2], logUb95 = ci[3], seLogRr = seLogRr)
-    priorVariance <- fit$variance
+    if (fit$return_flag == "ILLCONDITIONED"){
+      coefficients <- c(0)
+      treatmentEstimate <- data.frame(logRr=0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
+      priorVariance <- 0       
+    } else {
+      coefficients <- coef(fit)
+      logRr <- coef(fit)[names(coef(fit)) == dataObject$treatmentVariable]
+      ci <- confint(fit,parm = dataObject$treatmentVariable, includePenalty = TRUE)
+      seLogRr <- (ci[3] - logRr)/qnorm(.975)
+      treatmentEstimate <- data.frame(logRr=logRr, logLb95 = ci[2], logUb95 = ci[3], seLogRr = seLogRr)
+      priorVariance <- fit$variance
+    }
   }
-  outcomeModel <- list(modelType = modelType, 
+  outcomeModel <- list(outcomeConceptId = outcomeConceptId,
+                       modelType = modelType, 
                        coefficients = coefficients,
                        priorVariance = priorVariance,
                        treatmentEstimate = treatmentEstimate, 
