@@ -317,6 +317,22 @@ trimByPsToEquipoise <- function(data,bounds=c(0.25,0.75)){
   return(data[data$preferenceScore >= bounds[1] & data$preferenceScore <= bounds[2],])
 }
 
+mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
+  for (covariateId in covariateIds){
+    t <- cohortData$covariates$covariateId == covariateId
+    if (any(t)){
+      values <- as.ram(cohortData$covariates[ffbase::ffwhich(t,t == TRUE),c(1,3)])
+      colnames(values)[colnames(values) == "covariateValue"] = covariateId
+      data <- merge(data,values,all.x = TRUE)
+      col <- which(colnames(data) == covariateId)
+      data[is.na(data[,col]),col] <- 0
+    } else {
+      warning(paste("Not matching on covariate",covariateId,"because value is always 0"))
+    }
+  }
+  return(data)
+}
+
 #' Match persons by propensity score
 #'
 #' @description
@@ -330,7 +346,7 @@ trimByPsToEquipoise <- function(data,bounds=c(0.25,0.75)){
 #' caliper is interpreted in standard deviations of the propensity score distribution.
 #' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A 
 #' maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.
-#' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which subjects should be stratified prior to matching.
+#' @param stratificationColumns   Names or numbers of one or more columns in the \code{data} data.frame on which subjects should be stratified prior to matching.
 #' No persons will be matched with persons outside of the strata identified by the values in these columns.
 #' 
 #' @details
@@ -397,6 +413,51 @@ matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRa
   }
 }
 
+#' Match by propensity score as well as other covariates
+#'
+#' @description
+#' \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match 
+#' treated to comparator persons.
+#' 
+#' @param data              A data frame with the three columns described below.
+#' @param caliper  	        The caliper for matching. A caliper is the distance which is acceptable for 
+#' any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.
+#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \code{caliperScale = "propensity score"}
+#' or  \code{caliperScale = "standardized"}. On the standardized scale, the 
+#' caliper is interpreted in standard deviations of the propensity score distribution.
+#' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A 
+#' maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param covariateIds   One or more covariate IDs in the \code{cohortData} object on which subjects 
+#' should be also matched. 
+#' 
+#' @details
+#' The data frame should have at least the following three columns:
+#' \tabular{lll}{  
+#'   \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#' }
+#' 
+#' This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+#' 
+#' @return Returns a date frame with the same columns as the input data plus one extra column: stratumId.
+#' Any rows that could not be matched are removed 
+#' 
+#' @examples 
+#' #todo
+#' 
+#' @references
+#' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity score matching in 
+#' cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
+#' 
+#' @export
+matchOnPsAndCovariates <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, cohortData, covariateIds) {
+  data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
+  stratificationColumns = which(colnames(data) %in% as.character(covariateIds))
+  return(matchOnPs(data, caliper, caliperScale, maxRatio, stratificationColumns))
+}
+
 #' Stratify persons by propensity score
 #'
 #' @description
@@ -452,6 +513,39 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
     return(result)
   }
 }
+
+#' Stratify persons by propensity score and other covariates
+#'
+#' @description
+#' \code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify 
+#' persons. 
+#' 
+#' @param data              A data frame with the three columns described below
+#' @param numberOfStrata    Into how many strata should the propensity score be divided? The boundaries
+#' of the strata are automatically defined to contain equal numbers of treated persons.
+#' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param covariateIds   One or more covariate IDs in the \code{cohortData} object on which subjects 
+#' should also be stratified.
+#' 
+#' @details
+#' The data frame should have the following three columns:
+#' \tabular{lll}{  
+#'   \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+#'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)    \tab Propensity score \cr
+#' }
+#' 
+#' @return Returns a date frame with the same columns as the input data plus one extra column: stratumId.
+#' @examples 
+#' #todo
+#' 
+#' @export
+stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortData, covariateIds) {
+  data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
+  stratificationColumns = which(colnames(data) %in% as.character(covariateIds))
+  return(stratifyByPs(data, numberOfStrata, stratificationColumns))
+}
+
 
 quickSum <- function(data,squared=FALSE){
   result <- NULL
