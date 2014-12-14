@@ -52,14 +52,16 @@ TestCodePatrick <- function(){
   
   saveCohortData(cohortData,"mdcrCohortDataNegControls")
   
-  cohortData <- loadCohortData("mdcrCohortDataNegControls") 
+  cohortData <- loadCohortData("OPTUMCohortDataNegControls4") 
  
   summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
-  ps <- createPs(cohortData, outcomeConceptId = 1000134438, prior=createPrior("laplace",0.1))
+  ps <- createPs(cohortData, outcomeConceptId = 1000134438, prior=createPrior("laplace",0.007))
   
   computePsAuc(ps)
+  save(ps,file="ps.rData")
+  load(file="ps.rData")
   
   propensityModel <- getPsModel(ps,cohortData)
   
@@ -81,7 +83,7 @@ TestCodePatrick <- function(){
   
   
   #Part three: Fit the outcome model:
-  outcomeModel <- fitOutcomeModel(1000134438,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 180, addExposureDaysToEnd = TRUE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(1000134438,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 30, addExposureDaysToEnd = TRUE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
   
   plotKaplanMeier(outcomeModel)
   

@@ -34,8 +34,11 @@ in.ff <- function(a,b){
 #' \code{createPs} creates propensity scores using a regularized logistic regression.
 #' 
 #' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param checkSorting      Checks if the covariate data is sorted by rowId (necessary for fitting the model). 
+#' Checking can be very time-consuming if the data is already sorted.
 #' @param outcomeConceptId  The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
 #' creating the propensity score model.
+#' @param excludeCovariateIds    Exclude these covariates from the propensity model.
 #' @param prior   The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.
 #' @param control The control object used to control the cross-validation used to determine the 
 #' hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.
@@ -50,24 +53,38 @@ in.ff <- function(a,b){
 #' 
 #' @export
 createPs <- function(cohortData, 
+                     checkSorting = TRUE,
                      outcomeConceptId = NULL, 
                      excludeCovariateIds = NULL,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent")){
-  #Todo: exclude excluded covariate IDs
-  
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohortSubset <- cohortData$cohorts
-    covariateSubset <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
+    if (is.null(excludeCovariateIds)) {
+      covariateSubset <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
+    } else {
+      excludeCovariateIds <- c(excludeCovariateIds,1)
+      t <- in.ff(cohortData$covariates$covariateId,as.ff(excludeCovariateIds))
+      covariateSubset <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
+    }
   } else {
     t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
     cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == FALSE),]
     t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
-    t <- t | cohortData$covariates$covariateId == 1
+    if (is.null(excludeCovariateIds)){
+      excludeCovariateIds <- c(1)
+    } else {
+      excludeCovariateIds <- c(excludeCovariateIds,1)
+    }
+    t <- t | in.ff(cohortData$covariates$covariateId,as.ff(excludeCovariateIds))
     covariateSubset <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
-  cyclopsData <- convertToCyclopsData(cohortSubset,covariateSubset,modelType="lr",quiet=TRUE)
+  cyclopsData <- convertToCyclopsData(cohortSubset,
+                                      covariateSubset,
+                                      modelType="lr",
+                                      quiet=TRUE,
+                                      checkSorting = checkSorting)
   ps <- ff::as.ram(cohortSubset[,c("y","rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, 
                                 prior = prior,
