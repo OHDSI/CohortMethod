@@ -111,7 +111,7 @@ where ancestor_concept_id in (40241331, 21600960)
     save(outcomeModel,file = paste("analysis_1/outcomeModel_",outcomeConceptId,".rData",sep=""))
   }
   dir.create("analysis_1")
-  dummy <- sfSapply(outcomeCounts$outcomeConceptId,runOutcome)
+  dummy <- sfClusterApplyLB((outcomeCounts$outcomeConceptId,runOutcome)
   
   #Reading all the estimates into one data frame:
   logRr <- c()
