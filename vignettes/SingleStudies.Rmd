@@ -42,9 +42,13 @@ install_github("ohdsi/CohortMethod")
 
 Once installed, you can use `library(CohortMethod)` to load the package.
 
-# Configuring the connection to the server
+# Data extraction
 
-First, we need to tell R how to connect to the server where the data is. CohortMethod uses the DatabaseConnector package, which provides the `createConnectionDetails` package. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
+The first step in running the CohortMethod is extracting all necessary data from the server containing the data in Common Data Model format.
+
+## Configuring the connection to the server
+
+We need to tell R how to connect to the server where the data is. CohortMethod uses the DatabaseConnector package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
 ```{r tidy=FALSE,eval=FALSE}
 connectionDetails <- createConnectionDetails(dbms = "postgresql", 
@@ -52,99 +56,310 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
                                              user = "joe", 
                                              password = "supersecret")
 
-cdmSchema <- "MY_CDM_DATA"
-resultsSchema <- "MY_RESULTS"
+cdmSchema <- "my_cdm_data"
+resultsSchema <- "my_results"
 ```
 
 The last two lines define the cdmSchema and resultSchema variables, which we'll use later to tell R where the data in CDM format lives, and where we want to write intermediate and result tables.
 
-# Preparing the exposures and outcome(s)
+## Preparing the exposures and outcome(s)
 
 We need to define the exposures and outcomes for our study. We do this by writing SQL statements against the OMOP Common Data Model that populates a table of events we are interested in. For our example study, we've created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
 ```
-SELECT * FROM
-condition_occurrence
-INNER JOIN 
-visit_occurrence
-ON 
-condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
-WHERE 
-  condition_concept_id IN (SELECT descendant_concept_id FROM concept_ancestor WHERE ancestor_concept_id = 192671)
-AND
-visit_occurrence.place_of_service_concept_id IN ()
+/***********************************
+File coxibsVsNonselVsGiBleed.sql 
+***********************************/
+
+USE @cdmSchema;
+
+IF OBJECT_ID('@resultsSchema.dbo.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
+  drop table @resultsSchema.dbo.coxibVsNonselVsGiBleed;
+
+CREATE TABLE @resultsSchema.dbo.coxibVsNonselVsGiBleed (
+  cohort_definition_id INT,
+  cohort_start_date DATE,
+	cohort_end_date DATE,
+	subject_id INT
+	);
+
+INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
+	cohort_definition_id,
+	cohort_start_date,
+	cohort_end_date,
+	subject_id
+	)
+SELECT 1, -- Exposure
+	drug_era_start_date,
+	drug_era_end_date,
+	person_id
+FROM drug_era
+WHERE drug_concept_id = 1118084;-- celecoxib	
+
+INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
+	cohort_definition_id,
+	cohort_start_date,
+	cohort_end_date,
+	subject_id
+	)
+SELECT 2, -- Comparator
+	drug_era_start_date,
+	drug_era_end_date,
+	person_id
+FROM drug_era
+WHERE drug_concept_id IN (1112807,1177480); --Aspirin, Ibuprofen	
+
+INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
+	cohort_definition_id,
+	cohort_start_date,
+	cohort_end_date,
+	subject_id
+	)
+SELECT 3, -- Outcome
+	condition_start_date,
+	condition_end_date,
+	condition_occurrence.person_id
+FROM condition_occurrence
+INNER JOIN visit_occurrence
+	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
+WHERE condition_concept_id IN (
+		SELECT descendant_concept_id
+		FROM concept_ancestor
+		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
+		)
+	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
+  -- Inpatient visit, Emergency room visit
 ```
 
-We can send these SQL statements to the server from within R using the DatabaseConnector. Instead of pre-specifying the names of the schemas where the CDM data is, and where we can store our results, it is better to make these parameters as shown above. The SqlRender package offers functionality for replacing these parameters with the actual values in R. Furthermore, if we want to make sure others can also run our code even when they are using a different DBMS, we can first translate the SQL to the dialect needed for the server:
+This is parameterized SQL which can be used by the SqlRender package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values, we don't have to change the SQL code. By also making use of SqlRender's translation functionality, we can make sure the SQL code can be run in many different environments.
 
 ```{r tidy=TRUE,eval=FALSE}
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
-sql <- renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)
+sql <- renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
 connection <- connect(connectionDetails)
 executeSql(connection, sql)
 ```
 
-In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the connectionDetails. Next, we connect to the server, and submit the (translated) SQL.
+In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the connectionDetails. Next, we connect to the server, and submit the rendered and translated SQL.
 
 If all went well, we now have a table with the events of interest. We can see how many events per type:
 
 ```{r tidy=TRUE,eval=FALSE}
-sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM coxibVsNonselVsGiBleed GROUP BY cohort_concept_id"
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
+sql <- renderSql(sql, resultsSchema = resultsSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
 querySql(connection, sql)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,3),count=c(11231,123123,222))
+data.frame(cohort_concept_id = c(1,2,3),count=c(19207,202237,18970))
 ```
 
-# Extracting the data from the server
+## Extracting the data from the server
 
 Now we can tell CohortMethod to define the cohorts based on our events, and extract all necessay data for our analysis:
 
 ```{r tidy=FALSE,eval=FALSE}
- cohortData <- getDbCohortData(connectionDetails,
-                               cdmSchema = cdmSchema,
-                               resultsSchema = resultsSchema,
-                               targetDrugConceptId = 1,
-                               comparatorDrugConceptId = 2, 
-                               indicationConceptIds = "",
-                               washoutWindow = 183, 
-                               indicationLookbackWindow = 183,
-                               studyStartDate = "", 
-                               studyEndDate = "", 
-                               exclusionConceptIds = "",
-                               outcomeConceptIds = 3, 
-                               outcomeConditionTypeConceptIds = "", 
-                               maxOutcomeCount = 1,
-                               exposureSchema = resultsSchema,
-                               exposureTable = "MDCR_RivaWarfCER_cohort",
-                               outcomeSchema = resultsSchema,
-                               outcomeTable = "MDCR_RivaWarfCER_cohort",
-                               useCovariateDemographics = TRUE, 
-                               useCovariateConditionOccurrence = TRUE,
-                               useCovariateConditionEra = FALSE, 
-                               useCovariateConditionGroup = FALSE,
-                               useCovariateDrugExposure = FALSE, 
-                               useCovariateDrugEra = FALSE,
-                               useCovariateDrugGroup = FALSE, 
-                               useCovariateProcedureOccurrence = FALSE,
-                               useCovariateProcedureGroup = FALSE, 
-                               useCovariateObservation = FALSE,
-                               useCovariateConceptCounts = FALSE, 
-                               useCovariateRiskScores = FALSE,
-                               useCovariateInteractionYear = FALSE, 
-                               useCovariateInteractionMonth = FALSE,
-                               excludedCovariateConceptIds = "", 
-                               deleteCovariatesSmallCount = 100)
+nsaids <- c(1118084,1112807,1177480)
+cohortData <- getDbCohortData(connectionDetails,
+                              cdmSchema = cdmSchema,
+                              resultsSchema = resultsSchema,
+                              targetDrugConceptId = 1,
+                              comparatorDrugConceptId = 2, 
+                              indicationConceptIds = "",
+                              washoutWindow = 183, 
+                              indicationLookbackWindow = 183,
+                              studyStartDate = "", 
+                              studyEndDate = "", 
+                              exclusionConceptIds = nsaids,
+                              outcomeConceptIds = 3, 
+                              outcomeConditionTypeConceptIds = "", 
+                              maxOutcomeCount = 1,
+                              exposureSchema = resultsSchema,
+                              exposureTable = "coxibVsNonselVsGiBleed",
+                              outcomeSchema = resultsSchema,
+                              outcomeTable = "coxibVsNonselVsGiBleed",
+                              useCovariateDemographics = TRUE, 
+                              useCovariateConditionOccurrence = TRUE,
+                              useCovariateConditionEra = TRUE, 
+                              useCovariateConditionGroup = TRUE,
+                              useCovariateDrugExposure = TRUE, 
+                              useCovariateDrugEra = TRUE,
+                              useCovariateDrugGroup = TRUE, 
+                              useCovariateProcedureOccurrence = TRUE,
+                              useCovariateProcedureGroup = TRUE, 
+                              useCovariateObservation = TRUE,
+                              useCovariateConceptCounts = TRUE, 
+                              useCovariateRiskScores = TRUE,
+                              useCovariateInteractionYear = FALSE, 
+                              useCovariateInteractionMonth = FALSE,
+                              excludedCovariateConceptIds = "", 
+                              deleteCovariatesSmallCount = 100)
+cohortData
 ```
-There are a lot of parameters, but they are all documented in the CohortMethod manual.
-
+```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
+if (file.exists("c:/temp/mdcrCohortData")){
+  cohortData <- loadCohortData("c:/temp/mdcrCohortData")
+} else {
+  data(cohortDataSimulationProfile)
+  cohortData <- simulateCohortData(cohortDataSimulationProfile, n=1000)
+}
+```
 ```{r echo=FALSE,message=FALSE}
-data(cohortDataSimulationProfile)
-cohortData <- simulateCohortData(cohortDataSimulationProfile, n=10000)
+cohortData
 ```
 
-# Fitting a propensity model
+There are a lot of parameters, but they are all documented in the CohortMethod manual. In short, we're pointing the function to the table created earlier and indicate which concept IDs in that table identify the target, comparator and outcome. We further instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
+
+All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the cohortData object. This object uses the package ff to store information in a way that ensures R does not run out of memory, even when there is lots of data.
+
+### Saving the data to file
+
+Creating the cohortData file can be expensive, and it is probably a good idea to save it for future sessions. Because cohortData uses ff, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortData()` function:
+
+```{r tidy=TRUE,eval=FALSE}
+saveCohortData(cohortData,"coxibVsNonselVsGiBleed")
+```
+
+We can use the `loadCohortData()` function to load the data in a future session.
+
+# Propensity scores
+
+The CohortMethod can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handfull of predefined covariates, CohortMethod typically uses thousands to millions of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
+
+## Fitting a propensity model
+
+We can fit a propensity model using the covariates constructed by the `getDbCohortData()` function:
+
+--Todo: replace concept ID with 3 and use CV:
+```{r tidy=TRUE,eval=TRUE}
+ps <- createPs(cohortData,outcomeConceptId = 194133,prior=createPrior("laplace",0.1,exclude = 0))
+```
+
+The `createPs()` function uses the Cyclops package to fit a large scale regularized logistic regression. Note that We have to tell createPs what the outcomeConceptId is for which we will use the model so it can remove subjects who had the outcome prior to index date before fitting the model. 
+
+## Propensity score diagnostics
+
+We can compute the Area Under the Receiver-Operator curve:
+
+```{r tidy=TRUE,eval=TRUE}
+computePsAuc(ps)
+```
+
+We can also plot the propensity score distribution, although we prefer the preference score distribution:
+
+```{r tidy=TRUE,eval=TRUE}
+plotPs(ps, scale = "preference")
+```
+
+It is also possible to inspect the propensity model itself:
+
+```{r tidy=TRUE,eval=TRUE}
+propensityModel <- getPsModel(ps,cohortData)
+head(propensityModel)  
+```
+
+## Using the propensity score
+
+We can use the propensity scores to trim, match, or stratify our population. For example, one could first trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
+
+```{r tidy=TRUE,eval=TRUE}
+  psTrimmed <- trimByPsToEquipoise(ps)  
+  plotPs(psTrimmed, ps, scale = "preference")
+```
+
+We can then match subjects based on propensity scores:
+
+```{r tidy=TRUE,eval=TRUE}
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  plotPs(strata,ps)
+```
+
+## Evaluating covariate balance
+
+To evaluate whether our use of the propensity score is indeed making the two cohorts more comparable, we can compute the covariate balance before and after trimming, matching, and/or stratifying:
+
+--Todo: replace concept ID with 3
+```{r tidy=TRUE,eval=TRUE}
+ balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+ plotCovariateBalanceScatterPlot(balance)
+ plotCovariateBalanceOfTopVariables(balance)
+```
+
+# Fitting the outcome model
+
+The next step is fitting the outcome model. In theory we could fit an outcome model without using the propensity scores:
+
+--todo: conceptID to 3
+```{r tidy=FALSE,eval=TRUE}
+outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
+                                cohortData = cohortData,
+                                riskWindowStart = 0, 
+                                riskWindowEnd = 30,
+                                addExposureDaysToEnd = TRUE,
+                                useCovariates = FALSE, 
+                                modelType = "cox",
+                                stratifiedCox = FALSE,
+                                prior=createPrior("laplace",0.1)) 
+outcomeModel
+```
+
+In this example we're fitting an outcome model using a Cox regression. The risk window is defined as time of exposure + 30 days.
+
+But of course we want to make use of the trimming and matching done on the propensity score:
+
+```{r tidy=FALSE,eval=TRUE}
+outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
+                                cohortData = cohortData,
+                                subPopulation = strata,
+                                riskWindowStart = 0, 
+                                riskWindowEnd = 30,
+                                addExposureDaysToEnd = TRUE,
+                                useCovariates = FALSE, 
+                                modelType = "cox",
+                                stratifiedCox = TRUE,
+                                prior=createPrior("laplace",0.1)) 
+outcomeModel
+```
+
+Note that we define the subpopulation to be only those in the *strata* object, which we created earlier by trimming to equipoise and matching on propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+
+One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the Cyclops package. (Note that the treatment variable is automatically excluded from regularization.)
+
+```{r tidy=FALSE,eval=TRUE}
+outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
+                                cohortData = cohortData,
+                                subPopulation = strata,
+                                riskWindowStart = 0, 
+                                riskWindowEnd = 30,
+                                addExposureDaysToEnd = TRUE,
+                                useCovariates = TRUE, 
+                                modelType = "cox",
+                                stratifiedCox = TRUE,
+                                prior=createPrior("laplace",0.1)) 
+outcomeModel
+```
+
+We can create the Kaplan-Meier plot:
+
+```{r tidy=TRUE,eval=TRUE}
+plotKaplanMeier(outcomeModel)
+```
+
+We can inspect more details of the outcome model:
+
+```{r tidy=TRUE,eval=TRUE}
+summary(outcomeModel)
+coef(outcomeModel)
+confint(outcomeModel)
+```
+
+We can also see the covariates that ended up in the outcome model:
+
+```{r tidy=TRUE,eval=TRUE}
+fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+head(fullOutcomeModel)
+```
+
