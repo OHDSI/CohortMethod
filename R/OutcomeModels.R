@@ -27,8 +27,13 @@ createDataForModelFitCox <- function(useStrata,
                                      cohorts,
                                      covariates,
                                      outcomes) {
-  outcomes <- aggregate(timeToEvent ~ rowId,data=outcomes,min) #keep first outcome per person
-  data <- merge(cohorts,outcomes, all.x=TRUE)
+  if (nrow(outcomes) == 0){
+    data <- as.ram(cohorts)
+    data$timeToEvent <- NA
+  } else {
+    outcomes <- aggregate(timeToEvent ~ rowId,data=outcomes,min) #keep first outcome per person
+    data <- merge(cohorts,outcomes, all.x=TRUE)
+  }
   data$y <- 0
   data$y[!is.na(data$timeToEvent)] <- 1
   data$time <- data$timeToEvent
@@ -68,15 +73,21 @@ createDataForModelFitPoisson <- function(useStrata,
                                          cohorts,
                                          covariates,
                                          outcomes) {
-  outcomes <- ff::as.ram(outcomes)
-  outcomes$y <- 1
-  outcomes <- aggregate(y ~ rowId,data=outcomes,sum) #count outcome per person
-  if (useStrata) {
-    data <- merge(cohorts[,c("treatment","rowId","stratumId","timeToCensor")],outcomes, all.x=TRUE)  
+  if (nrow(outcomes) == 0){
+    data <- as.ram(cohorts[,c("treatment","rowId","stratumId","timeToCensor")])
+    data$y <- 0
   } else {
-    data <- merge(cohorts[,c("treatment","rowId","timeToCensor")],outcomes, all.x=TRUE)  
+    outcomes <- ff::as.ram(outcomes)
+    outcomes$y <- 1
+    outcomes <- aggregate(y ~ rowId,data=outcomes,sum) #count outcome per person
+    if (useStrata) {
+      data <- merge(cohorts[,c("treatment","rowId","stratumId","timeToCensor")],outcomes, all.x=TRUE)  
+    } else {
+      data <- merge(cohorts[,c("treatment","rowId","timeToCensor")],outcomes, all.x=TRUE)  
+    }
+    data$y[is.na(data$y)] <- 0
   }
-  data$y[is.na(data$y)] <- 0
+  
   colnames(data)[colnames(data) == "timeToCensor"] <- "time"
   data <- data[data$time > 0,]
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
@@ -112,15 +123,20 @@ createDataForModelFitLogistic <- function(useStrata,
                                           cohorts,
                                           covariates,
                                           outcomes) {
-  outcomes <- ff::as.ram(outcomes)
-  outcomes$y <- 1
-  outcomes <- aggregate(y ~ rowId,data=outcomes,max) #Keep one outcome per person
-  if (useStrata) {
-    data <- merge(cohorts[,c("treatment","rowId","stratumId")],outcomes, all.x=TRUE)  
+  if (nrow(outcomes) == 0){
+    data <- as.ram(cohorts[,c("treatment","rowId","stratumId")])
+    data$y <- 0
   } else {
-    data <- merge(cohorts[,c("treatment","rowId")],outcomes, all.x=TRUE)  
+    outcomes <- ff::as.ram(outcomes)
+    outcomes$y <- 1
+    outcomes <- aggregate(y ~ rowId,data=outcomes,max) #Keep one outcome per person
+    if (useStrata) {
+      data <- merge(cohorts[,c("treatment","rowId","stratumId")],outcomes, all.x=TRUE)  
+    } else {
+      data <- merge(cohorts[,c("treatment","rowId")],outcomes, all.x=TRUE)  
+    }
+    data$y[is.na(data$y)] <- 0
   }
-  data$y[is.na(data$y)] <- 0
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
@@ -200,7 +216,15 @@ createDataForModelFit <- function(outcomeConceptId,
     cohorts$timeToCensor <- cohorts$timeToCensor + cohorts$timeToCohortEnd
   cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <-  cohorts$timeToObsPeriodEnd[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd]
   outcomes <- merge(outcomes,as.ffdf(cohorts))
-  outcomes <- ffbase::subset.ffdf(outcomes, timeToEvent >= riskWindowStart & timeToEvent <= timeToCensor)  
+  outcomes <- tryCatch({
+    ffbase::subset.ffdf(outcomes, timeToEvent >= riskWindowStart & timeToEvent <= timeToCensor)  
+  }, error = function(e){
+    if (e$message == "no applicable method for 'as.hi' applied to an object of class \"NULL\"") {
+      return(data.frame(as.ram(outcomes)[0,])) #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
+    } else {
+      stop(as.character(e$message))
+    }
+  } )
   
   if (modelType == "cox"){
     return(createDataForModelFitCox(useStrata,useCovariates,cohorts,covariates,outcomes))
@@ -290,15 +314,15 @@ fitOutcomeModel <- function(outcomeConceptId,
       coefficients <- coef(fit)
       logRr <- coef(fit)[names(coef(fit)) == dataObject$treatmentVariable]
       ci <- tryCatch({
-        return(confint(fit,parm = dataObject$treatmentVariable, includePenalty = TRUE))
+        confint(fit,parm = dataObject$treatmentVariable, includePenalty = TRUE)
       }, error = function(e) {
-        return(c(0,-Inf,Inf))
+        c(0,-Inf,Inf)
       })
       if (identical(ci, c(0,-Inf,Inf)))
         status <- "ERROR COMPUTING CI"
       seLogRr <- (ci[3] - logRr)/qnorm(.975)
       treatmentEstimate <- data.frame(logRr=logRr, logLb95 = ci[2], logUb95 = ci[3], seLogRr = seLogRr)
-      priorVariance <- fit$variance
+      priorVariance <- fit$variance[1]
     }
   }
   outcomeModel <- list(outcomeConceptId = outcomeConceptId,
@@ -319,7 +343,10 @@ summary.outcomeModel <- function(outcomeModel){
     
     counts <- matrix(0, nrow=2, ncol=2)
     counts[1,] <- patientTable
-    counts[2,] <- eventTable[,2]
+    if (ncol(eventTable) == 1)
+      counts[2,] <- c(0,0)
+    else
+      counts[2,] <- eventTable[,2]
     colnames(counts) <- c("Comparator","Treated")
     rownames(counts) <- c("Nr. of persons","Nr. of events")
   } else {
@@ -329,7 +356,10 @@ summary.outcomeModel <- function(outcomeModel){
     
     counts <- matrix(0, nrow=3, ncol=2)
     counts[1,] <- patientTable
-    counts[2,] <- eventTable[,2]
+    if (ncol(eventTable) == 1)
+      counts[2,] <- c(0,0)
+    else
+      counts[2,] <- eventTable[,2]
     counts[3,] <- timeTable
     colnames(counts) <- c("Comparator","Treated")
     rownames(counts) <- c("Nr. of persons","Nr. of events","Person time (days)")
