@@ -171,7 +171,7 @@ createDataForModelFit <- function(outcomeConceptId,
   if ((modelType == "clr" | modelType == "cpr"))
     useStrata = TRUE
   
-  if (useStrata & is.null(subPopulation) | is.null(subPopulation$stratumId))
+  if (useStrata & (is.null(subPopulation) | is.null(subPopulation$stratumId)))
     stop("Conditional regression specified, but no strata provided")
   
   if (useStrata)
