@@ -272,6 +272,7 @@ fitOutcomeModel <- function(outcomeConceptId,
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
+  status <- "OK"
   if (fitModel) {
     if (useCovariates)
       prior$exclude = dataObject$treatmentVariable 
@@ -283,11 +284,18 @@ fitOutcomeModel <- function(outcomeConceptId,
     if (fit$return_flag == "ILLCONDITIONED"){
       coefficients <- c(0)
       treatmentEstimate <- data.frame(logRr=0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
-      priorVariance <- 0       
+      priorVariance <- 0   
+      status <- "ILL CONDITIONED, CANNOT FIT"
     } else {
       coefficients <- coef(fit)
       logRr <- coef(fit)[names(coef(fit)) == dataObject$treatmentVariable]
-      ci <- confint(fit,parm = dataObject$treatmentVariable, includePenalty = TRUE)
+      ci <- tryCatch({
+        return(confint(fit,parm = dataObject$treatmentVariable, includePenalty = TRUE))
+      }, error = function(e) {
+        return(c(0,-Inf,Inf))
+      })
+      if (identical(ci, c(0,-Inf,Inf)))
+        status <- "ERROR COMPUTING CI"
       seLogRr <- (ci[3] - logRr)/qnorm(.975)
       treatmentEstimate <- data.frame(logRr=logRr, logLb95 = ci[2], logUb95 = ci[3], seLogRr = seLogRr)
       priorVariance <- fit$variance
@@ -298,7 +306,8 @@ fitOutcomeModel <- function(outcomeConceptId,
                        coefficients = coefficients,
                        priorVariance = priorVariance,
                        treatmentEstimate = treatmentEstimate, 
-                       data = dataObject$data)
+                       data = dataObject$data,
+                       status = status)
   class(outcomeModel) <- "outcomeModel"
   return(outcomeModel)
 }
@@ -342,7 +351,8 @@ summary.outcomeModel <- function(outcomeModel){
                    counts = counts, 
                    model = model,
                    priorVariance = outcomeModel$priorVariance,
-                   coefficients = outcomeModel$treatmentEstimate)
+                   coefficients = outcomeModel$treatmentEstimate,
+                   status = outcomeModel$status)
   }
   class(result) <- "summary.outcomeModel"
   return(result);
@@ -350,6 +360,7 @@ summary.outcomeModel <- function(outcomeModel){
 
 print.summary.outcomeModel <- function(data){
   writeLines(paste("Model type:",data$modelType))
+  writeLines(paste("Status:",outcomeModel$status))
   writeLines("")
   writeLines("Counts")
   printCoefmat(data$counts)
@@ -385,13 +396,14 @@ confint.outcomeModel <- function(outcomeModel){
 
 print.outcomeModel <- function(outcomeModel){
   writeLines(paste("Model type:",outcomeModel$modelType))
+  writeLines(paste("Status:",outcomeModel$status))
+  
   d <- outcomeModel$treatmentEstimate
   output <- data.frame(exp(d$logRr), 
                        exp(d$logLb95),
                        exp(d$logUb95),
                        d$logRr,
                        d$seLogRr)
-  
   colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr","seLogRr")
   rownames(output) <- "treatment"
   writeLines("")
