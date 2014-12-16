@@ -215,16 +215,25 @@ createDataForModelFit <- function(outcomeConceptId,
   if (addExposureDaysToEnd)
     cohorts$timeToCensor <- cohorts$timeToCensor + cohorts$timeToCohortEnd
   cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <-  cohorts$timeToObsPeriodEnd[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd]
-  outcomes <- merge(outcomes,as.ffdf(cohorts))
+  
   outcomes <- tryCatch({
-    ffbase::subset.ffdf(outcomes, timeToEvent >= riskWindowStart & timeToEvent <= timeToCensor)  
-  }, error = function(e){
-    if (e$message == "no applicable method for 'as.hi' applied to an object of class \"NULL\"") {
-      return(data.frame(as.ram(outcomes)[0,])) #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
-    } else {
-      stop(as.character(e$message))
-    }
-  } )
+    merge(outcomes,as.ffdf(cohorts))
+  }, warning = function(w){
+    if (w$message == "No match found, returning NULL as ffdf can not contain 0 rows")
+      data.frame() #No events within selected population, return empty data.frame
+    else 
+      merge(outcomes,as.ffdf(cohorts))
+  })
+  if (nrow(outcomes) != 0)
+    outcomes <- tryCatch({
+      ffbase::subset.ffdf(outcomes, timeToEvent >= riskWindowStart & timeToEvent <= timeToCensor)  
+    }, error = function(e){
+      if (e$message == "no applicable method for 'as.hi' applied to an object of class \"NULL\"") {
+        data.frame(as.ram(outcomes)[0,]) #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
+      } else {
+        stop(as.character(e$message))
+      }
+    })
   
   if (modelType == "cox"){
     return(createDataForModelFitCox(useStrata,useCovariates,cohorts,covariates,outcomes))
