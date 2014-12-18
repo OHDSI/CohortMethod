@@ -38,23 +38,27 @@ snakeCaseToCamelCase <- function(string){
 #' Todo: add details
 #'
 #' @param connectionDetails  	An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
+#' 
+#' @param sourceName   	
 #' @param cdmSchema 		
-#' @param resultsSchema 		
+#' @param resultsSchema 	
+#' @param exposureSchema     
+#' @param exposureTable 		
+#' @param outcomeSchema
+#' @param outcomeTable 	
+#'  	
 #' @param targetDrugConceptId 		
 #' @param comparatorDrugConceptId 		
 #' @param indicationConceptIds 		
+#' @param exclusionConceptIds   	
+#' @param outcomeConceptIds 		
+#' @param excludedCovariateConceptIds 
+#' 
 #' @param washoutWindow 		
 #' @param indicationLookbackWindow 		
 #' @param studyStartDate 		
 #' @param studyEndDate 		
-#' @param exclusionConceptIds 		
-#' @param outcomeConceptIds 		
-#' @param outcomeConditionTypeConceptIds 		
-#' @param maxOutcomeCount 		
-#' @param exposureSchema   	
-#' @param exposureTable 		
-#' @param outcomeSchema
-#' @param outcomeTable 		
+#' @param outcomeConditionTypeConceptIds   
 #' @param useCovariateDemographics 		
 #' @param useCovariateConditionOccurrence 		
 #' @param useCovariateConditionEra 		
@@ -69,7 +73,6 @@ snakeCaseToCamelCase <- function(string){
 #' @param useCovariateRiskScores 		
 #' @param useCovariateInteractionYear 		
 #' @param useCovariateInteractionMonth 		
-#' @param excludedCovariateConceptIds 		
 #' @param deleteCovariatesSmallCount 		
 #' 
 #' @return
@@ -90,7 +93,6 @@ getDbCohortData <- function(connectionDetails,
                             exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                             outcomeConceptIds = 194133,
                             outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
-                            maxOutcomeCount = 1,
                             exposureSchema = cdmSchema,
                             exposureTable = "drug_era",
                             outcomeSchema = cdmSchema,

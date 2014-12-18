@@ -10,7 +10,7 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
   studyStartDate = "", studyEndDate = "", exclusionConceptIds = c(4027133,
   4032243, 4146536, 2002282, 2213572, 2005890, 43534760, 21601019),
   outcomeConceptIds = 194133, outcomeConditionTypeConceptIds = c(38000215,
-  38000216, 38000217, 38000218, 38000183, 38000232), maxOutcomeCount = 1,
+  38000216, 38000217, 38000218, 38000183, 38000232),
   exposureSchema = cdmSchema, exposureTable = "drug_era",
   outcomeSchema = cdmSchema, outcomeTable = "condition_occurrence",
   useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
@@ -49,8 +49,6 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
 \item{outcomeConceptIds}{}
 
 \item{outcomeConditionTypeConceptIds}{}
-
-\item{maxOutcomeCount}{}
 
 \item{exposureSchema}{}
 
@@ -91,6 +89,8 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
 \item{excludedCovariateConceptIds}{}
 
 \item{deleteCovariatesSmallCount}{}
+
+\item{sourceName}{}
 }
 \value{
 Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,

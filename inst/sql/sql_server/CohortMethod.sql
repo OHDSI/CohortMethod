@@ -50,7 +50,6 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 {DEFAULT @exclusion_concept_ids = ''}  /*exclusion_concept_ids: @exclusion_concept_ids*/
 {DEFAULT @outcome_concept_ids = ''}  /*outcome_concept_ids: @outcome_concept_ids*/
 {DEFAULT @outcome_condition_type_concept_ids = ''}    /*outcome_condition_type_concept_ids: @outcome_condition_type_concept_ids*/ /*condition type only applies if @outcome_table = condition_occurrence*/
-{DEFAULT @max_outcome_count = 1}  /*max_outcome_count: @max_outcome_count*/ /*number of conditions, 1 is first occurrence*/
 
 {DEFAULT @exposure_schema = 'CDM4_SIM'} /*exposure_schema: @exposure_schema*/
 {DEFAULT @exposure_table = 'drug_era'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
