@@ -66,7 +66,7 @@ The last two lines define the cdmSchema and resultSchema variables, which we'll 
 
 We need to define the exposures and outcomes for our study. We do this by writing SQL statements against the OMOP Common Data Model that populates a table of events we are interested in. For our example study, we've created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
-```
+```sql
 /***********************************
 File coxibsVsNonselVsGiBleed.sql 
 ***********************************/
@@ -80,7 +80,7 @@ CREATE TABLE @resultsSchema.dbo.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,
   cohort_start_date DATE,
 	cohort_end_date DATE,
-	subject_id INT
+	subject_id BIGINT
 	);
 
 INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
@@ -107,7 +107,9 @@ SELECT 2, -- Comparator
 	drug_era_end_date,
 	person_id
 FROM drug_era
-WHERE drug_concept_id IN (1112807,1177480); --Aspirin, Ibuprofen	
+WHERE drug_concept_id = 1124300; --Diclofenac
+--WHERE drug_concept_id IN (1124300,1177480,1115008,1178663,1185922,1146810); 
+--Diclofenac, Ibuprofen, Naproxen, Indomethacin, Ketoprofen, Piroxicam
 
 INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
@@ -128,7 +130,7 @@ WHERE condition_concept_id IN (
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
-  -- Inpatient visit, Emergency room visit
+-- Inpatient visit, Emergency room visit
 ```
 
 This is parameterized SQL which can be used by the SqlRender package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values, we don't have to change the SQL code. By also making use of SqlRender's translation functionality, we can make sure the SQL code can be run in many different environments.

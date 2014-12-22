@@ -23,11 +23,11 @@ vignetteDataFetch <- function(){
   library(CohortMethod)
   setwd("c:/temp")
   
-  pw <- "F1r3starter"
-  dbms <- "postgresql"
-  user <- "postgres"
-  server <- "localhost/ohdsi"
-  cdmSchema <- "cdm4_sim"
+  pw <- NULL
+  dbms <- "sql server"
+  user <- NULL
+  server <- "RNDUSRDHIT07.jnj.com"
+  cdmSchema <- "cdm_truven_mdcd"
   resultsSchema <- "scratch"
   port <- NULL
   
@@ -39,13 +39,19 @@ vignetteDataFetch <- function(){
   connection <- connect(connectionDetails)
   executeSql(connection, sql)
   
+  
+  # Check number of subjects per cohort:
   sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
   sql <- renderSql(sql, resultsSchema = resultsSchema)$sql
   sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-  
   querySql(connection, sql)
   
-  nsaids <- c(1118084,1112807,1177480)
+  # Get all NSAIDs:
+  sql <- "SELECT concept_id FROM concept_ancestor INNER JOIN concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+  nsaids <- querySql(connection, sql)
+  nsaids <- nsaids$CONCEPT_ID
+  
+  #Load data:
   cohortData <- getDbCohortData(connectionDetails,
                                 cdmSchema = cdmSchema,
                                 resultsSchema = resultsSchema,
@@ -78,7 +84,7 @@ vignetteDataFetch <- function(){
                                 useCovariateRiskScores = TRUE,
                                 useCovariateInteractionYear = FALSE, 
                                 useCovariateInteractionMonth = FALSE,
-                                excludedCovariateConceptIds = "", 
+                                excludedCovariateConceptIds = nsaids, 
                                 deleteCovariatesSmallCount = 100)
   
   saveCohortData(cohortData,"coxibVsNonselVsGiBleed")
