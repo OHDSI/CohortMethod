@@ -60,15 +60,33 @@ snakeCaseToCamelCase <- function(string){
 #' @param studyEndDate 		
 #' @param outcomeConditionTypeConceptIds   
 #' @param useCovariateDemographics 		
-#' @param useCovariateConditionOccurrence 		
-#' @param useCovariateConditionEra 		
+#' @param useCovariateConditionOccurrence 
+#' @param useCovariateConditionOccurrence365d   		
+#' @param useCovariateConditionOccurrence30d 
+#' @param useCovariateConditionOccurrenceInpt180d
+#' @param useCovariateConditionEra
+#' @param useCovariateConditionEraEver
+#' @param useCovariateConditionEraOverlap 		
 #' @param useCovariateConditionGroup 		
-#' @param useCovariateDrugExposure 		
-#' @param useCovariateDrugEra 		
+#' @param useCovariateDrugExposure
+#' @param useCovariateDrugExposure365d
+#' @param useCovariateDrugExposure30d 		
+#' @param useCovariateDrugEra
+#' @param useCovariateDrugEra365d
+#' @param useCovariateDrugEra30d
+#' @param useCovariateDrugEraEver
+#' @param useCovariateDrugEraOverlap  		
 #' @param useCovariateDrugGroup 		
-#' @param useCovariateProcedureOccurrence 		
+#' @param useCovariateProcedureOccurrence
+#' @param useCovariateProcedureOccurrence365d
+#' @param useCovariateProcedureOccurrence30d		
 #' @param useCovariateProcedureGroup 		
-#' @param useCovariateObservation 		
+#' @param useCovariateObservation 
+#' @param useCovariateObservation365d
+#' @param useCovariateObservation30d
+#' @param useCovariateObservationBelow
+#' @param useCovariateObservationAbove
+#' @param useCovariateObservationCount365d		
 #' @param useCovariateConceptCounts 		
 #' @param useCovariateRiskScores 		
 #' @param useCovariateInteractionYear 		
@@ -99,14 +117,32 @@ getDbCohortData <- function(connectionDetails,
                             outcomeTable = "condition_occurrence",
                             useCovariateDemographics = TRUE,
                             useCovariateConditionOccurrence = TRUE,
+                            useCovariateConditionOccurrence365d = TRUE,
+                            useCovariateConditionOccurrence30d = TRUE,
+                            useCovariateConditionOccurrenceInpt180d = TRUE,
                             useCovariateConditionEra = FALSE,
+                            useCovariateConditionEraEver = FALSE,
+                            useCovariateConditionEraOverlap = FALSE,
                             useCovariateConditionGroup = FALSE,
                             useCovariateDrugExposure = FALSE,
+                            useCovariateDrugExposure365d = FALSE,
+                            useCovariateDrugExposure30d = FALSE,
                             useCovariateDrugEra = FALSE,
+                            useCovariateDrugEra365d = FALSE,
+                            useCovariateDrugEra30d = FALSE,
+                            useCovariateDrugEraOverlap = FALSE,
+                            useCovariateDrugEraEver = FALSE,
                             useCovariateDrugGroup = FALSE,
                             useCovariateProcedureOccurrence = FALSE,
+                            useCovariateProcedureOccurrence365d = FALSE,
+                            useCovariateProcedureOccurrence30d = FALSE,
                             useCovariateProcedureGroup = FALSE,
                             useCovariateObservation = FALSE,
+                            useCovariateObservation365d = FALSE,
+                            useCovariateObservation30d = FALSE,
+                            useCovariateObservationBelow = FALSE,
+                            useCovariateObservationAbove = FALSE,
+                            useCovariateObservationCount365d = FALSE,
                             useCovariateConceptCounts = FALSE,
                             useCovariateRiskScores = FALSE,
                             useCovariateInteractionYear = FALSE,
@@ -135,14 +171,32 @@ getDbCohortData <- function(connectionDetails,
                                                    outcome_table = outcomeTable,
                                                    use_covariate_demographics = useCovariateDemographics,
                                                    use_covariate_condition_occurrence = useCovariateConditionOccurrence,
+                                                   use_covariate_condition_occurrence_365d = useCovariateConditionOccurrence365d,
+                                                   use_covariate_condition_occurrence_30d = useCovariateConditionOccurrence30d,
+                                                   use_covariate_condition_occurrence_inpt180d = useCovariateConditionOccurrenceInpt180d,
                                                    use_covariate_condition_era = useCovariateConditionEra,
+                                                   use_covariate_condition_era_ever = useCovariateConditionEraEver,
+                                                   use_covariate_condition_era_overlap = useCovariateConditionEraOverlap,
                                                    use_covariate_condition_group = useCovariateConditionGroup,
                                                    use_covariate_drug_exposure = useCovariateDrugExposure,
+                                                   use_covariate_drug_exposure_365d = useCovariateDrugExposure365d,
+                                                   use_covariate_drug_exposure_30d = useCovariateDrugExposure30d,
                                                    use_covariate_drug_era = useCovariateDrugEra,
+                                                   use_covariate_drug_era_365d = useCovariateDrugEra365d,
+                                                   use_covariate_drug_era_30d = useCovariateDrugEra30d,
+                                                   use_covariate_drug_era_overlap = useCovariateDrugEraOverlap,
+                                                   use_covariate_drug_era_ever = useCovariateDrugEraEver,
                                                    use_covariate_drug_group = useCovariateDrugGroup,
                                                    use_covariate_procedure_occurrence = useCovariateProcedureOccurrence,
+                                                   use_covariate_procedure_occurrence_365d = useCovariateProcedureOccurrence365d,
+                                                   use_covariate_procedure_occurrence_30d = useCovariateProcedureOccurrence30d,
                                                    use_covariate_procedure_group = useCovariateProcedureGroup,
                                                    use_covariate_observation = useCovariateObservation,
+                                                   use_covariate_observation_365d = useCovariateObservation365d,
+                                                   use_covariate_observation_30d = useCovariateObservation30d,
+                                                   use_covariate_observation_below = useCovariateObservationBelow,
+                                                   use_covariate_observation_above = useCovariateObservationAbove,
+                                                   use_covariate_observation_count365d = useCovariateObservationCount365d,
                                                    use_covariate_concept_counts = useCovariateConceptCounts,
                                                    use_covariate_risk_scores = useCovariateRiskScores,
                                                    use_covariate_interaction_year = useCovariateInteractionYear,

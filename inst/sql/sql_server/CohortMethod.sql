@@ -58,14 +58,32 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 
 {DEFAULT @use_covariate_demographics = TRUE} /*use_covariate_demographics: @use_covariate_demographics*/
 {DEFAULT @use_covariate_condition_occurrence = TRUE} /*use_covariate_condition_occurrence: @use_covariate_condition_occurrence*/
+{DEFAULT @use_covariate_condition_occurrence_365d = TRUE} /*use_covariate_condition_occurrence_365d: @use_covariate_condition_occurrence_365d*/
+{DEFAULT @use_covariate_condition_occurrence_30d = FALSE} /*use_covariate_condition_occurrence_30d: @use_covariate_condition_occurrence_30d*/
+{DEFAULT @use_covariate_condition_occurrence_inpt180d = FALSE} /*use_covariate_condition_occurrence_inpt180d: @use_covariate_condition_occurrence_inpt180d*/
 {DEFAULT @use_covariate_condition_era = FALSE} /*use_covariate_condition_era: @use_covariate_condition_era*/
+{DEFAULT @use_covariate_condition_era_ever = FALSE} /*use_covariate_condition_era_ever: @use_covariate_condition_era_ever*/
+{DEFAULT @use_covariate_condition_era_overlap = FALSE} /*use_covariate_condition_era_overlap: @use_covariate_condition_era_overlap*/
 {DEFAULT @use_covariate_condition_group = FALSE} /*use_covariate_condition_group: @use_covariate_condition_group*/
 {DEFAULT @use_covariate_drug_exposure = FALSE} /*use_covariate_drug_exposure: @use_covariate_drug_exposure*/
+{DEFAULT @use_covariate_drug_exposure_365d = FALSE} /*use_covariate_drug_exposure_365d: @use_covariate_drug_exposure_365d*/
+{DEFAULT @use_covariate_drug_exposure_30d = FALSE} /*use_covariate_drug_exposure_30d: @use_covariate_drug_exposure_30d*/
 {DEFAULT @use_covariate_drug_era = FALSE} /*use_covariate_drug_era: @use_covariate_drug_era*/
+{DEFAULT @use_covariate_drug_era_365d = FALSE} /*use_covariate_drug_era_365d: @use_covariate_drug_era_365d*/
+{DEFAULT @use_covariate_drug_era_30d = FALSE} /*use_covariate_drug_era_30d: @use_covariate_drug_era_30d*/
+{DEFAULT @use_covariate_drug_era_overlap = FALSE} /*use_covariate_drug_era_overlap: @use_covariate_drug_era_overlap*/
+{DEFAULT @use_covariate_drug_era_ever = FALSE} /*use_covariate_drug_era_ever: @use_covariate_drug_era_ever*/
 {DEFAULT @use_covariate_drug_group = FALSE} /*use_covariate_drug_group: @use_covariate_drug_group*/
 {DEFAULT @use_covariate_procedure_occurrence = FALSE} /*use_covariate_procedure_occurrence: @use_covariate_procedure_occurrence*/
+{DEFAULT @use_covariate_procedure_occurrence_365d = FALSE} /*use_covariate_procedure_occurrence_365d: @use_covariate_procedure_occurrence_365d*/
+{DEFAULT @use_covariate_procedure_occurrence_30d = FALSE} /*use_covariate_procedure_occurrence_30d: @use_covariate_procedure_occurrence_30d*/
 {DEFAULT @use_covariate_procedure_group = FALSE} /*use_covariate_procedure_group: @use_covariate_procedure_group*/
 {DEFAULT @use_covariate_observation = FALSE} /*use_covariate_observation: @use_covariate_observation*/
+{DEFAULT @use_covariate_observation_365d = FALSE} /*use_covariate_observation_365d: @use_covariate_observation_365d*/
+{DEFAULT @use_covariate_observation_30d = FALSE} /*use_covariate_observation_30d: @use_covariate_observation_30d*/
+{DEFAULT @use_covariate_observation_below = FALSE} /*use_covariate_observation_below: @use_covariate_observation_below*/
+{DEFAULT @use_covariate_observation_above = FALSE} /*use_covariate_observation_above: @use_covariate_observation_after*/
+{DEFAULT @use_covariate_observation_count365d = FALSE} /*use_covariate_observation_count365d: @use_covariate_observation_count365d*/
 {DEFAULT @use_covariate_concept_counts = FALSE} /*use_covariate_concept_counts: @use_covariate_concept_counts*/
 {DEFAULT @use_covariate_risk_scores = FALSE} /*use_covariate_risk_scores: @use_covariate_risk_scores*/
 {DEFAULT @use_covariate_interaction_year = FALSE} /*use_covariate_interaction_year: @use_covariate_interaction_year*/
@@ -489,8 +507,8 @@ DEMOGRAPHICS
 	--age group
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT
-		floor((year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10) + 10 AS covariate_id,
-		'Age group: ' + CAST(floor((year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10)*10 as VARCHAR) + '-' + CAST((floor((year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10)+1)*10-1 as VARCHAR) AS covariate_name,
+		floor((year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 5) + 10 AS covariate_id,
+		'Age group: ' + CAST(floor((year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 5)*5 as VARCHAR) + '-' + CAST((floor((year(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 5)+1)*5-1 as VARCHAR) AS covariate_name,
 		4 as analysis_id,
 		0 as concept_id
 	FROM #cohort_person cp1
@@ -505,7 +523,7 @@ DEMOGRAPHICS
 		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
-		FLOOR((YEAR(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 10) + 10 AS covariate_id,
+		FLOOR((YEAR(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 5) + 10 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
 	INNER JOIN @cdm_schema.dbo.person p1
@@ -539,7 +557,7 @@ DEMOGRAPHICS
 	
 	--index month
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
-	SELECT DISTINCT MONTH(cohort_start_date)+20 as covariate_id,
+	SELECT DISTINCT MONTH(cohort_start_date)+40 as covariate_id,
 		'Index month: ' + CAST(MONTH(cohort_start_date) AS VARCHAR) as covariate_name,
 		6 as analysis_id,
 		0 as concept_id
@@ -551,7 +569,7 @@ DEMOGRAPHICS
 		cp1.row_id,
 		cp1.cohort_id,
 		cp1.person_id,
-		MONTH(cohort_start_date)+20 AS covariate_id,
+		MONTH(cohort_start_date)+40 AS covariate_id,
 		1 AS covariate_value
 	FROM #cohort_person cp1
 	;
@@ -569,6 +587,9 @@ CONDITION OCCURRENCE
 **************************/	
 {@use_covariate_condition_occurrence} ? {
 	
+
+  {@use_covariate_condition_occurrence_365d} ? {
+
 	--conditions exist:  episode in last 365d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(co1.condition_concept_id AS BIGINT)*1000 + 101 AS covariate_id,
@@ -607,9 +628,11 @@ CONDITION OCCURRENCE
 		AND co1.condition_start_date >= dateadd(dd, - 365, cp1.cohort_start_date)
 	;
 	
+	}
 	
-	
-	
+
+  {@use_covariate_condition_occurrence_30d} ? {
+
 	--conditions:  episode in last 30d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(co1.condition_concept_id AS BIGINT)*1000 + 102 AS covariate_id,
@@ -648,8 +671,10 @@ CONDITION OCCURRENCE
 		AND co1.condition_start_date >= dateadd(dd, - 30, cp1.cohort_start_date)
 	;
 	
+	}
 	
-	
+  {@use_covariate_condition_occurrence_inpt180d} ? {
+
 	--conditions:  primary inpatient diagnosis in last 180d
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(co1.condition_concept_id AS BIGINT)*1000 + 103 AS covariate_id,
@@ -689,7 +714,9 @@ CONDITION OCCURRENCE
 	AND  co1.condition_start_date <= cp1.cohort_start_date
 		AND co1.condition_start_date >= dateadd(dd, -180, cp1.cohort_start_date)
 	;
-	
+
+  }
+
 }	
 
 
@@ -703,6 +730,8 @@ CONDITION ERA
 {@use_covariate_condition_era} ? {
 	
 	
+  {@use_covariate_condition_era_ever} ? {
+
 	--condition:  exist any time prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(ce1.condition_concept_id AS BIGINT)*1000 + 201 AS covariate_id,
@@ -741,8 +770,11 @@ CONDITION ERA
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
 	;
 
+	}
 	
-	
+
+  {@use_covariate_condition_era_overlap} ? {
+
 	--concurrent on index date (era overlapping)
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(ce1.condition_concept_id AS BIGINT)*1000 + 202 AS covariate_id,
@@ -782,6 +814,9 @@ CONDITION ERA
 		AND  ce1.condition_era_start_date <= cp1.cohort_start_date
 		AND  ce1.condition_era_end_date >= cp1.cohort_start_date
 	;
+
+  }
+
 }	
 
 
@@ -904,6 +939,8 @@ DRUG EXPOSURE
 ***************************
 **************************/	
 {@use_covariate_drug_exposure} ? {
+
+  {@use_covariate_drug_exposure_365d} ? {
 	
 	--drug exist:  episode in last 365d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -945,9 +982,12 @@ DRUG EXPOSURE
 		AND de1.drug_exposure_start_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
 	
+	}
 	
-	
-	--drug exist:  episode in last 30d prior
+
+  {@use_covariate_drug_exposure_30d} ? {
+
+  --drug exist:  episode in last 30d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT)*1000 + 402 AS covariate_id,
 		'Drug exposure record observed during 30d on or prior to cohort index:  ' +
@@ -987,7 +1027,7 @@ DRUG EXPOSURE
 		AND de1.drug_exposure_start_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
 	
-
+  }
 	
 }	
 
@@ -999,6 +1039,8 @@ DRUG ERA
 **************************/	
 {@use_covariate_drug_era} ? {
 	
+
+  {@use_covariate_drug_era_365d} ? {
 	--drug exist:  episode in last 365d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT)*1000 + 501 AS covariate_id,
@@ -1039,7 +1081,10 @@ DRUG ERA
 		AND de1.drug_era_end_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
 	
-	
+	}
+
+  {@use_covariate_drug_era_30d} ? {
+
 	--drug exist:  episode in last 30d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT)*1000 + 502 AS covariate_id,
@@ -1080,6 +1125,10 @@ DRUG ERA
 		AND de1.drug_era_end_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;	
 	
+  }
+
+
+  {@use_covariate_drug_era_overlap} ? {
 
 	--concurrent on index date (era overlapping)
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -1121,7 +1170,10 @@ DRUG ERA
 		AND de1.drug_era_end_date >= cp1.cohort_start_date
 	;		
 	
-	
+  }
+
+  {@use_covariate_drug_era_ever} ? {
+
 	--drug exist:  episode in all time prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT)*1000 + 504 AS covariate_id,
@@ -1160,7 +1212,8 @@ DRUG ERA
 	AND  de1.drug_era_start_date <= cp1.cohort_start_date
 	;	
 	
-	
+  }	
+
 }	
 
 
@@ -1324,6 +1377,7 @@ PROCEDURE OCCURRENCE
 **************************/	
 {@use_covariate_procedure_occurrence} ? {
 
+  {@use_covariate_procedure_occurrence_365d} ? {
 
 	--procedures exist:  episode in last 365d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -1363,6 +1417,9 @@ PROCEDURE OCCURRENCE
 		AND po1.procedure_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
 	
+  }
+
+  {@use_covariate_procedure_occurrence_30d} ? {
 
 	--procedures exist:  episode in last 30d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -1402,7 +1459,8 @@ PROCEDURE OCCURRENCE
 		AND po1.procedure_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
 	
-	
+  }
+
 }	
 
 
@@ -1508,7 +1566,8 @@ OBSERVATION
 **************************/	
 {@use_covariate_observation} ? {
 	
-	
+	{@use_covariate_observation_365d} ? {
+
 	--observation exist:  episode in last 365d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(o1.observation_concept_id AS BIGINT)*1000 + 901 AS covariate_id,
@@ -1547,7 +1606,9 @@ OBSERVATION
 		AND o1.observation_date >= dateadd(dd, -365, cp1.cohort_start_date)
 	;
 	
+  }
 
+  {@use_covariate_observation_30d} ? {
 
 	--observation exist:  episode in last 30d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -1587,7 +1648,9 @@ OBSERVATION
 		AND o1.observation_date >= dateadd(dd, -30, cp1.cohort_start_date)
 	;
 		
-	
+	}
+
+  {@use_covariate_observation_below} ? {
 	
 	--for numeric values with valid range, latest value within 180 below low
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -1658,7 +1721,11 @@ OBSERVATION
 	AND VALUE_AS_NUMBER < RANGE_LOW
 	;
 		
-	
+	}
+
+
+
+  {@use_covariate_observation_above} ? {
 	
 	--for numeric values with valid range, latest value above high
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
@@ -1729,8 +1796,11 @@ OBSERVATION
 	AND VALUE_AS_NUMBER > RANGE_HIGH
 	;
 	
+  }
 	
-	--observation exist:  episode in last 365d prior
+  {@use_covariate_observation_count365d} ? {
+
+	--number of observations:  episode in last 365d prior
 	INSERT INTO #cohort_covariate_ref (covariate_id, covariate_name, analysis_id, concept_id)
 	SELECT DISTINCT CAST(o1.observation_concept_id AS BIGINT)*1000 + 905 AS covariate_id,
 		'Number of observations observed during 365d on or prior to cohort index:  ' +
@@ -1769,8 +1839,9 @@ OBSERVATION
   	cp1.cohort_id,
 		cp1.person_id,
 		CAST(o1.observation_concept_id AS BIGINT)*1000 + 905
-	;	
-	
+	;
+
+  }	
 	
 }
 
