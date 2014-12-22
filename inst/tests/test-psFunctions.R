@@ -78,3 +78,17 @@ test_that("Stratification", {
   expect_equal(result$rowId[result$stratumId == 0],c(1,2,3,4,5,6,7,8,9,10,101,102,103,104,105,106,107,108,109,110))
   expect_equal(result$rowId[result$stratumId == 9],c(91,92,93,94,95,96,97,98,99,100,191,192,193,194,195,196,197,198,199,200))
 })
+
+test_that("matching with extra variable", {
+  rowId = 1:100
+  treatment = rep(0:1, 50)
+  propensityScore = (1:100)/100
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, age = floor(99:0/10))
+  result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = c("age"))
+  expect_equal(max(result$stratumId),49)
+  for (i in 0:max(result$stratumId)){
+    expect_equal(max(result$age[result$stratumId == i]),min(result$age[result$stratumId == i]))
+  }
+})
+
+

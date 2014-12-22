@@ -471,7 +471,7 @@ matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRa
 #' @export
 matchOnPsAndCovariates <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, cohortData, covariateIds) {
   data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
-  stratificationColumns = which(colnames(data) %in% as.character(covariateIds))
+  stratificationColumns = colnames(data)[colnames(data) %in% as.character(covariateIds)]
   return(matchOnPs(data, caliper, caliperScale, maxRatio, stratificationColumns))
 }
 
@@ -559,7 +559,7 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
 #' @export
 stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortData, covariateIds) {
   data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
-  stratificationColumns = which(colnames(data) %in% as.character(covariateIds))
+  stratificationColumns = colnames(data)[colnames(data) %in% as.character(covariateIds)]
   return(stratifyByPs(data, numberOfStrata, stratificationColumns))
 }
 
@@ -581,9 +581,9 @@ quickSum <- function(data,squared=FALSE){
       colnames(result)[colnames(result) == "value"] = "s"
     } else {
       result <- merge(result,r,all=TRUE)
-      result$S[is.na(result$S)] = 0
+      result$s[is.na(result$s)] = 0
       result$value[is.na(result$value)] = 0
-      result$S = result$S + result$value
+      result$s = result$s + result$value
       result$value <- NULL
     }
   }
@@ -595,7 +595,6 @@ quickSum <- function(data,squared=FALSE){
   result$covariateId <- as.numeric(result$covariateId)
   return(result)
 }
-
 
 computeMeansPerGroup <- function(cohorts, covariates){
   nOverall <- nrow(cohorts)
