@@ -14,10 +14,24 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
   exposureSchema = cdmSchema, exposureTable = "drug_era",
   outcomeSchema = cdmSchema, outcomeTable = "condition_occurrence",
   useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
-  useCovariateConditionEra = FALSE, useCovariateConditionGroup = FALSE,
-  useCovariateDrugExposure = FALSE, useCovariateDrugEra = FALSE,
-  useCovariateDrugGroup = FALSE, useCovariateProcedureOccurrence = FALSE,
+  useCovariateConditionOccurrence365d = TRUE,
+  useCovariateConditionOccurrence30d = TRUE,
+  useCovariateConditionOccurrenceInpt180d = TRUE,
+  useCovariateConditionEra = FALSE, useCovariateConditionEraEver = FALSE,
+  useCovariateConditionEraOverlap = FALSE,
+  useCovariateConditionGroup = FALSE, useCovariateDrugExposure = FALSE,
+  useCovariateDrugExposure365d = FALSE, useCovariateDrugExposure30d = FALSE,
+  useCovariateDrugEra = FALSE, useCovariateDrugEra365d = FALSE,
+  useCovariateDrugEra30d = FALSE, useCovariateDrugEraOverlap = FALSE,
+  useCovariateDrugEraEver = FALSE, useCovariateDrugGroup = FALSE,
+  useCovariateProcedureOccurrence = FALSE,
+  useCovariateProcedureOccurrence365d = FALSE,
+  useCovariateProcedureOccurrence30d = FALSE,
   useCovariateProcedureGroup = FALSE, useCovariateObservation = FALSE,
+  useCovariateObservation365d = FALSE, useCovariateObservation30d = FALSE,
+  useCovariateObservationBelow = FALSE,
+  useCovariateObservationAbove = FALSE,
+  useCovariateObservationCount365d = FALSE,
   useCovariateConceptCounts = FALSE, useCovariateRiskScores = FALSE,
   useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
   excludedCovariateConceptIds = c(4027133, 4032243, 4146536, 2002282, 2213572,
@@ -62,21 +76,57 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
 
 \item{useCovariateConditionOccurrence}{}
 
+\item{useCovariateConditionOccurrence365d}{}
+
+\item{useCovariateConditionOccurrence30d}{}
+
+\item{useCovariateConditionOccurrenceInpt180d}{}
+
 \item{useCovariateConditionEra}{}
+
+\item{useCovariateConditionEraEver}{}
+
+\item{useCovariateConditionEraOverlap}{}
 
 \item{useCovariateConditionGroup}{}
 
 \item{useCovariateDrugExposure}{}
 
+\item{useCovariateDrugExposure365d}{}
+
+\item{useCovariateDrugExposure30d}{}
+
 \item{useCovariateDrugEra}{}
+
+\item{useCovariateDrugEra365d}{}
+
+\item{useCovariateDrugEra30d}{}
+
+\item{useCovariateDrugEraOverlap}{}
+
+\item{useCovariateDrugEraEver}{}
 
 \item{useCovariateDrugGroup}{}
 
 \item{useCovariateProcedureOccurrence}{}
 
+\item{useCovariateProcedureOccurrence365d}{}
+
+\item{useCovariateProcedureOccurrence30d}{}
+
 \item{useCovariateProcedureGroup}{}
 
 \item{useCovariateObservation}{}
+
+\item{useCovariateObservation365d}{}
+
+\item{useCovariateObservation30d}{}
+
+\item{useCovariateObservationBelow}{}
+
+\item{useCovariateObservationAbove}{}
+
+\item{useCovariateObservationCount365d}{}
 
 \item{useCovariateConceptCounts}{}
 

@@ -91,4 +91,16 @@ test_that("matching with extra variable", {
   }
 })
 
+test_that("matching with extra two variables", {
+  rowId = 1:100
+  treatment = rep(0:1, 50)
+  propensityScore = (1:100)/100
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, age = floor(99:0/10), gender = rep(c(0,1),each=5,times = 10))
+  result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = c("age","gender"))
+  expect_equal(max(result$stratumId),39)
+  for (i in 0:max(result$stratumId)){
+    expect_equal(max(result$age[result$stratumId == i]),min(result$age[result$stratumId == i]))
+    expect_equal(max(result$gender[result$stratumId == i]),min(result$gender[result$stratumId == i]))
+  }
+})
 

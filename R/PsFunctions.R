@@ -339,9 +339,9 @@ mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
     t <- cohortData$covariates$covariateId == covariateId
     if (any(t)){
       values <- as.ram(cohortData$covariates[ffbase::ffwhich(t,t == TRUE),c(1,3)])
-      colnames(values)[colnames(values) == "covariateValue"] = covariateId
+      colnames(values)[colnames(values) == "covariateValue"] = paste("covariateId",covariateId,sep="_")
       data <- merge(data,values,all.x = TRUE)
-      col <- which(colnames(data) == covariateId)
+      col <- which(colnames(data) == paste("covariateId",covariateId,sep="_"))
       data[is.na(data[,col]),col] <- 0
     } else {
       warning(paste("Not matching on covariate",covariateId,"because value is always 0"))
@@ -413,19 +413,29 @@ matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRa
     result$rowId <- data$rowId
     return(result[result$stratumId != -1,])
   } else {
-    result <- data.frame()
-    interactions <- interaction(data[,stratificationColumns])
-    strata <- levels(interactions)
-    for (i in 1:length(strata)){
-      subset <- data[interactions == strata[i],]
+    f <- function(subset, maxRatio, caliper){
       subResult <- .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', subset$propensityScore, subset$treatment, maxRatio, caliper)
       subResult$rowId <- subset$rowId
       subResult[,stratificationColumns] <- subset[,stratificationColumns]
       subResult <- subResult[subResult$stratumId != -1,]
-      if (nrow(result) != 0)
-        subResult$stratumId = subResult$stratumId + max(result$stratumId) + 1
-      result <- rbind(result,subResult)
+      return(subResult)
     }
+    
+    results <- plyr::dlply(.data = data, 
+                           .variables = stratificationColumns, 
+                           .drop = TRUE, 
+                           .fun = f, 
+                           maxRatio = maxRatio, 
+                           caliper = caliper)
+    maxStratumId <- 0
+    for(i in 1:length(results)){
+      if (nrow(results[[i]]) > 0){
+        if (maxStratumId != 0)
+          results[[i]]$stratumId = results[[i]]$stratumId + maxStratumId + 1
+        maxStratumId <- max(results[[i]]$stratumId)
+      }
+    }
+    result <- do.call(rbind,results)
     return(result)
   }
 }
@@ -471,7 +481,7 @@ matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRa
 #' @export
 matchOnPsAndCovariates <- function(data, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, cohortData, covariateIds) {
   data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
-  stratificationColumns = colnames(data)[colnames(data) %in% as.character(covariateIds)]
+  stratificationColumns = colnames(data)[colnames(data) %in% paste("covariateId",covariateIds,sep="_")]
   return(matchOnPs(data, caliper, caliperScale, maxRatio, stratificationColumns))
 }
 
@@ -517,16 +527,26 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
     data$stratumId <- as.integer(as.character(cut(data$propensityScore,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
     return(data)
   } else {
-    result <- data.frame()
-    interactions <- interaction(data[,stratificationColumns])
-    strata <- levels(interactions)
-    for (i in 1:length(strata)){
-      subset <- data[interactions == strata[i],]
+   f <- function(subset, psStrata, numberOfStrata){
       subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
-      if (nrow(result) != 0)
-        subset$stratumId = subset$stratumId + max(result$stratumId) + 1
-      result <- rbind(result,subset)
+      return(subset)
     }
+    
+    results <- plyr::dlply(.data = data, 
+                           .variables = stratificationColumns, 
+                           .drop = TRUE, 
+                           .fun = f, 
+                           psStrata = psStrata, 
+                           numberOfStrata = numberOfStrata)
+    maxStratumId <- 0
+    for(i in 1:length(results)){
+      if (nrow(results[[i]]) > 0){
+        if (maxStratumId != 0)
+          results[[i]]$stratumId = results[[i]]$stratumId + maxStratumId + 1
+        maxStratumId <- max(results[[i]]$stratumId)
+      }
+    }
+    result <- do.call(rbind,results)
     return(result)
   }
 }
@@ -559,7 +579,7 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
 #' @export
 stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortData, covariateIds) {
   data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
-  stratificationColumns = colnames(data)[colnames(data) %in% as.character(covariateIds)]
+  stratificationColumns = colnames(data)[colnames(data) %in% paste("covariateId",covariateIds,sep="_")]
   return(stratifyByPs(data, numberOfStrata, stratificationColumns))
 }
 
