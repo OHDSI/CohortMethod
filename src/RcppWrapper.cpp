@@ -28,6 +28,7 @@
 
 #include <Rcpp.h>
 #include "Match.h"
+#include "Auc.h"
 
 using namespace Rcpp;
 
@@ -45,6 +46,39 @@ DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treat
 		::Rf_error("c++ exception (unknown reason)");
 	}
 	return DataFrame::create();
+}
+
+// [[Rcpp::export(".aucWithCi")]]
+std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<int> treatment) {
+
+  using namespace ohdsi::cohortMethod;
+
+	try {
+		std::vector<double> auc = Auc::aucWithCi(propensityScores, treatment);
+		return auc;
+	} catch (std::exception &e) {
+		forward_exception_to_r(e);
+	} catch (...) {
+		::Rf_error("c++ exception (unknown reason)");
+	}
+  std::vector<double> auc(3,0);
+	return auc;
+}
+
+// [[Rcpp::export(".auc")]]
+double auc(std::vector<double> propensityScores, std::vector<int> treatment) {
+
+  using namespace ohdsi::cohortMethod;
+
+  try {
+		double auc = Auc::auc(propensityScores, treatment);
+		return auc;
+	} catch (std::exception &e) {
+		forward_exception_to_r(e);
+	} catch (...) {
+		::Rf_error("c++ exception (unknown reason)");
+	}
+	return 0.0;
 }
 
 #endif // __RcppWrapper_cpp__

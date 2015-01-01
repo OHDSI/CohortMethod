@@ -221,8 +221,8 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' @description
 #' \code{computePsAuc} computes the area under the ROC curve of the propensity score
 #' 
-#' @param data              A data frame with at least the two columns described below
-#'
+#' @param data                A data frame with at least the two columns described below
+#' @param confidenceIntervals Compute 95 percent confidence intervals (computationally expensive for large data sets)
 #' @details
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
@@ -241,16 +241,19 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' computePsAuc(data)
 #' 
 #' @export
-computePsAuc <- function(data){
+computePsAuc <- function(data, confidenceIntervals = FALSE){
   if (!("treatment" %in% colnames(data))) 
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data))) 
     stop("Missing column propensityScore in data")
-  
-  # Functions roc and ci.auc are in the pROC package:
-  rocobj <- pROC::roc.default(data$treatment,data$propensityScore, algorithm=3)
-  auc <- as.numeric(pROC::ci.auc.roc(rocobj, method="delong"))
-  return(data.frame(auc=auc[2],auc_lb95ci=auc[1],auc_lb95ci=auc[3]))
+
+  if (confidenceIntervals){
+    auc <-  .Call('CohortMethod_aucWithCi', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment)
+    return(data.frame(auc=auc[1],auc_lb95ci=auc[2],auc_lb95ci=auc[3]))    
+  } else {
+    auc <-  .Call('CohortMethod_auc', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment)
+    return(auc)    
+  }
 }
 
 #' Trim persons by propensity score

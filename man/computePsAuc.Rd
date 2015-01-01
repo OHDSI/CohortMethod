@@ -3,10 +3,12 @@
 \alias{computePsAuc}
 \title{Compute the area under the ROC curve}
 \usage{
-computePsAuc(data)
+computePsAuc(data, confidenceIntervals = FALSE)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
+
+\item{confidenceIntervals}{Compute 95 percent confidence intervals (computationally expensive for large data sets)}
 }
 \value{
 A data frame holding the AUC and its 95 percent confidence interval

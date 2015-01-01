@@ -28,10 +28,10 @@ Imports:
     ff,
     ggplot2,
     plyr,
-    pROC,
     SqlRender (>= 1.0.0)    
 Suggests:
     testthat,
+    pROC,
     gnm,
     knitr,
     rmarkdown

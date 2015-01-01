@@ -252,13 +252,13 @@ computePsAuc(ps)
 
 We can also plot the propensity score distribution, although we prefer the preference score distribution:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 plotPs(ps, scale = "preference")
 ```
 
 It is also possible to inspect the propensity model itself:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 propensityModel <- getPsModel(ps,cohortData)
 head(propensityModel)  
 ```
@@ -267,14 +267,14 @@ head(propensityModel)
 
 We can use the propensity scores to trim, match, or stratify our population. For example, one could first trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
   psTrimmed <- trimByPsToEquipoise(ps)  
   plotPs(psTrimmed, ps, scale = "preference")
 ```
 
 We can then match subjects based on propensity scores:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   plotPs(strata,ps)
 ```
@@ -284,7 +284,7 @@ We can then match subjects based on propensity scores:
 To evaluate whether our use of the propensity score is indeed making the two cohorts more comparable, we can compute the covariate balance before and after trimming, matching, and/or stratifying:
 
 --Todo: replace concept ID with 3
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
  plotCovariateBalanceScatterPlot(balance)
  plotCovariateBalanceOfTopVariables(balance)
@@ -295,7 +295,7 @@ To evaluate whether our use of the propensity score is indeed making the two coh
 The next step is fitting the outcome model. In theory we could fit an outcome model without using the propensity scores:
 
 --todo: conceptID to 3
-```{r tidy=FALSE,eval=TRUE}
+```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
                                 cohortData = cohortData,
                                 riskWindowStart = 0, 
@@ -312,7 +312,7 @@ In this example we're fitting an outcome model using a Cox regression. The risk 
 
 But of course we want to make use of the trimming and matching done on the propensity score:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
                                 cohortData = cohortData,
                                 subPopulation = strata,
@@ -330,7 +330,7 @@ Note that we define the subpopulation to be only those in the *strata* object, w
 
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the Cyclops package. (Note that the treatment variable is automatically excluded from regularization.)
 
-```{r tidy=FALSE,eval=TRUE}
+```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
                                 cohortData = cohortData,
                                 subPopulation = strata,
@@ -346,13 +346,13 @@ outcomeModel
 
 We can create the Kaplan-Meier plot:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 plotKaplanMeier(outcomeModel)
 ```
 
 We can inspect more details of the outcome model:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 summary(outcomeModel)
 coef(outcomeModel)
 confint(outcomeModel)
@@ -360,7 +360,7 @@ confint(outcomeModel)
 
 We can also see the covariates that ended up in the outcome model:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
 head(fullOutcomeModel)
 ```

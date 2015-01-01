@@ -1,4 +1,5 @@
 library("testthat")
+library("pROC")
 
 
 test_that("Simple 1-on-1 matching", {
@@ -17,6 +18,23 @@ test_that("Simple 1-on-n matching", {
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- matchOnPs(data, caliper = 0, maxRatio = 100)
   expect_equal(result$stratumId, c(0,0,0,1,1,1))
+})
+
+test_that("AUC", {
+  ps <- data.frame(propensityScore = runif(100),treatment = round(runif(100)))
+  rocobj <- pROC::roc.default(ps$treatment,ps$propensityScore, algorithm=3)
+  goldStandard <- as.numeric(pROC::ci.auc.roc(rocobj, method="delong"))
+  auc <- computePsAuc(ps, confidenceIntervals = FALSE)  
+  aucWithCi <- computePsAuc(ps, confidenceIntervals = TRUE)
+  if ((auc < 0.5) != (goldStandard[2] < 0.5)){
+    auc = 1-auc
+    aucWithCi = c(1-aucWithCi[1],1-aucWithCi[3],1-aucWithCi[2])
+  }
+  tolerance = 0.001
+  expect_equal(goldStandard[2],auc,tolerance = tolerance)
+  expect_equal(goldStandard[2],as.numeric(aucWithCi[1]),tolerance = tolerance)
+  expect_equal(goldStandard[1],as.numeric(aucWithCi[2]),tolerance = tolerance)
+  expect_equal(goldStandard[3],as.numeric(aucWithCi[3]),tolerance = tolerance)
 })
 
 test_that("Simple 1-on-n matching", {

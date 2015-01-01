@@ -5,3 +5,11 @@
     .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', propensityScores, treatment, maxRatio, caliper)
 }
 
+.aucWithCi <- function(propensityScores, treatment) {
+    .Call('CohortMethod_aucWithCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
+}
+
+.auc <- function(propensityScores, treatment) {
+    .Call('CohortMethod_auc', PACKAGE = 'CohortMethod', propensityScores, treatment)
+}
+
