@@ -3,10 +3,12 @@
 \alias{loadCohortData}
 \title{Load the cohort data from a folder}
 \usage{
-loadCohortData(file)
+loadCohortData(file, readOnly = FALSE)
 }
 \arguments{
 \item{file}{The name of the folder containing the data.}
+
+\item{readOnly}{If true, the data is opened read only.}
 }
 \value{
 An object of class cohortData.

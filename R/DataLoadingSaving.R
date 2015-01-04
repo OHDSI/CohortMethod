@@ -306,6 +306,7 @@ saveCohortData <- function(cohortData, file){
 #' \code{loadCohortData} loads an object of type cohortData from a folder in the file system.
 #' 
 #' @param file                The name of the folder containing the data.
+#' @param readOnly            If true, the data is opened read only.
 #' 
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
@@ -317,7 +318,7 @@ saveCohortData <- function(cohortData, file){
 #' #todo
 #' 
 #' @export
-loadCohortData <- function(file){
+loadCohortData <- function(file, readOnly = FALSE){
   if (!file.exists(file))
     stop(paste("Cannot find folder",file))
   if (!file.info(file)$isdir)
@@ -336,6 +337,13 @@ loadCohortData <- function(file){
                  covariateRef = get("out5", envir=e),
                  metaData = mget("metaData",envir=e,ifnotfound=list(NULL))[[1]] #For backwards compatibility
   )
+  #Open all ffdfs to prevent annoying messages later:
+  open(result$outcomes,readonly = readOnly)
+  open(result$cohorts,readonly = readOnly)
+  open(result$covariates,readonly = readOnly)
+  open(result$exclude,readonly = readOnly)
+  open(result$covariateRef,readonly = readOnly)
+  
   class(result) <- "cohortData"
   rm(e)
   return(result)

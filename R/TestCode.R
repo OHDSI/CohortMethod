@@ -31,6 +31,7 @@ testCode <- function(){
   saveCohortData(cohortData,"mdcrCohortData")
     
   cohortData <- loadCohortData("mdcrCohortData") 
+  #cohortData <- loadCohortData("mdcrCohortData", readOnly = TRUE) 
   
   summary(cohortData)
   
