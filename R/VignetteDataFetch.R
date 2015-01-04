@@ -65,30 +65,56 @@ vignetteDataFetch <- function(){
                                 exclusionConceptIds = nsaids,
                                 outcomeConceptIds = 3, 
                                 outcomeConditionTypeConceptIds = "", 
-                                maxOutcomeCount = 1,
                                 exposureSchema = resultsSchema,
                                 exposureTable = "coxibVsNonselVsGiBleed",
                                 outcomeSchema = resultsSchema,
                                 outcomeTable = "coxibVsNonselVsGiBleed",
-                                useCovariateDemographics = TRUE, 
-                                useCovariateConditionOccurrence = TRUE,
-                                useCovariateConditionEra = TRUE, 
-                                useCovariateConditionGroup = TRUE,
-                                useCovariateDrugExposure = TRUE, 
-                                useCovariateDrugEra = TRUE,
-                                useCovariateDrugGroup = TRUE, 
-                                useCovariateProcedureOccurrence = TRUE,
-                                useCovariateProcedureGroup = TRUE, 
-                                useCovariateObservation = TRUE,
-                                useCovariateConceptCounts = TRUE, 
-                                useCovariateRiskScores = TRUE,
-                                useCovariateInteractionYear = FALSE, 
-                                useCovariateInteractionMonth = FALSE,
+								useCovariateDemographics = TRUE,
+								useCovariateConditionOccurrence = TRUE,
+								useCovariateConditionOccurrence365d = TRUE,
+								useCovariateConditionOccurrence30d = TRUE,
+								useCovariateConditionOccurrenceInpt180d = TRUE,
+								useCovariateConditionEra = TRUE,
+								useCovariateConditionEraEver = TRUE,
+								useCovariateConditionEraOverlap = TRUE,
+								useCovariateConditionGroup = TRUE,
+								useCovariateDrugExposure = TRUE,
+								useCovariateDrugExposure365d = TRUE,
+								useCovariateDrugExposure30d = TRUE,
+								useCovariateDrugEra = TRUE,
+								useCovariateDrugEra365d = TRUE,
+								useCovariateDrugEra30d = TRUE,
+								useCovariateDrugEraEver = TRUE,
+								useCovariateDrugEraOverlap = TRUE,
+								useCovariateDrugGroup = TRUE,
+								useCovariateProcedureOccurrence = TRUE,
+								useCovariateProcedureOccurrence365d = TRUE,
+								useCovariateProcedureOccurrence30d = TRUE,
+								useCovariateProcedureGroup = TRUE,
+								useCovariateObservation = TRUE,
+								useCovariateObservation365d = TRUE,
+								useCovariateObservation30d = TRUE,
+								useCovariateObservationBelow = TRUE,
+								useCovariateObservationAbove = TRUE,
+								useCovariateObservationCount365d = TRUE,
+								useCovariateConceptCounts = TRUE,
+								useCovariateRiskScores = TRUE,
+								useCovariateInteractionYear = FALSE,
+								useCovariateInteractionMonth = FALSE,
                                 excludedCovariateConceptIds = nsaids, 
                                 deleteCovariatesSmallCount = 100)
   
-  saveCohortData(cohortData,"coxibVsNonselVsGiBleed")
+  saveCohortData(cohortData,"vignetteCohortData")
   
   vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
-  save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rData")
+  save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")
+  #cohortData <- loadCohortData("vignetteCohortData")
+  ps <- createPs(cohortData,outcomeConceptId = 3, checkSorting = FALSE, control = createControl(noiseLevel = "silent",threads = 10))
+  save(ps, file = "vignettePs.rda")
+  #load("vignettePs.rda")
+  psTrimmed <- trimByPsToEquipoise(ps)  
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
+  save(balance, file = "vignetteBalance.rda")
+
 }

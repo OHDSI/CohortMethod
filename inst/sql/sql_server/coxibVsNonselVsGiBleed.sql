@@ -5,7 +5,7 @@ File coxibsVsNonselVsGiBleed.sql
 USE @cdmSchema;
 
 IF OBJECT_ID('@resultsSchema.dbo.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
-  drop table @resultsSchema.dbo.coxibVsNonselVsGiBleed;
+  DROP TABLE @resultsSchema.dbo.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsSchema.dbo.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,
@@ -39,8 +39,6 @@ SELECT 2, -- Comparator
 	person_id
 FROM drug_era
 WHERE drug_concept_id = 1124300; --Diclofenac
---WHERE drug_concept_id IN (1124300,1177480,1115008,1178663,1185922,1146810); 
---Diclofenac, Ibuprofen, Naproxen, Indomethacin, Ketoprofen, Piroxicam
 
 INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
@@ -61,4 +59,3 @@ WHERE condition_concept_id IN (
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
--- Inpatient visit, Emergency room visit

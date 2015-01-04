@@ -74,11 +74,11 @@ File coxibsVsNonselVsGiBleed.sql
 USE @cdmSchema;
 
 IF OBJECT_ID('@resultsSchema.dbo.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
-  drop table @resultsSchema.dbo.coxibVsNonselVsGiBleed;
+  DROP TABLE @resultsSchema.dbo.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsSchema.dbo.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,
-  cohort_start_date DATE,
+	cohort_start_date DATE,
 	cohort_end_date DATE,
 	subject_id BIGINT
 	);
@@ -108,8 +108,6 @@ SELECT 2, -- Comparator
 	person_id
 FROM drug_era
 WHERE drug_concept_id = 1124300; --Diclofenac
---WHERE drug_concept_id IN (1124300,1177480,1115008,1178663,1185922,1146810); 
---Diclofenac, Ibuprofen, Naproxen, Indomethacin, Ketoprofen, Piroxicam
 
 INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
@@ -130,7 +128,6 @@ WHERE condition_concept_id IN (
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
--- Inpatient visit, Emergency room visit
 ```
 
 This is parameterized SQL which can be used by the SqlRender package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values, we don't have to change the SQL code. By also making use of SqlRender's translation functionality, we can make sure the SQL code can be run in many different environments.
@@ -148,7 +145,7 @@ In this code, we first read the SQL from the file into memory. In the next line,
 
 If all went well, we now have a table with the events of interest. We can see how many events per type:
 
-```{r tidy=TRUE,eval=FALSE}
+```{r tidy=FALSE,eval=FALSE}
 sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
 sql <- renderSql(sql, resultsSchema = resultsSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
@@ -161,10 +158,15 @@ data.frame(cohort_concept_id = c(1,2,3),count=c(19207,202237,18970))
 
 ## Extracting the data from the server
 
-Now we can tell CohortMethod to define the cohorts based on our events, and extract all necessay data for our analysis:
+Now we can tell CohortMethod to define the cohorts based on our events, and extract all necessary data for our analysis:
 
 ```{r tidy=FALSE,eval=FALSE}
-nsaids <- c(1118084,1112807,1177480)
+# Get all NSAID Concept IDs for exclusion:
+sql <- "SELECT concept_id FROM concept_ancestor INNER JOIN concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+nsaids <- querySql(connection, sql)
+nsaids <- nsaids$CONCEPT_ID
+  
+ #Load data:
 cohortData <- getDbCohortData(connectionDetails,
                               cdmSchema = cdmSchema,
                               resultsSchema = resultsSchema,
@@ -178,35 +180,52 @@ cohortData <- getDbCohortData(connectionDetails,
                               exclusionConceptIds = nsaids,
                               outcomeConceptIds = 3, 
                               outcomeConditionTypeConceptIds = "", 
-                              maxOutcomeCount = 1,
                               exposureSchema = resultsSchema,
                               exposureTable = "coxibVsNonselVsGiBleed",
                               outcomeSchema = resultsSchema,
                               outcomeTable = "coxibVsNonselVsGiBleed",
-                              useCovariateDemographics = TRUE, 
+                              useCovariateDemographics = TRUE,
                               useCovariateConditionOccurrence = TRUE,
-                              useCovariateConditionEra = TRUE, 
+                              useCovariateConditionOccurrence365d = TRUE,
+                              useCovariateConditionOccurrence30d = TRUE,
+                              useCovariateConditionOccurrenceInpt180d = TRUE,
+                              useCovariateConditionEra = TRUE,
+                              useCovariateConditionEraEver = TRUE,
+                              useCovariateConditionEraOverlap = TRUE,
                               useCovariateConditionGroup = TRUE,
-                              useCovariateDrugExposure = TRUE, 
+                              useCovariateDrugExposure = TRUE,
+                              useCovariateDrugExposure365d = TRUE,
+                              useCovariateDrugExposure30d = TRUE,
                               useCovariateDrugEra = TRUE,
-                              useCovariateDrugGroup = TRUE, 
+                              useCovariateDrugEra365d = TRUE,
+                              useCovariateDrugEra30d = TRUE,
+                              useCovariateDrugEraEver = TRUE,
+                              useCovariateDrugEraOverlap = TRUE,
+                              useCovariateDrugGroup = TRUE,
                               useCovariateProcedureOccurrence = TRUE,
-                              useCovariateProcedureGroup = TRUE, 
+                              useCovariateProcedureOccurrence365d = TRUE,
+                              useCovariateProcedureOccurrence30d = TRUE,
+                              useCovariateProcedureGroup = TRUE,
                               useCovariateObservation = TRUE,
-                              useCovariateConceptCounts = TRUE, 
+                              useCovariateObservation365d = TRUE,
+                              useCovariateObservation30d = TRUE,
+                              useCovariateObservationBelow = TRUE,
+                              useCovariateObservationAbove = TRUE,
+                              useCovariateObservationCount365d = TRUE,
+                              useCovariateConceptCounts = TRUE,
                               useCovariateRiskScores = TRUE,
-                              useCovariateInteractionYear = FALSE, 
+                              useCovariateInteractionYear = FALSE,
                               useCovariateInteractionMonth = FALSE,
-                              excludedCovariateConceptIds = "", 
+                              excludedCovariateConceptIds = nsaids, 
                               deleteCovariatesSmallCount = 100)
-cohortData
+ cohortData
 ```
 ```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
-if (file.exists("c:/temp/mdcrCohortData")){
-  cohortData <- loadCohortData("c:/temp/mdcrCohortData")
+if (file.exists("c:/temp/vignetteCohortData")){
+  cohortData <- loadCohortData("c:/temp/vignetteCohortData")
 } else {
-  data(cohortDataSimulationProfile)
-  cohortData <- simulateCohortData(cohortDataSimulationProfile, n=1000)
+  data(vignetteSimulationProfile)
+  cohortData <- simulateCohortData(vignetteSimulationProfile, n=1000)
 }
 ```
 ```{r echo=FALSE,message=FALSE}
@@ -215,7 +234,13 @@ cohortData
 
 There are a lot of parameters, but they are all documented in the CohortMethod manual. In short, we're pointing the function to the table created earlier and indicate which concept IDs in that table identify the target, comparator and outcome. We further instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
 
-All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the cohortData object. This object uses the package ff to store information in a way that ensures R does not run out of memory, even when there is lots of data.
+All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the cohortData object. This object uses the package ff to store information in a way that ensures R does not run out of memory, even when there is lots of data. 
+
+We can use the generic `summary()` function to view some more information of the data we extracted:
+```{r tidy=TRUE,eval=TRUE}
+summary(cohortData)
+```
+
 
 ### Saving the data to file
 
@@ -235,12 +260,16 @@ The CohortMethod can use propensity scores to adjust for potential confounders. 
 
 We can fit a propensity model using the covariates constructed by the `getDbCohortData()` function:
 
---Todo: replace concept ID with 3 and use CV:
-```{r tidy=TRUE,eval=TRUE}
-ps <- createPs(cohortData,outcomeConceptId = 194133,prior=createPrior("laplace",0.1,exclude = 0))
+```{r tidy=TRUE,eval=FALSE}
+ps <- createPs(cohortData, outcomeConceptId = 3)
+```
+```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
+data(vignettePs)
 ```
 
 The `createPs()` function uses the Cyclops package to fit a large scale regularized logistic regression. Note that We have to tell createPs what the outcomeConceptId is for which we will use the model so it can remove subjects who had the outcome prior to index date before fitting the model. 
+
+To fit the propensity model, Cyclops needs to know the hyperparameter value. By default Cyclops will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify Cyclops' behaviour, including using multiple threads to speed up the cross-validation. 
 
 ## Propensity score diagnostics
 
@@ -252,14 +281,14 @@ computePsAuc(ps)
 
 We can also plot the propensity score distribution, although we prefer the preference score distribution:
 
-```{r tidy=TRUE,eval=FALSE}
+```{r tidy=TRUE,eval=TRUE}
 plotPs(ps, scale = "preference")
 ```
 
 It is also possible to inspect the propensity model itself:
 
-```{r tidy=TRUE,eval=FALSE}
-propensityModel <- getPsModel(ps,cohortData)
+```{r tidy=TRUE,eval=TRUE}
+propensityModel <- getPsModel(ps, cohortData)
 head(propensityModel)  
 ```
 
@@ -267,14 +296,14 @@ head(propensityModel)
 
 We can use the propensity scores to trim, match, or stratify our population. For example, one could first trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
-```{r tidy=TRUE,eval=FALSE}
-  psTrimmed <- trimByPsToEquipoise(ps)  
-  plotPs(psTrimmed, ps, scale = "preference")
+```{r tidy=TRUE,eval=TRUE}
+psTrimmed <- trimByPsToEquipoise(ps)  
+plotPs(psTrimmed, ps, scale = "preference")
 ```
 
 We can then match subjects based on propensity scores:
 
-```{r tidy=TRUE,eval=FALSE}
+```{r tidy=TRUE,eval=TRUE}
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   plotPs(strata,ps)
 ```
@@ -283,11 +312,14 @@ We can then match subjects based on propensity scores:
 
 To evaluate whether our use of the propensity score is indeed making the two cohorts more comparable, we can compute the covariate balance before and after trimming, matching, and/or stratifying:
 
---Todo: replace concept ID with 3
 ```{r tidy=TRUE,eval=FALSE}
- balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
- plotCovariateBalanceScatterPlot(balance)
- plotCovariateBalanceOfTopVariables(balance)
+balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
+```
+```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
+data(vignetteBalance)
+```{r tidy=TRUE,eval=TRUE}
+plotCovariateBalanceScatterPlot(balance)
+plotCovariateBalanceOfTopVariables(balance)
 ```
 
 # Fitting the outcome model
