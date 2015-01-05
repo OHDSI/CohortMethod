@@ -223,13 +223,12 @@ cohortData <- getDbCohortData(connectionDetails,
 ```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
 if (file.exists("c:/temp/vignetteCohortData")){
   cohortData <- loadCohortData("c:/temp/vignetteCohortData")
-} else {
-  data(vignetteSimulationProfile)
-  cohortData <- simulateCohortData(vignetteSimulationProfile, n=1000)
-}
+} 
 ```
 ```{r echo=FALSE,message=FALSE}
-cohortData
+if (file.exists("c:/temp/vignetteCohortData")){
+  cohortData
+}
 ```
 
 There are a lot of parameters, but they are all documented in the CohortMethod manual. In short, we're pointing the function to the table created earlier and indicate which concept IDs in that table identify the target, comparator and outcome. We further instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
@@ -237,10 +236,14 @@ There are a lot of parameters, but they are all documented in the CohortMethod m
 All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the cohortData object. This object uses the package ff to store information in a way that ensures R does not run out of memory, even when there is lots of data. 
 
 We can use the generic `summary()` function to view some more information of the data we extracted:
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 summary(cohortData)
 ```
-
+```{r echo=FALSE,message=FALSE}
+if (file.exists("c:/temp/vignetteCohortData")){
+  summary(cohortData)
+}
+```
 
 ### Saving the data to file
 
@@ -287,11 +290,16 @@ plotPs(ps, scale = "preference")
 
 It is also possible to inspect the propensity model itself:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 propensityModel <- getPsModel(ps, cohortData)
 head(propensityModel)  
 ```
-
+```{r echo=FALSE,message=FALSE}
+if (file.exists("c:/temp/vignetteCohortData")){
+  propensityModel <- getPsModel(ps, cohortData)
+  head(propensityModel)  
+}
+```
 ## Using the propensity score
 
 We can use the propensity scores to trim, match, or stratify our population. For example, one could first trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
