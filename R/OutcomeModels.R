@@ -95,6 +95,8 @@ createDataForModelFitPoisson <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
+      informativeStrata <- unique(data$stratumId[data$y == 1])
+      data <- data[data$stratumId %in% informativeStrata,]
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
       result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
@@ -142,6 +144,8 @@ createDataForModelFitLogistic <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
+      informativeStrata <- unique(data$stratumId[data$y == 1])
+      data <- data[data$stratumId %in% informativeStrata,]
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","stratumId")]))
       result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
