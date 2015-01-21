@@ -146,7 +146,9 @@ In this code, we first read the SQL from the file into memory. In the next line,
 If all went well, we now have a table with the events of interest. We can see how many events per type:
 
 ```{r tidy=FALSE,eval=FALSE}
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
+sql <- paste("SELECT cohort_definition_id, COUNT(*) AS count",
+             "FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed",
+             "GROUP BY cohort_definition_id")
 sql <- renderSql(sql, resultsSchema = resultsSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
@@ -162,7 +164,11 @@ Now we can tell CohortMethod to define the cohorts based on our events, and extr
 
 ```{r tidy=FALSE,eval=FALSE}
 # Get all NSAID Concept IDs for exclusion:
-sql <- "SELECT concept_id FROM concept_ancestor INNER JOIN concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+sql <- paste("SELECT concept_id",
+             "FROM concept_ancestor",
+             "INNER JOIN concept",
+             "ON descendant_concept_id = concept_id",
+             "WHERE ancestor_concept_id = 21603933")
 nsaids <- querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
   
@@ -297,8 +303,14 @@ head(propensityModel)
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("c:/temp/vignetteCohortData")){
   propensityModel <- getPsModel(ps, cohortData)
+  truncRight <- function(x, n){
+    nc <- nchar(x)
+    x[nc > (n-3)] <- paste('...',substr(x[nc > (n-3)], nc[nc > (n-3)]-n+1, nc[nc > (n-3)]),sep="")
+    x
+  }
+  propensityModel$covariateName <- truncRight(as.character(propensityModel$covariateName),40)
   head(propensityModel)  
-}
+  }
 ```
 ## Using the propensity score
 
@@ -325,7 +337,8 @@ balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
 ```
 ```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
 data(vignetteBalance)
-```{r tidy=TRUE,eval=TRUE}
+```
+```{r tidy=TRUE,eval=TRUE,warning=FALSE,fig.width=8,fig.height=5}
 plotCovariateBalanceScatterPlot(balance)
 plotCovariateBalanceOfTopVariables(balance)
 ```
@@ -334,17 +347,15 @@ plotCovariateBalanceOfTopVariables(balance)
 
 The next step is fitting the outcome model. In theory we could fit an outcome model without using the propensity scores:
 
---todo: conceptID to 3
 ```{r tidy=FALSE,eval=FALSE}
-outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
+outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                 cohortData = cohortData,
                                 riskWindowStart = 0, 
                                 riskWindowEnd = 30,
                                 addExposureDaysToEnd = TRUE,
                                 useCovariates = FALSE, 
                                 modelType = "cox",
-                                stratifiedCox = FALSE,
-                                prior=createPrior("laplace",0.1)) 
+                                stratifiedCox = FALSE) 
 outcomeModel
 ```
 
@@ -353,7 +364,7 @@ In this example we're fitting an outcome model using a Cox regression. The risk 
 But of course we want to make use of the trimming and matching done on the propensity score:
 
 ```{r tidy=FALSE,eval=FALSE}
-outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
+outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                 cohortData = cohortData,
                                 subPopulation = strata,
                                 riskWindowStart = 0, 
@@ -361,8 +372,7 @@ outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
                                 addExposureDaysToEnd = TRUE,
                                 useCovariates = FALSE, 
                                 modelType = "cox",
-                                stratifiedCox = TRUE,
-                                prior=createPrior("laplace",0.1)) 
+                                stratifiedCox = TRUE) 
 outcomeModel
 ```
 
@@ -371,7 +381,7 @@ Note that we define the subpopulation to be only those in the *strata* object, w
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the Cyclops package. (Note that the treatment variable is automatically excluded from regularization.)
 
 ```{r tidy=FALSE,eval=FALSE}
-outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
+outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                 cohortData = cohortData,
                                 subPopulation = strata,
                                 riskWindowStart = 0, 
@@ -379,8 +389,7 @@ outcomeModel <- fitOutcomeModel(outcomeConceptId = 194133,
                                 addExposureDaysToEnd = TRUE,
                                 useCovariates = TRUE, 
                                 modelType = "cox",
-                                stratifiedCox = TRUE,
-                                prior=createPrior("laplace",0.1)) 
+                                stratifiedCox = TRUE) 
 outcomeModel
 ```
 

@@ -1,23 +1,24 @@
-library("testthat")
-
-# This is a broad, shallow sweep of all functionality. It checks whether the code produces 
-# an output (and does not throw an error) under a wide range of parameter settings 
-
-data(cohortDataSimulationProfile)
-sampleSize <- 1000
-cohortData <- simulateCohortData(cohortDataSimulationProfile, n=sampleSize)
-
-test_that("CohortData functions", {
-  s <- summary(cohortData)
-  expect_is(s,"summary.cohortData")
-  expect_equal(s$treatedPersons + s$comparatorPersons,sampleSize)
-})
-
+# library("testthat")
+# 
+# # This is a broad, shallow sweep of all functionality. It checks whether the code produces 
+# # an output (and does not throw an error) under a wide range of parameter settings 
+# 
+# print(getOption("fftempdir"))
+# data(cohortDataSimulationProfile)
+# sampleSize <- 1000
+# cohortData <- simulateCohortData(cohortDataSimulationProfile, n=sampleSize)
+# 
+# test_that("CohortData functions", {
+#   s <- summary(cohortData)
+#   expect_is(s,"summary.cohortData")
+#   expect_equal(s$treatedPersons + s$comparatorPersons,sampleSize)
+# })
+# 
 # test_that("Propensity score functions", {
 #   #Cross-validation:
 #   ps <- createPs(cohortData,outcomeConceptId = 194133)
 #   
-#   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
+#   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace", 0.1, exclude = 0))
 #   expect_less_than(0.7,computePsAuc(ps)[1])
 #   
 #   propensityModel <- getPsModel(ps,cohortData)
@@ -51,7 +52,7 @@ test_that("CohortData functions", {
 # })
 # 
 # test_that("Balance functions", {    
-#   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
+#   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1, exclude=0))
 #   psTrimmed <- trimByPsToEquipoise(ps)
 #   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
 #   
@@ -66,7 +67,7 @@ test_that("CohortData functions", {
 # })
 # 
 # test_that("Outcome functions", {    
-#   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
+#   ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1,exclude=0))
 #   psTrimmed <- trimByPsToEquipoise(ps)
 #   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
 #   

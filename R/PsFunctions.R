@@ -718,7 +718,7 @@ computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConce
 plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
   balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
   balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
-  limits=c(0,max(c(balance$beforeMatchingStdDiff,balance$afterMatchingStdDiff)))
+  limits <- c(0,max(c(balance$beforeMatchingStdDiff,balance$afterMatchingStdDiff),na.rm = TRUE))
   plot <- ggplot2::ggplot(balance, ggplot2::aes(x=beforeMatchingStdDiff,y=afterMatchingStdDiff)) + 
     ggplot2::geom_point(color = rgb(0,0,0.8,alpha=0.3)) +
     ggplot2::geom_abline(a = 1) + 
@@ -731,6 +731,12 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
   return(plot)
 }  
 
+.truncRight <- function(x, n){
+  nc <- nchar(x)
+  x[nc > (n-3)] <- paste('...',substr(x[nc > (n-3)], nc[nc > (n-3)]-n+1, nc[nc > (n-3)]),sep="")
+  x
+}
+
 #' Plot variables with largest imbalance
 #'
 #' @description
@@ -741,11 +747,12 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
 #' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
 #'
 #' @param balance  A data frame created by the \code{computeCovariateBalance} funcion.
+#' @param maxNameWidth  Covariate names longer than this number of characters are truncated to create a nicer plot.
 #' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
 #' function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
 #' @export
-plotCovariateBalanceOfTopVariables <- function(balance, n = 20, fileName=NULL) {
+plotCovariateBalanceOfTopVariables <- function(balance, n = 20, maxNameWidth = 100, fileName=NULL) {
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)),]
   topBefore <- topBefore[1:n,]
   topBefore$facet <- paste("Top",n,"before matching")
@@ -760,6 +767,7 @@ plotCovariateBalanceOfTopVariables <- function(balance, n = 20, fileName=NULL) {
                      group = rep(c("before matching","after matching"),each=nrow(filtered)),
                      facet = rep(filtered$facet,2),
                      rowId = rep(nrow(filtered):1,2))
+  filtered$covariateName <- .truncRight(as.character(filtered$covariateName),maxNameWidth)
   data$facet <- factor(data$facet, levels = rev(levels(data$facet)))
   data$group <- factor(data$group, levels = rev(levels(data$group)))
   plot <- ggplot2::ggplot(data, ggplot2::aes(x=difference,y=rowId,color=group,group=group,fill=group,shape=group)) + 

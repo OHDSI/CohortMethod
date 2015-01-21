@@ -7,7 +7,7 @@ fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
   stratifiedCox = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
-  TRUE), control = createControl(lowerLimit = 0.01, upperLimit = 10, fold = 5,
+  TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
   noiseLevel = "quiet"))
 }
 \arguments{

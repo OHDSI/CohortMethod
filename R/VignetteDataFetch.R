@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-vignetteDataFetch <- function(){
+.vignetteDataFetch <- function(){
   # This function should be used to fetch the data that is used in the vignettes.
   library(SqlRender)
   library(DatabaseConnector)
@@ -38,7 +38,6 @@ vignetteDataFetch <- function(){
   
   connection <- connect(connectionDetails)
   executeSql(connection, sql)
-  
   
   # Check number of subjects per cohort:
   sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
@@ -106,15 +105,50 @@ vignetteDataFetch <- function(){
   
   saveCohortData(cohortData,"vignetteCohortData")
   
-  vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
-  save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")
+  #vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
+  #save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")
+  
   #cohortData <- loadCohortData("vignetteCohortData")
   ps <- createPs(cohortData,outcomeConceptId = 3, checkSorting = FALSE, control = createControl(noiseLevel = "silent",threads = 10))
   save(ps, file = "vignettePs.rda")
+  
   #load("vignettePs.rda")
   psTrimmed <- trimByPsToEquipoise(ps)  
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
   save(balance, file = "vignetteBalance.rda")
 
+  #load("vignetteBalance.rda")
+  
+  outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
+                                  cohortData = cohortData,
+                                  riskWindowStart = 0, 
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE,
+                                  useCovariates = FALSE, 
+                                  modelType = "cox",
+                                  stratifiedCox = FALSE) 
+  save(outcomeModel,file = "vignetteOutcome1.rda")
+  
+  outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
+                                  cohortData = cohortData,
+                                  subPopulation = strata,
+                                  riskWindowStart = 0, 
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE,
+                                  useCovariates = FALSE, 
+                                  modelType = "cox",
+                                  stratifiedCox = TRUE)
+  save(outcomeModel,file = "vignetteOutcome2.rda")
+  
+  outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
+                                  cohortData = cohortData,
+                                  subPopulation = strata,
+                                  riskWindowStart = 0, 
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE,
+                                  useCovariates = TRUE, 
+                                  modelType = "cox",
+                                  stratifiedCox = TRUE)
+  save(outcomeModel,file = "vignetteOutcome3.rda") 
 }

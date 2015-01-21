@@ -42,6 +42,8 @@ createDataForModelFitCox <- function(useStrata,
   result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
   if (useCovariates) { 
     if (useStrata){
+      informativeStrata <- unique(data$stratumId[data$y == 1])
+      data <- data[data$stratumId %in% informativeStrata,]
       covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time","stratumId")]))
       result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
@@ -298,7 +300,7 @@ fitOutcomeModel <- function(outcomeConceptId,
                             fitModel = TRUE,
                             modelType = "cox",
                             prior = createPrior("laplace", useCrossValidation = TRUE),
-                            control = createControl(lowerLimit=0.01, upperLimit=10, fold=5, noiseLevel = "quiet")){
+                            control = createControl(cvType = "auto",startingVariance = 0.1, noiseLevel = "quiet")){
   dataObject <- createDataForModelFit(outcomeConceptId,cohortData,subPopulation,stratifiedCox,riskWindowStart,riskWindowEnd,addExposureDaysToEnd,useCovariates,modelType)
   
   treatmentEstimate <- NULL
