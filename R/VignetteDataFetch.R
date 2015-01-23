@@ -23,6 +23,9 @@
   library(CohortMethod)
   setwd("c:/temp")
   
+  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
+  
+  
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
@@ -68,38 +71,38 @@
                                 exposureTable = "coxibVsNonselVsGiBleed",
                                 outcomeSchema = resultsSchema,
                                 outcomeTable = "coxibVsNonselVsGiBleed",
-								useCovariateDemographics = TRUE,
-								useCovariateConditionOccurrence = TRUE,
-								useCovariateConditionOccurrence365d = TRUE,
-								useCovariateConditionOccurrence30d = TRUE,
-								useCovariateConditionOccurrenceInpt180d = TRUE,
-								useCovariateConditionEra = TRUE,
-								useCovariateConditionEraEver = TRUE,
-								useCovariateConditionEraOverlap = TRUE,
-								useCovariateConditionGroup = TRUE,
-								useCovariateDrugExposure = TRUE,
-								useCovariateDrugExposure365d = TRUE,
-								useCovariateDrugExposure30d = TRUE,
-								useCovariateDrugEra = TRUE,
-								useCovariateDrugEra365d = TRUE,
-								useCovariateDrugEra30d = TRUE,
-								useCovariateDrugEraEver = TRUE,
-								useCovariateDrugEraOverlap = TRUE,
-								useCovariateDrugGroup = TRUE,
-								useCovariateProcedureOccurrence = TRUE,
-								useCovariateProcedureOccurrence365d = TRUE,
-								useCovariateProcedureOccurrence30d = TRUE,
-								useCovariateProcedureGroup = TRUE,
-								useCovariateObservation = TRUE,
-								useCovariateObservation365d = TRUE,
-								useCovariateObservation30d = TRUE,
-								useCovariateObservationBelow = TRUE,
-								useCovariateObservationAbove = TRUE,
-								useCovariateObservationCount365d = TRUE,
-								useCovariateConceptCounts = TRUE,
-								useCovariateRiskScores = TRUE,
-								useCovariateInteractionYear = FALSE,
-								useCovariateInteractionMonth = FALSE,
+                                useCovariateDemographics = TRUE,
+                                useCovariateConditionOccurrence = TRUE,
+                                useCovariateConditionOccurrence365d = TRUE,
+                                useCovariateConditionOccurrence30d = TRUE,
+                                useCovariateConditionOccurrenceInpt180d = TRUE,
+                                useCovariateConditionEra = TRUE,
+                                useCovariateConditionEraEver = TRUE,
+                                useCovariateConditionEraOverlap = TRUE,
+                                useCovariateConditionGroup = TRUE,
+                                useCovariateDrugExposure = TRUE,
+                                useCovariateDrugExposure365d = TRUE,
+                                useCovariateDrugExposure30d = TRUE,
+                                useCovariateDrugEra = TRUE,
+                                useCovariateDrugEra365d = TRUE,
+                                useCovariateDrugEra30d = TRUE,
+                                useCovariateDrugEraEver = TRUE,
+                                useCovariateDrugEraOverlap = TRUE,
+                                useCovariateDrugGroup = TRUE,
+                                useCovariateProcedureOccurrence = TRUE,
+                                useCovariateProcedureOccurrence365d = TRUE,
+                                useCovariateProcedureOccurrence30d = TRUE,
+                                useCovariateProcedureGroup = TRUE,
+                                useCovariateObservation = TRUE,
+                                useCovariateObservation365d = TRUE,
+                                useCovariateObservation30d = TRUE,
+                                useCovariateObservationBelow = TRUE,
+                                useCovariateObservationAbove = TRUE,
+                                useCovariateObservationCount365d = TRUE,
+                                useCovariateConceptCounts = TRUE,
+                                useCovariateRiskScores = TRUE,
+                                useCovariateInteractionYear = FALSE,
+                                useCovariateInteractionMonth = FALSE,
                                 excludedCovariateConceptIds = nsaids, 
                                 deleteCovariatesSmallCount = 100)
   
@@ -113,11 +116,11 @@
   save(ps, file = "vignettePs.rda")
   
   #load("vignettePs.rda")
-  psTrimmed <- trimByPsToEquipoise(ps)  
-  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  #psTrimmed <- trimByPsToEquipoise(ps)  
+  strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
   save(balance, file = "vignetteBalance.rda")
-
+  
   #load("vignetteBalance.rda")
   
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,

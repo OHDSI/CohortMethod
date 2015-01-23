@@ -226,7 +226,7 @@ cohortData <- getDbCohortData(connectionDetails,
                               deleteCovariatesSmallCount = 100)
  cohortData
 ```
-```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("c:/temp/vignetteCohortData")){
   cohortData <- loadCohortData("c:/temp/vignetteCohortData")
 } 
@@ -253,10 +253,10 @@ if (file.exists("c:/temp/vignetteCohortData")){
 
 ### Saving the data to file
 
-Creating the cohortData file can be expensive, and it is probably a good idea to save it for future sessions. Because cohortData uses ff, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortData()` function:
+Creating the cohortData file can take a lot of computing time, and it is probably a good idea to save it for future sessions. Because cohortData uses ff, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortData()` function:
 
 ```{r tidy=TRUE,eval=FALSE}
-saveCohortData(cohortData,"coxibVsNonselVsGiBleed")
+saveCohortData(cohortData, "coxibVsNonselVsGiBleed")
 ```
 
 We can use the `loadCohortData()` function to load the data in a future session.
@@ -272,13 +272,13 @@ We can fit a propensity model using the covariates constructed by the `getDbCoho
 ```{r tidy=TRUE,eval=FALSE}
 ps <- createPs(cohortData, outcomeConceptId = 3)
 ```
-```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,eval=TRUE}
 data(vignettePs)
 ```
 
 The `createPs()` function uses the Cyclops package to fit a large scale regularized logistic regression. Note that We have to tell createPs what the outcomeConceptId is for which we will use the model so it can remove subjects who had the outcome prior to index date before fitting the model. 
 
-To fit the propensity model, Cyclops needs to know the hyperparameter value. By default Cyclops will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify Cyclops' behaviour, including using multiple threads to speed up the cross-validation. 
+To fit the propensity model, Cyclops needs to know the hyperparameter value which specifies the variance of the prior. By default Cyclops will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify Cyclops' behaviour, including using multiple CPUs to speed up the cross-validation. 
 
 ## Propensity score diagnostics
 
@@ -294,7 +294,7 @@ We can also plot the propensity score distribution, although we prefer the prefe
 plotPs(ps, scale = "preference")
 ```
 
-It is also possible to inspect the propensity model itself:
+It is also possible to inspect the propensity model itself by showing the covariates that have non-zero coefficients:
 
 ```{r tidy=TRUE,eval=FALSE}
 propensityModel <- getPsModel(ps, cohortData)
@@ -312,6 +312,9 @@ if (file.exists("c:/temp/vignetteCohortData")){
   head(propensityModel)  
   }
 ```
+
+One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example instrumental variables..
+
 ## Using the propensity score
 
 We can use the propensity scores to trim, match, or stratify our population. For example, one could first trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
@@ -321,11 +324,11 @@ psTrimmed <- trimByPsToEquipoise(ps)
 plotPs(psTrimmed, ps, scale = "preference")
 ```
 
-We can then match subjects based on propensity scores:
+We can also match subjects based on propensity scores:
 
 ```{r tidy=TRUE,eval=TRUE}
-  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  plotPs(strata,ps)
+  strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  plotPs(strata, ps)
 ```
 
 ## Evaluating covariate balance
@@ -335,7 +338,7 @@ To evaluate whether our use of the propensity score is indeed making the two coh
 ```{r tidy=TRUE,eval=FALSE}
 balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
 ```
-```{r echo=FALSE,message=FALSE,comment=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,eval=TRUE}
 data(vignetteBalance)
 ```
 ```{r tidy=TRUE,eval=TRUE,warning=FALSE,fig.width=8,fig.height=5}
@@ -358,10 +361,13 @@ outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                 stratifiedCox = FALSE) 
 outcomeModel
 ```
-
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+data(vignetteOutcome1)
+outcomeModel
+```
 In this example we're fitting an outcome model using a Cox regression. The risk window is defined as time of exposure + 30 days.
 
-But of course we want to make use of the trimming and matching done on the propensity score:
+But of course we want to make use of the matching done on the propensity score:
 
 ```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
@@ -375,8 +381,12 @@ outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                 stratifiedCox = TRUE) 
 outcomeModel
 ```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+data(vignetteOutcome2)
+outcomeModel
+```
 
-Note that we define the subpopulation to be only those in the *strata* object, which we created earlier by trimming to equipoise and matching on propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+Note that we define the subpopulation to be only those in the *strata* object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
 
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the Cyclops package. (Note that the treatment variable is automatically excluded from regularization.)
 
@@ -392,16 +402,20 @@ outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                 stratifiedCox = TRUE) 
 outcomeModel
 ```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+data(vignetteOutcome3)
+outcomeModel
+```
 
 We can create the Kaplan-Meier plot:
 
-```{r tidy=TRUE,eval=FALSE}
+```{r tidy=TRUE,eval=TRUE}
 plotKaplanMeier(outcomeModel)
 ```
 
 We can inspect more details of the outcome model:
 
-```{r tidy=TRUE,eval=FALSE}
+```{r tidy=TRUE,eval=TRUE}
 summary(outcomeModel)
 coef(outcomeModel)
 confint(outcomeModel)
@@ -413,4 +427,8 @@ We can also see the covariates that ended up in the outcome model:
 fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
 head(fullOutcomeModel)
 ```
-
+```{r echo=FALSE,message=FALSE}
+fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
+head(fullOutcomeModel)  
+```

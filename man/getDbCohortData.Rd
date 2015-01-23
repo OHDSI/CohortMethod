@@ -144,12 +144,25 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
 }
 \value{
 Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,
-and baseline covariates.
+and baseline covariates. Information about multiple outcomes can be captured at once for efficiency reasons. This object is a list with the following components:
+\describe{
+  \item{outcomes}{An ffdf object listing the outcomes per person, including the time to event, and the outcome conncept ID. Outcomes are not yet filtered based on risk window, since this is done at a later stage.}
+  \item{cohorts}{An ffdf object listing the persons in each cohort, listing their exposure status as well as the time to the end of the observation period and time to the end of the cohort (usually the end of the exposure era).}
+  \item{covariates}{An ffdf object listing the baseline covariates per person in the two cohorts. This is done using a sparse representation: covariates with a value of 0 are omitted to save space.}
+  \item{exclude}{An ffdf object listing for each outcome concept ID the persons that need to be excluded from the analysis because of prior outcomes.}
+  \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
+  \item{metaData}{A list of objects with information on how the cohortData object was constructed.}
+}
+
+The generic \code{summary()} function has been implemented for this object.
 }
 \description{
-Todo: add description
+This function executes a large set of SQL statements against the database in OMOP CDM format to extract the data needed to perform the analysis.
 }
 \details{
-Todo: add details
+Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates at or before the index date are extracted, as well as outcomes occurring on or after the index date.
+The treatment and comparator cohorts can be identified using the drug_exposure or drug_era, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
+Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
+Covariates are automatically extracted from the appropriate tables within the CDM.
 }
 

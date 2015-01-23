@@ -8,7 +8,7 @@ fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
   TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
-  noiseLevel = "quiet"))
+  selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
