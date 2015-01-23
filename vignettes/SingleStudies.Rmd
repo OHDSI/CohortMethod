@@ -428,7 +428,10 @@ fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
 head(fullOutcomeModel)
 ```
 ```{r echo=FALSE,message=FALSE}
-fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
-fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
-head(fullOutcomeModel)  
+```{r echo=FALSE,message=FALSE}
+if (file.exists("c:/temp/vignetteCohortData")){
+  fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+  fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
+  head(fullOutcomeModel)  
+}
 ```
