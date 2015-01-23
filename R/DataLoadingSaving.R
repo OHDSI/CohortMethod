@@ -36,7 +36,7 @@ snakeCaseToCamelCase <- function(string){
 #'
 #' @details
 #' Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates at or before the index date are extracted, as well as outcomes occurring on or after the index date.
-#' The treatment and comparator cohorts can be identified using the drug_exposure or drug_era, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
+#' The treatment and comparator cohorts can be identified using the drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
 #' Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
 #' Covariates are automatically extracted from the appropriate tables within the CDM.
 #'
@@ -123,7 +123,7 @@ getDbCohortData <- function(connectionDetails,
                             studyEndDate = "",
                             exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                             outcomeConceptIds = 194133,
-                            outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
+                            outcomeConditionTypeConceptIds = c(),
                             exposureSchema = cdmSchema,
                             exposureTable = "drug_era",
                             outcomeSchema = cdmSchema,
@@ -178,9 +178,9 @@ getDbCohortData <- function(connectionDetails,
                                                    outcome_concept_ids = outcomeConceptIds,
                                                    outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
                                                    exposure_schema = exposureSchema,
-                                                   exposure_table = exposureTable,
+                                                   exposure_table = tolower(exposureTable),
                                                    outcome_schema = outcomeSchema,
-                                                   outcome_table = outcomeTable,
+                                                   outcome_table = tolower(outcomeTable),
                                                    use_covariate_demographics = useCovariateDemographics,
                                                    use_covariate_condition_occurrence = useCovariateConditionOccurrence,
                                                    use_covariate_condition_occurrence_365d = useCovariateConditionOccurrence365d,

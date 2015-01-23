@@ -26,7 +26,7 @@ testCode <- function(){
   #Part one: loading the data:
   connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
    
-  cohortData <- getDbCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema)
+  cohortData <- getDbCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema,outcomeTable = "condition_occurrence")
   
   saveCohortData(cohortData,"mdcrCohortData")
     
