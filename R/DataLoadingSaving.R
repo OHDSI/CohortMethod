@@ -112,17 +112,17 @@ snakeCaseToCamelCase <- function(string){
 #'
 #' @export
 getDbCohortData <- function(connectionDetails,
-                            cdmSchema = "CDM4_SIM",
-                            resultsSchema = "scratch",
-                            targetDrugConceptId = 755695,
-                            comparatorDrugConceptId = 739138,
-                            indicationConceptIds = 439926,
+                            cdmSchema,
+                            resultsSchema,
+                            targetDrugConceptId,
+                            comparatorDrugConceptId,
+                            indicationConceptIds = c(),
                             washoutWindow = 183,
                             indicationLookbackWindow = 183,
                             studyStartDate = "",
                             studyEndDate = "",
-                            exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
-                            outcomeConceptIds = 194133,
+                            exclusionConceptIds = c(),
+                            outcomeConceptIds,
                             outcomeConditionTypeConceptIds = c(),
                             exposureSchema = cdmSchema,
                             exposureTable = "drug_era",
@@ -160,7 +160,7 @@ getDbCohortData <- function(connectionDetails,
                             useCovariateRiskScores = FALSE,
                             useCovariateInteractionYear = FALSE,
                             useCovariateInteractionMonth = FALSE,
-                            excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                            excludedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
   renderedSql <- SqlRender::loadRenderTranslateSql("CohortMethod.sql",
                                                    packageName = "CohortMethod",
@@ -219,53 +219,93 @@ getDbCohortData <- function(connectionDetails,
   conn <- DatabaseConnector::connect(connectionDetails)
   
   writeLines("Executing multiple queries. This could take a while")
-  DatabaseConnector::executeSql(conn,renderedSql)
+  DatabaseConnector::executeSql(conn, renderedSql)
   
+  # Build queries for extracting data:
   cohortSql <-"SELECT row_id, cohort_id AS treatment, person_id, datediff(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end, datediff(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end FROM #cohort_person ORDER BY row_id"
-  cohortSql <- SqlRender::translateSql(cohortSql,"sql server",connectionDetails$dbms)$sql
+  cohortSql <- SqlRender::translateSql(cohortSql, "sql server", connectionDetails$dbms)$sql
   
   covariateSql <-"SELECT row_id, covariate_id,covariate_value FROM #cohort_covariate ORDER BY row_id, covariate_id"
-  covariateSql <- SqlRender::translateSql(covariateSql,"sql server",connectionDetails$dbms)$sql
+  covariateSql <- SqlRender::translateSql(covariateSql, "sql server", connectionDetails$dbms)$sql
   
   outcomeSql <-"SELECT row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, row_id"
-  outcomeSql <- SqlRender::translateSql(outcomeSql,"sql server",connectionDetails$dbms)$sql
+  outcomeSql <- SqlRender::translateSql(outcomeSql, "sql server", connectionDetails$dbms)$sql
   
   excludeSql <-"SELECT row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, row_id"
-  excludeSql <- SqlRender::translateSql(excludeSql,"sql server",connectionDetails$dbms)$sql
+  excludeSql <- SqlRender::translateSql(excludeSql, "sql server", connectionDetails$dbms)$sql
   
   covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
-  covariateRefSql <- SqlRender::translateSql(covariateRefSql,"sql server",connectionDetails$dbms)$sql
+  covariateRefSql <- SqlRender::translateSql(covariateRefSql, "sql server", connectionDetails$dbms)$sql
+  
+  rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
+                                                   packageName = "CohortMethod",
+                                                   dbms = connectionDetails$dbms,
+                                                   cdm_schema = cdmSchema,
+                                                   target_drug_concept_id = targetDrugConceptId,
+                                                   comparator_drug_concept_id = comparatorDrugConceptId,
+                                                   study_start_date = studyStartDate,
+                                                   study_end_date = studyEndDate,
+                                                   exposure_schema = exposureSchema,
+                                                   exposure_table = tolower(exposureTable))
+  
+  newUserCountSql <-"SELECT COUNT(*) AS new_user_count,cohort_id FROM #new_user_cohort GROUP BY cohort_id"
+  newUserCountSql <- SqlRender::translateSql(newUserCountSql, "sql server", connectionDetails$dbms)$sql
+  
+  indicatedCountSql <-"SELECT COUNT(*) AS indicated_count,cohort_id FROM #indicated_cohort GROUP BY cohort_id"
+  indicatedCountSql <- SqlRender::translateSql(indicatedCountSql, "sql server", connectionDetails$dbms)$sql
+  
+  nonOverlapCountSql <-"SELECT COUNT(*) AS non_overlap_count,cohort_id FROM #non_overlap_cohort GROUP BY cohort_id"
+  nonOverlapCountSql <- SqlRender::translateSql(nonOverlapCountSql, "sql server", connectionDetails$dbms)$sql
+
+  notExcludedCountSql <-"SELECT COUNT(*) AS not_excluded_count,cohort_id FROM #cohort_person GROUP BY cohort_id"
+  notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql, "sql server", connectionDetails$dbms)$sql
   
   writeLines("Fetching data from server")
   start <- Sys.time()
-  outcomes <- DatabaseConnector::dbGetQuery.ffdf(conn,outcomeSql)
-  cohorts <-  DatabaseConnector::dbGetQuery.ffdf(conn,cohortSql)
-  covariates <- DatabaseConnector::dbGetQuery.ffdf(conn,covariateSql)
-  exclude <- DatabaseConnector::dbGetQuery.ffdf(conn,excludeSql)
-  covariateRef <- DatabaseConnector::dbGetQuery.ffdf(conn,covariateRefSql)
+  outcomes <- DatabaseConnector::dbGetQuery.ffdf(conn, outcomeSql)
+  cohorts <-  DatabaseConnector::dbGetQuery.ffdf(conn, cohortSql)
+  covariates <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateSql)
+  exclude <- DatabaseConnector::dbGetQuery.ffdf(conn, excludeSql)
+  covariateRef <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateRefSql)
+  rawCount <- DatabaseConnector::querySql(conn, rawCountSql)
+  newUserCount <- DatabaseConnector::querySql(conn, newUserCountSql)
+  counts <- merge(rawCount, newUserCount)
+  if (length(indicationConceptIds) != 0){
+    indicatedCount <- DatabaseConnector::querySql(conn, indicatedCountSql)
+    counts <- merge(counts, indicatedCount)
+  }
+  nonOverlapCount <- DatabaseConnector::querySql(conn, nonOverlapCountSql)
+  counts <- merge(counts, nonOverlapCount)
+  notExcludedCount <- DatabaseConnector::querySql(conn, notExcludedCountSql)
+  counts <- merge(counts, notExcludedCount)  
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
+  
   #Remove temp tables:
   if (connectionDetails$dbms == "oracle"){
     renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
                                                      packageName = "CohortMethod",
-                                                     dbms = connectionDetails$dbms)
-    
+                                                     dbms = connectionDetails$dbms,
+                                                     indication_concept_ids = indicationConceptIds)
     DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE,profile=TRUE)
   }
+  
   colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
   colnames(cohorts) <- snakeCaseToCamelCase(colnames(cohorts))
   colnames(covariates) <- snakeCaseToCamelCase(colnames(covariates))
   colnames(exclude) <- snakeCaseToCamelCase(colnames(exclude))
   colnames(covariateRef) <- snakeCaseToCamelCase(colnames(covariateRef))
+  colnames(counts) <- snakeCaseToCamelCase(colnames(counts))
+  counts <- counts[order(counts$cohortId),]
+  
   dummy <- RJDBC::dbDisconnect(conn)
   metaData <- list(sql = renderedSql,
                    targetDrugConceptId = targetDrugConceptId,
                    comparatorDrugConceptId = comparatorDrugConceptId,
                    outcomeConceptIds = outcomeConceptIds,
+                   counts = counts,
                    call = match.call()
   )
-  
   
   result <- list(outcomes = outcomes,
                  cohorts = cohorts,
@@ -274,6 +314,13 @@ getDbCohortData <- function(connectionDetails,
                  covariateRef = covariateRef,
                  metaData = metaData
   )
+  
+  #Open all ffdfs to prevent annoying messages later:
+  open(result$outcomes,readonly = readOnly)
+  open(result$cohorts,readonly = readOnly)
+  open(result$covariates,readonly = readOnly)
+  open(result$exclude,readonly = readOnly)
+  open(result$covariateRef,readonly = readOnly)
   
   class(result) <- "cohortData"
   return(result)
@@ -414,4 +461,3 @@ print.summary.cohortData <- function(data){
   writeLines(paste("Number of covariates:",data$covariateCount))
   writeLines(paste("Number of non-zero covariate values:",data$covariateValueCount)) 
 }
-

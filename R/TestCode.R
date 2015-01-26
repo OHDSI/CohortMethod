@@ -3,15 +3,15 @@ testCode <- function(){
   library(CohortMethod)
   setwd("c:/temp")
   
-  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
+  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "s:/temp")
 
   #Settings for running SQL against JnJ Sql Server:
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
   server <- "RNDUSRDHIT07"
-  #cdmSchema <- "cdm4_sim"
-  cdmSchema <- "CDM_Truven_MDCR"
+  cdmSchema <- "cdm4_sim"
+  #cdmSchema <- "CDM_Truven_MDCR"
   resultsSchema <- "scratch"
   port <- NULL
   
@@ -26,17 +26,26 @@ testCode <- function(){
   #Part one: loading the data:
   connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
    
-  cohortData <- getDbCohortData(connectionDetails,cdmSchema=cdmSchema,resultsSchema=resultsSchema,outcomeTable = "condition_occurrence")
+  cohortData <- getDbCohortData(connectionDetails,
+                                cdmSchema=cdmSchema,
+                                resultsSchema=resultsSchema,
+                                targetDrugConceptId = 755695,
+                                comparatorDrugConceptId = 739138,
+                                indicationConceptIds = 439926,
+                                exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                                outcomeConceptIds = 194133,
+                                excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019)
+                                )
   
-  saveCohortData(cohortData,"mdcrCohortData")
+  saveCohortData(cohortData,"cohortData")
     
-  cohortData <- loadCohortData("mdcrCohortData") 
+  cohortData <- loadCohortData("cohortData") 
   #cohortData <- loadCohortData("mdcrCohortData", readOnly = TRUE) 
   
   summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
-  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
+  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1,exclude=c(0)))
   ps <- createPs(cohortData,outcomeConceptId = 194133)
    
   computePsAuc(ps)
@@ -88,4 +97,6 @@ testCode <- function(){
   coef(outcomeModel)
   
   confint(outcomeModel)
+  
+  drawAttritionDiagram(outcomeModel)
 }

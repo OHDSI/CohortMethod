@@ -23,9 +23,9 @@
 
 in.ff <- function(a,b){
   if (length(b) == 0)
-    return(as.ff(rep(FALSE,length(a))))
+    return(as.ff(rep(FALSE, length(a))))
   else
-    return(ffbase::ffmatch(x=a, table=b, nomatch = 0L) > 0L)
+    return(ffbase::ffmatch(x = a, table=b, nomatch = 0L) > 0L)
 }
 
 #' Create propensity scores
@@ -57,7 +57,7 @@ createPs <- function(cohortData,
                      outcomeConceptId = NULL, 
                      excludeCovariateIds = NULL,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-                     control = createControl(noiseLevel = "silent")){
+                     control = createControl(noiseLevel = "silent", cvType = "auto", startingVariance = 0.1)){
   if (is.null(outcomeConceptId) | is.null(cohortData$exclude)){
     cohortSubset <- cohortData$cohorts
     if (is.null(excludeCovariateIds)) {
@@ -235,7 +235,7 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #'  
 #' @examples 
 #' treatment = rep(0:1, each = 100)
-#' propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+#' propensityScore = c(rnorm(100, mean=0.4, sd=0.25),rnorm(100, mean=0.6, sd=0.25))
 #' data <- data.frame(treatment = treatment, propensityScore = propensityScore)
 #' data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
 #' computePsAuc(data)
@@ -277,9 +277,9 @@ computePsAuc <- function(data, confidenceIntervals = FALSE){
 #' @examples 
 #' rowId = 1:2000
 #' treatment = rep(0:1, each = 1000)
-#' propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+#' propensityScore = c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- trimByPs(data,0.05)
+#' result <- trimByPs(data, 0.05)
 #' 
 #' @export
 trimByPs <- function(data, trimFraction=0.05){

@@ -12,7 +12,7 @@
   
   
 Authors:   Patrick Ryan, Martijn Schuemie
-Last update date:  13 December 2014
+Last update date:  23 January 2014
 
 Parameterized SQL to create cohorts, covariates, and outcomes datasets to be used as input in fitting large-scale analytics
   
@@ -95,7 +95,6 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 USE @results_schema;
 
 
-
 /********************************************************************************
 
 
@@ -115,6 +114,18 @@ IF OBJECT_ID('raw_cohort', 'U') IS NOT NULL --This should only do something in O
 
 IF OBJECT_ID('tempdb..#raw_cohort', 'U') IS NOT NULL
   drop table #raw_cohort;
+  
+IF OBJECT_ID('new_user_cohort', 'U') IS NOT NULL --This should only do something in Oracle
+  drop table new_user_cohort;
+
+IF OBJECT_ID('tempdb..#new_user_cohort', 'U') IS NOT NULL
+  drop table #new_user_cohort;
+  
+IF OBJECT_ID('non_overlap_cohort', 'U') IS NOT NULL --This should only do something in Oracle
+  drop table non_overlap_cohort;
+
+IF OBJECT_ID('tempdb..#non_overlap_cohort', 'U') IS NOT NULL
+  drop table #non_overlap_cohort;
 
 IF OBJECT_ID('cohort_person', 'U') IS NOT NULL --This should only do something in Oracle
   drop table cohort_person;
@@ -131,7 +142,7 @@ IF OBJECT_ID('tempdb..#cohort_covariate', 'U') IS NOT NULL
 create table #cohort_covariate
 (
   row_id bigint,
-	cohort_id int,
+  cohort_id int,
 	person_id bigint,
 	covariate_id bigint,
 	covariate_value float
@@ -198,14 +209,12 @@ create table #cohort_excluded_person
 
 *********************************************************************************/
 
-
-/*made data table that contains cohorts and end of observation period*/
-
+/* make a table containing new users */
 SELECT DISTINCT raw_cohorts.cohort_id,
   raw_cohorts.person_id,
   raw_cohorts.cohort_start_date,
   {@study_end_date != ''} ? {
-	CASE WHEN raw_cohorts.cohort_end_date <= '@study_end_date'
+  CASE WHEN raw_cohorts.cohort_end_date <= '@study_end_date'
 		THEN raw_cohorts.cohort_end_date
 		ELSE '@study_end_date'
 		END
@@ -219,7 +228,7 @@ SELECT DISTINCT raw_cohorts.cohort_id,
   } : {op1.observation_period_end_date}
   AS observation_period_end_date
 INTO
-#raw_cohort 
+#new_user_cohort 
 FROM (
 	{@exposure_table == 'drug_era'} ? {
 		SELECT CASE 
@@ -254,11 +263,26 @@ FROM (
 		GROUP BY c1.cohort_definition_id,
 			c1.subject_id
 	}
-	
 	) raw_cohorts
 INNER JOIN @cdm_schema.dbo.observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
+WHERE raw_cohorts.cohort_start_date <= op1.observation_period_end_date
+  AND raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, observation_period_start_date)
+  {@study_start_date != ''} ? {AND raw_cohorts.cohort_start_date >= '@study_start_date'}
+	{@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= '@study_end_date'}
+;
+
 {@indication_concept_ids != ''} ? {
+/* select only users with the indication */
+SELECT DISTINCT cohort_id,
+  new_user_cohort.person_id,
+  cohort_start_date,
+  cohort_end_date,
+  observation_period_end_date
+INTO
+#indicated_cohort 
+FROM (
+#new_user_cohort new_user_cohort
 INNER JOIN (
 	SELECT person_id,
 		condition_start_date AS indication_date
@@ -269,37 +293,59 @@ INNER JOIN (
 			WHERE ancestor_concept_id IN (@indication_concept_ids)
 			)
 	) indication
-	ON raw_cohorts.person_id = indication.person_id
-  AND raw_cohorts.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication.indication_date)
-  AND raw_cohorts.cohort_start_date >= indication.indication_date
+	ON new_user_cohort.person_id = indication.person_id
+  AND new_user_cohort.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication_date)
+  AND new_user_cohort.cohort_start_date >= indication_date
+)
+;
 }
-WHERE raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, op1.observation_period_start_date)
-	AND raw_cohorts.cohort_start_date <= op1.observation_period_end_date
-  {@study_start_date != ''} ? {AND raw_cohorts.cohort_start_date >= '@study_start_date'}
-	{@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= '@study_end_date'};
 
-
-/* delete persons in both cohorts and apply exclusion criteria  */
-SELECT rc1.person_id*10+rc1.cohort_id as row_id,
-	rc1.cohort_id,
-	rc1.person_id,
-	rc1.cohort_start_date,
-	rc1.cohort_end_date,
-	rc1.observation_period_end_date
+/* delete persons in both cohorts */
+SELECT
+	cohort_id,
+	new_user_cohort.person_id,
+	cohort_start_date,
+  cohort_end_date,
+	observation_period_end_date
 INTO
-  #cohort_person 
-FROM #raw_cohort rc1
+    #non_overlap_cohort
+FROM
+{@indication_concept_ids != ''} ? {
+    #indicated_cohort new_user_cohort
+} : {
+    #new_user_cohort new_user_cohort
+}
 LEFT JOIN (
 	SELECT person_id
 	FROM (
 		SELECT person_id,
 			count(cohort_id) AS num_cohorts
-		FROM #raw_cohort
+		FROM 
+      {@indication_concept_ids != ''} ? {
+          #indicated_cohort
+      } : {
+          #new_user_cohort
+      }
 		GROUP BY person_id
 		) t1
 	WHERE num_cohorts = 2
 	) both_cohorts
-	ON rc1.person_id = both_cohorts.person_id
+	ON new_user_cohort.person_id = both_cohorts.person_id	
+WHERE
+	both_cohorts.person_id IS NULL
+;
+
+
+/* apply exclusion criteria  */
+SELECT non_overlap_cohort.person_id*10+non_overlap_cohort.cohort_id as row_id,
+	non_overlap_cohort.cohort_id,
+	non_overlap_cohort.person_id,
+	non_overlap_cohort.cohort_start_date,
+	non_overlap_cohort.cohort_end_date,
+	non_overlap_cohort.observation_period_end_date
+INTO
+  #cohort_person 
+FROM #non_overlap_cohort non_overlap_cohort
 {@exclusion_concept_ids != ''} ? {
 LEFT JOIN (
 	SELECT *
@@ -310,8 +356,8 @@ LEFT JOIN (
 			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_conditions
-	ON rc1.person_id = exclude_conditions.person_id
-		AND rc1.cohort_start_date > exclude_conditions.condition_start_date
+	ON non_overlap_cohort.person_id = exclude_conditions.person_id
+		AND non_overlap_cohort.cohort_start_date > exclude_conditions.condition_start_date
 LEFT JOIN (
 	SELECT *
 	FROM @cdm_schema.dbo.procedure_occurrence po1
@@ -321,8 +367,8 @@ LEFT JOIN (
 			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_procedures
-	ON rc1.person_id = exclude_procedures.person_id
-		AND rc1.cohort_start_date > exclude_procedures.procedure_date
+	ON non_overlap_cohort.person_id = exclude_procedures.person_id
+		AND non_overlap_cohort.cohort_start_date > exclude_procedures.procedure_date
 LEFT JOIN (
 	SELECT *
 	FROM @cdm_schema.dbo.drug_exposure de1
@@ -332,28 +378,14 @@ LEFT JOIN (
 			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
 			)
 	) exclude_drugs
-	ON rc1.person_id = exclude_drugs.person_id
-		AND rc1.cohort_start_date > exclude_drugs.drug_exposure_start_date
-}
-WHERE both_cohorts.person_id IS NULL
-  {@exclusion_concept_ids != ''} ? {
-	AND exclude_conditions.person_id IS NULL
+	ON non_overlap_cohort.person_id = exclude_drugs.person_id
+		AND non_overlap_cohort.cohort_start_date > exclude_drugs.drug_exposure_start_date
+WHERE
+	exclude_conditions.person_id IS NULL
 	AND exclude_procedures.person_id IS NULL
 	AND exclude_drugs.person_id IS NULL
-  }
+}
 ;
-
-
-
-
-TRUNCATE TABLE #raw_cohort;
-DROP TABLE #raw_cohort;
-
-
-
-  
-
-
 
 /********************************************************************************
 
@@ -3970,6 +4002,4 @@ INSERT INTO #cohort_excluded_person (row_id, cohort_id, person_id, outcome_id)
   		AND co1.cohort_start_date < cp1.cohort_start_date
   }
 }
-
-	
-	;
+;

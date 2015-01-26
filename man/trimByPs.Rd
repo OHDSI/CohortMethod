@@ -28,8 +28,8 @@ The data frame should have the following three columns:
 \examples{
 rowId = 1:2000
 treatment = rep(0:1, each = 1000)
-propensityScore = c(runif(1000,min=0,max=1),runif(1000,min=0,max=1))
+propensityScore = c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result <- trimByPs(data,0.05)
+result <- trimByPs(data, 0.05)
 }
 

@@ -38,7 +38,7 @@ SELECT 2, -- Comparator
 	drug_era_end_date,
 	person_id
 FROM drug_era
-WHERE drug_concept_id = 1124300; --Diclofenac
+WHERE drug_concept_id = 1124300; --diclofenac
 
 INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
 	cohort_definition_id,

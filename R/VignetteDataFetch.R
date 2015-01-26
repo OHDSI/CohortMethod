@@ -25,7 +25,6 @@
   
   # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
   
-  
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
@@ -59,14 +58,14 @@
                                 resultsSchema = resultsSchema,
                                 targetDrugConceptId = 1,
                                 comparatorDrugConceptId = 2, 
-                                indicationConceptIds = "",
+                                indicationConceptIds = c(),
                                 washoutWindow = 183, 
                                 indicationLookbackWindow = 183,
                                 studyStartDate = "", 
                                 studyEndDate = "", 
                                 exclusionConceptIds = nsaids,
                                 outcomeConceptIds = 3, 
-                                outcomeConditionTypeConceptIds = "", 
+                                outcomeConditionTypeConceptIds = c(), 
                                 exposureSchema = resultsSchema,
                                 exposureTable = "coxibVsNonselVsGiBleed",
                                 outcomeSchema = resultsSchema,

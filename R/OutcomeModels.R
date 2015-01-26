@@ -335,12 +335,28 @@ fitOutcomeModel <- function(outcomeConceptId,
       priorVariance <- fit$variance[1]
     }
   }
+  counts <- cohortData$metaData$counts
+
+  if (!is.null(outcomeConceptId) & !is.null(cohortData$exclude)){
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
+    treatedWithPriorOutcome <- sum(cohortSubset$treatment)
+    comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
+    notPriorCount <- data.frame(cohortId = c(0,1), notPriorCount = c(counts$notExcludedCount[1] - comparatorWithPriorOutcome, counts$notExcludedCount[2] - treatedWithPriorOutcome))
+    counts <- merge(counts, notPriorCount)
+  }
+  if (!is.null(subPopulation)){
+    matchedTrimmedCount <- aggregate(rowId ~ treatment, data = subPopulation, length)
+    names(matchedTrimmedCount) <- c("cohortId","matchedTrimmedCount")
+    counts <- merge(counts, matchedTrimmedCount)
+  }
   outcomeModel <- list(outcomeConceptId = outcomeConceptId,
                        modelType = modelType, 
                        coefficients = coefficients,
                        priorVariance = priorVariance,
                        treatmentEstimate = treatmentEstimate, 
                        data = dataObject$data,
+                       counts = counts,
                        status = status)
   class(outcomeModel) <- "outcomeModel"
   return(outcomeModel)

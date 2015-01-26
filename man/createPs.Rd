@@ -5,7 +5,8 @@
 \usage{
 createPs(cohortData, checkSorting = TRUE, outcomeConceptId = NULL,
   excludeCovariateIds = NULL, prior = createPrior("laplace", exclude = c(0),
-  useCrossValidation = TRUE), control = createControl(noiseLevel = "silent"))
+  useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
+  cvType = "auto", startingVariance = 0.1))
 }
 \arguments{
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}

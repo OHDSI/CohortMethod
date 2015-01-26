@@ -3,13 +3,11 @@
 \alias{getDbCohortData}
 \title{Get the cohort data from the server}
 \usage{
-getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
-  resultsSchema = "scratch", targetDrugConceptId = 755695,
-  comparatorDrugConceptId = 739138, indicationConceptIds = 439926,
+getDbCohortData(connectionDetails, cdmSchema, resultsSchema,
+  targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds = c(),
   washoutWindow = 183, indicationLookbackWindow = 183,
-  studyStartDate = "", studyEndDate = "", exclusionConceptIds = c(4027133,
-  4032243, 4146536, 2002282, 2213572, 2005890, 43534760, 21601019),
-  outcomeConceptIds = 194133, outcomeConditionTypeConceptIds = c(),
+  studyStartDate = "", studyEndDate = "", exclusionConceptIds = c(),
+  outcomeConceptIds, outcomeConditionTypeConceptIds = c(),
   exposureSchema = cdmSchema, exposureTable = "drug_era",
   outcomeSchema = cdmSchema, outcomeTable = "condition_occurrence",
   useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
@@ -33,8 +31,7 @@ getDbCohortData(connectionDetails, cdmSchema = "CDM4_SIM",
   useCovariateObservationCount365d = FALSE,
   useCovariateConceptCounts = FALSE, useCovariateRiskScores = FALSE,
   useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
-  excludedCovariateConceptIds = c(4027133, 4032243, 4146536, 2002282, 2213572,
-  2005890, 43534760, 21601019), deleteCovariatesSmallCount = 100)
+  excludedCovariateConceptIds = c(), deleteCovariatesSmallCount = 100)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}

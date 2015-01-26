@@ -18,6 +18,10 @@
 
 
 .createManualAndVignettes <- function(){
+  #Experimental:
+  #library(formatR)
+  #tidy_dir("R")
+
   shell("rm man/CohortMethod.pdf")
   shell("R CMD Rd2pdf ./ --output=man/CohortMethod.pdf")
 

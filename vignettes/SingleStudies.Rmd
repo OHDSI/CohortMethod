@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 ```
 # Introduction
 
-This vignette describes how you can use the CohortMethod package to perform a single new-user cohort study. We will walk through all the steps needed to perform an examplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective NSAIDs on GI bleeding-related hospitalization.
+This vignette describes how you can use the CohortMethod package to perform a single new-user cohort study. We will walk through all the steps needed to perform an examplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective NSAIDs on GI bleeding-related hospitalization. For simplicity, we focus on one coxib (celecoxib) and one non-selective NSAID (diclofenac).
 
 # Installation instructions
 
@@ -107,7 +107,7 @@ SELECT 2, -- Comparator
 	drug_era_end_date,
 	person_id
 FROM drug_era
-WHERE drug_concept_id = 1124300; --Diclofenac
+WHERE drug_concept_id = 1124300; --diclofenac
 
 INSERT INTO @resultsSchema.dbo.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
@@ -155,7 +155,7 @@ sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 querySql(connection, sql)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,3),count=c(19207,202237,18970))
+data.frame(cohort_concept_id = c(1,2,3),count=c(113492,342370,351289))
 ```
 
 ## Extracting the data from the server
@@ -178,14 +178,14 @@ cohortData <- getDbCohortData(connectionDetails,
                               resultsSchema = resultsSchema,
                               targetDrugConceptId = 1,
                               comparatorDrugConceptId = 2, 
-                              indicationConceptIds = "",
+                              indicationConceptIds = c(),
                               washoutWindow = 183, 
                               indicationLookbackWindow = 183,
                               studyStartDate = "", 
                               studyEndDate = "", 
                               exclusionConceptIds = nsaids,
                               outcomeConceptIds = 3, 
-                              outcomeConditionTypeConceptIds = "", 
+                              outcomeConditionTypeConceptIds = c(), 
                               exposureSchema = resultsSchema,
                               exposureTable = "coxibVsNonselVsGiBleed",
                               outcomeSchema = resultsSchema,
@@ -237,7 +237,7 @@ if (file.exists("c:/temp/vignetteCohortData")){
 }
 ```
 
-There are a lot of parameters, but they are all documented in the CohortMethod manual. In short, we're pointing the function to the table created earlier and indicate which concept IDs in that table identify the target, comparator and outcome. We further instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
+There are a lot of parameters, but they are all documented in the CohortMethod manual. In short, we're pointing the function to the table created earlier and indicate which concept IDs in that table identify the target, comparator and outcome. Note that in this example, we do not restrict the study to people having a particular indication (`indicationConceptIds = c()` ), but this is something you would often want to do. We do instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
 
 All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the cohortData object. This object uses the package ff to store information in a way that ensures R does not run out of memory, even when there is lots of data. 
 
@@ -346,9 +346,14 @@ plotCovariateBalanceScatterPlot(balance)
 plotCovariateBalanceOfTopVariables(balance)
 ```
 
-# Fitting the outcome model
+# Outcome models
 
-The next step is fitting the outcome model. In theory we could fit an outcome model without using the propensity scores:
+The outcome model is a model describing which variables are associated with the outcome. 
+
+## Fitting the outcome model
+
+In theory we could fit an outcome model without using the propensity scores. In this example we're fitting an outcome model using a Cox regression. The risk window is defined as time of exposure + 30 days:
+
 
 ```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
@@ -365,7 +370,6 @@ outcomeModel
 data(vignetteOutcome1)
 outcomeModel
 ```
-In this example we're fitting an outcome model using a Cox regression. The risk window is defined as time of exposure + 30 days.
 
 But of course we want to make use of the matching done on the propensity score:
 
@@ -407,12 +411,7 @@ data(vignetteOutcome3)
 outcomeModel
 ```
 
-We can create the Kaplan-Meier plot:
-
-```{r tidy=TRUE,eval=TRUE}
-plotKaplanMeier(outcomeModel)
-```
-
+## Inpecting the outcome model
 We can inspect more details of the outcome model:
 
 ```{r tidy=TRUE,eval=TRUE}
@@ -434,4 +433,20 @@ if (file.exists("c:/temp/vignetteCohortData")){
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
   head(fullOutcomeModel)  
 }
+```
+
+## Kaplan-Meier plot
+
+We can create the Kaplan-Meier plot:
+
+```{r tidy=TRUE,eval=TRUE}
+plotKaplanMeier(outcomeModel)
+```
+
+## Attrition diagram
+
+We can also investigate how we got to the study population by drawing the attrition diagram:
+
+```{r tidy=TRUE,eval=TRUE,fig.width=5,fig.height=6}
+drawAttritionDiagram(outcomeModel)
 ```
