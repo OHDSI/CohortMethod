@@ -316,11 +316,11 @@ getDbCohortData <- function(connectionDetails,
   )
   
   #Open all ffdfs to prevent annoying messages later:
-  open(result$outcomes,readonly = readOnly)
-  open(result$cohorts,readonly = readOnly)
-  open(result$covariates,readonly = readOnly)
-  open(result$exclude,readonly = readOnly)
-  open(result$covariateRef,readonly = readOnly)
+  open(result$outcomes)
+  open(result$cohorts)
+  open(result$covariates)
+  open(result$exclude)
+  open(result$covariateRef)
   
   class(result) <- "cohortData"
   return(result)
