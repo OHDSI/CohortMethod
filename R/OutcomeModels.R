@@ -39,7 +39,7 @@ createDataForModelFitCox <- function(useStrata,
   data$time <- data$timeToEvent
   data$time[is.na(data$time)] <- data$timeToCensor[is.na(data$time)]
   data <- data[data$time > 0,]
-  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
+  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL, useStrata = useStrata, useCovariates = useCovariates)
   if (useCovariates) { 
     if (useStrata){
       informativeStrata <- unique(data$stratumId[data$y == 1])
@@ -92,7 +92,7 @@ createDataForModelFitPoisson <- function(useStrata,
   
   colnames(data)[colnames(data) == "timeToCensor"] <- "time"
   data <- data[data$time > 0,]
-  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
+  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL, useStrata = useStrata, useCovariates = useCovariates)
   if (useCovariates) { 
     if (useStrata){
       informativeStrata <- unique(data$stratumId[data$y == 1])
@@ -141,7 +141,7 @@ createDataForModelFitLogistic <- function(useStrata,
     }
     data$y[is.na(data$y)] <- 0
   }
-  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL)
+  result <- list(outcomeData = NULL, cyclopsData = NULL, treatmentVariable = NULL, useStrata = useStrata, useCovariates = useCovariates)
   if (useCovariates) { 
     if (useStrata){
       informativeStrata <- unique(data$stratumId[data$y == 1])
@@ -336,7 +336,7 @@ fitOutcomeModel <- function(outcomeConceptId,
     }
   }
   counts <- cohortData$metaData$counts
-
+  
   if (!is.null(outcomeConceptId) & !is.null(cohortData$exclude)){
     t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
     cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
@@ -354,6 +354,8 @@ fitOutcomeModel <- function(outcomeConceptId,
                        modelType = modelType, 
                        coefficients = coefficients,
                        priorVariance = priorVariance,
+                       stratified = dataObject$useStrata,
+                       usedCovariates = dataObject$useCovariates,
                        treatmentEstimate = treatmentEstimate, 
                        data = dataObject$data,
                        counts = counts,
@@ -506,8 +508,11 @@ getOutcomeModel <- function(outcomeModel,cohortData){
 #' 
 #' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{fitOutcomeModel} function.
 #' @param censorMarks         Whether or not to include censor marks in the plot.
-#' @param legend              Whether or not to include a legend in the plot.
-#' @param labelsInGraph       If true, the labels identifying the two curves will be added to the graph.
+#' @param confidenceIntervals Plot 95 percent confidence intervals?
+#' @param includeZero         Should the y axis include zero, or only go down to the lowest observed survival?
+#' @param dataCutoff          Fraction of the data (number censored) after which the graph will not be shown.
+#' @param treatmentLabel      A label to us for the treated cohort.
+#' @param comparatorLabel     A label to us for the comparator cohort.
 #' @param fileName            Name of the file where the plot should be saved, for example 'plot.png'. See 
 #' the function \code{ggsave} in the ggplot2 package for supported file formats.
 #' 
@@ -519,19 +524,64 @@ getOutcomeModel <- function(outcomeModel,cohortData){
 #' @export
 plotKaplanMeier <- function(outcomeModel,
                             censorMarks = FALSE, 
-                            legend=FALSE,
-                            labelsInGraph=TRUE,
+                            confidenceIntervals = TRUE,
+                            includeZero = TRUE,
+                            dataCutoff = 0.99,
+                            treatmentLabel = "Treated",
+                            comparatorLabel = "Comparator",
                             fileName = NULL){
   if (class(outcomeModel) != "outcomeModel")
     stop("Object not of class outcomeModel")
   if (outcomeModel$modelType != "cox")
     stop("Outcome model is not a Cox model")
+  if (outcomeModel$stratified)
+    warning("The outcome model is stratified, but the stratification is not visible in the plot")
   
-  plot <- .ggkm(survfit(Surv(time, y) ~ treatment, outcomeModel$data), 
-                marks = censorMarks, 
-                legend = legend,
-                labelsInGraph = labelsInGraph)  
+  sv <- survfit(Surv(time, y) ~ treatment, outcomeModel$data, conf.int = TRUE)
+  data <- data.frame(
+    time = sv$time,
+    n.risk = sv$n.risk,
+    n.event = sv$n.event,
+    n.censor = sv$n.censor,
+    surv = sv$surv,
+    strata = summary(sv, censored = T)$strata,
+    upper = sv$upper,
+    lower = sv$lower
+  )
+  levels(data$strata)[levels(data$strata) == "treatment=0"] = comparatorLabel
+  levels(data$strata)[levels(data$strata) == "treatment=1"] = treatmentLabel
+  dataAtT <- aggregate(n.censor ~ time, data, sum)
+  dataAtT$cumSum <- cumsum(dataAtT$n.censor)
+  cutoff <- min(dataAtT$time[dataAtT$cumSum >= dataCutoff*sum(dataAtT$n.censor)])
+  xlabs = "Time in days"
+  ylabs = "Survival probability"
+  main = "Kaplan-Meier Plot"
+  xlims = c(0,cutoff)
+  data <- data[data$time <= cutoff,]
+  if (includeZero){
+    ylims = c(0,1)
+  } else if (confidenceIntervals) {
+    ylims = c(min(data$lower),1)
+  } else {
+    ylims = c(min(data$surv),1)
+  }
+  plot <- ggplot2::ggplot( data, ggplot2::aes(x = time, y = surv, color = strata, fill = strata, ymin=lower, ymax=upper)) 
+  
+  if (confidenceIntervals)
+    plot <- plot + ggplot2::geom_ribbon(color=rgb(0,0,0,alpha=0))
+  
+  plot <- plot + ggplot2::geom_step(size=1) +
+    ggplot2::scale_color_manual(values=c(rgb(0,0,0.8,alpha=0.8),rgb(0.8,0,0,alpha=0.8))) +
+    ggplot2::scale_fill_manual(values=c(rgb(0,0,0.8,alpha=0.3),rgb(0.8,0,0,alpha=0.3))) +
+    ggplot2::scale_x_continuous(xlabs, limits = xlims) +
+    ggplot2::scale_y_continuous(ylabs, limits = ylims) +
+    ggplot2::ggtitle(main) +
+    ggplot2::theme(legend.title = ggplot2::element_blank())
+  
+  if(censorMarks == TRUE)
+    plot <- plot + ggplot2::geom_point(data = subset(data, n.censor >= 1), ggplot2::aes(x = time, y = surv), shape = "|", size = 3)
+  
   if (!is.null(fileName))
-    ggplot2::ggsave(fileName,plot,width=5,height=5,dpi=400) 
+    ggplot2::ggsave(fileName,plot,width=7,height=5,dpi=400) 
   return(plot)
 }
