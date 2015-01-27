@@ -50,9 +50,9 @@ getDbCohortData(connectionDetails, cdmSchema, resultsSchema,
 
 \item{indicationLookbackWindow}{The window to look back prior to cohort index date to identify records of a indication condition.  Only applicable if indicationConceptIds != ''.}
 
-\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index date can appear.}
+\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.}
 
-\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index date can appear.}
+\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'.}
 
 \item{exclusionConceptIds}{A list of CONCEPT_IDs used to restrict the cohorts, based on any descendant conditions/drugs/procedures occurring at least once anytime prior to the cohort index date.}
 

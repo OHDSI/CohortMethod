@@ -59,8 +59,8 @@ snakeCaseToCamelCase <- function(string){
 #' 
 #' @param washoutWindow 		The mininum required continuous observation time prior to index date for a person to be included in the cohort.
 #' @param indicationLookbackWindow 		The window to look back prior to cohort index date to identify records of a indication condition.  Only applicable if indicationConceptIds != ''.
-#' @param studyStartDate 		A calendar date specifying the minimum date that a cohort index date can appear.
-#' @param studyEndDate 		A calendar date specifying the maximum date that a cohort index date can appear.
+#' @param studyStartDate 		A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.
+#' @param studyEndDate 		A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'.
 #' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.
 #' @param useCovariateDemographics 		A boolean value (TRUE/FALSE) to determine if demographic covariates (age in 5-yr increments, gender, race, ethnicity, year of index date, month of index date) will be created and included in future models.
 #' @param useCovariateConditionOccurrence   A boolean value (TRUE/FALSE) to determine if covariates derived from CONDITION_OCCURRENCE table will be created and included in future models.
@@ -256,7 +256,7 @@ getDbCohortData <- function(connectionDetails,
   
   nonOverlapCountSql <-"SELECT COUNT(*) AS non_overlap_count,cohort_id FROM #non_overlap_cohort GROUP BY cohort_id"
   nonOverlapCountSql <- SqlRender::translateSql(nonOverlapCountSql, "sql server", connectionDetails$dbms)$sql
-
+  
   notExcludedCountSql <-"SELECT COUNT(*) AS not_excluded_count,cohort_id FROM #cohort_person GROUP BY cohort_id"
   notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql, "sql server", connectionDetails$dbms)$sql
   
@@ -287,7 +287,7 @@ getDbCohortData <- function(connectionDetails,
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
                                                      indication_concept_ids = indicationConceptIds)
-    DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE,profile=TRUE)
+    DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   }
   
   colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
@@ -316,12 +316,15 @@ getDbCohortData <- function(connectionDetails,
   )
   
   #Open all ffdfs to prevent annoying messages later:
-  open(result$outcomes)
-  open(result$cohorts)
-  open(result$covariates)
-  open(result$exclude)
-  open(result$covariateRef)
-  
+  if (nrow(result$outcomes) == 0 | nrow(result$covariates) == 0){
+    warning("No data found")
+  } else {
+    open(result$outcomes)
+    open(result$cohorts)
+    open(result$covariates)
+    open(result$exclude)
+    open(result$covariateRef)
+  }
   class(result) <- "cohortData"
   return(result)
 }

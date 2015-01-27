@@ -112,8 +112,8 @@ USE @results_schema;
 IF OBJECT_ID('raw_cohort', 'U') IS NOT NULL --This should only do something in Oracle
   drop table raw_cohort;
 
-IF OBJECT_ID('tempdb..#raw_cohort', 'U') IS NOT NULL
-  drop table #raw_cohort;
+IF OBJECT_ID('tempdb..#indicated_cohort', 'U') IS NOT NULL
+  drop table #indicated_cohort;
   
 IF OBJECT_ID('new_user_cohort', 'U') IS NOT NULL --This should only do something in Oracle
   drop table new_user_cohort;
@@ -214,16 +214,16 @@ SELECT DISTINCT raw_cohorts.cohort_id,
   raw_cohorts.person_id,
   raw_cohorts.cohort_start_date,
   {@study_end_date != ''} ? {
-  CASE WHEN raw_cohorts.cohort_end_date <= '@study_end_date'
+  CASE WHEN raw_cohorts.cohort_end_date <= CAST('@study_end_date' AS DATE)
 		THEN raw_cohorts.cohort_end_date
-		ELSE '@study_end_date'
+		ELSE CAST('@study_end_date' AS DATE)
 		END
   } : {raw_cohorts.cohort_end_date}
   AS cohort_end_date,
   {@study_end_date != ''} ? {
-	CASE WHEN op1.observation_period_end_date <= '@study_end_date'
+	CASE WHEN op1.observation_period_end_date <= CAST('@study_end_date' AS DATE)
 		THEN op1.observation_period_end_date
-		ELSE '@study_end_date'
+		ELSE CAST('@study_end_date' AS DATE)
 		END
   } : {op1.observation_period_end_date}
   AS observation_period_end_date
@@ -268,8 +268,8 @@ INNER JOIN @cdm_schema.dbo.observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
 WHERE raw_cohorts.cohort_start_date <= op1.observation_period_end_date
   AND raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, observation_period_start_date)
-  {@study_start_date != ''} ? {AND raw_cohorts.cohort_start_date >= '@study_start_date'}
-	{@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= '@study_end_date'}
+  {@study_start_date != ''} ? {AND raw_cohorts.cohort_start_date >= CAST('@study_start_date' AS DATE)}
+	{@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= CAST('@study_end_date' AS DATE)}
 ;
 
 {@indication_concept_ids != ''} ? {
