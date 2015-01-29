@@ -1,5 +1,5 @@
 ---
-title: "Single studies using CohortMethod"
+title: "Single studies using the CohortMethod package"
 author: "Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan"
 date: "`r Sys.Date()`"
 output:

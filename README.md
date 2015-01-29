@@ -61,7 +61,7 @@ Getting Started
 
 Getting Involved
 =============
-* Vignette: [Single studies using CohortMethod](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/vignettes/SingleStudies.pdf)
+* Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/vignettes/SingleStudies.pdf)
 * Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/man/CohortMethod.pdf) 
 * Developer questions/comments/feedback: <a href="http://forums.ohdsi.org/c/developers">OHDSI Forum</a>
 * We use the <a href="../../issues">GitHub issue tracker</a> for all bugs/issues/enhancements
