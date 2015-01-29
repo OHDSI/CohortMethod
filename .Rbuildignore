@@ -4,4 +4,5 @@
 standalone
 ^\.travis\.yml$
 man/CohortMethod.pdf
-man/*.png
+man/balanceScatterPlot.png
+man/ps.png
