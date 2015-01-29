@@ -1,5 +1,7 @@
 ---
 title: "Single studies using CohortMethod"
+author: "Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan"
+date: "`r Sys.Date()`"
 output:
   pdf_document:
     number_sections: yes
@@ -23,13 +25,13 @@ knitr::opts_chunk$set(
 ```
 # Introduction
 
-This vignette describes how you can use the CohortMethod package to perform a single new-user cohort study. We will walk through all the steps needed to perform an examplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective NSAIDs on GI bleeding-related hospitalization. For simplicity, we focus on one coxib (celecoxib) and one non-selective NSAID (diclofenac).
+This vignette describes how you can use the `CohortMethod` package to perform a single new-user cohort study. We will walk through all the steps needed to perform an examplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective nonsteroidal anti-inflammatory drugs (NSAIDs) on gastrointestinal (GI) bleeding-related hospitalization. For simplicity, we focus on one coxib -- celecoxib -- and one non-selective NSAID -- diclofenac.
 
 # Installation instructions
 
-Before installing the CohortMethod package make sure you have Java and RTools installed. Java can be downloaded from [www.java.com](http://www.java.com). RTools can be downloaded from [CRAN](http://cran.r-project.org/bin/windows/Rtools/).
+Before installing the `CohortMethod` package make sure you have Java available.  Java can be downloaded from [www.java.com](http://www.java.com). For Windows users, RTools is also necessary.  RTools can be downloaded from [CRAN](http://cran.r-project.org/bin/windows/Rtools/).
 
-The CohortMethod package is maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All these packages can be downloaded and installed from within R using the `devtools` package:
+The `CohortMethod` package is currently maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the `devtools` package:
 
 ```{r tidy=TRUE,eval=FALSE}
 install.packages("devtools")
@@ -40,15 +42,15 @@ install_github("ohdsi/Cyclops")
 install_github("ohdsi/CohortMethod") 
 ```
 
-Once installed, you can use `library(CohortMethod)` to load the package.
+Once installed, you can type `library(CohortMethod)` to load the package.
 
 # Data extraction
 
-The first step in running the CohortMethod is extracting all necessary data from the server containing the data in Common Data Model format.
+The first step in running the `CohortMethod` is extracting all necessary data from the database server holding the data in the Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM) format.
 
 ## Configuring the connection to the server
 
-We need to tell R how to connect to the server where the data is. CohortMethod uses the DatabaseConnector package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
+We need to tell R how to connect to the server where the data are. `CohortMethod` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
 ```{r tidy=FALSE,eval=FALSE}
 connectionDetails <- createConnectionDetails(dbms = "postgresql", 
@@ -60,11 +62,11 @@ cdmSchema <- "my_cdm_data"
 resultsSchema <- "my_results"
 ```
 
-The last two lines define the cdmSchema and resultSchema variables, which we'll use later to tell R where the data in CDM format lives, and where we want to write intermediate and result tables.
+The last two lines define the `cdmSchema` and `resultSchema` variables, which we'll use later to tell R where the data in CDM format live, and where we want to write intermediate and result tables.
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. We do this by writing SQL statements against the OMOP Common Data Model that populates a table of events we are interested in. For our example study, we've created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
+We need to define the exposures and outcomes for our study. We do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
 ```sql
 /***********************************
@@ -130,7 +132,7 @@ WHERE condition_concept_id IN (
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
 ```
 
-This is parameterized SQL which can be used by the SqlRender package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values, we don't have to change the SQL code. By also making use of SqlRender's translation functionality, we can make sure the SQL code can be run in many different environments.
+This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
 ```{r tidy=TRUE,eval=FALSE}
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
@@ -141,7 +143,7 @@ connection <- connect(connectionDetails)
 executeSql(connection, sql)
 ```
 
-In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the connectionDetails. Next, we connect to the server, and submit the rendered and translated SQL.
+In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the `connectionDetails`. Next, we connect to the server, and submit the rendered and translated SQL.
 
 If all went well, we now have a table with the events of interest. We can see how many events per type:
 
@@ -160,7 +162,7 @@ data.frame(cohort_concept_id = c(1,2,3),count=c(113492,342370,351289))
 
 ## Extracting the data from the server
 
-Now we can tell CohortMethod to define the cohorts based on our events, and extract all necessary data for our analysis:
+Now we can tell `CohortMethod` to define the cohorts based on our events, and extract all necessary data for our analysis:
 
 ```{r tidy=FALSE,eval=FALSE}
 # Get all NSAID Concept IDs for exclusion:
@@ -237,9 +239,9 @@ if (file.exists("c:/temp/vignetteCohortData")){
 }
 ```
 
-There are a lot of parameters, but they are all documented in the CohortMethod manual. In short, we're pointing the function to the table created earlier and indicate which concept IDs in that table identify the target, comparator and outcome. Note that in this example, we do not restrict the study to people having a particular indication (`indicationConceptIds = c()` ), but this is something you would often want to do. We do instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
+There are many parameters, but they are all documented in the `CohortMethod` manual. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. Note that in this example, we do not restrict the study to people having a particular indication  via `indicationConceptIds = c()`, but this is something you would often want to do. We do instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
 
-All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the cohortData object. This object uses the package ff to store information in a way that ensures R does not run out of memory, even when there is lots of data. 
+All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
 
 We can use the generic `summary()` function to view some more information of the data we extracted:
 ```{r tidy=TRUE,eval=FALSE}
@@ -253,7 +255,7 @@ if (file.exists("c:/temp/vignetteCohortData")){
 
 ### Saving the data to file
 
-Creating the cohortData file can take a lot of computing time, and it is probably a good idea to save it for future sessions. Because cohortData uses ff, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortData()` function:
+Creating the `cohortData` file can take considerable computing time, and it is probably a good idea to save it for future sessions. Because `cohortData` uses `ff`, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortData()` function:
 
 ```{r tidy=TRUE,eval=FALSE}
 saveCohortData(cohortData, "coxibVsNonselVsGiBleed")
@@ -263,7 +265,7 @@ We can use the `loadCohortData()` function to load the data in a future session.
 
 # Propensity scores
 
-The CohortMethod can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handfull of predefined covariates, CohortMethod typically uses thousands to millions of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
+The `CohortMethod` can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handfull of predefined covariates, `CohortMethod` typically uses thousands to millions of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
 
 ## Fitting a propensity model
 
@@ -276,13 +278,13 @@ ps <- createPs(cohortData, outcomeConceptId = 3)
 data(vignettePs)
 ```
 
-The `createPs()` function uses the Cyclops package to fit a large scale regularized logistic regression. Note that We have to tell createPs what the outcomeConceptId is for which we will use the model so it can remove subjects who had the outcome prior to index date before fitting the model. 
+The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. Note that we have to tell `createPs()` what the `outcomeConceptId` is for which we will use the model so it can remove subjects who had the outcome prior to the index date before fitting the model. 
 
-To fit the propensity model, Cyclops needs to know the hyperparameter value which specifies the variance of the prior. By default Cyclops will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify Cyclops' behaviour, including using multiple CPUs to speed up the cross-validation. 
+To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behaviour, including using multiple CPUs to speed-up the cross-validation. 
 
 ## Propensity score diagnostics
 
-We can compute the Area Under the Receiver-Operator curve:
+We can compute the area under the receiver-operator curve (AUC) for the propensity score model:
 
 ```{r tidy=TRUE,eval=TRUE}
 computePsAuc(ps)
@@ -313,7 +315,7 @@ if (file.exists("c:/temp/vignetteCohortData")){
   }
 ```
 
-One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example instrumental variables..
+One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example instrumental variables.
 
 ## Using the propensity score
 
@@ -352,7 +354,7 @@ The outcome model is a model describing which variables are associated with the 
 
 ## Fitting the outcome model
 
-In theory we could fit an outcome model without using the propensity scores. In this example we're fitting an outcome model using a Cox regression. The risk window is defined as time of exposure + 30 days:
+In theory we could fit an outcome model without using the propensity scores. In this example we are fitting an outcome model using a Cox regression. The risk window is defined as time of exposure + 30 days:
 
 
 ```{r tidy=FALSE,eval=FALSE}
@@ -390,9 +392,9 @@ data(vignetteOutcome2)
 outcomeModel
 ```
 
-Note that we define the subpopulation to be only those in the *strata* object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+Note that we define the subpopulation to be only those in the `strata` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
 
-One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the Cyclops package. (Note that the treatment variable is automatically excluded from regularization.)
+One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the `Cyclops` package. (Note that the treatment variable is automatically excluded from regularization.)
 
 ```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
@@ -440,7 +442,7 @@ if (file.exists("c:/temp/vignetteCohortData")){
 We can create the Kaplan-Meier plot:
 
 ```{r tidy=TRUE,eval=TRUE}
-plotKaplanMeier(outcomeModel)
+plotKaplanMeier(outcomeModel, includeZero = FALSE)
 ```
 
 ## Attrition diagram
@@ -450,3 +452,22 @@ We can also investigate how we got to the study population by drawing the attrit
 ```{r tidy=TRUE,eval=TRUE,fig.width=5,fig.height=6}
 drawAttritionDiagram(outcomeModel)
 ```
+
+# Acknowledgments
+
+Considerable work has been dedicated to provide the `CohortMethod` package.
+
+```{r tidy=TRUE,evale=TRUE}
+citation("CohortMethod")
+```
+
+Further, `CohortMethod` makes extensive use of the `Cyclops` package.
+
+```{r tidy=TRUE,evale=TRUE}
+citation("Cyclops")
+```
+
+This work is supported in part through the National Science Foundation grant IIS 1251151.
+
+
+
