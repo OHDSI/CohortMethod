@@ -43,8 +43,8 @@ snakeCaseToCamelCase <- function(string){
 #' @param connectionDetails  	An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' 
 #' @param sourceName    The name of the source database, to be used to name temporary files and distinguish results within organizations with multiple databases.   	
-#' @param cdmSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database.   		
-#' @param resultsSchema    The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database. 	
+#' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.   		
+#' @param resultsDatabaseSchema    The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database. 	On SQL Server, this should specifiy both the database and the schema, so for example 'my_results.dbo'.
 #' @param exposureSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
 #' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.	
 #' @param outcomeSchema     The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
@@ -112,8 +112,8 @@ snakeCaseToCamelCase <- function(string){
 #'
 #' @export
 getDbCohortData <- function(connectionDetails,
-                            cdmSchema,
-                            resultsSchema,
+                            cdmDatabaseSchema,
+                            resultsDatabaseSchema,
                             targetDrugConceptId,
                             comparatorDrugConceptId,
                             indicationConceptIds = c(),
@@ -124,9 +124,9 @@ getDbCohortData <- function(connectionDetails,
                             exclusionConceptIds = c(),
                             outcomeConceptIds,
                             outcomeConditionTypeConceptIds = c(),
-                            exposureSchema = cdmSchema,
+                            exposureSchema = cdmDatabaseSchema,
                             exposureTable = "drug_era",
-                            outcomeSchema = cdmSchema,
+                            outcomeSchema = cdmDatabaseSchema,
                             outcomeTable = "condition_occurrence",
                             useCovariateDemographics = TRUE,
                             useCovariateConditionOccurrence = TRUE,
@@ -162,11 +162,15 @@ getDbCohortData <- function(connectionDetails,
                             useCovariateInteractionMonth = FALSE,
                             excludedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
+  cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
+  resultsDatabase <- strsplit(resultsDatabaseSchema ,"\\.")[[1]][1]
   renderedSql <- SqlRender::loadRenderTranslateSql("CohortMethod.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   cdm_schema = cdmSchema,
-                                                   results_schema = resultsSchema,
+                                                   cdm_database_schema = cdmDatabaseSchema,
+                                                   results_database_schema = resultsDatabaseSchema,
+                                                   cdm_database = cdmDatabase,
+                                                   results_database = resultsDatabase,
                                                    target_drug_concept_id = targetDrugConceptId,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
                                                    indication_concept_ids = indicationConceptIds,
@@ -240,7 +244,7 @@ getDbCohortData <- function(connectionDetails,
   rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   cdm_schema = cdmSchema,
+                                                   cdm_database_schema = cdmDatabaseSchema,
                                                    target_drug_concept_id = targetDrugConceptId,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
                                                    study_start_date = studyStartDate,

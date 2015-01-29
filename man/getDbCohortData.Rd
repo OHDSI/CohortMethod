@@ -3,13 +3,13 @@
 \alias{getDbCohortData}
 \title{Get the cohort data from the server}
 \usage{
-getDbCohortData(connectionDetails, cdmSchema, resultsSchema,
+getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
   targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds = c(),
   washoutWindow = 183, indicationLookbackWindow = 183,
   studyStartDate = "", studyEndDate = "", exclusionConceptIds = c(),
   outcomeConceptIds, outcomeConditionTypeConceptIds = c(),
-  exposureSchema = cdmSchema, exposureTable = "drug_era",
-  outcomeSchema = cdmSchema, outcomeTable = "condition_occurrence",
+  exposureSchema = cdmDatabaseSchema, exposureTable = "drug_era",
+  outcomeSchema = cdmDatabaseSchema, outcomeTable = "condition_occurrence",
   useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE,
   useCovariateConditionOccurrence30d = TRUE,
@@ -36,9 +36,9 @@ getDbCohortData(connectionDetails, cdmSchema, resultsSchema,
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}
 
-\item{cdmSchema}{The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database.}
+\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.}
 
-\item{resultsSchema}{The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database.}
+\item{resultsDatabaseSchema}{The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database.     On SQL Server, this should specifiy both the database and the schema, so for example 'my_results.dbo'.}
 
 \item{targetDrugConceptId}{A unique identifier to define the target cohort.  If exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, targetDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.}
 
