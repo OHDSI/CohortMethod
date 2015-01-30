@@ -21,6 +21,14 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+#' CohortMethod
+#' 
+#' @docType package
+#' @name CohortMethod
+#' @importFrom Rcpp evalCpp
+#' @useDynLib CohortMethod
+NULL
+
 
 .onLoad <- function(libname, pkgname) {
   #Workaround for problem with ff on machines with lots of memory (see https://github.com/edwindj/ffbase/issues/37)

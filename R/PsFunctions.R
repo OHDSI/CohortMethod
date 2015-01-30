@@ -155,8 +155,9 @@ computePreferenceScore <- function(data, unfilteredData = NULL){
 #' @details
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
-#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
@@ -226,8 +227,9 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
 #' @details
 #' The data frame should have a least the following two columns:
 #' \tabular{lll}{  
-#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' @return
@@ -269,8 +271,9 @@ computePsAuc <- function(data, confidenceIntervals = FALSE){
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same three columns as the input.
@@ -307,8 +310,9 @@ trimByPs <- function(data, trimFraction=0.05){
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}             \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}  	       \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same three columns as the input.
@@ -361,7 +365,7 @@ mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
 #' @param data              A data frame with the three columns described below.
 #' @param caliper		        The caliper for matching. A caliper is the distance which is acceptable for 
 #' any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.
-#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \code{caliperScale = "propensity score"}
+#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \cr\code{caliperScale = "propensity score"}
 #' or  \code{caliperScale = "standardized"}. On the standardized scale, the 
 #' caliper is interpreted in standard deviations of the propensity score distribution.
 #' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A 
@@ -373,8 +377,9 @@ mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
 #' The data frame should have at least the following three columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
@@ -387,7 +392,8 @@ mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
 #' treatment = c(1,0,1,0,1)
 #' propensityScore = c(0,0.1,0.3,0.4,1)
 #' age_group =c(1,1,1,1,1) #everyone in the same age group, so will not influence the matching
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, age_group = age_group)
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore, 
+#'                    age_group = age_group)
 #' result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 #' 
 #' @references
@@ -452,7 +458,7 @@ matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRa
 #' @param data              A data frame with the three columns described below.
 #' @param caliper  	        The caliper for matching. A caliper is the distance which is acceptable for 
 #' any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.
-#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported: \code{caliperScale = "propensity score"}
+#' @param caliperScale      The scale on which the caliper is defined. Two scales are supported:\cr\code{caliperScale = "propensity score"}
 #' or  \code{caliperScale = "standardized"}. On the standardized scale, the 
 #' caliper is interpreted in standard deviations of the propensity score distribution.
 #' @param maxRatio		    The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A 
@@ -465,8 +471,9 @@ matchOnPs <- function(data, caliper = 0.25, caliperScale = "standardized", maxRa
 #' The data frame should have at least the following three columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}  	      \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}   \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
@@ -504,8 +511,9 @@ matchOnPsAndCovariates <- function(data, caliper = 0.25, caliperScale = "standar
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}    \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same columns as the input data plus one extra column: stratumId.
@@ -571,8 +579,9 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
 #' The data frame should have the following three columns:
 #' \tabular{lll}{  
 #'   \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#'   \verb{treatment}           \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
-#'   \verb{propensityScore}    \tab(real)    \tab Propensity score \cr
+#'   \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
+#'                             \tab          \tab (0) group  \cr
+#'   \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
 #' }
 #' 
 #' @return Returns a date frame with the same columns as the input data plus one extra column: stratumId.
@@ -661,7 +670,8 @@ computeMeansPerGroup <- function(cohorts, covariates){
 #' The restrictedCohorts data frame should have at least the following columns:
 #' \tabular{lll}{  
 #' \verb{rowId}       \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-#' \verb{treatment}   \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0) group  \cr
+#' \verb{treatment}   \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0)\cr
+#'                    \tab          \tab group  \cr
 #' }
 #' 
 #' @return Returns a date frame describing the covariate balance before and after matching/trimming.

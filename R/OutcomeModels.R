@@ -364,6 +364,7 @@ fitOutcomeModel <- function(outcomeConceptId,
   return(outcomeModel)
 }
 
+#' @export
 summary.outcomeModel <- function(outcomeModel){
   if (outcomeModel$modelType == "clr" || outcomeModel$modelType == "lr"){
     patientTable <- table(outcomeModel$data$treatment)
@@ -416,6 +417,7 @@ summary.outcomeModel <- function(outcomeModel){
   return(result);
 }
 
+#' @export
 print.summary.outcomeModel <- function(data){
   writeLines(paste("Model type:",data$modelType))
   writeLines(paste("Status:",outcomeModel$status))
@@ -444,14 +446,17 @@ print.summary.outcomeModel <- function(data){
   }
 }
 
+#' @export
 coef.outcomeModel <- function(outcomeModel){
   return(outcomeModel$treatmentEstimate$logRr)
 }
 
+#' @export
 confint.outcomeModel <- function(outcomeModel){
   return(c(outcomeModel$treatmentEstimate$logLb95,outcomeModel$treatmentEstimate$logUb95))
 }
 
+#' @export
 print.outcomeModel <- function(outcomeModel){
   writeLines(paste("Model type:",outcomeModel$modelType))
   writeLines(paste("Status:",outcomeModel$status))

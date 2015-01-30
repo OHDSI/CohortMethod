@@ -16,7 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#' @export
 createCmAnalysisDetails <- function (analysisId,
                                      washoutWindow = 183,
                                      indicationLookbackWindow = 183,
@@ -80,7 +79,6 @@ createCmAnalysisDetails <- function (analysisId,
   analysisDetails
 }
 
-#' @export
 appendToCmAnalysesDetails <- function(cmAnalysisDetails,cmAnalysesDetails = NULL){
   stopifnot(class(cmAnalysisDetails) == "cmAnalysisDetails")
   if (is.null(cmAnalysesDetails)){
@@ -91,7 +89,6 @@ appendToCmAnalysesDetails <- function(cmAnalysisDetails,cmAnalysesDetails = NULL
   cmAnalysesDetails
 }
 
-#' @export
 writeCmAnalysesDetailsToFile <- function(cmAnalysesDetails, file){
   stopifnot(class(cmAnalysesDetails) == "cmAnalysesDetails")
   
@@ -110,7 +107,6 @@ writeCmAnalysesDetailsToFile <- function(cmAnalysesDetails, file){
   write.csv(d,file=file, row.names=FALSE)
 }
 
-#' @export
 readCmAnalysesDetailsFromFile <- function(file){
   d <- read.csv(file)
   d[is.na(d)] <- ""

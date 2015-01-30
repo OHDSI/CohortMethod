@@ -25,8 +25,8 @@
 #' @param cohortData        An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #'
 #' @details
-#' The output of this function is an object that can be used by the \code{simulateCohortData} function
-#' to generate a cohortData object.
+#' The output of this function is an object that can be used by the 
+#' \code{simulateCohortData} function to generate a cohortData object.
 #' 
 #' @return              
 #' An object of type \code{cohortDataSimulationProfile}.
@@ -83,7 +83,7 @@ createCohortDataSimulationProfile <- function(cohortData){
 #' \code{simulateCohortData} creates a cohortData object with simulated data.
 #'
 #' @param cohortDataSimulationProfile        An object of type \code{cohortDataSimulationProfile} as 
-#' generated using the \code{createCohortDataSimulationProfile} function.
+#' generated using the \cr\code{createCohortDataSimulationProfile} function.
 #' @param n   The size of the population to be generated.
 #'
 #' @details

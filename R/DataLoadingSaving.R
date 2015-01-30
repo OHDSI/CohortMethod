@@ -40,7 +40,7 @@ snakeCaseToCamelCase <- function(string){
 #' Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
 #' Covariates are automatically extracted from the appropriate tables within the CDM.
 #'
-#' @param connectionDetails  	An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
+#' @param connectionDetails  	An R object of type\cr\code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' 
 #' @param sourceName    The name of the source database, to be used to name temporary files and distinguish results within organizations with multiple databases.   	
 #' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.   		
@@ -54,7 +54,7 @@ snakeCaseToCamelCase <- function(string){
 #' @param comparatorDrugConceptId   	A unique identifier to define the comparator cohort.  If exposureTable = DRUG_ERA, comparatorDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, comparatorDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.	
 #' @param indicationConceptIds   A list of CONCEPT_IDs used to restrict the target and comparator cohorts, based on any descendant condition of this list occurring at least once within the indicationLookbackWindow prior to the cohort index date.  	
 #' @param exclusionConceptIds   A list of CONCEPT_IDs used to restrict the cohorts, based on any descendant conditions/drugs/procedures occurring at least once anytime prior to the cohort index date.	
-#' @param outcomeConceptIds 	A list of CONCEPT_IDs used to define outcomes.  If outcomeTable=CONDITION_OCCURRENCE, the list is a set of ancestor CONCEPT_IDs, and all occurrences of all descendant concepts will be selected.  If outcomeTable<>CONDITION_OCCURRENCE, the list contains records found in COHORT_DEFINITION_ID field.
+#' @param outcomeConceptIds 	A list of CONCEPT_IDs used to define outcomes.  If outcomeTable = CONDITION_OCCURRENCE, the list is a set of ancestor CONCEPT_IDs, and all occurrences of all descendant concepts will be selected.  If outcomeTable <> CONDITION_OCCURRENCE, the list contains records found in COHORT_DEFINITION_ID field.
 #' @param excludedCovariateConceptIds    A list of Covariate Ids that should be removed from the COVARIATE table prior to fitting any model (either propensity score model or outcome model).  Generally required if any covariates perfectly predict exposure status (e.g. the target drug itself).
 #' 
 #' @param washoutWindow 		The mininum required continuous observation time prior to index date for a person to be included in the cohort.
@@ -416,6 +416,7 @@ loadCohortData <- function(file, readOnly = FALSE){
   return(result)
 }
 
+#' @export
 print.cohortData <- function(cohortData){
   writeLines("CohortData object")
   writeLines("")
@@ -424,6 +425,7 @@ print.cohortData <- function(cohortData){
   writeLines(paste("Outcome concept ID(s):",paste(cohortData$metaData$outcomeConceptIds,collapse=",")))
 }
 
+#' @export
 summary.cohortData <- function(cohortData){
   treatedPersons = ffbase::sum.ff(cohortData$cohorts$treatment)  
   comparatorPersons = nrow(cohortData$cohorts)-treatedPersons
@@ -447,6 +449,7 @@ summary.cohortData <- function(cohortData){
   return(result)
 }
 
+#' @export
 print.summary.cohortData <- function(data){
   writeLines("CohortData object summary")
   writeLines("")
