@@ -75,7 +75,10 @@ Development
 CohortMethod is being developed in R Studio.
 
 ###Development status
+[![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
+
 Under development: do not expect this to work
+
 
 # Acknowledgements
 - This project is supported in part through the National Science Foundation grant IIS 1251151.
