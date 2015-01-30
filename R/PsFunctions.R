@@ -757,6 +757,7 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName=NULL) {
 #' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
 #'
 #' @param balance  A data frame created by the \code{computeCovariateBalance} funcion.
+#' @param n  Count of variates to plot.
 #' @param maxNameWidth  Covariate names longer than this number of characters are truncated to create a nicer plot.
 #' @param fileName  Name of the file where the plot should be saved, for example 'plot.png'. See the 
 #' function \code{ggsave} in the ggplot2 package for supported file formats.
