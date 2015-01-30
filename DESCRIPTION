@@ -20,7 +20,7 @@ Description: CohortMethod is an R package for performing new-user cohort studies
 License: Apache License 2.0
 VignetteBuilder: knitr
 Depends:
-    Cyclops,
+    Cyclops (>= 1.0.0),
     DatabaseConnector,
     ffbase,
     R (>= 3.1.0),
