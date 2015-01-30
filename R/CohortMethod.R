@@ -26,6 +26,8 @@
 #' @docType package
 #' @name CohortMethod
 #' @importFrom Rcpp evalCpp
+#' @import Cyclops
+#' @import survival
 #' @useDynLib CohortMethod
 NULL
 
