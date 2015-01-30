@@ -28,7 +28,7 @@ createDataForModelFitCox <- function(useStrata,
                                      covariates,
                                      outcomes) {
   if (nrow(outcomes) == 0){
-    data <- as.ram(cohorts)
+    data <- ff::as.ram(cohorts)
     data$timeToEvent <- NA
   } else {
     outcomes <- aggregate(timeToEvent ~ rowId,data=outcomes,min) #keep first outcome per person
@@ -44,24 +44,24 @@ createDataForModelFitCox <- function(useStrata,
     if (useStrata){
       informativeStrata <- unique(data$stratumId[data$y == 1])
       informativeData <- data[data$stratumId %in% informativeStrata,]
-      covariates <- merge(covariates,as.ffdf(informativeData[,c("rowId","y","time","stratumId")]))
-      result$cyclopsData <- convertToCyclopsData(as.ffdf(informativeData),covariates,modelType="cox",quiet=TRUE)
+      covariates <- merge(covariates,ff::as.ffdf(informativeData[,c("rowId","y","time","stratumId")]))
+      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(informativeData),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
       data$stratumId <- NULL
-      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
-      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
+      covariates <- merge(covariates,ff::as.ffdf(data[,c("rowId","y","time")]))
+      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(data),covariates,modelType="cox",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
   } else {# don't use covariates    
     if (useStrata){
-      result$cyclopsData <- createCyclopsData(Surv(time, y) ~ treatment + strata(stratumId),data=data, modelType = "cox")
+      result$cyclopsData <- createCyclopsData(survival::Surv(time, y) ~ treatment + strata(stratumId),data=data, modelType = "cox")
       result$data <- data
       result$treatmentVariable <- "treatment"
     } else {
-      result$cyclopsData <- createCyclopsData(Surv(time, y) ~ treatment,data=data, modelType = "cox")
+      result$cyclopsData <- createCyclopsData(survival::Surv(time, y) ~ treatment,data=data, modelType = "cox")
       result$data <- data
       result$data$stratumId <- NULL
       result$treatmentVariable <-"treatment"
@@ -76,7 +76,7 @@ createDataForModelFitPoisson <- function(useStrata,
                                          covariates,
                                          outcomes) {
   if (nrow(outcomes) == 0){
-    data <- as.ram(cohorts[,c("treatment","rowId","stratumId","timeToCensor")])
+    data <- ff::as.ram(cohorts[,c("treatment","rowId","stratumId","timeToCensor")])
     data$y <- 0
   } else {
     outcomes <- ff::as.ram(outcomes)
@@ -97,13 +97,13 @@ createDataForModelFitPoisson <- function(useStrata,
     if (useStrata){
       informativeStrata <- unique(data$stratumId[data$y == 1])
       informativeData <- data[data$stratumId %in% informativeStrata,]
-      covariates <- merge(covariates,as.ffdf(informativeData[,c("rowId","y","time","stratumId")]))
-      result$cyclopsData <- convertToCyclopsData(as.ffdf(informativeData),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
+      covariates <- merge(covariates,ff::as.ffdf(informativeData[,c("rowId","y","time","stratumId")]))
+      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(informativeData),covariates,modelType="cpr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
-      covariates <- merge(covariates,as.ffdf(data[,c("rowId","y","time")]))
-      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="pr",quiet=TRUE)
+      covariates <- merge(covariates,ff::as.ffdf(data[,c("rowId","y","time")]))
+      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(data),covariates,modelType="pr",quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
@@ -128,7 +128,7 @@ createDataForModelFitLogistic <- function(useStrata,
                                           covariates,
                                           outcomes) {
   if (nrow(outcomes) == 0){
-    data <- as.ram(cohorts[,c("treatment","rowId","stratumId")])
+    data <- ff::as.ram(cohorts[,c("treatment","rowId","stratumId")])
     data$y <- 0
   } else {
     outcomes <- ff::as.ram(outcomes)
@@ -146,12 +146,12 @@ createDataForModelFitLogistic <- function(useStrata,
     if (useStrata){
       informativeStrata <- unique(data$stratumId[data$y == 1])
       informativeData <- data[data$stratumId %in% informativeStrata,]
-      covariates <- merge(covariates,as.ffdf(informativeData[,c("rowId","stratumId")]))
-      result$cyclopsData <- convertToCyclopsData(as.ffdf(informativeData),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
+      covariates <- merge(covariates,ff::as.ffdf(informativeData[,c("rowId","stratumId")]))
+      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(informativeData),covariates,modelType="clr",addIntercept=FALSE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     } else {
-      result$cyclopsData <- convertToCyclopsData(as.ffdf(data),covariates,modelType="lr",addIntercept=TRUE,quiet=TRUE)
+      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(data),covariates,modelType="lr",addIntercept=TRUE,quiet=TRUE)
       result$data <- data
       result$treatmentVariable <- 1
     }
@@ -218,19 +218,19 @@ createDataForModelFit <- function(outcomeConceptId,
   cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <-  cohorts$timeToObsPeriodEnd[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd]
   
   outcomes <- tryCatch({
-    merge(outcomes,as.ffdf(cohorts))
+    merge(outcomes,ff::as.ffdf(cohorts))
   }, warning = function(w){
     if (w$message == "No match found, returning NULL as ffdf can not contain 0 rows")
       data.frame() #No events within selected population, return empty data.frame
     else 
-      merge(outcomes,as.ffdf(cohorts))
+      merge(outcomes,ff::as.ffdf(cohorts))
   })
   if (nrow(outcomes) != 0)
     outcomes <- tryCatch({
       ffbase::subset.ffdf(outcomes, timeToEvent >= riskWindowStart & timeToEvent <= timeToCensor)  
     }, error = function(e){
       if (e$message == "no applicable method for 'as.hi' applied to an object of class \"NULL\"") {
-        data.frame(as.ram(outcomes)[0,]) #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
+        data.frame(ff::as.ram(outcomes)[0,]) #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
       } else {
         stop(as.character(e$message))
       }
@@ -312,7 +312,7 @@ fitOutcomeModel <- function(outcomeConceptId,
       prior$exclude = dataObject$treatmentVariable 
     else
       prior <- createPrior("none") #Only one variable, which we're not going to regularize, so effectively no prior
-    fit <- fitCyclopsModel(dataObject$cyclopsData, 
+    fit <- Cyclops::fitCyclopsModel(dataObject$cyclopsData, 
                            prior = prior,
                            control = control)  
     if (fit$return_flag == "ILLCONDITIONED"){
@@ -498,7 +498,7 @@ getOutcomeModel <- function(outcomeModel,cohortData){
   attr(cfs,"names")[attr(cfs,"names") == "treatment"] <- 1
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
   
-  cfs <- merge(as.ffdf(cfs), cohortData$covariateRef, by.x = "id", by.y = "covariateId", all.x = TRUE)
+  cfs <- merge(ff::as.ffdf(cfs), cohortData$covariateRef, by.x = "id", by.y = "covariateId", all.x = TRUE)
   cfs <- ff::as.ram(cfs[,c("coefficient","id","covariateName")])
   cfs$covariateName <- as.character(cfs$covariateName)
   cfs <- cfs[order(-abs(cfs$coefficient)),]
@@ -542,7 +542,7 @@ plotKaplanMeier <- function(outcomeModel,
   if (outcomeModel$stratified)
     warning("The outcome model is stratified, but the stratification is not visible in the plot")
   
-  sv <- survfit(Surv(time, y) ~ treatment, outcomeModel$data, conf.int = TRUE)
+  sv <- survival::survfit(survival::Surv(time, y) ~ treatment, outcomeModel$data, conf.int = TRUE)
   data <- data.frame(
     time = sv$time,
     n.risk = sv$n.risk,

@@ -119,8 +119,8 @@ getPsModel <- function(propensityScore, cohortData){
   cfs <- cfs[cfs != 0]
   attr(cfs,"names")[1] <- 0 #Rename intercept to 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs,"names")))
-  cfs <- merge(as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="covariateId")
-  cfs <- as.ram(cfs[,c("coefficient","id","covariateName")])
+  cfs <- merge(ff::as.ffdf(cfs),cohortData$covariateRef,by.x="id",by.y="covariateId")
+  cfs <- ff::as.ram(cfs[,c("coefficient","id","covariateName")])
   cfs <- cfs[order(-abs(cfs$coefficient)),]
   return(cfs)
 }
@@ -345,7 +345,7 @@ mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
   for (covariateId in covariateIds){
     t <- cohortData$covariates$covariateId == covariateId
     if (any(t)){
-      values <- as.ram(cohortData$covariates[ffbase::ffwhich(t,t == TRUE),c(1,3)])
+      values <- ff::as.ram(cohortData$covariates[ffbase::ffwhich(t,t == TRUE),c(1,3)])
       colnames(values)[colnames(values) == "covariateValue"] = paste("covariateId",covariateId,sep="_")
       data <- merge(data,values,all.x = TRUE)
       col <- which(colnames(data) == paste("covariateId",covariateId,sep="_"))
@@ -690,7 +690,7 @@ computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConce
   }
   
   beforeMatching <- computeMeansPerGroup(cohorts,covariates)
-  afterMatching <- computeMeansPerGroup(as.ffdf(restrictedCohorts),covariates)
+  afterMatching <- computeMeansPerGroup(ff::as.ffdf(restrictedCohorts),covariates)
   
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
@@ -703,7 +703,7 @@ computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConce
   colnames(afterMatching)[colnames(afterMatching) == "sumComparator"] <- "afterMatchingSumComparator"
   colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
   balance <- merge(beforeMatching,afterMatching)
-  balance <- merge(balance,as.ram(cohortData$covariateRef))
+  balance <- merge(balance,ff::as.ram(cohortData$covariateRef))
   balance$beforeMatchingStdDiff <- (balance$beforeMatchingMeanTreated-balance$beforeMatchingMeanComparator)/balance$beforeMatchingSd
   balance$afterMatchingStdDiff <- (balance$afterMatchingMeanTreated-balance$afterMatchingMeanComparator)/balance$afterMatchingSd
   balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0

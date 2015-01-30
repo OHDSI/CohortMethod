@@ -26,8 +26,14 @@
 #' @docType package
 #' @name CohortMethod
 #' @importFrom Rcpp evalCpp
-#' @import Cyclops
-#' @import survival
+# @importFrom bit chunk
+# @importFrom bit ri
+# @import bit
+# @import ff
+# @import ffbase
+# @import Cyclops
+# @import survival
+#' @importFrom survival strata
 #' @useDynLib CohortMethod
 NULL
 

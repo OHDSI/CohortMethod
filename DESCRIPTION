@@ -17,21 +17,22 @@ Description: CohortMethod is an R package for performing new-user cohort studies
   propensity score distribution plots and plots showing covariate balance before and after 
   matching and/or trimming. Supported outcome models are (conditional) logistic regression,
   (conditional) Poisson regression, and (conditional) Cox regression.
-License: Apache License 2.0
+License: Apache License 2.0 + file LICENSE
 VignetteBuilder: knitr
 Depends:
-    R (>= 3.1.0)
-Imports:
-    bit, 
+    R (>= 3.1.0),
+    bit,
     Cyclops (>= 1.0.0),
-    DatabaseConnector,    
-    ffbase,
     ff,
+    ffbase, 
+    survival
+Imports:     
+    DatabaseConnector,
     ggplot2,
     plyr,
-    Rcpp (>= 0.11.2),    
-    SqlRender (>= 1.0.0),
-    survival    
+    Rcpp (>= 0.11.2),   
+    RJDBC,
+    SqlRender (>= 1.0.0)   
 Suggests:
     testthat,
     pROC,

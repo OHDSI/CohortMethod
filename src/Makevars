@@ -23,5 +23,3 @@ CXX_STD = CXX11
 ## Of course, autoconf can also be used to write configure files. This is
 ## done by a number of packages, but recommended only for more advanced users
 ## comfortable with autoconf and its related tools.
-
-

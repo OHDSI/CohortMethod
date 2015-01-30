@@ -55,21 +55,21 @@ createCohortDataSimulationProfile <- function(cohortData){
   }
   
   writeLines("Fitting models for time to observation period end and time to cohort end")
-  obsEnd <- as.ram(cohortData$cohorts$timeToObsPeriodEnd)
-  cohortEnd <- as.ram(cohortData$cohorts$timeToCohortEnd)
+  obsEnd <- ff::as.ram(cohortData$cohorts$timeToObsPeriodEnd)
+  cohortEnd <- ff::as.ram(cohortData$cohorts$timeToCohortEnd)
   event <- as.integer(cohortEnd < obsEnd)
   time <- cohortEnd
   time[cohortEnd > obsEnd] <- obsEnd[cohortEnd > obsEnd]
   data <- data.frame(time=time,event=event)
   data <- data[data$time>0,]
-  fitCohortEnd = survreg (Surv(time,event) ~ 1, data=data,dist="exponential");
-  fitObsEnd = survreg (Surv(obsEnd[obsEnd>0]) ~ 1, dist="exponential");
+  fitCohortEnd = survreg (survival::Surv(time,event) ~ 1, data=data,dist="exponential");
+  fitObsEnd = survreg (survival::Surv(obsEnd[obsEnd>0]) ~ 1, dist="exponential");
   
   result <- list(covariatePrevalence = covariatePrevalence,
                  propensityModel = propensityModel,
                  outcomeModels = outcomeModels,
                  metaData = cohortData$metaData,
-                 covariateRef = as.ram(cohortData$covariateRef),
+                 covariateRef = ff::as.ram(cohortData$covariateRef),
                  cohortEndRate = 1/exp(coef(fitCohortEnd)),
                  obsEndRate = 1/exp(coef(fitObsEnd))
   )
@@ -174,11 +174,11 @@ simulateCohortData <- function(cohortDataSimulationProfile, n=10000){
     allOutcomes <- rbind(allOutcomes,outcomes)
   }
   
-  result <- list(outcomes = as.ffdf(allOutcomes),
-                 cohorts = as.ffdf(cohorts),
-                 covariates = as.ffdf(covariates),
+  result <- list(outcomes = ff::as.ffdf(allOutcomes),
+                 cohorts = ff::as.ffdf(cohorts),
+                 covariates = ff::as.ffdf(covariates),
                  exclude = NULL,
-                 covariateRef = as.ffdf(cohortDataSimulationProfile$covariateRef),
+                 covariateRef = ff::as.ffdf(cohortDataSimulationProfile$covariateRef),
                  metaData = cohortDataSimulationProfile$metaData
   )
   
