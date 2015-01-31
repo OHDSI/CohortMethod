@@ -426,24 +426,24 @@ print.cohortData <- function(x, ...){
 }
 
 #' @export
-summary.cohortData <- function(cohortData){
-  treatedPersons = ffbase::sum.ff(cohortData$cohorts$treatment)  
-  comparatorPersons = nrow(cohortData$cohorts)-treatedPersons
-  outcomeCounts = data.frame(outcomeConceptId = cohortData$metaData$outcomeConceptIds, eventCount = 0, personCount = 0)
+summary.cohortData <- function(object, ...){
+  treatedPersons = ffbase::sum.ff(object$cohorts$treatment)  
+  comparatorPersons = nrow(object$cohorts)-treatedPersons
+  outcomeCounts = data.frame(outcomeConceptId = object$metaData$outcomeConceptIds, eventCount = 0, personCount = 0)
   for (i in 1:nrow(outcomeCounts)){
-    outcomeCounts$eventCount[i] = ffbase::sum.ff(cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i])
+    outcomeCounts$eventCount[i] = ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] = 0
     else
-      outcomeCounts$personCount[i] = length(ffbase::unique.ff(cohortData$outcomes$rowId[cohortData$outcomes$outcomeId == cohortData$metaData$outcomeConceptIds[i]]) )   
+      outcomeCounts$personCount[i] = length(ffbase::unique.ff(object$outcomes$rowId[object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i]]) )   
   }
   
-  result <- list(metaData = cohortData$metaData,
+  result <- list(metaData = object$metaData,
                  treatedPersons = treatedPersons,
                  comparatorPersons = comparatorPersons,
                  outcomeCounts = outcomeCounts,
-                 covariateCount = nrow(cohortData$covariateRef),
-                 covariateValueCount = nrow(cohortData$covariates)                 
+                 covariateCount = nrow(object$covariateRef),
+                 covariateValueCount = nrow(object$covariates)                 
   )
   class(result) <- "summary.cohortData"
   return(result)

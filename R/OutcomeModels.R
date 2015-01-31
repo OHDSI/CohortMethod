@@ -365,10 +365,10 @@ fitOutcomeModel <- function(outcomeConceptId,
 }
 
 #' @export
-summary.outcomeModel <- function(outcomeModel){
-  if (outcomeModel$modelType == "clr" || outcomeModel$modelType == "lr"){
-    patientTable <- table(outcomeModel$data$treatment)
-    eventTable <- table(outcomeModel$data$treatment, outcomeModel$data$y)
+summary.outcomeModel <- function(object, ...){
+  if (object$modelType == "clr" || object$modelType == "lr"){
+    patientTable <- table(object$data$treatment)
+    eventTable <- table(object$data$treatment, object$data$y)
     
     counts <- matrix(0, nrow=2, ncol=2)
     counts[1,] <- patientTable
@@ -379,9 +379,9 @@ summary.outcomeModel <- function(outcomeModel){
     colnames(counts) <- c("Comparator","Treated")
     rownames(counts) <- c("Nr. of persons","Nr. of events")
   } else {
-    patientTable <- table(outcomeModel$data$treatment)
-    eventTable <- table(outcomeModel$data$treatment, outcomeModel$data$y)
-    timeTable <- aggregate(time ~ treatment, FUN = sum, data = outcomeModel$data)[,2]
+    patientTable <- table(object$data$treatment)
+    eventTable <- table(object$data$treatment, object$data$y)
+    timeTable <- aggregate(time ~ treatment, FUN = sum, data = object$data)[,2]
     
     counts <- matrix(0, nrow=3, ncol=2)
     counts[1,] <- patientTable
@@ -395,23 +395,23 @@ summary.outcomeModel <- function(outcomeModel){
   }
   
   
-  if (is.null(outcomeModel$coefficients)){
-    result <- list(modelType = outcomeModel$modelType,
+  if (is.null(object$coefficients)){
+    result <- list(modelType = object$modelType,
                    counts = counts)
   } else {
-    model <- c(length(outcomeModel$coefficients),sum(outcomeModel$coefficients != 0))
+    model <- c(length(object$coefficients),sum(object$coefficients != 0))
     names(model) <- c("Nr. of betas","Nr. of non-zero betas")
-    if (!is.null(outcomeModel$data$stratumId)){
-      model <- c(model,length(unique(outcomeModel$data$stratumId)))
+    if (!is.null(object$data$stratumId)){
+      model <- c(model,length(unique(object$data$stratumId)))
       names(model)[length(model)] <- "Number of strata"
     }
     
-    result <- list(modelType = outcomeModel$modelType,
+    result <- list(modelType = object$modelType,
                    counts = counts, 
                    model = model,
-                   priorVariance = outcomeModel$priorVariance,
-                   coefficients = outcomeModel$treatmentEstimate,
-                   status = outcomeModel$status)
+                   priorVariance = object$priorVariance,
+                   coefficients = object$treatmentEstimate,
+                   status = object$status)
   }
   class(result) <- "summary.outcomeModel"
   return(result);
