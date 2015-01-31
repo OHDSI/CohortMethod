@@ -634,7 +634,7 @@ computeMeansPerGroup <- function(cohorts, covariates){
   nComparator <- nOverall - nTreated
   
   t <- in.ff(covariates$rowId,cohorts$rowId[cohorts$treatment == 1])
-  treated <- quickSum(covariates[ffwhich(t,t == TRUE),])
+  treated <- quickSum(covariates[ffbase::ffwhich(t,t == TRUE),])
   treated$meanTreated <- treated$sum / nTreated
   colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
   

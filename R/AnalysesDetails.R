@@ -62,7 +62,7 @@ createCmAnalysisDetails <- function (analysisId,
 ){
   #First: get the default values:
   analysisDetails <- list()
-  for (name in names(formals(createSccAnalysisDetails))){
+  for (name in names(formals(createCmAnalysisDetails))){
     analysisDetails[[name]] = get(name)
   }
   
