@@ -33,23 +33,23 @@
   resultsSchema <- "scratch"
   port <- NULL
   
-  connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
-  sql <- readSql("coxibVsNonselVsGiBleed.sql")
-  sql <- renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)$sql
-  sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
+  sql <- SqlRender::readSql("coxibVsNonselVsGiBleed.sql")
+  sql <- SqlRender::renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)$sql
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   
-  connection <- connect(connectionDetails)
-  executeSql(connection, sql)
+  connection <- DatabaseConnector::connect(connectionDetails)
+  DatabaseConnector::executeSql(connection, sql)
   
   # Check number of subjects per cohort:
   sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
-  sql <- renderSql(sql, resultsSchema = resultsSchema)$sql
-  sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-  querySql(connection, sql)
+  sql <- SqlRender::renderSql(sql, resultsSchema = resultsSchema)$sql
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  DatabaseConnector::querySql(connection, sql)
   
   # Get all NSAIDs:
   sql <- "SELECT concept_id FROM concept_ancestor INNER JOIN concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-  nsaids <- querySql(connection, sql)
+  nsaids <- DatabaseConnector::querySql(connection, sql)
   nsaids <- nsaids$CONCEPT_ID
   
   #Load data:
