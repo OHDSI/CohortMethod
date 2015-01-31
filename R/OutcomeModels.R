@@ -418,20 +418,20 @@ summary.outcomeModel <- function(outcomeModel){
 }
 
 #' @export
-print.summary.outcomeModel <- function(data){
-  writeLines(paste("Model type:",data$modelType))
+print.summary.outcomeModel <- function(x, ...){
+  writeLines(paste("Model type:",x$modelType))
   writeLines(paste("Status:",outcomeModel$status))
   writeLines("")
   writeLines("Counts")
-  printCoefmat(data$counts)
-  if (!is.null(data$model)){
+  printCoefmat(x$counts)
+  if (!is.null(x$model)){
     writeLines("")
     writeLines("Model")
-    print(data$model)
+    print(x$model)
     
     writeLines("")
     writeLines("Coefficients")
-    d <- data$coefficients
+    d <- x$coefficients
     output <- data.frame(exp(d$logRr), 
                          exp(d$logLb95),
                          exp(d$logUb95),
@@ -442,7 +442,7 @@ print.summary.outcomeModel <- function(data){
     rownames(output) <- "treatment"
     printCoefmat(output)
     writeLines("")
-    writeLines(paste("Prior variance:",data$priorVariance))
+    writeLines(paste("Prior variance:",x$priorVariance))
   }
 }
 
@@ -457,11 +457,11 @@ confint.outcomeModel <- function(outcomeModel){
 }
 
 #' @export
-print.outcomeModel <- function(outcomeModel){
-  writeLines(paste("Model type:",outcomeModel$modelType))
-  writeLines(paste("Status:",outcomeModel$status))
+print.outcomeModel <- function(x, ...){
+  writeLines(paste("Model type:",x$modelType))
+  writeLines(paste("Status:",x$status))
   
-  d <- outcomeModel$treatmentEstimate
+  d <- x$treatmentEstimate
   output <- data.frame(exp(d$logRr), 
                        exp(d$logLb95),
                        exp(d$logUb95),
@@ -470,7 +470,7 @@ print.outcomeModel <- function(outcomeModel){
   colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr","seLogRr")
   rownames(output) <- "treatment"
   writeLines("")
-  writeLines(paste("Prior variance:",outcomeModel$priorVariance))
+  writeLines(paste("Prior variance:",x$priorVariance))
   printCoefmat(output)
 }
 

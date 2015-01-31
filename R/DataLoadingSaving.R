@@ -417,12 +417,12 @@ loadCohortData <- function(file, readOnly = FALSE){
 }
 
 #' @export
-print.cohortData <- function(cohortData){
+print.cohortData <- function(x, ...){
   writeLines("CohortData object")
   writeLines("")
-  writeLines(paste("Treatment concept ID:",cohortData$metaData$targetDrugConceptId))
-  writeLines(paste("Comparator concept ID:",cohortData$metaData$comparatorDrugConceptId))
-  writeLines(paste("Outcome concept ID(s):",paste(cohortData$metaData$outcomeConceptIds,collapse=",")))
+  writeLines(paste("Treatment concept ID:",x$metaData$targetDrugConceptId))
+  writeLines(paste("Comparator concept ID:",x$metaData$comparatorDrugConceptId))
+  writeLines(paste("Outcome concept ID(s):",paste(x$metaData$outcomeConceptIds,collapse=",")))
 }
 
 #' @export
@@ -450,24 +450,24 @@ summary.cohortData <- function(cohortData){
 }
 
 #' @export
-print.summary.cohortData <- function(data){
+print.summary.cohortData <- function(x, ...){
   writeLines("CohortData object summary")
   writeLines("")
-  writeLines(paste("Treatment concept ID:",data$metaData$targetDrugConceptId))
-  writeLines(paste("Comparator concept ID:",data$metaData$comparatorDrugConceptId))
-  writeLines(paste("Outcome concept ID(s):",paste(data$metaData$outcomeConceptIds,collapse=",")))
+  writeLines(paste("Treatment concept ID:",x$metaData$targetDrugConceptId))
+  writeLines(paste("Comparator concept ID:",x$metaData$comparatorDrugConceptId))
+  writeLines(paste("Outcome concept ID(s):",paste(x$metaData$outcomeConceptIds,collapse=",")))
   writeLines("")
-  writeLines(paste("Treated persons:",paste(data$treatedPersons)))
-  writeLines(paste("Comparator persons:",paste(data$comparatorPersons)))
+  writeLines(paste("Treated persons:",paste(x$treatedPersons)))
+  writeLines(paste("Comparator persons:",paste(x$comparatorPersons)))
   writeLines("")
   writeLines("Outcome counts:")
-  outcomeCounts <- data$outcomeCounts
+  outcomeCounts <- x$outcomeCounts
   rownames(outcomeCounts) <- outcomeCounts$outcomeConceptId
   outcomeCounts$outcomeConceptId <- NULL
   colnames(outcomeCounts) <- c("Event count","Person count")
   printCoefmat(outcomeCounts)
   writeLines("")
   writeLines("Covariates:")
-  writeLines(paste("Number of covariates:",data$covariateCount))
-  writeLines(paste("Number of non-zero covariate values:",data$covariateValueCount)) 
+  writeLines(paste("Number of covariates:",x$covariateCount))
+  writeLines(paste("Number of non-zero covariate values:",x$covariateValueCount)) 
 }
