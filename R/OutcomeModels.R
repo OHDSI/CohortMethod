@@ -447,13 +447,13 @@ print.summary.outcomeModel <- function(x, ...){
 }
 
 #' @export
-coef.outcomeModel <- function(outcomeModel){
-  return(outcomeModel$treatmentEstimate$logRr)
+coef.outcomeModel <- function(object, ...){
+  return(outcomeModel$object$logRr)
 }
 
 #' @export
-confint.outcomeModel <- function(outcomeModel){
-  return(c(outcomeModel$treatmentEstimate$logLb95,outcomeModel$treatmentEstimate$logUb95))
+confint.outcomeModel <- function(object, parm, level = 0.95, ...){
+  return(c(object$treatmentEstimate$logLb95,object$treatmentEstimate$logUb95))
 }
 
 #' @export
