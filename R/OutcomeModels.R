@@ -448,7 +448,7 @@ print.summary.outcomeModel <- function(x, ...){
 
 #' @export
 coef.outcomeModel <- function(object, ...){
-  return(outcomeModel$object$logRr)
+  return(object$treatmentEstimate$logRr)
 }
 
 #' @export
