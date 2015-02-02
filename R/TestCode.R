@@ -1,3 +1,4 @@
+#' @keywords internal
 testCode <- function(){
   ### Test code ###
   library(CohortMethod)
@@ -24,11 +25,11 @@ testCode <- function(){
   port <- 17001
   
   #Part one: loading the data:
-  connectionDetails <- createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
    
   cohortData <- getDbCohortData(connectionDetails,
-                                cdmSchema=cdmSchema,
-                                resultsSchema=resultsSchema,
+                                cdmDatabaseSchema=cdmSchema,
+                                resultsDatabaseSchema=resultsSchema,
                                 targetDrugConceptId = 755695,
                                 comparatorDrugConceptId = 739138,
                                 indicationConceptIds = 439926,
@@ -70,6 +71,13 @@ testCode <- function(){
   plotCovariateBalanceOfTopVariables(balance,fileName = "balanceTopVarPlot.png")
   
   
+  ####
+  cohortData <- loadCohortData("cohortData") 
+  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1,exclude=c(0)))
+  psTrimmed <- trimByPsToEquipoise(ps)
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
+  
+  
   #Part three: Fit the outcome model:
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
   
@@ -78,9 +86,9 @@ testCode <- function(){
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "pr", prior=createPrior("laplace",0.1))
  
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "lr", prior=createPrior("laplace",0.1))
-  
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
-  
+  #
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, stratifiedCox =  FALSE, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
+  #
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "clr", prior=createPrior("laplace",0.1))
   
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "pr", prior=createPrior("laplace",0.1))

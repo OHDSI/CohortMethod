@@ -12,6 +12,9 @@ fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
   selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
+\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
+creating the outcome model.}
+
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 
 \item{subPopulation}{A data frame specifying the (matched and/or trimmed) subpopulation to be
@@ -22,7 +25,11 @@ least a \code{RowId}, and a \code{StratumId} when including stratification.}
 \code{subPopulation} in the analysis. For Poisson regression and logistic regression, this is implied in
 'clr' and 'cpr'.}
 
-\item{riskWindowEnd}{The maximum length (in days) of the risk window.}
+\item{riskWindowStart}{The start of the risk window (in days) relative to the index data.}
+
+\item{riskWindowEnd}{The end of the risk window (in days) relative to the index data (+ days of exposure if the \code{addExposureDaysToEnd} parameter is specified).}
+
+\item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
 \item{useCovariates}{Whether to use the covariate matrix in the cohortData in the outcome model.}
 

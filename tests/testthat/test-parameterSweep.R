@@ -2,7 +2,7 @@ library("testthat")
 
 # This is a broad, shallow sweep of all functionality. It checks whether the code produces 
 # an output (and does not throw an error) under a wide range of parameter settings 
-
+set.seed(123)
 print(getOption("fftempdir"))
 data(cohortDataSimulationProfile)
 sampleSize <- 1000
@@ -108,7 +108,7 @@ test_that("Outcome functions", {
                                           addExposureDaysToEnd = addExposureDaysToEnd,
                                           useCovariates = useCovariates, 
                                           modelType = modelType,
-                                          prior=createPrior("laplace",0.1))
+                                          prior=createPrior("laplace", 0.1))
           expect_is(outcomeModel,"outcomeModel")        
           logRrs <- c(logRrs,coef(outcomeModel))
           #params <- c(params,paste("type:",type,",stratified:",stratified,",useCovariates:",useCovariates,",addExposureDaysToEnd:",addExposureDaysToEnd))
@@ -122,4 +122,28 @@ test_that("Outcome functions", {
   
   # All analyses are fundamentally different, so should have no duplicate values at full precision:
   expect_equal(length(unique(logRrs)), length(logRrs))
+})
+
+
+test_that("Functions on outcome model", {   
+  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1, exclude=0))
+  strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized",maxRatio=1)
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = TRUE, modelType = "cox", prior=createPrior("laplace",0.1))
+  
+  s <- summary(outcomeModel)
+  expect_is(s,"summary.outcomeModel")
+  
+  p <- plotKaplanMeier(outcomeModel)
+  expect_is(p,"ggplot")  
+  
+  p <- drawAttritionDiagram(outcomeModel)
+  expect_is(p,"ggplot")  
+  
+  cf <- coef(outcomeModel)
+  ci <- confint(outcomeModel)  
+  expect_more_than(cf,ci[1])
+  expect_less_than(cf,ci[2])
+  
+  fullOutcomeModel <- getOutcomeModel(outcomeModel, cohortData)
+  expect_is(fullOutcomeModel,"data.frame")  
 })

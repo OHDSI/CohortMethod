@@ -23,7 +23,7 @@
 
 in.ff <- function(a,b){
   if (length(b) == 0)
-    return(as.ff(rep(FALSE, length(a))))
+    return(ff::as.ff(rep(FALSE, length(a))))
   else
     return(ffbase::ffmatch(x = a, table=b, nomatch = 0L) > 0L)
 }
@@ -64,7 +64,7 @@ createPs <- function(cohortData,
       covariateSubset <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
     } else {
       excludeCovariateIds <- c(excludeCovariateIds,1)
-      t <- in.ff(cohortData$covariates$covariateId,as.ff(excludeCovariateIds))
+      t <- in.ff(cohortData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
       covariateSubset <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
     }
   } else {
@@ -76,7 +76,7 @@ createPs <- function(cohortData,
     } else {
       excludeCovariateIds <- c(excludeCovariateIds,1)
     }
-    t <- t | in.ff(cohortData$covariates$covariateId,as.ff(excludeCovariateIds))
+    t <- t | in.ff(cohortData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
     covariateSubset <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
@@ -601,9 +601,9 @@ quickSum <- function(data,squared=FALSE){
   for (i in bit::chunk(data)){
     dataChunk <- data[i,]
     if (squared)
-      x <- bySum(dataChunk$covariateValue^2,as.factor(dataChunk$covariateId))
+      x <- ffbase::bySum(dataChunk$covariateValue^2,as.factor(dataChunk$covariateId))
     else
-      x <- bySum(dataChunk$covariateValue,as.factor(dataChunk$covariateId))
+      x <- ffbase::bySum(dataChunk$covariateValue,as.factor(dataChunk$covariateId))
     covariateId <- attr(x,"dimnames")
     attributes(x) <- NULL
     r <- data.frame(value = x,covariateId = covariateId, stringsAsFactors=FALSE)
@@ -630,22 +630,24 @@ quickSum <- function(data,squared=FALSE){
 
 computeMeansPerGroup <- function(cohorts, covariates){
   nOverall <- nrow(cohorts)
-  nTreated <-  sum(cohorts$treatment == 1)
+  nTreated <-  ffbase::sum.ff(cohorts$treatment == 1)
   nComparator <- nOverall - nTreated
   
-  t <- in.ff(covariates$rowId,cohorts$rowId[cohorts$treatment == 1])
+  t <- cohorts$treatment == 1
+  t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
   treated <- quickSum(covariates[ffbase::ffwhich(t,t == TRUE),])
   treated$meanTreated <- treated$sum / nTreated
   colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
   
-  t <- in.ff(covariates$rowId,cohorts$rowId[cohorts$treatment == 0])
-  comparator <- quickSum(covariates[ffwhich(t,t == TRUE),])
+  t <- cohorts$treatment == 0
+  t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
+  comparator <- quickSum(covariates[ffbase::ffwhich(t,t == TRUE),])
   comparator$meanComparator <- comparator$sum / nComparator
   colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   
   t <- in.ff(covariates$rowId,cohorts$rowId)
-  overall <- quickSum(covariates[ffwhich(t,t == TRUE),])
-  overallSqr <- quickSum(covariates[ffwhich(t,t == TRUE),],squared=TRUE)
+  overall <- quickSum(covariates[ffbase::ffwhich(t,t == TRUE),])
+  overallSqr <- quickSum(covariates[ffbase::ffwhich(t,t == TRUE),],squared=TRUE)
   overall <- merge(overall,overallSqr)
   overall$sd <- sqrt((overall$sumSqr - (overall$sum^2/nOverall))/nOverall)
   overall <- data.frame(covariateId = overall$covariateId,sd = overall$sd)

@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 0.1.0
-Date: 2015-01-30
+Version: 1.0.0
+Date: 2015-02-02
 Author: Martijn J. Schuemie [aut, cre],
   Marc A. Suchard [aut],
   Patrick B. Ryan [aut]  
@@ -17,22 +17,22 @@ Description: CohortMethod is an R package for performing new-user cohort studies
   propensity score distribution plots and plots showing covariate balance before and after 
   matching and/or trimming. Supported outcome models are (conditional) logistic regression,
   (conditional) Poisson regression, and (conditional) Cox regression.
-License: Apache License 2.0 + file LICENSE
+License: Apache License 2.0
 VignetteBuilder: knitr
 Depends:
     R (>= 3.1.0),
     bit,
-    Cyclops (>= 1.0.0),
+    DatabaseConnector,
+    Cyclops (>= 1.0.0)
+Imports:     
+    ggplot2,
     ff,
     ffbase, 
-    survival
-Imports:     
-    DatabaseConnector,
-    ggplot2,
     plyr,
     Rcpp (>= 0.11.2),   
     RJDBC,
-    SqlRender (>= 1.0.0)   
+    SqlRender (>= 1.0.0),
+    survival
 Suggests:
     testthat,
     pROC,

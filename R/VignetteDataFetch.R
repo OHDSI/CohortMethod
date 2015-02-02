@@ -16,12 +16,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#' @keywords internal
 .vignetteDataFetch <- function(){
   # This function should be used to fetch the data that is used in the vignettes.
-  library(SqlRender)
-  library(DatabaseConnector)
-  library(CohortMethod)
-  setwd("c:/temp")
+  #library(SqlRender)
+  #library(DatabaseConnector)
+  #library(CohortMethod)
+  #setwd("c:/temp")
   
   # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
   
@@ -33,7 +34,7 @@
   resultsSchema <- "scratch"
   port <- NULL
   
-  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, cdmSchema = cdmSchema, resulstSchema = resultsSchema, port=port)
   sql <- SqlRender::readSql("coxibVsNonselVsGiBleed.sql")
   sql <- SqlRender::renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
@@ -54,8 +55,8 @@
   
   #Load data:
   cohortData <- getDbCohortData(connectionDetails,
-                                cdmSchema = cdmSchema,
-                                resultsSchema = resultsSchema,
+                                cdmDatabaseSchema = cdmSchema,
+                                resultsDatabaseSchema = resultsSchema,
                                 targetDrugConceptId = 1,
                                 comparatorDrugConceptId = 2, 
                                 indicationConceptIds = c(),
@@ -105,20 +106,25 @@
                                 excludedCovariateConceptIds = nsaids, 
                                 deleteCovariatesSmallCount = 100)
   
-  saveCohortData(cohortData,"vignetteCohortData")
+  saveCohortData(cohortData,"c:/temp/vignetteCohortData")
   
   #vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
   #save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")
   
   #cohortData <- loadCohortData("vignetteCohortData")
-  ps <- createPs(cohortData,outcomeConceptId = 3, checkSorting = FALSE, control = createControl(noiseLevel = "silent",threads = 10))
-  save(ps, file = "vignettePs.rda")
+  ps <- createPs(cohortData,
+                 outcomeConceptId = 3, 
+                 checkSorting = FALSE, 
+                 control = createControl(noiseLevel = "silent",threads = 10)
+  )
+  vignettePs <- ps
+  save(vignettePs, file = "data/vignettePs.rda", compression_level = 9)
   
   #load("vignettePs.rda")
   #psTrimmed <- trimByPsToEquipoise(ps)  
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
-  save(balance, file = "vignetteBalance.rda")
+  vignetteBalance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
+  save(vignetteBalance,file = "data/vignetteBalance.rda", compression_level = 9)
   
   #load("vignetteBalance.rda")
   
@@ -130,7 +136,8 @@
                                   useCovariates = FALSE, 
                                   modelType = "cox",
                                   stratifiedCox = FALSE) 
-  save(outcomeModel,file = "vignetteOutcome1.rda")
+  vignetteOutcomeModel1 <- outcomeModel
+  save(vignetteOutcomeModel1, file = "data/vignetteOutcomeModel1.rda", compression_level = 9)
   
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
@@ -141,7 +148,8 @@
                                   useCovariates = FALSE, 
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
-  save(outcomeModel,file = "vignetteOutcome2.rda")
+  vignetteOutcomeModel2 <- outcomeModel
+  save(vignetteOutcomeModel2, file = "data/vignetteOutcomeModel2.rda", compression_level = 9)
   
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
@@ -152,5 +160,7 @@
                                   useCovariates = TRUE, 
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
-  save(outcomeModel,file = "vignetteOutcome3.rda") 
+  vignetteOutcomeModel3 <- outcomeModel
+  save(vignetteOutcomeModel3, file = "data/vignetteOutcomeModel3.rda", compression_level = 9)
+  
 }

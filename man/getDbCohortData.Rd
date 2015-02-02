@@ -136,8 +136,6 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
 \item{excludedCovariateConceptIds}{A list of Covariate Ids that should be removed from the COVARIATE table prior to fitting any model (either propensity score model or outcome model).  Generally required if any covariates perfectly predict exposure status (e.g. the target drug itself).}
 
 \item{deleteCovariatesSmallCount}{A numeric value used to remove covariates that occur in both cohorts fewer than deleteCovariateSmallCounts time.}
-
-\item{sourceName}{The name of the source database, to be used to name temporary files and distinguish results within organizations with multiple databases.}
 }
 \value{
 Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,

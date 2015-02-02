@@ -1,3 +1,4 @@
+#' @keywords internal
 testSimCode <- function(){
   library(CohortMethod)
   setwd("c:/temp")
@@ -64,7 +65,7 @@ testSimCode <- function(){
   
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "lr", prior=createPrior("laplace",0.1))
 
-  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,useStrata=FALSE,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
+  outcomeModel <- fitOutcomeModel(194133,cohortData,strata,stratifiedCox=FALSE,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "cox", prior=createPrior("laplace",0.1))
   
   outcomeModel <- fitOutcomeModel(194133,cohortData,strata,riskWindowStart = 0, riskWindowEnd = 365,addExposureDaysToEnd = FALSE,useCovariates = FALSE, modelType = "clr", prior=createPrior("laplace",0.1))
   

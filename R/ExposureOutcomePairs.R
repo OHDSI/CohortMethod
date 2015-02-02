@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+#' @keywords internal
 createExposureOutcomePair <- function (targetDrugConceptId,
                                        comparatorDrugConceptId,
                                        outcomeConceptId, 
@@ -43,7 +43,7 @@ createExposureOutcomePair <- function (targetDrugConceptId,
   return(exposureOutcomePair)
 }
 
-
+#' @keywords internal
 appendToExposureOutcomePairs <- function(exposureOutcomePair,exposureOutcomePairs = NULL){
   stopifnot(class(exposureOutcomePair) == "exposureOutcomePair")
   if (is.null(exposureOutcomePairs)){
@@ -54,7 +54,7 @@ appendToExposureOutcomePairs <- function(exposureOutcomePair,exposureOutcomePair
   return(exposureOutcomePairs)
 }
 
-#' @export
+#' @keywords internal
 writeExposureOutcomePairsToFile <- function(exposureOutcomePairs, file){
   stopifnot(class(exposureOutcomePairs) == "exposureOutcomePairs")
   
@@ -73,6 +73,7 @@ writeExposureOutcomePairsToFile <- function(exposureOutcomePairs, file){
   write.csv(d,file=file, row.names=FALSE)
 }
 
+#' @keywords internal
 readExposureOutcomePairsFromFile <- function(file){
   d <- read.csv(file)
   d[is.na(d)] <- ""

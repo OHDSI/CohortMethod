@@ -42,7 +42,6 @@ snakeCaseToCamelCase <- function(string){
 #'
 #' @param connectionDetails  	An R object of type\cr\code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' 
-#' @param sourceName    The name of the source database, to be used to name temporary files and distinguish results within organizations with multiple databases.   	
 #' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.   		
 #' @param resultsDatabaseSchema    The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database. 	On SQL Server, this should specifiy both the database and the schema, so for example 'my_results.dbo'.
 #' @param exposureSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
@@ -395,7 +394,7 @@ loadCohortData <- function(file, readOnly = FALSE){
   absolutePath <- setwd(temp)
   
   e <- new.env()  
-  load.ffdf(absolutePath,e)
+  ffbase::load.ffdf(absolutePath,e)
   load(file.path(absolutePath,"metaData.Rdata"),e)
   result <- list(outcomes = get("out1", envir=e),
                  cohorts = get("out2", envir=e),
@@ -434,8 +433,10 @@ summary.cohortData <- function(object, ...){
     outcomeCounts$eventCount[i] = ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] = 0
-    else
-      outcomeCounts$personCount[i] = length(ffbase::unique.ff(object$outcomes$rowId[object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i]]) )   
+    else {
+      t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+      outcomeCounts$personCount[i] = length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t, t == TRUE)]))   
+    }
   }
   
   result <- list(metaData = object$metaData,
