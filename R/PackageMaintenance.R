@@ -26,5 +26,7 @@
   shell("R CMD Rd2pdf ./ --output=man/CohortMethod.pdf")
 
   require(rmarkdown)
-  rmarkdown::render("vignettes/SingleStudies.Rmd", rmarkdown::pdf_document(latex_engine = "pdflatex",toc = TRUE,number_sections = TRUE))
+  rmarkdown::render("vignettes/SingleStudies.Rmd", 
+                    output_file = "../inst/doc/SingleStudies.pdf",
+                    rmarkdown::pdf_document(latex_engine = "pdflatex",toc = TRUE,number_sections = TRUE))
 }
