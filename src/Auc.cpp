@@ -51,7 +51,7 @@ namespace ohdsi {
 				}
 			}
 			unsigned int n = treatment.size() - m;
-			std::vector<double> cases(m);
+      std::vector<double> cases(m);
 			std::vector<double> controls(n);
 			m = 0;
 			n = 0;
@@ -62,15 +62,16 @@ namespace ohdsi {
 					controls[n++] = propensityScores.at(i);
 				}
 			}
-			unsigned int mn = m * n;
 			double mean = 0;
 			for (unsigned int i = 0; i < m; i++) {
+        double localMean = 0;
 				for (unsigned int j = 0; j < n; j++) {
 					double mw = mannWhitneyKernel(cases.at(i), controls.at(j));
-					mean += mw;
+					localMean += mw;
 				}
+        mean += localMean / n;
 			}
-			mean /= mn;
+			mean /= m;
 			return mean;
 		}
 
@@ -93,44 +94,37 @@ namespace ohdsi {
 					controls[n++] = propensityScores.at(i);
 				}
 			}
-			unsigned int mn = m * n;
-			double **mwMatrix = new double*[m];
-			for (int i = 0; i < m; ++i) {
-				mwMatrix[i] = new double[n];
-			}
-			double mean = 0;
+
+      double mean = 0;
 			for (unsigned int i = 0; i < m; i++) {
+        double localMean = 0;
 				for (unsigned int j = 0; j < n; j++) {
 					double mw = mannWhitneyKernel(cases.at(i), controls.at(j));
-					mwMatrix[i][j] = mw;
-					mean += mw;
+					localMean += mw;
 				}
+        mean += localMean / n;
 			}
-			mean /= mn;
+			mean /= m;
 			double vr10[m];
 			for (unsigned int i = 0; i < m; i++) {
 				double sum = 0;
 				for (unsigned int j = 0; j < n; j++) {
-					sum += mwMatrix[i][j];
+          sum += mannWhitneyKernel(cases.at(i), controls.at(j));
 				}
 				vr10[i] = sum / n;
 			}
-
+      
 			double vr01[n];
 			for (unsigned int i = 0; i < n; i++) {
 				double sum = 0;
-				for (unsigned int j = 0; j < m; j++)
-					sum += mwMatrix[j][i];
+				for (unsigned int j = 0; j < m; j++) {
+          sum += mannWhitneyKernel(cases.at(j), controls.at(i));
+				}
+					
 				vr01[i] = sum / m;
 			}
 
-			//Clean up mwMatrix:
-			for (int i = 0; i < m; ++i) {
-				delete[] mwMatrix[i];
-			}
-			delete[] mwMatrix;
-
-			double s10 = 0;
+      double s10 = 0;
 			for (unsigned int i = 0; i < m; i++) {
 				s10 += (vr10[i] - mean) * (vr10[i] - mean);
 			}
