@@ -205,6 +205,20 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
       ggplot2::scale_color_manual(values=c(rgb(0.8,0,0,alpha=0.5),rgb(0,0,0.8,alpha=0.5))) + 
       ggplot2::scale_x_continuous(label,limits=c(0,1)) +
       ggplot2::scale_y_continuous("Density")
+    if (!is.null(attr(data, "strata"))) {
+      strata <- data.frame(propensityScore = attr(data, "strata"))
+      if (scale == "preference") {
+        if (is.null(unfilteredData)) {
+          strata <- computePreferenceScore(strata, data)
+        } else { 
+          strata <- computePreferenceScore(strata, unfilteredData)
+        }
+        strata$SCORE <- strata$preferenceScore
+      } else {
+        strata$SCORE <- strata$propensityScore
+      }
+      plot = plot + ggplot2::geom_vline(x = strata$SCORE, color = rgb(0,0,0,alpha=0.5))
+    }
   } else {
     plot = ggplot2::ggplot(data, ggplot2::aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
       ggplot2::geom_histogram(binwidth = binWidth, position="identity") +
@@ -213,6 +227,7 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
       ggplot2::scale_x_continuous(label,limits=c(0,1)) +
       ggplot2::scale_y_continuous("Number of subjects")
   }
+  
   if (!is.null(fileName))
     ggplot2::ggsave(fileName,plot,width=5,height=3.5,dpi=400) 
   return(plot)
@@ -249,7 +264,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE){
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data))) 
     stop("Missing column propensityScore in data")
-
+  
   if (confidenceIntervals){
     auc <-  .Call('CohortMethod_aucWithCi', PACKAGE = 'CohortMethod', data$propensityScore, data$treatment)
     return(data.frame(auc=auc[1],auc_lb95ci=auc[2],auc_lb95ci=auc[3]))    
@@ -535,11 +550,12 @@ stratifyByPs <- function(data, numberOfStrata=5, stratificationColumns = c()){
     stop("Missing column propensityScore in data")
   
   psStrata <- quantile(data$propensityScore[data$treatment == 1],(1:(numberOfStrata-1))/numberOfStrata)
+  attr(data, "strata") <- psStrata
   if (length(stratificationColumns) == 0) {
     data$stratumId <- as.integer(as.character(cut(data$propensityScore,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
     return(data)
   } else {
-   f <- function(subset, psStrata, numberOfStrata){
+    f <- function(subset, psStrata, numberOfStrata){
       subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,breaks=c(0,psStrata,1), labels = (1:numberOfStrata)-1)))
       return(subset)
     }
