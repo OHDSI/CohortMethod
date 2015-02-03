@@ -188,7 +188,11 @@ createDataForModelFit <- function(outcomeConceptId,
                                   modelType = "cox"){
   if (!(modelType %in% c("lr","clr","pr","cpr","cox")))
     stop("Unknown model type")
-  if (!any(cohortData$outcomes$outcomeId == outcomeConceptId))
+  t <- cohortData$outcomes$outcomeId == outcomeConceptId
+  maxValue <- max(sapply(bit::chunk(t), function(i) {
+    max(t[i])
+  }))
+  if (maxValue != 1)
     stop("Outcome concept ID has no events. Cannot fit model.")
   
   if ((modelType == "lr" | modelType == "pr"))
@@ -208,7 +212,8 @@ createDataForModelFit <- function(outcomeConceptId,
     cohorts <- ff::as.ram(cohortData$cohort)
   } else {
     outcomes <- ffbase::subset.ffdf(cohortData$outcomes,outcomeId == as.double(outcomeConceptId))
-    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohorts <- ff::as.ram(cohortData$cohort[ffbase::ffwhich(t,t == FALSE),])
   }
   
@@ -353,9 +358,10 @@ fitOutcomeModel <- function(outcomeConceptId,
   counts <- cohortData$metaData$counts
   
   if (!is.null(outcomeConceptId) & !is.null(cohortData$exclude)){
-    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
-    treatedWithPriorOutcome <- sum(cohortSubset$treatment)
+    treatedWithPriorOutcome <- ffbase::sum.ff(cohortSubset$treatment)
     comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
     notPriorCount <- data.frame(cohortId = c(0,1), notPriorCount = c(counts$notExcludedCount[1] - comparatorWithPriorOutcome, counts$notExcludedCount[2] - treatedWithPriorOutcome))
     counts <- merge(counts, notPriorCount)
