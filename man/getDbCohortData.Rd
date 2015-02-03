@@ -45,7 +45,7 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
 
 \item{comparatorDrugConceptId}{A unique identifier to define the comparator cohort.  If exposureTable = DRUG_ERA, comparatorDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, comparatorDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.}
 
-\item{indicationConceptIds}{A list of CONCEPT_IDs used to restrict the target and comparator cohorts, based on any descendant condition of this list occurring at least once within the indicationLookbackWindow prior to the cohort index date.}
+\item{indicationConceptIds}{A list of CONCEPT_IDs used to restrict the target and comparator cohorts, based on any descendant condition of this list occurring at least once within the indicationLookbackWindow prior to the cohort index date. If no concept IDs are specified, the cohorts are not restricted to any indication.}
 
 \item{washoutWindow}{The mininum required continuous observation time prior to index date for a person to be included in the cohort.}
 
