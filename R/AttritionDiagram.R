@@ -131,6 +131,6 @@ drawAttritionDiagram <- function(outcomeModel,
                 axis.ticks = ggplot2::element_blank())
   
   if (!is.null(fileName))
-    ggplot2::ggsave(p,filename = "c:/temp/myplot.png",width=6,height=7,dpi=400)
+    ggplot2::ggsave(p,filename = fileName,width=6,height=7,dpi=400)
   return(p)
 }
