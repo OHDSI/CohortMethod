@@ -576,6 +576,7 @@ plotKaplanMeier <- function(outcomeModel,
   )
   levels(data$strata)[levels(data$strata) == "treatment=0"] = comparatorLabel
   levels(data$strata)[levels(data$strata) == "treatment=1"] = treatmentLabel
+  levels(data$strata) <- c(treatmentLabel, comparatorLabel)
   dataAtT <- aggregate(n.censor ~ time, data, sum)
   dataAtT$cumSum <- cumsum(dataAtT$n.censor)
   cutoff <- min(dataAtT$time[dataAtT$cumSum >= dataCutoff*sum(dataAtT$n.censor)])
@@ -596,9 +597,9 @@ plotKaplanMeier <- function(outcomeModel,
   if (confidenceIntervals)
     plot <- plot + ggplot2::geom_ribbon(color=rgb(0,0,0,alpha=0))
   
-  plot <- plot + ggplot2::geom_step(size=1) +
-    ggplot2::scale_color_manual(values=c(rgb(0,0,0.8,alpha=0.8),rgb(0.8,0,0,alpha=0.8))) +
-    ggplot2::scale_fill_manual(values=c(rgb(0,0,0.8,alpha=0.3),rgb(0.8,0,0,alpha=0.3))) +
+  plot <- plot + ggplot2::geom_step(size = 1) +
+    ggplot2::scale_color_manual(values=c(rgb(0.8, 0, 0, alpha=0.8),rgb(0, 0, 0.8, alpha=0.8))) +
+    ggplot2::scale_fill_manual(values=c(rgb(0.8, 0, 0, alpha=0.3),rgb(0, 0, 0.8, alpha=0.3))) +
     ggplot2::scale_x_continuous(xlabs, limits = xlims) +
     ggplot2::scale_y_continuous(ylabs, limits = ylims) +
     ggplot2::ggtitle(main) +

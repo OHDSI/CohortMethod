@@ -197,6 +197,7 @@ plotPs <- function(data, unfilteredData = NULL, scale = "preference", type = "de
   }
   data$GROUP <- "Treated"
   data$GROUP[data$treatment == 0] <- "Comparator"
+  data$GROUP <- factor(data$GROUP, levels = c("Treated","Comparator"))
   if (type == "density"){
     plot = ggplot2::ggplot(data, ggplot2::aes(x=SCORE,color=GROUP,group=GROUP,fill=GROUP)) + 
       ggplot2::geom_density() +
