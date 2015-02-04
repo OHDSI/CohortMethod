@@ -812,6 +812,7 @@ plotCovariateBalanceOfTopVariables <- function(balance, n = 20, maxNameWidth = 1
       axis.text.y = ggplot2::element_text(size=7),
       axis.title.y = ggplot2::element_blank(),
       legend.position="top",
+      legend.direction = "vertical",
       legend.title = ggplot2::element_blank()
     )
   if (!is.null(fileName))
