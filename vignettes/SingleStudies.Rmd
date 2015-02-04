@@ -318,19 +318,28 @@ One advantage of using the regularization when fitting the propensity model is t
 
 ## Using the propensity score
 
-We can use the propensity scores to trim, match, or stratify our population. For example, one could first trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
+We can use the propensity scores to trim, stratify, or match our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
 ```{r tidy=TRUE,eval=TRUE}
 psTrimmed <- trimByPsToEquipoise(ps)  
 plotPs(psTrimmed, ps, scale = "preference")
 ```
 
-We can also match subjects based on propensity scores:
+Instead (or additionally), we could stratify the population based on the propensity score:
+
+```{r tidy=TRUE,eval=TRUE}
+psStratified <- stratifyByPs(ps, numberOfStrata = 5)  
+plotPs(psStratified, ps, scale = "preference")
+```
+
+We can also match subjects based on propensity scores. In this example, we're using one-to-one matching:
 
 ```{r tidy=TRUE,eval=TRUE}
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   plotPs(strata, ps)
 ```
+
+Note that for both stratification and matching it is possible to specify additional matching criteria such as age and sex using the `stratifyByPsAndCovariates()` and `matchOnPsAndCovariates()` functions, respectively.
 
 ## Evaluating covariate balance
 
