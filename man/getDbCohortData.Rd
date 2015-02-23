@@ -9,9 +9,10 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
   washoutWindow = 183, indicationLookbackWindow = 183,
   studyStartDate = "", studyEndDate = "", exclusionConceptIds = c(),
   outcomeConceptIds, outcomeConditionTypeConceptIds = c(),
-  exposureSchema = cdmDatabaseSchema, exposureTable = "drug_era",
-  outcomeSchema = cdmDatabaseSchema, outcomeTable = "condition_occurrence",
-  useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
+  exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
+  outcomeDatabaseSchema = cdmDatabaseSchema,
+  outcomeTable = "condition_occurrence", useCovariateDemographics = TRUE,
+  useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE,
   useCovariateConditionOccurrence30d = TRUE,
   useCovariateConditionOccurrenceInpt180d = TRUE,
@@ -61,11 +62,11 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
 
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.}
 
-\item{exposureSchema}{The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
+\item{exposureDatabaseSchema}{The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
 
 \item{exposureTable}{The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{outcomeSchema}{The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
+\item{outcomeDatabaseSchema}{The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
 
 \item{outcomeTable}{The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 

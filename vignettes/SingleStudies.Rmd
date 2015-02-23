@@ -58,11 +58,11 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
                                              user = "joe", 
                                              password = "supersecret")
 
-cdmSchema <- "my_cdm_data"
-resultsSchema <- "my_results"
+cdmDatabaseSchema <- "my_cdm_data"
+resultsDatabaseSchema <- "my_results"
 ```
 
-The last two lines define the `cdmSchema` and `resultSchema` variables, which we'll use later to tell R where the data in CDM format live, and where we want to write intermediate and result tables.
+The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables, which we'll use later to tell R where the data in CDM format live, and where we want to write intermediate and result tables. Note that for Microsoft SQL Server, these variables need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 ## Preparing the exposures and outcome(s)
 
@@ -70,20 +70,20 @@ We need to define the exposures and outcomes for our study. We do this by writin
 
 ```sql
 /***********************************
-File coxibsVsNonselVsGiBleed.sql 
+File coxibVsNonselVsGiBleed.sql 
 ***********************************/
 
-IF OBJECT_ID('@resultsSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
-  DROP TABLE @resultsSchema.coxibVsNonselVsGiBleed;
+IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
+  DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
-CREATE TABLE @resultsSchema.coxibVsNonselVsGiBleed (
+CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,
   cohort_start_date DATE,
 	cohort_end_date DATE,
 	subject_id BIGINT
 	);
 
-INSERT INTO @resultsSchema.coxibVsNonselVsGiBleed (
+INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -93,10 +93,10 @@ SELECT 1, -- Exposure
 	drug_era_start_date,
 	drug_era_end_date,
 	person_id
-FROM @cdmSchema.drug_era
+FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1118084;-- celecoxib	
 
-INSERT INTO @resultsSchema.coxibVsNonselVsGiBleed (
+INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -106,10 +106,10 @@ SELECT 2, -- Comparator
 	drug_era_start_date,
 	drug_era_end_date,
 	person_id
-FROM @cdmSchema.drug_era
+FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1124300; --diclofenac
 
-INSERT INTO @resultsSchema.coxibVsNonselVsGiBleed (
+INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -119,12 +119,12 @@ SELECT 3, -- Outcome
 	condition_start_date,
 	condition_end_date,
 	condition_occurrence.person_id
-FROM @cdmSchema.condition_occurrence
-INNER JOIN @cdmSchema.visit_occurrence
+FROM @cdmDatabaseSchema.condition_occurrence
+INNER JOIN @cdmDatabaseSchema.visit_occurrence
 	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
 WHERE condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM @cdmSchema.concept_ancestor
+		FROM @cdmDatabaseSchema.concept_ancestor
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
@@ -134,7 +134,7 @@ This is parameterized SQL which can be used by the `SqlRender` package. We use p
 
 ```{r tidy=TRUE,eval=FALSE}
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
-sql <- renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)$sql
+sql <- renderSql(sql,cdmDatabaseSchema = cdmDatabaseSchema, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
 connection <- connect(connectionDetails)
@@ -147,15 +147,15 @@ If all went well, we now have a table with the events of interest. We can see ho
 
 ```{r tidy=FALSE,eval=FALSE}
 sql <- paste("SELECT cohort_definition_id, COUNT(*) AS count",
-             "FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed",
+             "FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed",
              "GROUP BY cohort_definition_id")
-sql <- renderSql(sql, resultsSchema = resultsSchema)$sql
+sql <- renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
 querySql(connection, sql)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,3),count=c(113492,342370,351289))
+data.frame(cohort_concept_id = c(1,2,3),count=c(128785,417027,419141))
 ```
 
 ## Extracting the data from the server
@@ -165,17 +165,19 @@ Now we can tell `CohortMethod` to define the cohorts based on our events, and ex
 ```{r tidy=FALSE,eval=FALSE}
 # Get all NSAID Concept IDs for exclusion:
 sql <- paste("SELECT concept_id",
-             "FROM concept_ancestor",
-             "INNER JOIN concept",
+             "FROM @cdmDatabaseSchema.concept_ancestor",
+             "INNER JOIN @cdmDatabaseSchema.concept",
              "ON descendant_concept_id = concept_id",
              "WHERE ancestor_concept_id = 21603933")
+sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
+sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 nsaids <- querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
   
  #Load data:
 cohortData <- getDbCohortData(connectionDetails,
-                              cdmSchema = cdmSchema,
-                              resultsSchema = resultsSchema,
+                              cdmDatabaseSchema = cdmDatabaseSchema,
+                              resultsDatabaseSchema = resultsDatabaseSchema,
                               targetDrugConceptId = 1,
                               comparatorDrugConceptId = 2, 
                               indicationConceptIds = c(),
@@ -186,9 +188,9 @@ cohortData <- getDbCohortData(connectionDetails,
                               exclusionConceptIds = nsaids,
                               outcomeConceptIds = 3, 
                               outcomeConditionTypeConceptIds = c(), 
-                              exposureSchema = resultsSchema,
+                              exposureDatabaseSchema = resultsDatabaseSchema,
                               exposureTable = "coxibVsNonselVsGiBleed",
-                              outcomeSchema = resultsSchema,
+                              outcomeDatabaseSchema = resultsDatabaseSchema,
                               outcomeTable = "coxibVsNonselVsGiBleed",
                               useCovariateDemographics = TRUE,
                               useCovariateConditionOccurrence = TRUE,

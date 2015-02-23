@@ -3,7 +3,7 @@
 {DEFAULT @cdm_database_schema = 'CDM4_SIM.dbo'} /*cdm_database_schema: @cdm_database_schema*/
 {DEFAULT @study_start_date = ''} /*study_start_date: @study_start_date*/
 {DEFAULT @study_end_date = ''} /*study_end_date: @study_end_date*/
-{DEFAULT @exposure_schema = 'CDM4_SIM'} /*exposure_schema: @exposure_schema*/
+{DEFAULT @exposure_database_schema = 'CDM4_SIM'} /*exposure_database_schema: @exposure_database_schema*/
 {DEFAULT @exposure_table = 'drug_era'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
 
 SELECT COUNT(DISTINCT raw_cohorts.person_id) AS exposed_count,
@@ -35,7 +35,7 @@ FROM (
   c1.subject_id as person_id,
   c1.cohort_start_date AS cohort_start_date,
   c1.cohort_end_date AS cohort_end_date
-  FROM @exposure_schema.dbo.@exposure_table c1
+  FROM @exposure_database_schema.@exposure_table c1
   WHERE c1.cohort_definition_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 }
 ) raw_cohorts

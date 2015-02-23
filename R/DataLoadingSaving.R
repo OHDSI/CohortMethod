@@ -44,9 +44,9 @@ snakeCaseToCamelCase <- function(string){
 #' 
 #' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.   		
 #' @param resultsDatabaseSchema    The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database. 	On SQL Server, this should specifiy both the database and the schema, so for example 'my_results.dbo'.
-#' @param exposureSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
+#' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
 #' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.	
-#' @param outcomeSchema     The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
+#' @param outcomeDatabaseSchema     The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
 #' @param outcomeTable   The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE. 	
 #'  	
 #' @param targetDrugConceptId 		A unique identifier to define the target cohort.  If exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, targetDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.
@@ -123,9 +123,9 @@ getDbCohortData <- function(connectionDetails,
                             exclusionConceptIds = c(),
                             outcomeConceptIds,
                             outcomeConditionTypeConceptIds = c(),
-                            exposureSchema = cdmDatabaseSchema,
+                            exposureDatabaseSchema = cdmDatabaseSchema,
                             exposureTable = "drug_era",
-                            outcomeSchema = cdmDatabaseSchema,
+                            outcomeDatabaseSchema = cdmDatabaseSchema,
                             outcomeTable = "condition_occurrence",
                             useCovariateDemographics = TRUE,
                             useCovariateConditionOccurrence = TRUE,
@@ -180,9 +180,9 @@ getDbCohortData <- function(connectionDetails,
                                                    exclusion_concept_ids = exclusionConceptIds,
                                                    outcome_concept_ids = outcomeConceptIds,
                                                    outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
-                                                   exposure_schema = exposureSchema,
+                                                   exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = tolower(exposureTable),
-                                                   outcome_schema = outcomeSchema,
+                                                   outcome_database_schema = outcomeDatabaseSchema,
                                                    outcome_table = tolower(outcomeTable),
                                                    use_covariate_demographics = useCovariateDemographics,
                                                    use_covariate_condition_occurrence = useCovariateConditionOccurrence,
@@ -248,7 +248,7 @@ getDbCohortData <- function(connectionDetails,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
                                                    study_start_date = studyStartDate,
                                                    study_end_date = studyEndDate,
-                                                   exposure_schema = exposureSchema,
+                                                   exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = tolower(exposureTable))
   
   newUserCountSql <-"SELECT COUNT(*) AS new_user_count,cohort_id FROM #new_user_cohort GROUP BY cohort_id"
@@ -285,13 +285,11 @@ getDbCohortData <- function(connectionDetails,
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
   
   #Remove temp tables:
-  if (connectionDetails$dbms == "oracle"){
-    renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
-                                                     packageName = "CohortMethod",
-                                                     dbms = connectionDetails$dbms,
-                                                     indication_concept_ids = indicationConceptIds)
-    DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
-  }
+  renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
+                                                   packageName = "CohortMethod",
+                                                   dbms = connectionDetails$dbms,
+                                                   indication_concept_ids = indicationConceptIds)
+  DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
   colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
   colnames(cohorts) <- snakeCaseToCamelCase(colnames(cohorts))

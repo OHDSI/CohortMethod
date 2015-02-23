@@ -28,6 +28,17 @@ in.ff <- function(a,b){
     return(ffbase::ffmatch(x = a, table=b, nomatch = 0L) > 0L)
 }
 
+any.ff <- function(x, ..., na.rm=FALSE, range=NULL){
+  r <- checkRange(range,x)
+  any( ...
+      , sapply(chunk(x, from=min(r), to=max(r))
+               , function(i){
+                 any(x[i], na.rm=na.rm)
+               }
+      )
+  )
+}
+
 #' Create propensity scores
 #'
 #' @description
@@ -68,9 +79,11 @@ createPs <- function(cohortData,
       covariateSubset <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
     }
   } else {
-    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == FALSE),]
-    t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     if (is.null(excludeCovariateIds)){
       excludeCovariateIds <- c(1)
     } else {
@@ -360,7 +373,7 @@ trimByPsToEquipoise <- function(data,bounds=c(0.25,0.75)){
 mergeCovariatesWithPs <- function(data, cohortData, covariateIds){
   for (covariateId in covariateIds){
     t <- cohortData$covariates$covariateId == covariateId
-    if (any(t)){
+    if (any.ff(t)){
       values <- ff::as.ram(cohortData$covariates[ffbase::ffwhich(t,t == TRUE),c(1,3)])
       colnames(values)[colnames(values) == "covariateValue"] = paste("covariateId",covariateId,sep="_")
       data <- merge(data,values,all.x = TRUE)

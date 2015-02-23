@@ -1,18 +1,18 @@
 /***********************************
-File coxibsVsNonselVsGiBleed.sql 
+File coxibVsNonselVsGiBleed.sql 
 ***********************************/
 
-IF OBJECT_ID('@resultsSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
-  DROP TABLE @resultsSchema.coxibVsNonselVsGiBleed;
+IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
+  DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
-CREATE TABLE @resultsSchema.coxibVsNonselVsGiBleed (
+CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,
-	cohort_start_date DATE,
+  cohort_start_date DATE,
 	cohort_end_date DATE,
 	subject_id BIGINT
 	);
 
-INSERT INTO @resultsSchema.coxibVsNonselVsGiBleed (
+INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -22,10 +22,10 @@ SELECT 1, -- Exposure
 	drug_era_start_date,
 	drug_era_end_date,
 	person_id
-FROM @cdmSchema.drug_era
+FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1118084;-- celecoxib	
 
-INSERT INTO @resultsSchema.coxibVsNonselVsGiBleed (
+INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -35,10 +35,10 @@ SELECT 2, -- Comparator
 	drug_era_start_date,
 	drug_era_end_date,
 	person_id
-FROM @cdmSchema.drug_era
+FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1124300; --diclofenac
 
-INSERT INTO @resultsSchema.coxibVsNonselVsGiBleed (
+INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -48,12 +48,12 @@ SELECT 3, -- Outcome
 	condition_start_date,
 	condition_end_date,
 	condition_occurrence.person_id
-FROM @cdmSchema.condition_occurrence
-INNER JOIN @cdmSchema.visit_occurrence
+FROM @cdmDatabaseSchema.condition_occurrence
+INNER JOIN @cdmDatabaseSchema.visit_occurrence
 	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
 WHERE condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM @cdmSchema.concept_ancestor
+		FROM @cdmDatabaseSchema.concept_ancestor
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 

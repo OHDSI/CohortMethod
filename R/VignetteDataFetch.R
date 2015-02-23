@@ -22,41 +22,43 @@
   #library(SqlRender)
   #library(DatabaseConnector)
   #library(CohortMethod)
-  #setwd("c:/temp")
+  #setwd("s:/temp")
   
-  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "c:/temp")
+  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "s:/temp")
   
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
   server <- "RNDUSRDHIT07.jnj.com"
-  cdmSchema <- "cdm_truven_mdcd"
-  resultsSchema <- "scratch"
+  cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+  resultsDatabaseSchema <- "scratch.dbo"
   port <- NULL
   
-  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, cdmSchema = cdmSchema, resulstSchema = resultsSchema, port=port)
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, port=port)
   sql <- SqlRender::readSql("coxibVsNonselVsGiBleed.sql")
-  sql <- SqlRender::renderSql(sql,cdmSchema = cdmSchema, resultsSchema = resultsSchema)$sql
+  sql <- SqlRender::renderSql(sql,cdmDatabaseSchema = cdmDatabaseSchema, resultsDatabaseSchema = resultsDatabaseSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   
   connection <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::executeSql(connection, sql)
   
   # Check number of subjects per cohort:
-  sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsSchema.dbo.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
-  sql <- SqlRender::renderSql(sql, resultsSchema = resultsSchema)$sql
+  sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
+  sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::querySql(connection, sql)
   
   # Get all NSAIDs:
-  sql <- "SELECT concept_id FROM concept_ancestor INNER JOIN concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+  sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+  sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   nsaids <- DatabaseConnector::querySql(connection, sql)
   nsaids <- nsaids$CONCEPT_ID
   
   #Load data:
   cohortData <- getDbCohortData(connectionDetails,
-                                cdmDatabaseSchema = cdmSchema,
-                                resultsDatabaseSchema = resultsSchema,
+                                cdmDatabaseSchema = cdmDatabaseSchema,
+                                resultsDatabaseSchema = resultsDatabaseSchema,
                                 targetDrugConceptId = 1,
                                 comparatorDrugConceptId = 2, 
                                 indicationConceptIds = c(),
@@ -67,9 +69,9 @@
                                 exclusionConceptIds = nsaids,
                                 outcomeConceptIds = 3, 
                                 outcomeConditionTypeConceptIds = c(), 
-                                exposureSchema = resultsSchema,
+                                exposureDatabaseSchema = resultsDatabaseSchema,
                                 exposureTable = "coxibVsNonselVsGiBleed",
-                                outcomeSchema = resultsSchema,
+                                outcomeDatabaseSchema = resultsDatabaseSchema,
                                 outcomeTable = "coxibVsNonselVsGiBleed",
                                 useCovariateDemographics = TRUE,
                                 useCovariateConditionOccurrence = TRUE,
@@ -106,7 +108,7 @@
                                 excludedCovariateConceptIds = nsaids, 
                                 deleteCovariatesSmallCount = 100)
   
-  saveCohortData(cohortData,"c:/temp/vignetteCohortData")
+  saveCohortData(cohortData,"vignetteCohortData")
   
   #vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
   #save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")

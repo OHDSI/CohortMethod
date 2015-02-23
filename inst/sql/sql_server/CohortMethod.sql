@@ -53,9 +53,9 @@ Parameterized SQL to create cohorts, covariates, and outcomes datasets to be use
 {DEFAULT @outcome_concept_ids = ''}  /*outcome_concept_ids: @outcome_concept_ids*/
 {DEFAULT @outcome_condition_type_concept_ids = ''}    /*outcome_condition_type_concept_ids: @outcome_condition_type_concept_ids*/ /*condition type only applies if @outcome_table = condition_occurrence*/
 
-{DEFAULT @exposure_schema = 'CDM4_SIM'} /*exposure_schema: @exposure_schema*/
+{DEFAULT @exposure_database_schema = 'CDM4_SIM'} /*exposure_database_schema: @exposure_database_schema*/
 {DEFAULT @exposure_table = 'drug_era'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
-{DEFAULT @outcome_schema = 'CDM4_SIM'} /*outcome_schema: @outcome_schema*/
+{DEFAULT @outcome_database_schema = 'CDM4_SIM'} /*outcome_database_schema: @outcome_database_schema*/
 {DEFAULT @outcome_table = 'condition_occurrence'}   /*outcome_table: @outcome_table*/ /*the table that contains the outcome information (condition_occurrence or COHORT)*/
 
 {DEFAULT @use_covariate_demographics = TRUE} /*use_covariate_demographics: @use_covariate_demographics*/
@@ -260,7 +260,7 @@ FROM (
 			c1.subject_id as person_id,
 			min(c1.cohort_start_date) AS cohort_start_date,
 			min(c1.cohort_end_date) AS cohort_end_date
-		FROM @exposure_schema.dbo.@exposure_table c1
+		FROM @exposure_database_schema.@exposure_table c1
 		WHERE c1.cohort_definition_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 		GROUP BY c1.cohort_definition_id,
 			c1.subject_id
@@ -3932,7 +3932,7 @@ INSERT INTO #cohort_outcome (row_id, cohort_id, person_id, outcome_id, time_to_e
 				datediff(dd, cp1.cohort_start_date, co1.cohort_start_date) AS time_to_event
 			FROM #cohort_person cp1
 			INNER JOIN 
-				@outcome_schema.dbo.@outcome_table co1
+				@outcome_database_schema.@outcome_table co1
 				ON cp1.person_id = co1.subject_id
 			WHERE
 				co1.cohort_definition_id in (@outcome_concept_ids)
@@ -3997,7 +3997,7 @@ INSERT INTO #cohort_excluded_person (row_id, cohort_id, person_id, outcome_id)
   		cp1.person_id,
   		co1.cohort_definition_id AS outcome_id
   	FROM #cohort_person cp1
-  	INNER JOIN @outcome_schema.dbo.@outcome_table co1
+  	INNER JOIN @outcome_database_schema.@outcome_table co1
   		ON cp1.person_id = co1.subject_id
   	WHERE
   		co1.cohort_definition_id in (@outcome_concept_ids)
