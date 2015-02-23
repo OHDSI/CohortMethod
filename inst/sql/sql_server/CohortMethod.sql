@@ -3816,7 +3816,7 @@ INTERACTION MONTH
 
 	
 
-{@delete_covariates_small_count > 0} ? {	
+{@delete_covariates_small_count != 0} ? {	
 
 DELETE FROM #cohort_covariate_ref 
 WHERE covariate_id IN (
