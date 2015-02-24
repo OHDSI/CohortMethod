@@ -21,24 +21,6 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-in.ff <- function(a,b){
-  if (length(b) == 0)
-    return(ff::as.ff(rep(FALSE, length(a))))
-  else
-    return(ffbase::ffmatch(x = a, table=b, nomatch = 0L) > 0L)
-}
-
-any.ff <- function(x, ..., na.rm=FALSE, range=NULL){
-  r <- checkRange(range,x)
-  any( ...
-      , sapply(chunk(x, from=min(r), to=max(r))
-               , function(i){
-                 any(x[i], na.rm=na.rm)
-               }
-      )
-  )
-}
-
 #' Create propensity scores
 #'
 #' @description
@@ -625,8 +607,7 @@ stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortData, cova
   return(stratifyByPs(data, numberOfStrata, stratificationColumns))
 }
 
-
-quickSum <- function(data,squared=FALSE){
+quickSum <- function(data, squared=FALSE){
   result <- NULL
   for (i in bit::chunk(data)){
     dataChunk <- data[i,]

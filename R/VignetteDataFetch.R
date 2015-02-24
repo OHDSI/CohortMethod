@@ -121,14 +121,14 @@
                  control = createControl(noiseLevel = "quiet",threads = 10)
   )
   vignettePs <- ps
-  save(vignettePs, file = "data/vignettePs.rda", compression_level = 9)
+  save(vignettePs, file = "data/vignettePs.rda", compress = "xz")
   
   #load("data/vignettePs.rda")
   #ps <- vignettePs
   #psTrimmed <- trimByPsToEquipoise(ps)  
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   vignetteBalance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
-  save(vignetteBalance,file = "data/vignetteBalance.rda", compression_level = 9)
+  save(vignetteBalance,file = "data/vignetteBalance.rda", compress = "xz")
   
   #load("vignetteBalance.rda")
   
@@ -141,7 +141,7 @@
                                   modelType = "cox",
                                   stratifiedCox = FALSE) 
   vignetteOutcomeModel1 <- outcomeModel
-  save(vignetteOutcomeModel1, file = "data/vignetteOutcomeModel1.rda", compression_level = 9)
+  save(vignetteOutcomeModel1, file = "data/vignetteOutcomeModel1.rda", compress = "xz")
   
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
@@ -153,7 +153,7 @@
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
   vignetteOutcomeModel2 <- outcomeModel
-  save(vignetteOutcomeModel2, file = "data/vignetteOutcomeModel2.rda", compression_level = 9)
+  save(vignetteOutcomeModel2, file = "data/vignetteOutcomeModel2.rda", compress = "xz")
   
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
@@ -165,6 +165,6 @@
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
   vignetteOutcomeModel3 <- outcomeModel
-  save(vignetteOutcomeModel3, file = "data/vignetteOutcomeModel3.rda", compression_level = 9)
+  save(vignetteOutcomeModel3, file = "data/vignetteOutcomeModel3.rda", compress = "xz")
   
 }

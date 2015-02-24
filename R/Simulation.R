@@ -37,7 +37,6 @@ createCohortDataSimulationProfile <- function(cohortData){
   sums <- quickSum(cohortData$covariates)
   covariatePrevalence <- sums$sum/nrow(cohortData$cohorts)
   attr(covariatePrevalence,"names") <- sums$covariateId
-  #covariatePrevalence <- covariatePrevalence[order(names(covariatePrevalence),]
   
   writeLines("Computing propensity model")
   propensityScore <- createPs(cohortData, prior=Cyclops::createPrior("laplace",0.1))
@@ -65,13 +64,17 @@ createCohortDataSimulationProfile <- function(cohortData){
   fitCohortEnd = survival::survreg (survival::Surv(time,event) ~ 1, data=data,dist="exponential");
   fitObsEnd = survival::survreg (survival::Surv(obsEnd[obsEnd>0]) ~ 1, dist="exponential");
   
+  writeLines("Computing prevalence of exlusion")
+  exclusionPrevalence <- table(ff::as.ram(cohortData$exclude$outcomeId))/nrow(cohortData$cohorts)
+  
   result <- list(covariatePrevalence = covariatePrevalence,
                  propensityModel = propensityModel,
                  outcomeModels = outcomeModels,
                  metaData = cohortData$metaData,
                  covariateRef = ff::as.ram(cohortData$covariateRef),
                  cohortEndRate = 1/exp(coef(fitCohortEnd)),
-                 obsEndRate = 1/exp(coef(fitObsEnd))
+                 obsEndRate = 1/exp(coef(fitObsEnd)),
+                 exclusionPrevalence = exclusionPrevalence
   )
   class(result) <- "cohortDataSimulationProfile"
   return(result)
@@ -174,10 +177,19 @@ simulateCohortData <- function(cohortDataSimulationProfile, n=10000){
     allOutcomes <- rbind(allOutcomes,outcomes)
   }
   
+  writeLines("Generating exclusion")
+  exclude <- data.frame()
+  for (i in 1:nrow(cohortDataSimulationProfile$exclusionPrevalence)){
+    sampleSize = cohortDataSimulationProfile$exclusionPrevalence[i] * nrow(cohorts)
+    rowId <- cohorts$rowId[sample(nrow(cohorts), size = sampleSize, replace = FALSE)]
+    outcomeId <- as.numeric(names(cohortDataSimulationProfile$exclusionPrevalence)[i])
+    exclude <- rbind(exclude, data.frame(rowId = rowId, outcomeId = outcomeId))
+  }
+  
   result <- list(outcomes = ff::as.ffdf(allOutcomes),
                  cohorts = ff::as.ffdf(cohorts),
                  covariates = ff::as.ffdf(covariates),
-                 exclude = NULL,
+                 exclude = ff::as.ffdf(exclude),
                  covariateRef = ff::as.ffdf(cohortDataSimulationProfile$covariateRef),
                  metaData = cohortDataSimulationProfile$metaData
   )
