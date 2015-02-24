@@ -132,9 +132,11 @@ WHERE condition_concept_id IN (
 
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
-```{r tidy=TRUE,eval=FALSE}
+```{r tidy=FALSE,eval=FALSE}
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
-sql <- renderSql(sql,cdmDatabaseSchema = cdmDatabaseSchema, resultsDatabaseSchema = resultsDatabaseSchema)$sql
+sql <- renderSql(sql,
+                 cdmDatabaseSchema = cdmDatabaseSchema, 
+                 resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
 connection <- connect(connectionDetails)

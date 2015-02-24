@@ -714,9 +714,11 @@ computeCovariateBalance <- function (restrictedCohorts, cohortData, outcomeConce
     cohorts <- cohortData$cohorts
     covariates <- ffbase::subset.ffdf(cohortData$covariates,covariateId != 1)
   } else {
-    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohorts <- cohortData$cohort[ffbase::ffwhich(t,t == FALSE),]
-    t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[cohortData$exclude$outcomeId == outcomeConceptId])
+    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortData$covariates$rowId ,cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     t <- t | cohortData$covariates$covariateId == 1
     covariates <- cohortData$covariates[ffbase::ffwhich(t,t == FALSE),]
   }

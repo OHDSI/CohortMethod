@@ -114,15 +114,17 @@
   #save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")
   
   #cohortData <- loadCohortData("vignetteCohortData")
+  #setwd("C:/Users/mschuemi/git/CohortMethod")
   ps <- createPs(cohortData,
                  outcomeConceptId = 3, 
                  checkSorting = FALSE, 
-                 control = createControl(noiseLevel = "silent",threads = 10)
+                 control = createControl(noiseLevel = "quiet",threads = 10)
   )
   vignettePs <- ps
   save(vignettePs, file = "data/vignettePs.rda", compression_level = 9)
   
-  #load("vignettePs.rda")
+  #load("data/vignettePs.rda")
+  #ps <- vignettePs
   #psTrimmed <- trimByPsToEquipoise(ps)  
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   vignetteBalance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
