@@ -3,8 +3,7 @@ testCode <- function(){
   ### Test code ###
   library(CohortMethod)
   setwd("c:/temp")
-  
-  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "s:/temp")
+  options("fftempdir" = "s:/temp")
 
   #Settings for running SQL against JnJ Sql Server:
   pw <- NULL

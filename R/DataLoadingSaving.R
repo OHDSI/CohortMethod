@@ -21,14 +21,6 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-snakeCaseToCamelCase <- function(string){
-  string <- tolower(string)
-  for(letter in letters){
-    string = gsub(paste("_",letter,sep=""),toupper(letter),string)
-  }
-  return(string)
-}
-
 #' Get the cohort data from the server
 #'
 #' @description
@@ -43,7 +35,7 @@ snakeCaseToCamelCase <- function(string){
 #' @param connectionDetails  	An R object of type\cr\code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' 
 #' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.   		
-#' @param resultsDatabaseSchema    The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database. 	On SQL Server, this should specifiy both the database and the schema, so for example 'my_results.dbo'.
+#' @param oracleTempSchema    For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database. 
 #' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
 #' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.	
 #' @param outcomeDatabaseSchema     The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
@@ -112,7 +104,7 @@ snakeCaseToCamelCase <- function(string){
 #' @export
 getDbCohortData <- function(connectionDetails,
                             cdmDatabaseSchema,
-                            resultsDatabaseSchema,
+                            oracleTempSchema = cdmDatabaseSchema,
                             targetDrugConceptId,
                             comparatorDrugConceptId,
                             indicationConceptIds = c(),
@@ -162,14 +154,11 @@ getDbCohortData <- function(connectionDetails,
                             excludedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
-  resultsDatabase <- strsplit(resultsDatabaseSchema ,"\\.")[[1]][1]
   renderedSql <- SqlRender::loadRenderTranslateSql("CohortMethod.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   results_database_schema = resultsDatabaseSchema,
+                                                   oracleTempSchema = oracleTempSchema,
                                                    cdm_database = cdmDatabase,
-                                                   results_database = resultsDatabase,
                                                    target_drug_concept_id = targetDrugConceptId,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
                                                    indication_concept_ids = indicationConceptIds,
@@ -226,24 +215,24 @@ getDbCohortData <- function(connectionDetails,
   
   # Build queries for extracting data:
   cohortSql <-"SELECT row_id, cohort_id AS treatment, person_id, datediff(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end, datediff(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end FROM #cohort_person ORDER BY row_id"
-  cohortSql <- SqlRender::translateSql(cohortSql, "sql server", connectionDetails$dbms)$sql
+  cohortSql <- SqlRender::translateSql(cohortSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   covariateSql <-"SELECT row_id, covariate_id,covariate_value FROM #cohort_covariate ORDER BY row_id, covariate_id"
-  covariateSql <- SqlRender::translateSql(covariateSql, "sql server", connectionDetails$dbms)$sql
+  covariateSql <- SqlRender::translateSql(covariateSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   outcomeSql <-"SELECT row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, row_id"
-  outcomeSql <- SqlRender::translateSql(outcomeSql, "sql server", connectionDetails$dbms)$sql
+  outcomeSql <- SqlRender::translateSql(outcomeSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   excludeSql <-"SELECT row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, row_id"
-  excludeSql <- SqlRender::translateSql(excludeSql, "sql server", connectionDetails$dbms)$sql
+  excludeSql <- SqlRender::translateSql(excludeSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
-  covariateRefSql <- SqlRender::translateSql(covariateRefSql, "sql server", connectionDetails$dbms)$sql
+  covariateRefSql <- SqlRender::translateSql(covariateRefSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   cdm_database_schema = cdmDatabaseSchema,
+                                                   oracleTempSchema = oracleTempSchema, 
                                                    target_drug_concept_id = targetDrugConceptId,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
                                                    study_start_date = studyStartDate,
@@ -252,16 +241,16 @@ getDbCohortData <- function(connectionDetails,
                                                    exposure_table = tolower(exposureTable))
   
   newUserCountSql <-"SELECT COUNT(*) AS new_user_count,cohort_id FROM #new_user_cohort GROUP BY cohort_id"
-  newUserCountSql <- SqlRender::translateSql(newUserCountSql, "sql server", connectionDetails$dbms)$sql
+  newUserCountSql <- SqlRender::translateSql(newUserCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   indicatedCountSql <-"SELECT COUNT(*) AS indicated_count,cohort_id FROM #indicated_cohort GROUP BY cohort_id"
-  indicatedCountSql <- SqlRender::translateSql(indicatedCountSql, "sql server", connectionDetails$dbms)$sql
+  indicatedCountSql <- SqlRender::translateSql(indicatedCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   nonOverlapCountSql <-"SELECT COUNT(*) AS non_overlap_count,cohort_id FROM #non_overlap_cohort GROUP BY cohort_id"
-  nonOverlapCountSql <- SqlRender::translateSql(nonOverlapCountSql, "sql server", connectionDetails$dbms)$sql
+  nonOverlapCountSql <- SqlRender::translateSql(nonOverlapCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   notExcludedCountSql <-"SELECT COUNT(*) AS not_excluded_count,cohort_id FROM #cohort_person GROUP BY cohort_id"
-  notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql, "sql server", connectionDetails$dbms)$sql
+  notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
   
   writeLines("Fetching data from server")
   start <- Sys.time()
@@ -288,15 +277,16 @@ getDbCohortData <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
+                                                   oracleTempSchema = oracleTempSchema,
                                                    indication_concept_ids = indicationConceptIds)
   DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
-  colnames(outcomes) <- snakeCaseToCamelCase(colnames(outcomes))
-  colnames(cohorts) <- snakeCaseToCamelCase(colnames(cohorts))
-  colnames(covariates) <- snakeCaseToCamelCase(colnames(covariates))
-  colnames(exclude) <- snakeCaseToCamelCase(colnames(exclude))
-  colnames(covariateRef) <- snakeCaseToCamelCase(colnames(covariateRef))
-  colnames(counts) <- snakeCaseToCamelCase(colnames(counts))
+  colnames(outcomes) <- SqlRender::snakeCaseToCamelCase(colnames(outcomes))
+  colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
+  colnames(covariates) <- SqlRender::snakeCaseToCamelCase(colnames(covariates))
+  colnames(exclude) <- SqlRender::snakeCaseToCamelCase(colnames(exclude))
+  colnames(covariateRef) <- SqlRender::snakeCaseToCamelCase(colnames(covariateRef))
+  colnames(counts) <- SqlRender::snakeCaseToCamelCase(colnames(counts))
   counts <- counts[order(counts$cohortId),]
   
   dummy <- RJDBC::dbDisconnect(conn)

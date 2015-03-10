@@ -4,11 +4,12 @@
 \alias{getDbCohortData}
 \title{Get the cohort data from the server}
 \usage{
-getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
-  targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds = c(),
-  washoutWindow = 183, indicationLookbackWindow = 183,
-  studyStartDate = "", studyEndDate = "", exclusionConceptIds = c(),
-  outcomeConceptIds, outcomeConditionTypeConceptIds = c(),
+getDbCohortData(connectionDetails, cdmDatabaseSchema,
+  oracleTempSchema = cdmDatabaseSchema, targetDrugConceptId,
+  comparatorDrugConceptId, indicationConceptIds = c(), washoutWindow = 183,
+  indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
+  exclusionConceptIds = c(), outcomeConceptIds,
+  outcomeConditionTypeConceptIds = c(),
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", useCovariateDemographics = TRUE,
@@ -40,7 +41,7 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema,
 
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.}
 
-\item{resultsDatabaseSchema}{The name of the database schema that is the location where you want all temporary tables to be managed and all results tables to persist.  Requires create/insert permissions to this database.     On SQL Server, this should specifiy both the database and the schema, so for example 'my_results.dbo'.}
+\item{oracleTempSchema}{For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database.}
 
 \item{targetDrugConceptId}{A unique identifier to define the target cohort.  If exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, targetDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.}
 

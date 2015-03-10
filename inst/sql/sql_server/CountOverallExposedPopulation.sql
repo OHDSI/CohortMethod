@@ -1,6 +1,5 @@
 {DEFAULT @target_drug_concept_id = ''}  /*target_drug_concept_id: @target_drug_concept_id*/
 {DEFAULT @comparator_drug_concept_id = ''} /*comparator_drug_concept_id: @comparator_drug_concept_id*/
-{DEFAULT @cdm_database_schema = 'CDM4_SIM.dbo'} /*cdm_database_schema: @cdm_database_schema*/
 {DEFAULT @study_start_date = ''} /*study_start_date: @study_start_date*/
 {DEFAULT @study_end_date = ''} /*study_end_date: @study_end_date*/
 {DEFAULT @exposure_database_schema = 'CDM4_SIM'} /*exposure_database_schema: @exposure_database_schema*/
@@ -20,8 +19,8 @@ FROM (
   de1.person_id,
   de1.drug_era_start_date AS cohort_start_date,
   de1.drug_era_end_date AS cohort_end_date
-  FROM @cdm_database_schema.drug_era de1
-  INNER JOIN @cdm_database_schema.concept_ancestor ca1
+  FROM drug_era de1
+  INNER JOIN concept_ancestor ca1
   ON de1.drug_concept_id = ca1.descendant_concept_id
   WHERE ca1.ancestor_concept_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 } : {
@@ -39,7 +38,7 @@ FROM (
   WHERE c1.cohort_definition_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 }
 ) raw_cohorts
-INNER JOIN @cdm_database_schema.observation_period op1
+INNER JOIN observation_period op1
 ON raw_cohorts.person_id = op1.person_id
 WHERE raw_cohorts.cohort_start_date <= op1.observation_period_end_date
 AND  raw_cohorts.cohort_end_date >= op1.observation_period_start_date
