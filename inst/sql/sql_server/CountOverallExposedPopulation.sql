@@ -6,7 +6,7 @@
 {DEFAULT @exposure_table = 'drug_era'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
 
 SELECT COUNT(DISTINCT raw_cohorts.person_id) AS exposed_count,
-raw_cohorts.cohort_id
+raw_cohorts.treatment
 FROM (
 {@exposure_table == 'drug_era'} ? {
   SELECT CASE 
@@ -15,7 +15,7 @@ FROM (
   WHEN ca1.ancestor_concept_id = @comparator_drug_concept_id
   THEN 0
   ELSE - 1
-  END AS cohort_id,
+  END AS treatment,
   de1.person_id,
   de1.drug_era_start_date AS cohort_start_date,
   de1.drug_era_end_date AS cohort_end_date
@@ -30,7 +30,7 @@ FROM (
   WHEN c1.cohort_definition_id = @comparator_drug_concept_id
   THEN 0
   ELSE - 1
-  END AS cohort_id,
+  END AS treatment,
   c1.subject_id as person_id,
   c1.cohort_start_date AS cohort_start_date,
   c1.cohort_end_date AS cohort_end_date
@@ -45,4 +45,4 @@ AND  raw_cohorts.cohort_end_date >= op1.observation_period_start_date
 {@study_start_date != ''} ? {AND raw_cohorts.cohort_end_date >= CAST('@study_start_date' AS DATE)}
 {@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= CAST('@study_end_date' AS DATE)}
 GROUP BY
-raw_cohorts.cohort_id
+raw_cohorts.treatment

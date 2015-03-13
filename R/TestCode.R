@@ -2,7 +2,7 @@
 testCode <- function(){
   ### Test code ###
   library(CohortMethod)
-  setwd("c:/temp")
+  setwd("s:/temp")
   options("fftempdir" = "s:/temp")
 
   #Settings for running SQL against JnJ Sql Server:
@@ -22,30 +22,40 @@ testCode <- function(){
   cdmSchema <- "CDM_Truven_MDCR"
   resultsSchema <- "CDM_Truven_MDCR"
   port <- 17001
+
+  pw <- pw
+  dbms <- "postgresql"
+  user <- "postgres"
+  server <- "localhost/ohdsi"
+  cdmSchema <- "cdm_truven_ccae_6k"
+  port <- NULL
+  
   
   #Part one: loading the data:
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server=server, user=user, password=pw, schema=cdmSchema,port=port)
-   
+
+  
+  
   cohortData <- getDbCohortData(connectionDetails,
                                 cdmDatabaseSchema=cdmSchema,
-                                resultsDatabaseSchema=resultsSchema,
                                 targetDrugConceptId = 755695,
                                 comparatorDrugConceptId = 739138,
                                 indicationConceptIds = 439926,
                                 exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                                 outcomeConceptIds = 194133,
-                                excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019)
+                                excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                                deleteCovariatesSmallCount = 0
                                 )
+
+  saveCohortData(cohortData, "s:/temp/cohortData")
+  cohortData <- loadCohortData("s:/temp/cohortData")
   
-  saveCohortData(cohortData,"cohortData")
-    
-  cohortData <- loadCohortData("cohortData") 
-  #cohortData <- loadCohortData("mdcrCohortData", readOnly = TRUE) 
+  
   
   summary(cohortData)
   
   #Part two: Creating propensity scores, and match people on propensity score:
-  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1,exclude=c(0)))
+  ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",1,exclude=c(0)))
   ps <- createPs(cohortData,outcomeConceptId = 194133)
    
   computePsAuc(ps)

@@ -1,6 +1,6 @@
 # @file CohortMethod.R
 #
-# Copyright 2014 Observational Health Data Sciences and Informatics
+# Copyright 2015 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 # 
@@ -15,11 +15,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# @author Observational Health Data Sciences and Informatics
-# @author Patrick Ryan
-# @author Marc Suchard
-# @author Martijn Schuemie
 
 #' Get the cohort data from the server
 #'
@@ -30,62 +25,24 @@
 #' Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates at or before the index date are extracted, as well as outcomes occurring on or after the index date.
 #' The treatment and comparator cohorts can be identified using the drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
 #' Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
-#' Covariates are automatically extracted from the appropriate tables within the CDM.
+#' Covariates are automatically extracted from the appropriate tables within the CDM.This function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
 #'
 #' @param connectionDetails  	An R object of type\cr\code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' 
-#' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.   		
+#' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.
 #' @param oracleTempSchema    For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database. 
 #' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
 #' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.	
-#' @param outcomeDatabaseSchema     The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
-#' @param outcomeTable   The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE. 	
-#'  	
+#' @template GetCovariatesParams
+#' @template GetOutcomesParams
 #' @param targetDrugConceptId 		A unique identifier to define the target cohort.  If exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, targetDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.
 #' @param comparatorDrugConceptId   	A unique identifier to define the comparator cohort.  If exposureTable = DRUG_ERA, comparatorDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, comparatorDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.	
 #' @param indicationConceptIds   A list of CONCEPT_IDs used to restrict the target and comparator cohorts, based on any descendant condition of this list occurring at least once within the indicationLookbackWindow prior to the cohort index date. If no concept IDs are specified, the cohorts are not restricted to any indication.	
 #' @param exclusionConceptIds   A list of CONCEPT_IDs used to restrict the cohorts, based on any descendant conditions/drugs/procedures occurring at least once anytime prior to the cohort index date.	
-#' @param outcomeConceptIds 	A list of CONCEPT_IDs used to define outcomes.  If outcomeTable = CONDITION_OCCURRENCE, the list is a set of ancestor CONCEPT_IDs, and all occurrences of all descendant concepts will be selected.  If outcomeTable <> CONDITION_OCCURRENCE, the list contains records found in COHORT_DEFINITION_ID field.
-#' @param excludedCovariateConceptIds    A list of Covariate Ids that should be removed from the COVARIATE table prior to fitting any model (either propensity score model or outcome model).  Generally required if any covariates perfectly predict exposure status (e.g. the target drug itself).
-#' 
 #' @param washoutWindow 		The mininum required continuous observation time prior to index date for a person to be included in the cohort.
 #' @param indicationLookbackWindow 		The window to look back prior to cohort index date to identify records of a indication condition.  Only applicable if indicationConceptIds != ''.
 #' @param studyStartDate 		A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate 		A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'.
-#' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.
-#' @param useCovariateDemographics 		A boolean value (TRUE/FALSE) to determine if demographic covariates (age in 5-yr increments, gender, race, ethnicity, year of index date, month of index date) will be created and included in future models.
-#' @param useCovariateConditionOccurrence   A boolean value (TRUE/FALSE) to determine if covariates derived from CONDITION_OCCURRENCE table will be created and included in future models.
-#' @param useCovariateConditionOccurrence365d   	A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition in 365d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE.	
-#' @param useCovariateConditionOccurrence30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition in 30d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE. 
-#' @param useCovariateConditionOccurrenceInpt180d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition within inpatient type in 180d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE.
-#' @param useCovariateConditionEra      A boolean value (TRUE/FALSE) to determine if covariates derived from CONDITION_ERA table will be created and included in future models.
-#' @param useCovariateConditionEraEver     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition era anytime prior to or on cohort index date.  Only applicable if useCovariateConditionEra = TRUE.	
-#' @param useCovariateConditionEraOverlap     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition era that overlaps the cohort index date.  Only applicable if useCovariateConditionEra = TRUE. 		
-#' @param useCovariateConditionGroup   A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on vocabluary classification.
-#' @param useCovariateDrugExposure    A boolean value (TRUE/FALSE) to determine if covariates derived from DRUG_EXPOSURE table will be created and included in future models.   
-#' @param useCovariateDrugExposure365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug in 365d window prior to or on cohort index date.  Only applicable if useCovariateDrugExposure = TRUE.	
-#' @param useCovariateDrugExposure30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug in 30d window prior to or on cohort index date.  Only applicable if useCovariateDrugExposure = TRUE.   		
-#' @param useCovariateDrugEra    A boolean value (TRUE/FALSE) to determine if covariates derived from DRUG_ERA table will be created and included in future models. 
-#' @param useCovariateDrugEra365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era in 365d window prior to or on cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEra30d    A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era in 30d window prior to or on cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEraEver    A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era anytime prior to or on cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEraOverlap      A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era that overlaps the cohort index date.  Only applicable if useCovariateDrugEra = TRUE.		
-#' @param useCovariateDrugGroup 	   A boolean value (TRUE/FALSE) to determine if all DRUG_EXPOSURE and DRUG_ERA covariates should be aggregated or rolled-up to higher-level concepts of drug classes based on vocabluary classification.	
-#' @param useCovariateProcedureOccurrence    A boolean value (TRUE/FALSE) to determine if covariates derived from PROCEDURE_OCCURRENCE table will be created and included in future models.  
-#' @param useCovariateProcedureOccurrence365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of procedure in 365d window prior to or on cohort index date.  Only applicable if useCovariateProcedureOccurrence = TRUE.	
-#' @param useCovariateProcedureOccurrence30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of procedure in 30d window prior to or on cohort index date.  Only applicable if useCovariateProcedureOccurrence = TRUE.		
-#' @param useCovariateProcedureGroup       A boolean value (TRUE/FALSE) to determine if all PROCEDURE_OCCURRENCE covariates should be aggregated or rolled-up to higher-level concepts based on vocabluary classification.			
-#' @param useCovariateObservation    A boolean value (TRUE/FALSE) to determine if covariates derived from OBSERVATION table will be created and included in future models. 
-#' @param useCovariateObservation365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation in 365d window prior to or on cohort index date.  Only applicable if useCovariateObservation = TRUE.  
-#' @param useCovariateObservation30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation in 30d window prior to or on cohort index date.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationBelow     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation with a numeric value below normal range for latest value within 180d of cohort index.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationAbove     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation with a numeric value above normal range for latest value within 180d of cohort index.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationCount365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for the count of each observation concept in 365d window prior to or on cohort index date.  Only applicable if useCovariateObservation = TRUE.		
-#' @param useCovariateConceptCounts 		A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that count the number of concepts that a person has within each domain (CONDITION, DRUG, PROCEDURE, OBSERVATION)
-#' @param useCovariateRiskScores 		A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that calculate various Risk Scores, including Charlson, DCSI.  
-#' @param useCovariateInteractionYear 	A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the year of the cohort index date.  	
-#' @param useCovariateInteractionMonth    A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the month of the cohort index date.  		
-#' @param deleteCovariatesSmallCount 		A numeric value used to remove covariates that occur in both cohorts fewer than deleteCovariateSmallCounts time.
 #' 
 #' @return
 #' Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,
@@ -154,7 +111,10 @@ getDbCohortData <- function(connectionDetails,
                             excludedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
-  renderedSql <- SqlRender::loadRenderTranslateSql("CohortMethod.sql",
+  conn <- DatabaseConnector::connect(connectionDetails)
+  
+  writeLines("\nConstructing treatment and comparator cohorts")
+  renderedSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
@@ -167,68 +127,18 @@ getDbCohortData <- function(connectionDetails,
                                                    study_start_date = studyStartDate,
                                                    study_end_date = studyEndDate,
                                                    exclusion_concept_ids = exclusionConceptIds,
-                                                   outcome_concept_ids = outcomeConceptIds,
-                                                   outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
                                                    exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = tolower(exposureTable),
-                                                   outcome_database_schema = outcomeDatabaseSchema,
-                                                   outcome_table = tolower(outcomeTable),
-                                                   use_covariate_demographics = useCovariateDemographics,
-                                                   use_covariate_condition_occurrence = useCovariateConditionOccurrence,
-                                                   use_covariate_condition_occurrence_365d = useCovariateConditionOccurrence365d,
-                                                   use_covariate_condition_occurrence_30d = useCovariateConditionOccurrence30d,
-                                                   use_covariate_condition_occurrence_inpt180d = useCovariateConditionOccurrenceInpt180d,
-                                                   use_covariate_condition_era = useCovariateConditionEra,
-                                                   use_covariate_condition_era_ever = useCovariateConditionEraEver,
-                                                   use_covariate_condition_era_overlap = useCovariateConditionEraOverlap,
-                                                   use_covariate_condition_group = useCovariateConditionGroup,
-                                                   use_covariate_drug_exposure = useCovariateDrugExposure,
-                                                   use_covariate_drug_exposure_365d = useCovariateDrugExposure365d,
-                                                   use_covariate_drug_exposure_30d = useCovariateDrugExposure30d,
-                                                   use_covariate_drug_era = useCovariateDrugEra,
-                                                   use_covariate_drug_era_365d = useCovariateDrugEra365d,
-                                                   use_covariate_drug_era_30d = useCovariateDrugEra30d,
-                                                   use_covariate_drug_era_overlap = useCovariateDrugEraOverlap,
-                                                   use_covariate_drug_era_ever = useCovariateDrugEraEver,
-                                                   use_covariate_drug_group = useCovariateDrugGroup,
-                                                   use_covariate_procedure_occurrence = useCovariateProcedureOccurrence,
-                                                   use_covariate_procedure_occurrence_365d = useCovariateProcedureOccurrence365d,
-                                                   use_covariate_procedure_occurrence_30d = useCovariateProcedureOccurrence30d,
-                                                   use_covariate_procedure_group = useCovariateProcedureGroup,
-                                                   use_covariate_observation = useCovariateObservation,
-                                                   use_covariate_observation_365d = useCovariateObservation365d,
-                                                   use_covariate_observation_30d = useCovariateObservation30d,
-                                                   use_covariate_observation_below = useCovariateObservationBelow,
-                                                   use_covariate_observation_above = useCovariateObservationAbove,
-                                                   use_covariate_observation_count365d = useCovariateObservationCount365d,
-                                                   use_covariate_concept_counts = useCovariateConceptCounts,
-                                                   use_covariate_risk_scores = useCovariateRiskScores,
-                                                   use_covariate_interaction_year = useCovariateInteractionYear,
-                                                   use_covariate_interaction_month = useCovariateInteractionMonth,
-                                                   excluded_covariate_concept_ids = excludedCovariateConceptIds,
-                                                   delete_covariates_small_count = deleteCovariatesSmallCount)
-  
-  conn <- DatabaseConnector::connect(connectionDetails)
+                                                   exposure_table = exposureTable)
   
   writeLines("Executing multiple queries. This could take a while")
-  DatabaseConnector::executeSql(conn, renderedSql)
+  DatabaseConnector::executeSql(conn,renderedSql)
   
-  # Build queries for extracting data:
-  cohortSql <-"SELECT row_id, cohort_id AS treatment, person_id, datediff(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end, datediff(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end FROM #cohort_person ORDER BY row_id"
-  cohortSql <- SqlRender::translateSql(cohortSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  covariateSql <-"SELECT row_id, covariate_id,covariate_value FROM #cohort_covariate ORDER BY row_id, covariate_id"
-  covariateSql <- SqlRender::translateSql(covariateSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  outcomeSql <-"SELECT row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, row_id"
-  outcomeSql <- SqlRender::translateSql(outcomeSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  excludeSql <-"SELECT row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, row_id"
-  excludeSql <- SqlRender::translateSql(excludeSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
-  covariateRefSql <- SqlRender::translateSql(covariateRefSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
+  writeLines("Fetching data from server")
+  start <- Sys.time()
+  cohortSql <- SqlRender::loadRenderTranslateSql("FetchCohortData.sql",
+                                                 packageName = "CohortMethod",
+                                                 dbms = connectionDetails$dbms,
+                                                 oracleTempSchema = oracleTempSchema)
   rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -239,26 +149,15 @@ getDbCohortData <- function(connectionDetails,
                                                    study_end_date = studyEndDate,
                                                    exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = tolower(exposureTable))
-  
-  newUserCountSql <-"SELECT COUNT(*) AS new_user_count,cohort_id FROM #new_user_cohort GROUP BY cohort_id"
+  newUserCountSql <-"SELECT COUNT(*) AS new_user_count, treatment FROM #new_user_cohort GROUP BY treatment"
   newUserCountSql <- SqlRender::translateSql(newUserCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  indicatedCountSql <-"SELECT COUNT(*) AS indicated_count,cohort_id FROM #indicated_cohort GROUP BY cohort_id"
+  indicatedCountSql <-"SELECT COUNT(*) AS indicated_count, treatment FROM #indicated_cohort GROUP BY treatment"
   indicatedCountSql <- SqlRender::translateSql(indicatedCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  nonOverlapCountSql <-"SELECT COUNT(*) AS non_overlap_count,cohort_id FROM #non_overlap_cohort GROUP BY cohort_id"
+  nonOverlapCountSql <-"SELECT COUNT(*) AS non_overlap_count, treatment FROM #non_overlap_cohort GROUP BY treatment"
   nonOverlapCountSql <- SqlRender::translateSql(nonOverlapCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  notExcludedCountSql <-"SELECT COUNT(*) AS not_excluded_count,cohort_id FROM #cohort_person GROUP BY cohort_id"
+  notExcludedCountSql <-"SELECT COUNT(*) AS not_excluded_count, cohort_definition_id AS treatment FROM #cohort_person GROUP BY cohort_definition_id"
   notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-  
-  writeLines("Fetching data from server")
-  start <- Sys.time()
-  outcomes <- DatabaseConnector::dbGetQuery.ffdf(conn, outcomeSql)
   cohorts <-  DatabaseConnector::dbGetQuery.ffdf(conn, cohortSql)
-  covariates <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateSql)
-  exclude <- DatabaseConnector::dbGetQuery.ffdf(conn, excludeSql)
-  covariateRef <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateRefSql)
   rawCount <- DatabaseConnector::querySql(conn, rawCountSql)
   newUserCount <- DatabaseConnector::querySql(conn, newUserCountSql)
   counts <- merge(rawCount, newUserCount)
@@ -270,53 +169,92 @@ getDbCohortData <- function(connectionDetails,
   counts <- merge(counts, nonOverlapCount)
   notExcludedCount <- DatabaseConnector::querySql(conn, notExcludedCountSql)
   counts <- merge(counts, notExcludedCount)  
+  colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
+  colnames(counts) <- SqlRender::snakeCaseToCamelCase(colnames(counts))
+  counts <- counts[order(counts$treatment),]
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
   
+  writeLines("\nConstructing baseline covariates")
+  covariateData <- getDbCovariates(connection = conn, 
+                                   oracleTempSchema = oracleTempSchema, 
+                                   cdmDatabaseSchema = cdmDatabaseSchema, 
+                                   useExistingCohortPerson = TRUE, 
+                                   useCovariateDemographics = useCovariateDemographics,
+                                   useCovariateConditionOccurrence = useCovariateConditionOccurrence,
+                                   useCovariateConditionOccurrence365d = useCovariateConditionOccurrence365d,
+                                   useCovariateConditionOccurrence30d = useCovariateConditionOccurrence30d,
+                                   useCovariateConditionOccurrenceInpt180d = useCovariateConditionOccurrenceInpt180d,
+                                   useCovariateConditionEra = useCovariateConditionEra,
+                                   useCovariateConditionEraEver = useCovariateConditionEraEver,
+                                   useCovariateConditionEraOverlap = useCovariateConditionEraOverlap,
+                                   useCovariateConditionGroup = useCovariateConditionGroup,
+                                   useCovariateDrugExposure = useCovariateDrugExposure,
+                                   useCovariateDrugExposure365d = useCovariateDrugExposure365d,
+                                   useCovariateDrugExposure30d = useCovariateDrugExposure30d,
+                                   useCovariateDrugEra = useCovariateDrugEra,
+                                   useCovariateDrugEra365d = useCovariateDrugEra365d,
+                                   useCovariateDrugEra30d = useCovariateDrugEra30d,
+                                   useCovariateDrugEraOverlap = useCovariateDrugEraOverlap,
+                                   useCovariateDrugEraEver = useCovariateDrugEraEver,
+                                   useCovariateDrugGroup = useCovariateDrugGroup,
+                                   useCovariateProcedureOccurrence = useCovariateProcedureOccurrence,
+                                   useCovariateProcedureOccurrence365d = useCovariateProcedureOccurrence365d,
+                                   useCovariateProcedureOccurrence30d = useCovariateProcedureOccurrence30d,
+                                   useCovariateProcedureGroup = useCovariateProcedureGroup,
+                                   useCovariateObservation = useCovariateObservation,
+                                   useCovariateObservation365d = useCovariateObservation365d,
+                                   useCovariateObservation30d = useCovariateObservation30d,
+                                   useCovariateObservationBelow = useCovariateObservationBelow,
+                                   useCovariateObservationAbove = useCovariateObservationAbove,
+                                   useCovariateObservationCount365d = useCovariateObservationCount365d,
+                                   useCovariateConceptCounts = useCovariateConceptCounts,
+                                   useCovariateRiskScores = useCovariateRiskScores,
+                                   useCovariateInteractionYear = useCovariateInteractionYear,
+                                   useCovariateInteractionMonth = useCovariateInteractionMonth,
+                                   excludedCovariateConceptIds = excludedCovariateConceptIds,
+                                   deleteCovariatesSmallCount = deleteCovariatesSmallCount)
+  names(covariateData$covariates)[names(covariateData$covariates) == "personId"] <- "rowId"
+  covariateData$covariates$cohortStartDate <- NULL
+  covariateData$covariates$cohortDefinitionId <- NULL
+  metaData <- list(sql = c(renderedSql, covariateData$metaData$sql),
+                   targetDrugConceptId = targetDrugConceptId,
+                   comparatorDrugConceptId = comparatorDrugConceptId,
+                   counts = counts,
+                   call = match.call()
+  )
+  
+  result <- list(cohorts = cohorts,
+                 covariates = covariateData$covariates,
+                 covariateRef = covariateData$covariateRef,
+                 metaData = metaData
+  )
+  open(result$cohorts)
+  class(result) <- "cohortData"
+  
+  if (!missing(outcomeConceptIds) && !is.null(outcomeConceptIds)){  
+    writeLines("\nConstructing outcomes")
+    result <- getDbOutcomes(connection = conn, 
+                            oracleTempSchema = oracleTempSchema, 
+                            cdmDatabaseSchema = cdmDatabaseSchema, 
+                            cohortData = result,
+                            outcomeDatabaseSchema = outcomeDatabaseSchema,
+                            outcomeTable = outcomeTable,
+                            outcomeConceptIds = outcomeConceptIds,
+                            outcomeConditionTypeConceptIds = outcomeConditionTypeConceptIds)
+  }
+  
   #Remove temp tables:
-  renderedSql <- SqlRender::loadRenderTranslateSql("CMRemoveTempTables.sql",
+  renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
                                                    indication_concept_ids = indicationConceptIds)
   DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
   
-  colnames(outcomes) <- SqlRender::snakeCaseToCamelCase(colnames(outcomes))
-  colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
-  colnames(covariates) <- SqlRender::snakeCaseToCamelCase(colnames(covariates))
-  colnames(exclude) <- SqlRender::snakeCaseToCamelCase(colnames(exclude))
-  colnames(covariateRef) <- SqlRender::snakeCaseToCamelCase(colnames(covariateRef))
-  colnames(counts) <- SqlRender::snakeCaseToCamelCase(colnames(counts))
-  counts <- counts[order(counts$cohortId),]
   
   dummy <- RJDBC::dbDisconnect(conn)
-  metaData <- list(sql = renderedSql,
-                   targetDrugConceptId = targetDrugConceptId,
-                   comparatorDrugConceptId = comparatorDrugConceptId,
-                   outcomeConceptIds = outcomeConceptIds,
-                   counts = counts,
-                   call = match.call()
-  )
   
-  result <- list(outcomes = outcomes,
-                 cohorts = cohorts,
-                 covariates = covariates,
-                 exclude = exclude,
-                 covariateRef = covariateRef,
-                 metaData = metaData
-  )
-  
-  #Open all ffdfs to prevent annoying messages later:
-  if (nrow(result$outcomes) == 0 | nrow(result$covariates) == 0){
-    warning("No data found")
-  } else {
-    open(result$outcomes)
-    open(result$cohorts)
-    open(result$covariates)
-    open(result$exclude)
-    open(result$covariateRef)
-  }
-  class(result) <- "cohortData"
   return(result)
 }
 

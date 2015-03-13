@@ -135,7 +135,7 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema,
 
 \item{useCovariateInteractionMonth}{A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the month of the cohort index date.}
 
-\item{excludedCovariateConceptIds}{A list of Covariate Ids that should be removed from the COVARIATE table prior to fitting any model (either propensity score model or outcome model).  Generally required if any covariates perfectly predict exposure status (e.g. the target drug itself).}
+\item{excludedCovariateConceptIds}{A list of concept IDs that should NOT be used to construct covariates.}
 
 \item{deleteCovariatesSmallCount}{A numeric value used to remove covariates that occur in both cohorts fewer than deleteCovariateSmallCounts time.}
 }
@@ -160,6 +160,6 @@ This function executes a large set of SQL statements against the database in OMO
 Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates at or before the index date are extracted, as well as outcomes occurring on or after the index date.
 The treatment and comparator cohorts can be identified using the drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
 Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
-Covariates are automatically extracted from the appropriate tables within the CDM.
+Covariates are automatically extracted from the appropriate tables within the CDM.This function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
 }
 
