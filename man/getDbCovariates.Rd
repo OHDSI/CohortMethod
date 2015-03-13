@@ -7,7 +7,7 @@
 getDbCovariates(connectionDetails = NULL, connection = NULL,
   oracleTempSchema = NULL, cdmDatabaseSchema,
   useExistingCohortPerson = TRUE, cohortDatabaseSchema = cdmDatabaseSchema,
-  cohortTable = "cohort", cohortConceptIds = c(),
+  cohortTable = "cohort", cohortConceptIds = c(0, 1),
   useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE,
   useCovariateConditionOccurrence30d = FALSE,

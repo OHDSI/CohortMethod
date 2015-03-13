@@ -249,7 +249,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	race_concept_id AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1
@@ -287,7 +287,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	FLOOR((YEAR(cp1.cohort_start_date) - p1.YEAR_OF_BIRTH) / 5) + 10 AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1
@@ -318,7 +318,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	YEAR(cohort_start_date) AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1;
@@ -391,7 +391,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT DISTINCT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	CAST(co1.condition_concept_id AS BIGINT) * 1000 + 101 AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1
@@ -436,7 +436,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT DISTINCT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	CAST(co1.condition_concept_id AS BIGINT) * 1000 + 102 AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1
@@ -733,7 +733,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
@@ -757,7 +757,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
@@ -788,7 +788,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
@@ -812,7 +812,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
@@ -849,7 +849,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
@@ -873,7 +873,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
@@ -904,7 +904,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
@@ -928,7 +928,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
@@ -959,7 +959,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= cp1.cohort_start_date;
@@ -983,7 +983,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= cp1.cohort_start_date;
@@ -1014,7 +1014,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date;
 
@@ -1037,7 +1037,7 @@ WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {
 	AND de1.drug_concept_id NOT IN (
 		SELECT descendant_concept_id
 		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+		WHERE ancestor_concept_id IN (@cohort_concept_ids)
 		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date;
 
@@ -1444,7 +1444,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT DISTINCT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	CAST(o1.observation_concept_id AS BIGINT) * 1000 + 901 AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1
@@ -1489,7 +1489,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT DISTINCT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	CAST(o1.observation_concept_id AS BIGINT) * 1000 + 902 AS covariate_id,
 	1 AS covariate_value
 FROM #cohort_person cp1
@@ -1552,7 +1552,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT DISTINCT cohort_start_date,
 	cohort_definition_id,
-	person_id,
+	subject_id AS person_id,
 	CAST(observation_concept_id AS BIGINT) * 1000 + 903 AS covariate_id,
 	1 AS covariate_value
 FROM (
@@ -1634,7 +1634,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT DISTINCT cohort_start_date,
 	cohort_definition_id,
-	person_id,
+	subject_id AS person_id,
 	CAST(observation_concept_id AS BIGINT) * 1000 + 904 AS covariate_id,
 	1 AS covariate_value
 FROM (
@@ -1698,7 +1698,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	CAST(o1.observation_concept_id AS BIGINT) * 1000 + 905 AS covariate_id,
 	count(observation_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1743,7 +1743,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1000 AS covariate_id,
 	COUNT(DISTINCT ce1.condition_concept_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1778,7 +1778,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1001 AS covariate_id,
 	COUNT(DISTINCT de1.drug_concept_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1813,7 +1813,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1002 AS covariate_id,
 	COUNT(DISTINCT po1.procedure_concept_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1848,7 +1848,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1003 AS covariate_id,
 	COUNT(DISTINCT o1.observation_concept_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1883,7 +1883,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1004 AS covariate_id,
 	COUNT(vo1.visit_occurrence_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1918,7 +1918,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1005 AS covariate_id,
 	COUNT(vo1.visit_occurrence_id) AS covariate_value
 FROM #cohort_person cp1
@@ -1954,7 +1954,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
-	cp1.subject_id,
+	cp1.subject_id AS person_id,
 	1006 AS covariate_id,
 	COUNT(vo1.visit_occurrence_id) AS covariate_value
 FROM #cohort_person cp1
@@ -13733,7 +13733,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cohort_start_date,
 	cohort_definition_id,
-	person_id,
+	subject_id AS person_id,
 	1100 AS covariate_id,
 	SUM(weight) AS covariate_value
 FROM (
@@ -14071,7 +14071,7 @@ INSERT INTO #cohort_covariate (
 	)
 SELECT cohort_start_date,
 	cohort_definition_id,
-	person_id,
+	subject_id AS person_id,
 	1101 AS covariate_id,
 	SUM(max_score) AS covariate_value
 FROM (
