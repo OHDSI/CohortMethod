@@ -730,11 +730,6 @@ INNER JOIN drug_exposure de1
 LEFT JOIN concept c1
 	ON de1.drug_concept_id = c1.concept_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -754,11 +749,6 @@ FROM #cohort_person cp1
 INNER JOIN drug_exposure de1
 	ON cp1.subject_id = de1.person_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -785,11 +775,6 @@ INNER JOIN drug_exposure de1
 LEFT JOIN concept c1
 	ON de1.drug_concept_id = c1.concept_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -809,11 +794,6 @@ FROM #cohort_person cp1
 INNER JOIN drug_exposure de1
 	ON cp1.subject_id = de1.person_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -846,11 +826,6 @@ INNER JOIN drug_era de1
 LEFT JOIN concept c1
 	ON de1.drug_concept_id = c1.concept_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -870,11 +845,6 @@ FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -901,11 +871,6 @@ INNER JOIN drug_era de1
 LEFT JOIN concept c1
 	ON de1.drug_concept_id = c1.concept_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -925,11 +890,6 @@ FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -956,11 +916,6 @@ INNER JOIN drug_era de1
 LEFT JOIN concept c1
 	ON de1.drug_concept_id = c1.concept_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= cp1.cohort_start_date;
 
@@ -980,11 +935,6 @@ FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= cp1.cohort_start_date;
 
@@ -1011,11 +961,6 @@ INNER JOIN drug_era de1
 LEFT JOIN concept c1
 	ON de1.drug_concept_id = c1.concept_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date;
 
 INSERT INTO #cohort_covariate (
@@ -1034,11 +979,6 @@ FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
 WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_concept_id NOT IN (
-		SELECT descendant_concept_id
-		FROM concept_ancestor
-		WHERE ancestor_concept_id IN (@cohort_concept_ids)
-		)
 	AND de1.drug_era_start_date <= cp1.cohort_start_date;
 
 } }
@@ -13761,7 +13701,7 @@ FROM (
 	) t1
 GROUP BY cohort_start_date,
 	cohort_definition_id,
-	person_id;
+	subject_id;
 
 TRUNCATE TABLE #Charlson_codes;
 
@@ -14093,7 +14033,7 @@ FROM (
 	) t1
 GROUP BY cohort_start_date,
 	cohort_definition_id,
-	person_id;
+	subject_id;
 
 TRUNCATE TABLE #DCSI_scoring;
 
