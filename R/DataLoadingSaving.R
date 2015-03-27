@@ -33,6 +33,8 @@
 #' @param oracleTempSchema    For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database. 
 #' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
 #' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.	
+#' @param excludeDrugsFromCovariates  Should the target and comparator drugs (and their descendant concepts) be excluded from the covariates? Note
+#' that this will work if the drugs are actualy drug concept IDs (and not cohort IDs).
 #' @template GetCovariatesParams
 #' @template GetOutcomesParams
 #' @param targetDrugConceptId 		A unique identifier to define the target cohort.  If exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, targetDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.
@@ -76,6 +78,7 @@ getDbCohortData <- function(connectionDetails,
                             exposureTable = "drug_era",
                             outcomeDatabaseSchema = cdmDatabaseSchema,
                             outcomeTable = "condition_occurrence",
+                            excludeDrugsFromCovariates = TRUE,
                             useCovariateDemographics = TRUE,
                             useCovariateConditionOccurrence = TRUE,
                             useCovariateConditionOccurrence365d = TRUE,
@@ -112,6 +115,21 @@ getDbCohortData <- function(connectionDetails,
                             deleteCovariatesSmallCount = 100){
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   conn <- DatabaseConnector::connect(connectionDetails)
+  
+  if (excludeDrugsFromCovariates) {
+    if (exposureTable != "drug_era")
+      warning("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
+    sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)"
+    sql <- SqlRender::renderSql(sql, 
+                                cdm_database_schema = cdmDatabaseSchema,
+                                target_drug_concept_id = targetDrugConceptId,
+                                comparator_drug_concept_id = comparatorDrugConceptId)$sql
+    sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+    conceptIds <- DatabaseConnector::querySql(conn, sql)
+    names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
+    conceptIds <- conceptIds$descendantConceptId
+    excludedCovariateConceptIds <- c(excludedCovariateConceptIds, conceptIds)
+  }
   
   writeLines("\nConstructing treatment and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",

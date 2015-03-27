@@ -180,7 +180,7 @@ nsaids <- nsaids$CONCEPT_ID
  #Load data:
 cohortData <- getDbCohortData(connectionDetails,
                               cdmDatabaseSchema = cdmDatabaseSchema,
-                              resultsDatabaseSchema = resultsDatabaseSchema,
+                              oracleTempSchema = resultsDatabaseSchema,
                               targetDrugConceptId = 1,
                               comparatorDrugConceptId = 2, 
                               indicationConceptIds = c(),
@@ -228,6 +228,7 @@ cohortData <- getDbCohortData(connectionDetails,
                               useCovariateInteractionYear = FALSE,
                               useCovariateInteractionMonth = FALSE,
                               excludedCovariateConceptIds = nsaids, 
+                              excludeDrugsFromCovariates = FALSE,
                               deleteCovariatesSmallCount = 100)
  cohortData
 ```

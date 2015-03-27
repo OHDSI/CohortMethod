@@ -12,8 +12,8 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema,
   outcomeConditionTypeConceptIds = c(),
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "condition_occurrence", useCovariateDemographics = TRUE,
-  useCovariateConditionOccurrence = TRUE,
+  outcomeTable = "condition_occurrence", excludeDrugsFromCovariates = TRUE,
+  useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE,
   useCovariateConditionOccurrence30d = TRUE,
   useCovariateConditionOccurrenceInpt180d = TRUE,
@@ -70,6 +70,9 @@ getDbCohortData(connectionDetails, cdmDatabaseSchema,
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
 
 \item{outcomeTable}{The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+
+\item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their descendant concepts) be excluded from the covariates? Note
+that this will work if the drugs are actualy drug concept IDs (and not cohort IDs).}
 
 \item{useCovariateDemographics}{A boolean value (TRUE/FALSE) to determine if demographic covariates (age in 5-yr increments, gender, race, ethnicity, year of index date, month of index date) will be created and included in future models.}
 
