@@ -19,10 +19,10 @@ Screenshots
 <table border = "">
 <tr valign="top">
 <td width = 50%>
-  <img src="https://github.com/OHDSI/CohortMethod/blob/master/man/ps.png" alt="CohortMethod propensity score plot" title="CohortMethod propensity score plot" />
+  <img src="https://github.com/OHDSI/CohortMethod/blob/master/extras/ps.png" alt="CohortMethod propensity score plot" title="CohortMethod propensity score plot" />
 </td>
 <td width = 50%>
- <img src="https://github.com/OHDSI/CohortMethod/blob/master/man/balanceScatterplot.png" alt="CohortMethod covariate balance plot" title="CohortMethod covariate balance plot" />
+ <img src="https://github.com/OHDSI/CohortMethod/blob/master/extras/balanceScatterplot.png" alt="CohortMethod covariate balance plot" title="CohortMethod covariate balance plot" />
 </td>
 </tr><tr>
 <td>Propensity (preference score) distribution</td><td>Covariate balance plot</td>
@@ -53,19 +53,19 @@ Getting Started
   ```r
   install.packages("devtools")
   library(devtools)
-  install_github("ohdsi/SqlRender") 
-  install_github("ohdsi/DatabaseConnector") 
-  install_github("ohdsi/Cyclops") 
-  install_github("ohdsi/CohortMethod") 
+  install_github("ohdsi/SqlRender")
+  install_github("ohdsi/DatabaseConnector")
+  install_github("ohdsi/Cyclops")
+  install_github("ohdsi/CohortMethod")
   ```
 
 Getting Involved
 =============
 * Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/SingleStudies.pdf)
-* Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/man/CohortMethod.pdf) 
+* Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/extras/CohortMethod.pdf)
 * Developer questions/comments/feedback: <a href="http://forums.ohdsi.org/c/developers">OHDSI Forum</a>
 * We use the <a href="../../issues">GitHub issue tracker</a> for all bugs/issues/enhancements
- 
+
 License
 =======
 CohortMethod is licensed under Apache License 2.0
