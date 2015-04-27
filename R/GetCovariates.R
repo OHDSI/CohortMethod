@@ -55,6 +55,12 @@ getDbCovariates <- function(connectionDetails = NULL,
                             cohortTable = "cohort",
                             cohortConceptIds = c(0,1),
                             useCovariateDemographics = TRUE,
+                            useCovariateDemographicsGender = TRUE,
+                            useCovariateDemographicsRace = TRUE,
+                            useCovariateDemographicsEthnicity = TRUE,
+                            useCovariateDemographicsAge = TRUE,
+                            useCovariateDemographicsYear = TRUE,
+                            useCovariateDemographicsMonth = TRUE,
                             useCovariateConditionOccurrence = TRUE,
                             useCovariateConditionOccurrence365d = TRUE,
                             useCovariateConditionOccurrence30d = FALSE,
@@ -112,6 +118,12 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    cohort_table = cohortTable,
                                                    cohort_concept_ids = cohortConceptIds,
                                                    use_covariate_demographics = useCovariateDemographics,
+                                                   use_covariate_demographics_gender = useCovariateDemographicsGender,
+                                                   use_covariate_demographics_race = useCovariateDemographicsRace,
+                                                   use_covariate_demographics_ethnicity = useCovariateDemographicsEthnicity,
+                                                   use_covariate_demographics_age = useCovariateDemographicsAge,
+                                                   use_covariate_demographics_year = useCovariateDemographicsYear,
+                                                   use_covariate_demographics_month = useCovariateDemographicsMonth,
                                                    use_covariate_condition_occurrence = useCovariateConditionOccurrence,
                                                    use_covariate_condition_occurrence_365d = useCovariateConditionOccurrence365d,
                                                    use_covariate_condition_occurrence_30d = useCovariateConditionOccurrence30d,
@@ -147,7 +159,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    delete_covariates_small_count = deleteCovariatesSmallCount)
 
   writeLines("Executing multiple queries. This could take a while")
-  DatabaseConnector::executeSql(conn,renderedSql)
+
+  DatabaseConnector::executeSql(conn,renderedSql,profile=TRUE)
   writeLines("Done")
 
   writeLines("Fetching data from server")

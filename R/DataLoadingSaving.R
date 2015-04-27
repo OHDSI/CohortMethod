@@ -3,13 +3,13 @@
 # Copyright 2015 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,29 +23,29 @@
 #'
 #' @details
 #' Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates at or before the index date are extracted, as well as outcomes occurring on or after the index date.
-#' The treatment and comparator cohorts can be identified using the drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
-#' Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema. 
+#' The treatment and comparator cohorts can be identified using the drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
+#' Similarly, outcomes are identified using the condition_occurrence or condition_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
 #' Covariates are automatically extracted from the appropriate tables within the CDM.This function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
 #'
 #' @param connectionDetails  	An R object of type\cr\code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
-#' 
+#'
 #' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.
-#' @param oracleTempSchema    For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database. 
-#' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
-#' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.	
+#' @param oracleTempSchema    For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database.
+#' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.
+#' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param excludeDrugsFromCovariates  Should the target and comparator drugs (and their descendant concepts) be excluded from the covariates? Note
 #' that this will work if the drugs are actualy drug concept IDs (and not cohort IDs).
 #' @template GetCovariatesParams
 #' @template GetOutcomesParams
 #' @param targetDrugConceptId 		A unique identifier to define the target cohort.  If exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, targetDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.
-#' @param comparatorDrugConceptId   	A unique identifier to define the comparator cohort.  If exposureTable = DRUG_ERA, comparatorDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, comparatorDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.	
-#' @param indicationConceptIds   A list of CONCEPT_IDs used to restrict the target and comparator cohorts, based on any descendant condition of this list occurring at least once within the indicationLookbackWindow prior to the cohort index date. If no concept IDs are specified, the cohorts are not restricted to any indication.	
-#' @param exclusionConceptIds   A list of CONCEPT_IDs used to restrict the cohorts, based on any descendant conditions/drugs/procedures occurring at least once anytime prior to the cohort index date.	
+#' @param comparatorDrugConceptId   	A unique identifier to define the comparator cohort.  If exposureTable = DRUG_ERA, comparatorDrugConceptId is a CONCEPT_ID and all descendant concepts within that CONCEPT_ID will be used to define the cohort.  If exposureTable <> DRUG_ERA, comparatorDrugConceptId is used to select the COHORT_DEFINITION_ID in the cohort-like table.
+#' @param indicationConceptIds   A list of CONCEPT_IDs used to restrict the target and comparator cohorts, based on any descendant condition of this list occurring at least once within the indicationLookbackWindow prior to the cohort index date. If no concept IDs are specified, the cohorts are not restricted to any indication.
+#' @param exclusionConceptIds   A list of CONCEPT_IDs used to restrict the cohorts, based on any descendant conditions/drugs/procedures occurring at least once anytime prior to the cohort index date.
 #' @param washoutWindow 		The mininum required continuous observation time prior to index date for a person to be included in the cohort.
 #' @param indicationLookbackWindow 		The window to look back prior to cohort index date to identify records of a indication condition.  Only applicable if indicationConceptIds != ''.
 #' @param studyStartDate 		A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate 		A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'.
-#' 
+#'
 #' @return
 #' Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,
 #' and baseline covariates. Information about multiple outcomes can be captured at once for efficiency reasons. This object is a list with the following components:
@@ -57,7 +57,7 @@
 #'   \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
 #'   \item{metaData}{A list of objects with information on how the cohortData object was constructed.}
 #' }
-#' 
+#'
 #' The generic \code{summary()} function has been implemented for this object.
 #'
 #' @export
@@ -80,6 +80,12 @@ getDbCohortData <- function(connectionDetails,
                             outcomeTable = "condition_occurrence",
                             excludeDrugsFromCovariates = TRUE,
                             useCovariateDemographics = TRUE,
+                            useCovariateDemographicsGender = TRUE,
+                            useCovariateDemographicsRace = TRUE,
+                            useCovariateDemographicsEthnicity = TRUE,
+                            useCovariateDemographicsAge = TRUE,
+                            useCovariateDemographicsYear = TRUE,
+                            useCovariateDemographicsMonth = TRUE,
                             useCovariateConditionOccurrence = TRUE,
                             useCovariateConditionOccurrence365d = TRUE,
                             useCovariateConditionOccurrence30d = TRUE,
@@ -115,12 +121,12 @@ getDbCohortData <- function(connectionDetails,
                             deleteCovariatesSmallCount = 100){
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   conn <- DatabaseConnector::connect(connectionDetails)
-  
+
   if (excludeDrugsFromCovariates) {
     if (exposureTable != "drug_era")
       warning("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
     sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)"
-    sql <- SqlRender::renderSql(sql, 
+    sql <- SqlRender::renderSql(sql,
                                 cdm_database_schema = cdmDatabaseSchema,
                                 target_drug_concept_id = targetDrugConceptId,
                                 comparator_drug_concept_id = comparatorDrugConceptId)$sql
@@ -130,7 +136,7 @@ getDbCohortData <- function(connectionDetails,
     conceptIds <- conceptIds$descendantConceptId
     excludedCovariateConceptIds <- c(excludedCovariateConceptIds, conceptIds)
   }
-  
+
   writeLines("\nConstructing treatment and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                    packageName = "CohortMethod",
@@ -147,10 +153,10 @@ getDbCohortData <- function(connectionDetails,
                                                    exclusion_concept_ids = exclusionConceptIds,
                                                    exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = exposureTable)
-  
+
   writeLines("Executing multiple queries. This could take a while")
   DatabaseConnector::executeSql(conn,renderedSql)
-  
+
   writeLines("Fetching data from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("FetchCohortData.sql",
@@ -160,7 +166,7 @@ getDbCohortData <- function(connectionDetails,
   rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema, 
+                                                   oracleTempSchema = oracleTempSchema,
                                                    target_drug_concept_id = targetDrugConceptId,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
                                                    study_start_date = studyStartDate,
@@ -186,19 +192,25 @@ getDbCohortData <- function(connectionDetails,
   nonOverlapCount <- DatabaseConnector::querySql(conn, nonOverlapCountSql)
   counts <- merge(counts, nonOverlapCount)
   notExcludedCount <- DatabaseConnector::querySql(conn, notExcludedCountSql)
-  counts <- merge(counts, notExcludedCount)  
+  counts <- merge(counts, notExcludedCount)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
   colnames(counts) <- SqlRender::snakeCaseToCamelCase(colnames(counts))
   counts <- counts[order(counts$treatment),]
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
-  
+
   writeLines("\nConstructing baseline covariates")
-  covariateData <- getDbCovariates(connection = conn, 
-                                   oracleTempSchema = oracleTempSchema, 
-                                   cdmDatabaseSchema = cdmDatabaseSchema, 
-                                   useExistingCohortPerson = TRUE, 
+  covariateData <- getDbCovariates(connection = conn,
+                                   oracleTempSchema = oracleTempSchema,
+                                   cdmDatabaseSchema = cdmDatabaseSchema,
+                                   useExistingCohortPerson = TRUE,
                                    useCovariateDemographics = useCovariateDemographics,
+                                   useCovariateDemographicsGender = useCovariateDemographicsGender,
+                                   useCovariateDemographicsRace = useCovariateDemographicsRace,
+                                   useCovariateDemographicsEthnicity = useCovariateDemographicsEthnicity,
+                                   useCovariateDemographicsAge = useCovariateDemographicsAge,
+                                   useCovariateDemographicsYear = useCovariateDemographicsYear,
+                                   useCovariateDemographicsMonth = useCovariateDemographicsMonth,
                                    useCovariateConditionOccurrence = useCovariateConditionOccurrence,
                                    useCovariateConditionOccurrence365d = useCovariateConditionOccurrence365d,
                                    useCovariateConditionOccurrence30d = useCovariateConditionOccurrence30d,
@@ -241,7 +253,7 @@ getDbCohortData <- function(connectionDetails,
                    counts = counts,
                    call = match.call()
   )
-  
+
   result <- list(cohorts = cohorts,
                  covariates = covariateData$covariates,
                  covariateRef = covariateData$covariateRef,
@@ -249,19 +261,19 @@ getDbCohortData <- function(connectionDetails,
   )
   open(result$cohorts)
   class(result) <- "cohortData"
-  
-  if (!missing(outcomeConceptIds) && !is.null(outcomeConceptIds)){  
+
+  if (!missing(outcomeConceptIds) && !is.null(outcomeConceptIds)){
     writeLines("\nConstructing outcomes")
-    result <- getDbOutcomes(connection = conn, 
-                            oracleTempSchema = oracleTempSchema, 
-                            cdmDatabaseSchema = cdmDatabaseSchema, 
+    result <- getDbOutcomes(connection = conn,
+                            oracleTempSchema = oracleTempSchema,
+                            cdmDatabaseSchema = cdmDatabaseSchema,
                             cohortData = result,
                             outcomeDatabaseSchema = outcomeDatabaseSchema,
                             outcomeTable = outcomeTable,
                             outcomeConceptIds = outcomeConceptIds,
                             outcomeConditionTypeConceptIds = outcomeConditionTypeConceptIds)
   }
-  
+
   #Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
                                                    packageName = "CohortMethod",
@@ -269,10 +281,10 @@ getDbCohortData <- function(connectionDetails,
                                                    oracleTempSchema = oracleTempSchema,
                                                    indication_concept_ids = indicationConceptIds)
   DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
-  
-  
+
+
   dummy <- RJDBC::dbDisconnect(conn)
-  
+
   return(result)
 }
 
@@ -280,17 +292,17 @@ getDbCohortData <- function(connectionDetails,
 #'
 #' @description
 #' \code{saveCohortData} saves an object of type cohortData to folder.
-#' 
+#'
 #' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortData}.
 #' @param file                The name of the folder where the data will be written. The folder should
 #' not yet exist.
-#' 
+#'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
-#'  
-#' @examples 
+#'
+#' @examples
 #' #todo
-#' 
+#'
 #' @export
 saveCohortData <- function(cohortData, file){
   if (missing(cohortData))
@@ -299,7 +311,7 @@ saveCohortData <- function(cohortData, file){
     stop("Must specify file")
   if (class(cohortData) != "cohortData")
     stop("Data not of class cohortData")
-  
+
   out1 <- cohortData$outcomes
   out2 <- cohortData$cohorts
   out3 <- cohortData$covariates
@@ -314,30 +326,30 @@ saveCohortData <- function(cohortData, file){
 #'
 #' @description
 #' \code{loadCohortData} loads an object of type cohortData from a folder in the file system.
-#' 
+#'
 #' @param file                The name of the folder containing the data.
 #' @param readOnly            If true, the data is opened read only.
-#' 
+#'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
-#' 
+#'
 #' @return
 #' An object of class cohortData.
-#'  
-#' @examples 
+#'
+#' @examples
 #' #todo
-#' 
+#'
 #' @export
 loadCohortData <- function(file, readOnly = FALSE){
   if (!file.exists(file))
     stop(paste("Cannot find folder",file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder",file))
-  
+
   temp <- setwd(file)
   absolutePath <- setwd(temp)
-  
-  e <- new.env()  
+
+  e <- new.env()
   ffbase::load.ffdf(absolutePath,e)
   load(file.path(absolutePath,"metaData.Rdata"),e)
   result <- list(outcomes = get("out1", envir=e),
@@ -353,7 +365,7 @@ loadCohortData <- function(file, readOnly = FALSE){
   open(result$covariates,readonly = readOnly)
   open(result$exclude,readonly = readOnly)
   open(result$covariateRef,readonly = readOnly)
-  
+
   class(result) <- "cohortData"
   rm(e)
   return(result)
@@ -370,7 +382,7 @@ print.cohortData <- function(x, ...){
 
 #' @export
 summary.cohortData <- function(object, ...){
-  treatedPersons = ffbase::sum.ff(object$cohorts$treatment)  
+  treatedPersons = ffbase::sum.ff(object$cohorts$treatment)
   comparatorPersons = nrow(object$cohorts)-treatedPersons
   outcomeCounts = data.frame(outcomeConceptId = object$metaData$outcomeConceptIds, eventCount = 0, personCount = 0)
   for (i in 1:nrow(outcomeCounts)){
@@ -379,16 +391,16 @@ summary.cohortData <- function(object, ...){
       outcomeCounts$personCount[i] = 0
     else {
       t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
-      outcomeCounts$personCount[i] = length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t, t == TRUE)]))   
+      outcomeCounts$personCount[i] = length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t, t == TRUE)]))
     }
   }
-  
+
   result <- list(metaData = object$metaData,
                  treatedPersons = treatedPersons,
                  comparatorPersons = comparatorPersons,
                  outcomeCounts = outcomeCounts,
                  covariateCount = nrow(object$covariateRef),
-                 covariateValueCount = nrow(object$covariates)                 
+                 covariateValueCount = nrow(object$covariates)
   )
   class(result) <- "summary.cohortData"
   return(result)
@@ -414,5 +426,5 @@ print.summary.cohortData <- function(x, ...){
   writeLines("")
   writeLines("Covariates:")
   writeLines(paste("Number of covariates:",x$covariateCount))
-  writeLines(paste("Number of non-zero covariate values:",x$covariateValueCount)) 
+  writeLines(paste("Number of non-zero covariate values:",x$covariateValueCount))
 }
