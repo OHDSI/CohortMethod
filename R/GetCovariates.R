@@ -69,6 +69,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                             useCovariateConditionEraEver = FALSE,
                             useCovariateConditionEraOverlap = FALSE,
                             useCovariateConditionGroup = FALSE,
+                            useCovariateConditionGroupMeddra = FALSE,
+                            useCovariateConditionGroupSnomed = FALSE,
                             useCovariateDrugExposure = FALSE,
                             useCovariateDrugExposure365d = FALSE,
                             useCovariateDrugExposure30d = FALSE,
@@ -93,6 +95,7 @@ getDbCovariates <- function(connectionDetails = NULL,
                             useCovariateInteractionYear = FALSE,
                             useCovariateInteractionMonth = FALSE,
                             excludedCovariateConceptIds = "",
+                            includedCovariateConceptIds = "",
                             deleteCovariatesSmallCount = 100) {
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   if (is.null(connectionDetails) && is.null(connection))
@@ -132,6 +135,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    use_covariate_condition_era_ever = useCovariateConditionEraEver,
                                                    use_covariate_condition_era_overlap = useCovariateConditionEraOverlap,
                                                    use_covariate_condition_group = useCovariateConditionGroup,
+                                                   use_covariate_condition_group_meddra = useCovariateConditionGroupMeddra,
+                                                   use_covariate_condition_group_snomed = useCovariateConditionGroupSnomed,
                                                    use_covariate_drug_exposure = useCovariateDrugExposure,
                                                    use_covariate_drug_exposure_365d = useCovariateDrugExposure365d,
                                                    use_covariate_drug_exposure_30d = useCovariateDrugExposure30d,
@@ -156,6 +161,7 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    use_covariate_interaction_year = useCovariateInteractionYear,
                                                    use_covariate_interaction_month = useCovariateInteractionMonth,
                                                    excluded_covariate_concept_ids = excludedCovariateConceptIds,
+                                                   included_covariate_concept_ids = includedCovariateConceptIds,
                                                    delete_covariates_small_count = deleteCovariatesSmallCount)
 
   writeLines("Executing multiple queries. This could take a while")

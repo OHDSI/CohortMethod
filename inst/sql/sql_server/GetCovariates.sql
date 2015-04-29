@@ -38,6 +38,8 @@ limitations under the License.
 {DEFAULT @use_covariate_condition_era_ever = FALSE} /*use_covariate_condition_era_ever: @use_covariate_condition_era_ever*/
 {DEFAULT @use_covariate_condition_era_overlap = FALSE} /*use_covariate_condition_era_overlap: @use_covariate_condition_era_overlap*/
 {DEFAULT @use_covariate_condition_group = FALSE} /*use_covariate_condition_group: @use_covariate_condition_group*/
+{DEFAULT @use_covariate_condition_group_meddra = TRUE} /*use_covariate_condition_group_meddra: @use_covariate_condition_group_meddra*/
+{DEFAULT @use_covariate_condition_group_snomed = TRUE} /*use_covariate_condition_group_snomed: @use_covariate_condition_group_snomed*/
 {DEFAULT @use_covariate_drug_exposure = FALSE} /*use_covariate_drug_exposure: @use_covariate_drug_exposure*/
 {DEFAULT @use_covariate_drug_exposure_365d = FALSE} /*use_covariate_drug_exposure_365d: @use_covariate_drug_exposure_365d*/
 {DEFAULT @use_covariate_drug_exposure_30d = FALSE} /*use_covariate_drug_exposure_30d: @use_covariate_drug_exposure_30d*/
@@ -62,6 +64,7 @@ limitations under the License.
 {DEFAULT @use_covariate_interaction_year = FALSE} /*use_covariate_interaction_year: @use_covariate_interaction_year*/
 {DEFAULT @use_covariate_interaction_month = FALSE} /*use_covariate_interaction_month: @use_covariate_interaction_month*/
 {DEFAULT @excluded_covariate_concept_ids = '' } /*excluded_covariate_concept_ids: @excluded_covariate_concept_ids*/
+{DEFAULT @included_covariate_concept_ids = '' } /*included_covariate_concept_ids: @included_covariate_concept_ids*/
 {DEFAULT @delete_covariates_small_count = 100 } /*delete_covariates_small_count: @delete_covariates_small_count*/
 
 USE @cdm_database;
@@ -153,11 +156,15 @@ INSERT INTO #cohort_covariate_ref (
 	concept_id
 	)
 SELECT p1.covariate_id,
-	'Gender = ' + v1.concept_name AS covariate_name,
+	'Gender = ' +
+    CASE WHEN v1.concept_name IS NOT NULL
+			THEN v1.concept_name
+		ELSE 'Unknown invalid concept'
+		END AS covariate_name,
 	2 AS analysis_id,
 	p1.covariate_id AS concept_id
 FROM (SELECT distinct covariate_id FROM #cohort_covariate_gender) p1
-INNER JOIN (
+LEFT JOIN (
 	SELECT concept_id,
 		concept_name
 	FROM concept
@@ -193,11 +200,14 @@ INSERT INTO #cohort_covariate_ref (
 	concept_id
 	)
 SELECT p1.covariate_id,
-	'Race = ' + v1.concept_name AS covariate_name,
+	'Race = ' + CASE WHEN v1.concept_name IS NOT NULL
+  		THEN v1.concept_name
+		ELSE 'Unknown invalid concept'
+		END  AS covariate_name,
 	3 AS analysis_id,
 	p1.covariate_id AS concept_id
 FROM (SELECT distinct covariate_id FROM #cohort_covariate_race) p1
-INNER JOIN (
+LEFT JOIN (
 	SELECT concept_id,
 		concept_name
 	FROM concept
@@ -213,7 +223,7 @@ INNER JOIN (
 SELECT cp1.cohort_start_date,
 	cp1.cohort_definition_id,
 	cp1.subject_id AS person_id,
-	race_concept_id AS covariate_id,
+	ethnicity_concept_id AS covariate_id,
 	1 AS covariate_value
   INTO #cohort_covariate_ethnicity
 FROM #cohort_person cp1
@@ -234,11 +244,14 @@ INSERT INTO #cohort_covariate_ref (
 	concept_id
 	)
 SELECT p1.covariate_id,
-	'Ethnicity = ' + v1.concept_name AS covariate_name,
+	'Ethnicity = ' + CASE WHEN v1.concept_name IS NOT NULL
+  		THEN v1.concept_name
+		ELSE 'Unknown invalid concept'
+		END  AS covariate_name,
 	4 AS analysis_id,
 	p1.covariate_id AS concept_id
 FROM (SELECT distinct covariate_id FROM #cohort_covariate_ethnicity) p1
-INNER JOIN (
+LEFT JOIN (
 	SELECT concept_id,
 		concept_name
 	FROM concept
@@ -362,6 +375,7 @@ FROM #cohort_person cp1
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
 WHERE co1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND co1.condition_concept_id IN (@included_covariate_concept_ids)}
 	AND co1.condition_start_date <= cp1.cohort_start_date
 	AND co1.condition_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -400,6 +414,7 @@ FROM #cohort_person cp1
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
 WHERE co1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND co1.condition_concept_id IN (@included_covariate_concept_ids)}
 	AND co1.condition_start_date <= cp1.cohort_start_date
 	AND co1.condition_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -415,7 +430,7 @@ SELECT p1.covariate_id,
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
-	101 AS analysis_id,
+	102 AS analysis_id,
   (p1.covariate_id-102)/1000 AS concept_id
 FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_co_30d) p1
 LEFT JOIN concept c1
@@ -438,6 +453,7 @@ FROM #cohort_person cp1
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
 WHERE co1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND co1.condition_concept_id IN (@included_covariate_concept_ids)}
 	AND co1.condition_type_concept_id IN (38000183, 38000184, 38000199, 38000200)
 	AND co1.condition_start_date <= cp1.cohort_start_date
 	AND co1.condition_start_date >= dateadd(dd, - 180, cp1.cohort_start_date);
@@ -456,7 +472,7 @@ SELECT p1.covariate_id,
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
-	101 AS analysis_id,
+	103 AS analysis_id,
 	(p1.covariate_id-103)/1000 AS concept_id
 FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_co_inpt180d) p1
 LEFT JOIN concept c1
@@ -465,6 +481,9 @@ LEFT JOIN concept c1
 
 
 } }
+
+
+
 /**************************
 ***************************
 CONDITION ERA
@@ -473,118 +492,116 @@ CONDITION ERA
 	{@use_covariate_condition_era} ? { {@use_covariate_condition_era_ever} ? {
 
 --condition:  exist any time prior
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(ce1.condition_concept_id AS BIGINT) * 1000 + 201 AS covariate_id,
+	1 AS covariate_value
+  INTO #cohort_covariate_ce_ever
+FROM #cohort_person cp1
+INNER JOIN condition_era ce1
+	ON cp1.subject_id = ce1.person_id
+LEFT JOIN concept c1
+	ON ce1.condition_concept_id = c1.concept_id
+WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+  {@included_covariate_concept_ids != '' } ? {AND ce1.condition_concept_id IN (@included_covariate_concept_ids)}
+	AND ce1.condition_era_start_date <= cp1.cohort_start_date;
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
-	concept_id
+  covariate_id,
+  covariate_name,
+  analysis_id,
+  concept_id
 	)
-SELECT DISTINCT CAST(ce1.condition_concept_id AS BIGINT) * 1000 + 201 AS covariate_id,
-	'Condition era record observed during anytime on or prior to cohort index:  ' + CAST(ce1.condition_concept_id AS VARCHAR) + '-' + CASE
+SELECT p1.covariate_id,
+	'Condition era record observed during anytime on or prior to cohort index:    ' + CAST((p1.covariate_id-201)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	201 AS analysis_id,
-	ce1.condition_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN condition_era ce1
-	ON cp1.subject_id = ce1.person_id
+	(p1.covariate_id-201)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_ce_ever) p1
 LEFT JOIN concept c1
-	ON ce1.condition_concept_id = c1.concept_id
-WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND ce1.condition_era_start_date <= cp1.cohort_start_date;
+	ON (p1.covariate_id-201)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(ce1.condition_concept_id AS BIGINT) * 1000 + 201 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN condition_era ce1
-	ON cp1.subject_id = ce1.person_id
-LEFT JOIN concept c1
-	ON ce1.condition_concept_id = c1.concept_id
-WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND ce1.condition_era_start_date <= cp1.cohort_start_date;
+}
 
-} {@use_covariate_condition_era_overlap} ? {
+
+{@use_covariate_condition_era_overlap} ? {
 
 --concurrent on index date (era overlapping)
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(ce1.condition_concept_id AS BIGINT) * 1000 + 202 AS covariate_id,
+	1 AS covariate_value
+  INTO #cohort_covariate_ce_overlap
+FROM #cohort_person cp1
+INNER JOIN condition_era ce1
+	ON cp1.subject_id = ce1.person_id
+LEFT JOIN concept c1
+	ON ce1.condition_concept_id = c1.concept_id
+WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND ce1.condition_concept_id IN (@included_covariate_concept_ids)}
+	AND ce1.condition_era_start_date <= cp1.cohort_start_date
+	AND ce1.condition_era_end_date >= cp1.cohort_start_date;
+
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
-	concept_id
-	)
-SELECT DISTINCT CAST(ce1.condition_concept_id AS BIGINT) * 1000 + 202 AS covariate_id,
-	'Condition era record observed concurrent (overlapping) with cohort index:  ' + CAST(ce1.condition_concept_id AS VARCHAR) + '-' + CASE
+  covariate_id,
+  covariate_name,
+  analysis_id,
+  concept_id
+  )
+SELECT p1.covariate_id,
+	'Condition era record observed concurrent (overlapping) with cohort index:    ' + CAST((p1.covariate_id-202)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	202 AS analysis_id,
-	ce1.condition_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN condition_era ce1
-	ON cp1.subject_id = ce1.person_id
+	(p1.covariate_id-202)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_ce_overlap) p1
 LEFT JOIN concept c1
-	ON ce1.condition_concept_id = c1.concept_id
-WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND ce1.condition_era_start_date <= cp1.cohort_start_date
-	AND ce1.condition_era_end_date >= cp1.cohort_start_date;
+	ON (p1.covariate_id-202)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(ce1.condition_concept_id AS BIGINT) * 1000 + 202 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN condition_era ce1
-	ON cp1.subject_id = ce1.person_id
-LEFT JOIN concept c1
-	ON ce1.condition_concept_id = c1.concept_id
-WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND ce1.condition_era_start_date <= cp1.cohort_start_date
-	AND ce1.condition_era_end_date >= cp1.cohort_start_date;
 
-} }
+
+}
+
+}
+
+
+
 /**************************
 ***************************
 CONDITION GROUP
 ***************************
 **************************/
+
+
+
 	{@use_covariate_condition_group} ? {
 
 
 IF OBJECT_ID('tempdb..#condition_group', 'U') IS NOT NULL
 	DROP TABLE #condition_group;
 
-CREATE TABLE #condition_group (
-	descendant_concept_id INT,
-	ancestor_concept_id INT
-	);
 
---currently using MedDRA hierarchy
---future extension:  expand to SNOMED classes as well
-INSERT INTO #condition_group (
-	descendant_concept_id,
-	ancestor_concept_id
-	)
+select descendant_concept_id,
+  ancestor_concept_id
+  INTO #condition_group
+from
+(
+
+{@use_covariate_condition_group_meddra} ? {
 SELECT DISTINCT ca1.descendant_concept_id,
 	ca1.ancestor_concept_id
 FROM (
@@ -602,7 +619,40 @@ INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
 WHERE c1.vocabulary_id = 15
 	AND c1.concept_class <> 'System Organ Class'
-	AND c1.concept_id NOT IN (36302170, 36303153, 36313966 /*Investigation concepts, too broad*/ {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids });
+	AND c1.concept_id NOT IN (36302170, 36303153, 36313966 /*Investigation concepts, too broad*/ {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
+
+{@use_covariate_condition_group_snomed} ? { UNION }
+
+}
+
+{@use_covariate_condition_group_snomed} ? {
+SELECT DISTINCT ca1.descendant_concept_id,
+  ca1.ancestor_concept_id
+FROM (
+	SELECT covariate_id,
+		covariate_name,
+		analysis_id,
+		concept_id
+	FROM #cohort_covariate_ref
+	WHERE analysis_id > 100
+		AND analysis_id < 300
+	) ccr1
+INNER JOIN concept_ancestor ca1
+	ON ccr1.concept_id = ca1.descendant_concept_id
+INNER JOIN concept c1
+	ON ca1.ancestor_concept_id = c1.concept_id
+WHERE c1.vocabulary_id = 1
+  AND c1.concept_class = 'Clinical finding'
+  AND ca1.min_levels_of_separation = 1
+  AND c1.concept_id NOT IN (select distinct descendant_concept_id from concept_ancestor where ancestor_concept_id = 441480 /*clinical finding*/ and max_levels_of_separation <= 2)
+{@excluded_covariate_concept_ids != '' } ?	{AND c1.concept_id NOT IN (@excluded_covariate_concept_ids )}
+{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
+
+}
+
+) t1
+;
 
 INSERT INTO #cohort_covariate_ref (
 	covariate_id,
@@ -610,7 +660,7 @@ INSERT INTO #cohort_covariate_ref (
 	analysis_id,
 	concept_id
 	)
-SELECT DISTINCT CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + ccr1.analysis_id AS covariate_id,
+SELECT DISTINCT CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 50 + ccr1.analysis_id AS covariate_id,
 	CASE
 		WHEN analysis_id = 101
 			THEN 'Condition occurrence record observed during 365d on or prior to cohort index within condition group:  '
@@ -626,7 +676,91 @@ SELECT DISTINCT CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + ccr1.analysis_i
 		END + CAST(cg1.ancestor_concept_id AS VARCHAR) + '-' + c1.concept_name AS covariate_name,
 	ccr1.analysis_id,
 	cg1.ancestor_concept_id AS concept_id
-FROM #cohort_covariate cc1
+FROM (
+	SELECT covariate_id,
+		covariate_name,
+		analysis_id,
+		concept_id
+	FROM #cohort_covariate_ref
+	WHERE analysis_id > 100
+		AND analysis_id < 300
+	) ccr1
+INNER JOIN #condition_group cg1
+	ON ccr1.concept_id = cg1.descendant_concept_id
+INNER JOIN concept c1
+	ON cg1.ancestor_concept_id = c1.concept_id;
+
+
+SELECT DISTINCT cc1.cohort_start_date,
+	cc1.cohort_definition_id,
+	cc1.person_id,
+	CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 50 + ccr1.analysis_id AS covariate_id,
+	1 AS covariate_value
+INTO #cohort_covariate_cg
+FROM
+
+(
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_exposure
+
+{@use_covariate_condition_occurrence} ? {
+
+{@use_covariate_condition_occurrence_365d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_co_365d
+
+}
+
+{@use_covariate_condition_occurrence_30d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_co_30d
+
+}
+
+{@use_covariate_condition_occurrence_inpt180d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_co_inpt180d
+
+}
+
+}
+
+
+
+{@use_covariate_condition_era} ? {
+
+{@use_covariate_condition_era_ever} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_ce_ever
+
+}
+
+{@use_covariate_condition_era_overlap} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_ce_overlap
+
+}
+
+
+}
+
+
+) cc1
 INNER JOIN (
 	SELECT covariate_id,
 		covariate_name,
@@ -639,34 +773,12 @@ INNER JOIN (
 	ON cc1.covariate_id = ccr1.covariate_id
 INNER JOIN #condition_group cg1
 	ON ccr1.concept_id = cg1.descendant_concept_id
-INNER JOIN concept c1
-	ON cg1.ancestor_concept_id = c1.concept_id;
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cc1.cohort_start_date,
-	cc1.cohort_definition_id,
-	cc1.person_id,
-	CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + ccr1.analysis_id AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_covariate cc1
-INNER JOIN (
-	SELECT covariate_id,
-		covariate_name,
-		analysis_id,
-		concept_id
-	FROM #cohort_covariate_ref
-	WHERE analysis_id > 100
-		AND analysis_id < 300
-	) ccr1
-	ON cc1.covariate_id = ccr1.covariate_id
-INNER JOIN #condition_group cg1
-	ON ccr1.concept_id = cg1.descendant_concept_id;
+
+
+
+
 
 TRUNCATE TABLE #condition_group;
 
@@ -681,94 +793,88 @@ DRUG EXPOSURE
 	{@use_covariate_drug_exposure} ? { {@use_covariate_drug_exposure_365d} ? {
 
 --drug exist:  episode in last 365d prior
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 401 AS covariate_id,
+	1 AS covariate_value
+INTO #cohort_covariate_de_365d
+FROM #cohort_person cp1
+INNER JOIN drug_exposure de1
+	ON cp1.subject_id = de1.person_id
+WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+  {@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
+	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
+  covariate_id,
+  covariate_name,
 	analysis_id,
 	concept_id
 	)
-SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT) * 1000 + 401 AS covariate_id,
-	'Drug exposure record observed during 365d on or prior to cohort index:  ' + CAST(de1.drug_concept_id AS VARCHAR) + '-' + CASE
+SELECT p1.covariate_id,
+	'Drug exposure record observed during 365d on or prior to cohort index:  ' + CAST((p1.covariate_id-401)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	401 AS analysis_id,
-	de1.drug_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN drug_exposure de1
-	ON cp1.subject_id = de1.person_id
+	(p1.covariate_id-401)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_de_365d) p1
 LEFT JOIN concept c1
-	ON de1.drug_concept_id = c1.concept_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
-	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
+	ON (p1.covariate_id-401)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 401 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN drug_exposure de1
-	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
-	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
-} {@use_covariate_drug_exposure_30d} ? {
+}
+
+
+{@use_covariate_drug_exposure_30d} ? {
 
 --drug exist:  episode in last 30d prior
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 402 AS covariate_id,
+	1 AS covariate_value
+  INTO #cohort_covariate_de_30d
+FROM #cohort_person cp1
+INNER JOIN drug_exposure de1
+	ON cp1.subject_id = de1.person_id
+WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
+	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
+  covariate_id,
+  covariate_name,
+  analysis_id,
 	concept_id
 	)
-SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT) * 1000 + 402 AS covariate_id,
-	'Drug exposure record observed during 30d on or prior to cohort index:  ' + CAST(de1.drug_concept_id AS VARCHAR) + '-' + CASE
+SELECT p1.covariate_id,
+	'Drug exposure record observed during 30d on or prior to cohort index:  ' + CAST((p1.covariate_id-402)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	402 AS analysis_id,
-	de1.drug_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN drug_exposure de1
-	ON cp1.subject_id = de1.person_id
+	(p1.covariate_id-402)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_de_30d) p1
 LEFT JOIN concept c1
-	ON de1.drug_concept_id = c1.concept_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
-	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
+	ON (p1.covariate_id-402)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 402 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN drug_exposure de1
-	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
-	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
-} }
+}
+
+
+}
 /**************************
 ***************************
 DRUG ERA
@@ -777,182 +883,170 @@ DRUG ERA
 	{@use_covariate_drug_era} ? { {@use_covariate_drug_era_365d} ? {
 
 --drug exist:  episode in last 365d prior
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 501 AS covariate_id,
+	1 AS covariate_value
+INTO #cohort_covariate_dera_365d
+FROM #cohort_person cp1
+INNER JOIN drug_era de1
+	ON cp1.subject_id = de1.person_id
+WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+	AND de1.drug_era_start_date <= cp1.cohort_start_date
+	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
+
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
+  covariate_id,
+  covariate_name,
+  analysis_id,
 	concept_id
 	)
-SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT) * 1000 + 501 AS covariate_id,
-	'Drug era record observed during 365d on or prior to cohort index:  ' + CAST(de1.drug_concept_id AS VARCHAR) + '-' + CASE
+SELECT p1.covariate_id,
+	'Drug era record observed during 365d on or prior to cohort index:  ' + CAST((p1.covariate_id-501)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	501 AS analysis_id,
-	de1.drug_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
+	(p1.covariate_id-501)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_dera_365d) p1
 LEFT JOIN concept c1
-	ON de1.drug_concept_id = c1.concept_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
-	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
+	ON (p1.covariate_id-501)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 501 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
-	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
-} {@use_covariate_drug_era_30d} ? {
+}
+
+
+{@use_covariate_drug_era_30d} ? {
 
 --drug exist:  episode in last 30d prior
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 502 AS covariate_id,
+	1 AS covariate_value
+INTO #cohort_covariate_dera_30d
+FROM #cohort_person cp1
+INNER JOIN drug_era de1
+	ON cp1.subject_id = de1.person_id
+WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+	AND de1.drug_era_start_date <= cp1.cohort_start_date
+	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
-	concept_id
+  covariate_id,
+  covariate_name,
+  analysis_id,
+  concept_id
 	)
-SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT) * 1000 + 502 AS covariate_id,
-	'Drug era record observed during 30d on or prior to cohort index:  ' + CAST(de1.drug_concept_id AS VARCHAR) + '-' + CASE
+SELECT p1.covariate_id,
+	'Drug era record observed during 30d on or prior to cohort index:  ' + CAST((p1.covariate_id-502)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	502 AS analysis_id,
-	de1.drug_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
+	(p1.covariate_id-502)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_dera_30d) p1
 LEFT JOIN concept c1
-	ON de1.drug_concept_id = c1.concept_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
-	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
+	ON (p1.covariate_id-502)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 502 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
-	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
+}
 
-} {@use_covariate_drug_era_overlap} ? {
+
+{@use_covariate_drug_era_overlap} ? {
 
 --concurrent on index date (era overlapping)
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 503 AS covariate_id,
+	1 AS covariate_value
+  INTO #cohort_covariate_dera_overlap
+FROM #cohort_person cp1
+INNER JOIN drug_era de1
+	ON cp1.subject_id = de1.person_id
+WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+	AND de1.drug_era_start_date <= cp1.cohort_start_date
+	AND de1.drug_era_end_date >= cp1.cohort_start_date;
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
-	concept_id
-	)
-SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT) * 1000 + 503 AS covariate_id,
-	'Drug era record observed concurrent (overlapping) with cohort index:  ' + CAST(de1.drug_concept_id AS VARCHAR) + '-' + CASE
+  covariate_id,
+  covariate_name,
+  analysis_id,
+  concept_id
+  )
+SELECT p1.covariate_id,
+	'Drug era record observed concurrent (overlapping) with cohort index:  ' + CAST((p1.covariate_id-503)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	503 AS analysis_id,
-	de1.drug_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
+	(p1.covariate_id-503)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_dera_overlap) p1
 LEFT JOIN concept c1
-	ON de1.drug_concept_id = c1.concept_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
-	AND de1.drug_era_end_date >= cp1.cohort_start_date;
+	ON (p1.covariate_id-503)/1000 = c1.concept_id
+;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 503 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
-	AND de1.drug_era_end_date >= cp1.cohort_start_date;
+}
 
-} {@use_covariate_drug_era_ever} ? {
+
+{@use_covariate_drug_era_ever} ? {
 
 --drug exist:  episode in all time prior
+
+SELECT DISTINCT cp1.cohort_start_date,
+	cp1.cohort_definition_id,
+	cp1.subject_id as person_id,
+	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 504 AS covariate_id,
+	1 AS covariate_value
+  INTO #cohort_covariate_dera_ever
+FROM #cohort_person cp1
+INNER JOIN drug_era de1
+	ON cp1.subject_id = de1.person_id
+WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+	AND de1.drug_era_start_date <= cp1.cohort_start_date;
+
+
+
 INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
-	concept_id
-	)
-SELECT DISTINCT CAST(de1.drug_concept_id AS BIGINT) * 1000 + 504 AS covariate_id,
-	'Drug era record observed during anytime on or prior to cohort index:  ' + CAST(de1.drug_concept_id AS VARCHAR) + '-' + CASE
+  covariate_id,
+  covariate_name,
+  analysis_id,
+  concept_id
+  )
+SELECT p1.covariate_id,
+  'Drug era record observed during anytime on or prior to cohort index:  ' + CAST((p1.covariate_id-504)/1000 AS VARCHAR) + '-' + CASE
 		WHEN c1.concept_name IS NOT NULL
 			THEN c1.concept_name
 		ELSE 'Unknown invalid concept'
 		END AS covariate_name,
 	504 AS analysis_id,
-	de1.drug_concept_id AS concept_id
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
+	(p1.covariate_id-504)/1000 AS concept_id
+FROM (SELECT DISTINCT covariate_id FROM #cohort_covariate_dera_ever) p1
 LEFT JOIN concept c1
-	ON de1.drug_concept_id = c1.concept_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date;
-
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
-SELECT DISTINCT cp1.cohort_start_date,
-	cp1.cohort_definition_id,
-	cp1.subject_id,
-	CAST(de1.drug_concept_id AS BIGINT) * 1000 + 504 AS covariate_id,
-	1 AS covariate_value
-FROM #cohort_person cp1
-INNER JOIN drug_era de1
-	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-	AND de1.drug_era_start_date <= cp1.cohort_start_date;
+	ON (p1.covariate_id-504)/1000 = c1.concept_id
+;
 
 } }
+
+
+
 /**************************
 ***************************
 DRUG GROUP
@@ -964,18 +1058,50 @@ DRUG GROUP
 IF OBJECT_ID('tempdb..#drug_group', 'U') IS NOT NULL
 	DROP TABLE #drug_group;
 
-CREATE TABLE #drug_group (
-	descendant_concept_id INT,
-	ancestor_concept_id INT
-	);
-
 --ATC
-INSERT INTO #drug_group (
-	descendant_concept_id,
-	ancestor_concept_id
-	)
 SELECT DISTINCT ca1.descendant_concept_id,
 	ca1.ancestor_concept_id
+  INTO #drug_group
+FROM (
+	SELECT covariate_id,
+		covariate_name,
+		analysis_id,
+		concept_id
+	FROM #cohort_covariate_ref
+	WHERE analysis_id > 400
+		AND analysis_id < 600
+	) ccr1
+INNER JOIN concept_ancestor ca1
+	ON ccr1.concept_id = ca1.descendant_concept_id
+INNER JOIN concept c1
+	ON ca1.ancestor_concept_id = c1.concept_id
+WHERE c1.vocabulary_id = 21
+	AND len(c1.concept_code) IN (1, 3, 5)
+	AND c1.concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
+{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
+;
+
+
+INSERT INTO #cohort_covariate_ref (
+	covariate_id,
+	covariate_name,
+	analysis_id,
+	concept_id
+	)
+SELECT DISTINCT CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 50 + ccr1.analysis_id AS covariate_id,
+	CASE
+		WHEN analysis_id = 501
+			THEN 'Drug era record observed during 365d on or prior to cohort index within drug group:  '
+		WHEN analysis_id = 502
+			THEN 'Drug era record observed during 30d on or prior to cohort index within drug group:  '
+		WHEN analysis_id = 503
+			THEN 'Drug era record observed concurrent (overlapping) with cohort index within drug group:  '
+    WHEN analysis_id = 504
+  		THEN 'Drug era record observed during anytime on or prior to cohort index within drug group:  '
+  ELSE 'Other drug group analysis'
+		END + CAST(cg1.ancestor_concept_id AS VARCHAR) + '-' + c1.concept_name AS covariate_name,
+	ccr1.analysis_id,
+	cg1.ancestor_concept_id AS concept_id
 FROM (
 	SELECT covariate_id,
 		covariate_name,
@@ -985,61 +1111,89 @@ FROM (
 	WHERE analysis_id > 500
 		AND analysis_id < 600
 	) ccr1
-INNER JOIN concept_ancestor ca1
-	ON ccr1.concept_id = ca1.descendant_concept_id
-INNER JOIN concept c1
-	ON ca1.ancestor_concept_id = c1.concept_id
-WHERE c1.vocabulary_id = 21
-	AND len(c1.concept_code) IN (1, 3, 5)
-	AND c1.concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids });
-
-INSERT INTO #cohort_covariate_ref (
-	covariate_id,
-	covariate_name,
-	analysis_id,
-	concept_id
-	)
-SELECT DISTINCT CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + ccr1.analysis_id AS covariate_id,
-	CASE
-		WHEN analysis_id = 501
-			THEN 'Drug era record observed during 365d on or prior to cohort index within drug group:  '
-		WHEN analysis_id = 502
-			THEN 'Drug era record observed during 30d on or prior to cohort index within drug group:  '
-		WHEN analysis_id = 503
-			THEN 'Drug era record observed concurrent (overlapping) with cohort index within drug group:  '
-		ELSE 'Other drug group analysis'
-		END + CAST(cg1.ancestor_concept_id AS VARCHAR) + '-' + c1.concept_name AS covariate_name,
-	ccr1.analysis_id,
-	cg1.ancestor_concept_id AS concept_id
-FROM #cohort_covariate cc1
-INNER JOIN (
-	SELECT covariate_id,
-		covariate_name,
-		analysis_id,
-		concept_id
-	FROM #cohort_covariate_ref
-	WHERE analysis_id > 500
-		AND analysis_id < 600
-	) ccr1
-	ON cc1.covariate_id = ccr1.covariate_id
 INNER JOIN #drug_group cg1
 	ON ccr1.concept_id = cg1.descendant_concept_id
 INNER JOIN concept c1
 	ON cg1.ancestor_concept_id = c1.concept_id;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
+
 SELECT DISTINCT cc1.cohort_start_date,
 	cc1.cohort_definition_id,
 	cc1.person_id,
-	CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + ccr1.analysis_id AS covariate_id,
+	CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 50 + ccr1.analysis_id AS covariate_id,
 	1 AS covariate_value
-FROM #cohort_covariate cc1
+  INTO #cohort_covariate_dg
+FROM (
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_exposure
+
+{@use_covariate_drug_exposure} ? {
+
+{@use_covariate_drug_exposure_365d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_de_365d
+
+}
+
+{@use_covariate_drug_exposure_30d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_de_30d
+
+}
+
+
+}
+
+
+{@use_covariate_drug_era} ? {
+
+{@use_covariate_drug_era_365d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_365d
+
+}
+
+{@use_covariate_drug_era_30d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_30d
+
+}
+
+{@use_covariate_drug_era_ever} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_ever
+
+}
+
+{@use_covariate_drug_era_overlap} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_overlap
+
+}
+
+
+}
+
+) cc1
 INNER JOIN (
 	SELECT covariate_id,
 		covariate_name,
@@ -1053,6 +1207,13 @@ INNER JOIN (
 INNER JOIN #drug_group cg1
 	ON ccr1.concept_id = cg1.descendant_concept_id;
 
+
+
+
+
+
+{@use_covariate_drug_era_ever} ? {
+
 --number of drugs within each ATC3 groupings all time prior
 INSERT INTO #cohort_covariate_ref (
 	covariate_id,
@@ -1064,8 +1225,7 @@ SELECT DISTINCT CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 601 AS covariat
 	'Number of ingredients within the drug group observed all time on or prior to cohort index: ' + CAST(cg1.ancestor_concept_id AS VARCHAR) + '-' + c1.concept_name AS covariate_name,
 	601 AS analysis_id,
 	cg1.ancestor_concept_id AS concept_id
-FROM #cohort_covariate cc1
-INNER JOIN (
+FROM (
 	SELECT covariate_id,
 		covariate_name,
 		analysis_id,
@@ -1073,26 +1233,20 @@ INNER JOIN (
 	FROM #cohort_covariate_ref
 	WHERE analysis_id = 504
 	) ccr1
-	ON cc1.covariate_id = ccr1.covariate_id
 INNER JOIN #drug_group cg1
 	ON ccr1.concept_id = cg1.descendant_concept_id
 INNER JOIN concept c1
 	ON cg1.ancestor_concept_id = c1.concept_id
 WHERE len(c1.concept_code) = 3;
 
-INSERT INTO #cohort_covariate (
-	cohort_start_date,
-	cohort_definition_id,
-	person_id,
-	covariate_id,
-	covariate_value
-	)
+
 SELECT cc1.cohort_start_date,
 	cc1.cohort_definition_id,
 	cc1.person_id,
 	CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 601 AS covariate_id,
 	COUNT(DISTINCT ccr1.concept_id) AS covariate_value
-FROM #cohort_covariate cc1
+    INTO #cohort_covariate_dg_count
+FROM #cohort_covariate_dera_ever cc1
 INNER JOIN (
 	SELECT covariate_id,
 		covariate_name,
@@ -1111,6 +1265,10 @@ GROUP BY cc1.cohort_start_date,
 	cc1.cohort_definition_id,
 	cc1.person_id,
 	CAST(cg1.ancestor_concept_id AS BIGINT) * 1000 + 601;
+
+
+}
+
 
 TRUNCATE TABLE #drug_group;
 
@@ -14223,6 +14381,124 @@ FROM #cohort_covariate_co_inpt180d
 }
 
 
+
+{@use_covariate_condition_era} ? {
+
+{@use_covariate_condition_era_ever} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_ce_ever
+
+}
+
+{@use_covariate_condition_era_overlap} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_ce_overlap
+
+}
+
+
+}
+
+{@use_covariate_condition_group} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_cg
+
+}
+
+
+{@use_covariate_drug_exposure} ? {
+
+{@use_covariate_drug_exposure_365d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_de_365d
+
+}
+
+{@use_covariate_drug_exposure_30d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_de_30d
+
+}
+
+
+}
+
+
+{@use_covariate_drug_era} ? {
+
+{@use_covariate_drug_era_365d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_365d
+
+}
+
+{@use_covariate_drug_era_30d} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_30d
+
+}
+
+{@use_covariate_drug_era_ever} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_ever
+
+}
+
+{@use_covariate_drug_era_overlap} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dera_overlap
+
+}
+
+
+}
+
+
+{@use_covariate_drug_group} ? {
+
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dg
+
+
+{@use_covariate_drug_era_ever} ? {
+UNION
+
+SELECT cohort_start_date, cohort_definition_id, person_id, covariate_id, covariate_value
+FROM #cohort_covariate_dg_count
+}
+
+}
+
+
 ) all_covariates
 
 ;
@@ -14265,6 +14541,34 @@ IF OBJECT_ID('tempdb..#cohort_covariate_year', 'U') IS NOT NULL
   DROP TABLE #cohort_covariate_year;
 IF OBJECT_ID('tempdb..#cohort_covariate_month', 'U') IS NOT NULL
   DROP TABLE #cohort_covariate_month;
+IF OBJECT_ID('tempdb..#cohort_covariate_co_365d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_co_365d;
+IF OBJECT_ID('tempdb..#cohort_covariate_co_30d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_co_30d;
+IF OBJECT_ID('tempdb..#cohort_covariate_co_inpt180d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_co_inpt180d;
+IF OBJECT_ID('tempdb..#cohort_covariate_ce_ever', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_ce_ever;
+IF OBJECT_ID('tempdb..#cohort_covariate_ce_overlap', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_ce_overlap;
+IF OBJECT_ID('tempdb..#cohort_covariate_cg', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_cg;
+IF OBJECT_ID('tempdb..#cohort_covariate_de_365d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_de_365d;
+IF OBJECT_ID('tempdb..#cohort_covariate_de_30d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_de_30d;
+IF OBJECT_ID('tempdb..#cohort_covariate_dera_365d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_dera_365d;
+IF OBJECT_ID('tempdb..#cohort_covariate_dera_30d', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_dera_30d;
+IF OBJECT_ID('tempdb..#cohort_covariate_dera_ever', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_dera_ever;
+IF OBJECT_ID('tempdb..#cohort_covariate_dera_overlap', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_dera_overlap;
+IF OBJECT_ID('tempdb..#cohort_covariate_dg', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_dg;
+IF OBJECT_ID('tempdb..#cohort_covariate_dg_count', 'U') IS NOT NULL
+  DROP TABLE #cohort_covariate_dg_count;
 
 
 IF OBJECT_ID('tempdb..#cohort_covariate_all', 'U') IS NOT NULL

@@ -94,6 +94,8 @@ getDbCohortData <- function(connectionDetails,
                             useCovariateConditionEraEver = FALSE,
                             useCovariateConditionEraOverlap = FALSE,
                             useCovariateConditionGroup = FALSE,
+                            useCovariateConditionGroupMeddra = FALSE,
+                            useCovariateConditionGroupSnomed = FALSE,
                             useCovariateDrugExposure = FALSE,
                             useCovariateDrugExposure365d = FALSE,
                             useCovariateDrugExposure30d = FALSE,
@@ -118,6 +120,7 @@ getDbCohortData <- function(connectionDetails,
                             useCovariateInteractionYear = FALSE,
                             useCovariateInteractionMonth = FALSE,
                             excludedCovariateConceptIds = c(),
+                            includedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   conn <- DatabaseConnector::connect(connectionDetails)
@@ -219,6 +222,8 @@ getDbCohortData <- function(connectionDetails,
                                    useCovariateConditionEraEver = useCovariateConditionEraEver,
                                    useCovariateConditionEraOverlap = useCovariateConditionEraOverlap,
                                    useCovariateConditionGroup = useCovariateConditionGroup,
+                                   useCovariateConditionGroupMeddra = useCovariateConditionGroupMeddra,
+                                   useCovariateConditionGroupSnomed = useCovariateConditionGroupSnomed,
                                    useCovariateDrugExposure = useCovariateDrugExposure,
                                    useCovariateDrugExposure365d = useCovariateDrugExposure365d,
                                    useCovariateDrugExposure30d = useCovariateDrugExposure30d,
@@ -243,6 +248,7 @@ getDbCohortData <- function(connectionDetails,
                                    useCovariateInteractionYear = useCovariateInteractionYear,
                                    useCovariateInteractionMonth = useCovariateInteractionMonth,
                                    excludedCovariateConceptIds = excludedCovariateConceptIds,
+                                   includedCovariateConceptIds = includedCovariateConceptIds,
                                    deleteCovariatesSmallCount = deleteCovariatesSmallCount)
   names(covariateData$covariates)[names(covariateData$covariates) == "personId"] <- "rowId"
   covariateData$covariates$cohortStartDate <- NULL
