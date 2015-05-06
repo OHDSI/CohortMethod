@@ -23,6 +23,7 @@
   #library(DatabaseConnector)
   #library(CohortMethod)
   #setwd("s:/temp")
+  #setwd("c:/users/mschuemi/git/CohortMethod")
   
   # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "s:/temp")
   
@@ -35,9 +36,11 @@
   port <- NULL
   
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, port=port)
-  sql <- SqlRender::readSql("coxibVsNonselVsGiBleed.sql")
-  sql <- SqlRender::renderSql(sql,cdmDatabaseSchema = cdmDatabaseSchema, resultsDatabaseSchema = resultsDatabaseSchema)$sql
-  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql", 
+                                packageName = "CohortMethod", 
+                                dbms = dbms,
+                                cdmDatabaseSchema = cdmDatabaseSchema, 
+                                resultsDatabaseSchema = resultsDatabaseSchema)
   
   connection <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::executeSql(connection, sql)
@@ -58,7 +61,7 @@
   #Load data:
   cohortData <- getDbCohortData(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
-                                resultsDatabaseSchema = resultsDatabaseSchema,
+                                oracleTempSchema = resultsDatabaseSchema,
                                 targetDrugConceptId = 1,
                                 comparatorDrugConceptId = 2, 
                                 indicationConceptIds = c(),
@@ -106,9 +109,10 @@
                                 useCovariateInteractionYear = FALSE,
                                 useCovariateInteractionMonth = FALSE,
                                 excludedCovariateConceptIds = nsaids, 
+                                excludeDrugsFromCovariates = FALSE,
                                 deleteCovariatesSmallCount = 100)
   
-  saveCohortData(cohortData,"vignetteCohortData")
+  saveCohortData(cohortData,"c:/temp/vignetteCohortData")
   
   #vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
   #save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")

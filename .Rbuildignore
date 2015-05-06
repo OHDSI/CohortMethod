@@ -3,6 +3,5 @@
 .travis.yml
 standalone
 ^\.travis\.yml$
-man/CohortMethod.pdf
-man/balanceScatterPlot.png
-man/ps.png
+extras
+^\.git
