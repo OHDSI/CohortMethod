@@ -55,6 +55,12 @@ getDbCovariates <- function(connectionDetails = NULL,
                             cohortTable = "cohort",
                             cohortConceptIds = c(0,1),
                             useCovariateDemographics = TRUE,
+                            useCovariateDemographicsGender = TRUE,
+                            useCovariateDemographicsRace = TRUE,
+                            useCovariateDemographicsEthnicity = TRUE,
+                            useCovariateDemographicsAge = TRUE,
+                            useCovariateDemographicsYear = TRUE,
+                            useCovariateDemographicsMonth = TRUE,
                             useCovariateConditionOccurrence = TRUE,
                             useCovariateConditionOccurrence365d = TRUE,
                             useCovariateConditionOccurrence30d = FALSE,
@@ -63,6 +69,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                             useCovariateConditionEraEver = FALSE,
                             useCovariateConditionEraOverlap = FALSE,
                             useCovariateConditionGroup = FALSE,
+                            useCovariateConditionGroupMeddra = FALSE,
+                            useCovariateConditionGroupSnomed = FALSE,
                             useCovariateDrugExposure = FALSE,
                             useCovariateDrugExposure365d = FALSE,
                             useCovariateDrugExposure30d = FALSE,
@@ -84,9 +92,13 @@ getDbCovariates <- function(connectionDetails = NULL,
                             useCovariateObservationCount365d = FALSE,
                             useCovariateConceptCounts = FALSE,
                             useCovariateRiskScores = FALSE,
+                            useCovariateRiskScoresCharlson = FALSE,
+                            useCovariateRiskScoresDCSI = FALSE,
+                            useCovariateRiskScoresCHADS2 = FALSE,
                             useCovariateInteractionYear = FALSE,
                             useCovariateInteractionMonth = FALSE,
                             excludedCovariateConceptIds = "",
+                            includedCovariateConceptIds = "",
                             deleteCovariatesSmallCount = 100) {
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   if (is.null(connectionDetails) && is.null(connection))
@@ -112,6 +124,12 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    cohort_table = cohortTable,
                                                    cohort_concept_ids = cohortConceptIds,
                                                    use_covariate_demographics = useCovariateDemographics,
+                                                   use_covariate_demographics_gender = useCovariateDemographicsGender,
+                                                   use_covariate_demographics_race = useCovariateDemographicsRace,
+                                                   use_covariate_demographics_ethnicity = useCovariateDemographicsEthnicity,
+                                                   use_covariate_demographics_age = useCovariateDemographicsAge,
+                                                   use_covariate_demographics_year = useCovariateDemographicsYear,
+                                                   use_covariate_demographics_month = useCovariateDemographicsMonth,
                                                    use_covariate_condition_occurrence = useCovariateConditionOccurrence,
                                                    use_covariate_condition_occurrence_365d = useCovariateConditionOccurrence365d,
                                                    use_covariate_condition_occurrence_30d = useCovariateConditionOccurrence30d,
@@ -120,6 +138,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    use_covariate_condition_era_ever = useCovariateConditionEraEver,
                                                    use_covariate_condition_era_overlap = useCovariateConditionEraOverlap,
                                                    use_covariate_condition_group = useCovariateConditionGroup,
+                                                   use_covariate_condition_group_meddra = useCovariateConditionGroupMeddra,
+                                                   use_covariate_condition_group_snomed = useCovariateConditionGroupSnomed,
                                                    use_covariate_drug_exposure = useCovariateDrugExposure,
                                                    use_covariate_drug_exposure_365d = useCovariateDrugExposure365d,
                                                    use_covariate_drug_exposure_30d = useCovariateDrugExposure30d,
@@ -141,23 +161,28 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    use_covariate_observation_count365d = useCovariateObservationCount365d,
                                                    use_covariate_concept_counts = useCovariateConceptCounts,
                                                    use_covariate_risk_scores = useCovariateRiskScores,
+                                                   use_covariate_risk_scores_Charlson = useCovariateRiskScoresCharlson,
+                                                   use_covariate_risk_scores_DCSI = useCovariateRiskScoresDCSI,
+                                                   use_covariate_risk_scores_CHADS2 = useCovariateRiskScoresCHADS2,
                                                    use_covariate_interaction_year = useCovariateInteractionYear,
                                                    use_covariate_interaction_month = useCovariateInteractionMonth,
                                                    excluded_covariate_concept_ids = excludedCovariateConceptIds,
+                                                   included_covariate_concept_ids = includedCovariateConceptIds,
                                                    delete_covariates_small_count = deleteCovariatesSmallCount)
 
   writeLines("Executing multiple queries. This could take a while")
+
   DatabaseConnector::executeSql(conn,renderedSql)
   writeLines("Done")
 
   writeLines("Fetching data from server")
   start <- Sys.time()
-  covariateSql <-"SELECT person_id, cohort_start_date, cohort_definition_id, covariate_id, covariate_value FROM #cohort_covariate ORDER BY person_id, covariate_id"
+  covariateSql <-"SELECT person_id, cohort_start_date, cohort_definition_id, covariate_id, covariate_value FROM #cov ORDER BY person_id, covariate_id"
   covariateSql <- SqlRender::translateSql(covariateSql, "sql server", attr(conn, "dbms"), oracleTempSchema)$sql
-  covariates <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateSql)
-  covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
+  covariates <- DatabaseConnector::querySql.ffdf(conn, covariateSql)
+  covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cov_ref ORDER BY covariate_id"
   covariateRefSql <- SqlRender::translateSql(covariateRefSql, "sql server", attr(conn, "dbms"), oracleTempSchema)$sql
-  covariateRef <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateRefSql)
+  covariateRef <- DatabaseConnector::querySql.ffdf(conn, covariateRefSql)
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
 
