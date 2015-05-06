@@ -8,18 +8,25 @@ getDbCovariates(connectionDetails = NULL, connection = NULL,
   oracleTempSchema = NULL, cdmDatabaseSchema,
   useExistingCohortPerson = TRUE, cohortDatabaseSchema = cdmDatabaseSchema,
   cohortTable = "cohort", cohortConceptIds = c(0, 1),
-  useCovariateDemographics = TRUE, useCovariateConditionOccurrence = TRUE,
+  useCovariateDemographics = TRUE, useCovariateDemographicsGender = TRUE,
+  useCovariateDemographicsRace = TRUE,
+  useCovariateDemographicsEthnicity = TRUE,
+  useCovariateDemographicsAge = TRUE, useCovariateDemographicsYear = TRUE,
+  useCovariateDemographicsMonth = TRUE,
+  useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE,
   useCovariateConditionOccurrence30d = FALSE,
   useCovariateConditionOccurrenceInpt180d = FALSE,
   useCovariateConditionEra = FALSE, useCovariateConditionEraEver = FALSE,
   useCovariateConditionEraOverlap = FALSE,
-  useCovariateConditionGroup = FALSE, useCovariateDrugExposure = FALSE,
-  useCovariateDrugExposure365d = FALSE, useCovariateDrugExposure30d = FALSE,
-  useCovariateDrugEra = FALSE, useCovariateDrugEra365d = FALSE,
-  useCovariateDrugEra30d = FALSE, useCovariateDrugEraOverlap = FALSE,
-  useCovariateDrugEraEver = FALSE, useCovariateDrugGroup = FALSE,
-  useCovariateProcedureOccurrence = FALSE,
+  useCovariateConditionGroup = FALSE,
+  useCovariateConditionGroupMeddra = FALSE,
+  useCovariateConditionGroupSnomed = FALSE,
+  useCovariateDrugExposure = FALSE, useCovariateDrugExposure365d = FALSE,
+  useCovariateDrugExposure30d = FALSE, useCovariateDrugEra = FALSE,
+  useCovariateDrugEra365d = FALSE, useCovariateDrugEra30d = FALSE,
+  useCovariateDrugEraOverlap = FALSE, useCovariateDrugEraEver = FALSE,
+  useCovariateDrugGroup = FALSE, useCovariateProcedureOccurrence = FALSE,
   useCovariateProcedureOccurrence365d = FALSE,
   useCovariateProcedureOccurrence30d = FALSE,
   useCovariateProcedureGroup = FALSE, useCovariateObservation = FALSE,
@@ -28,8 +35,11 @@ getDbCovariates(connectionDetails = NULL, connection = NULL,
   useCovariateObservationAbove = FALSE,
   useCovariateObservationCount365d = FALSE,
   useCovariateConceptCounts = FALSE, useCovariateRiskScores = FALSE,
+  useCovariateRiskScoresCharlson = FALSE,
+  useCovariateRiskScoresDCSI = FALSE, useCovariateRiskScoresCHADS2 = FALSE,
   useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
-  excludedCovariateConceptIds = "", deleteCovariatesSmallCount = 100)
+  excludedCovariateConceptIds = "", includedCovariateConceptIds = "",
+  deleteCovariatesSmallCount = 100)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}
@@ -51,6 +61,18 @@ the database and schema, e.g. "cdm_schema.dbo".}
 
 \item{useCovariateDemographics}{A boolean value (TRUE/FALSE) to determine if demographic covariates (age in 5-yr increments, gender, race, ethnicity, year of index date, month of index date) will be created and included in future models.}
 
+\item{useCovariateDemographicsGender}{A boolean value (TRUE/FALSE) to determine if gender should be included in the model.}
+
+\item{useCovariateDemographicsRace}{A boolean value (TRUE/FALSE) to determine if race should be included in the model.}
+
+\item{useCovariateDemographicsEthnicity}{A boolean value (TRUE/FALSE) to determine if ethnicity should be included in the model.}
+
+\item{useCovariateDemographicsAge}{A boolean value (TRUE/FALSE) to determine if age (in 5 year increments) should be included in the model.}
+
+\item{useCovariateDemographicsYear}{A boolean value (TRUE/FALSE) to determine if calendar year should be included in the model.}
+
+\item{useCovariateDemographicsMonth}{A boolean value (TRUE/FALSE) to determine if calendar month should be included in the model.}
+
 \item{useCovariateConditionOccurrence}{A boolean value (TRUE/FALSE) to determine if covariates derived from CONDITION_OCCURRENCE table will be created and included in future models.}
 
 \item{useCovariateConditionOccurrence365d}{A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition in 365d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE.}
@@ -66,6 +88,10 @@ the database and schema, e.g. "cdm_schema.dbo".}
 \item{useCovariateConditionEraOverlap}{A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition era that overlaps the cohort index date.  Only applicable if useCovariateConditionEra = TRUE.}
 
 \item{useCovariateConditionGroup}{A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on vocabluary classification.}
+
+\item{useCovariateConditionGroupMeddra}{A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on the MEDDRA classification.}
+
+\item{useCovariateConditionGroupSnomed}{A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on the SNOMED classification.}
 
 \item{useCovariateDrugExposure}{A boolean value (TRUE/FALSE) to determine if covariates derived from DRUG_EXPOSURE table will be created and included in future models.}
 
@@ -109,11 +135,19 @@ the database and schema, e.g. "cdm_schema.dbo".}
 
 \item{useCovariateRiskScores}{A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that calculate various Risk Scores, including Charlson, DCSI.}
 
+\item{useCovariateRiskScoresCharlson}{A boolean value (TRUE/FALSE) to determine if the Charlson comorbidity index should be included in the model.}
+
+\item{useCovariateRiskScoresDCSI}{A boolean value (TRUE/FALSE) to determine if the DCSI score should be included in the model.}
+
+\item{useCovariateRiskScoresCHADS2}{A boolean value (TRUE/FALSE) to determine if the CHADS2 score should be included in the model.}
+
 \item{useCovariateInteractionYear}{A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the year of the cohort index date.}
 
 \item{useCovariateInteractionMonth}{A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the month of the cohort index date.}
 
 \item{excludedCovariateConceptIds}{A list of concept IDs that should NOT be used to construct covariates.}
+
+\item{includedCovariateConceptIds}{A list of concept IDs that should be used to construct covariates.}
 
 \item{deleteCovariatesSmallCount}{A numeric value used to remove covariates that occur in both cohorts fewer than deleteCovariateSmallCounts time.}
 }

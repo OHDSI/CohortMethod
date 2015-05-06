@@ -12,7 +12,7 @@ getOutcomeModel(outcomeModel, cohortData)
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 }
 \description{
-\code{getFullOutcomeModel} shows the full outcome model, so showing the betas of all variables
+\code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables
 included in the outcome model, not just the treatment variable.
 }
 \details{
