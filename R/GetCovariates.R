@@ -172,17 +172,17 @@ getDbCovariates <- function(connectionDetails = NULL,
 
   writeLines("Executing multiple queries. This could take a while")
 
-  DatabaseConnector::executeSql(conn,renderedSql,profile=TRUE)
+  DatabaseConnector::executeSql(conn,renderedSql)
   writeLines("Done")
 
   writeLines("Fetching data from server")
   start <- Sys.time()
-  covariateSql <-"SELECT person_id, cohort_start_date, cohort_definition_id, covariate_id, covariate_value FROM #cohort_covariate ORDER BY person_id, covariate_id"
+  covariateSql <-"SELECT person_id, cohort_start_date, cohort_definition_id, covariate_id, covariate_value FROM #cov ORDER BY person_id, covariate_id"
   covariateSql <- SqlRender::translateSql(covariateSql, "sql server", attr(conn, "dbms"), oracleTempSchema)$sql
-  covariates <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateSql)
-  covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cohort_covariate_ref ORDER BY covariate_id"
+  covariates <- DatabaseConnector::querySql.ffdf(conn, covariateSql)
+  covariateRefSql <-"SELECT covariate_id, covariate_name, analysis_id, concept_id  FROM #cov_ref ORDER BY covariate_id"
   covariateRefSql <- SqlRender::translateSql(covariateRefSql, "sql server", attr(conn, "dbms"), oracleTempSchema)$sql
-  covariateRef <- DatabaseConnector::dbGetQuery.ffdf(conn, covariateRefSql)
+  covariateRef <- DatabaseConnector::querySql.ffdf(conn, covariateRefSql)
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
 
