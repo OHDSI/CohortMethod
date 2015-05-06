@@ -498,7 +498,7 @@ print.outcomeModel <- function(x, ...){
 #' Get the outcome model
 #'
 #' @description
-#' \code{getFullOutcomeModel} shows the full outcome model, so showing the betas of all variables
+#' \code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables
 #' included in the outcome model, not just the treatment variable.
 #' 
 #' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.
