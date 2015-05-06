@@ -22,9 +22,9 @@ test_that("Simple 1-on-n matching", {
 
 test_that("AUC", {
   ps <- data.frame(propensityScore = runif(100),treatment = round(runif(100)))
-  rocobj <- pROC::roc.default(ps$treatment,ps$propensityScore, algorithm=3)
-  goldStandard <- as.numeric(pROC::ci.auc.roc(rocobj, method="delong"))
-  auc <- computePsAuc(ps, confidenceIntervals = FALSE)  
+  rocobj <- roc(ps$treatment,ps$propensityScore, algorithm=3)
+  goldStandard <- as.numeric(ci(rocobj, method="delong"))
+  auc <- computePsAuc(ps, confidenceIntervals = FALSE)
   aucWithCi <- computePsAuc(ps, confidenceIntervals = TRUE)
   if ((auc < 0.5) != (goldStandard[2] < 0.5)){
     auc = 1-auc
@@ -91,7 +91,7 @@ test_that("Stratification", {
   propensityScore = rep(1:100,2)/100
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- stratifyByPs(data, 10)
-  
+
   paste(result$rowId[result$stratumId == 9],collapse=",")
   expect_equal(result$rowId[result$stratumId == 0],c(1,2,3,4,5,6,7,8,9,10,101,102,103,104,105,106,107,108,109,110))
   expect_equal(result$rowId[result$stratumId == 9],c(91,92,93,94,95,96,97,98,99,100,191,192,193,194,195,196,197,198,199,200))
