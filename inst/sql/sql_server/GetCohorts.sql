@@ -119,6 +119,7 @@ INNER JOIN (
 ON new_user_cohort.person_id = indication.person_id
 	AND new_user_cohort.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication_date)
 	AND new_user_cohort.cohort_start_date >= indication_date
+;
 }
 
 /* delete persons in both cohorts */

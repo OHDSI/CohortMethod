@@ -1089,7 +1089,7 @@ INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
 WHERE c1.vocabulary_id = 21
 	AND len(c1.concept_code) IN (1, 3, 5)
-WHERE c1.concept_id != 0
+	AND c1.concept_id != 0
 {@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
 {@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}	
 ;
