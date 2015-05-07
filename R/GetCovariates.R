@@ -97,8 +97,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                             useCovariateRiskScoresCHADS2 = FALSE,
                             useCovariateInteractionYear = FALSE,
                             useCovariateInteractionMonth = FALSE,
-                            excludedCovariateConceptIds = "",
-                            includedCovariateConceptIds = "",
+                            excludedCovariateConceptIds = c(),
+                            includedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100) {
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   if (is.null(connectionDetails) && is.null(connection))
@@ -112,6 +112,36 @@ getDbCovariates <- function(connectionDetails = NULL,
     conn <- connect(connectionDetails)
   } else {
     conn <- connection
+  }
+
+  if (is.null(excludedCovariateConceptIds) || length(excludedCovariateConceptIds) == 0) {
+    hasExcludedCovariateConceptIds <- FALSE
+  } else {
+    if (!is.numeric(excludedCovariateConceptIds))
+      stop("excludedCovariateConceptIds must be a (vector of) numeric")
+    hasExcludedCovariateConceptIds <- TRUE
+    DatabaseConnector::dbInsertTable(conn,
+                                     tableName = "#excluded_cov",
+                                     data = data.frame(concept_id = as.integer(excludedCovariateConceptIds)),
+                                     dropTableIfExists = TRUE,
+                                     createTable = TRUE,
+                                     tempTable = TRUE,
+                                     oracleTempSchema = oracleTempSchema)
+  }
+
+  if (is.null(includedCovariateConceptIds) || length(includedCovariateConceptIds) == 0) {
+    hasIncludedCovariateConceptIds <- FALSE
+  } else {
+    if (!is.numeric(includedCovariateConceptIds))
+      stop("includedCovariateConceptIds must be a (vector of) numeric")
+    hasIncludedCovariateConceptIds <- TRUE
+    DatabaseConnector::dbInsertTable(conn,
+                                     tableName = "#included_cov",
+                                     data = data.frame(concept_id = as.integer(includedCovariateConceptIds)),
+                                     dropTableIfExists = TRUE,
+                                     createTable = TRUE,
+                                     tempTable = TRUE,
+                                     oracleTempSchema = oracleTempSchema)
   }
 
   renderedSql <- SqlRender::loadRenderTranslateSql("GetCovariates.sql",
@@ -166,8 +196,8 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    use_covariate_risk_scores_CHADS2 = useCovariateRiskScoresCHADS2,
                                                    use_covariate_interaction_year = useCovariateInteractionYear,
                                                    use_covariate_interaction_month = useCovariateInteractionMonth,
-                                                   excluded_covariate_concept_ids = excludedCovariateConceptIds,
-                                                   included_covariate_concept_ids = includedCovariateConceptIds,
+                                                   has_excluded_covariate_concept_ids = hasExcludedCovariateConceptIds,
+                                                   has_included_covariate_concept_ids = hasIncludedCovariateConceptIds,
                                                    delete_covariates_small_count = deleteCovariatesSmallCount)
 
   writeLines("Executing multiple queries. This could take a while")
@@ -189,7 +219,9 @@ getDbCovariates <- function(connectionDetails = NULL,
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCovariateTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = attr(conn, "dbms"),
-                                                   oracleTempSchema = oracleTempSchema)
+                                                   oracleTempSchema = oracleTempSchema,
+                                                   has_excluded_covariate_concept_ids = hasExcludedCovariateConceptIds,
+                                                   has_included_covariate_concept_ids = hasIncludedCovariateConceptIds)
   DatabaseConnector::executeSql(conn,renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
   if (is.null(connection)){
     dummy <- RJDBC::dbDisconnect(conn)

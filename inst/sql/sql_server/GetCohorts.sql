@@ -18,17 +18,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database = 'CDM4_SIM' } /*cdm_database: @cdm_database*/
-{DEFAULT @target_drug_concept_id = '' } /*target_drug_concept_id: @target_drug_concept_id*/
-{DEFAULT @comparator_drug_concept_id = '' } /*comparator_drug_concept_id: @comparator_drug_concept_id*/
-{DEFAULT @indication_concept_ids = '' } /*indication_concept_ids: @indication_concept_ids*/
-{DEFAULT @washout_window = 183 } /*washout_window: @washout_window*/
-{DEFAULT @indication_lookback_window = 183 } /*indication_lookback_window: @indication_lookback_window*/
-{DEFAULT @study_start_date = '' } /*study_start_date: @study_start_date*/
-{DEFAULT @study_end_date = '' } /*study_end_date: @study_end_date*/
-{DEFAULT @exclusion_concept_ids = '' } /*exclusion_concept_ids: @exclusion_concept_ids*/
-{DEFAULT @exposure_database_schema = 'CDM4_SIM' } /*exposure_database_schema: @exposure_database_schema*/
-{DEFAULT @exposure_table = 'drug_era' } /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
+{DEFAULT @cdm_database = 'CDM4_SIM' } 
+{DEFAULT @target_drug_concept_id = '' } 
+{DEFAULT @comparator_drug_concept_id = '' } 
+{DEFAULT @has_indication_concept_ids = FALSE } 
+{DEFAULT @washout_window = 183 } 
+{DEFAULT @indication_lookback_window = 183 } 
+{DEFAULT @study_start_date = '' } 
+{DEFAULT @study_end_date = '' } 
+{DEFAULT @has_exclusion_concept_ids = FALSE } 
+{DEFAULT @exposure_database_schema = 'CDM4_SIM' } 
+{DEFAULT @exposure_table = 'drug_era' } 
 
 USE @cdm_database;
 
@@ -95,7 +95,7 @@ INNER JOIN observation_period op1
 WHERE raw_cohorts.cohort_start_date <= op1.observation_period_end_date
 	AND raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, observation_period_start_date) {@study_start_date != '' } ? {AND raw_cohorts.cohort_start_date >= CAST('@study_start_date' AS DATE) } {@study_end_date != '' } ? {AND raw_cohorts.cohort_start_date <= CAST('@study_end_date' AS DATE) };
 
-{@indication_concept_ids != '' } ? {
+{@has_indication_concept_ids} ? {
 
 /* select only users with the indication */
 SELECT DISTINCT treatment,
@@ -104,22 +104,22 @@ SELECT DISTINCT treatment,
 	cohort_end_date,
 	observation_period_end_date
 INTO #indicated_cohort
-FROM (
-	#new_user_cohort new_user_cohort INNER JOIN (
+FROM #new_user_cohort new_user_cohort 
+INNER JOIN (
 		SELECT person_id,
 			condition_start_date AS indication_date
 		FROM condition_occurrence
 		WHERE condition_concept_id IN (
 				SELECT descendant_concept_id
 				FROM concept_ancestor
-				WHERE ancestor_concept_id IN (@indication_concept_ids)
+				INNER JOIN #indications
+				ON ancestor_concept_id  = concept_id
 				)
 		) indication
-		ON new_user_cohort.person_id = indication.person_id
-			AND new_user_cohort.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication_date)
-			AND new_user_cohort.cohort_start_date >= indication_date
-	);
-
+ON new_user_cohort.person_id = indication.person_id
+	AND new_user_cohort.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication_date)
+	AND new_user_cohort.cohort_start_date >= indication_date
+;
 }
 
 /* delete persons in both cohorts */
@@ -128,7 +128,7 @@ SELECT treatment,
 	cohort_start_date,
 	cohort_end_date
 INTO #non_overlap_cohort
-FROM {@indication_concept_ids != '' } ? { #indicated_cohort new_user_cohort } : { #new_user_cohort new_user_cohort }
+FROM {@has_indication_concept_ids} ? { #indicated_cohort new_user_cohort } : { #new_user_cohort new_user_cohort }
 LEFT JOIN (
 	SELECT person_id
 	FROM (
@@ -148,14 +148,15 @@ SELECT non_overlap_cohort.treatment AS cohort_definition_id,
 	non_overlap_cohort.cohort_start_date,
 	non_overlap_cohort.cohort_end_date
 INTO #cohort_person
-FROM #non_overlap_cohort non_overlap_cohort {@exclusion_concept_ids != '' } ? {
+FROM #non_overlap_cohort non_overlap_cohort {@has_exclusion_concept_ids} ? {
 LEFT JOIN (
 	SELECT *
 	FROM condition_occurrence co1
 	WHERE condition_concept_id IN (
 			SELECT descendant_concept_id
 			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
+			INNER JOIN #exclusions
+			ON ancestor_concept_id = concept_id
 			)
 	) exclude_conditions
 	ON non_overlap_cohort.person_id = exclude_conditions.person_id
@@ -166,7 +167,8 @@ LEFT JOIN (
 	WHERE procedure_concept_id IN (
 			SELECT descendant_concept_id
 			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
+			INNER JOIN #exclusions
+			ON ancestor_concept_id = concept_id
 			)
 	) exclude_procedures
 	ON non_overlap_cohort.person_id = exclude_procedures.person_id
@@ -177,7 +179,8 @@ LEFT JOIN (
 	WHERE drug_concept_id IN (
 			SELECT descendant_concept_id
 			FROM concept_ancestor
-			WHERE ancestor_concept_id IN (@exclusion_concept_ids)
+			INNER JOIN #exclusions
+			ON ancestor_concept_id = concept_id
 			)
 	) exclude_drugs
 	ON non_overlap_cohort.person_id = exclude_drugs.person_id
