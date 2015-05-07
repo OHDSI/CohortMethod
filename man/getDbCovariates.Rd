@@ -38,7 +38,7 @@ getDbCovariates(connectionDetails = NULL, connection = NULL,
   useCovariateRiskScoresCharlson = FALSE,
   useCovariateRiskScoresDCSI = FALSE, useCovariateRiskScoresCHADS2 = FALSE,
   useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
-  excludedCovariateConceptIds = "", includedCovariateConceptIds = "",
+  excludedCovariateConceptIds = c(), includedCovariateConceptIds = c(),
   deleteCovariatesSmallCount = 100)
 }
 \arguments{
