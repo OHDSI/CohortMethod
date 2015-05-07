@@ -20,7 +20,7 @@
 .createManualAndVignettes <- function(){
   #Experimental:
   #library(formatR)
-  #tidy_dir("R/test",width.cutoff = 100 )
+  #tidy_dir("R/test", width.cutoff = 100, arrow = TRUE, indent = 2)
   #tidySomeMore()
 
   shell("rm man/CohortMethod.pdf")
@@ -34,38 +34,25 @@
 tidySomeMore <- function(){
   x <-  readLines("R/test/PsFunctions.R")
   newX <- c()
-  previousList <- FALSE
-  for (i in 1:length(x)){
+  i <- 1
+  while (i <= length(x)) {
     if (regexpr(", $", x[i]) != -1){
-      parts <- c()
-      depth <- 0
-      quote <- FALSE
-      for (j in (nchar(x[i])-2):1) {
-        char <- substr(x[i],j,j)
-        if (char == "\"") {
-          quote <- !quote
-        } else if (!quote) {
-          if (char == ")") {
-            depth = depth + 1
-          } else if (char == "(") {
-            if (depth == 0)
-              break
-            depth = depth - 1
-          } else if (depth == 0 & char == ",") {
-            parts <- c(substr(x[i],j+1,nchar(x[i])),parts)
-            x[i] <- substr(x[i], 1, j)
-          }
-        }
+      # Found line that has been wrapped. Recreate full line:
+      fullLine <- c(x[i])
+      i <- i + 1
+      while (regexpr(", $", x[i]) != -1) {
+        fullLine <- c(fullLine, substr(x[i], regexpr("[^ ]", x[i]), nchar(x[i])))
+        i <- i + 1
       }
-      parts <- c(x[i], parts)
-      newX <- c(newX, parts)
-      previousList <- TRUE
-    } else if (previousList) {
-      parts <- c()
+      fullLine <- c(fullLine, substr(x[i], regexpr("[^ ]", x[i]), nchar(x[i])))
+      fullLine <- paste(fullLine, collapse = "")
+      # Now redo split in a prettier way:
+      indent <- regexpr("\\(", fullLine)[1] + 1
       depth <- 0
       quote <- FALSE
-      for (j in 1:nchar(x[i])) {
-        char <- substr(x[i],j,j)
+      start <- 1
+      for (j in indent:nchar(fullLine)){
+        char <- substr(fullLine, j, j)
         if (char == "\"") {
           quote <- !quote
         } else if (!quote) {
@@ -76,17 +63,24 @@ tidySomeMore <- function(){
               break
             depth = depth - 1
           } else if (depth == 0 & char == ",") {
-            parts <- c(parts, substr(x[i], 0,j))
-            x[i] <- paste(paste(rep(" ",j),collapse=""),substr(x[i], j + 1, nchar(x[i])),sep="")
+            part <- substr(fullLine, start, j)
+            if (start != 1){
+              part <- paste(paste(rep(" ", indent-3), collapse = ""), part)
+            }
+            newX <- c(newX, part)
+            start <- j + 1
           }
         }
       }
-      parts <- c(parts,x[i])
-      newX <- c(newX, parts)
-      previousList <- FALSE
+      part <- substr(fullLine, start, nchar(fullLine))
+      if (start != 1){
+        part <- paste(paste(rep(" ", indent-3), collapse = ""), part)
+      }
+      newX <- c(newX, part)
     } else {
       newX <- c(newX, x[i])
     }
+    i <- i + 1
   }
   writeLines(newX, con = "R/test/PsFunctions2.R")
 }
