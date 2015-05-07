@@ -2,7 +2,7 @@ TRUNCATE TABLE #new_user_cohort;
 
 DROP TABLE #new_user_cohort;
 
-{@hasIndicationConceptIds} ? {
+{@has_indication_concept_ids} ? {
 TRUNCATE TABLE #indications;
 
 DROP TABLE #indications;
