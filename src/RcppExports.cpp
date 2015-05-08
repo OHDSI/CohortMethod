@@ -9,49 +9,37 @@ using namespace Rcpp;
 DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
 RcppExport SEXP CohortMethod_matchOnPs(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
 BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP );
-        Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP );
-        Rcpp::traits::input_parameter< unsigned int >::type maxRatio(maxRatioSEXP );
-        Rcpp::traits::input_parameter< double >::type caliper(caliperSEXP );
-        DataFrame __result = matchOnPs(propensityScores, treatment, maxRatio, caliper);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type maxRatio(maxRatioSEXP);
+    Rcpp::traits::input_parameter< double >::type caliper(caliperSEXP);
+    __result = Rcpp::wrap(matchOnPs(propensityScores, treatment, maxRatio, caliper));
+    return __result;
 END_RCPP
 }
 // aucWithCi
 std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<int> treatment);
 RcppExport SEXP CohortMethod_aucWithCi(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP );
-        Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP );
-        std::vector<double> __result = aucWithCi(propensityScores, treatment);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP);
+    __result = Rcpp::wrap(aucWithCi(propensityScores, treatment));
+    return __result;
 END_RCPP
 }
 // auc
 double auc(std::vector<double> propensityScores, std::vector<int> treatment);
 RcppExport SEXP CohortMethod_auc(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP );
-        Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP );
-        double __result = auc(propensityScores, treatment);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP);
+    Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP);
+    __result = Rcpp::wrap(auc(propensityScores, treatment));
+    return __result;
 END_RCPP
 }
