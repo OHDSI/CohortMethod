@@ -55,7 +55,7 @@ AS (
 {@source_type_concept_id != '' & @target_type_concept_id != ''} ? {		@source_type_concept_id AS type_concept_id,}
 		@source_start_date AS start_date,
 {@source_table == 'drug_exposure'} ? {
-		COALESCE(drug_exposure_end_date, DATEADD(DAY, days_supply, drug_exposure_start_date), DATEADD(DAY, 1, drug_exposure_start_date)) AS end_date,
+		COALESCE(drug_exposure_end_date, DATEADD(DAY, days_supply, drug_exposure_start_date), drug_exposure_start_date) AS end_date,
 } : {
 		COALESCE(@source_end_date, @source_start_date) AS end_date,
 }

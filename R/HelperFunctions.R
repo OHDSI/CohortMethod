@@ -59,7 +59,7 @@
 #'               createTargetTable = FALSE,
 #'               gracePeriod = 30,
 #'               rollUpVocabularyId = 8,
-#'               rollUpConceptClassId = 'Ingredient',
+#'               rollUpConceptClassId = "Ingredient",
 #'               cdmVersion = "4")
 #'
 #' #Constructing drug eras in CDM v5:
@@ -69,8 +69,8 @@
 #'               targetTable = "drug_era",
 #'               createTargetTable = FALSE,
 #'               gracePeriod = 30,
-#'               rollUpVocabularyId = 'RxNorm',
-#'               rollUpConceptClassId = 'Ingredient',
+#'               rollUpVocabularyId = "RxNorm",
+#'               rollUpConceptClassId = "Ingredient",
 #'               cdmVersion = "5")
 #'
 #' }
@@ -87,6 +87,8 @@ constructEras <- function(connectionDetails,
                           rollUpConceptClassId = "ingredient",
                           rollUpVocabularyId = "rxnorm",
                           cdmVersion = "5") {
+  if (connectionDetails$dbms == "pdw")
+	stop("Currently not supporting Microsoft PDW")
   if (!rollUp)
     rollUpConceptClassId <- ""
   if (sourceTable == "drug_exposure") {
