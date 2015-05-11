@@ -100,13 +100,16 @@ getDbCovariates <- function(connectionDetails = NULL,
                             excludedCovariateConceptIds = c(),
                             includedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100) {
-  cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   if (is.null(connectionDetails) && is.null(connection))
     stop("Either connectionDetails or connection has to be specified")
   if (!is.null(connectionDetails) && !is.null(connection))
     stop("Cannot specify both connectionDetails and connection")
   if (useExistingCohortPerson && is.null(connection))
     stop("When using an existing cohort temp table, connection must be specified")
+  if (!useCovariateConditionGroupMeddra & !useCovariateConditionGroupSnomed)
+    useCovariateConditionGroup  <- FALSE
+
+  cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
 
   if (is.null(connection)){
     conn <- connect(connectionDetails)
