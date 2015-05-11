@@ -125,6 +125,11 @@ getDbCohortData <- function(connectionDetails,
                             excludedCovariateConceptIds = c(),
                             includedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
+  if (studyStartDate != "" &&  regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
+    stop("Study start date must have format YYYYMMDD")
+  if (studyEndDate != "" &&  regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
+    stop("Study end date must have format YYYYMMDD")
+
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   conn <- DatabaseConnector::connect(connectionDetails)
 
