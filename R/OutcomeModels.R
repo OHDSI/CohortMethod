@@ -363,7 +363,7 @@ fitOutcomeModel <- function(outcomeConceptId,
     cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
     treatedWithPriorOutcome <- ffbase::sum.ff(cohortSubset$treatment)
     comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
-    notPriorCount <- data.frame(cohortId = c(0,1), notPriorCount = c(counts$notExcludedCount[1] - comparatorWithPriorOutcome, counts$notExcludedCount[2] - treatedWithPriorOutcome))
+    notPriorCount <- data.frame(cohortId = c(0,1), notPriorCount = c(counts$notExcludedCount[counts$cohortId == 0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$cohortId == 1] - treatedWithPriorOutcome))
     counts <- merge(counts, notPriorCount)
   }
   if (!is.null(subPopulation)){

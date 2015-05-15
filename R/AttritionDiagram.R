@@ -3,13 +3,13 @@
 # Copyright 2014 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,40 +19,41 @@
 #' Draw the attrition diagram
 #'
 #' @description
-#' \code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from the study 
+#' \code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from the study
 #' population, and for what reasons.
-#' 
+#'
 #' @param outcomeModel        An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.
 #' @param treatmentLabel      A label to us for the treated cohort.
 #' @param comparatorLabel      A label to us for the comparator cohort.
-#' @param fileName        Name of the file where the plot should be saved, for example 'plot.png'. See 
+#' @param fileName        Name of the file where the plot should be saved, for example 'plot.png'. See
 #' the function \code{ggsave} in the ggplot2 package for supported file formats.
-#' 
-#' 
+#'
+#'
 #' @return A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
-#'  
+#'
 #' @export
 drawAttritionDiagram <- function(outcomeModel,
                              treatmentLabel = "Treated",
                              comparatorLabel = "Comparator",
                              fileName = NULL){
   counts <- outcomeModel$counts
-  
+  counts <- counts[order(counts$cohortId),]
+
   addStep <- function(label, newCounts, data){
     data$leftBoxText[length(data$leftBoxText) + 1] <- label
-    data$rightBoxText[length(data$rightBoxText) + 1]  <- paste(treatmentLabel,": n = ",data$currentCounts[2]-newCounts[2],"\n",comparatorLabel,": n = ",data$currentCounts[1]-newCounts[1],sep="")  
+    data$rightBoxText[length(data$rightBoxText) + 1]  <- paste(treatmentLabel,": n = ",data$currentCounts[2]-newCounts[2],"\n",comparatorLabel,": n = ",data$currentCounts[1]-newCounts[1],sep="")
     data$currentCounts <- newCounts
     return(data)
   }
-  data <- list(leftBoxText = c(paste("Exposed population:\n",treatmentLabel,": n = ",counts$exposedCount[2],"\n",comparatorLabel,": n = ",counts$exposedCount[1],sep="")), 
-               rightBoxText = c(""), 
+  data <- list(leftBoxText = c(paste("Exposed population:\n",treatmentLabel,": n = ",counts$exposedCount[2],"\n",comparatorLabel,": n = ",counts$exposedCount[1],sep="")),
+               rightBoxText = c(""),
                currentCounts = counts$exposedCount)
-  
+
   data <- addStep("New user", counts$newUserCount, data)
-  
+
   if ("indicatedCount" %in% names(counts)){
     data <- addStep("Has indicated condition\nprior to index", counts$indicatedCount, data)
-  } 
+  }
   data <- addStep("Person appears in only one\n of the two cohorts", counts$nonOverlapCount, data)
   data <- addStep("Does not meet exclusion\ncriteria", counts$notExcludedCount, data)
   if ("notPriorCount" %in% names(counts)){
@@ -65,7 +66,7 @@ drawAttritionDiagram <- function(outcomeModel,
   leftBoxText <- data$leftBoxText
   rightBoxText <- data$rightBoxText
   nSteps <- length(leftBoxText)
-  
+
   boxHeight <- (1/nSteps)-0.03
   boxWidth <- 0.45
   shadowOffset <- 0.01
@@ -76,16 +77,16 @@ drawAttritionDiagram <- function(outcomeModel,
   y <- function(y){
     return(1 - (y-0.5) * (1/nSteps))
   }
-  
+
   downArrow <- function(p, x1, y1, x2, y2){
-    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x1, y=y1, xend=x2, yend=y2)) 
-    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x2, y=y2, xend=x2+arrowLength, yend=y2+arrowLength)) 
+    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x1, y=y1, xend=x2, yend=y2))
+    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x2, y=y2, xend=x2+arrowLength, yend=y2+arrowLength))
     p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x2, y=y2, xend=x2-arrowLength, yend=y2+arrowLength))
     return(p)
   }
   rightArrow <- function(p, x1, y1, x2, y2){
-    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x1, y=y1, xend=x2, yend=y2)) 
-    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x2, y=y2, xend=x2-arrowLength, yend=y2+arrowLength)) 
+    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x1, y=y1, xend=x2, yend=y2))
+    p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x2, y=y2, xend=x2-arrowLength, yend=y2+arrowLength))
     p = p + ggplot2::geom_segment(ggplot2::aes_string(x=x2, y=y2, xend=x2-arrowLength, yend=y2-arrowLength))
     return(p)
   }
@@ -98,7 +99,7 @@ drawAttritionDiagram <- function(outcomeModel,
     p = p + ggplot2::geom_text(ggplot2::aes_string(x=x,y=y,label=paste("\"",text,"\"",sep="")),hjust=hjust,size=3.7)
     return(p)
   }
-  
+
   p = ggplot2::ggplot()
   for (i in 2:nSteps-1){
     p = downArrow(p, x(1), y(i)-(boxHeight/2), x(1),y(i+1)+(boxHeight/2))
@@ -129,7 +130,7 @@ drawAttritionDiagram <- function(outcomeModel,
                 axis.text = ggplot2::element_blank(),
                 axis.title = ggplot2::element_blank(),
                 axis.ticks = ggplot2::element_blank())
-  
+
   if (!is.null(fileName))
     ggplot2::ggsave(p,filename = fileName,width=6,height=7,dpi=400)
   return(p)
