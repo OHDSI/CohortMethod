@@ -125,6 +125,11 @@ getDbCohortData <- function(connectionDetails,
                             excludedCovariateConceptIds = c(),
                             includedCovariateConceptIds = c(),
                             deleteCovariatesSmallCount = 100){
+  if (studyStartDate != "" &&  regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
+    stop("Study start date must have format YYYYMMDD")
+  if (studyEndDate != "" &&  regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
+    stop("Study end date must have format YYYYMMDD")
+
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   conn <- DatabaseConnector::connect(connectionDetails)
 
@@ -143,6 +148,36 @@ getDbCohortData <- function(connectionDetails,
     excludedCovariateConceptIds <- c(excludedCovariateConceptIds, conceptIds)
   }
 
+  if (is.null(indicationConceptIds) || length(indicationConceptIds) == 0) {
+    hasIndicationConceptIds <- FALSE
+  } else {
+    if (!is.numeric(indicationConceptIds))
+      stop("indicationConceptIds must be a (vector of) numeric")
+    hasIndicationConceptIds <- TRUE
+    DatabaseConnector::dbInsertTable(conn,
+                                     tableName = "#indications",
+                                     data = data.frame(concept_id = as.integer(indicationConceptIds)),
+                                     dropTableIfExists = TRUE,
+                                     createTable = TRUE,
+                                     tempTable = TRUE,
+                                     oracleTempSchema = oracleTempSchema)
+  }
+
+  if (is.null(exclusionConceptIds) || length(exclusionConceptIds) == 0) {
+    hasExclusionConceptIds <- FALSE
+  } else {
+    if (!is.numeric(exclusionConceptIds))
+      stop("exclusionConceptIds must be a (vector of) numeric")
+    hasExclusionConceptIds <- TRUE
+    DatabaseConnector::dbInsertTable(conn,
+                                     tableName = "#exclusions",
+                                     data = data.frame(concept_id = as.integer(exclusionConceptIds)),
+                                     dropTableIfExists = TRUE,
+                                     createTable = TRUE,
+                                     tempTable = TRUE,
+                                     oracleTempSchema = oracleTempSchema)
+  }
+
   writeLines("\nConstructing treatment and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                    packageName = "CohortMethod",
@@ -151,12 +186,12 @@ getDbCohortData <- function(connectionDetails,
                                                    cdm_database = cdmDatabase,
                                                    target_drug_concept_id = targetDrugConceptId,
                                                    comparator_drug_concept_id = comparatorDrugConceptId,
-                                                   indication_concept_ids = indicationConceptIds,
+                                                   has_indication_concept_ids = hasIndicationConceptIds,
                                                    washout_window = washoutWindow,
                                                    indication_lookback_window = indicationLookbackWindow,
                                                    study_start_date = studyStartDate,
                                                    study_end_date = studyEndDate,
-                                                   exclusion_concept_ids = exclusionConceptIds,
+                                                   has_exclusion_concept_ids = hasExclusionConceptIds,
                                                    exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = exposureTable)
 
@@ -191,7 +226,7 @@ getDbCohortData <- function(connectionDetails,
   rawCount <- DatabaseConnector::querySql(conn, rawCountSql)
   newUserCount <- DatabaseConnector::querySql(conn, newUserCountSql)
   counts <- merge(rawCount, newUserCount)
-  if (length(indicationConceptIds) != 0){
+  if (hasIndicationConceptIds){
     indicatedCount <- DatabaseConnector::querySql(conn, indicatedCountSql)
     counts <- merge(counts, indicatedCount)
   }
@@ -291,7 +326,8 @@ getDbCohortData <- function(connectionDetails,
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
-                                                   indication_concept_ids = indicationConceptIds)
+                                                   has_indication_concept_ids = hasIndicationConceptIds,
+                                                   has_exclusion_concept_ids = hasExclusionConceptIds)
   DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
 
 

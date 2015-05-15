@@ -2,10 +2,21 @@ TRUNCATE TABLE #new_user_cohort;
 
 DROP TABLE #new_user_cohort;
 
-{@indication_concept_ids != ''} ? {
+{@has_indication_concept_ids} ? {
+TRUNCATE TABLE #indications;
+
+DROP TABLE #indications;
+
+
 TRUNCATE TABLE #indicated_cohort;
 
 DROP TABLE #indicated_cohort;
+}
+
+{@has_exclusion_concept_ids} ? {
+TRUNCATE TABLE #exclusions;
+
+DROP TABLE #exclusions;
 }
 
 TRUNCATE TABLE #non_overlap_cohort;

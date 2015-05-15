@@ -18,57 +18,57 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database = 'CDM4_SIM' } /*cdm_database: @cdm_database*/
-{DEFAULT @use_existing_cohort_person = TRUE } /*use_existing_cohort_person: @ use_existing_cohort_person*/
-{DEFAULT @cohort_database_schema = 'CDM4_SIM' } /*cohort_database_schema: @cohort_database_schema*/
-{DEFAULT @cohort_table = 'cohort' } /*cohort_table: @cohort_table*/
-{DEFAULT @cohort_concept_ids = '0,1' } /*cohort_concept_ids: @cohort_concept_ids*/
-{DEFAULT @use_covariate_demographics = TRUE} /*use_covariate_demographics: @use_covariate_demographics*/
-{DEFAULT @use_covariate_demographics_age = TRUE} /*use_covariate_demographics_age: @use_covariate_demographics_age*/
-{DEFAULT @use_covariate_demographics_gender = TRUE} /*use_covariate_demographics_gender: @use_covariate_demographics_gender*/
-{DEFAULT @use_covariate_demographics_race = TRUE} /*use_covariate_demographics_race: @use_covariate_demographics_race*/
-{DEFAULT @use_covariate_demographics_ethnicity = TRUE} /*use_covariate_demographics_ethnicity: @use_covariate_demographics_ethnicity*/
-{DEFAULT @use_covariate_demographics_year = TRUE} /*use_covariate_demographics_year: @use_covariate_demographics_year*/
-{DEFAULT @use_covariate_demographics_month = TRUE} /*use_covariate_demographics_month: @use_covariate_demographics_month*/
-{DEFAULT @use_covariate_condition_occurrence = TRUE} /*use_covariate_condition_occurrence: @use_covariate_condition_occurrence*/
-{DEFAULT @use_covariate_condition_occurrence_365d = TRUE} /*use_covariate_condition_occurrence_365d: @use_covariate_condition_occurrence_365d*/
-{DEFAULT @use_covariate_condition_occurrence_30d = TRUE} /*use_covariate_condition_occurrence_30d: @use_covariate_condition_occurrence_30d*/
-{DEFAULT @use_covariate_condition_occurrence_inpt180d = TRUE} /*use_covariate_condition_occurrence_inpt180d: @use_covariate_condition_occurrence_inpt180d*/
-{DEFAULT @use_covariate_condition_era = FALSE} /*use_covariate_condition_era: @use_covariate_condition_era*/
-{DEFAULT @use_covariate_condition_era_ever = TRUE} /*use_covariate_condition_era_ever: @use_covariate_condition_era_ever*/
-{DEFAULT @use_covariate_condition_era_overlap = TRUE} /*use_covariate_condition_era_overlap: @use_covariate_condition_era_overlap*/
-{DEFAULT @use_covariate_condition_group = FALSE} /*use_covariate_condition_group: @use_covariate_condition_group*/
-{DEFAULT @use_covariate_condition_group_meddra = TRUE} /*use_covariate_condition_group_meddra: @use_covariate_condition_group_meddra*/
-{DEFAULT @use_covariate_condition_group_snomed = TRUE} /*use_covariate_condition_group_snomed: @use_covariate_condition_group_snomed*/
-{DEFAULT @use_covariate_drug_exposure = FALSE} /*use_covariate_drug_exposure: @use_covariate_drug_exposure*/
-{DEFAULT @use_covariate_drug_exposure_365d = TRUE} /*use_covariate_drug_exposure_365d: @use_covariate_drug_exposure_365d*/
-{DEFAULT @use_covariate_drug_exposure_30d = TRUE} /*use_covariate_drug_exposure_30d: @use_covariate_drug_exposure_30d*/
-{DEFAULT @use_covariate_drug_era = FALSE} /*use_covariate_drug_era: @use_covariate_drug_era*/
-{DEFAULT @use_covariate_drug_era_365d = TRUE} /*use_covariate_drug_era_365d: @use_covariate_drug_era_365d*/
-{DEFAULT @use_covariate_drug_era_30d = TRUE} /*use_covariate_drug_era_30d: @use_covariate_drug_era_30d*/
-{DEFAULT @use_covariate_drug_era_overlap = TRUE} /*use_covariate_drug_era_overlap: @use_covariate_drug_era_overlap*/
-{DEFAULT @use_covariate_drug_era_ever = TRUE} /*use_covariate_drug_era_ever: @use_covariate_drug_era_ever*/
-{DEFAULT @use_covariate_drug_group = FALSE} /*use_covariate_drug_group: @use_covariate_drug_group*/
-{DEFAULT @use_covariate_procedure_occurrence = FALSE} /*use_covariate_procedure_occurrence: @use_covariate_procedure_occurrence*/
-{DEFAULT @use_covariate_procedure_occurrence_365d = TRUE} /*use_covariate_procedure_occurrence_365d: @use_covariate_procedure_occurrence_365d*/
-{DEFAULT @use_covariate_procedure_occurrence_30d = TRUE} /*use_covariate_procedure_occurrence_30d: @use_covariate_procedure_occurrence_30d*/
-{DEFAULT @use_covariate_procedure_group = FALSE} /*use_covariate_procedure_group: @use_covariate_procedure_group*/
-{DEFAULT @use_covariate_observation = FALSE} /*use_covariate_observation: @use_covariate_observation*/
-{DEFAULT @use_covariate_observation_365d = TRUE} /*use_covariate_observation_365d: @use_covariate_observation_365d*/
-{DEFAULT @use_covariate_observation_30d = TRUE} /*use_covariate_observation_30d: @use_covariate_observation_30d*/
-{DEFAULT @use_covariate_observation_below = TRUE} /*use_covariate_observation_below: @use_covariate_observation_below*/
-{DEFAULT @use_covariate_observation_above = TRUE} /*use_covariate_observation_above: @use_covariate_observation_after*/
-{DEFAULT @use_covariate_observation_count365d = TRUE} /*use_covariate_observation_count365d: @use_covariate_observation_count365d*/
-{DEFAULT @use_covariate_concept_counts = FALSE} /*use_covariate_concept_counts: @use_covariate_concept_counts*/
-{DEFAULT @use_covariate_risk_scores = FALSE} /*use_covariate_risk_scores: @use_covariate_risk_scores*/
-{DEFAULT @use_covariate_risk_scores_Charlson = TRUE} /*use_covariate_risk_scores_Charlson: @use_covariate_risk_scores_Charlson*/
-{DEFAULT @use_covariate_risk_scores_DCSI = TRUE} /*use_covariate_risk_scores_DCSI: @use_covariate_risk_scores_DCSI*/
-{DEFAULT @use_covariate_risk_scores_CHADS2 = TRUE} /*use_covariate_risk_scores_CHADS2: @use_covariate_risk_scores_CHADS2*/
-{DEFAULT @use_covariate_interaction_year = FALSE} /*use_covariate_interaction_year: @use_covariate_interaction_year*/
-{DEFAULT @use_covariate_interaction_month = FALSE} /*use_covariate_interaction_month: @use_covariate_interaction_month*/
-{DEFAULT @excluded_covariate_concept_ids = '' } /*excluded_covariate_concept_ids: @excluded_covariate_concept_ids*/
-{DEFAULT @included_covariate_concept_ids = '' } /*included_covariate_concept_ids: @included_covariate_concept_ids*/
-{DEFAULT @delete_covariates_small_count = 100 } /*delete_covariates_small_count: @delete_covariates_small_count*/
+{DEFAULT @cdm_database = 'CDM4_SIM' } 
+{DEFAULT @use_existing_cohort_person = TRUE } 
+{DEFAULT @cohort_database_schema = 'CDM4_SIM' } 
+{DEFAULT @cohort_table = 'cohort' } 
+{DEFAULT @cohort_concept_ids = '0,1' } 
+{DEFAULT @use_covariate_demographics = TRUE} 
+{DEFAULT @use_covariate_demographics_age = TRUE} 
+{DEFAULT @use_covariate_demographics_gender = TRUE} 
+{DEFAULT @use_covariate_demographics_race = TRUE} 
+{DEFAULT @use_covariate_demographics_ethnicity = TRUE} 
+{DEFAULT @use_covariate_demographics_year = TRUE} 
+{DEFAULT @use_covariate_demographics_month = TRUE} 
+{DEFAULT @use_covariate_condition_occurrence = TRUE} 
+{DEFAULT @use_covariate_condition_occurrence_365d = TRUE} 
+{DEFAULT @use_covariate_condition_occurrence_30d = TRUE} 
+{DEFAULT @use_covariate_condition_occurrence_inpt180d = TRUE} 
+{DEFAULT @use_covariate_condition_era = FALSE} 
+{DEFAULT @use_covariate_condition_era_ever = TRUE} 
+{DEFAULT @use_covariate_condition_era_overlap = TRUE} 
+{DEFAULT @use_covariate_condition_group = FALSE} 
+{DEFAULT @use_covariate_condition_group_meddra = TRUE} 
+{DEFAULT @use_covariate_condition_group_snomed = TRUE} 
+{DEFAULT @use_covariate_drug_exposure = FALSE} 
+{DEFAULT @use_covariate_drug_exposure_365d = TRUE} 
+{DEFAULT @use_covariate_drug_exposure_30d = TRUE} 
+{DEFAULT @use_covariate_drug_era = FALSE} 
+{DEFAULT @use_covariate_drug_era_365d = TRUE} 
+{DEFAULT @use_covariate_drug_era_30d = TRUE} 
+{DEFAULT @use_covariate_drug_era_overlap = TRUE} 
+{DEFAULT @use_covariate_drug_era_ever = TRUE} 
+{DEFAULT @use_covariate_drug_group = FALSE} 
+{DEFAULT @use_covariate_procedure_occurrence = FALSE} 
+{DEFAULT @use_covariate_procedure_occurrence_365d = TRUE} 
+{DEFAULT @use_covariate_procedure_occurrence_30d = TRUE} 
+{DEFAULT @use_covariate_procedure_group = FALSE} 
+{DEFAULT @use_covariate_observation = FALSE} 
+{DEFAULT @use_covariate_observation_365d = TRUE} 
+{DEFAULT @use_covariate_observation_30d = TRUE} 
+{DEFAULT @use_covariate_observation_below = TRUE} 
+{DEFAULT @use_covariate_observation_above = TRUE} 
+{DEFAULT @use_covariate_observation_count365d = TRUE} 
+{DEFAULT @use_covariate_concept_counts = FALSE} 
+{DEFAULT @use_covariate_risk_scores = FALSE} 
+{DEFAULT @use_covariate_risk_scores_Charlson = TRUE} 
+{DEFAULT @use_covariate_risk_scores_DCSI = TRUE} 
+{DEFAULT @use_covariate_risk_scores_CHADS2 = TRUE} 
+{DEFAULT @use_covariate_interaction_year = FALSE} 
+{DEFAULT @use_covariate_interaction_month = FALSE} 
+{DEFAULT @has_excluded_covariate_concept_ids} 
+{DEFAULT @has_included_covariate_concept_ids} 
+{DEFAULT @delete_covariates_small_count = 100 } 
 
 USE @cdm_database;
 
@@ -96,7 +96,7 @@ IF OBJECT_ID('tempdb..#cov_ref', 'U') IS NOT NULL
 
 CREATE TABLE #cov_ref (
 	covariate_id BIGINT,
-	covariate_name VARCHAR(max),
+	covariate_name VARCHAR(512),
 	analysis_id INT,
 	concept_id INT
 	);
@@ -377,12 +377,11 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
-WHERE co1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND co1.condition_concept_id IN (@included_covariate_concept_ids)}
+WHERE co1.condition_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND co1.condition_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND co1.condition_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND co1.condition_start_date <= cp1.cohort_start_date
 	AND co1.condition_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
-
-
 
 INSERT INTO #cov_ref (
   covariate_id,
@@ -416,8 +415,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
-WHERE co1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND co1.condition_concept_id IN (@included_covariate_concept_ids)}
+WHERE co1.condition_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND co1.condition_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND co1.condition_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND co1.condition_start_date <= cp1.cohort_start_date
 	AND co1.condition_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -455,8 +455,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
-WHERE co1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND co1.condition_concept_id IN (@included_covariate_concept_ids)}
+WHERE co1.condition_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND co1.condition_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND co1.condition_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND co1.condition_type_concept_id IN (38000183, 38000184, 38000199, 38000200)
 	AND co1.condition_start_date <= cp1.cohort_start_date
 	AND co1.condition_start_date >= dateadd(dd, - 180, cp1.cohort_start_date);
@@ -507,8 +508,9 @@ INNER JOIN condition_era ce1
 	ON cp1.subject_id = ce1.person_id
 LEFT JOIN concept c1
 	ON ce1.condition_concept_id = c1.concept_id
-WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-  {@included_covariate_concept_ids != '' } ? {AND ce1.condition_concept_id IN (@included_covariate_concept_ids)}
+WHERE ce1.condition_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND ce1.condition_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND ce1.condition_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND ce1.condition_era_start_date <= cp1.cohort_start_date;
 
 
@@ -549,8 +551,9 @@ INNER JOIN condition_era ce1
 	ON cp1.subject_id = ce1.person_id
 LEFT JOIN concept c1
 	ON ce1.condition_concept_id = c1.concept_id
-WHERE ce1.condition_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND ce1.condition_concept_id IN (@included_covariate_concept_ids)}
+WHERE ce1.condition_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND ce1.condition_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND ce1.condition_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND ce1.condition_era_start_date <= cp1.cohort_start_date
 	AND ce1.condition_era_end_date >= cp1.cohort_start_date;
 
@@ -622,8 +625,9 @@ INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
 WHERE c1.vocabulary_id = 15
 	AND c1.concept_class <> 'System Organ Class'
-	AND c1.concept_id NOT IN (36302170, 36303153, 36313966 /*Investigation concepts, too broad*/ {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
+	AND c1.concept_id NOT IN (36302170, 36303153, 36313966)
+{@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}
 
 {@use_covariate_condition_group_snomed} ? { UNION }
 
@@ -649,9 +653,8 @@ WHERE c1.vocabulary_id = 1
   AND c1.concept_class = 'Clinical finding'
   AND ca1.min_levels_of_separation = 1
   AND c1.concept_id NOT IN (select distinct descendant_concept_id from concept_ancestor where ancestor_concept_id = 441480 /*clinical finding*/ and max_levels_of_separation <= 2)
-{@excluded_covariate_concept_ids != '' } ?	{AND c1.concept_id NOT IN (@excluded_covariate_concept_ids )}
-{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
-
+{@has_excluded_covariate_concept_ids} ? {  AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {  AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}
 }
 
 ) t1
@@ -806,8 +809,9 @@ INTO #cov_de_365d
 FROM #cohort_person cp1
 INNER JOIN drug_exposure de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-  {@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+WHERE de1.drug_concept_id != 0 
+{@has_excluded_covariate_concept_ids} ? {  AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {  AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -848,8 +852,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN drug_exposure de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+WHERE de1.drug_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
 	AND de1.drug_exposure_start_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -896,9 +901,10 @@ INTO #cov_dera_365d
 FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
-	AND de1.drug_era_start_date <= cp1.cohort_start_date
+WHERE de1.drug_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
+ 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
 
@@ -939,8 +945,9 @@ INTO #cov_dera_30d
 FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+WHERE de1.drug_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -980,8 +987,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+WHERE de1.drug_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND de1.drug_era_start_date <= cp1.cohort_start_date
 	AND de1.drug_era_end_date >= cp1.cohort_start_date;
 
@@ -1021,8 +1029,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN drug_era de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND de1.drug_concept_id IN (@included_covariate_concept_ids)}
+WHERE de1.drug_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND de1.drug_era_start_date <= cp1.cohort_start_date;
 
 
@@ -1080,8 +1089,9 @@ INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
 WHERE c1.vocabulary_id = 21
 	AND len(c1.concept_code) IN (1, 3, 5)
-	AND c1.concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
+	AND c1.concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}	
 ;
 
 
@@ -1295,14 +1305,13 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN procedure_occurrence po1
 	ON cp1.subject_id = po1.person_id
-WHERE po1.procedure_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND po1.procedure_concept_id IN (@included_covariate_concept_ids)}
+WHERE po1.procedure_concept_id  != 0
+{@has_excluded_covariate_concept_ids} ? {	AND po1.procedure_concept_id  NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND po1.procedure_concept_id  IN (SELECT concept_id FROM #included_cov)}		
 	AND po1.procedure_date <= cp1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
-
-
-
+	
 INSERT INTO #cov_ref (
   covariate_id,
   covariate_name,
@@ -1339,11 +1348,11 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN procedure_occurrence po1
 	ON cp1.subject_id = po1.person_id
-WHERE po1.procedure_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND po1.procedure_concept_id IN (@included_covariate_concept_ids)}
+WHERE po1.procedure_concept_id  != 0
+{@has_excluded_covariate_concept_ids} ? {	AND po1.procedure_concept_id  NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND po1.procedure_concept_id  IN (SELECT concept_id FROM #included_cov)}	
 	AND po1.procedure_date <= cp1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 30, cp1.cohort_start_date);
-
 
 
 INSERT INTO #cov_ref (
@@ -1401,9 +1410,9 @@ INNER JOIN concept c1
 WHERE c1.vocabulary_id = 1
 	AND ca1.min_levels_of_separation <= 2
 	AND c1.concept_id NOT IN (0,
-	76094,67368, 46042, 40949, 31332, 28263, 24955, 18791, 13449, 12571, 10678, 10592, 9878, 9727, 9652, 9451, 9192, 8975, 8930, 8786, 8370, 8161, 7763, 7059, 6923, 6752, 6690, 6611, 6336, 6264, 6204, 6003, 5783
-	{@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND c1.concept_id IN (@included_covariate_concept_ids)}
+	76094,67368, 46042, 40949, 31332, 28263, 24955, 18791, 13449, 12571, 10678, 10592, 9878, 9727, 9652, 9451, 9192, 8975, 8930, 8786, 8370, 8161, 7763, 7059, 6923, 6752, 6690, 6611, 6336, 6264, 6204, 6003, 5783)
+{@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}		
 ;
 
 
@@ -1515,8 +1524,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN observation o1
 	ON cp1.subject_id = o1.person_id
-WHERE o1.observation_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND o1.observation_concept_id IN (@included_covariate_concept_ids)}
+WHERE o1.observation_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}		
 	AND o1.observation_date <= cp1.cohort_start_date
 	AND o1.observation_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -1558,8 +1568,9 @@ SELECT DISTINCT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN observation o1
 	ON cp1.subject_id = o1.person_id
-WHERE o1.observation_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND o1.observation_concept_id IN (@included_covariate_concept_ids)}
+WHERE o1.observation_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}	
 	AND o1.observation_date <= cp1.cohort_start_date
 	AND o1.observation_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -1615,8 +1626,9 @@ FROM (
 	FROM #cohort_person cp1
 	INNER JOIN observation o1
 		ON cp1.subject_id = o1.person_id
-	WHERE o1.observation_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND o1.observation_concept_id IN (@included_covariate_concept_ids)}
+	WHERE o1.observation_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {		AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {		AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}	
 		AND o1.observation_date <= cp1.cohort_start_date
 		AND o1.observation_date >= dateadd(dd, - 180, cp1.cohort_start_date)
 		AND o1.value_as_number >= 0
@@ -1680,8 +1692,9 @@ FROM (
 	FROM #cohort_person cp1
 	INNER JOIN observation o1
 		ON cp1.subject_id = o1.person_id
-	WHERE o1.observation_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-{@included_covariate_concept_ids != '' } ? {AND o1.observation_concept_id IN (@included_covariate_concept_ids)}
+	WHERE o1.observation_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {		AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {		AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}
 		AND o1.observation_date <= cp1.cohort_start_date
 		AND o1.observation_date >= dateadd(dd, - 180, cp1.cohort_start_date)
 		AND o1.value_as_number >= 0
@@ -1729,8 +1742,9 @@ SELECT cp1.cohort_start_date,
 FROM #cohort_person cp1
 INNER JOIN observation o1
 	ON cp1.subject_id = o1.person_id
-WHERE o1.observation_concept_id NOT IN (0 {@excluded_covariate_concept_ids != '' } ? {, @excluded_covariate_concept_ids })
-  {@included_covariate_concept_ids != '' } ? {AND o1.observation_concept_id IN (@included_covariate_concept_ids)}
+WHERE o1.observation_concept_id != 0
+{@has_excluded_covariate_concept_ids} ? {	AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
+{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND o1.observation_date <= cp1.cohort_start_date
 	AND o1.observation_date >= dateadd(dd, - 365, cp1.cohort_start_date)
 GROUP BY cp1.cohort_start_date,
