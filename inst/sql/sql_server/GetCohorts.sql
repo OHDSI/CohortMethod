@@ -134,7 +134,7 @@ LEFT JOIN (
 	FROM (
 		SELECT person_id,
 			COUNT(treatment) AS num_cohorts
-		FROM {@indication_concept_ids != '' } ? { #indicated_cohort } : { #new_user_cohort }
+		FROM {@has_indication_concept_ids} ? { #indicated_cohort } : { #new_user_cohort }
 		GROUP BY person_id
 		) t1
 	WHERE num_cohorts = 2

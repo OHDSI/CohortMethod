@@ -96,7 +96,7 @@ IF OBJECT_ID('tempdb..#cov_ref', 'U') IS NOT NULL
 
 CREATE TABLE #cov_ref (
 	covariate_id BIGINT,
-	covariate_name VARCHAR(max),
+	covariate_name VARCHAR(512),
 	analysis_id INT,
 	concept_id INT
 	);

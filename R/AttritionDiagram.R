@@ -37,7 +37,7 @@ drawAttritionDiagram <- function(outcomeModel,
                              comparatorLabel = "Comparator",
                              fileName = NULL){
   counts <- outcomeModel$counts
-  counts <- counts[order(counts$cohortId),]
+  counts <- counts[order(counts$treatment),]
 
   addStep <- function(label, newCounts, data){
     data$leftBoxText[length(data$leftBoxText) + 1] <- label
