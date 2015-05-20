@@ -3,13 +3,13 @@
 # Copyright 2014 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@
   # library(CohortMethod)
   # setwd("s:/temp")
   # options("fftempdir" = "s:/temp")
-  
+
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
@@ -30,22 +30,21 @@
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
   resultsDatabaseSchema <- "scratch.dbo"
   port <- NULL
-  
+
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, port=port)
-  
+
   #Load data:
   cohortData <- getDbCohortData(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
-                                resultsDatabaseSchema = resultsDatabaseSchema,
                                 targetDrugConceptId = 755695,
                                 comparatorDrugConceptId = 739138,
                                 indicationConceptIds = 439926,
-                                washoutWindow = 183, 
+                                washoutWindow = 183,
                                 indicationLookbackWindow = 183,
-                                studyStartDate = "", 
-                                studyEndDate = "", 
+                                studyStartDate = "",
+                                studyEndDate = "",
                                 exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
-                                outcomeConceptIds = 194133, 
+                                outcomeConceptIds = 194133,
                                 outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
                                 exposureDatabaseSchema = cdmDatabaseSchema,
                                 exposureTable = "drug_era",
@@ -85,12 +84,12 @@
                                 useCovariateInteractionMonth = FALSE,
                                 excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
                                 deleteCovariatesSmallCount = 100)
-  
+
   saveCohortData(cohortData,"s:/temp/simulationCohortData")
-  
+
   #cohortData <- loadCohortData("s:/temp/simulationCohortData")
   #ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
-  
+
   cohortDataSimulationProfile <- createCohortDataSimulationProfile(cohortData)
   save(cohortDataSimulationProfile,file="s:/temp/cohortDataSimulationProfile.rda", compress = "xz")
 }
