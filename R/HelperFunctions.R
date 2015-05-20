@@ -84,8 +84,8 @@ constructEras <- function(connectionDetails,
                           cdmDatabaseSchema = sourceDatabaseSchema,
                           gracePeriod = 30,
                           rollUp = TRUE,
-                          rollUpConceptClassId = "ingredient",
-                          rollUpVocabularyId = "rxnorm",
+                          rollUpConceptClassId = "Ingredient",
+                          rollUpVocabularyId = "RxNorm",
                           cdmVersion = "5") {
   if (!rollUp)
     rollUpConceptClassId <- ""
@@ -112,20 +112,29 @@ constructEras <- function(connectionDetails,
     sourceTypeConceptId <- ""
   }
   if (targetTable == "drug_era") {
+    targetId <- "drug_era_id"
     targetPersonId <- "person_id"
     targetStartDate <- "drug_era_start_date"
     targetEndDate <- "drug_era_end_date"
     targetConceptId <- "drug_concept_id"
-    targetTypeConceptId <- "drug_type_concept_id"
+    if (cdmVersion == "4")
+      targetTypeConceptId <- "drug_type_concept_id"
+    else
+      targetTypeConceptId <- ""
     targetCount <- "drug_exposure_count"
   } else if (targetTable == "condition_era") {
+    targetId <- "condition_era_id"
     targetPersonId <- "person_id"
     targetStartDate <- "condition_era_start_date"
     targetEndDate <- "condition_era_end_date"
     targetConceptId <- "condition_concept_id"
-    targetTypeConceptId <- ""
+    if (cdmVersion == "4")
+      targetTypeConceptId <- "condition_type_concept_id"
+    else
+      targetTypeConceptId <- ""
     targetCount <- "condition_occurrence_count"
   } else {
+    targetId <- ""
     targetPersonId <- "subject_id"
     targetStartDate <- "cohort_start_date"
     targetEndDate <- "cohort_end_date"
@@ -149,6 +158,7 @@ constructEras <- function(connectionDetails,
                                                    source_type_concept_id = sourceTypeConceptId,
                                                    target_database_schema = targetDatabaseSchema,
                                                    target_table = targetTable,
+                                                   target_id = targetId,
                                                    target_person_id = targetPersonId,
                                                    target_start_date = targetStartDate,
                                                    target_end_date = targetEndDate,

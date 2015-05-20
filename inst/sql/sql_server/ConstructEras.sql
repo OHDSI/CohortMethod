@@ -28,6 +28,7 @@ limitations under the License.
 {DEFAULT @source_type_concept_id = 'drug_type_concept_id'} /* If empty, type will be ignored */
 {DEFAULT @target_database_schema = 'cdm4_sim.dbo'}
 {DEFAULT @target_table = 'drug_era'}
+{DEFAULT @target_id = 'drug_era_id'}
 {DEFAULT @target_person_id = 'person_id'}
 {DEFAULT @target_start_date = 'drug_era_start_date'}
 {DEFAULT @target_end_date = 'drug_era_end_date'}
@@ -36,8 +37,8 @@ limitations under the License.
 {DEFAULT @target_count = 'drug_exposure_count'}
 {DEFAULT @create_target_table = FALSE}
 {DEFAULT @cdm_database_schema = 'cdm4_sim.dbo'} /* Holds the vocabulary for rolling up concepts */
-{DEFAULT @roll_up_concept_class_id = 'ingredient'} /* If empty, will not roll up */
-{DEFAULT @roll_up_vocabulary_id = 'rxnorm'}
+{DEFAULT @roll_up_concept_class_id = 'Ingredient'} /* If empty, will not roll up */
+{DEFAULT @roll_up_vocabulary_id = 'RxNorm'}
 {DEFAULT @cdm_version = 5}
 
 WITH cte_source_periods (
@@ -146,11 +147,21 @@ AS (
 	GROUP BY d.row_num,
 		d.person_id,
 		d.concept_id,
-{@source_type_concept_id != '' & @target_type_concept_id != ''} ? {		d.drug_type_concept_id,}
+{@source_type_concept_id != '' & @target_type_concept_id != ''} ? {		d.type_concept_id,}
 		d.start_date
 	)
-{!@create_target_table} ? {INSERT INTO @target_database_schema.@target_table}
-SELECT person_id AS @target_person_id,
+{!@create_target_table} ? {
+INSERT INTO @target_database_schema.@target_table (
+{@target_id != ''} ? {@target_id,}
+	@target_person_id, 
+	@target_concept_id, 
+{@source_type_concept_id != '' & @target_type_concept_id != ''} ? {@target_type_concept_id,}
+	@target_start_date, 
+{@target_count != ''} ? {@target_count,}	
+	@target_end_date)
+}
+SELECT {@target_id != ''} ? {ROW_NUMBER() OVER (ORDER BY person_id) AS @target_id,}
+    person_id AS @target_person_id,
 	concept_id AS @target_concept_id,
 {@source_type_concept_id != '' & @target_type_concept_id != ''} ? {	type_concept_id AS @target_type_concept_id,}
 	MIN(start_date) AS @target_start_date,
