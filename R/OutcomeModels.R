@@ -310,7 +310,9 @@ fitOutcomeModel <- function(outcomeConceptId,
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
-  status <- "OK"
+  status <- "NO MODEL FITTED"
+  if (dataObject$zeroOutcomes)
+    status <- "NO OUTCOMES REMAINING AFTER RESTRICTING TO SUBPOPULATION, CANNOT FIT"
   if (fitModel & !is.null(dataObject$cyclopsData)) {
     if (useCovariates){
       if (dataObject$useStrata | modelType == "cox")
@@ -328,6 +330,7 @@ fitOutcomeModel <- function(outcomeConceptId,
       priorVariance <- 0
       status <- "ILL CONDITIONED, CANNOT FIT"
     } else {
+      status <- "OK"
       coefficients <- coef(fit)
       logRr <- coef(fit)[names(coef(fit)) == "1"]
       ci <- tryCatch({
@@ -350,7 +353,7 @@ fitOutcomeModel <- function(outcomeConceptId,
     cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
     treatedWithPriorOutcome <- ffbase::sum.ff(cohortSubset$treatment)
     comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
-    notPriorCount <- data.frame(cohortId = c(0,1), notPriorCount = c(counts$notExcludedCount[counts$cohortId == 0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$cohortId == 1] - treatedWithPriorOutcome))
+    notPriorCount <- data.frame(treatment = c(0,1), notPriorCount = c(counts$notExcludedCount[counts$treatment == 0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$treatment == 1] - treatedWithPriorOutcome))
     counts <- merge(counts, notPriorCount)
   }
   if (!is.null(subPopulation)){
