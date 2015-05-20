@@ -331,7 +331,7 @@ getDbCohortData <- function(connectionDetails,
   DatabaseConnector::executeSql(conn,renderedSql,progressBar = FALSE,reportOverallTime=FALSE)
 
 
-  dummy <- RJDBC::dbDisconnect(conn)
+  RJDBC::dbDisconnect(conn)
 
   return(result)
 }

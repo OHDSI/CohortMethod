@@ -8,8 +8,8 @@ constructEras(connectionDetails, sourceDatabaseSchema,
   sourceTable = "drug_exposure",
   targetDatabaseSchema = sourceDatabaseSchema, targetTable = "drug_era",
   createTargetTable = FALSE, cdmDatabaseSchema = sourceDatabaseSchema,
-  gracePeriod = 30, rollUp = TRUE, rollUpConceptClassId = "ingredient",
-  rollUpVocabularyId = "rxnorm", cdmVersion = "5")
+  gracePeriod = 30, rollUp = TRUE, rollUpConceptClassId = "Ingredient",
+  rollUpVocabularyId = "RxNorm", cdmVersion = "5")
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}

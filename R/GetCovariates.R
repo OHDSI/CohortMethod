@@ -227,7 +227,7 @@ getDbCovariates <- function(connectionDetails = NULL,
                                                    has_included_covariate_concept_ids = hasIncludedCovariateConceptIds)
   DatabaseConnector::executeSql(conn,renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
   if (is.null(connection)){
-    dummy <- RJDBC::dbDisconnect(conn)
+    RJDBC::dbDisconnect(conn)
   }
 
   colnames(covariates) <- SqlRender::snakeCaseToCamelCase(colnames(covariates))
@@ -249,7 +249,6 @@ getDbCovariates <- function(connectionDetails = NULL,
   class(result) <- "covariateData"
   return(result)
 }
-
 
 
 
@@ -279,12 +278,11 @@ grepCovariateNames <- function(pattern, object) {
   if (is.null(object$covariateRef)) {
     stop("object does not contain a covariateRef")
   }
-
-  select <- with(object, ffwhich(covariateRef, grepl(pattern, covariateName)))
+  select <- ffbase::ffwhich(object$covariateRef, grepl(pattern, covariateName))
   if (is.null(select)) {
     data.frame(covariateId = numeric(0), covariateName = character(0),
                analysisID = numeric(0), conceptId = numeric(0))
   } else {
-    as.ram(with(object, covariateRef[select,]))
+    ff::as.ram(object$covariateRef[select,])
   }
 }

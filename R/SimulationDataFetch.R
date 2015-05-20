@@ -28,7 +28,6 @@
   user <- NULL
   server <- "RNDUSRDHIT07.jnj.com"
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-  resultsDatabaseSchema <- "scratch.dbo"
   port <- NULL
 
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, port=port)

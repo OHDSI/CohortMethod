@@ -176,5 +176,6 @@ constructEras <- function(connectionDetails,
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE)
   writeLines("Done")
 
-  dummy <- RJDBC::dbDisconnect(conn)
+  RJDBC::dbDisconnect(conn)
+  return()
 }
