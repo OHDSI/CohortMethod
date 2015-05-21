@@ -204,8 +204,14 @@ createDataForModelFit <- function(outcomeConceptId,
   } else {
     outcomes <- ffbase::subset.ffdf(cohortData$outcomes,outcomeId == as.double(outcomeConceptId))
     t <- cohortData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohorts <- ff::as.ram(cohortData$cohort[ffbase::ffwhich(t,t == FALSE),])
+    t <- ffbase::ffwhich(t, t == TRUE)
+    if (is.null(t)){
+      # None need to be excluded
+      cohorts <- ff::as.ram(cohortData$cohort)
+    } else {
+      t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[t])
+      cohorts <- ff::as.ram(cohortData$cohort[ffbase::ffwhich(t,t == FALSE),])
+    }
   }
 
   if (!is.null(subPopulation))
@@ -322,8 +328,8 @@ fitOutcomeModel <- function(outcomeConceptId,
     } else
       prior <- createPrior("none") #Only one variable, which we're not going to regularize, so effectively no prior
     fit <- Cyclops::fitCyclopsModel(dataObject$cyclopsData,
-                           prior = prior,
-                           control = control)
+                                    prior = prior,
+                                    control = control)
     if (fit$return_flag == "ILLCONDITIONED"){
       coefficients <- c(0)
       treatmentEstimate <- data.frame(logRr=0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
@@ -349,8 +355,13 @@ fitOutcomeModel <- function(outcomeConceptId,
 
   if (!is.null(outcomeConceptId) & !is.null(cohortData$exclude)){
     t <- cohortData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
+    t <- ffbase::ffwhich(t, t == TRUE)
+    if (is.null(t)){
+      cohortSubset <- cohortData$cohort
+    } else {
+      t <- in.ff(cohortData$cohorts$rowId ,cohortData$exclude$rowId[t])
+      cohortSubset <- cohortData$cohort[ffbase::ffwhich(t,t == TRUE),]
+    }
     treatedWithPriorOutcome <- ffbase::sum.ff(cohortSubset$treatment)
     comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
     notPriorCount <- data.frame(treatment = c(0,1), notPriorCount = c(counts$notExcludedCount[counts$treatment == 0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$treatment == 1] - treatedWithPriorOutcome))
