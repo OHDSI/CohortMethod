@@ -21,13 +21,13 @@ License: Apache License 2.0
 VignetteBuilder: knitr
 Depends:
     R (>= 3.1.0),
-    bit,
     DatabaseConnector (>= 1.2.1),
     Cyclops (>= 1.1.0)
 Imports:
+    bit,
     ggplot2,
     ff,
-    ffbase,
+    ffbase (>= 0.12.1),
     plyr,
     Rcpp (>= 0.11.2),
     RJDBC,

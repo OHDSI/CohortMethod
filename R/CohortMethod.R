@@ -29,7 +29,6 @@
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
 #' @importFrom RJDBC dbDisconnect
 #' @importFrom survival survfit Surv
-#' @import bit
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @useDynLib CohortMethod

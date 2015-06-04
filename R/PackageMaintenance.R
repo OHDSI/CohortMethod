@@ -18,6 +18,22 @@
 
 
 .createManualAndVignettes <- function() {
+
+  #library(lintr)
+  lintr::lint("R/PackageMaintenance.R", linters = list(assignment_linter = assignment_linter,
+                                                       object_snake_case_linter = object_snake_case_linter,
+                                                       commas_linter = commas_linter,
+                                                       infix_spaces_linter = infix_spaces_linter,
+                                                       no_tab_linter = no_tab_linter,
+                                                       object_usage_linter = object_usage_linter,
+                                                       object_multiple_dots_linter = object_multiple_dots_linter,
+                                                       object_length_linter = object_length_linter,
+                                                       open_curly_linter = open_curly_linter,
+                                                       single_quotes_linter = single_quotes_linter,
+                                                       spaces_inside_linter = spaces_inside_linter,
+                                                       trailing_blank_lines_linter = trailing_blank_lines_linter,
+                                                       trailing_whitespace_linter = trailing_whitespace_linter))
+
   source("R/PackageMaintenance.R")
 
   # .myTidyDir('.')
@@ -33,14 +49,15 @@
                     rmarkdown::pdf_document(latex_engine = "pdflatex",
                                             toc = TRUE,
                                             number_sections = TRUE))
+
 }
 
 
 .getFunctionDefinitionFromMem <- function(note){
-  funcPos <- regexpr("^.*: ", note)
+  funcPos <- regexpr("^.*: ",note)
   func <- substr(note, funcPos, funcPos + attr(funcPos, "match.length") - 3)
   func <- gsub("\\s","", func)
-  funcDef <- capture.output(getFunction(func, mustFind = FALSE))
+  funcDef <- capture.output(getFunction(func,mustFind=FALSE))
   if (funcDef[1] == "NULL")
     return(NULL)
   else
@@ -48,8 +65,8 @@
 }
 
 .getVariableName <- function(note) {
-  varPos <- regexpr("(variable|parameter) .[a-zA-Z0-9_.-]*.", notes[i])
-  var <- substr(notes[i], varPos + 10, varPos + attr(varPos, "match.length") - 2)
+  varPos <- regexpr("(variable|parameter) .[a-zA-Z0-9_.-]*.", note)
+  var <- substr(note, varPos + 10, varPos + attr(varPos, "match.length") - 2)
   return(var)
 }
 
@@ -78,7 +95,7 @@
       filePos <- regexpr(" \\(.*\\.R:", notes[i])
       if (filePos != -1) {
         # Option 1: use file name and line number to get offending text:
-        file <- substr(notes[i], filePos + 2, filePos + attr(filePos, "match.length") - 2)
+        file <- substr(notes[i],filePos + 2, filePos + attr(filePos, "match.length") - 2)
         linePos <- regexpr("\\.R:.*\\)", notes[i])
         line <- substr(notes[i], linePos + 3, linePos + attr(linePos, "match.length") - 2)
         line <- strsplit(line, "-")[[1]]
@@ -485,5 +502,5 @@ testCode <- function() {
   # file <- 'C:/Users/mschuemi/git/CohortMethod/man-roxygen/GetCovariatesParams.R'
   file <- "C:/Users/mschuemi/git/CohortMethod/R/HelperFunctions.R"
   file <- "C:/Users/mschuemi/git/CohortMethod/R/PackageMaintenance.R"
-  # Still todo: - Code formatting of examples + Prevent wrapping of literal strings
+  file <- "C:/Users/mschuemi/git/CohortMethod/R/PsFunctions.R"
 }

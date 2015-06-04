@@ -27,7 +27,7 @@ in.ff <- function(a, b){
 # Return a logical value indicating whether any x is TRUE
 any.ff <- function(x, ..., na.rm = FALSE){
   any( ...
-      , sapply(chunk(x)
+      , sapply(bit::chunk(x)
                , function(i){
                  any(x[i], na.rm = na.rm)
                }
