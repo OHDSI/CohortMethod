@@ -38,6 +38,7 @@ Suggests:
     pROC,
     gnm,
     knitr,
-    rmarkdown
+    rmarkdown,
+    OhdsiRTools
 LinkingTo: Rcpp
 NeedsCompilation: yes
