@@ -342,6 +342,7 @@ fitOutcomeModel <- function(outcomeConceptId,
       ci <- tryCatch({
         confint(fit,parm = 1, includePenalty = TRUE)
       }, error = function(e) {
+        missing(e) # suppresses R CMD check note
         c(0,-Inf,Inf)
       })
       if (identical(ci, c(0,-Inf,Inf)))
@@ -442,7 +443,7 @@ summary.outcomeModel <- function(object, ...){
 #' @export
 print.summary.outcomeModel <- function(x, ...){
   writeLines(paste("Model type:",x$modelType))
-  writeLines(paste("Status:",outcomeModel$status))
+  writeLines(paste("Status:",x$status))
   writeLines("")
   writeLines("Counts")
   printCoefmat(x$counts)
@@ -475,6 +476,9 @@ coef.outcomeModel <- function(object, ...){
 
 #' @export
 confint.outcomeModel <- function(object, parm, level = 0.95, ...){
+  missing(parm) # suppresses R CMD check note
+  if (level != 0.95)
+    stop("Only supporting 95% confidence interval")
   return(c(object$treatmentEstimate$logLb95,object$treatmentEstimate$logUb95))
 }
 
