@@ -22,16 +22,22 @@
 #' Gets the outcomes for the cohorts in the \code{cohortData} object.
 #'
 #' @details
-#' If the \code{connection} parameter is specified, the cohorts are already assumed to be on the server in the appropriate temp table. Else, the temp table will be created by loading
-#' the cohorts from the \code{cohortData} object to the server.
+#' If the \code{connection} parameter is specified, the cohorts are already assumed to be on the
+#' server in the appropriate temp table. Else, the temp table will be created by loading the cohorts
+#' from the \code{cohortData} object to the server. This function can be used to add additional
+#' outcomes to an existing cohortData object.
 #'
-#' This function can be used to add additional outcomes to an existing cohortData object.
-#'
-#' @param connectionDetails  	An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
-#' @param connection          A connection to the server containing the schema as created using the \code{connect} function in the \code{DatabaseConnector} package.
-#' @param oracleTempSchema		A schema where temp tables can be created in Oracle.
-#' @param cdmDatabaseSchema    The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.
-#' @param cohortData          An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param connectionDetails   An R object of type \code{ConnectionDetails} created using the function
+#'                            \code{createConnectionDetails} in the \code{DatabaseConnector} package.
+#' @param connection          A connection to the server containing the schema as created using the
+#'                            \code{connect} function in the \code{DatabaseConnector} package.
+#' @param oracleTempSchemaA   schema where temp tables can be created in Oracle.
+#' @param cdmDatabaseSchema   The name of the database schema that contains the OMOP CDM instance.
+#'                            Requires read permissions to this database. On SQL Server, this should
+#'                            specifiy both the database and the schema, so for example
+#'                            'cdm_instance.dbo'.
+#' @param cohortData          An object of type \code{cohortData} as generated using
+#'                            \code{getDbCohortData}.
 #' @template GetOutcomesParams
 #'
 #' @return
@@ -47,18 +53,24 @@ getDbOutcomes <- function(connectionDetails = NULL,
                           outcomeTable = "condition_occurrence",
                           outcomeConceptIds = "",
                           outcomeConditionTypeConceptIds = "") {
-  cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
+  cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
   if (is.null(connectionDetails) && is.null(connection))
     stop("Either connectionDetails or connection has to be specified")
   if (!is.null(connectionDetails) && !is.null(connection))
     stop("Cannot specify both connectionDetails and connection")
 
-  if (is.null(connection)){
+  if (is.null(connection)) {
     conn <- DatabaseConnector::connect(connectionDetails)
     cohort <- data.frame(subject_id = ff::as.ram.ff(cohortData$cohorts$rowId),
                          cohort_definition_id = ff::as.ram.ff(cohortData$cohorts$treatment),
                          cohort_start_date = ff::as.ram.ff(cohortData$cohorts$cohortStartDate))
-    DatabaseConnector::dbInsertTable(conn, "#cohort_person", cohort, TRUE, TRUE, TRUE, oracleTempSchema)
+    DatabaseConnector::dbInsertTable(conn,
+                                     "#cohort_person",
+                                     cohort,
+                                     TRUE,
+                                     TRUE,
+                                     TRUE,
+                                     oracleTempSchema)
   } else {
     conn <- connection
   }
@@ -74,38 +86,44 @@ getDbOutcomes <- function(connectionDetails = NULL,
                                                    outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds)
 
   writeLines("Executing multiple queries. This could take a while")
-  DatabaseConnector::executeSql(conn,renderedSql)
+  DatabaseConnector::executeSql(conn, renderedSql)
   writeLines("Done")
 
   writeLines("Fetching data from server")
   start <- Sys.time()
-  outcomeSql <-"SELECT person_id AS row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, person_id"
-  outcomeSql <- SqlRender::translateSql(outcomeSql, "sql server", attr(conn, "dbms"), oracleTempSchema)$sql
+  outcomeSql <- "SELECT person_id AS row_id, outcome_id, time_to_event FROM #cohort_outcome ORDER BY outcome_id, person_id"
+  outcomeSql <- SqlRender::translateSql(outcomeSql,
+                                        "sql server",
+                                        attr(conn, "dbms"),
+                                        oracleTempSchema)$sql
   outcomes <- DatabaseConnector::dbGetQuery.ffdf(conn, outcomeSql)
-  excludeSql <-"SELECT person_id AS row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, person_id"
-  excludeSql <- SqlRender::translateSql(excludeSql, "sql server", attr(conn, "dbms"), oracleTempSchema)$sql
+  excludeSql <- "SELECT person_id AS row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, person_id"
+  excludeSql <- SqlRender::translateSql(excludeSql,
+                                        "sql server",
+                                        attr(conn, "dbms"),
+                                        oracleTempSchema)$sql
   exclude <- DatabaseConnector::dbGetQuery.ffdf(conn, excludeSql)
   delta <- Sys.time() - start
-  writeLines(paste("Loading took", signif(delta,3), attr(delta,"units")))
+  writeLines(paste("Loading took", signif(delta, 3), attr(delta, "units")))
 
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveOutcomeTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = attr(conn, "dbms"),
                                                    oracleTempSchema = oracleTempSchema)
-  DatabaseConnector::executeSql(conn,renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
-  if (is.null(connection)){
+  DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
+  if (is.null(connection)) {
     RJDBC::dbDisconnect(conn)
   }
 
   colnames(outcomes) <- SqlRender::snakeCaseToCamelCase(colnames(outcomes))
   colnames(exclude) <- SqlRender::snakeCaseToCamelCase(colnames(exclude))
-  if (nrow(outcomes) == 0){
+  if (nrow(outcomes) == 0) {
     warning("No data found")
   } else {
     open(outcomes)
     open(exclude)
   }
-  if (is.null(cohortData$outcomes)){
+  if (is.null(cohortData$outcomes)) {
     cohortData$outcomes <- outcomes
     cohortData$exclude <- exclude
     cohortData$metaData$outcomeConceptIds <- outcomeConceptIds
@@ -113,7 +131,8 @@ getDbOutcomes <- function(connectionDetails = NULL,
   } else {
     ffbase::ffdfappend(cohortData$outcomes, outcomes)
     ffbase::ffdfappend(cohortData$exclude, exclude)
-    cohortData$metaData$outcomeConceptIds = rbind(cohortData$metaData$outcomeConceptIds, outcomeConceptIds)
+    cohortData$metaData$outcomeConceptIds <- rbind(cohortData$metaData$outcomeConceptIds,
+                                                   outcomeConceptIds)
     cohortData$metaData$sql <- c(cohortData$metaData$sql, renderedSql)
   }
   return(cohortData)

@@ -9,7 +9,8 @@ getPsModel(propensityScore, cohortData)
 \arguments{
 \item{propensityScore}{The propensity scores as generated using the \code{createPs} function.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using
+                         \code{getDbCohortData}.}
 }
 \description{
 \code{getPsModel} shows the propensity score model
@@ -18,6 +19,6 @@ getPsModel(propensityScore, cohortData)
 Shows the coefficients and names of the covariates with non-zero coefficients.
 }
 \examples{
-#todo
+# todo
 }
 

@@ -38,67 +38,71 @@ NULL
 #' @docType data
 #' @keywords datasets
 #' @name cohortDataSimulationProfile
-#' @usage data(cohortDataSimulationProfile)
+#' @usage
+#' data(cohortDataSimulationProfile)
 NULL
 
 #' Propensity scores for the vignette
 #' @docType data
 #' @keywords datasets
 #' @name vignettePs
-#' @usage data(vignettePs)
+#' @usage
+#' data(vignettePs)
 NULL
 
 #' Balance data for the vignette
 #' @docType data
 #' @keywords datasets
 #' @name vignetteBalance
-#' @usage data(vignetteBalance)
+#' @usage
+#' data(vignetteBalance)
 NULL
 
 #' Outcome data for the vignette
 #' @docType data
 #' @keywords datasets
 #' @name vignetteOutcomeModel1
-#' @usage data(vignetteOutcomeModel1)
+#' @usage
+#' data(vignetteOutcomeModel1)
 NULL
 
 #' Outcome data for the vignette
 #' @docType data
 #' @keywords datasets
 #' @name vignetteOutcomeModel2
-#' @usage data(vignetteOutcomeModel2)
+#' @usage
+#' data(vignetteOutcomeModel2)
 NULL
 
 #' Outcome data for the vignette
 #' @docType data
 #' @keywords datasets
 #' @name vignetteOutcomeModel3
-#' @usage data(vignetteOutcomeModel3)
+#' @usage
+#' data(vignetteOutcomeModel3)
 NULL
 
 .onLoad <- function(libname, pkgname) {
-  missing(libname) # suppresses R CMD check note
-  missing(pkgname) # suppresses R CMD check note
+  missing(libname)  # suppresses R CMD check note
+  missing(pkgname)  # suppresses R CMD check note
   # Copied this from the ff package:
-  if (is.null(getOption("ffmaxbytes"))){
+  if (is.null(getOption("ffmaxbytes"))) {
     # memory.limit is windows specific
-    if (.Platform$OS.type=="windows")
-    {
-      if (getRversion()>="2.6.0")
-        options(ffmaxbytes=0.5*utils::memory.limit()*(1024^2))
-      else
-        options(ffmaxbytes=0.5*utils::memory.limit())
+    if (.Platform$OS.type == "windows") {
+      if (getRversion() >= "2.6.0")
+        options(ffmaxbytes = 0.5 * utils::memory.limit() * (1024^2)) else options(ffmaxbytes = 0.5 * utils::memory.limit())
     } else {
       # some magic constant
-      options(ffmaxbytes=0.5*1024^3)
+      options(ffmaxbytes = 0.5 * 1024^3)
     }
   }
 
-  #Workaround for problem with ff on machines with lots of memory (see https://github.com/edwindj/ffbase/issues/37)
+  # Workaround for problem with ff on machines with lots of memory (see
+  # https://github.com/edwindj/ffbase/issues/37)
   options(ffmaxbytes = min(getOption("ffmaxbytes"), .Machine$integer.max * 12))
 }
 
 #' @keywords internal
-runCohortMethod <- function(){
-  #todo: implement function that will call all other functions needed to run a cohort method study
+runCohortMethod <- function() {
+  # todo: implement function that will call all other functions needed to run a cohort method study
 }

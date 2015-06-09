@@ -8,20 +8,23 @@ drawAttritionDiagram(outcomeModel, treatmentLabel = "Treated",
   comparatorLabel = "Comparator", fileName = NULL)
 }
 \arguments{
-\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.}
+\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he
+\code{createOutcomeMode} function.}
 
 \item{treatmentLabel}{A label to us for the treated cohort.}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
 
-\item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
-the function \code{ggsave} in the ggplot2 package for supported file formats.}
+\item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
+                         See the function \code{ggsave} in the ggplot2 package for supported file
+                         formats.}
 }
 \value{
-A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
+A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+format.
 }
 \description{
-\code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from the study
-population, and for what reasons.
+\code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from
+the study population, and for what reasons.
 }
 

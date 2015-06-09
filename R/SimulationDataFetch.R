@@ -17,11 +17,9 @@
 # limitations under the License.
 
 #' @keywords internal
-.simulationDataFetch <- function(){
+.simulationDataFetch <- function() {
   # This function should be used to create the simulation profile used in some of the unit tests
-  # library(CohortMethod)
-  # setwd("s:/temp")
-  # options("fftempdir" = "s:/temp")
+  # library(CohortMethod) setwd('s:/temp') options('fftempdir' = 's:/temp')
 
   pw <- NULL
   dbms <- "sql server"
@@ -30,9 +28,13 @@
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
   port <- NULL
 
-  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, port=port)
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
+                                                                  server = server,
+                                                                  user = user,
+                                                                  password = pw,
+                                                                  port = port)
 
-  #Load data:
+  # Load data:
   cohortData <- getDbCohortData(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
                                 targetDrugConceptId = 755695,
@@ -42,9 +44,21 @@
                                 indicationLookbackWindow = 183,
                                 studyStartDate = "",
                                 studyEndDate = "",
-                                exclusionConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                                exclusionConceptIds = c(4027133,
+                                                        4032243,
+                                                        4146536,
+                                                        2002282,
+                                                        2213572,
+                                                        2005890,
+                                                        43534760,
+                                                        21601019),
                                 outcomeConceptIds = 194133,
-                                outcomeConditionTypeConceptIds = c(38000215,38000216,38000217,38000218,38000183,38000232),
+                                outcomeConditionTypeConceptIds = c(38000215,
+                                                                   38000216,
+                                                                   38000217,
+                                                                   38000218,
+                                                                   38000183,
+                                                                   38000232),
                                 exposureDatabaseSchema = cdmDatabaseSchema,
                                 exposureTable = "drug_era",
                                 outcomeDatabaseSchema = cdmDatabaseSchema,
@@ -81,14 +95,23 @@
                                 useCovariateRiskScores = TRUE,
                                 useCovariateInteractionYear = FALSE,
                                 useCovariateInteractionMonth = FALSE,
-                                excludedCovariateConceptIds = c(4027133,4032243,4146536,2002282,2213572,2005890,43534760,21601019),
+                                excludedCovariateConceptIds = c(4027133,
+                                                                4032243,
+                                                                4146536,
+                                                                2002282,
+                                                                2213572,
+                                                                2005890,
+                                                                43534760,
+                                                                21601019),
                                 deleteCovariatesSmallCount = 100)
 
-  saveCohortData(cohortData,"s:/temp/simulationCohortData")
+  saveCohortData(cohortData, "s:/temp/simulationCohortData")
 
-  #cohortData <- loadCohortData("s:/temp/simulationCohortData")
-  #ps <- createPs(cohortData, outcomeConceptId = 194133, prior=createPrior("laplace",0.1))
+  # cohortData <- loadCohortData('s:/temp/simulationCohortData') ps <- createPs(cohortData,
+  # outcomeConceptId = 194133, prior=createPrior('laplace',0.1))
 
   cohortDataSimulationProfile <- createCohortDataSimulationProfile(cohortData)
-  save(cohortDataSimulationProfile,file="s:/temp/cohortDataSimulationProfile.rda", compress = "xz")
+  save(cohortDataSimulationProfile,
+       file = "s:/temp/cohortDataSimulationProfile.rda",
+       compress = "xz")
 }

@@ -12,27 +12,42 @@ constructEras(connectionDetails, sourceDatabaseSchema,
   rollUpVocabularyId = "RxNorm", cdmVersion = "5")
 }
 \arguments{
-\item{connectionDetails}{An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}
+\item{connectionDetails}{An R object of type \code{connectionDetails} created using the
+function \code{createConnectionDetails} in the
+\code{DatabaseConnector} package.}
 
-\item{sourceDatabaseSchema}{The name of the database schema that contains the source table.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.}
+\item{sourceDatabaseSchema}{The name of the database schema that contains the source table.
+Requires read permissions to this database. On SQL Server, this should
+specifiy both the database and the schema, so for example
+'cdm_instance.dbo'.}
 
 \item{sourceTable}{The name of the source table.}
 
-\item{targetDatabaseSchema}{The name of the database schema that contains the target table.  Requires write permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.}
+\item{targetDatabaseSchema}{The name of the database schema that contains the target table.
+Requires write permissions to this database. On SQL Server, this
+should specifiy both the database and the schema, so for example
+'cdm_instance.dbo'.}
 
 \item{targetTable}{The name of the target table.}
 
-\item{createTargetTable}{Should the target table be created? If not, the data is inserted in an existing table.}
+\item{createTargetTable}{Should the target table be created? If not, the data is inserted in an
+existing table.}
 
-\item{cdmDatabaseSchema}{Only needed when rolling up concepts to ancestors: The name of the database schema that contains the vocabulary files.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.}
+\item{cdmDatabaseSchema}{Only needed when rolling up concepts to ancestors: The name of the
+database schema that contains the vocabulary files.  Requires read
+permissions to this database. On SQL Server, this should specifiy both
+the database and the schema, so for example 'cdm_instance.dbo'.}
 
-\item{gracePeriod}{The number of days allowed between periods for them to still be considered part of the same era.}
+\item{gracePeriod}{The number of days allowed between periods for them to still be
+considered part of the same era.}
 
 \item{rollUp}{Should concepts be rolled up to their ancestors?}
 
-\item{rollUpConceptClassId}{The identifier of the concept class to which concepts should be rolled up.}
+\item{rollUpConceptClassId}{The identifier of the concept class to which concepts should be rolled
+up.}
 
-\item{rollUpVocabularyId}{The identifier of the vocabulary to which concepts should be rolled up.}
+\item{rollUpVocabularyId}{The identifier of the vocabulary to which concepts should be rolled
+up.}
 
 \item{cdmVersion}{The verion of the CDM that is being used.}
 }
@@ -42,21 +57,20 @@ Constructs eras (continuous periods of exposure or disease).
 \details{
 This function creates eras from source data. For example, one could use this function to create
 drug eras based on drug exposures. The function allows drugs to be rolled up to ingredients, and
-prescriptions to the same ingredient that overlap in time are merged into a single ingredient. Note that
-stockpiling is not assumed to take place (ie. overlap is discarded), but a grace period can be specified
-allowing for a small gap between prescriptions when merging.
-
-The user can specify the source and target table. These tables are assumed to have the same structure as
-the cohort table in the Common Data Model (CDM), except when the table names are "drug_exposure" or
-"condition_occurrence" for the source table, or "drug_era" or "condition_era" for the target table,
-in which case the tables are assumed to have the structure defined for those tables in the CDM.
-
-If both the source and target table specify a field for type_concept_id, the era construction will partition by
-the type_concept_id, in other words periods with different type_concept_ids will be treated independently.
+prescriptions to the same ingredient that overlap in time are merged into a single ingredient. Note
+that stockpiling is not assumed to take place (ie. overlap is discarded), but a grace period can be
+specified allowing for a small gap between prescriptions when merging. The user can specify the
+source and target table. These tables are assumed to have the same structure as the cohort table in
+the Common Data Model (CDM), except when the table names are 'drug_exposure' or
+'condition_occurrence' for the source table, or 'drug_era' or 'condition_era' for the target table,
+in which case the tables are assumed to have the structure defined for those tables in the CDM. If
+both the source and target table specify a field for type_concept_id, the era construction will
+partition by the type_concept_id, in other words periods with different type_concept_ids will be
+treated independently.
 }
 \examples{
 \dontrun{
-#Constructing drug eras in CDM v4:
+# Constructing drug eras in CDM v4:
 constructEras(connectionDetails,
               sourceDatabaseSchema = cdmDatabaseSchema,
               sourceTable = "drug_exposure",
@@ -64,18 +78,18 @@ constructEras(connectionDetails,
               createTargetTable = FALSE,
               gracePeriod = 30,
               rollUpVocabularyId = 8,
-              rollUpConceptClassId = 'Ingredient',
+              rollUpConceptClassId = "Ingredient",
               cdmVersion = "4")
 
-#Constructing drug eras in CDM v5:
+# Constructing drug eras in CDM v5:
 constructEras(connectionDetails,
               sourceDatabaseSchema = cdmDatabaseSchema,
               sourceTable = "drug_exposure",
               targetTable = "drug_era",
               createTargetTable = FALSE,
               gracePeriod = 30,
-              rollUpVocabularyId = 'RxNorm',
-              rollUpConceptClassId = 'Ingredient',
+              rollUpVocabularyId = "RxNorm",
+              rollUpConceptClassId = "Ingredient",
               cdmVersion = "5")
 
 }

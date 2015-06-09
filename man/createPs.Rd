@@ -10,20 +10,24 @@ createPs(cohortData, checkSorting = TRUE, outcomeConceptId = NULL,
   cvType = "auto", startingVariance = 0.1))
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using
+\code{getDbCohortData}.}
 
-\item{checkSorting}{Checks if the covariate data is sorted by rowId (necessary for fitting the model).
-Checking can be very time-consuming if the data is already sorted.}
+\item{checkSorting}{Checks if the covariate data is sorted by rowId (necessary for fitting
+the model). Checking can be very time-consuming if the data is already
+sorted.}
 
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
-creating the propensity score model.}
+\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
+outcome will be removed prior to creating the propensity score model.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
-\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.}
+\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
+for details.}
 
-\item{control}{The control object used to control the cross-validation used to determine the
-hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.}
+\item{control}{The control object used to control the cross-validation used to
+                             determine the hyperparameters of the prior (if applicable). See
+                             \code{\link[Cyclops]{createControl}} for details.}
 }
 \description{
 \code{createPs} creates propensity scores using a regularized logistic regression.
@@ -33,7 +37,7 @@ hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createCon
 }
 \examples{
 data(cohortDataSimulationProfile)
-cohortData <- simulateCohortData(cohortDataSimulationProfile, n=1000)
+cohortData <- simulateCohortData(cohortDataSimulationProfile, n = 1000)
 ps <- createPs(cohortData)
 }
 

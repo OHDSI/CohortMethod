@@ -9,33 +9,31 @@ stratifyByPs(data, numberOfStrata = 5, stratificationColumns = c())
 \arguments{
 \item{data}{A data frame with the three columns described below}
 
-\item{numberOfStrata}{How many strata? The boundaries of the strata are automatically defined to
-contain equal numbers of treated persons.}
+\item{numberOfStrata}{How many strata? The boundaries of the strata are automatically
+defined to contain equal numbers of treated persons.}
 
-\item{stratificationColumns}{Names of one or more columns in the \code{data} data.frame on which subjects should also be
-stratified in addition to stratification on propensity score.}
+\item{stratificationColumns}{Names of one or more columns in the \code{data} data.frame on which
+                               subjects should also be stratified in addition to stratification on
+                               propensity score.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId.
 }
 \description{
-\code{stratifyByPs} uses the provided propensity scores to stratify persons. Additional stratification variables for
-stratifications can also be used.
+\code{stratifyByPs} uses the provided propensity scores to stratify persons. Additional
+stratification variables for stratifications can also be used.
 }
 \details{
-The data frame should have the following three columns:
-\tabular{lll}{
-  \verb{rowId}              \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-  \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
-                            \tab          \tab (0) group  \cr
-  \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
-}
+The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
+\tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
+Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+\verb{propensityScore} \tab(real) \tab Propensity score \cr }
 }
 \examples{
-rowId = 1:200
-treatment = rep(0:1, each = 100)
-propensityScore = c(runif(100,min=0,max=1),runif(100,min=0,max=1))
+rowId <- 1:200
+treatment <- rep(0:1, each = 100)
+propensityScore <- c(runif(100, min = 0, max = 1), runif(100, min = 0, max = 1))
 data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result <- stratifyByPs(data,5)
+result <- stratifyByPs(data, 5)
 }
 

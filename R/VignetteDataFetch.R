@@ -17,16 +17,13 @@
 # limitations under the License.
 
 #' @keywords internal
-.vignetteDataFetch <- function(){
-  # This function should be used to fetch the data that is used in the vignettes.
-  #library(SqlRender)
-  #library(DatabaseConnector)
-  #library(CohortMethod)
-  #setwd("s:/temp")
-  #setwd("c:/users/mschuemi/git/CohortMethod")
-  
-  # If ff is complaining it can't find the temp folder, use   options("fftempdir" = "s:/temp")
-  
+.vignetteDataFetch <- function() {
+  # This function should be used to fetch the data that is used in the vignettes. library(SqlRender)
+  # library(DatabaseConnector) library(CohortMethod) setwd('s:/temp')
+  # setwd('c:/users/mschuemi/git/CohortMethod')
+
+  # If ff is complaining it can't find the temp folder, use options('fftempdir' = 's:/temp')
+
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
@@ -34,44 +31,48 @@
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
   resultsDatabaseSchema <- "scratch.dbo"
   port <- NULL
-  
-  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms=dbms, server = server, user = user, password = pw, port=port)
-  sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql", 
-                                packageName = "CohortMethod", 
+
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
+                                                                  server = server,
+                                                                  user = user,
+                                                                  password = pw,
+                                                                  port = port)
+  sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
+                                packageName = "CohortMethod",
                                 dbms = dbms,
-                                cdmDatabaseSchema = cdmDatabaseSchema, 
+                                cdmDatabaseSchema = cdmDatabaseSchema,
                                 resultsDatabaseSchema = resultsDatabaseSchema)
-  
+
   connection <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::executeSql(connection, sql)
-  
+
   # Check number of subjects per cohort:
   sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
   sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::querySql(connection, sql)
-  
+
   # Get all NSAIDs:
   sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
   sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   nsaids <- DatabaseConnector::querySql(connection, sql)
   nsaids <- nsaids$CONCEPT_ID
-  
-  #Load data:
+
+  # Load data:
   cohortData <- getDbCohortData(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
                                 oracleTempSchema = resultsDatabaseSchema,
                                 targetDrugConceptId = 1,
-                                comparatorDrugConceptId = 2, 
+                                comparatorDrugConceptId = 2,
                                 indicationConceptIds = c(),
-                                washoutWindow = 183, 
+                                washoutWindow = 183,
                                 indicationLookbackWindow = 183,
-                                studyStartDate = "", 
-                                studyEndDate = "", 
+                                studyStartDate = "",
+                                studyEndDate = "",
                                 exclusionConceptIds = nsaids,
-                                outcomeConceptIds = 3, 
-                                outcomeConditionTypeConceptIds = c(), 
+                                outcomeConceptIds = 3,
+                                outcomeConditionTypeConceptIds = c(),
                                 exposureDatabaseSchema = resultsDatabaseSchema,
                                 exposureTable = "coxibVsNonselVsGiBleed",
                                 outcomeDatabaseSchema = resultsDatabaseSchema,
@@ -108,67 +109,63 @@
                                 useCovariateRiskScores = TRUE,
                                 useCovariateInteractionYear = FALSE,
                                 useCovariateInteractionMonth = FALSE,
-                                excludedCovariateConceptIds = nsaids, 
+                                excludedCovariateConceptIds = nsaids,
                                 excludeDrugsFromCovariates = FALSE,
                                 deleteCovariatesSmallCount = 100)
-  
-  saveCohortData(cohortData,"c:/temp/vignetteCohortData")
-  
-  #vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
-  #save(vignetteSimulationProfile, file = "vignetteSimulationProfile.rda")
-  
-  #cohortData <- loadCohortData("vignetteCohortData")
-  #setwd("C:/Users/mschuemi/git/CohortMethod")
+
+  saveCohortData(cohortData, "c:/temp/vignetteCohortData")
+
+  # vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
+  # save(vignetteSimulationProfile, file = 'vignetteSimulationProfile.rda')
+
+  # cohortData <- loadCohortData('vignetteCohortData') setwd('C:/Users/mschuemi/git/CohortMethod')
   ps <- createPs(cohortData,
-                 outcomeConceptId = 3, 
-                 checkSorting = FALSE, 
-                 control = createControl(noiseLevel = "quiet",threads = 10)
-  )
+                 outcomeConceptId = 3,
+                 checkSorting = FALSE,
+                 control = createControl(noiseLevel = "quiet", threads = 10))
   vignettePs <- ps
   save(vignettePs, file = "data/vignettePs.rda", compress = "xz")
-  
-  #load("data/vignettePs.rda")
-  #ps <- vignettePs
-  #psTrimmed <- trimByPsToEquipoise(ps)  
+
+  # load('data/vignettePs.rda') ps <- vignettePs psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   vignetteBalance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
-  save(vignetteBalance,file = "data/vignetteBalance.rda", compress = "xz")
-  
-  #load("vignetteBalance.rda")
-  
+  save(vignetteBalance, file = "data/vignetteBalance.rda", compress = "xz")
+
+  # load('vignetteBalance.rda')
+
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
-                                  riskWindowStart = 0, 
+                                  riskWindowStart = 0,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE,
-                                  useCovariates = FALSE, 
+                                  useCovariates = FALSE,
                                   modelType = "cox",
-                                  stratifiedCox = FALSE) 
+                                  stratifiedCox = FALSE)
   vignetteOutcomeModel1 <- outcomeModel
   save(vignetteOutcomeModel1, file = "data/vignetteOutcomeModel1.rda", compress = "xz")
-  
+
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
                                   subPopulation = strata,
-                                  riskWindowStart = 0, 
+                                  riskWindowStart = 0,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE,
-                                  useCovariates = FALSE, 
+                                  useCovariates = FALSE,
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
   vignetteOutcomeModel2 <- outcomeModel
   save(vignetteOutcomeModel2, file = "data/vignetteOutcomeModel2.rda", compress = "xz")
-  
+
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortData = cohortData,
                                   subPopulation = strata,
-                                  riskWindowStart = 0, 
+                                  riskWindowStart = 0,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE,
-                                  useCovariates = TRUE, 
+                                  useCovariates = TRUE,
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
   vignetteOutcomeModel3 <- outcomeModel
   save(vignetteOutcomeModel3, file = "data/vignetteOutcomeModel3.rda", compress = "xz")
-  
+
 }

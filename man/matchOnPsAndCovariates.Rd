@@ -11,44 +11,43 @@ matchOnPsAndCovariates(data, caliper = 0.25, caliperScale = "standardized",
 \item{data}{A data frame with the three columns described below.}
 
 \item{caliper}{The caliper for matching. A caliper is the distance which is acceptable for
-any match. Observations which are outside of the caliper are dropped. A caliper of 0 means no caliper is used.}
+any match. Observations which are outside of the caliper are dropped. A
+caliper of 0 means no caliper is used.}
 
-\item{caliperScale}{The scale on which the caliper is defined. Two scales are supported:\cr\code{caliperScale = "propensity score"}
-or  \code{caliperScale = "standardized"}. On the standardized scale, the
-caliper is interpreted in standard deviations of the propensity score distribution.}
+\item{caliperScale}{The scale on which the caliper is defined. Two scales are
+supported:\cr\code{caliperScale = 'propensity score'} or \code{caliperScale =
+'standardized'}. On the standardized scale, the caliper is interpreted in
+standard deviations of the propensity score distribution.}
 
-\item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each person in the treatment arm. A
-maxRatio of 0 means no maximum: all comparators will be assigned to a treated person.}
+\item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each
+person in the treatment arm. A maxRatio of 0 means no maximum: all comparators
+will be assigned to a treated person.}
 
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 
 \item{covariateIds}{One or more covariate IDs in the \code{cohortData} object on which subjects
-should be also matched.}
+                      should be also matched.}
 }
 \value{
-Returns a date frame with the same columns as the input data plus one extra column: stratumId.
-Any rows that could not be matched are removed
+Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
+rows that could not be matched are removed
 }
 \description{
 \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
 treated to comparator persons.
 }
 \details{
-The data frame should have at least the following three columns:
-\tabular{lll}{
-  \verb{rowId}  	          \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-  \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
-                            \tab          \tab (0) group  \cr
-  \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
-}
-
-This function implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
+\tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
+\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr } This function
+implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 }
 \examples{
-#todo
+# todo
 }
 \references{
-Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity score matching in
-cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
+Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
+score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 }
 

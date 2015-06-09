@@ -1,46 +1,184 @@
-#' @param excludedCovariateConceptIds    A list of concept IDs that should NOT be used to construct covariates.
-#' @param includedCovariateConceptIds    A list of concept IDs that should be used to construct covariates.
-#' @param useCovariateDemographics   	A boolean value (TRUE/FALSE) to determine if demographic covariates (age in 5-yr increments, gender, race, ethnicity, year of index date, month of index date) will be created and included in future models.
-#' @param useCovariateDemographicsGender    A boolean value (TRUE/FALSE) to determine if gender should be included in the model.
-#' @param useCovariateDemographicsRace    A boolean value (TRUE/FALSE) to determine if race should be included in the model.
-#' @param useCovariateDemographicsEthnicity    A boolean value (TRUE/FALSE) to determine if ethnicity should be included in the model.
-#' @param useCovariateDemographicsAge    A boolean value (TRUE/FALSE) to determine if age (in 5 year increments) should be included in the model.
-#' @param useCovariateDemographicsYear    A boolean value (TRUE/FALSE) to determine if calendar year should be included in the model.
-#' @param useCovariateDemographicsMonth    A boolean value (TRUE/FALSE) to determine if calendar month should be included in the model.
-#' @param useCovariateConditionOccurrence   A boolean value (TRUE/FALSE) to determine if covariates derived from CONDITION_OCCURRENCE table will be created and included in future models.
-#' @param useCovariateConditionOccurrence365d   	A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition in 365d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE.
-#' @param useCovariateConditionOccurrence30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition in 30d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE.
-#' @param useCovariateConditionOccurrenceInpt180d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition within inpatient type in 180d window prior to or on cohort index date.  Only applicable if useCovariateConditionOccurrence = TRUE.
-#' @param useCovariateConditionEra      A boolean value (TRUE/FALSE) to determine if covariates derived from CONDITION_ERA table will be created and included in future models.
-#' @param useCovariateConditionEraEver     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition era anytime prior to or on cohort index date.  Only applicable if useCovariateConditionEra = TRUE.
-#' @param useCovariateConditionEraOverlap     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of condition era that overlaps the cohort index date.  Only applicable if useCovariateConditionEra = TRUE.
-#' @param useCovariateConditionGroup   A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on vocabluary classification.
-#' @param useCovariateConditionGroupMeddra   A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on the MEDDRA classification.
-#' @param useCovariateConditionGroupSnomed   A boolean value (TRUE/FALSE) to determine if all CONDITION_OCCURRENCE and CONDITION_ERA covariates should be aggregated or rolled-up to higher-level concepts based on the SNOMED classification.
-#' @param useCovariateDrugExposure    A boolean value (TRUE/FALSE) to determine if covariates derived from DRUG_EXPOSURE table will be created and included in future models.
-#' @param useCovariateDrugExposure365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug in 365d window prior to or on cohort index date.  Only applicable if useCovariateDrugExposure = TRUE.
-#' @param useCovariateDrugExposure30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug in 30d window prior to or on cohort index date.  Only applicable if useCovariateDrugExposure = TRUE.
-#' @param useCovariateDrugEra    A boolean value (TRUE/FALSE) to determine if covariates derived from DRUG_ERA table will be created and included in future models.
-#' @param useCovariateDrugEra365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era in 365d window prior to or on cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEra30d    A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era in 30d window prior to or on cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEraEver    A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era anytime prior to or on cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEraOverlap      A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of drug era that overlaps the cohort index date.  Only applicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugGroup 	   A boolean value (TRUE/FALSE) to determine if all DRUG_EXPOSURE and DRUG_ERA covariates should be aggregated or rolled-up to higher-level concepts of drug classes based on vocabluary classification.
-#' @param useCovariateProcedureOccurrence    A boolean value (TRUE/FALSE) to determine if covariates derived from PROCEDURE_OCCURRENCE table will be created and included in future models.
-#' @param useCovariateProcedureOccurrence365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of procedure in 365d window prior to or on cohort index date.  Only applicable if useCovariateProcedureOccurrence = TRUE.
-#' @param useCovariateProcedureOccurrence30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of procedure in 30d window prior to or on cohort index date.  Only applicable if useCovariateProcedureOccurrence = TRUE.
-#' @param useCovariateProcedureGroup       A boolean value (TRUE/FALSE) to determine if all PROCEDURE_OCCURRENCE covariates should be aggregated or rolled-up to higher-level concepts based on vocabluary classification.
-#' @param useCovariateObservation    A boolean value (TRUE/FALSE) to determine if covariates derived from OBSERVATION table will be created and included in future models.
-#' @param useCovariateObservation365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation in 365d window prior to or on cohort index date.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservation30d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation in 30d window prior to or on cohort index date.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationBelow     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation with a numeric value below normal range for latest value within 180d of cohort index.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationAbove     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for presence/absence of observation with a numeric value above normal range for latest value within 180d of cohort index.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationCount365d     A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that look for the count of each observation concept in 365d window prior to or on cohort index date.  Only applicable if useCovariateObservation = TRUE.
-#' @param useCovariateConceptCounts 		A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that count the number of concepts that a person has within each domain (CONDITION, DRUG, PROCEDURE, OBSERVATION)
-#' @param useCovariateRiskScores 		A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that calculate various Risk Scores, including Charlson, DCSI.
-#' @param useCovariateRiskScoresCharlson   	A boolean value (TRUE/FALSE) to determine if the Charlson comorbidity index should be included in the model.
-#' @param useCovariateRiskScoresDCSI     A boolean value (TRUE/FALSE) to determine if the DCSI score should be included in the model.
-#' @param useCovariateRiskScoresCHADS2     A boolean value (TRUE/FALSE) to determine if the CHADS2 score should be included in the model.
-#' @param useCovariateInteractionYear 	A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the year of the cohort index date.
-#' @param useCovariateInteractionMonth    A boolean value (TRUE/FALSE) to determine if covariates will be created and used in models that represent interaction terms between all other covariates and the month of the cohort index date.
-#' @param deleteCovariatesSmallCount 		A numeric value used to remove covariates that occur in both cohorts fewer than deleteCovariateSmallCounts time.
+#' @param excludedCovariateConceptIds               A list of concept IDs that should NOT be used to
+#'                                                  construct covariates.
+#' @param includedCovariateConceptIds               A list of concept IDs that should be used to
+#'                                                  construct covariates.
+#' @param useCovariateDemographics                  A boolean value (TRUE/FALSE) to determine if
+#'                                                  demographic covariates (age in 5-yr increments,
+#'                                                  gender, race, ethnicity, year of index date, month
+#'                                                  of index date) will be created and included in
+#'                                                  future models.
+#' @param useCovariateDemographicsGender            A boolean value (TRUE/FALSE) to determine if gender
+#'                                                  should be included in the model.
+#' @param useCovariateDemographicsRace              A boolean value (TRUE/FALSE) to determine if race
+#'                                                  should be included in the model.
+#' @param useCovariateDemographicsEthnicity         A boolean value (TRUE/FALSE) to determine if
+#'                                                  ethnicity should be included in the model.
+#' @param useCovariateDemographicsAge               A boolean value (TRUE/FALSE) to determine if age
+#'                                                  (in 5 year increments) should be included in the
+#'                                                  model.
+#' @param useCovariateDemographicsYear              A boolean value (TRUE/FALSE) to determine if
+#'                                                  calendar year should be included in the model.
+#' @param useCovariateDemographicsMonth             A boolean value (TRUE/FALSE) to determine if
+#'                                                  calendar month should be included in the model.
+#' @param useCovariateConditionOccurrence           A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates derived from CONDITION_OCCURRENCE table
+#'                                                  will be created and included in future models.
+#' @param useCovariateConditionOccurrence365d       A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of condition in 365d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateConditionOccurrence =
+#'                                                  TRUE.
+#' @param useCovariateConditionOccurrence30d        A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of condition in 30d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateConditionOccurrence =
+#'                                                  TRUE.
+#' @param useCovariateConditionOccurrenceInpt180d   A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of condition within
+#'                                                  inpatient type in 180d window prior to or on cohort
+#'                                                  index date.  Only applicable if
+#'                                                  useCovariateConditionOccurrence = TRUE.
+#' @param useCovariateConditionEra                  A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates derived from CONDITION_ERA table will be
+#'                                                  created and included in future models.
+#' @param useCovariateConditionEraEver              A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of condition era anytime
+#'                                                  prior to or on cohort index date.  Only applicable
+#'                                                  if useCovariateConditionEra = TRUE.
+#' @param useCovariateConditionEraOverlap           A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of condition era that
+#'                                                  overlaps the cohort index date.  Only applicable if
+#'                                                  useCovariateConditionEra = TRUE.
+#' @param useCovariateConditionGroup                A boolean value (TRUE/FALSE) to determine if all
+#'                                                  CONDITION_OCCURRENCE and CONDITION_ERA covariates
+#'                                                  should be aggregated or rolled-up to higher-level
+#'                                                  concepts based on vocabluary classification.
+#' @param useCovariateConditionGroupMeddra          A boolean value (TRUE/FALSE) to determine if all
+#'                                                  CONDITION_OCCURRENCE and CONDITION_ERA covariates
+#'                                                  should be aggregated or rolled-up to higher-level
+#'                                                  concepts based on the MEDDRA classification.
+#' @param useCovariateConditionGroupSnomed          A boolean value (TRUE/FALSE) to determine if all
+#'                                                  CONDITION_OCCURRENCE and CONDITION_ERA covariates
+#'                                                  should be aggregated or rolled-up to higher-level
+#'                                                  concepts based on the SNOMED classification.
+#' @param useCovariateDrugExposure                  A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates derived from DRUG_EXPOSURE table will be
+#'                                                  created and included in future models.
+#' @param useCovariateDrugExposure365d              A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of drug in 365d window
+#'                                                  prior to or on cohort index date.  Only applicable
+#'                                                  if useCovariateDrugExposure = TRUE.
+#' @param useCovariateDrugExposure30d               A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of drug in 30d window
+#'                                                  prior to or on cohort index date.  Only applicable
+#'                                                  if useCovariateDrugExposure = TRUE.
+#' @param useCovariateDrugEra                       A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates derived from DRUG_ERA table will be
+#'                                                  created and included in future models.
+#' @param useCovariateDrugEra365d                   A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of drug era in 365d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateDrugEra = TRUE.
+#' @param useCovariateDrugEra30d                    A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of drug era in 30d window
+#'                                                  prior to or on cohort index date.  Only applicable
+#'                                                  if useCovariateDrugEra = TRUE.
+#' @param useCovariateDrugEraEver                   A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of drug era anytime prior
+#'                                                  to or on cohort index date.  Only applicable if
+#'                                                  useCovariateDrugEra = TRUE.
+#' @param useCovariateDrugEraOverlap                A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of drug era that overlaps
+#'                                                  the cohort index date.  Only applicable if
+#'                                                  useCovariateDrugEra = TRUE.
+#' @param useCovariateDrugGroup                     A boolean value (TRUE/FALSE) to determine if all
+#'                                                  DRUG_EXPOSURE and DRUG_ERA covariates should be
+#'                                                  aggregated or rolled-up to higher-level concepts of
+#'                                                  drug classes based on vocabluary classification.
+#' @param useCovariateProcedureOccurrence           A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates derived from PROCEDURE_OCCURRENCE table
+#'                                                  will be created and included in future models.
+#' @param useCovariateProcedureOccurrence365d       A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of procedure in 365d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateProcedureOccurrence =
+#'                                                  TRUE.
+#' @param useCovariateProcedureOccurrence30d        A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of procedure in 30d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateProcedureOccurrence =
+#'                                                  TRUE.
+#' @param useCovariateProcedureGroup                A boolean value (TRUE/FALSE) to determine if all
+#'                                                  PROCEDURE_OCCURRENCE covariates should be
+#'                                                  aggregated or rolled-up to higher-level concepts
+#'                                                  based on vocabluary classification.
+#' @param useCovariateObservation                   A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates derived from OBSERVATION table will be
+#'                                                  created and included in future models.
+#' @param useCovariateObservation365d               A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of observation in 365d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateObservation = TRUE.
+#' @param useCovariateObservation30d                A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of observation in 30d
+#'                                                  window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateObservation = TRUE.
+#' @param useCovariateObservationBelow              A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of observation with a
+#'                                                  numeric value below normal range for latest value
+#'                                                  within 180d of cohort index.  Only applicable if
+#'                                                  useCovariateObservation = TRUE.
+#' @param useCovariateObservationAbove              A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for presence/absence of observation with a
+#'                                                  numeric value above normal range for latest value
+#'                                                  within 180d of cohort index.  Only applicable if
+#'                                                  useCovariateObservation = TRUE.
+#' @param useCovariateObservationCount365d          A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  look for the count of each observation concept in
+#'                                                  365d window prior to or on cohort index date.  Only
+#'                                                  applicable if useCovariateObservation = TRUE.
+#' @param useCovariateConceptCounts                 A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  count the number of concepts that a person has
+#'                                                  within each domain (CONDITION, DRUG, PROCEDURE,
+#'                                                  OBSERVATION)
+#' @param useCovariateRiskScores                    A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  calculate various Risk Scores, including Charlson,
+#'                                                  DCSI.
+#' @param useCovariateRiskScoresCharlson            A boolean value (TRUE/FALSE) to determine if the
+#'                                                  Charlson comorbidity index should be included in
+#'                                                  the model.
+#' @param useCovariateRiskScoresDCSI                A boolean value (TRUE/FALSE) to determine if the
+#'                                                  DCSI score should be included in the model.
+#' @param useCovariateRiskScoresCHADS2              A boolean value (TRUE/FALSE) to determine if the
+#'                                                  CHADS2 score should be included in the model.
+#' @param useCovariateInteractionYear               A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  represent interaction terms between all other
+#'                                                  covariates and the year of the cohort index date.
+#' @param useCovariateInteractionMonth              A boolean value (TRUE/FALSE) to determine if
+#'                                                  covariates will be created and used in models that
+#'                                                  represent interaction terms between all other
+#'                                                  covariates and the month of the cohort index date.
+#' @param deleteCovariatesSmallCount                A numeric value used to remove covariates that
+#'                                                  occur in both cohorts fewer than
+#'                                                  deleteCovariateSmallCounts time.

@@ -17,7 +17,7 @@ An object of type \code{cohortDataSimulationProfile}.
 which can be used to generate simulated data that has similar characteristics.
 }
 \details{
-The output of this function is an object that can be used by the
-\code{simulateCohortData} function to generate a cohortData object.
+The output of this function is an object that can be used by the \code{simulateCohortData} function
+to generate a cohortData object.
 }
 

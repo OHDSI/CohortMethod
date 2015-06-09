@@ -9,7 +9,8 @@ computePsAuc(data, confidenceIntervals = FALSE)
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
 
-\item{confidenceIntervals}{Compute 95 percent confidence intervals (computationally expensive for large data sets)}
+\item{confidenceIntervals}{Compute 95 percent confidence intervals (computationally expensive for
+large data sets)}
 }
 \value{
 A data frame holding the AUC and its 95 percent confidence interval
@@ -18,18 +19,15 @@ A data frame holding the AUC and its 95 percent confidence interval
 \code{computePsAuc} computes the area under the ROC curve of the propensity score
 }
 \details{
-The data frame should have a least the following two columns:
-\tabular{lll}{
-  \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
-                            \tab          \tab (0) group  \cr
-  \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
-}
+The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
+\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr }
 }
 \examples{
-treatment = rep(0:1, each = 100)
-propensityScore = c(rnorm(100, mean=0.4, sd=0.25),rnorm(100, mean=0.6, sd=0.25))
+treatment <- rep(0:1, each = 100)
+propensityScore <- c(rnorm(100, mean = 0.4, sd = 0.25), rnorm(100, mean = 0.6, sd = 0.25))
 data <- data.frame(treatment = treatment, propensityScore = propensityScore)
-data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+data <- data[data$propensityScore > 0 & data$propensityScore < 1, ]
 computePsAuc(data)
 }
 

@@ -7,18 +7,19 @@
 getOutcomeModel(outcomeModel, cohortData)
 }
 \arguments{
-\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he \code{createOutcomeMode} function.}
+\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he
+\code{createOutcomeMode} function.}
 
 \item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
 }
 \description{
-\code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables
-included in the outcome model, not just the treatment variable.
+\code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables included
+in the outcome model, not just the treatment variable.
 }
 \details{
 Shows the coefficients and names of the covariates with non-zero coefficients.
 }
 \examples{
-#todo
+# todo
 }
 

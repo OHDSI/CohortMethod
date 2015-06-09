@@ -8,25 +8,26 @@ computeCovariateBalance(restrictedCohorts, cohortData,
   outcomeConceptId = NULL)
 }
 \arguments{
-\item{restrictedCohorts}{A data frame containing the people that are remaining after matching and/or trimming.}
+\item{restrictedCohorts}{A data frame containing the people that are remaining after matching
+and/or trimming.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{cohortData}{An object of type \code{cohortData} as generated using
+\code{getDbCohortData}.}
 
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed
-when computing the balance before matching/trimming.}
+\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome
+                           will be removed when computing the balance before matching/trimming.}
 }
 \value{
 Returns a date frame describing the covariate balance before and after matching/trimming.
 }
 \description{
-For every covariate, prevalence in treatment and comparator groups before and after matching/trimming are computed.
+For every covariate, prevalence in treatment and comparator groups before and after
+matching/trimming are computed.
 }
 \details{
-The restrictedCohorts data frame should have at least the following columns:
-\tabular{lll}{
-\verb{rowId}       \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
-\verb{treatment}   \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0)\cr
-                   \tab          \tab group  \cr
-}
+The restrictedCohorts data frame should have at least the following columns: \tabular{lll}{
+\verb{rowId} \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
+\verb{treatment} \tab(integer) \tab Column indicating whether the person is in the treated (1) or
+comparator (0)\cr \tab \tab group \cr }
 }
 

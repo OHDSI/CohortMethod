@@ -21,7 +21,6 @@
   OhdsiRTools::formatRFolder()
   OhdsiRTools::checkUsagePackage("CohortMethod")
   OhdsiRTools::ohdsiLintrFolder()
-  OhdsiRTools::ohdsiLintrFile("./R/PackageMaintenance.R")
 }
 
 .createManualAndVignettes <- function() {
