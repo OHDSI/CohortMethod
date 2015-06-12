@@ -136,7 +136,7 @@ getDbCovariates <- function(connectionDetails = NULL,
     if (!is.numeric(excludedCovariateConceptIds))
       stop("excludedCovariateConceptIds must be a (vector of) numeric")
     hasExcludedCovariateConceptIds <- TRUE
-    DatabaseConnector::dbInsertTable(conn,
+    DatabaseConnector::insertTable(conn,
                                      tableName = "#excluded_cov",
                                      data = data.frame(concept_id = as.integer(excludedCovariateConceptIds)),
                                      dropTableIfExists = TRUE,
@@ -151,7 +151,7 @@ getDbCovariates <- function(connectionDetails = NULL,
     if (!is.numeric(includedCovariateConceptIds))
       stop("includedCovariateConceptIds must be a (vector of) numeric")
     hasIncludedCovariateConceptIds <- TRUE
-    DatabaseConnector::dbInsertTable(conn,
+    DatabaseConnector::insertTable(conn,
                                      tableName = "#included_cov",
                                      data = data.frame(concept_id = as.integer(includedCovariateConceptIds)),
                                      dropTableIfExists = TRUE,

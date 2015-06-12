@@ -64,7 +64,7 @@ getDbOutcomes <- function(connectionDetails = NULL,
     cohort <- data.frame(subject_id = ff::as.ram.ff(cohortData$cohorts$rowId),
                          cohort_definition_id = ff::as.ram.ff(cohortData$cohorts$treatment),
                          cohort_start_date = ff::as.ram.ff(cohortData$cohorts$cohortStartDate))
-    DatabaseConnector::dbInsertTable(conn,
+    DatabaseConnector::insertTable(conn,
                                      "#cohort_person",
                                      cohort,
                                      TRUE,
@@ -96,13 +96,13 @@ getDbOutcomes <- function(connectionDetails = NULL,
                                         "sql server",
                                         attr(conn, "dbms"),
                                         oracleTempSchema)$sql
-  outcomes <- DatabaseConnector::dbGetQuery.ffdf(conn, outcomeSql)
+  outcomes <- DatabaseConnector::querySql.ffdf(conn, outcomeSql)
   excludeSql <- "SELECT person_id AS row_id, outcome_id FROM #cohort_excluded_person ORDER BY outcome_id, person_id"
   excludeSql <- SqlRender::translateSql(excludeSql,
                                         "sql server",
                                         attr(conn, "dbms"),
                                         oracleTempSchema)$sql
-  exclude <- DatabaseConnector::dbGetQuery.ffdf(conn, excludeSql)
+  exclude <- DatabaseConnector::querySql.ffdf(conn, excludeSql)
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta, 3), attr(delta, "units")))
 

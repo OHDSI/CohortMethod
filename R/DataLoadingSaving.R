@@ -17,7 +17,6 @@
 # limitations under the License.
 
 #' Get the cohort data from the server
-#'
 #' @description
 #' This function executes a large set of SQL statements against the database in OMOP CDM format to
 #' extract the data needed to perform the analysis.
@@ -198,7 +197,7 @@ getDbCohortData <- function(connectionDetails,
     if (!is.numeric(indicationConceptIds))
       stop("indicationConceptIds must be a (vector of) numeric")
     hasIndicationConceptIds <- TRUE
-    DatabaseConnector::dbInsertTable(conn,
+    DatabaseConnector::insertTable(conn,
                                      tableName = "#indications",
                                      data = data.frame(concept_id = as.integer(indicationConceptIds)),
                                      dropTableIfExists = TRUE,
@@ -213,7 +212,7 @@ getDbCohortData <- function(connectionDetails,
     if (!is.numeric(exclusionConceptIds))
       stop("exclusionConceptIds must be a (vector of) numeric")
     hasExclusionConceptIds <- TRUE
-    DatabaseConnector::dbInsertTable(conn,
+    DatabaseConnector::insertTable(conn,
                                      tableName = "#exclusions",
                                      data = data.frame(concept_id = as.integer(exclusionConceptIds)),
                                      dropTableIfExists = TRUE,
@@ -278,7 +277,7 @@ getDbCohortData <- function(connectionDetails,
                                                  "sql server",
                                                  connectionDetails$dbms,
                                                  oracleTempSchema)$sql
-  cohorts <- DatabaseConnector::dbGetQuery.ffdf(conn, cohortSql)
+  cohorts <- DatabaseConnector::querySql.ffdf(conn, cohortSql)
   rawCount <- DatabaseConnector::querySql(conn, rawCountSql)
   newUserCount <- DatabaseConnector::querySql(conn, newUserCountSql)
   counts <- merge(rawCount, newUserCount)
