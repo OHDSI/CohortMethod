@@ -433,7 +433,7 @@ fitOutcomeModel <- function(outcomeConceptId,
   }
   if (!is.null(subPopulation)) {
     matchedTrimmedCount <- aggregate(rowId ~ treatment, data = subPopulation, length)
-    names(matchedTrimmedCount) <- c("cohortId", "matchedTrimmedCount")
+    names(matchedTrimmedCount) <- c("treatment", "matchedTrimmedCount")
     counts <- merge(counts, matchedTrimmedCount)
   }
   outcomeModel <- list(outcomeConceptId = outcomeConceptId,

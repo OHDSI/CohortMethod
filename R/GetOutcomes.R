@@ -65,12 +65,12 @@ getDbOutcomes <- function(connectionDetails = NULL,
                          cohort_definition_id = ff::as.ram.ff(cohortData$cohorts$treatment),
                          cohort_start_date = ff::as.ram.ff(cohortData$cohorts$cohortStartDate))
     DatabaseConnector::insertTable(conn,
-                                     "#cohort_person",
-                                     cohort,
-                                     TRUE,
-                                     TRUE,
-                                     TRUE,
-                                     oracleTempSchema)
+                                   "#cohort_person",
+                                   cohort,
+                                   TRUE,
+                                   TRUE,
+                                   TRUE,
+                                   oracleTempSchema)
   } else {
     conn <- connection
   }

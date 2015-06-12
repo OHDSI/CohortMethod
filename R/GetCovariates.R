@@ -137,12 +137,12 @@ getDbCovariates <- function(connectionDetails = NULL,
       stop("excludedCovariateConceptIds must be a (vector of) numeric")
     hasExcludedCovariateConceptIds <- TRUE
     DatabaseConnector::insertTable(conn,
-                                     tableName = "#excluded_cov",
-                                     data = data.frame(concept_id = as.integer(excludedCovariateConceptIds)),
-                                     dropTableIfExists = TRUE,
-                                     createTable = TRUE,
-                                     tempTable = TRUE,
-                                     oracleTempSchema = oracleTempSchema)
+                                   tableName = "#excluded_cov",
+                                   data = data.frame(concept_id = as.integer(excludedCovariateConceptIds)),
+                                   dropTableIfExists = TRUE,
+                                   createTable = TRUE,
+                                   tempTable = TRUE,
+                                   oracleTempSchema = oracleTempSchema)
   }
 
   if (is.null(includedCovariateConceptIds) || length(includedCovariateConceptIds) == 0) {
@@ -152,12 +152,12 @@ getDbCovariates <- function(connectionDetails = NULL,
       stop("includedCovariateConceptIds must be a (vector of) numeric")
     hasIncludedCovariateConceptIds <- TRUE
     DatabaseConnector::insertTable(conn,
-                                     tableName = "#included_cov",
-                                     data = data.frame(concept_id = as.integer(includedCovariateConceptIds)),
-                                     dropTableIfExists = TRUE,
-                                     createTable = TRUE,
-                                     tempTable = TRUE,
-                                     oracleTempSchema = oracleTempSchema)
+                                   tableName = "#included_cov",
+                                   data = data.frame(concept_id = as.integer(includedCovariateConceptIds)),
+                                   dropTableIfExists = TRUE,
+                                   createTable = TRUE,
+                                   tempTable = TRUE,
+                                   oracleTempSchema = oracleTempSchema)
   }
 
   renderedSql <- SqlRender::loadRenderTranslateSql("GetCovariates.sql",

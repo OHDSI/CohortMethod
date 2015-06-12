@@ -198,12 +198,12 @@ getDbCohortData <- function(connectionDetails,
       stop("indicationConceptIds must be a (vector of) numeric")
     hasIndicationConceptIds <- TRUE
     DatabaseConnector::insertTable(conn,
-                                     tableName = "#indications",
-                                     data = data.frame(concept_id = as.integer(indicationConceptIds)),
-                                     dropTableIfExists = TRUE,
-                                     createTable = TRUE,
-                                     tempTable = TRUE,
-                                     oracleTempSchema = oracleTempSchema)
+                                   tableName = "#indications",
+                                   data = data.frame(concept_id = as.integer(indicationConceptIds)),
+                                   dropTableIfExists = TRUE,
+                                   createTable = TRUE,
+                                   tempTable = TRUE,
+                                   oracleTempSchema = oracleTempSchema)
   }
 
   if (is.null(exclusionConceptIds) || length(exclusionConceptIds) == 0) {
@@ -213,12 +213,12 @@ getDbCohortData <- function(connectionDetails,
       stop("exclusionConceptIds must be a (vector of) numeric")
     hasExclusionConceptIds <- TRUE
     DatabaseConnector::insertTable(conn,
-                                     tableName = "#exclusions",
-                                     data = data.frame(concept_id = as.integer(exclusionConceptIds)),
-                                     dropTableIfExists = TRUE,
-                                     createTable = TRUE,
-                                     tempTable = TRUE,
-                                     oracleTempSchema = oracleTempSchema)
+                                   tableName = "#exclusions",
+                                   data = data.frame(concept_id = as.integer(exclusionConceptIds)),
+                                   dropTableIfExists = TRUE,
+                                   createTable = TRUE,
+                                   tempTable = TRUE,
+                                   oracleTempSchema = oracleTempSchema)
   }
 
   writeLines("\nConstructing treatment and comparator cohorts")
