@@ -26,11 +26,8 @@
 #' @description
 #' \code{createPs} creates propensity scores using a regularized logistic regression.
 #'
-#' @param cohortData            An object of type \code{cohortData} as generated using
-#'                              \code{getDbCohortData}.
-#' @param checkSorting          Checks if the covariate data is sorted by rowId (necessary for fitting
-#'                              the model). Checking can be very time-consuming if the data is already
-#'                              sorted.
+#' @param cohortMethodData            An object of type \code{cohortMethodData} as generated using
+#'                              \code{getDbCohortMethodData}.
 #' @param outcomeConceptId      The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
@@ -45,47 +42,45 @@
 #'
 #' @examples
 #' data(cohortDataSimulationProfile)
-#' cohortData <- simulateCohortData(cohortDataSimulationProfile, n = 1000)
-#' ps <- createPs(cohortData)
+#' cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = 1000)
+#' ps <- createPs(cohortMethodData)
 #'
 #' @export
-createPs <- function(cohortData,
-                     checkSorting = TRUE,
+createPs <- function(cohortMethodData,
                      outcomeConceptId = NULL,
                      excludeCovariateIds = NULL,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent",
                                              cvType = "auto",
                                              startingVariance = 0.1)) {
-  if (is.null(outcomeConceptId) | is.null(cohortData$exclude)) {
-    cohortSubset <- cohortData$cohorts
+  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude)) {
+    cohortSubset <- cohortMethodData$cohorts
     if (is.null(excludeCovariateIds)) {
-      covariateSubset <- ffbase::subset.ffdf(cohortData$covariates, covariateId != 1)
+      covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
     } else {
       excludeCovariateIds <- c(excludeCovariateIds, 1)
-      t <- in.ff(cohortData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
-      covariateSubset <- cohortData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+      t <- in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
+      covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
     }
   } else {
-    t <- cohortData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohortSubset <- cohortData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortData$covariates$rowId, cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
+    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortMethodData$covariates$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     if (is.null(excludeCovariateIds)) {
       excludeCovariateIds <- c(1)
     } else {
       excludeCovariateIds <- c(excludeCovariateIds, 1)
     }
-    t <- t | in.ff(cohortData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
-    covariateSubset <- cohortData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+    t <- t | in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
+    covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
   cyclopsData <- convertToCyclopsData(cohortSubset,
                                       covariateSubset,
                                       modelType = "lr",
-                                      quiet = TRUE,
-                                      checkSorting = checkSorting)
+                                      quiet = TRUE)
   ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
   pred <- predict(cyclopsFit)
@@ -104,8 +99,8 @@ createPs <- function(cohortData,
 #' \code{getPsModel} shows the propensity score model
 #'
 #' @param propensityScore   The propensity scores as generated using the \code{createPs} function.
-#' @param cohortData        An object of type \code{cohortData} as generated using
-#'                          \code{getDbCohortData}.
+#' @param cohortMethodData        An object of type \code{cohortMethodData} as generated using
+#'                          \code{getDbCohortMethodData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -114,12 +109,12 @@ createPs <- function(cohortData,
 #' # todo
 #'
 #' @export
-getPsModel <- function(propensityScore, cohortData) {
+getPsModel <- function(propensityScore, cohortMethodData) {
   cfs <- attr(propensityScore, "coefficients")
   cfs <- cfs[cfs != 0]
   attr(cfs, "names")[1] <- 0  #Rename intercept to 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
-  cfs <- merge(ff::as.ffdf(cfs), cohortData$covariateRef, by.x = "id", by.y = "covariateId")
+  cfs <- merge(ff::as.ffdf(cfs), cohortMethodData$covariateRef, by.x = "id", by.y = "covariateId")
   cfs <- ff::as.ram(cfs[, c("coefficient", "id", "covariateName")])
   cfs <- cfs[order(-abs(cfs$coefficient)), ]
   return(cfs)
@@ -367,11 +362,11 @@ trimByPsToEquipoise <- function(data, bounds = c(0.25, 0.75)) {
   return(data[data$preferenceScore >= bounds[1] & data$preferenceScore <= bounds[2], ])
 }
 
-mergeCovariatesWithPs <- function(data, cohortData, covariateIds) {
+mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
   for (covariateId in covariateIds) {
-    t <- cohortData$covariates$covariateId == covariateId
+    t <- cohortMethodData$covariates$covariateId == covariateId
     if (any.ff(t)) {
-      values <- ff::as.ram(cohortData$covariates[ffbase::ffwhich(t, t == TRUE), c(1, 3)])
+      values <- ff::as.ram(cohortMethodData$covariates[ffbase::ffwhich(t, t == TRUE), c(1, 3)])
       colnames(values)[colnames(values) == "covariateValue"] <- paste("covariateId", covariateId, sep = "_")
       data <- merge(data, values, all.x = TRUE)
       col <- which(colnames(data) == paste("covariateId", covariateId, sep = "_"))
@@ -511,8 +506,8 @@ matchOnPs <- function(data,
 #' @param maxRatio       The maximum number of persons int the comparator arm to be matched to each
 #'                       person in the treatment arm. A maxRatio of 0 means no maximum: all comparators
 #'                       will be assigned to a treated person.
-#' @param cohortData     An object of type \code{cohortData} as generated using \code{getDbCohortData}.
-#' @param covariateIds   One or more covariate IDs in the \code{cohortData} object on which subjects
+#' @param cohortMethodData     An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
+#' @param covariateIds   One or more covariate IDs in the \code{cohortMethodData} object on which subjects
 #'                       should be also matched.
 #'
 #' @details
@@ -538,9 +533,9 @@ matchOnPsAndCovariates <- function(data,
                                    caliper = 0.25,
                                    caliperScale = "standardized",
                                    maxRatio = 1,
-                                   cohortData,
+                                   cohortMethodData,
                                    covariateIds) {
-  data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
+  data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
                                                                     covariateIds,
                                                                     sep = "_")]
@@ -629,9 +624,9 @@ stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) 
 #' @param numberOfStrata   Into how many strata should the propensity score be divided? The boundaries
 #'                         of the strata are automatically defined to contain equal numbers of treated
 #'                         persons.
-#' @param cohortData       An object of type \code{cohortData} as generated using
-#'                         \code{getDbCohortData}.
-#' @param covariateIds     One or more covariate IDs in the \code{cohortData} object on which subjects
+#' @param cohortMethodData       An object of type \code{cohortMethodData} as generated using
+#'                         \code{getDbCohortMethodData}.
+#' @param covariateIds     One or more covariate IDs in the \code{cohortMethodData} object on which subjects
 #'                         should also be stratified.
 #'
 #' @details
@@ -646,8 +641,8 @@ stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) 
 #' # todo
 #'
 #' @export
-stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortData, covariateIds) {
-  data <- mergeCovariatesWithPs(data, cohortData, covariateIds)
+stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortMethodData, covariateIds) {
+  data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
                                                                     covariateIds,
                                                                     sep = "_")]
@@ -725,8 +720,8 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'
 #' @param restrictedCohorts   A data frame containing the people that are remaining after matching
 #'                            and/or trimming.
-#' @param cohortData          An object of type \code{cohortData} as generated using
-#'                            \code{getDbCohortData}.
+#' @param cohortMethodData          An object of type \code{cohortMethodData} as generated using
+#'                            \code{getDbCohortMethodData}.
 #' @param outcomeConceptId    The concept ID of the outcome. Persons marked for removal for the outcome
 #'                            will be removed when computing the balance before matching/trimming.
 #'
@@ -740,18 +735,18 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' Returns a date frame describing the covariate balance before and after matching/trimming.
 #'
 #' @export
-computeCovariateBalance <- function(restrictedCohorts, cohortData, outcomeConceptId = NULL) {
-  if (is.null(outcomeConceptId) | is.null(cohortData$exclude)) {
-    cohorts <- cohortData$cohorts
-    covariates <- ffbase::subset.ffdf(cohortData$covariates, covariateId != 1)
+computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeConceptId = NULL) {
+  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude)) {
+    cohorts <- cohortMethodData$cohorts
+    covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
   } else {
-    t <- cohortData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohorts <- cohortData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortData$covariates$rowId, cohortData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    t <- t | cohortData$covariates$covariateId == 1
-    covariates <- cohortData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    cohorts <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
+    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- in.ff(cohortMethodData$covariates$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- t | cohortMethodData$covariates$covariateId == 1
+    covariates <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
   }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
@@ -768,7 +763,7 @@ computeCovariateBalance <- function(restrictedCohorts, cohortData, outcomeConcep
   colnames(afterMatching)[colnames(afterMatching) == "sumComparator"] <- "afterMatchingSumComparator"
   colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
   balance <- merge(beforeMatching, afterMatching)
-  balance <- merge(balance, ff::as.ram(cohortData$covariateRef))
+  balance <- merge(balance, ff::as.ram(cohortMethodData$covariateRef))
   balance$beforeMatchingStdDiff <- (balance$beforeMatchingMeanTreated - balance$beforeMatchingMeanComparator)/balance$beforeMatchingSd
   balance$afterMatchingStdDiff <- (balance$afterMatchingMeanTreated - balance$afterMatchingMeanComparator)/balance$afterMatchingSd
   balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0

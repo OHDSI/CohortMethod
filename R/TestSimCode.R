@@ -5,17 +5,17 @@ testSimCode <- function() {
 
   # If ff is complaining it can't find the temp folder, use options('fftempdir' = 'c:/temp')
 
-  cohortData <- loadCohortData("mdcrCohortData")
-  cohortDataSimulationProfile <- createCohortDataSimulationProfile(cohortData)
+  cohortMethodData <- loadCohortMethodData("mdcrCohortMethodData")
+  cohortDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
   save(cohortDataSimulationProfile, file = "sim.Rdata")
 
   load("sim.Rdata")
-  cohortData <- simulateCohortData(cohortDataSimulationProfile, n = 1000)
+  cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = 1000)
 
-  summary(cohortData)
+  summary(cohortMethodData)
 
-  ps <- createPs(cohortData, outcomeConceptId = 194133, prior = createPrior("laplace", 0.1))
-  # ps <- createPs(cohortData, outcomeConceptId = 194133)
+  ps <- createPs(cohortMethodData, outcomeConceptId = 194133, prior = createPrior("laplace", 0.1))
+  # ps <- createPs(cohortMethodData, outcomeConceptId = 194133)
 
   coefs <- attr(ps, "coefficients")
   coefs <- coefs[order(names(coefs))]
@@ -29,7 +29,7 @@ testSimCode <- function() {
 
   computePsAuc(ps)
 
-  propensityModel <- getPsModel(ps, cohortData)
+  propensityModel <- getPsModel(ps, cohortMethodData)
 
   head(propensityModel)
 
@@ -43,14 +43,14 @@ testSimCode <- function() {
 
   plotPs(strata, ps)  #Plot matched PS distributions
 
-  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 194133)
 
   plotCovariateBalanceScatterPlot(balance, fileName = "balanceScatterplot.png")
 
   plotCovariateBalanceOfTopVariables(balance, fileName = "balanceTopVarPlot.png")
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -60,7 +60,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -70,7 +70,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -80,7 +80,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -90,7 +90,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -100,7 +100,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -110,7 +110,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -120,7 +120,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -130,7 +130,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   stratifiedCox = FALSE,
                                   riskWindowStart = 0,
@@ -141,7 +141,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -151,7 +151,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -161,7 +161,7 @@ testSimCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -173,7 +173,7 @@ testSimCode <- function() {
 
   plotKaplanMeier(outcomeModel)
 
-  # fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+  # fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
 
   summary(outcomeModel)
 

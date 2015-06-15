@@ -35,7 +35,7 @@
                                                                   port = port)
 
   # Load data:
-  cohortData <- getDbCohortData(connectionDetails,
+  cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
                                 targetDrugConceptId = 755695,
                                 comparatorDrugConceptId = 739138,
@@ -105,12 +105,12 @@
                                                                 21601019),
                                 deleteCovariatesSmallCount = 100)
 
-  saveCohortData(cohortData, "s:/temp/simulationCohortData")
+  saveCohortMethodData(cohortMethodData, "s:/temp/simulationCohortMethodData")
 
-  # cohortData <- loadCohortData('s:/temp/simulationCohortData') ps <- createPs(cohortData,
+  # cohortMethodData <- loadCohortMethodData('s:/temp/simulationCohortMethodData') ps <- createPs(cohortMethodData,
   # outcomeConceptId = 194133, prior=createPrior('laplace',0.1))
 
-  cohortDataSimulationProfile <- createCohortDataSimulationProfile(cohortData)
+  cohortDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
   save(cohortDataSimulationProfile,
        file = "s:/temp/cohortDataSimulationProfile.rda",
        compress = "xz")

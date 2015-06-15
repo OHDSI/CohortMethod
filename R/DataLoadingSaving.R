@@ -88,7 +88,7 @@
 #'                                     date can appear. Date format is 'yyyymmdd'.
 #'
 #' @return
-#' Returns an object of type \code{cohortData}, containing information on the cohorts, their outcomes,
+#' Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their outcomes,
 #' and baseline covariates. Information about multiple outcomes can be captured at once for efficiency
 #' reasons. This object is a list with the following components: \describe{ \item{outcomes}{An ffdf
 #' object listing the outcomes per person, including the time to event, and the outcome conncept ID.
@@ -100,11 +100,11 @@
 #' are omitted to save space.} \item{exclude}{An ffdf object listing for each outcome concept ID the
 #' persons that need to be excluded from the analysis because of prior outcomes.}
 #' \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
-#' \item{metaData}{A list of objects with information on how the cohortData object was constructed.} }
+#' \item{metaData}{A list of objects with information on how the cohortMethodData object was constructed.} }
 #' The generic \code{summary()} function has been implemented for this object.
 #'
 #' @export
-getDbCohortData <- function(connectionDetails,
+getDbCohortMethodData <- function(connectionDetails,
                             cdmDatabaseSchema,
                             oracleTempSchema = cdmDatabaseSchema,
                             targetDrugConceptId,
@@ -243,7 +243,7 @@ getDbCohortData <- function(connectionDetails,
 
   writeLines("Fetching data from server")
   start <- Sys.time()
-  cohortSql <- SqlRender::loadRenderTranslateSql("FetchCohortData.sql",
+  cohortSql <- SqlRender::loadRenderTranslateSql("FetchCohortMethodData.sql",
                                                  packageName = "CohortMethod",
                                                  dbms = connectionDetails$dbms,
                                                  oracleTempSchema = oracleTempSchema)
@@ -360,14 +360,14 @@ getDbCohortData <- function(connectionDetails,
                  covariateRef = covariateData$covariateRef,
                  metaData = metaData)
   open(result$cohorts)
-  class(result) <- "cohortData"
+  class(result) <- "cohortMethodData"
 
   if (!missing(outcomeConceptIds) && !is.null(outcomeConceptIds)) {
     writeLines("\nConstructing outcomes")
     result <- getDbOutcomes(connection = conn,
                             oracleTempSchema = oracleTempSchema,
                             cdmDatabaseSchema = cdmDatabaseSchema,
-                            cohortData = result,
+                            cohortMethodData = result,
                             outcomeDatabaseSchema = outcomeDatabaseSchema,
                             outcomeTable = outcomeTable,
                             outcomeConceptIds = outcomeConceptIds,
@@ -392,9 +392,9 @@ getDbCohortData <- function(connectionDetails,
 #' Save the cohort data to folder
 #'
 #' @description
-#' \code{saveCohortData} saves an object of type cohortData to folder.
+#' \code{saveCohortMethodData} saves an object of type cohortMethodData to folder.
 #'
-#' @param cohortData   An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
 #' @param file         The name of the folder where the data will be written. The folder should not yet
 #'                     exist.
 #'
@@ -405,28 +405,28 @@ getDbCohortData <- function(connectionDetails,
 #' # todo
 #'
 #' @export
-saveCohortData <- function(cohortData, file) {
-  if (missing(cohortData))
-    stop("Must specify cohortData")
+saveCohortMethodData <- function(cohortMethodData, file) {
+  if (missing(cohortMethodData))
+    stop("Must specify cohortMethodData")
   if (missing(file))
     stop("Must specify file")
-  if (class(cohortData) != "cohortData")
-    stop("Data not of class cohortData")
+  if (class(cohortMethodData) != "cohortMethodData")
+    stop("Data not of class cohortMethodData")
 
-  out1 <- cohortData$outcomes
-  out2 <- cohortData$cohorts
-  out3 <- cohortData$covariates
-  out4 <- cohortData$exclude
-  out5 <- cohortData$covariateRef
+  out1 <- cohortMethodData$outcomes
+  out2 <- cohortMethodData$cohorts
+  out3 <- cohortMethodData$covariates
+  out4 <- cohortMethodData$exclude
+  out5 <- cohortMethodData$covariateRef
   ffbase::save.ffdf(out1, out2, out3, out4, out5, dir = file)
-  metaData <- cohortData$metaData
+  metaData <- cohortMethodData$metaData
   save(metaData, file = file.path(file, "metaData.Rdata"))
 }
 
 #' Load the cohort data from a folder
 #'
 #' @description
-#' \code{loadCohortData} loads an object of type cohortData from a folder in the file system.
+#' \code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file system.
 #'
 #' @param file       The name of the folder containing the data.
 #' @param readOnly   If true, the data is opened read only.
@@ -435,13 +435,13 @@ saveCohortData <- function(cohortData, file) {
 #' The data will be written to a set of files in the folder specified by the user.
 #'
 #' @return
-#' An object of class cohortData.
+#' An object of class cohortMethodData.
 #'
 #' @examples
 #' # todo
 #'
 #' @export
-loadCohortData <- function(file, readOnly = FALSE) {
+loadCohortMethodData <- function(file, readOnly = FALSE) {
   if (!file.exists(file))
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
@@ -469,14 +469,14 @@ loadCohortData <- function(file, readOnly = FALSE) {
   open(result$exclude, readonly = readOnly)
   open(result$covariateRef, readonly = readOnly)
 
-  class(result) <- "cohortData"
+  class(result) <- "cohortMethodData"
   rm(e)
   return(result)
 }
 
 #' @export
-print.cohortData <- function(x, ...) {
-  writeLines("CohortData object")
+print.cohortMethodData <- function(x, ...) {
+  writeLines("CohortMethodData object")
   writeLines("")
   writeLines(paste("Treatment concept ID:", x$metaData$targetDrugConceptId))
   writeLines(paste("Comparator concept ID:", x$metaData$comparatorDrugConceptId))
@@ -484,7 +484,7 @@ print.cohortData <- function(x, ...) {
 }
 
 #' @export
-summary.cohortData <- function(object, ...) {
+summary.cohortMethodData <- function(object, ...) {
   treatedPersons <- ffbase::sum.ff(object$cohorts$treatment)
   comparatorPersons <- nrow(object$cohorts) - treatedPersons
   outcomeCounts <- data.frame(outcomeConceptId = object$metaData$outcomeConceptIds,
@@ -506,13 +506,13 @@ summary.cohortData <- function(object, ...) {
                  outcomeCounts = outcomeCounts,
                  covariateCount = nrow(object$covariateRef),
                  covariateValueCount = nrow(object$covariates))
-  class(result) <- "summary.cohortData"
+  class(result) <- "summary.cohortMethodData"
   return(result)
 }
 
 #' @export
-print.summary.cohortData <- function(x, ...) {
-  writeLines("CohortData object summary")
+print.summary.cohortMethodData <- function(x, ...) {
+  writeLines("CohortMethodData object summary")
   writeLines("")
   writeLines(paste("Treatment concept ID:", x$metaData$targetDrugConceptId))
   writeLines(paste("Comparator concept ID:", x$metaData$comparatorDrugConceptId))

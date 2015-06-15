@@ -39,7 +39,7 @@ testCode <- function() {
 
 
 
-  cohortData <- getDbCohortData(connectionDetails,
+  cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                 cdmDatabaseSchema = cdmSchema,
                                 targetDrugConceptId = 755695,
                                 comparatorDrugConceptId = 739138,
@@ -95,23 +95,23 @@ testCode <- function() {
                                 useCovariateInteractionMonth = FALSE,
                                 deleteCovariatesSmallCount = 0)
 
-  saveCohortData(cohortData, "s:/temp/cohortData")
-  cohortData <- loadCohortData("s:/temp/cohortData")
+  saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodData")
+  cohortMethodData <- loadCohortMethodData("s:/temp/cohortMethodData")
 
 
 
-  summary(cohortData)
+  summary(cohortMethodData)
 
   # Part two: Creating propensity scores, and match people on propensity score:
-  ps <- createPs(cohortData,
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 194133,
                  prior = createPrior("laplace", 1, exclude = c(0)))
-  ps <- createPs(cohortData, outcomeConceptId = 194133)
+  ps <- createPs(cohortMethodData, outcomeConceptId = 194133)
 
   computePsAuc(ps)
   # computePsAuc(ps2)
 
-  # propensityModel <- getPsModel(ps,cohortData)
+  # propensityModel <- getPsModel(ps,cohortMethodData)
 
   plotPs(ps)
 
@@ -123,7 +123,7 @@ testCode <- function() {
 
   plotPs(strata, ps)  #Plot matched PS distributions
 
-  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 194133)
 
   plotCovariateBalanceScatterPlot(balance, fileName = "balanceScatterplot.png")
 
@@ -131,8 +131,8 @@ testCode <- function() {
 
 
   ####
-  cohortData <- loadCohortData("cohortData")
-  ps <- createPs(cohortData,
+  cohortMethodData <- loadCohortMethodData("cohortMethodData")
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = c(0)))
   psTrimmed <- trimByPsToEquipoise(ps)
@@ -141,7 +141,7 @@ testCode <- function() {
 
   # Part three: Fit the outcome model:
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -151,7 +151,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -161,7 +161,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -171,7 +171,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -181,7 +181,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
   #
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   stratifiedCox = FALSE,
@@ -192,7 +192,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
   #
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -202,7 +202,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -212,7 +212,7 @@ testCode <- function() {
                                   prior = createPrior("laplace", 0.1))
 
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -224,7 +224,7 @@ testCode <- function() {
 
   plotKaplanMeier(outcomeModel)
 
-  # fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+  # fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
 
   summary(outcomeModel)
 

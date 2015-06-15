@@ -220,7 +220,7 @@ createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, cov
 }
 
 createDataForModelFit <- function(outcomeConceptId,
-                                  cohortData,
+                                  cohortMethodData,
                                   subPopulation,
                                   useStrata,
                                   riskWindowStart = 0,
@@ -230,7 +230,7 @@ createDataForModelFit <- function(outcomeConceptId,
                                   modelType = "cox") {
   if (!(modelType %in% c("lr", "clr", "pr", "cpr", "cox")))
     stop("Unknown model type")
-  t <- cohortData$outcomes$outcomeId == outcomeConceptId
+  t <- cohortMethodData$outcomes$outcomeId == outcomeConceptId
   maxValue <- max(sapply(bit::chunk(t), function(i) {
     max(t[i])
   }))
@@ -244,19 +244,19 @@ createDataForModelFit <- function(outcomeConceptId,
     stop("Conditional regression specified, but no strata provided")
   if (useStrata)
     writeLines("Fitting stratified model") else writeLines("Fitting unstratified model")
-  if (is.null(outcomeConceptId) | is.null(cohortData$exclude)) {
-    outcomes <- cohortData$outcomes
-    cohorts <- ff::as.ram(cohortData$cohort)
+  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude)) {
+    outcomes <- cohortMethodData$outcomes
+    cohorts <- ff::as.ram(cohortMethodData$cohort)
   } else {
-    outcomes <- ffbase::subset.ffdf(cohortData$outcomes, outcomeId == as.double(outcomeConceptId))
-    t <- cohortData$exclude$outcomeId == outcomeConceptId
+    outcomes <- ffbase::subset.ffdf(cohortMethodData$outcomes, outcomeId == as.double(outcomeConceptId))
+    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
     t <- ffbase::ffwhich(t, t == TRUE)
     if (is.null(t)) {
       # None need to be excluded
-      cohorts <- ff::as.ram(cohortData$cohort)
+      cohorts <- ff::as.ram(cohortMethodData$cohort)
     } else {
-      t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[t])
-      cohorts <- ff::as.ram(cohortData$cohort[ffbase::ffwhich(t, t == FALSE), ])
+      t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[t])
+      cohorts <- ff::as.ram(cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ])
     }
   }
 
@@ -264,7 +264,7 @@ createDataForModelFit <- function(outcomeConceptId,
     cohorts <- merge(subPopulation, cohorts)  #keeping only persons that have been matched
 
   if (useCovariates) {
-    covariates <- cohortData$covariates
+    covariates <- cohortMethodData$covariates
   }
 
   # Censor outcomes outside of risk window:
@@ -310,8 +310,8 @@ createDataForModelFit <- function(outcomeConceptId,
 #'
 #' @param outcomeConceptId       The concept ID of the outcome. Persons marked for removal for the
 #'                               outcome will be removed prior to creating the outcome model.
-#' @param cohortData             An object of type \code{cohortData} as generated using
-#'                               \code{getDbCohortData}.
+#' @param cohortMethodData             An object of type \code{cohortMethodData} as generated using
+#'                               \code{getDbCohortMethodData}.
 #' @param subPopulation          A data frame specifying the (matched and/or trimmed) subpopulation to
 #'                               be used in the study, as well as their strata (for conditional
 #'                               models). This data frame should have at least a \code{RowId}, and a
@@ -325,7 +325,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #'                               days of exposure if the \code{addExposureDaysToEnd} parameter is
 #'                               specified).
 #' @param addExposureDaysToEnd   Add the length of exposure the risk window?
-#' @param useCovariates          Whether to use the covariate matrix in the cohortData in the outcome
+#' @param useCovariates          Whether to use the covariate matrix in the cohortMethodData in the outcome
 #'                               model.
 #' @param fitModel               If false, the model will not be fit, and only summary statistics are
 #'                               available.
@@ -351,7 +351,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #'
 #' @export
 fitOutcomeModel <- function(outcomeConceptId,
-                            cohortData,
+                            cohortMethodData,
                             subPopulation = NULL,
                             stratifiedCox = TRUE,
                             riskWindowStart = 0,
@@ -366,7 +366,7 @@ fitOutcomeModel <- function(outcomeConceptId,
                                                     selectorType = "byPid",
                                                     noiseLevel = "quiet")) {
   dataObject <- createDataForModelFit(outcomeConceptId,
-                                      cohortData,
+                                      cohortMethodData,
                                       subPopulation,
                                       stratifiedCox,
                                       riskWindowStart,
@@ -413,16 +413,16 @@ fitOutcomeModel <- function(outcomeConceptId,
       priorVariance <- fit$variance[1]
     }
   }
-  counts <- cohortData$metaData$counts
+  counts <- cohortMethodData$metaData$counts
 
-  if (!is.null(outcomeConceptId) & !is.null(cohortData$exclude)) {
-    t <- cohortData$exclude$outcomeId == outcomeConceptId
+  if (!is.null(outcomeConceptId) & !is.null(cohortMethodData$exclude)) {
+    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
     t <- ffbase::ffwhich(t, t == TRUE)
     if (is.null(t)) {
-      cohortSubset <- cohortData$cohort
+      cohortSubset <- cohortMethodData$cohort
     } else {
-      t <- in.ff(cohortData$cohorts$rowId, cohortData$exclude$rowId[t])
-      cohortSubset <- cohortData$cohort[ffbase::ffwhich(t, t == TRUE), ]
+      t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[t])
+      cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == TRUE), ]
     }
     treatedWithPriorOutcome <- ffbase::sum.ff(cohortSubset$treatment)
     comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
@@ -558,7 +558,7 @@ print.outcomeModel <- function(x, ...) {
 #'
 #' @param outcomeModel   An object of type \code{outcomeModel} as generated using he
 #'                       \code{createOutcomeMode} function.
-#' @param cohortData     An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param cohortMethodData     An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -567,7 +567,7 @@ print.outcomeModel <- function(x, ...) {
 #' # todo
 #'
 #' @export
-getOutcomeModel <- function(outcomeModel, cohortData) {
+getOutcomeModel <- function(outcomeModel, cohortMethodData) {
   cfs <- outcomeModel$coefficients
 
   cfs <- cfs[cfs != 0]
@@ -576,7 +576,7 @@ getOutcomeModel <- function(outcomeModel, cohortData) {
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
 
   cfs <- merge(ff::as.ffdf(cfs),
-               cohortData$covariateRef,
+               cohortMethodData$covariateRef,
                by.x = "id",
                by.y = "covariateId",
                all.x = TRUE)

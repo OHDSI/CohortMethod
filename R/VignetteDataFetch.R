@@ -60,7 +60,7 @@
   nsaids <- nsaids$CONCEPT_ID
 
   # Load data:
-  cohortData <- getDbCohortData(connectionDetails,
+  cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
                                 oracleTempSchema = resultsDatabaseSchema,
                                 targetDrugConceptId = 1,
@@ -113,13 +113,13 @@
                                 excludeDrugsFromCovariates = FALSE,
                                 deleteCovariatesSmallCount = 100)
 
-  saveCohortData(cohortData, "c:/temp/vignetteCohortData")
+  saveCohortMethodData(cohortMethodData, "c:/temp/vignetteCohortMethodData")
 
-  # vignetteSimulationProfile <- createCohortDataSimulationProfile(cohortData)
+  # vignetteSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
   # save(vignetteSimulationProfile, file = 'vignetteSimulationProfile.rda')
 
-  # cohortData <- loadCohortData('vignetteCohortData') setwd('C:/Users/mschuemi/git/CohortMethod')
-  ps <- createPs(cohortData,
+  # cohortMethodData <- loadCohortMethodData('vignetteCohortMethodData') setwd('C:/Users/mschuemi/git/CohortMethod')
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 3,
                  checkSorting = FALSE,
                  control = createControl(noiseLevel = "quiet", threads = 10))
@@ -128,13 +128,13 @@
 
   # load('data/vignettePs.rda') ps <- vignettePs psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  vignetteBalance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
+  vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 3)
   save(vignetteBalance, file = "data/vignetteBalance.rda", compress = "xz")
 
   # load('vignetteBalance.rda')
 
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
-                                  cohortData = cohortData,
+                                  cohortMethodData = cohortMethodData,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE,
@@ -145,7 +145,7 @@
   save(vignetteOutcomeModel1, file = "data/vignetteOutcomeModel1.rda", compress = "xz")
 
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
-                                  cohortData = cohortData,
+                                  cohortMethodData = cohortMethodData,
                                   subPopulation = strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 30,
@@ -157,7 +157,7 @@
   save(vignetteOutcomeModel2, file = "data/vignetteOutcomeModel2.rda", compress = "xz")
 
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
-                                  cohortData = cohortData,
+                                  cohortMethodData = cohortMethodData,
                                   subPopulation = strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 30,

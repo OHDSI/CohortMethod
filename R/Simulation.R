@@ -19,38 +19,38 @@
 #' Create simulation profile
 #'
 #' @description
-#' \code{createCohortDataSimulationProfile} creates a profile based on the provided cohortData object,
+#' \code{createCohortMethodDataSimulationProfile} creates a profile based on the provided cohortMethodData object,
 #' which can be used to generate simulated data that has similar characteristics.
 #'
-#' @param cohortData   An object of type \code{cohortData} as generated using \code{getDbCohortData}.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
 #'
 #' @details
-#' The output of this function is an object that can be used by the \code{simulateCohortData} function
-#' to generate a cohortData object.
+#' The output of this function is an object that can be used by the \code{simulateCohortMethodData} function
+#' to generate a cohortMethodData object.
 #'
 #' @return
 #' An object of type \code{cohortDataSimulationProfile}.
 #'
 #' @export
-createCohortDataSimulationProfile <- function(cohortData) {
+createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   writeLines("Computing covariate prevalence")  # (Note: currently assuming binary covariates)
-  sums <- quickSum(cohortData$covariates)
-  covariatePrevalence <- sums$sum/nrow(cohortData$cohorts)
+  sums <- quickSum(cohortMethodData$covariates)
+  covariatePrevalence <- sums$sum/nrow(cohortMethodData$cohorts)
   attr(covariatePrevalence, "names") <- sums$covariateId
 
   writeLines("Computing propensity model")
-  propensityScore <- createPs(cohortData, prior = Cyclops::createPrior("laplace", 0.1))
+  propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1))
   propensityModel <- attr(propensityScore, "coefficients")
 
   writeLines("Fitting outcome model(s)")
   psTrimmed <- trimByPsToEquipoise(propensityScore)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  outcomeModels <- vector("list", length(cohortData$metaData$outcomeConceptIds))
-  for (i in 1:length(cohortData$metaData$outcomeConceptIds)) {
-    outcomeConceptId <- cohortData$metaData$outcomeConceptIds[i]
+  outcomeModels <- vector("list", length(cohortMethodData$metaData$outcomeConceptIds))
+  for (i in 1:length(cohortMethodData$metaData$outcomeConceptIds)) {
+    outcomeConceptId <- cohortMethodData$metaData$outcomeConceptIds[i]
     outcomeModel <- fitOutcomeModel(outcomeConceptId,
-                                    cohortData,
+                                    cohortMethodData,
                                     strata,
                                     useCovariates = TRUE,
                                     modelType = "pr",
@@ -59,8 +59,8 @@ createCohortDataSimulationProfile <- function(cohortData) {
   }
 
   writeLines("Fitting models for time to observation period end and time to cohort end")
-  obsEnd <- ff::as.ram(cohortData$cohorts$timeToObsPeriodEnd)
-  cohortEnd <- ff::as.ram(cohortData$cohorts$timeToCohortEnd)
+  obsEnd <- ff::as.ram(cohortMethodData$cohorts$timeToObsPeriodEnd)
+  cohortEnd <- ff::as.ram(cohortMethodData$cohorts$timeToCohortEnd)
   event <- as.integer(cohortEnd < obsEnd)
   time <- cohortEnd
   time[cohortEnd > obsEnd] <- obsEnd[cohortEnd > obsEnd]
@@ -71,13 +71,13 @@ createCohortDataSimulationProfile <- function(cohortData) {
   fitObsEnd <- survival::survreg(survival::Surv(obsEnd[obsEnd > 0]) ~ 1, dist = "exponential")
 
   writeLines("Computing prevalence of exlusion")
-  exclusionPrevalence <- table(ff::as.ram(cohortData$exclude$outcomeId))/nrow(cohortData$cohorts)
+  exclusionPrevalence <- table(ff::as.ram(cohortMethodData$exclude$outcomeId))/nrow(cohortMethodData$cohorts)
 
   result <- list(covariatePrevalence = covariatePrevalence,
                  propensityModel = propensityModel,
                  outcomeModels = outcomeModels,
-                 metaData = cohortData$metaData,
-                 covariateRef = ff::as.ram(cohortData$covariateRef),
+                 metaData = cohortMethodData$metaData,
+                 covariateRef = ff::as.ram(cohortMethodData$covariateRef),
                  cohortEndRate = 1/exp(coef(fitCohortEnd)),
                  obsEndRate = 1/exp(coef(fitObsEnd)),
                  exclusionPrevalence = exclusionPrevalence)
@@ -88,10 +88,10 @@ createCohortDataSimulationProfile <- function(cohortData) {
 #' Generate simulated data
 #'
 #' @description
-#' \code{simulateCohortData} creates a cohortData object with simulated data.
+#' \code{simulateCohortMethodData} creates a cohortMethodData object with simulated data.
 #'
 #' @param cohortDataSimulationProfile   An object of type \code{cohortDataSimulationProfile} as
-#'                                      generated using the \cr\code{createCohortDataSimulationProfile}
+#'                                      generated using the \cr\code{createCohortMethodDataSimulationProfile}
 #'                                      function.
 #' @param n                             The size of the population to be generated.
 #'
@@ -101,10 +101,10 @@ createCohortDataSimulationProfile <- function(cohortData) {
 #' and the covariates and their 1st order statistics should be comparable.
 #'
 #' @return
-#' An object of type \code{cohortData}.
+#' An object of type \code{cohortMethodData}.
 #'
 #' @export
-simulateCohortData <- function(cohortDataSimulationProfile, n = 10000) {
+simulateCohortMethodData <- function(cohortDataSimulationProfile, n = 10000) {
   # Note: currently, simulation is done completely in-memory. Could easily do batch-wise, storing in
   # ffdf
   writeLines("Generating covariates")
@@ -213,7 +213,7 @@ simulateCohortData <- function(cohortDataSimulationProfile, n = 10000) {
                  covariateRef = ff::as.ffdf(cohortDataSimulationProfile$covariateRef),
                  metaData = cohortDataSimulationProfile$metaData)
 
-  class(result) <- "cohortData"
+  class(result) <- "cohortMethodData"
   return(result)
 }
 
