@@ -28,9 +28,6 @@
 #'
 #' @param cohortData            An object of type \code{cohortData} as generated using
 #'                              \code{getDbCohortData}.
-#' @param checkSorting          Checks if the covariate data is sorted by rowId (necessary for fitting
-#'                              the model). Checking can be very time-consuming if the data is already
-#'                              sorted.
 #' @param outcomeConceptId      The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
@@ -50,7 +47,6 @@
 #'
 #' @export
 createPs <- function(cohortData,
-                     checkSorting = TRUE,
                      outcomeConceptId = NULL,
                      excludeCovariateIds = NULL,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
@@ -84,8 +80,7 @@ createPs <- function(cohortData,
   cyclopsData <- convertToCyclopsData(cohortSubset,
                                       covariateSubset,
                                       modelType = "lr",
-                                      quiet = TRUE,
-                                      checkSorting = checkSorting)
+                                      quiet = TRUE)
   ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
   pred <- predict(cyclopsFit)
