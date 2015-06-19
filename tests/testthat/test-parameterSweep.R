@@ -24,24 +24,24 @@ set.seed(1234)
 print(getOption("fftempdir"))
 data(cohortDataSimulationProfile)
 sampleSize <- 1000
-cohortData <- simulateCohortData(cohortDataSimulationProfile, n = sampleSize)
+cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = sampleSize)
 
-test_that("CohortData functions", {
-  s <- summary(cohortData)
-  expect_is(s, "summary.cohortData")
+test_that("cohortMethodData functions", {
+  s <- summary(cohortMethodData)
+  expect_is(s, "summary.cohortMethodData")
   expect_equal(s$treatedPersons + s$comparatorPersons, sampleSize)
 })
 
 test_that("Propensity score functions", {
   # Cross-validation:
-  ps <- createPs(cohortData, outcomeConceptId = 194133)
+  ps <- createPs(cohortMethodData, outcomeConceptId = 194133)
 
-  ps <- createPs(cohortData,
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   expect_less_than(0.7, computePsAuc(ps)[1])
 
-  propensityModel <- getPsModel(ps, cohortData)
+  propensityModel <- getPsModel(ps, cohortMethodData)
   expect_is(propensityModel, "data.frame")
 
   for (scale in c("preference", "propensity")) {
@@ -69,7 +69,7 @@ test_that("Propensity score functions", {
   for (numberOfStrata in c(2, 5, 10, 20)) {
     strata <- stratifyByPsAndCovariates(psTrimmed,
                                         numberOfStrata = numberOfStrata,
-                                        cohortData = cohortData,
+                                        cohortMethodData = cohortMethodData,
                                         covariateIds = c(11:27, 8507))  #age + sex
     expect_is(strata, "data.frame")
   }
@@ -93,7 +93,7 @@ test_that("Propensity score functions", {
                                          caliper = caliper,
                                          caliperScale = caliperScale,
                                          maxRatio = maxRatio,
-                                         cohortData = cohortData,
+                                         cohortMethodData = cohortMethodData,
                                          covariateIds = c(11:27, 8507))  #age + sex
         expect_is(strata, "data.frame")
       }
@@ -103,13 +103,13 @@ test_that("Propensity score functions", {
 })
 
 test_that("Balance functions", {
-  ps <- createPs(cohortData,
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 194133)
   expect_is(balance, "data.frame")
 
   p <- plotCovariateBalanceScatterPlot(balance)
@@ -120,7 +120,7 @@ test_that("Balance functions", {
 })
 
 test_that("Outcome functions", {
-  ps <- createPs(cohortData,
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
@@ -162,7 +162,7 @@ test_that("Outcome functions", {
             stratifiedCox <- FALSE
           }
           outcomeModel <- fitOutcomeModel(194133,
-                                          cohortData,
+                                          cohortMethodData,
                                           strata,
                                           stratifiedCox = stratifiedCox,
                                           riskWindowStart = 0,
@@ -188,12 +188,12 @@ test_that("Outcome functions", {
 
 
 test_that("Functions on outcome model", {
-  ps <- createPs(cohortData,
+  ps <- createPs(cohortMethodData,
                  outcomeConceptId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   outcomeModel <- fitOutcomeModel(194133,
-                                  cohortData,
+                                  cohortMethodData,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,
@@ -216,6 +216,6 @@ test_that("Functions on outcome model", {
   expect_more_than(cf, ci[1])
   expect_less_than(cf, ci[2])
 
-  fullOutcomeModel <- getOutcomeModel(outcomeModel, cohortData)
+  fullOutcomeModel <- getOutcomeModel(outcomeModel, cohortMethodData)
   expect_is(fullOutcomeModel, "data.frame")
 })
