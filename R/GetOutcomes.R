@@ -132,7 +132,7 @@ getDbOutcomes <- function(connectionDetails = NULL,
     ffbase::ffdfappend(cohortMethodData$outcomes, outcomes)
     ffbase::ffdfappend(cohortMethodData$exclude, exclude)
     cohortMethodData$metaData$outcomeConceptIds <- rbind(cohortMethodData$metaData$outcomeConceptIds,
-                                                   outcomeConceptIds)
+                                                         outcomeConceptIds)
     cohortMethodData$metaData$sql <- c(cohortMethodData$metaData$sql, renderedSql)
   }
   return(cohortMethodData)

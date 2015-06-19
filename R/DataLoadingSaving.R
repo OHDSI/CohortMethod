@@ -105,69 +105,69 @@
 #'
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
-                            cdmDatabaseSchema,
-                            oracleTempSchema = cdmDatabaseSchema,
-                            targetDrugConceptId,
-                            comparatorDrugConceptId,
-                            indicationConceptIds = c(),
-                            washoutWindow = 183,
-                            indicationLookbackWindow = 183,
-                            studyStartDate = "",
-                            studyEndDate = "",
-                            exclusionConceptIds = c(),
-                            outcomeConceptIds,
-                            outcomeConditionTypeConceptIds = c(),
-                            exposureDatabaseSchema = cdmDatabaseSchema,
-                            exposureTable = "drug_era",
-                            outcomeDatabaseSchema = cdmDatabaseSchema,
-                            outcomeTable = "condition_occurrence",
-                            excludeDrugsFromCovariates = TRUE,
-                            useCovariateDemographics = TRUE,
-                            useCovariateDemographicsGender = TRUE,
-                            useCovariateDemographicsRace = TRUE,
-                            useCovariateDemographicsEthnicity = TRUE,
-                            useCovariateDemographicsAge = TRUE,
-                            useCovariateDemographicsYear = TRUE,
-                            useCovariateDemographicsMonth = TRUE,
-                            useCovariateConditionOccurrence = TRUE,
-                            useCovariateConditionOccurrence365d = TRUE,
-                            useCovariateConditionOccurrence30d = TRUE,
-                            useCovariateConditionOccurrenceInpt180d = TRUE,
-                            useCovariateConditionEra = FALSE,
-                            useCovariateConditionEraEver = FALSE,
-                            useCovariateConditionEraOverlap = FALSE,
-                            useCovariateConditionGroup = FALSE,
-                            useCovariateConditionGroupMeddra = FALSE,
-                            useCovariateConditionGroupSnomed = FALSE,
-                            useCovariateDrugExposure = FALSE,
-                            useCovariateDrugExposure365d = FALSE,
-                            useCovariateDrugExposure30d = FALSE,
-                            useCovariateDrugEra = FALSE,
-                            useCovariateDrugEra365d = FALSE,
-                            useCovariateDrugEra30d = FALSE,
-                            useCovariateDrugEraOverlap = FALSE,
-                            useCovariateDrugEraEver = FALSE,
-                            useCovariateDrugGroup = FALSE,
-                            useCovariateProcedureOccurrence = FALSE,
-                            useCovariateProcedureOccurrence365d = FALSE,
-                            useCovariateProcedureOccurrence30d = FALSE,
-                            useCovariateProcedureGroup = FALSE,
-                            useCovariateObservation = FALSE,
-                            useCovariateObservation365d = FALSE,
-                            useCovariateObservation30d = FALSE,
-                            useCovariateObservationBelow = FALSE,
-                            useCovariateObservationAbove = FALSE,
-                            useCovariateObservationCount365d = FALSE,
-                            useCovariateConceptCounts = FALSE,
-                            useCovariateRiskScores = FALSE,
-                            useCovariateRiskScoresCharlson = FALSE,
-                            useCovariateRiskScoresDCSI = FALSE,
-                            useCovariateRiskScoresCHADS2 = FALSE,
-                            useCovariateInteractionYear = FALSE,
-                            useCovariateInteractionMonth = FALSE,
-                            excludedCovariateConceptIds = c(),
-                            includedCovariateConceptIds = c(),
-                            deleteCovariatesSmallCount = 100) {
+                                  cdmDatabaseSchema,
+                                  oracleTempSchema = cdmDatabaseSchema,
+                                  targetDrugConceptId,
+                                  comparatorDrugConceptId,
+                                  indicationConceptIds = c(),
+                                  washoutWindow = 183,
+                                  indicationLookbackWindow = 183,
+                                  studyStartDate = "",
+                                  studyEndDate = "",
+                                  exclusionConceptIds = c(),
+                                  outcomeConceptIds,
+                                  outcomeConditionTypeConceptIds = c(),
+                                  exposureDatabaseSchema = cdmDatabaseSchema,
+                                  exposureTable = "drug_era",
+                                  outcomeDatabaseSchema = cdmDatabaseSchema,
+                                  outcomeTable = "condition_occurrence",
+                                  excludeDrugsFromCovariates = TRUE,
+                                  useCovariateDemographics = TRUE,
+                                  useCovariateDemographicsGender = TRUE,
+                                  useCovariateDemographicsRace = TRUE,
+                                  useCovariateDemographicsEthnicity = TRUE,
+                                  useCovariateDemographicsAge = TRUE,
+                                  useCovariateDemographicsYear = TRUE,
+                                  useCovariateDemographicsMonth = TRUE,
+                                  useCovariateConditionOccurrence = TRUE,
+                                  useCovariateConditionOccurrence365d = TRUE,
+                                  useCovariateConditionOccurrence30d = TRUE,
+                                  useCovariateConditionOccurrenceInpt180d = TRUE,
+                                  useCovariateConditionEra = FALSE,
+                                  useCovariateConditionEraEver = FALSE,
+                                  useCovariateConditionEraOverlap = FALSE,
+                                  useCovariateConditionGroup = FALSE,
+                                  useCovariateConditionGroupMeddra = FALSE,
+                                  useCovariateConditionGroupSnomed = FALSE,
+                                  useCovariateDrugExposure = FALSE,
+                                  useCovariateDrugExposure365d = FALSE,
+                                  useCovariateDrugExposure30d = FALSE,
+                                  useCovariateDrugEra = FALSE,
+                                  useCovariateDrugEra365d = FALSE,
+                                  useCovariateDrugEra30d = FALSE,
+                                  useCovariateDrugEraOverlap = FALSE,
+                                  useCovariateDrugEraEver = FALSE,
+                                  useCovariateDrugGroup = FALSE,
+                                  useCovariateProcedureOccurrence = FALSE,
+                                  useCovariateProcedureOccurrence365d = FALSE,
+                                  useCovariateProcedureOccurrence30d = FALSE,
+                                  useCovariateProcedureGroup = FALSE,
+                                  useCovariateObservation = FALSE,
+                                  useCovariateObservation365d = FALSE,
+                                  useCovariateObservation30d = FALSE,
+                                  useCovariateObservationBelow = FALSE,
+                                  useCovariateObservationAbove = FALSE,
+                                  useCovariateObservationCount365d = FALSE,
+                                  useCovariateConceptCounts = FALSE,
+                                  useCovariateRiskScores = FALSE,
+                                  useCovariateRiskScoresCharlson = FALSE,
+                                  useCovariateRiskScoresDCSI = FALSE,
+                                  useCovariateRiskScoresCHADS2 = FALSE,
+                                  useCovariateInteractionYear = FALSE,
+                                  useCovariateInteractionMonth = FALSE,
+                                  excludedCovariateConceptIds = c(),
+                                  includedCovariateConceptIds = c(),
+                                  deleteCovariatesSmallCount = 100) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
     stop("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
@@ -359,7 +359,9 @@ getDbCohortMethodData <- function(connectionDetails,
                  covariates = covariateData$covariates,
                  covariateRef = covariateData$covariateRef,
                  metaData = metaData)
-  open(result$cohorts)
+  if (nrow(result$cohorts) != 0) {
+    open(result$cohorts)
+  }
   class(result) <- "cohortMethodData"
 
   if (!missing(outcomeConceptIds) && !is.null(outcomeConceptIds)) {
@@ -461,7 +463,7 @@ loadCohortMethodData <- function(file, readOnly = FALSE) {
                  metaData = mget("metaData",
                                  envir = e,
                                  ifnotfound = list(NULL))[[1]]  #For backwards compatibility
-)
+  )
   # Open all ffdfs to prevent annoying messages later:
   open(result$outcomes, readonly = readOnly)
   open(result$cohorts, readonly = readOnly)
@@ -494,10 +496,10 @@ summary.cohortMethodData <- function(object, ...) {
     outcomeCounts$eventCount[i] <- ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] <- 0 else {
-      t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
-      outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
-                                                                                                     t == TRUE)]))
-    }
+        t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+        outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
+                                                                                                       t == TRUE)]))
+      }
   }
 
   result <- list(metaData = object$metaData,
