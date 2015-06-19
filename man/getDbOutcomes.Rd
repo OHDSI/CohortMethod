@@ -5,7 +5,7 @@
 \title{Get outcomes for persons in the cohorts}
 \usage{
 getDbOutcomes(connectionDetails = NULL, connection = NULL,
-  cdmDatabaseSchema, oracleTempSchema = cdmDatabaseSchema, cohortData,
+  cdmDatabaseSchema, oracleTempSchema = cdmDatabaseSchema, cohortMethodData,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", outcomeConceptIds = "",
   outcomeConditionTypeConceptIds = "")
@@ -22,8 +22,8 @@ Requires read permissions to this database. On SQL Server, this should
 specifiy both the database and the schema, so for example
 'cdm_instance.dbo'.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using
-\code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where
 the data used to define the outcome cohorts is available. If
@@ -51,15 +51,15 @@ CONDITION_OCCURRENCE.}
 \item{oracleTempSchemaA}{schema where temp tables can be created in Oracle.}
 }
 \value{
-The original \code{cohortData} object with the new outcome data added.
+The original \code{cohortMethodData} object with the new outcome data added.
 }
 \description{
-Gets the outcomes for the cohorts in the \code{cohortData} object.
+Gets the outcomes for the cohorts in the \code{cohortMethodData} object.
 }
 \details{
 If the \code{connection} parameter is specified, the cohorts are already assumed to be on the
 server in the appropriate temp table. Else, the temp table will be created by loading the cohorts
-from the \code{cohortData} object to the server. This function can be used to add additional
-outcomes to an existing cohortData object.
+from the \code{cohortMethodData} object to the server. This function can be used to add additional
+outcomes to an existing cohortMethodData object.
 }
 

@@ -5,7 +5,7 @@
 \title{Match by propensity score as well as other covariates}
 \usage{
 matchOnPsAndCovariates(data, caliper = 0.25, caliperScale = "standardized",
-  maxRatio = 1, cohortData, covariateIds)
+  maxRatio = 1, cohortMethodData, covariateIds)
 }
 \arguments{
 \item{data}{A data frame with the three columns described below.}
@@ -23,9 +23,9 @@ standard deviations of the propensity score distribution.}
 person in the treatment arm. A maxRatio of 0 means no maximum: all comparators
 will be assigned to a treated person.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.}
 
-\item{covariateIds}{One or more covariate IDs in the \code{cohortData} object on which subjects
+\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which subjects
                       should be also matched.}
 }
 \value{

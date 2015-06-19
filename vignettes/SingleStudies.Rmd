@@ -475,13 +475,13 @@ drawAttritionDiagram(outcomeModel)
 
 Considerable work has been dedicated to provide the `CohortMethod` package.
 
-```{r tidy=TRUE,evale=TRUE}
+```{r tidy=TRUE,eval=TRUE}
 citation("CohortMethod")
 ```
 
 Further, `CohortMethod` makes extensive use of the `Cyclops` package.
 
-```{r tidy=TRUE,evale=TRUE}
+```{r tidy=TRUE,eval=TRUE}
 citation("Cyclops")
 ```
 

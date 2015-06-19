@@ -4,13 +4,13 @@
 \alias{getPsModel}
 \title{Get the propensity model}
 \usage{
-getPsModel(propensityScore, cohortData)
+getPsModel(propensityScore, cohortMethodData)
 }
 \arguments{
 \item{propensityScore}{The propensity scores as generated using the \code{createPs} function.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using
-                         \code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+                         \code{getDbCohortMethodData}.}
 }
 \description{
 \code{getPsModel} shows the propensity score model

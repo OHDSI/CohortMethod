@@ -1,0 +1,267 @@
+# @file RunAnalyses.R
+#
+# Copyright 2015 Observational Health Data Sciences and Informatics
+#
+# This file is part of CohortMethod
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#' Run a list of analyses
+#'
+#' @details
+#' Run a list of analyses for the drug-comparator-outcomes of interest.
+#'
+#' @param connectionDetails            An R object of type \code{connectionDetails} created using the
+#'                                     function \code{createConnectionDetails} in the
+#'                                     \code{DatabaseConnector} package.
+#' @param cdmDatabaseSchema            The name of the database schema that contains the OMOP CDM
+#'                                     instance.  Requires read permissions to this database. On SQL
+#'                                     Server, this should specifiy both the database and the schema,
+#'                                     so for example 'cdm_instance.dbo'.
+#' @param oracleTempSchema             For Oracle only: the name of the database schema where you want
+#'                                     all temporary tables to be managed. Requires create/insert
+#'                                     permissions to this database.
+#' @param exposureDatabaseSchema       The name of the database schema that is the location where the
+#'                                     exposure data used to define the exposure cohorts is available.
+#'                                     If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used
+#'                                     by assumed to be cdmSchema.  Requires read permissions to this
+#'                                     database.
+#' @param outcomeDatabaseSchema            The name of the database schema that is the location where
+#'                                         the data used to define the outcome cohorts is available. If
+#'                                         exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+#'                                         used by assumed to be cdmSchema.  Requires read permissions
+#'                                         to this database.
+#' @param outcomeTable                     The tablename that contains the outcome cohorts.  If
+#'                                         outcomeTable <> CONDITION_OCCURRENCE, then expectation is
+#'                                         outcomeTable has format of COHORT table:
+#'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                         COHORT_END_DATE.
+#'
+#' @export
+runCohortMethodAnalyses <- function(connectionDetails,
+                                    cdmDatabaseSchema,
+                                    oracleTempSchema = cdmDatabaseSchema,
+                                    exposureDatabaseSchema = cdmDatabaseSchema,
+                                    exposureTable = "drug_era",
+                                    outcomeDatabaseSchema = cdmDatabaseSchema,
+                                    outcomeTable = "condition_occurrence",
+                                    outputFolder = "./CohortMethodOutput",
+                                    cohortMethodAnalysisList,
+                                    drugComparatorOutcomeList,
+                                    createPsThreads = 1,
+                                    fitOutcomeModelThreads = 1){
+  for (drugComparatorOutcome in drugComparatorOutcomeList){
+    stopifnot(class(drugComparatorOutcome) == "drugComparatorOutcome")
+  }
+  for (cohortMethodAnalysis in cohortMethodAnalysisList){
+    stopifnot(class(cohortMethodAnalysis) == "cohortMethodAnalysis")
+  }
+  uniquedrugComparatorOutcomeList <- unique(selectFromList(drugComparatorOutcomeList, c("targetDrugConceptId","comparatorDrugConceptId","outcomeConceptId","indicationConceptIds")))
+  if (length(uniquedrugComparatorOutcomeList) != length(drugComparatorOutcomeList)){
+    stop("Duplicate drug-comparator-indication-outcome combinations are not allowed")
+  }
+  uniqueAnalysisIds <- unlist(unique(selectFromList(cohortMethodAnalysisList, "analysisId")))
+  if (length(uniqueAnalysisIds) != length(cohortMethodAnalysisList)){
+    stop("Duplicate analysis IDs are not allowed")
+  }
+
+  if (!file.exists(outputFolder))
+    dir.create(outputFolder)
+
+  writeLines("*** Creating cohortMethodData objects ***")
+  getDbCohortMethodDataArgsList <- unique(selectFromList(cohortMethodAnalysisList, "getDbCohortMethodDataArgs"))
+  for (i in 1:length(getDbCohortMethodDataArgsList)){
+    getDbCohortMethodDataArgs = getDbCohortMethodDataArgsList[[i]]
+    drugComparatorList<- unique(selectFromList(drugComparatorOutcomeList, c("targetDrugConceptId","comparatorDrugConceptId","indicationConceptIds","exclusionConceptIds")))
+    for (drugComparator in drugComparatorList){
+      cohortMethodDataFolder <- .createCohortMethodDataFileName (outputFolder, i, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds)
+      if (!file.exists(cohortMethodDataFolder)){
+        outcomeConceptIds <- unlist(selectFromList(matchInList(drugComparatorOutcomeList, drugComparator), "outcomeConceptId"))
+        args <- list(connectionDetails = connectionDetails,
+                     cdmDatabaseSchema = cdmDatabaseSchema,
+                     exposureDatabaseSchema = exposureDatabaseSchema,
+                     exposureTable = exposureTable,
+                     outcomeDatabaseSchema = outcomeDatabaseSchema,
+                     outcomeTable = outcomeTable,
+                     outcomeConceptIds = outcomeConceptIds)
+        args <- append(args, getDbCohortMethodDataArgs)
+        cohortMethodData <- do.call("getDbCohortMethodData", args)
+        saveCohortMethodData(cohortMethodData, cohortMethodDataFolder)
+      }
+    }
+  }
+
+  writeLines("*** Fitting propensity score models ***")
+  modelsToFit <- list()
+  getDbCohortMethodDataArgsList <- unique(selectFromList(cohortMethodAnalysisList, "getDbCohortMethodDataArgs"))
+  for (i in 1:length(getDbCohortMethodDataArgsList)){
+    getDbCohortMethodDataArgs = getDbCohortMethodDataArgsList[[i]]
+    drugComparatorList<- unique(selectFromList(drugComparatorOutcomeList, c("targetDrugConceptId","comparatorDrugConceptId","indicationConceptIds","exclusionConceptIds")))
+    for (drugComparator in drugComparatorList){
+      cohortMethodDataFolder <- .createCohortMethodDataFileName (outputFolder, i, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds)
+      cohortMethodAnalysisSubset <- matchInList(cohortMethodAnalysisList, getDbCohortMethodDataArgs)
+      createPsArgsList <- unique(selectFromList(cohortMethodAnalysisSubset, c("createPs","createPsArgs")))
+      for (j in 1:length(createPsArgsList)){
+        createPsArgs = createPsArgsList[[j]]
+        psFileName <- .createPsFileName(outputFolder, i, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, j)
+        if (!file.exists(psFileName)){
+          modelsToFit[length(modelsToFit) + 1] <- list(cohortMethodDataFolder = cohortMethodDataFolder, createPsArgs = createPsArgs, psFileName = psFileName)
+        }
+      }
+    }
+  }
+  snowfall::sfInit(parallel = TRUE, cpus = createPsThreads)
+  snowfall::sfLibrary(CohortMethod)
+  ffTempDir <- options("fftempdir")
+  snowfall::sfExport("ffTempDir")
+  fitPSModel <- function(params){
+    if (params$createPsArgs$createPs){
+      options("fftempdir" = ffTempDir)
+      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+      args <- list(cohortMethodData = cohortMethodData)
+      args <- append(args, params$createPsArgs$createPsArgs)
+      ps <- do.call("createPs", args)
+      saveRDS(ps, file = params$psFileName)
+    }
+  }
+  dummy <- myClusterApply(modelsToFit, fitPSModel)
+  snowfall::sfStop()
+
+  writeLines("*** Fitting outcome models ***")
+  modelsToFit <- list()
+  allButFitOutcomeModelArgsList <- unique(excludeFromList(cohortMethodAnalysisList, c("analysisId", "fitOutcomeModel","fitOutcomeModelArgs")))
+  getDbCohortMethodDataArgsList <- unique(selectFromList(cohortMethodAnalysisList, "getDbCohortMethodDataArgs"))
+  for (i in 1:length(getDbCohortMethodDataArgsList)){
+    getDbCohortMethodDataArgs = getDbCohortMethodDataArgsList[[i]]
+    drugComparatorList<- unique(selectFromList(drugComparatorOutcomeList, c("targetDrugConceptId","comparatorDrugConceptId","indicationConceptIds","exclusionConceptIds")))
+    for (drugComparator in drugComparatorList){
+      cohortMethodDataFolder <- file.path(outputFolder,paste("cohortMethodData_cmdArgs_",i,"_target_",drugComparator$targetDrugConceptId,"_comparator_",drugComparator$comparatorDrugConceptId,sep=""))
+      cohortMethodAnalysisSubset <- matchInList(cohortMethodAnalysisList, getDbCohortMethodDataArgs)
+      createPsArgsList <- unique(selectFromList(cohortMethodAnalysisSubset, "createPsArgs"))
+      for (j in 1:length(createPsArgsList)){
+        createPsArgs = createPsArgsList[[j]]
+        psFileName <- .createPsFileName(outputFolder, i, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, j)
+        allButFitOutcomeModelArgsSubset <- matchInList(matchInList(allButFitOutcomeModelArgsList, getDbCohortMethodDataArgs),createPsArgs)
+        outcomeConceptIds <- unlist(selectFromList(matchInList(drugComparatorOutcomeList, drugComparator), "outcomeConceptId"))
+        for (outcomeConceptId in outcomeConceptIds){
+          for (allButFitOutcomeModelArgs in allButFitOutcomeModelArgsSubset){
+            modelsToFit[length(modelsToFit) + 1] <- list(cohortMethodDataFolder = cohortMethodDataFolder, psFileName = psFileName, outcomeConceptId = outcomeConceptId, allButFitOutcomeModelArgs = allButFitOutcomeModelArgs)
+          }
+        }
+      }
+    }
+  }
+  snowfall::sfInit(parallel = TRUE, cpus = fitOutcomeModelThreads)
+  snowfall::sfLibrary(CohortMethod)
+  ffTempDir <- options("fftempdir")
+  snowfall::sfExport("ffTempDir")
+  snowfall::sfExport("cohortMethodAnalysisList")
+  snowfall::sfExport("outputFolder")
+  fitOutcomeModel <- function(params){
+    if (params$allButFitOutcomeModelArgs$fitOutcomeModel){
+      options("fftempdir" = ffTempDir)
+      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+      if (!params$allButFitOutcomeModelArgs$createPs){
+        ps <- NULL
+      } else {
+        ps <- readRDS(file = params$psFileName)
+
+        # Exclude people with prior outcome:
+        ps <- ps[!(ps$rowId %in% as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId == outcomeConceptId])),]
+
+        if (params$allButFitOutcomeModelArgs$trimByPs){
+          args <- list(data = ps)
+          args <- append(args, params$allButFitOutcomeModelArgs$trimByPsArgs)
+          ps <- do.call("trimByPs", args)
+        } else if (params$allButFitOutcomeModelArgs$trimByPsToEquipoise){
+          args <- list(data = ps)
+          args <- append(args, params$allButFitOutcomeModelArgs$trimByPsToEquipoisesArgs)
+          ps <- do.call("trimByPsToEquipoise", args)
+        }
+        if (params$allButFitOutcomeModelArgs$matchOnPsAndCovariates){
+          args <- list(data = ps)
+          args <- append(args, params$allButFitOutcomeModelArgs$matchOnPsAndCovariatesArgs)
+          if (is.null(args$covariateIds)){
+            ps <- do.call("matchOnPs", args)
+          } else {
+            ps <- do.call("matchOnPsAndCovariates", args)
+          }
+        } else if (params$allButFitOutcomeModelArgs$stratifyByPs){
+          args <- list(data = ps)
+          args <- append(args, params$allButFitOutcomeModelArgs$stratifyByPsArgs)
+          if (is.null(args$covariateIds)){
+            ps <- do.call("stratifyByPs", args)
+          } else {
+            ps <- do.call("stratifyByPsAndCovariates", args)
+          }
+        }
+      }
+      .createOutcomeModelFileName <- function(folder, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, outcomeConceptId) {
+        name <- paste("om_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
+        if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0){
+          name <- paste(name,"_i",indicationConceptIds[1],sep="")
+          if (length(indicationConceptIds) > 1){
+            name <- paste(name,"etc",sep="")
+          }
+        }
+        name <- paste(name,"_o",outcomeConceptId,sep="")
+        name <- paste(name,".rda",sep="")
+        return(file.path(folder,name))
+      }
+
+      cohortMethodAnalysisSubset <- matchInList(cohortMethodAnalysisList, params$allButFitOutcomeModelArgs)
+      for (cohortMethodAnalysis in cohortMethodAnalysisSubset){
+        analysisFolder <- paste(outputFolder,"/Analysis_",cohortMethodAnalysis$analysisId,sep="")
+        if (!file.exists(analysisFolder))
+          dir.create(analysisFolder)
+        outcomeModelFile <- .createOutcomeModelFileName(analysisFolder, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds, outcomeConceptId)
+        if (!file.exists(outcomeModelFile)){
+          args <- list(outcomeConceptId = outcomeConceptId, cohortMethodData = cohortMethodData, subPopulation = ps)
+          args <- append(args, params$createPsArgs)
+          outcomeModel <- do.call("createPs", cohortMethodAnalysisSubset$fitOutcomeModelArgs)
+          saveRDS(outcomeModel, file = outcomeModelFile)
+        }
+      }
+    }
+  }
+  dummy <- myClusterApply(modelsToFit, fitPSModel)
+  snowfall::sfStop()
+}
+
+.createCohortMethodDataFileName <- function(folder, argsId, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds) {
+  name <- paste("CmData_a_",argsId,"_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
+  if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0){
+    name <- paste(name,"_i",indicationConceptIds[1],sep="")
+    if (length(indicationConceptIds) > 1){
+      name <- paste(name,"etc",sep="")
+    }
+  }
+  name <- paste(name,".rda",sep="")
+  return(file.path(folder,name))
+}
+
+.createPsFileName <- function(folder, argsId, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, psArgsId) {
+  name <- paste("Ps_a_",argsId,"_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
+  if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0){
+    name <- paste(name,"_i",indicationConceptIds[1],sep="")
+    if (length(indicationConceptIds) > 1){
+      name <- paste(name,"etc",sep="")
+    }
+  }
+  name <- paste(name,"_p",psArgsId,sep="")
+  name <- paste(name,".rda",sep="")
+  return(file.path(folder,name))
+}
+
+
+

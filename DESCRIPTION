@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 1.0.4
-Date: 2015-05-07
+Version: 1.1.0
+Date: 2015-07-01
 Author: Martijn J. Schuemie [aut, cre],
   Marc A. Suchard [aut],
   Patrick B. Ryan [aut]
@@ -32,13 +32,16 @@ Imports:
     Rcpp (>= 0.11.2),
     RJDBC,
     SqlRender (>= 1.1.1),
-    survival
+    survival,
+    rjson,
+    snowfall
 Suggests:
     testthat,
     pROC,
     gnm,
     knitr,
     rmarkdown,
-    OhdsiRTools
+    OhdsiRTools,
+    XML
 LinkingTo: Rcpp
 NeedsCompilation: yes

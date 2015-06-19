@@ -2,8 +2,108 @@
 testCode <- function() {
   ### Test code ###
   library(CohortMethod)
-  setwd("s:/temp")
   options(fftempdir = "s:/temp")
+
+  drugComparatorOutcome1 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
+                                                        comparatorDrugConceptId = 739138,
+                                                        indicationConceptIds = 439926,
+                                                        outcomeConceptId = 194133)
+
+  drugComparatorOutcome2 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
+                                                        comparatorDrugConceptId = 739138,
+                                                        indicationConceptIds = 439926,
+                                                        outcomeConceptId = 123)
+
+  drugComparatorOutcomeList <- list(drugComparatorOutcome1, drugComparatorOutcome2)
+
+  saveDrugComparatorOutcomeList(drugComparatorOutcomeList, "s:/temp/drugComparatorOutcomeList.json.txt")
+
+
+
+
+
+  getDbCmDataArgs <- createGetDbCohortMethodDataArgs(excludeDrugsFromCovariates = TRUE,
+                                                     useCovariateDemographics = TRUE,
+                                                     useCovariateConditionOccurrence = TRUE,
+                                                     useCovariateConditionOccurrence365d = TRUE,
+                                                     useCovariateConditionOccurrence30d = TRUE,
+                                                     useCovariateConditionOccurrenceInpt180d = TRUE,
+                                                     useCovariateConditionEra = TRUE,
+                                                     useCovariateConditionEraEver = TRUE,
+                                                     useCovariateConditionEraOverlap = TRUE,
+                                                     useCovariateConditionGroup = TRUE,
+                                                     useCovariateDrugExposure = TRUE,
+                                                     useCovariateDrugExposure365d = TRUE,
+                                                     useCovariateDrugExposure30d = TRUE,
+                                                     useCovariateDrugEra = TRUE,
+                                                     useCovariateDrugEra365d = TRUE,
+                                                     useCovariateDrugEra30d = TRUE,
+                                                     useCovariateDrugEraEver = TRUE,
+                                                     useCovariateDrugEraOverlap = TRUE,
+                                                     useCovariateDrugGroup = TRUE,
+                                                     useCovariateProcedureOccurrence = TRUE,
+                                                     useCovariateProcedureOccurrence365d = TRUE,
+                                                     useCovariateProcedureOccurrence30d = TRUE,
+                                                     useCovariateProcedureGroup = TRUE,
+                                                     useCovariateObservation = TRUE,
+                                                     useCovariateObservation365d = TRUE,
+                                                     useCovariateObservation30d = TRUE,
+                                                     useCovariateObservationBelow = TRUE,
+                                                     useCovariateObservationAbove = TRUE,
+                                                     useCovariateObservationCount365d = TRUE,
+                                                     useCovariateConceptCounts = TRUE,
+                                                     useCovariateRiskScores = TRUE,
+                                                     useCovariateInteractionYear = FALSE,
+                                                     useCovariateInteractionMonth = FALSE,
+                                                     deleteCovariatesSmallCount = 100)
+
+  createPsArgs <- createCreatePsArgs() # Using only defaults
+  matchOnPsAndCovariatesArgs <- createMatchOnPsAndCovariatesArgs(maxRatio = 1, covariateIds = NULL)
+  fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                    riskWindowEnd = 365,
+                                                    addExposureDaysToEnd = FALSE,
+                                                    modelType = "cox",
+                                                    stratifiedCox = TRUE,
+                                                    useCovariates = TRUE)
+
+  cmAnalysis1 <- createCohortMethodAnalysis(analysisId = 1,
+                                            getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                            createPs = TRUE,
+                                            createPsArgs = createPsArgs,
+                                            matchOnPsAndCovariates = TRUE,
+                                            matchOnPsAndCovariatesArgs = matchOnPsAndCovariatesArgs,
+                                            fitOutcomeModel = TRUE,
+                                            fitOutcomeModelArgs = fitOutcomeModelArgs1)
+  fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                    riskWindowEnd = 365,
+                                                    addExposureDaysToEnd = FALSE,
+                                                    modelType = "cox",
+                                                    stratifiedCox = TRUE,
+                                                    useCovariates = FALSE)
+
+
+  cmAnalysis2 <- createCohortMethodAnalysis(analysisId = 2,
+                                            getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                            createPs = TRUE,
+                                            createPsArgs = createPsArgs,
+                                            matchOnPsAndCovariates = TRUE,
+                                            matchOnPsAndCovariatesArgs = matchOnPsAndCovariatesArgs,
+                                            fitOutcomeModel = TRUE,
+                                            fitOutcomeModelArgs = fitOutcomeModelArgs2)
+
+  cohortMethodAnalysisList <- list(cmAnalysis1, cmAnalysis2)
+
+  saveCohortMethodAnalysisList(cohortMethodAnalysisList, "s:/temp/cohortMethodAnalysisList.json.txt")
+
+
+
+  dco <- sapply(drugComparatorOutcomeList, unlist)
+
+  unlist(drugComparatorOutcome2)
+
+  x<- as.relistable(cohortMethodAnalysis)
+  x <- unlist(x)
+  x <- relist(x)
 
   # Settings for running SQL against JnJ Sql Server:
   pw <- NULL
@@ -40,60 +140,60 @@ testCode <- function() {
 
 
   cohortMethodData <- getDbCohortMethodData(connectionDetails,
-                                cdmDatabaseSchema = cdmSchema,
-                                targetDrugConceptId = 755695,
-                                comparatorDrugConceptId = 739138,
-                                indicationConceptIds = 439926,
-                                exclusionConceptIds = c(4027133,
-                                                        4032243,
-                                                        4146536,
-                                                        2002282,
-                                                        2213572,
-                                                        2005890,
-                                                        43534760,
-                                                        21601019),
-                                outcomeConceptIds = 194133,
-                                excludedCovariateConceptIds = c(4027133,
-                                                                4032243,
-                                                                4146536,
-                                                                2002282,
-                                                                2213572,
-                                                                2005890,
-                                                                43534760,
-                                                                21601019),
-                                useCovariateDemographics = TRUE,
-                                useCovariateConditionOccurrence = TRUE,
-                                useCovariateConditionOccurrence365d = TRUE,
-                                useCovariateConditionOccurrence30d = TRUE,
-                                useCovariateConditionOccurrenceInpt180d = TRUE,
-                                useCovariateConditionEra = TRUE,
-                                useCovariateConditionEraEver = TRUE,
-                                useCovariateConditionEraOverlap = TRUE,
-                                useCovariateConditionGroup = TRUE,
-                                useCovariateDrugExposure = TRUE,
-                                useCovariateDrugExposure365d = TRUE,
-                                useCovariateDrugExposure30d = TRUE,
-                                useCovariateDrugEra = TRUE,
-                                useCovariateDrugEra365d = TRUE,
-                                useCovariateDrugEra30d = TRUE,
-                                useCovariateDrugEraEver = TRUE,
-                                useCovariateDrugEraOverlap = TRUE,
-                                useCovariateDrugGroup = TRUE,
-                                useCovariateProcedureOccurrence = TRUE,
-                                useCovariateProcedureOccurrence365d = TRUE,
-                                useCovariateProcedureOccurrence30d = TRUE,
-                                useCovariateProcedureGroup = TRUE,
-                                useCovariateObservation = TRUE,
-                                useCovariateObservation365d = TRUE,
-                                useCovariateObservation30d = TRUE,
-                                useCovariateObservationBelow = TRUE,
-                                useCovariateObservationAbove = TRUE,
-                                useCovariateObservationCount365d = TRUE,
-                                useCovariateConceptCounts = TRUE,
-                                useCovariateRiskScores = TRUE,
-                                useCovariateInteractionYear = FALSE,
-                                useCovariateInteractionMonth = FALSE,
-                                deleteCovariatesSmallCount = 0)
+                                            cdmDatabaseSchema = cdmSchema,
+                                            targetDrugConceptId = 755695,
+                                            comparatorDrugConceptId = 739138,
+                                            indicationConceptIds = 439926,
+                                            exclusionConceptIds = c(4027133,
+                                                                    4032243,
+                                                                    4146536,
+                                                                    2002282,
+                                                                    2213572,
+                                                                    2005890,
+                                                                    43534760,
+                                                                    21601019),
+                                            outcomeConceptIds = 194133,
+                                            excludedCovariateConceptIds = c(4027133,
+                                                                            4032243,
+                                                                            4146536,
+                                                                            2002282,
+                                                                            2213572,
+                                                                            2005890,
+                                                                            43534760,
+                                                                            21601019),
+                                            useCovariateDemographics = TRUE,
+                                            useCovariateConditionOccurrence = TRUE,
+                                            useCovariateConditionOccurrence365d = TRUE,
+                                            useCovariateConditionOccurrence30d = TRUE,
+                                            useCovariateConditionOccurrenceInpt180d = TRUE,
+                                            useCovariateConditionEra = TRUE,
+                                            useCovariateConditionEraEver = TRUE,
+                                            useCovariateConditionEraOverlap = TRUE,
+                                            useCovariateConditionGroup = TRUE,
+                                            useCovariateDrugExposure = TRUE,
+                                            useCovariateDrugExposure365d = TRUE,
+                                            useCovariateDrugExposure30d = TRUE,
+                                            useCovariateDrugEra = TRUE,
+                                            useCovariateDrugEra365d = TRUE,
+                                            useCovariateDrugEra30d = TRUE,
+                                            useCovariateDrugEraEver = TRUE,
+                                            useCovariateDrugEraOverlap = TRUE,
+                                            useCovariateDrugGroup = TRUE,
+                                            useCovariateProcedureOccurrence = TRUE,
+                                            useCovariateProcedureOccurrence365d = TRUE,
+                                            useCovariateProcedureOccurrence30d = TRUE,
+                                            useCovariateProcedureGroup = TRUE,
+                                            useCovariateObservation = TRUE,
+                                            useCovariateObservation365d = TRUE,
+                                            useCovariateObservation30d = TRUE,
+                                            useCovariateObservationBelow = TRUE,
+                                            useCovariateObservationAbove = TRUE,
+                                            useCovariateObservationCount365d = TRUE,
+                                            useCovariateConceptCounts = TRUE,
+                                            useCovariateRiskScores = TRUE,
+                                            useCovariateInteractionYear = FALSE,
+                                            useCovariateInteractionMonth = FALSE,
+                                            deleteCovariatesSmallCount = 0)
 
   saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodData")
   cohortMethodData <- loadCohortMethodData("s:/temp/cohortMethodData")

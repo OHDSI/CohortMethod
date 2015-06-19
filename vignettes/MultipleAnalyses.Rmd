@@ -1,0 +1,206 @@
+---
+title: "Running multiple analyses at once using the CohortMethod package"
+author: "Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+<!--
+%\VignetteEngine{knitr}
+%\VignetteIndexEntry{Multiple analyses using CohortMethod}
+-->
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(CohortMethod)
+knitr::opts_chunk$set(
+  cache=FALSE,
+  comment = "#>",
+  error = FALSE,
+  tidy = FALSE)
+```
+# Introduction
+
+In this vignette we focus on running several different analyses on several drug-comparator-outcome combinations. This can be useful when we want to explore the sensitivity to analyses choices, include negative controls, or run an experiment similar to the OMOP experiment to emprically identify the optimal analysis choices for a particular research question.
+
+This vignette assumes you are already familiar with the `CohortMethod` package and are able to perform single studies. We will walk through all the steps needed to perform an examplar set of analyses, and we have selected the well-studied topic of X versus Y on z.
+
+# General approach
+
+The general approach to running a set of analyses is that you specify all the function arguments of the functions you would normally call, and create sets of these function arguments. The final outcome models as well as intermediate data objects will all be saved to disk for later extraction. 
+
+An analysis will be executed by calling these functions in sequence:
+
+1. `getDbCohortMethodData()`
+2. `createPs()` (optional)
+3. `trimByPs()` or `trimByPsToEquipoise()` (optional)
+4. `matchOnPs()`, `matchOnPsAndCovariates()`, `stratifyByPs()`, or `stratifyByPsAndCovariates()` (optional)
+5. `fitOutcomeModel()` (optional)
+
+When you provide several analyses to the `CohortMethod` package, it will determine whether any of the analyses have anything in common, and will take advantage of this fact. For example, if we specify several analyses that only differ in the way the outcome model is fitted, then `CohortMethod` will extract the data and fit the propensity model only once, and re-use this in all the analysis. 
+
+The function arguments you need to define have been divided into four groups:
+
+1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of drug, comparator, and outcome (and indication).
+2. **Analyses**: arguments that are not directly specific to a hypothesis of interest, such as the washout window, whether to include drugs as covariates, etc.
+3. Arguments that are the output of a previous function in the `CohortMethod` package. These cannot be specified by the user.
+4. Arguments that are specific to an environment, such as the connection details for connecting to the server, and the name of the schema holding the CDM data.
+
+# Specifying hypotheses of interest
+
+The first group of arguments define the drug, comparator, outcome, and optionally the indiction in which to nest the study. Here we demonstrate how to create two sets  that only differ in terms of the outcome, and combine them in a list:
+
+```{r tidy=FALSE,eval=TRUE}
+# TODO: create real example
+drugComparatorOutcome1 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
+                                                      comparatorDrugConceptId = 739138,
+                                                      indicationConceptIds = 439926,
+                                                      outcomeConceptId = 194133)
+
+drugComparatorOutcome2 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
+                                                      comparatorDrugConceptId = 739138,
+                                                      indicationConceptIds = 439926,
+                                                      outcomeConceptId = 123)
+
+drugComparatorOutcomeList <- list(drugComparatorOutcome1, drugComparatorOutcome2)
+```
+
+A conventient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomeList` function, and we can load it again using the `loadDrugComparatorOutcomeList` function.
+
+# Specifying analyses
+
+The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion funcion is available that has (almost) the same arguments. For example, for the `trimByPs()` function there is the `createTrimByPsArgs()` function. These companion functions can be used to create the arguments to be used during execution:
+```{r tidy=FALSE,eval=TRUE}
+getDbCmDataArgs <- createGetDbCohortMethodDataArgs(excludeDrugsFromCovariates = TRUE,
+                                                   useCovariateDemographics = TRUE,
+                                                   useCovariateConditionOccurrence = TRUE,
+                                                   useCovariateConditionOccurrence365d = TRUE,
+                                                   useCovariateConditionOccurrence30d = TRUE,
+                                                   useCovariateConditionOccurrenceInpt180d = TRUE,
+                                                   useCovariateConditionEra = TRUE,
+                                                   useCovariateConditionEraEver = TRUE,
+                                                   useCovariateConditionEraOverlap = TRUE,
+                                                   useCovariateConditionGroup = TRUE,
+                                                   useCovariateDrugExposure = TRUE,
+                                                   useCovariateDrugExposure365d = TRUE,
+                                                   useCovariateDrugExposure30d = TRUE,
+                                                   useCovariateDrugEra = TRUE,
+                                                   useCovariateDrugEra365d = TRUE,
+                                                   useCovariateDrugEra30d = TRUE,
+                                                   useCovariateDrugEraEver = TRUE,
+                                                   useCovariateDrugEraOverlap = TRUE,
+                                                   useCovariateDrugGroup = TRUE,
+                                                   useCovariateProcedureOccurrence = TRUE,
+                                                   useCovariateProcedureOccurrence365d = TRUE,
+                                                   useCovariateProcedureOccurrence30d = TRUE,
+                                                   useCovariateProcedureGroup = TRUE,
+                                                   useCovariateObservation = TRUE,
+                                                   useCovariateObservation365d = TRUE,
+                                                   useCovariateObservation30d = TRUE,
+                                                   useCovariateObservationBelow = TRUE,
+                                                   useCovariateObservationAbove = TRUE,
+                                                   useCovariateObservationCount365d = TRUE,
+                                                   useCovariateConceptCounts = TRUE,
+                                                   useCovariateRiskScores = TRUE,
+                                                   useCovariateInteractionYear = FALSE,
+                                                   useCovariateInteractionMonth = FALSE,
+                                                   deleteCovariatesSmallCount = 100)
+
+createPsArgs <- createCreatePsArgs() # Using only defaults
+matchOnPsAndCovariatesArgs <- createMatchOnPsAndCovariatesArgs(maxRatio = 1, covariateIds = NULL)
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                  riskWindowEnd = 365,
+                                                  addExposureDaysToEnd = FALSE,
+                                                  modelType = "cox",
+                                                  stratifiedCox = TRUE,
+                                                  useCovariates = TRUE)
+```
+
+Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:
+
+```{r tidy=FALSE,eval=TRUE}
+cmAnalysis1 <- createCohortMethodAnalysis(analysisId = 1,
+                                          getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                          createPs = TRUE,
+                                          createPsArgs = createPsArgs,
+                                          matchOnPsAndCovariates = TRUE,
+                                          matchOnPsAndCovariatesArgs = matchOnPsAndCovariatesArgs,
+                                          fitOutcomeModel = TRUE,
+                                          fitOutcomeModelArgs = fitOutcomeModelArgs1)
+```
+
+Note that we have assigned an analysis ID (1) to this set of arguments. We can use this later to link the results back to this specific set of choices. We could easily create a second analysis, for example by modifying the outcome model, telling `CohortMethod` not to use the extra covariates in the outcome model:
+
+```{r tidy=FALSE,eval=TRUE}
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                  riskWindowEnd = 365,
+                                                  addExposureDaysToEnd = FALSE,
+                                                  modelType = "cox",
+                                                  stratifiedCox = TRUE,
+                                                  useCovariates = FALSE)
+
+
+cmAnalysis2 <- createCohortMethodAnalysis(analysisId = 2,
+                                          getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                          createPs = TRUE,
+                                          createPsArgs = createPsArgs,
+                                          matchOnPsAndCovariates = TRUE,
+                                          matchOnPsAndCovariatesArgs = matchOnPsAndCovariatesArgs,
+                                          fitOutcomeModel = TRUE,
+                                          fitOutcomeModelArgs = fitOutcomeModelArgs2)
+```
+
+These two analyses can be combined in a list:
+
+```{r tidy=FALSE,eval=TRUE}
+cohortMethodAnalysisList <- list(cmAnalysis1, cmAnalysis2)
+```
+
+A conventient way to save `cohortMethodAnalysisList` to file is by using the `saveCohortMethodAnalysisList` function, and we can load it again using the `loadCohortMethodAnalysisList` function.
+
+# Executing multiple analyses
+
+We can now run the analyses against the hypotheses of interest using the `runCohortMethodAnalyses()`function. This function will run all specified analyses against all hypotheses of interest, meaning that if the analyses specify an outcome model should be fitted, the total number of outcome models is `length(cohortMethodAnalysisList) * length(drugComparatorOutcomeList)`.
+
+```{r tidy=FALSE,eval=FALSE}
+runCohortMethodAnalyses(connectionDetails = connectionDetails,
+                        cdmDatabaseSchema = cdmDatabaseSchema,
+                        exposureDatabaseSchema = cohortDatabaseSchema,
+                        exposureTable = cohortTable,
+                        outcomeDatabaseSchema = cohortDatabaseSchema,
+                        outcomeTable = cohortTable,
+                        outputFolder = "./CohortMethodOutput",
+                        cohortMethodAnalysisList,
+                        drugComparatorOutcomeList,
+                        createPsThreads = 4,
+                        fitOutcomeModelThreads = 4)
+```
+
+In the code above, we provide the arguments for connecting to the database, which schema's and tables to use, as well as the analyses and hypotheses of interest. The `outputFolder` specifies where the outcome models and intermediate files will be written. We also instruct `CohortMethod` to use 4 threads when fitting propensity scores and when fitting the outcome model. Multithreading can significantly reduce execution time, but can require more system resources such as memory.
+
+## Restarting
+
+If for some reason the execution was interrupted, you can restart by re-issuing the `runCohortMethodAnalyses()` command. Any intermediate and final products that have already been completed and written to disk will be skipped.
+
+# Acknowledgments
+
+Considerable work has been dedicated to provide the `CohortMethod` package.
+
+```{r tidy=TRUE,eval=TRUE}
+citation("CohortMethod")
+```
+
+Further, `CohortMethod` makes extensive use of the `Cyclops` package.
+
+```{r tidy=TRUE,eval=TRUE}
+citation("Cyclops")
+```
+
+This work is supported in part through the National Science Foundation grant IIS 1251151.
+
+
+

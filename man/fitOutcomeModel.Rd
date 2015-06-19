@@ -4,7 +4,7 @@
 \alias{fitOutcomeModel}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
+fitOutcomeModel(outcomeConceptId, cohortMethodData, subPopulation = NULL,
   stratifiedCox = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
@@ -15,8 +15,8 @@ fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
 outcome will be removed prior to creating the outcome model.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using
-\code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
 \item{subPopulation}{A data frame specifying the (matched and/or trimmed) subpopulation to
 be used in the study, as well as their strata (for conditional
@@ -36,7 +36,7 @@ specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortData in the outcome
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the outcome
 model.}
 
 \item{fitModel}{If false, the model will not be fit, and only summary statistics are

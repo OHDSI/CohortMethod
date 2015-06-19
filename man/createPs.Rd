@@ -4,18 +4,14 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortData, checkSorting = TRUE, outcomeConceptId = NULL,
+createPs(cohortMethodData, outcomeConceptId = NULL,
   excludeCovariateIds = NULL, prior = createPrior("laplace", exclude = c(0),
   useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
   cvType = "auto", startingVariance = 0.1))
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using
-\code{getDbCohortData}.}
-
-\item{checkSorting}{Checks if the covariate data is sorted by rowId (necessary for fitting
-the model). Checking can be very time-consuming if the data is already
-sorted.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
 \item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
 outcome will be removed prior to creating the propensity score model.}
@@ -37,7 +33,7 @@ for details.}
 }
 \examples{
 data(cohortDataSimulationProfile)
-cohortData <- simulateCohortData(cohortDataSimulationProfile, n = 1000)
-ps <- createPs(cohortData)
+cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = 1000)
+ps <- createPs(cohortMethodData)
 }
 

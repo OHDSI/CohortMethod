@@ -4,7 +4,8 @@
 \alias{stratifyByPsAndCovariates}
 \title{Stratify persons by propensity score and other covariates}
 \usage{
-stratifyByPsAndCovariates(data, numberOfStrata = 5, cohortData, covariateIds)
+stratifyByPsAndCovariates(data, numberOfStrata = 5, cohortMethodData,
+  covariateIds)
 }
 \arguments{
 \item{data}{A data frame with the three columns described below}
@@ -13,10 +14,10 @@ stratifyByPsAndCovariates(data, numberOfStrata = 5, cohortData, covariateIds)
 of the strata are automatically defined to contain equal numbers of treated
 persons.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using
-\code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
-\item{covariateIds}{One or more covariate IDs in the \code{cohortData} object on which subjects
+\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which subjects
                         should also be stratified.}
 }
 \value{
