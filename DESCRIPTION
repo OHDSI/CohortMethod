@@ -34,7 +34,7 @@ Imports:
     SqlRender (>= 1.1.1),
     survival,
     rjson,
-    snowfall
+    snow
 Suggests:
     testthat,
     pROC,

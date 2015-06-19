@@ -159,7 +159,7 @@ prettyPrint <- function(object) {
 
 #' @export
 selectFromList <- function(x, select){
-  return(sapply(x, function(x){x[select]}, simplify = FALSE))
+  return(sapply(x, function(x){x[names(x)[names(x) %in% select]]}, simplify = FALSE))
 }
 
 #' @export
@@ -200,58 +200,107 @@ matchInList <- function(x, toMatch){
 }
 
 #' @export
-myClusterApply <- function (x, fun, ..., stopOnError = FALSE, progressBar = TRUE, divideFfMemory = TRUE){
-  cl <- snowfall::sfGetCluster()
-  snowfall::checkCluster(cl)
-  if (divideFfMemory){
-    values = .computeFfMemPerCluster(length(cl))
-    setFfMem <- function(values){
-      options(ffmaxbytes = values[1])
-      options(ffbatchbytes = values[2])
-      return(c(getOption("ffmaxbytes"),getOption("ffbatchbytes")))
+makeCluster <- function(numberOfThreads, singleThreadToMain = TRUE){
+  if (numberOfThreads == 1 && singleThreadToMain){
+    cluster <- list()
+    class(cluster) <- "noCluster"
+  } else {
+    cluster <- snow::makeCluster(numberOfThreads, type = "SOCK")
+  }
+  return(cluster)
+}
+
+#' @export
+clusterRequire <- function(cluster, package){
+  if (class(cluster)[1] == "noCluster"){
+    do.call("require", list(package = package))
+  } else {
+    requirePackage <- function(package){
+      do.call("require", list(package = package))
     }
-    for (i in 1:length(cl)){
-      snowfall::sendCall(cl[[i]], setFfMem, list(values = values))
+    for (i in 1:length(cluster)){
+      snow::sendCall(cluster[[i]], requirePackage, list(package = package))
     }
-    for (i in 1:length(cl)){
-      if (min(snowfall::recvOneResult(cl)$value == values) == 0)
-        warning("Unable to set ffmaxbytes and/or ffbatchbytes on worker")
+    for (i in 1:length(cluster)){
+      snow::recvOneResult(cluster)
     }
   }
-  argfun <- function(i) c(list(x[[i]]), list(...))
-  n <- length(x)
-  p <- length(cl)
-  if (n > 0 && p > 0) {
-    if (progressBar)
-      pb <- txtProgressBar(style=3)
+}
 
-    submit <- function(node, job) snowfall::sendCall(cl[[node]], fun,
-                                                     argfun(job), tag = job)
-    for (i in 1:min(n, p)) submit(i, i)
-    val <- vector("list", n)
-    errors <- c(paste("Error(s) when calling function ",substitute(fun,parent.frame(1)),":",sep = ""))
-    formatError <- function(error,args){
-      paste("\nError \"",error[[1]],"\" when using argument(s): ",paste(args,collapse=","),sep="")
+#' @export
+stopCluster <- function(cluster){
+  if (class(cluster)[1] != "noCluster"){
+    snow::stopCluster.default(cluster)
+  }
+}
+
+#' @export
+clusterApply <- function (cluster, x, fun, ..., stopOnError = FALSE, progressBar = TRUE, divideFfMemory = TRUE, setFfTempDir = TRUE){
+  if (class(cluster)[1] == "noCluster"){
+    lapply(x, fun, ...)
+  } else {
+    if (divideFfMemory){
+      values = .computeFfMemPerCluster(length(cluster))
+      setFfMem <- function(values){
+        options(ffmaxbytes = values[1])
+        options(ffbatchbytes = values[2])
+        return(c(getOption("ffmaxbytes"),getOption("ffbatchbytes")))
+      }
+      for (i in 1:length(cluster)){
+        snow::sendCall(cluster[[i]], setFfMem, list(values = values))
+      }
+      for (i in 1:length(cluster)){
+        if (min(snow::recvOneResult(cluster)$value == values) == 0)
+          warning("Unable to set ffmaxbytes and/or ffbatchbytes on worker")
+      }
     }
-    for (i in 1:n) {
-      d <- snowfall::recvOneResult(cl)
-      if (inherits(d$value, "try-error")){
-        val[d$tag] <- NULL
-        errors <- c(errors, formatError(d$value, argfun(d$tag)))
-        if (stopOnError)
-          stop(paste(errors,collapse=""), call. = FALSE)
+    if (setFfTempDir){
+      setFfDir <- function(fftempdir) {
+        options("fftempdir" = fftempdir)
+      }
+      for (i in 1:length(cluster)){
+        snow::sendCall(cluster[[i]], setFfDir, list(fftempdir = options("fftempdir")$fftempdir))
+      }
+      for (i in 1:length(cluster)){
+        snow::recvOneResult(cluster)
+      }
+    }
+
+    argfun <- function(i) c(list(x[[i]]), list(...))
+    n <- length(x)
+    p <- length(cluster)
+    if (n > 0 && p > 0) {
+      if (progressBar)
+        pb <- txtProgressBar(style=3)
+
+      submit <- function(node, job) snow::sendCall(cluster[[node]], fun,
+                                                   argfun(job), tag = job)
+      for (i in 1:min(n, p)) submit(i, i)
+      val <- vector("list", n)
+      errors <- c(paste("Error(s) when calling function ",substitute(fun,parent.frame(1)),":",sep = ""))
+      formatError <- function(error,args){
+        paste("\nError \"",error[[1]],"\" when using argument(s): ",paste(args,collapse=","),sep="")
+      }
+      for (i in 1:n) {
+        d <- snow::recvOneResult(cluster)
+        if (inherits(d$value, "try-error")){
+          val[d$tag] <- NULL
+          errors <- c(errors, formatError(d$value, argfun(d$tag)))
+          if (stopOnError)
+            stop(paste(errors,collapse=""), call. = FALSE)
+        }
+        if (progressBar)
+          setTxtProgressBar(pb, i/n)
+        j <- i + min(n, p)
+        if (j <= n)
+          snow::submit(d$node, j)
+        val[d$tag] <- list(d$value)
       }
       if (progressBar)
-        setTxtProgressBar(pb, i/n)
-      j <- i + min(n, p)
-      if (j <= n)
-        snowfall::submit(d$node, j)
-      val[d$tag] <- list(d$value)
+        close(pb)
+      if (length(errors) != 1)
+        stop(paste(errors,collapse=""), call. = FALSE)
+      return(val)
     }
-    if (progressBar)
-      close(pb)
-    if (length(errors) != 1)
-      stop(paste(errors,collapse=""), call. = FALSE)
-    return(val)
   }
 }

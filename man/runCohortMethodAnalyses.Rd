@@ -10,8 +10,8 @@ runCohortMethodAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
   outputFolder = "./CohortMethodOutput", cohortMethodAnalysisList,
-  drugComparatorOutcomeList, createPsThreads = 1,
-  fitOutcomeModelThreads = 1)
+  drugComparatorOutcomeList, getDbCohortMethodDataThreads = 1,
+  createPsThreads = 1, fitOutcomeModelThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the

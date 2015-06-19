@@ -6,12 +6,10 @@ testCode <- function() {
 
   drugComparatorOutcome1 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
                                                         comparatorDrugConceptId = 739138,
-                                                        indicationConceptIds = 439926,
                                                         outcomeConceptId = 194133)
 
   drugComparatorOutcome2 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
                                                         comparatorDrugConceptId = 739138,
-                                                        indicationConceptIds = 439926,
                                                         outcomeConceptId = 123)
 
   drugComparatorOutcomeList <- list(drugComparatorOutcome1, drugComparatorOutcome2)
@@ -97,52 +95,39 @@ testCode <- function() {
 
 
 
-  dco <- sapply(drugComparatorOutcomeList, unlist)
+  cohortMethodAnalysisList <- loadCohortMethodAnalysisList("s:/temp/cohortMethodAnalysisList.json.txt")
+  drugComparatorOutcomeList <- loadDrugComparatorOutcomeList("s:/temp/drugComparatorOutcomeList.json.txt")
 
-  unlist(drugComparatorOutcome2)
-
-  x<- as.relistable(cohortMethodAnalysis)
-  x <- unlist(x)
-  x <- relist(x)
 
   # Settings for running SQL against JnJ Sql Server:
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
-  server <- "RNDUSRDHIT07"
-  cdmSchema <- "cdm4_sim"
+  server <- "RNDUSRDHIT09"
+  cdmDatabaseSchema <- "CDM_TRUVEN_CCAE_6k.dbo"
   # cdmSchema <- 'CDM_Truven_MDCR'
   port <- NULL
-
-  pw <- NULL
-  dbms <- "pdw"
-  user <- NULL
-  server <- "JRDUSHITAPS01"
-  cdmSchema <- "CDM_Truven_MDCR"
-  port <- 17001
-
-  pw <- pw
-  dbms <- "postgresql"
-  user <- "postgres"
-  server <- "localhost/ohdsi"
-  cdmSchema <- "cdm_truven_ccae_6k"
-  port <- NULL
-
 
   # Part one: loading the data:
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                   server = server,
                                                                   user = user,
                                                                   password = pw,
-                                                                  schema = cdmSchema,
+                                                                  schema = cdmDatabaseSchema,
                                                                   port = port)
 
 
+  runCohortMethodAnalyses(connectionDetails =  connectionDetails,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          outputFolder = "s:/temp/cmOutput",
+                          cohortMethodAnalysisList = cohortMethodAnalysisList,
+                          drugComparatorOutcomeList = drugComparatorOutcomeList, getDbCohortMethodDataThreads = 2, createPsThreads = 1, fitOutcomeModelThreads = 1)
+
 
   cohortMethodData <- getDbCohortMethodData(connectionDetails,
-                                            cdmDatabaseSchema = cdmSchema,
-                                            targetDrugConceptId = 755695,
-                                            comparatorDrugConceptId = 739138,
+                                            cdmDatabaseSchema = cdmDatabaseSchema,
+                                            targetDrugConceptId = 1,
+                                            comparatorDrugConceptId = 2,
                                             indicationConceptIds = 439926,
                                             exclusionConceptIds = c(4027133,
                                                                     4032243,

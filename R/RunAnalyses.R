@@ -58,6 +58,7 @@ runCohortMethodAnalyses <- function(connectionDetails,
                                     outputFolder = "./CohortMethodOutput",
                                     cohortMethodAnalysisList,
                                     drugComparatorOutcomeList,
+                                    getDbCohortMethodDataThreads = 1,
                                     createPsThreads = 1,
                                     fitOutcomeModelThreads = 1){
   for (drugComparatorOutcome in drugComparatorOutcomeList){
@@ -79,6 +80,7 @@ runCohortMethodAnalyses <- function(connectionDetails,
     dir.create(outputFolder)
 
   writeLines("*** Creating cohortMethodData objects ***")
+  objectsToCreate <- list()
   getDbCohortMethodDataArgsList <- unique(selectFromList(cohortMethodAnalysisList, "getDbCohortMethodDataArgs"))
   for (i in 1:length(getDbCohortMethodDataArgsList)){
     getDbCohortMethodDataArgs = getDbCohortMethodDataArgsList[[i]]
@@ -94,12 +96,20 @@ runCohortMethodAnalyses <- function(connectionDetails,
                      outcomeDatabaseSchema = outcomeDatabaseSchema,
                      outcomeTable = outcomeTable,
                      outcomeConceptIds = outcomeConceptIds)
-        args <- append(args, getDbCohortMethodDataArgs)
-        cohortMethodData <- do.call("getDbCohortMethodData", args)
-        saveCohortMethodData(cohortMethodData, cohortMethodDataFolder)
+        args <- append(args, getDbCohortMethodDataArgs$getDbCohortMethodDataArgs)
+        args <- append(args, drugComparator)
+        objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args, cohortMethodDataFolder = cohortMethodDataFolder)
       }
     }
   }
+  cluster <- makeCluster(getDbCohortMethodDataThreads)
+  clusterRequire(cluster,"CohortMethod")
+  createCmDataObject <- function(params){
+    cohortMethodData <- do.call("getDbCohortMethodData", params$args)
+    saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
+  }
+  dummy <- clusterApply(cluster, objectsToCreate, createCmDataObject)
+  stopCluster(cluster)
 
   writeLines("*** Fitting propensity score models ***")
   modelsToFit <- list()
@@ -113,20 +123,17 @@ runCohortMethodAnalyses <- function(connectionDetails,
       createPsArgsList <- unique(selectFromList(cohortMethodAnalysisSubset, c("createPs","createPsArgs")))
       for (j in 1:length(createPsArgsList)){
         createPsArgs = createPsArgsList[[j]]
-        psFileName <- .createPsFileName(outputFolder, i, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, j)
+        psFileName <- .createPsFileName(outputFolder, i, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds, j)
         if (!file.exists(psFileName)){
-          modelsToFit[length(modelsToFit) + 1] <- list(cohortMethodDataFolder = cohortMethodDataFolder, createPsArgs = createPsArgs, psFileName = psFileName)
+          modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder, createPsArgs = createPsArgs, psFileName = psFileName)
         }
       }
     }
   }
-  snowfall::sfInit(parallel = TRUE, cpus = createPsThreads)
-  snowfall::sfLibrary(CohortMethod)
-  ffTempDir <- options("fftempdir")
-  snowfall::sfExport("ffTempDir")
+  cluster <- makeCluster(createPsThreads)
+  clusterRequire(cluster,"CohortMethod")
   fitPSModel <- function(params){
     if (params$createPsArgs$createPs){
-      options("fftempdir" = ffTempDir)
       cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
       args <- list(cohortMethodData = cohortMethodData)
       args <- append(args, params$createPsArgs$createPsArgs)
@@ -134,8 +141,8 @@ runCohortMethodAnalyses <- function(connectionDetails,
       saveRDS(ps, file = params$psFileName)
     }
   }
-  dummy <- myClusterApply(modelsToFit, fitPSModel)
-  snowfall::sfStop()
+  dummy <- clusterApply(cluster, modelsToFit, fitPSModel)
+  stopCluster(cluster)
 
   writeLines("*** Fitting outcome models ***")
   modelsToFit <- list()
@@ -145,31 +152,28 @@ runCohortMethodAnalyses <- function(connectionDetails,
     getDbCohortMethodDataArgs = getDbCohortMethodDataArgsList[[i]]
     drugComparatorList<- unique(selectFromList(drugComparatorOutcomeList, c("targetDrugConceptId","comparatorDrugConceptId","indicationConceptIds","exclusionConceptIds")))
     for (drugComparator in drugComparatorList){
-      cohortMethodDataFolder <- file.path(outputFolder,paste("cohortMethodData_cmdArgs_",i,"_target_",drugComparator$targetDrugConceptId,"_comparator_",drugComparator$comparatorDrugConceptId,sep=""))
+      cohortMethodDataFolder <- .createCohortMethodDataFileName (outputFolder, i, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds)
       cohortMethodAnalysisSubset <- matchInList(cohortMethodAnalysisList, getDbCohortMethodDataArgs)
       createPsArgsList <- unique(selectFromList(cohortMethodAnalysisSubset, "createPsArgs"))
       for (j in 1:length(createPsArgsList)){
         createPsArgs = createPsArgsList[[j]]
-        psFileName <- .createPsFileName(outputFolder, i, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, j)
+        psFileName <- .createPsFileName(outputFolder, i, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds, j)
         allButFitOutcomeModelArgsSubset <- matchInList(matchInList(allButFitOutcomeModelArgsList, getDbCohortMethodDataArgs),createPsArgs)
         outcomeConceptIds <- unlist(selectFromList(matchInList(drugComparatorOutcomeList, drugComparator), "outcomeConceptId"))
         for (outcomeConceptId in outcomeConceptIds){
           for (allButFitOutcomeModelArgs in allButFitOutcomeModelArgsSubset){
-            modelsToFit[length(modelsToFit) + 1] <- list(cohortMethodDataFolder = cohortMethodDataFolder, psFileName = psFileName, outcomeConceptId = outcomeConceptId, allButFitOutcomeModelArgs = allButFitOutcomeModelArgs)
+            modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder, psFileName = psFileName, outcomeConceptId = outcomeConceptId, allButFitOutcomeModelArgs = allButFitOutcomeModelArgs)
           }
         }
       }
     }
   }
-  snowfall::sfInit(parallel = TRUE, cpus = fitOutcomeModelThreads)
-  snowfall::sfLibrary(CohortMethod)
-  ffTempDir <- options("fftempdir")
-  snowfall::sfExport("ffTempDir")
-  snowfall::sfExport("cohortMethodAnalysisList")
-  snowfall::sfExport("outputFolder")
-  fitOutcomeModel <- function(params){
-    if (params$allButFitOutcomeModelArgs$fitOutcomeModel){
-      options("fftempdir" = ffTempDir)
+  cluster <- makeCluster(fitOutcomeModelThreads)
+  clusterRequire(cluster,"CohortMethod")
+  doFitOutcomeModel <- function(params, cohortMethodAnalysisList, outputFolder){
+    cohortMethodAnalysisSubset <- matchInList(cohortMethodAnalysisList, params$allButFitOutcomeModelArgs)
+    fitOutcomeModels <- unlist(selectFromList(cohortMethodAnalysisSubset, "fitOutcomeModel"))
+    if (any(fitOutcomeModels)){
       cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
       if (!params$allButFitOutcomeModelArgs$createPs){
         ps <- NULL
@@ -177,7 +181,7 @@ runCohortMethodAnalyses <- function(connectionDetails,
         ps <- readRDS(file = params$psFileName)
 
         # Exclude people with prior outcome:
-        ps <- ps[!(ps$rowId %in% as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId == outcomeConceptId])),]
+        ps <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId == outcomeConceptId])),]
 
         if (params$allButFitOutcomeModelArgs$trimByPs){
           args <- list(data = ps)
@@ -219,7 +223,6 @@ runCohortMethodAnalyses <- function(connectionDetails,
         return(file.path(folder,name))
       }
 
-      cohortMethodAnalysisSubset <- matchInList(cohortMethodAnalysisList, params$allButFitOutcomeModelArgs)
       for (cohortMethodAnalysis in cohortMethodAnalysisSubset){
         analysisFolder <- paste(outputFolder,"/Analysis_",cohortMethodAnalysis$analysisId,sep="")
         if (!file.exists(analysisFolder))
@@ -227,19 +230,19 @@ runCohortMethodAnalyses <- function(connectionDetails,
         outcomeModelFile <- .createOutcomeModelFileName(analysisFolder, drugComparator$targetDrugConceptId, drugComparator$comparatorDrugConceptId, drugComparator$indicationConceptIds, outcomeConceptId)
         if (!file.exists(outcomeModelFile)){
           args <- list(outcomeConceptId = outcomeConceptId, cohortMethodData = cohortMethodData, subPopulation = ps)
-          args <- append(args, params$createPsArgs)
-          outcomeModel <- do.call("createPs", cohortMethodAnalysisSubset$fitOutcomeModelArgs)
+          args <- append(args, cohortMethodAnalysis$fitOutcomeModelArgs)
+          outcomeModel <- do.call("fitOutcomeModel", args)
           saveRDS(outcomeModel, file = outcomeModelFile)
         }
       }
     }
   }
-  dummy <- myClusterApply(modelsToFit, fitPSModel)
-  snowfall::sfStop()
+  dummy <- clusterApply(cluster, modelsToFit, doFitOutcomeModel, cohortMethodAnalysisList = cohortMethodAnalysisList, outputFolder = outputFolder)
+  stopCluster(cluster)
 }
 
 .createCohortMethodDataFileName <- function(folder, argsId, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds) {
-  name <- paste("CmData_a_",argsId,"_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
+  name <- paste("CmData_a",argsId,"_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
   if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0){
     name <- paste(name,"_i",indicationConceptIds[1],sep="")
     if (length(indicationConceptIds) > 1){
@@ -251,7 +254,7 @@ runCohortMethodAnalyses <- function(connectionDetails,
 }
 
 .createPsFileName <- function(folder, argsId, targetDrugConceptId, comparatorDrugConceptId, indicationConceptIds, psArgsId) {
-  name <- paste("Ps_a_",argsId,"_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
+  name <- paste("Ps_a",argsId,"_t",targetDrugConceptId,"_c",comparatorDrugConceptId,sep="")
   if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0){
     name <- paste(name,"_i",indicationConceptIds[1],sep="")
     if (length(indicationConceptIds) > 1){

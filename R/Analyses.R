@@ -115,10 +115,10 @@ loadCohortMethodAnalysisList <- function(file) {
         class(cohortMethodAnalysisList[[i]][[j]]) <- "args"
       }
     }
-    class(cohortMethodAnalysisList[[i]]$createPsArgs$prior) <- "prior"
-    class(cohortMethodAnalysisList[[i]]$createPsArgs$control) <- "control"
-    class(cohortMethodAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "prior"
-    class(cohortMethodAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "control"
+    class(cohortMethodAnalysisList[[i]]$createPsArgs$prior) <- "cyclopsPrior"
+    class(cohortMethodAnalysisList[[i]]$createPsArgs$control) <- "cyclopsControl"
+    class(cohortMethodAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "cyclopsPrior"
+    class(cohortMethodAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "cyclopsControl"
   }
   return(cohortMethodAnalysisList)
 }
@@ -138,7 +138,6 @@ createDrugComparatorOutcome <- function (targetDrugConceptId, comparatorDrugConc
       drugComparatorOutcome[[name]] = values[[name]]
     }
   }
-
   class(drugComparatorOutcome) <- "drugComparatorOutcome"
   return(drugComparatorOutcome)
 }
@@ -174,5 +173,8 @@ saveDrugComparatorOutcomeList <- function(drugComparatorOutcomeList, file){
 #' @export
 loadDrugComparatorOutcomeList <- function(file) {
   drugComparatorOutcomeList <- rjson::fromJSON(file = file)
+  for (i in 1:length(drugComparatorOutcomeList)){
+    class(drugComparatorOutcomeList[[i]]) <- "drugComparatorOutcome"
+  }
   return(drugComparatorOutcomeList)
 }
