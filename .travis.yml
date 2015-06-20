@@ -32,4 +32,4 @@ notifications:
 after_success:
   - Rscript -e 'library(covr);codecov()'
   # Rebuild docker container
-  - curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/ohdsi/development/trigger/e51f720d-c4e7-45df-b042-5d8a362bd7e0/
+  - curl "-H "Content-Type: application/json" --data '{"build":true}' -X POST https://registry.hub.docker.com/u/ohdsi/development/trigger/e51f720d-c4e7-45df-b042-5d8a362bd7e0/
