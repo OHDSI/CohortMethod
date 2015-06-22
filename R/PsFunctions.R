@@ -649,23 +649,25 @@ stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortMethodData
   return(stratifyByPs(data, numberOfStrata, stratificationColumns))
 }
 
+# A faster version of ffbase::bySum. Doesn't require the bins to be converted to characters
+cmBySum <- function(values, bins){
+  .Call('CohortMethod_bySum', PACKAGE = 'CohortMethod', values, bins)
+}
+
 quickSum <- function(data, squared = FALSE) {
   result <- NULL
   for (i in bit::chunk(data)) {
-    dataChunk <- data[i, ]
-    if (squared)
-      x <- ffbase::bySum(dataChunk$covariateValue^2,
-                         as.factor(dataChunk$covariateId)) else x <- ffbase::bySum(dataChunk$covariateValue,
-                                                                                   as.factor(dataChunk$covariateId))
-    covariateId <- attr(x, "dimnames")
-    attributes(x) <- NULL
-    r <- data.frame(value = x, covariateId = covariateId, stringsAsFactors = FALSE)
-    colnames(r)[2] <- "covariateId"  #for some reason we lose the name when stringsAsFactors = FALSE
-    if (is.null(result)) {
-      result <- r
-      colnames(result)[colnames(result) == "value"] <- "s"
+    if (squared) {
+      x <- cmBySum(data$covariateValue[i]^2, data$covariateId[i])
     } else {
-      result <- merge(result, r, all = TRUE)
+      x <- cmBySum(data$covariateValue[i], data$covariateId[i])
+    }
+    if (is.null(result)) {
+      colnames(x) <- c("covariateId", "s")
+      result <- x
+    } else {
+      colnames(x) <- c("covariateId", "value")
+      result <- merge(result, x, all = TRUE)
       result$s[is.na(result$s)] <- 0
       result$value[is.na(result$value)] <- 0
       result$s <- result$s + result$value
@@ -700,8 +702,9 @@ computeMeansPerGroup <- function(cohorts, covariates) {
   colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
 
   t <- in.ff(covariates$rowId, cohorts$rowId)
-  overall <- quickSum(covariates[ffbase::ffwhich(t, t == TRUE), ])
-  overallSqr <- quickSum(covariates[ffbase::ffwhich(t, t == TRUE), ], squared = TRUE)
+  covsInCohorts <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+  overall <- quickSum(covsInCohorts)
+  overallSqr <- quickSum(covsInCohorts, squared = TRUE)
   overall <- merge(overall, overallSqr)
   overall$sd <- sqrt((overall$sumSqr - (overall$sum^2/nOverall))/nOverall)
   overall <- data.frame(covariateId = overall$covariateId, sd = overall$sd)

@@ -27,8 +27,10 @@
 
 
 #include <Rcpp.h>
+#include <map>
 #include "Match.h"
 #include "Auc.h"
+#include "BySum.h"
 
 using namespace Rcpp;
 
@@ -79,6 +81,28 @@ double auc(std::vector<double> propensityScores, std::vector<int> treatment) {
 		::Rf_error("c++ exception (unknown reason)");
 	}
 	return 0.0;
+}
+
+// [[Rcpp::export(".bySum")]]
+DataFrame bySum(std::vector<double> values, std::vector<double> bins) {
+
+  using namespace ohdsi::cohortMethod;
+
+  try {
+    std::map<double,double> map = BySum::bySum(values, bins);
+    std::vector<double> bins;
+    std::vector<double> sums;
+    for(std::map<double,double>::iterator iter = map.begin(); iter != map.end(); ++iter){
+      bins.push_back(iter->first);
+      sums.push_back(iter->second);
+    }
+    return DataFrame::create(_["bins"] = bins, _["sums"] = sums);
+  } catch (std::exception &e) {
+    forward_exception_to_r(e);
+  } catch (...) {
+    ::Rf_error("c++ exception (unknown reason)");
+  }
+  return DataFrame::create();
 }
 
 #endif // __RcppWrapper_cpp__
