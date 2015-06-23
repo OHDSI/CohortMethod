@@ -14,7 +14,8 @@ testCode <- function() {
 
   drugComparatorOutcomeList <- list(drugComparatorOutcome1, drugComparatorOutcome2)
 
-  saveDrugComparatorOutcomeList(drugComparatorOutcomeList, "s:/temp/drugComparatorOutcomeList.json.txt")
+  saveDrugComparatorOutcomeList(drugComparatorOutcomeList,
+                                "s:/temp/drugComparatorOutcomeList.json.txt")
 
 
 
@@ -55,8 +56,8 @@ testCode <- function() {
                                                      useCovariateInteractionMonth = FALSE,
                                                      deleteCovariatesSmallCount = 100)
 
-  createPsArgs <- createCreatePsArgs() # Using only defaults
-  matchOnPsAndCovariatesArgs <- createMatchOnPsAndCovariatesArgs(maxRatio = 1, covariateIds = NULL)
+  createPsArgs <- createCreatePsArgs()  # Using only defaults
+  matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 1)
   fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0,
                                                     riskWindowEnd = 365,
                                                     addExposureDaysToEnd = FALSE,
@@ -68,8 +69,8 @@ testCode <- function() {
                                             getDbCohortMethodDataArgs = getDbCmDataArgs,
                                             createPs = TRUE,
                                             createPsArgs = createPsArgs,
-                                            matchOnPsAndCovariates = TRUE,
-                                            matchOnPsAndCovariatesArgs = matchOnPsAndCovariatesArgs,
+                                            matchOnPs = TRUE,
+                                            matchOnPsArgs = matchOnPsArgs,
                                             fitOutcomeModel = TRUE,
                                             fitOutcomeModelArgs = fitOutcomeModelArgs1)
   fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(riskWindowStart = 0,
@@ -84,14 +85,15 @@ testCode <- function() {
                                             getDbCohortMethodDataArgs = getDbCmDataArgs,
                                             createPs = TRUE,
                                             createPsArgs = createPsArgs,
-                                            matchOnPsAndCovariates = TRUE,
-                                            matchOnPsAndCovariatesArgs = matchOnPsAndCovariatesArgs,
+                                            matchOnPs = TRUE,
+                                            matchOnPsArgs = matchOnPsArgs,
                                             fitOutcomeModel = TRUE,
                                             fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
   cohortMethodAnalysisList <- list(cmAnalysis1, cmAnalysis2)
 
-  saveCohortMethodAnalysisList(cohortMethodAnalysisList, "s:/temp/cohortMethodAnalysisList.json.txt")
+  saveCohortMethodAnalysisList(cohortMethodAnalysisList,
+                               "s:/temp/cohortMethodAnalysisList.json.txt")
 
 
 
@@ -117,11 +119,15 @@ testCode <- function() {
                                                                   port = port)
 
 
-  runCohortMethodAnalyses(connectionDetails =  connectionDetails,
+  runCohortMethodAnalyses(connectionDetails = connectionDetails,
                           cdmDatabaseSchema = cdmDatabaseSchema,
                           outputFolder = "s:/temp/cmOutput",
                           cohortMethodAnalysisList = cohortMethodAnalysisList,
-                          drugComparatorOutcomeList = drugComparatorOutcomeList, getDbCohortMethodDataThreads = 2, createPsThreads = 1, fitOutcomeModelThreads = 1)
+                          drugComparatorOutcomeList = drugComparatorOutcomeList,
+                          getDbCohortMethodDataThreads = 2,
+                          createPsThreads = 1,
+                          fitOutcomeModelThreads = 1)
+
 
 
   cohortMethodData <- getDbCohortMethodData(connectionDetails,

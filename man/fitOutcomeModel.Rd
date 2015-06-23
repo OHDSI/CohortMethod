@@ -36,8 +36,8 @@ specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the outcome
-model.}
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the
+outcome model.}
 
 \item{fitModel}{If false, the model will not be fit, and only summary statistics are
 available.}

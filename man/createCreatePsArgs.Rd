@@ -2,7 +2,7 @@
 % Please edit documentation in R/CreateArgFunctions.R
 \name{createCreatePsArgs}
 \alias{createCreatePsArgs}
-\title{Create parameter object for the function createPs}
+\title{Create a parameter object for the function createPs}
 \usage{
 createCreatePsArgs(excludeCovariateIds = NULL,
   prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
@@ -19,10 +19,9 @@ createCreatePsArgs(excludeCovariateIds = NULL,
                              SeecreateControl for details.}
 }
 \description{
-Create parameter object for the function createPs
+Create a parameter object for the function createPs
 }
 \details{
-Create an object defining the parameter values. To be used in the
-\code{\link{createCohortMethodAnalysis}} function.
+Create an object defining the parameter values.
 }
 

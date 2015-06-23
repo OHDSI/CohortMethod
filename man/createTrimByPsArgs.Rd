@@ -2,7 +2,7 @@
 % Please edit documentation in R/CreateArgFunctions.R
 \name{createTrimByPsArgs}
 \alias{createTrimByPsArgs}
-\title{Create parameter object for the function trimByPs}
+\title{Create a parameter object for the function trimByPs}
 \usage{
 createTrimByPsArgs(trimFraction = 0.05)
 }
@@ -12,10 +12,9 @@ createTrimByPsArgs(trimFraction = 0.05)
                       thecomparator group person with the lowest scores will be removed.}
 }
 \description{
-Create parameter object for the function trimByPs
+Create a parameter object for the function trimByPs
 }
 \details{
-Create an object defining the parameter values. To be used in the
-\code{\link{createCohortMethodAnalysis}} function.
+Create an object defining the parameter values.
 }
 

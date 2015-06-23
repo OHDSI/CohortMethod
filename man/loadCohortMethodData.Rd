@@ -15,7 +15,8 @@ loadCohortMethodData(file, readOnly = FALSE)
 An object of class cohortMethodData.
 }
 \description{
-\code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file system.
+\code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file
+system.
 }
 \details{
 The data will be written to a set of files in the folder specified by the user.

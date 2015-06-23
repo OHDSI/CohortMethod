@@ -248,7 +248,8 @@ createDataForModelFit <- function(outcomeConceptId,
     outcomes <- cohortMethodData$outcomes
     cohorts <- ff::as.ram(cohortMethodData$cohort)
   } else {
-    outcomes <- ffbase::subset.ffdf(cohortMethodData$outcomes, outcomeId == as.double(outcomeConceptId))
+    outcomes <- ffbase::subset.ffdf(cohortMethodData$outcomes,
+                                    outcomeId == as.double(outcomeConceptId))
     t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
     t <- ffbase::ffwhich(t, t == TRUE)
     if (is.null(t)) {
@@ -310,7 +311,7 @@ createDataForModelFit <- function(outcomeConceptId,
 #'
 #' @param outcomeConceptId       The concept ID of the outcome. Persons marked for removal for the
 #'                               outcome will be removed prior to creating the outcome model.
-#' @param cohortMethodData             An object of type \code{cohortMethodData} as generated using
+#' @param cohortMethodData       An object of type \code{cohortMethodData} as generated using
 #'                               \code{getDbCohortMethodData}.
 #' @param subPopulation          A data frame specifying the (matched and/or trimmed) subpopulation to
 #'                               be used in the study, as well as their strata (for conditional
@@ -325,8 +326,8 @@ createDataForModelFit <- function(outcomeConceptId,
 #'                               days of exposure if the \code{addExposureDaysToEnd} parameter is
 #'                               specified).
 #' @param addExposureDaysToEnd   Add the length of exposure the risk window?
-#' @param useCovariates          Whether to use the covariate matrix in the cohortMethodData in the outcome
-#'                               model.
+#' @param useCovariates          Whether to use the covariate matrix in the cohortMethodData in the
+#'                               outcome model.
 #' @param fitModel               If false, the model will not be fit, and only summary statistics are
 #'                               available.
 #' @param modelType              The type of model to be fitted. See details for options.
@@ -556,9 +557,10 @@ print.outcomeModel <- function(x, ...) {
 #' \code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables included
 #' in the outcome model, not just the treatment variable.
 #'
-#' @param outcomeModel   An object of type \code{outcomeModel} as generated using he
-#'                       \code{createOutcomeMode} function.
-#' @param cohortMethodData     An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
+#' @param outcomeModel       An object of type \code{outcomeModel} as generated using he
+#'                           \code{createOutcomeMode} function.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
+#'                           \code{getDbCohortMethodData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.

@@ -36,7 +36,7 @@
 #'                            Requires read permissions to this database. On SQL Server, this should
 #'                            specifiy both the database and the schema, so for example
 #'                            'cdm_instance.dbo'.
-#' @param cohortMethodData          An object of type \code{cohortMethodData} as generated using
+#' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
 #' @template GetOutcomesParams
 #'

@@ -88,20 +88,20 @@
 #'                                     date can appear. Date format is 'yyyymmdd'.
 #'
 #' @return
-#' Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their outcomes,
-#' and baseline covariates. Information about multiple outcomes can be captured at once for efficiency
-#' reasons. This object is a list with the following components: \describe{ \item{outcomes}{An ffdf
-#' object listing the outcomes per person, including the time to event, and the outcome conncept ID.
-#' Outcomes are not yet filtered based on risk window, since this is done at a later stage.}
-#' \item{cohorts}{An ffdf object listing the persons in each cohort, listing their exposure status as
-#' well as the time to the end of the observation period and time to the end of the cohort (usually
-#' the end of the exposure era).} \item{covariates}{An ffdf object listing the baseline covariates per
-#' person in the two cohorts. This is done using a sparse representation: covariates with a value of 0
-#' are omitted to save space.} \item{exclude}{An ffdf object listing for each outcome concept ID the
-#' persons that need to be excluded from the analysis because of prior outcomes.}
-#' \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
-#' \item{metaData}{A list of objects with information on how the cohortMethodData object was constructed.} }
-#' The generic \code{summary()} function has been implemented for this object.
+#' Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
+#' outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for
+#' efficiency reasons. This object is a list with the following components: \describe{
+#' \item{outcomes}{An ffdf object listing the outcomes per person, including the time to event, and
+#' the outcome conncept ID. Outcomes are not yet filtered based on risk window, since this is done at
+#' a later stage.} \item{cohorts}{An ffdf object listing the persons in each cohort, listing their
+#' exposure status as well as the time to the end of the observation period and time to the end of the
+#' cohort (usually the end of the exposure era).} \item{covariates}{An ffdf object listing the
+#' baseline covariates per person in the two cohorts. This is done using a sparse representation:
+#' covariates with a value of 0 are omitted to save space.} \item{exclude}{An ffdf object listing for
+#' each outcome concept ID the persons that need to be excluded from the analysis because of prior
+#' outcomes.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
+#' \item{metaData}{A list of objects with information on how the cohortMethodData object was
+#' constructed.} } The generic \code{summary()} function has been implemented for this object.
 #'
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
@@ -396,9 +396,10 @@ getDbCohortMethodData <- function(connectionDetails,
 #' @description
 #' \code{saveCohortMethodData} saves an object of type cohortMethodData to folder.
 #'
-#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
-#' @param file         The name of the folder where the data will be written. The folder should not yet
-#'                     exist.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
+#'                           \code{getDbCohortMethodData}.
+#' @param file               The name of the folder where the data will be written. The folder should
+#'                           not yet exist.
 #'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
@@ -428,7 +429,8 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' Load the cohort data from a folder
 #'
 #' @description
-#' \code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file system.
+#' \code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file
+#' system.
 #'
 #' @param file       The name of the folder containing the data.
 #' @param readOnly   If true, the data is opened read only.
@@ -463,7 +465,7 @@ loadCohortMethodData <- function(file, readOnly = FALSE) {
                  metaData = mget("metaData",
                                  envir = e,
                                  ifnotfound = list(NULL))[[1]]  #For backwards compatibility
-  )
+)
   # Open all ffdfs to prevent annoying messages later:
   open(result$outcomes, readonly = readOnly)
   open(result$cohorts, readonly = readOnly)
@@ -496,10 +498,10 @@ summary.cohortMethodData <- function(object, ...) {
     outcomeCounts$eventCount[i] <- ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] <- 0 else {
-        t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
-        outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
-                                                                                                       t == TRUE)]))
-      }
+      t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+      outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
+                                                                                                     t == TRUE)]))
+    }
   }
 
   result <- list(metaData = object$metaData,

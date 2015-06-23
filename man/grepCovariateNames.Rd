@@ -22,7 +22,7 @@ common data model concept identifier, or 0} }
 Extracts covariate names using a regular-expression.
 }
 \details{
-This function extracts covariate names that match a regular-expression for a \code{cohortMethodData} or
-\code{covariateData} object.
+This function extracts covariate names that match a regular-expression for a
+\code{cohortMethodData} or \code{covariateData} object.
 }
 

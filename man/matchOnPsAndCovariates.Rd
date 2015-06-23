@@ -10,23 +10,25 @@ matchOnPsAndCovariates(data, caliper = 0.25, caliperScale = "standardized",
 \arguments{
 \item{data}{A data frame with the three columns described below.}
 
-\item{caliper}{The caliper for matching. A caliper is the distance which is acceptable for
-any match. Observations which are outside of the caliper are dropped. A
-caliper of 0 means no caliper is used.}
+\item{caliper}{The caliper for matching. A caliper is the distance which is acceptable
+for any match. Observations which are outside of the caliper are dropped.
+A caliper of 0 means no caliper is used.}
 
 \item{caliperScale}{The scale on which the caliper is defined. Two scales are
-supported:\cr\code{caliperScale = 'propensity score'} or \code{caliperScale =
-'standardized'}. On the standardized scale, the caliper is interpreted in
-standard deviations of the propensity score distribution.}
+supported:\cr\code{caliperScale = 'propensity score'} or
+\code{caliperScale = 'standardized'}. On the standardized scale, the
+caliper is interpreted in standard deviations of the propensity score
+distribution.}
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each
-person in the treatment arm. A maxRatio of 0 means no maximum: all comparators
-will be assigned to a treated person.}
+person in the treatment arm. A maxRatio of 0 means no maximum: all
+comparators will be assigned to a treated person.}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
-\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which subjects
-                      should be also matched.}
+\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
+                          subjects should be also matched.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any

@@ -26,7 +26,7 @@
 #' @description
 #' \code{createPs} creates propensity scores using a regularized logistic regression.
 #'
-#' @param cohortMethodData            An object of type \code{cohortMethodData} as generated using
+#' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
 #'                              \code{getDbCohortMethodData}.
 #' @param outcomeConceptId      The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
@@ -64,10 +64,12 @@ createPs <- function(cohortMethodData,
     }
   } else {
     t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- in.ff(cohortMethodData$cohorts$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
     t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortMethodData$covariates$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- in.ff(cohortMethodData$covariates$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     if (is.null(excludeCovariateIds)) {
       excludeCovariateIds <- c(1)
     } else {
@@ -77,10 +79,7 @@ createPs <- function(cohortMethodData,
     covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
-  cyclopsData <- convertToCyclopsData(cohortSubset,
-                                      covariateSubset,
-                                      modelType = "lr",
-                                      quiet = TRUE)
+  cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
   pred <- predict(cyclopsFit)
@@ -98,9 +97,9 @@ createPs <- function(cohortMethodData,
 #' @description
 #' \code{getPsModel} shows the propensity score model
 #'
-#' @param propensityScore   The propensity scores as generated using the \code{createPs} function.
-#' @param cohortMethodData        An object of type \code{cohortMethodData} as generated using
-#'                          \code{getDbCohortMethodData}.
+#' @param propensityScore    The propensity scores as generated using the \code{createPs} function.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
+#'                           \code{getDbCohortMethodData}.
 #'
 #' @details
 #' Shows the coefficients and names of the covariates with non-zero coefficients.
@@ -495,20 +494,22 @@ matchOnPs <- function(data,
 #' \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
 #' treated to comparator persons.
 #'
-#' @param data           A data frame with the three columns described below.
-#' @param caliper        The caliper for matching. A caliper is the distance which is acceptable for
-#'                       any match. Observations which are outside of the caliper are dropped. A
-#'                       caliper of 0 means no caliper is used.
-#' @param caliperScale   The scale on which the caliper is defined. Two scales are
-#'                       supported:\cr\code{caliperScale = 'propensity score'} or \code{caliperScale =
-#'                       'standardized'}. On the standardized scale, the caliper is interpreted in
-#'                       standard deviations of the propensity score distribution.
-#' @param maxRatio       The maximum number of persons int the comparator arm to be matched to each
-#'                       person in the treatment arm. A maxRatio of 0 means no maximum: all comparators
-#'                       will be assigned to a treated person.
-#' @param cohortMethodData     An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
-#' @param covariateIds   One or more covariate IDs in the \code{cohortMethodData} object on which subjects
-#'                       should be also matched.
+#' @param data               A data frame with the three columns described below.
+#' @param caliper            The caliper for matching. A caliper is the distance which is acceptable
+#'                           for any match. Observations which are outside of the caliper are dropped.
+#'                           A caliper of 0 means no caliper is used.
+#' @param caliperScale       The scale on which the caliper is defined. Two scales are
+#'                           supported:\cr\code{caliperScale = 'propensity score'} or
+#'                           \code{caliperScale = 'standardized'}. On the standardized scale, the
+#'                           caliper is interpreted in standard deviations of the propensity score
+#'                           distribution.
+#' @param maxRatio           The maximum number of persons int the comparator arm to be matched to each
+#'                           person in the treatment arm. A maxRatio of 0 means no maximum: all
+#'                           comparators will be assigned to a treated person.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
+#'                           \code{getDbCohortMethodData}.
+#' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
+#'                           subjects should be also matched.
 #'
 #' @details
 #' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
@@ -620,14 +621,14 @@ stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) 
 #' \code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify
 #' persons.
 #'
-#' @param data             A data frame with the three columns described below
-#' @param numberOfStrata   Into how many strata should the propensity score be divided? The boundaries
-#'                         of the strata are automatically defined to contain equal numbers of treated
-#'                         persons.
-#' @param cohortMethodData       An object of type \code{cohortMethodData} as generated using
-#'                         \code{getDbCohortMethodData}.
-#' @param covariateIds     One or more covariate IDs in the \code{cohortMethodData} object on which subjects
-#'                         should also be stratified.
+#' @param data               A data frame with the three columns described below
+#' @param numberOfStrata     Into how many strata should the propensity score be divided? The
+#'                           boundaries of the strata are automatically defined to contain equal
+#'                           numbers of treated persons.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
+#'                           \code{getDbCohortMethodData}.
+#' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
+#'                           subjects should also be stratified.
 #'
 #' @details
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
@@ -650,8 +651,8 @@ stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortMethodData
 }
 
 # A faster version of ffbase::bySum. Doesn't require the bins to be converted to characters
-cmBySum <- function(values, bins){
-  .Call('CohortMethod_bySum', PACKAGE = 'CohortMethod', values, bins)
+cmBySum <- function(values, bins) {
+  .Call("CohortMethod_bySum", PACKAGE = "CohortMethod", values, bins)
 }
 
 quickSum <- function(data, squared = FALSE) {
@@ -723,7 +724,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'
 #' @param restrictedCohorts   A data frame containing the people that are remaining after matching
 #'                            and/or trimming.
-#' @param cohortMethodData          An object of type \code{cohortMethodData} as generated using
+#' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
 #' @param outcomeConceptId    The concept ID of the outcome. Persons marked for removal for the outcome
 #'                            will be removed when computing the balance before matching/trimming.
@@ -744,10 +745,12 @@ computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcome
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
   } else {
     t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- in.ff(cohortMethodData$cohorts$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohorts <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
     t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
-    t <- in.ff(cohortMethodData$covariates$rowId, cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- in.ff(cohortMethodData$covariates$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     t <- t | cohortMethodData$covariates$covariateId == 1
     covariates <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
   }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/CreateArgFunctions.R
 \name{createFitOutcomeModelArgs}
 \alias{createFitOutcomeModelArgs}
-\title{Create parameter object for the function fitOutcomeModel}
+\title{Create a parameter object for the function fitOutcomeModel}
 \usage{
 createFitOutcomeModelArgs(stratifiedCox = TRUE, riskWindowStart = 0,
   riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
@@ -23,8 +23,8 @@ of exposure if the addExposureDaysToEnd parameter isspecified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the
-outcomemodel.}
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in
+theoutcome model.}
 
 \item{fitModel}{If false, the model will not be fit, and only summary statistics
 areavailable.}
@@ -38,10 +38,9 @@ areavailable.}
                               SeecreateControl for details.}
 }
 \description{
-Create parameter object for the function fitOutcomeModel
+Create a parameter object for the function fitOutcomeModel
 }
 \details{
-Create an object defining the parameter values. To be used in the
-\code{\link{createCohortMethodAnalysis}} function.
+Create an object defining the parameter values.
 }
 

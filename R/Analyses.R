@@ -25,14 +25,18 @@ createCohortMethodAnalysis <- function(analysisId = 1,
                                        trimByPsArgs = NULL,
                                        trimByPsToEquipoise = FALSE,
                                        trimByPsToEquipoiseArgs = NULL,
+                                       matchOnPs = FALSE,
+                                       matchOnPsArgs = NULL,
                                        matchOnPsAndCovariates = FALSE,
                                        matchOnPsAndCovariatesArgs = NULL,
                                        stratifyByPs = FALSE,
                                        stratifyByPsArgs = NULL,
+                                       stratifyByPsAndCovariates = FALSE,
+                                       stratifyByPsAndCovariatesArgs = NULL,
                                        fitOutcomeModel = FALSE,
                                        fitOutcomeModelArgs = NULL) {
-  if (matchOnPsAndCovariates && stratifyByPs) {
-    stop("Cannot match and stratify at the same time")
+  if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
+    stop("Need to pick one matching or stratification function")
   }
   if (trimByPs && trimByPsToEquipoise) {
     stop("Cannot trim to fraction and equipoise at the same time")
@@ -40,36 +44,42 @@ createCohortMethodAnalysis <- function(analysisId = 1,
   if (!createPs && (trimByPs | matchOnPsAndCovariates | stratifyByPs)) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
-  if (!createPs){
+  if (!createPs) {
     createPsArgs <- NULL
   }
-  if (!trimByPs){
+  if (!trimByPs) {
     trimByPsArgs <- NULL
   }
-  if (!trimByPsToEquipoise){
+  if (!trimByPsToEquipoise) {
     trimByPsToEquipoiseArgs <- NULL
   }
-  if (!matchOnPsAndCovariates){
+  if (!matchOnPs) {
+    matchOnPsArgs <- NULL
+  }
+  if (!matchOnPsAndCovariates) {
     matchOnPsAndCovariatesArgs <- NULL
   }
-  if (!stratifyByPs){
+  if (!stratifyByPs) {
     stratifyByPsArgs <- NULL
   }
-  if (!fitOutcomeModel){
+  if (!stratifyByPsAndCovariates) {
+    stratifyByPsAndCovariatesArgs <- NULL
+  }
+  if (!fitOutcomeModel) {
     fitOutcomeModelArgs <- NULL
   }
 
-  #First: get the default values:
+  # First: get the default values:
   analysis <- list()
-  for (name in names(formals(createCohortMethodAnalysis))){
-    analysis[[name]] = get(name)
+  for (name in names(formals(createCohortMethodAnalysis))) {
+    analysis[[name]] <- get(name)
   }
 
-  #Next: overwrite defaults with actual values if specified:
-  values <- lapply(as.list(match.call())[-1],function(x) eval(x,envir=sys.frame(-3)))
-  for (name in names(values)){
+  # Next: overwrite defaults with actual values if specified:
+  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
+  for (name in names(values)) {
     if (name %in% names(analysis)) {
-      analysis[[name]] = values[[name]]
+      analysis[[name]] <- values[[name]]
     }
   }
 
@@ -82,14 +92,14 @@ createCohortMethodAnalysis <- function(analysisId = 1,
 #' @description
 #' Write a list of objects of type \code{cohortMethodAnalysis} to file. The file is in JSON format.
 #'
-#' @param cohortMethodAnalysisList    The cohortMethodAnalysis list to be written to file
-#' @param file                  The name of the file where the results will be written
+#' @param cohortMethodAnalysisList   The cohortMethodAnalysis list to be written to file
+#' @param file                       The name of the file where the results will be written
 #'
 #' @export
-saveCohortMethodAnalysisList <- function(cohortMethodAnalysisList, file){
+saveCohortMethodAnalysisList <- function(cohortMethodAnalysisList, file) {
   stopifnot(is.list(cohortMethodAnalysisList))
   stopifnot(length(cohortMethodAnalysisList) > 0)
-  for (i in 1:length(cohortMethodAnalysisList)){
+  for (i in 1:length(cohortMethodAnalysisList)) {
     stopifnot(class(cohortMethodAnalysisList[[i]]) == "cohortMethodAnalysis")
   }
   write(rjson::toJSON(cohortMethodAnalysisList), file)
@@ -100,7 +110,7 @@ saveCohortMethodAnalysisList <- function(cohortMethodAnalysisList, file){
 #' @description
 #' Load a list of objects of type \code{cohortMethodAnalysis} from file. The file is in JSON format.
 #'
-#' @param file                  The name of the file
+#' @param file   The name of the file
 #'
 #' @return
 #' A list of objects of type \code{cohortMethodAnalysis}.
@@ -108,10 +118,10 @@ saveCohortMethodAnalysisList <- function(cohortMethodAnalysisList, file){
 #' @export
 loadCohortMethodAnalysisList <- function(file) {
   cohortMethodAnalysisList <- rjson::fromJSON(file = file)
-  for (i in 1:length(cohortMethodAnalysisList)){
+  for (i in 1:length(cohortMethodAnalysisList)) {
     class(cohortMethodAnalysisList[[i]]) <- "cohortMethodAnalysis"
-    for (j in 1:length(cohortMethodAnalysisList[[i]])){
-      if (is.list(cohortMethodAnalysisList[[i]][[j]])){
+    for (j in 1:length(cohortMethodAnalysisList[[i]])) {
+      if (is.list(cohortMethodAnalysisList[[i]][[j]])) {
         class(cohortMethodAnalysisList[[i]][[j]]) <- "args"
       }
     }
@@ -124,18 +134,22 @@ loadCohortMethodAnalysisList <- function(file) {
 }
 
 #' @export
-createDrugComparatorOutcome <- function (targetDrugConceptId, comparatorDrugConceptId, outcomeConceptId, indicationConceptIds = c(), exclusionConceptIds = c()){
-  #First: get the default values:
+createDrugComparatorOutcome <- function(targetDrugConceptId,
+                                        comparatorDrugConceptId,
+                                        outcomeConceptId,
+                                        indicationConceptIds = c(),
+                                        exclusionConceptIds = c()) {
+  # First: get the default values:
   drugComparatorOutcome <- list()
-  for (name in names(formals(createDrugComparatorOutcome))){
-    drugComparatorOutcome[[name]] = get(name)
+  for (name in names(formals(createDrugComparatorOutcome))) {
+    drugComparatorOutcome[[name]] <- get(name)
   }
 
-  #Next: overwrite defaults with actual values if specified:
-  values <- lapply(as.list(match.call())[-1],function(x) eval(x,envir=sys.frame(-3)))
-  for (name in names(values)){
+  # Next: overwrite defaults with actual values if specified:
+  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
+  for (name in names(values)) {
     if (name %in% names(drugComparatorOutcome)) {
-      drugComparatorOutcome[[name]] = values[[name]]
+      drugComparatorOutcome[[name]] <- values[[name]]
     }
   }
   class(drugComparatorOutcome) <- "drugComparatorOutcome"
@@ -147,14 +161,14 @@ createDrugComparatorOutcome <- function (targetDrugConceptId, comparatorDrugConc
 #' @description
 #' Write a list of objects of type \code{drugComparatorOutcome} to file. The file is in JSON format.
 #'
-#' @param drugComparatorOutcomeList    The drugComparatorOutcome list to be written to file
-#' @param file                  The name of the file where the results will be written
+#' @param drugComparatorOutcomeList   The drugComparatorOutcome list to be written to file
+#' @param file                        The name of the file where the results will be written
 #'
 #' @export
-saveDrugComparatorOutcomeList <- function(drugComparatorOutcomeList, file){
+saveDrugComparatorOutcomeList <- function(drugComparatorOutcomeList, file) {
   stopifnot(is.list(drugComparatorOutcomeList))
   stopifnot(length(drugComparatorOutcomeList) > 0)
-  for (i in 1:length(drugComparatorOutcomeList)){
+  for (i in 1:length(drugComparatorOutcomeList)) {
     stopifnot(class(drugComparatorOutcomeList[[i]]) == "drugComparatorOutcome")
   }
   write(rjson::toJSON(drugComparatorOutcomeList), file)
@@ -165,7 +179,7 @@ saveDrugComparatorOutcomeList <- function(drugComparatorOutcomeList, file){
 #' @description
 #' Load a list of objects of type \code{drugComparatorOutcome} from file. The file is in JSON format.
 #'
-#' @param file                  The name of the file
+#' @param file   The name of the file
 #'
 #' @return
 #' A list of objects of type \code{drugComparatorOutcome}.
@@ -173,7 +187,7 @@ saveDrugComparatorOutcomeList <- function(drugComparatorOutcomeList, file){
 #' @export
 loadDrugComparatorOutcomeList <- function(file) {
   drugComparatorOutcomeList <- rjson::fromJSON(file = file)
-  for (i in 1:length(drugComparatorOutcomeList)){
+  for (i in 1:length(drugComparatorOutcomeList)) {
     class(drugComparatorOutcomeList[[i]]) <- "drugComparatorOutcome"
   }
   return(drugComparatorOutcomeList)

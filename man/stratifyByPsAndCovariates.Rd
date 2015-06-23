@@ -10,15 +10,15 @@ stratifyByPsAndCovariates(data, numberOfStrata = 5, cohortMethodData,
 \arguments{
 \item{data}{A data frame with the three columns described below}
 
-\item{numberOfStrata}{Into how many strata should the propensity score be divided? The boundaries
-of the strata are automatically defined to contain equal numbers of treated
-persons.}
+\item{numberOfStrata}{Into how many strata should the propensity score be divided? The
+boundaries of the strata are automatically defined to contain equal
+numbers of treated persons.}
 
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
-\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which subjects
-                        should also be stratified.}
+\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
+                          subjects should also be stratified.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId.

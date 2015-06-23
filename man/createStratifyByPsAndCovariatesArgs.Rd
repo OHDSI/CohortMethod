@@ -2,23 +2,22 @@
 % Please edit documentation in R/CreateArgFunctions.R
 \name{createStratifyByPsAndCovariatesArgs}
 \alias{createStratifyByPsAndCovariatesArgs}
-\title{Create parameter object for the function stratifyByPsAndCovariates}
+\title{Create a parameter object for the function stratifyByPsAndCovariates}
 \usage{
 createStratifyByPsAndCovariatesArgs(numberOfStrata = 5, covariateIds)
 }
 \arguments{
-\item{numberOfStrata}{Into how many strata should the propensity score be divided? The
-boundariesof the strata are automatically defined to contain equal numbers
-of treatedpersons.}
+\item{numberOfStrata}{Into how many strata should the propensity score be divided? Theboundaries
+of the strata are automatically defined to contain equalnumbers of treated
+persons.}
 
-\item{covariateIds}{One or more covariate IDs in the cohortMethodData object on which
-                        subjectsshould also be stratified.}
+\item{covariateIds}{One or more covariate IDs in the cohortMethodData object on whichsubjects
+                        should also be stratified.}
 }
 \description{
-Create parameter object for the function stratifyByPsAndCovariates
+Create a parameter object for the function stratifyByPsAndCovariates
 }
 \details{
-Create an object defining the parameter values. To be used in the
-\code{\link{createCohortMethodAnalysis}} function.
+Create an object defining the parameter values.
 }
 

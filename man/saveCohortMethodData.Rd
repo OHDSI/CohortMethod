@@ -7,10 +7,11 @@
 saveCohortMethodData(cohortMethodData, file)
 }
 \arguments{
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
-\item{file}{The name of the folder where the data will be written. The folder should not yet
-                    exist.}
+\item{file}{The name of the folder where the data will be written. The folder should
+                          not yet exist.}
 }
 \description{
 \code{saveCohortMethodData} saves an object of type cohortMethodData to folder.

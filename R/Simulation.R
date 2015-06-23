@@ -19,14 +19,16 @@
 #' Create simulation profile
 #'
 #' @description
-#' \code{createCohortMethodDataSimulationProfile} creates a profile based on the provided cohortMethodData object,
-#' which can be used to generate simulated data that has similar characteristics.
+#' \code{createCohortMethodDataSimulationProfile} creates a profile based on the provided
+#' cohortMethodData object, which can be used to generate simulated data that has similar
+#' characteristics.
 #'
-#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.
+#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
+#'                           \code{getDbCohortMethodData}.
 #'
 #' @details
-#' The output of this function is an object that can be used by the \code{simulateCohortMethodData} function
-#' to generate a cohortMethodData object.
+#' The output of this function is an object that can be used by the \code{simulateCohortMethodData}
+#' function to generate a cohortMethodData object.
 #'
 #' @return
 #' An object of type \code{cohortDataSimulationProfile}.
@@ -91,8 +93,8 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 #' \code{simulateCohortMethodData} creates a cohortMethodData object with simulated data.
 #'
 #' @param cohortDataSimulationProfile   An object of type \code{cohortDataSimulationProfile} as
-#'                                      generated using the \cr\code{createCohortMethodDataSimulationProfile}
-#'                                      function.
+#'                                      generated using the
+#'                                      \cr\code{createCohortMethodDataSimulationProfile} function.
 #' @param n                             The size of the population to be generated.
 #'
 #' @details

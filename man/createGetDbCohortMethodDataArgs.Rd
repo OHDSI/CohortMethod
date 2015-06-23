@@ -2,7 +2,7 @@
 % Please edit documentation in R/CreateArgFunctions.R
 \name{createGetDbCohortMethodDataArgs}
 \alias{createGetDbCohortMethodDataArgs}
-\title{Create parameter object for the function getDbCohortMethodData}
+\title{Create a parameter object for the function getDbCohortMethodData}
 \usage{
 createGetDbCohortMethodDataArgs(washoutWindow = 183,
   indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
@@ -45,9 +45,7 @@ createGetDbCohortMethodDataArgs(washoutWindow = 183,
 prior to indexdate for a person to be included in
 the cohort.}
 
-\item{indicationLookbackWindow}{The window to look back prior to cohort index date
-to identifyrecords of a indication condition.  Only
-applicable ifindicationConceptIds != ”.}
+\item{indicationLookbackWindow}{NA}
 
 \item{studyStartDate}{A calendar date specifying the minimum date that a
 cohort indexdate can appear. Date format is
@@ -301,10 +299,9 @@ toconstruct covariates.}
                                                  thandeleteCovariateSmallCounts time.}
 }
 \description{
-Create parameter object for the function getDbCohortMethodData
+Create a parameter object for the function getDbCohortMethodData
 }
 \details{
-Create an object defining the parameter values. To be used in the
-\code{\link{createCohortMethodAnalysis}} function.
+Create an object defining the parameter values.
 }
 

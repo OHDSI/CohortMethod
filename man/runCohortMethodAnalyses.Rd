@@ -18,32 +18,30 @@ runCohortMethodAnalyses(connectionDetails, cdmDatabaseSchema,
 function \code{createConnectionDetails} in the
 \code{DatabaseConnector} package.}
 
-\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
-instance.  Requires read permissions to this database. On SQL
-Server, this should specifiy both the database and the schema,
-so for example 'cdm_instance.dbo'.}
+\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM instance.
+Requires read permissions to this database. On SQL Server, this
+should specifiy both the database and the schema, so for example
+'cdm_instance.dbo'.}
 
-\item{oracleTempSchema}{For Oracle only: the name of the database schema where you want
-all temporary tables to be managed. Requires create/insert
-permissions to this database.}
-
-\item{exposureDatabaseSchema}{The name of the database schema that is the location where the
-exposure data used to define the exposure cohorts is available.
-If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used
-by assumed to be cdmSchema.  Requires read permissions to this
-database.}
-
-\item{outcomeDatabaseSchema}{The name of the database schema that is the location where
-the data used to define the outcome cohorts is available. If
-exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
-used by assumed to be cdmSchema.  Requires read permissions
+\item{oracleTempSchema}{For Oracle only: the name of the database schema where you want all
+temporary tables to be managed. Requires create/insert permissions
 to this database.}
 
-\item{outcomeTable}{The tablename that contains the outcome cohorts.  If
-                                        outcomeTable <> CONDITION_OCCURRENCE, then expectation is
-                                        outcomeTable has format of COHORT table:
-                                        COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
-                                        COHORT_END_DATE.}
+\item{exposureDatabaseSchema}{The name of the database schema that is the location where the
+exposure data used to define the exposure cohorts is available. If
+exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by
+assumed to be cdmSchema.  Requires read permissions to this
+database.}
+
+\item{outcomeDatabaseSchema}{The name of the database schema that is the location where the data
+used to define the outcome cohorts is available. If exposureTable =
+CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be
+cdmSchema.  Requires read permissions to this database.}
+
+\item{outcomeTable}{The tablename that contains the outcome cohorts.  If outcomeTable <>
+                                CONDITION_OCCURRENCE, then expectation is outcomeTable has format of
+                                COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+                                COHORT_END_DATE.}
 }
 \description{
 Run a list of analyses

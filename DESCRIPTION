@@ -34,14 +34,12 @@ Imports:
     SqlRender (>= 1.1.1),
     survival,
     rjson,
-    snow
+    OhdsiRTools
 Suggests:
     testthat,
     pROC,
     gnm,
     knitr,
-    rmarkdown,
-    OhdsiRTools,
-    XML
+    rmarkdown
 LinkingTo: Rcpp
 NeedsCompilation: yes

@@ -10,7 +10,8 @@ getOutcomeModel(outcomeModel, cohortMethodData)
 \item{outcomeModel}{An object of type \code{outcomeModel} as generated using he
 \code{createOutcomeMode} function.}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using \code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+                          \code{getDbCohortMethodData}.}
 }
 \description{
 \code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables included

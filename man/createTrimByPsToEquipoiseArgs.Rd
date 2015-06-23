@@ -2,7 +2,7 @@
 % Please edit documentation in R/CreateArgFunctions.R
 \name{createTrimByPsToEquipoiseArgs}
 \alias{createTrimByPsToEquipoiseArgs}
-\title{Create parameter object for the function trimByPsToEquipoise}
+\title{Create a parameter object for the function trimByPsToEquipoise}
 \usage{
 createTrimByPsToEquipoiseArgs(bounds = c(0.25, 0.75))
 }
@@ -10,10 +10,9 @@ createTrimByPsToEquipoiseArgs(bounds = c(0.25, 0.75))
 \item{bounds}{The upper and lower bound on the preference score for keeping persons}
 }
 \description{
-Create parameter object for the function trimByPsToEquipoise
+Create a parameter object for the function trimByPsToEquipoise
 }
 \details{
-Create an object defining the parameter values. To be used in the
-\code{\link{createCohortMethodAnalysis}} function.
+Create an object defining the parameter values.
 }
 
