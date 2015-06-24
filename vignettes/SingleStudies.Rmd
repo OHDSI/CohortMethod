@@ -36,6 +36,7 @@ The `CohortMethod` package is currently maintained in a [Github repository](http
 ```{r tidy=TRUE,eval=FALSE}
 install.packages("devtools")
 library(devtools)
+install_github("ohdsi/OhdsiRTools") 
 install_github("ohdsi/SqlRender") 
 install_github("ohdsi/DatabaseConnector") 
 install_github("ohdsi/Cyclops") 
@@ -475,13 +476,13 @@ drawAttritionDiagram(outcomeModel)
 
 Considerable work has been dedicated to provide the `CohortMethod` package.
 
-```{r tidy=TRUE,evale=TRUE}
+```{r tidy=TRUE,eval=TRUE}
 citation("CohortMethod")
 ```
 
 Further, `CohortMethod` makes extensive use of the `Cyclops` package.
 
-```{r tidy=TRUE,evale=TRUE}
+```{r tidy=TRUE,eval=TRUE}
 citation("Cyclops")
 ```
 

@@ -4,7 +4,7 @@
 \alias{fitOutcomeModel}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
+fitOutcomeModel(outcomeConceptId, cohortMethodData, subPopulation = NULL,
   stratifiedCox = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
@@ -12,54 +12,59 @@ fitOutcomeModel(outcomeConceptId, cohortData, subPopulation = NULL,
   selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
-creating the outcome model.}
+\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
+outcome will be removed prior to creating the outcome model.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
-\item{subPopulation}{A data frame specifying the (matched and/or trimmed) subpopulation to be
-used in the study, as well as their strata (for conditional models). This data frame should have at
-least a \code{RowId}, and a \code{StratumId} when including stratification.}
+\item{subPopulation}{A data frame specifying the (matched and/or trimmed) subpopulation to
+be used in the study, as well as their strata (for conditional
+models). This data frame should have at least a \code{RowId}, and a
+\code{StratumId} when including stratification.}
 
-\item{stratifiedCox}{Specifically for Cox regressions: specify whether to use the strata defined in
-\code{subPopulation} in the analysis. For Poisson regression and logistic regression, this is implied in
-'clr' and 'cpr'.}
+\item{stratifiedCox}{Specifically for Cox regressions: specify whether to use the strata
+defined in \code{subPopulation} in the analysis. For Poisson
+regression and logistic regression, this is implied in 'clr' and
+'cpr'.}
 
 \item{riskWindowStart}{The start of the risk window (in days) relative to the index data.}
 
-\item{riskWindowEnd}{The end of the risk window (in days) relative to the index data (+ days of exposure if the \code{addExposureDaysToEnd} parameter is specified).}
+\item{riskWindowEnd}{The end of the risk window (in days) relative to the index data (+
+days of exposure if the \code{addExposureDaysToEnd} parameter is
+specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortData in the outcome model.}
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the
+outcome model.}
 
-\item{fitModel}{If false, the model will not be fit, and only summary statistics are available.}
+\item{fitModel}{If false, the model will not be fit, and only summary statistics are
+available.}
 
 \item{modelType}{The type of model to be fitted. See details for options.}
 
-\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.}
+\item{prior}{The prior used to fit the model. See
+\code{\link[Cyclops]{createPrior}} for details.}
 
-\item{control}{The control object used to control the cross-validation used to determine the
-hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.}
+\item{control}{The control object used to control the cross-validation used to
+                              determine the hyperparameters of the prior (if applicable). See
+                              \code{\link[Cyclops]{createControl}} for details.}
 }
 \value{
-An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and \code{confint}
-are available.
+An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and
+\code{confint} are available.
 }
 \description{
 \code{fitOutcomeModel} creates an outcome model, and computes the relative risk
 }
 \details{
-The model type can be one of these:
-\tabular{ll}{
-  \verb{lr}      \tab Logistic regression  \cr
-  \verb{clr}     \tab Conditional logistic regression \cr
-  \verb{cox}     \tab Cox regression (stratified or not, depending on whether \code{stata} is specified) \cr
-  \verb{pr}      \tab Poisson regression  \cr
-  \verb{cpr}     \tab Conditional Poisson regression \cr
-}
+The model type can be one of these: \tabular{ll}{ \verb{lr} \tab Logistic regression \cr \verb{clr}
+\tab Conditional logistic regression \cr \verb{cox} \tab Cox regression (stratified or not,
+depending on whether \code{stata} is specified) \cr \verb{pr} \tab Poisson regression \cr
+\verb{cpr} \tab Conditional Poisson regression \cr }
 }
 \examples{
-#todo
+# todo
 }
 

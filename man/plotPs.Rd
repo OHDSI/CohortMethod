@@ -11,44 +11,44 @@ plotPs(data, unfilteredData = NULL, scale = "preference",
 \item{data}{A data frame with at least the two columns described below}
 
 \item{unfilteredData}{To be used when computing preference scores on data from which subjects have
-already been removed, e.g. through trimming and/or matching. This data frame should have the same
-structure as \code{data}.}
+already been removed, e.g. through trimming and/or matching. This data frame
+should have the same structure as \code{data}.}
 
-\item{scale}{The scale of the graph. Two scales are supported: \code{
-scale = "propensity"} or  \code{scale = "preference"}. The preference score scale is defined by Walker
-et al (2013).}
+\item{scale}{The scale of the graph. Two scales are supported: \code{ scale =
+'propensity'} or \code{scale = 'preference'}. The preference score scale is
+defined by Walker et al (2013).}
 
-\item{type}{Type of plot. Two possible values: \code{type = "density"} or \code{type = "histogram"}}
+\item{type}{Type of plot. Two possible values: \code{type = 'density'} or \code{type =
+'histogram'}}
 
 \item{binWidth}{For histograms, the width of the bins}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
-the function \code{ggsave} in the ggplot2 package for supported file formats.}
+                        the function \code{ggsave} in the ggplot2 package for supported file
+                        formats.}
 }
 \value{
-A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different format.
+A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+format.
 }
 \description{
 \code{plotPs} shows the propensity (or preference) score distribution
 }
 \details{
-The data frame should have a least the following two columns:
-\tabular{lll}{
-  \verb{treatment}          \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr
-                            \tab          \tab (0) group  \cr
-  \verb{propensityScore}    \tab(real)     \tab Propensity score \cr
-}
+The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
+\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr }
 }
 \examples{
-treatment = rep(0:1, each = 100)
-propensityScore = c(rnorm(100,mean=0.4, sd=0.25),rnorm(100,mean=0.6, sd=0.25))
+treatment <- rep(0:1, each = 100)
+propensityScore <- c(rnorm(100, mean = 0.4, sd = 0.25), rnorm(100, mean = 0.6, sd = 0.25))
 data <- data.frame(treatment = treatment, propensityScore = propensityScore)
-data <- data[data$propensityScore > 0 & data$propensityScore < 1,]
+data <- data[data$propensityScore > 0 & data$propensityScore < 1, ]
 plotPs(data)
 }
 \references{
-Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and Schneeweiss S.
-(2013) A tool for assessing the feasibility of comparative effectiveness research, Comparative Effective
-Research, 3, 11-20
+Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
+Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
+Comparative Effective Research, 3, 11-20
 }
 

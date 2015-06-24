@@ -9,21 +9,20 @@ grepCovariateNames(pattern, object)
 \arguments{
 \item{pattern}{A regular expression with which to name covariate names}
 
-\item{object}{An R object of type \code{cohortData} or \code{covariateData}.}
+\item{object}{An R object of type \code{cohortMethodData} or \code{covariateData}.}
 }
 \value{
-Returns a \code{data.frame} containing information about covariates that match a regular expression.  This \code{data.frame} has the following columns:
-\describe{
- \item{covariateId}{Numerical identifier for use in model fitting using these covariates}
- \item{covariateName}{Text identifier}
- \item{analysisId}{Analysis identifier}
- \item{conceptId}{OMOP common data model concept identifier, or 0}
-}
+Returns a \code{data.frame} containing information about covariates that match a regular
+expression.  This \code{data.frame} has the following columns: \describe{
+\item{covariateId}{Numerical identifier for use in model fitting using these covariates}
+\item{covariateName}{Text identifier} \item{analysisId}{Analysis identifier} \item{conceptId}{OMOP
+common data model concept identifier, or 0} }
 }
 \description{
 Extracts covariate names using a regular-expression.
 }
 \details{
-This function extracts covariate names that match a regular-expression for a \code{cohortData} or \code{covariateData} object.
+This function extracts covariate names that match a regular-expression for a
+\code{cohortMethodData} or \code{covariateData} object.
 }
 

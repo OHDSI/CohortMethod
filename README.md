@@ -53,6 +53,7 @@ Getting Started
   ```r
   install.packages("devtools")
   library(devtools)
+  install_github("ohdsi/OhdsiRTools") 
   install_github("ohdsi/SqlRender")
   install_github("ohdsi/DatabaseConnector")
   install_github("ohdsi/Cyclops")
@@ -62,6 +63,7 @@ Getting Started
 Getting Involved
 =============
 * Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/SingleStudies.pdf)
+* Vignette: [unning multiple analyses at once using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/MultipleAnalyses.pdf)
 * Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/extras/CohortMethod.pdf)
 * Developer questions/comments/feedback: <a href="http://forums.ohdsi.org/c/developers">OHDSI Forum</a>
 * We use the <a href="../../issues">GitHub issue tracker</a> for all bugs/issues/enhancements
@@ -76,6 +78,7 @@ CohortMethod is being developed in R Studio.
 
 ###Development status
 [![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
+[![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
 
 Beta
 

@@ -4,26 +4,26 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortData, checkSorting = TRUE, outcomeConceptId = NULL,
+createPs(cohortMethodData, outcomeConceptId = NULL,
   excludeCovariateIds = NULL, prior = createPrior("laplace", exclude = c(0),
   useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
   cvType = "auto", startingVariance = 0.1))
 }
 \arguments{
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
-\item{checkSorting}{Checks if the covariate data is sorted by rowId (necessary for fitting the model).
-Checking can be very time-consuming if the data is already sorted.}
-
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome will be removed prior to
-creating the propensity score model.}
+\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
+outcome will be removed prior to creating the propensity score model.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
-\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}} for details.}
+\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
+for details.}
 
-\item{control}{The control object used to control the cross-validation used to determine the
-hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createControl}}  for details.}
+\item{control}{The control object used to control the cross-validation used to
+                             determine the hyperparameters of the prior (if applicable). See
+                             \code{\link[Cyclops]{createControl}} for details.}
 }
 \description{
 \code{createPs} creates propensity scores using a regularized logistic regression.
@@ -33,7 +33,7 @@ hyperparameters of the prior (if applicable). See \code{\link[Cyclops]{createCon
 }
 \examples{
 data(cohortDataSimulationProfile)
-cohortData <- simulateCohortData(cohortDataSimulationProfile, n=1000)
-ps <- createPs(cohortData)
+cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = 1000)
+ps <- createPs(cohortMethodData)
 }
 

@@ -25,33 +25,48 @@
 #' @details
 #' This function creates eras from source data. For example, one could use this function to create
 #' drug eras based on drug exposures. The function allows drugs to be rolled up to ingredients, and
-#' prescriptions to the same ingredient that overlap in time are merged into a single ingredient. Note that
-#' stockpiling is not assumed to take place (ie. overlap is discarded), but a grace period can be specified
-#' allowing for a small gap between prescriptions when merging.
+#' prescriptions to the same ingredient that overlap in time are merged into a single ingredient. Note
+#' that stockpiling is not assumed to take place (ie. overlap is discarded), but a grace period can be
+#' specified allowing for a small gap between prescriptions when merging. The user can specify the
+#' source and target table. These tables are assumed to have the same structure as the cohort table in
+#' the Common Data Model (CDM), except when the table names are 'drug_exposure' or
+#' 'condition_occurrence' for the source table, or 'drug_era' or 'condition_era' for the target table,
+#' in which case the tables are assumed to have the structure defined for those tables in the CDM. If
+#' both the source and target table specify a field for type_concept_id, the era construction will
+#' partition by the type_concept_id, in other words periods with different type_concept_ids will be
+#' treated independently.
 #'
-#' The user can specify the source and target table. These tables are assumed to have the same structure as
-#' the cohort table in the Common Data Model (CDM), except when the table names are "drug_exposure" or
-#' "condition_occurrence" for the source table, or "drug_era" or "condition_era" for the target table,
-#' in which case the tables are assumed to have the structure defined for those tables in the CDM.
+#' @param connectionDetails      An R object of type \code{connectionDetails} created using the
+#'                               function \code{createConnectionDetails} in the
+#'                               \code{DatabaseConnector} package.
+#' @param sourceDatabaseSchema   The name of the database schema that contains the source table.
+#'                               Requires read permissions to this database. On SQL Server, this should
+#'                               specifiy both the database and the schema, so for example
+#'                               'cdm_instance.dbo'.
+#' @param sourceTable            The name of the source table.
+#' @param targetDatabaseSchema   The name of the database schema that contains the target table.
+#'                               Requires write permissions to this database. On SQL Server, this
+#'                               should specifiy both the database and the schema, so for example
+#'                               'cdm_instance.dbo'.
+#' @param targetTable            The name of the target table.
+#' @param createTargetTable      Should the target table be created? If not, the data is inserted in an
+#'                               existing table.
+#' @param cdmDatabaseSchema      Only needed when rolling up concepts to ancestors: The name of the
+#'                               database schema that contains the vocabulary files.  Requires read
+#'                               permissions to this database. On SQL Server, this should specifiy both
+#'                               the database and the schema, so for example 'cdm_instance.dbo'.
+#' @param gracePeriod            The number of days allowed between periods for them to still be
+#'                               considered part of the same era.
+#' @param rollUp                 Should concepts be rolled up to their ancestors?
+#' @param rollUpConceptClassId   The identifier of the concept class to which concepts should be rolled
+#'                               up.
+#' @param rollUpVocabularyId     The identifier of the vocabulary to which concepts should be rolled
+#'                               up.
+#' @param cdmVersion             The verion of the CDM that is being used.
 #'
-#' If both the source and target table specify a field for type_concept_id, the era construction will partition by
-#' the type_concept_id, in other words periods with different type_concept_ids will be treated independently.
-#'
-#' @param connectionDetails  	  An R object of type \code{connectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
-#' @param sourceDatabaseSchema  The name of the database schema that contains the source table.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.
-#' @param sourceTable           The name of the source table.
-#' @param targetDatabaseSchema  The name of the database schema that contains the target table.  Requires write permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.
-#' @param targetTable           The name of the target table.
-#' @param createTargetTable     Should the target table be created? If not, the data is inserted in an existing table.
-#' @param cdmDatabaseSchema     Only needed when rolling up concepts to ancestors: The name of the database schema that contains the vocabulary files.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.
-#' @param gracePeriod           The number of days allowed between periods for them to still be considered part of the same era.
-#' @param rollUp                Should concepts be rolled up to their ancestors?
-#' @param rollUpConceptClassId  The identifier of the concept class to which concepts should be rolled up.
-#' @param rollUpVocabularyId    The identifier of the vocabulary to which concepts should be rolled up.
-#' @param cdmVersion            The verion of the CDM that is being used.
-#'
-#' @examples \dontrun{
-#' #Constructing drug eras in CDM v4:
+#' @examples
+#' \dontrun{
+#' # Constructing drug eras in CDM v4:
 #' constructEras(connectionDetails,
 #'               sourceDatabaseSchema = cdmDatabaseSchema,
 #'               sourceTable = "drug_exposure",
@@ -62,7 +77,7 @@
 #'               rollUpConceptClassId = "Ingredient",
 #'               cdmVersion = "4")
 #'
-#' #Constructing drug eras in CDM v5:
+#' # Constructing drug eras in CDM v5:
 #' constructEras(connectionDetails,
 #'               sourceDatabaseSchema = cdmDatabaseSchema,
 #'               sourceTable = "drug_exposure",
@@ -84,8 +99,8 @@ constructEras <- function(connectionDetails,
                           cdmDatabaseSchema = sourceDatabaseSchema,
                           gracePeriod = 30,
                           rollUp = TRUE,
-                          rollUpConceptClassId = "ingredient",
-                          rollUpVocabularyId = "rxnorm",
+                          rollUpConceptClassId = "Ingredient",
+                          rollUpVocabularyId = "RxNorm",
                           cdmVersion = "5") {
   if (connectionDetails$dbms == "pdw")
 	stop("Currently not supporting Microsoft PDW")
@@ -108,33 +123,34 @@ constructEras <- function(connectionDetails,
     sourceStartDate <- "cohort_start_date"
     sourceEndDate <- "cohort_end_date"
     if (cdmVersion == "4")
-      sourceConceptId <- "cohort_concept_id"
-    else
-      sourceConceptId <- "cohort_definition_id"
+      sourceConceptId <- "cohort_concept_id" else sourceConceptId <- "cohort_definition_id"
     sourceTypeConceptId <- ""
   }
   if (targetTable == "drug_era") {
+    targetId <- "drug_era_id"
     targetPersonId <- "person_id"
     targetStartDate <- "drug_era_start_date"
     targetEndDate <- "drug_era_end_date"
     targetConceptId <- "drug_concept_id"
-    targetTypeConceptId <- "drug_type_concept_id"
+    if (cdmVersion == "4")
+      targetTypeConceptId <- "drug_type_concept_id" else targetTypeConceptId <- ""
     targetCount <- "drug_exposure_count"
   } else if (targetTable == "condition_era") {
+    targetId <- "condition_era_id"
     targetPersonId <- "person_id"
     targetStartDate <- "condition_era_start_date"
     targetEndDate <- "condition_era_end_date"
     targetConceptId <- "condition_concept_id"
-    targetTypeConceptId <- ""
+    if (cdmVersion == "4")
+      targetTypeConceptId <- "condition_type_concept_id" else targetTypeConceptId <- ""
     targetCount <- "condition_occurrence_count"
   } else {
+    targetId <- ""
     targetPersonId <- "subject_id"
     targetStartDate <- "cohort_start_date"
     targetEndDate <- "cohort_end_date"
     if (cdmVersion == "4")
-      targetConceptId <- "cohort_concept_id"
-    else
-      targetConceptId <- "cohort_definition_id"
+      targetConceptId <- "cohort_concept_id" else targetConceptId <- "cohort_definition_id"
     targetTypeConceptId <- ""
     targetCount <- ""
   }
@@ -151,6 +167,7 @@ constructEras <- function(connectionDetails,
                                                    source_type_concept_id = sourceTypeConceptId,
                                                    target_database_schema = targetDatabaseSchema,
                                                    target_table = targetTable,
+                                                   target_id = targetId,
                                                    target_person_id = targetPersonId,
                                                    target_start_date = targetStartDate,
                                                    target_end_date = targetEndDate,
@@ -168,5 +185,6 @@ constructEras <- function(connectionDetails,
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE)
   writeLines("Done")
 
-  dummy <- RJDBC::dbDisconnect(conn)
+  RJDBC::dbDisconnect(conn)
+  return()
 }

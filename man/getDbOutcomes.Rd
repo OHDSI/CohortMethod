@@ -5,40 +5,61 @@
 \title{Get outcomes for persons in the cohorts}
 \usage{
 getDbOutcomes(connectionDetails = NULL, connection = NULL,
-  cdmDatabaseSchema, oracleTempSchema = cdmDatabaseSchema, cohortData,
+  cdmDatabaseSchema, oracleTempSchema = cdmDatabaseSchema, cohortMethodData,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", outcomeConceptIds = "",
   outcomeConditionTypeConceptIds = "")
 }
 \arguments{
-\item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}
+\item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the function
+\code{createConnectionDetails} in the \code{DatabaseConnector} package.}
 
-\item{connection}{A connection to the server containing the schema as created using the \code{connect} function in the \code{DatabaseConnector} package.}
+\item{connection}{A connection to the server containing the schema as created using the
+\code{connect} function in the \code{DatabaseConnector} package.}
 
-\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM instance.  Requires read permissions to this database. On SQL Server, this should specifiy both the database and the schema, so for example 'cdm_instance.dbo'.}
+\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM instance.
+Requires read permissions to this database. On SQL Server, this should
+specifiy both the database and the schema, so for example
+'cdm_instance.dbo'.}
 
-\item{oracleTempSchema}{A schema where temp tables can be created in Oracle.}
+\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
+\code{getDbCohortMethodData}.}
 
-\item{cohortData}{An object of type \code{cohortData} as generated using \code{getDbCohortData}.}
+\item{outcomeDatabaseSchema}{The name of the database schema that is the location where
+the data used to define the outcome cohorts is available. If
+exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+used by assumed to be cdmSchema.  Requires read permissions
+to this database.}
 
-\item{outcomeDatabaseSchema}{The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
+\item{outcomeTable}{The tablename that contains the outcome cohorts.  If
+outcomeTable <> CONDITION_OCCURRENCE, then expectation is
+outcomeTable has format of COHORT table:
+COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+COHORT_END_DATE.}
 
-\item{outcomeTable}{The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+\item{outcomeConceptIds}{A list of CONCEPT_IDs used to define outcomes.  If
+outcomeTable = CONDITION_OCCURRENCE, the list is a set of
+ancestor CONCEPT_IDs, and all occurrences of all descendant
+concepts will be selected.  If outcomeTable <>
+CONDITION_OCCURRENCE, the list contains records found in
+COHORT_DEFINITION_ID field.}
 
-\item{outcomeConceptIds}{A list of CONCEPT_IDs used to define outcomes.  If outcomeTable = CONDITION_OCCURRENCE, the list is a set of ancestor CONCEPT_IDs, and all occurrences of all descendant concepts will be selected.  If outcomeTable <> CONDITION_OCCURRENCE, the list contains records found in COHORT_DEFINITION_ID field.}
+\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
+condition occurrences.  Only applicable if outcomeTable =
+CONDITION_OCCURRENCE.}
 
-\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.}
+\item{oracleTempSchemaA}{schema where temp tables can be created in Oracle.}
 }
 \value{
-The original \code{cohortData} object with the new outcome data added.
+The original \code{cohortMethodData} object with the new outcome data added.
 }
 \description{
-Gets the outcomes for the cohorts in the \code{cohortData} object.
+Gets the outcomes for the cohorts in the \code{cohortMethodData} object.
 }
 \details{
-If the \code{connection} parameter is specified, the cohorts are already assumed to be on the server in the appropriate temp table. Else, the temp table will be created by loading
-the cohorts from the \code{cohortData} object to the server.
-
-This function can be used to add additional outcomes to an existing cohortData object.
+If the \code{connection} parameter is specified, the cohorts are already assumed to be on the
+server in the appropriate temp table. Else, the temp table will be created by loading the cohorts
+from the \code{cohortMethodData} object to the server. This function can be used to add additional
+outcomes to an existing cohortMethodData object.
 }
 
