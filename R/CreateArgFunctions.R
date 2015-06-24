@@ -15,6 +15,10 @@
 #' @param studyEndDate                              A calendar date specifying the maximum date that a
 #'                                                  cohort indexdate can appear. Date format is
 #'                                                  'yyyymmdd'.
+#' @param exclusionConceptIds                       A list of CONCEPT_IDs used to restrict the cohorts,
+#'                                                  based on anydescendant conditions/drugs/procedures
+#'                                                  occurring at least onceanytime prior to the cohort
+#'                                                  index date.
 #' @param outcomeConditionTypeConceptIds            A list of TYPE_CONCEPT_ID values that will
 #'                                                  restrictcondition occurrences.  Only applicable if
 #'                                                  outcomeTable =CONDITION_OCCURRENCE.
@@ -216,6 +220,7 @@ createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
                                             indicationLookbackWindow = 183,
                                             studyStartDate = "",
                                             studyEndDate = "",
+                                            exclusionConceptIds = c(),
                                             outcomeConditionTypeConceptIds = c(),
                                             excludeDrugsFromCovariates = TRUE,
                                             useCovariateDemographics = TRUE,

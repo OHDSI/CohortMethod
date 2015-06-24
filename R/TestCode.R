@@ -4,18 +4,14 @@ testCode <- function() {
   library(CohortMethod)
   options(fftempdir = "s:/temp")
 
-  drugComparatorOutcome1 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
+  drugComparatorOutcomes1 <- createDrugComparatorOutcomes(targetDrugConceptId = 755695,
                                                         comparatorDrugConceptId = 739138,
-                                                        outcomeConceptId = 194133)
+                                                        outcomeConceptId = c(194133, 123))
 
-  drugComparatorOutcome2 <- createDrugComparatorOutcome(targetDrugConceptId = 755695,
-                                                        comparatorDrugConceptId = 739138,
-                                                        outcomeConceptId = 123)
+  drugComparatorOutcomesList <- list(drugComparatorOutcomes1, drugComparatorOutcomes2)
 
-  drugComparatorOutcomeList <- list(drugComparatorOutcome1, drugComparatorOutcome2)
-
-  saveDrugComparatorOutcomeList(drugComparatorOutcomeList,
-                                "s:/temp/drugComparatorOutcomeList.json.txt")
+  saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
+                                "s:/temp/drugComparatorOutcomesList.json.txt")
 
 
 
@@ -65,14 +61,14 @@ testCode <- function() {
                                                     stratifiedCox = TRUE,
                                                     useCovariates = TRUE)
 
-  cmAnalysis1 <- createCohortMethodAnalysis(analysisId = 1,
-                                            getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                            createPs = TRUE,
-                                            createPsArgs = createPsArgs,
-                                            matchOnPs = TRUE,
-                                            matchOnPsArgs = matchOnPsArgs,
-                                            fitOutcomeModel = TRUE,
-                                            fitOutcomeModelArgs = fitOutcomeModelArgs1)
+  cmAnalysis1 <- createCmAnalysis(analysisId = 1,
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
   fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(riskWindowStart = 0,
                                                     riskWindowEnd = 365,
                                                     addExposureDaysToEnd = FALSE,
@@ -81,24 +77,62 @@ testCode <- function() {
                                                     useCovariates = FALSE)
 
 
-  cmAnalysis2 <- createCohortMethodAnalysis(analysisId = 2,
-                                            getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                            createPs = TRUE,
-                                            createPsArgs = createPsArgs,
-                                            matchOnPs = TRUE,
-                                            matchOnPsArgs = matchOnPsArgs,
-                                            fitOutcomeModel = TRUE,
-                                            fitOutcomeModelArgs = fitOutcomeModelArgs2)
+  cmAnalysis2 <- createCmAnalysis(analysisId = 2,
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
-  cohortMethodAnalysisList <- list(cmAnalysis1, cmAnalysis2)
+  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
 
-  saveCohortMethodAnalysisList(cohortMethodAnalysisList,
-                               "s:/temp/cohortMethodAnalysisList.json.txt")
+  saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodAnalysisList.json.txt")
+
+  cmAnalysisList <- loadCmAnalysisList("s:/temp/cohortMethodAnalysisList.json.txt")
+  drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.json.txt")
+
+
+  #### Comparator selection strategies ####
+  comparatorIds <- list(drugInSameClass = 1234, drugWithSameIndication = 2345)
+
+  drugComparatorOutcomes <- createDrugComparatorOutcomes(targetDrugConceptId = 755695,
+                                                       comparatorDrugConceptId = comparatorIds,
+                                                       outcomeConceptId = 194133)
+
+  drugComparatorOutcomesList <- list(drugComparatorOutcomes)
+  cmAnalysis1 <- createCmAnalysis(analysisId = 1,
+                                  description = "Analysis using drug in same class as comparator",
+                                  comparatorType = "drugInSameClass",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
+
+  cmAnalysis2 <- createCmAnalysis(analysisId = 2,
+                                  description = "Analysis using drug with same indication as comparator",
+                                  comparatorType = "drugWithSameIndication",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
+
+  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
 
 
 
-  cohortMethodAnalysisList <- loadCohortMethodAnalysisList("s:/temp/cohortMethodAnalysisList.json.txt")
-  drugComparatorOutcomeList <- loadDrugComparatorOutcomeList("s:/temp/drugComparatorOutcomeList.json.txt")
+
+
+
+
+
 
 
   # Settings for running SQL against JnJ Sql Server:
@@ -119,11 +153,11 @@ testCode <- function() {
                                                                   port = port)
 
 
-  runCohortMethodAnalyses(connectionDetails = connectionDetails,
+  runCmAnalyses(connectionDetails = connectionDetails,
                           cdmDatabaseSchema = cdmDatabaseSchema,
                           outputFolder = "s:/temp/cmOutput",
                           cohortMethodAnalysisList = cohortMethodAnalysisList,
-                          drugComparatorOutcomeList = drugComparatorOutcomeList,
+                          drugComparatorOutcomesList = drugComparatorOutcomesList,
                           getDbCohortMethodDataThreads = 2,
                           createPsThreads = 1,
                           fitOutcomeModelThreads = 1)

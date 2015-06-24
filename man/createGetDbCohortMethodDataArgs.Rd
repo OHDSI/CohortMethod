@@ -6,8 +6,9 @@
 \usage{
 createGetDbCohortMethodDataArgs(washoutWindow = 183,
   indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
-  outcomeConditionTypeConceptIds = c(), excludeDrugsFromCovariates = TRUE,
-  useCovariateDemographics = TRUE, useCovariateDemographicsGender = TRUE,
+  exclusionConceptIds = c(), outcomeConditionTypeConceptIds = c(),
+  excludeDrugsFromCovariates = TRUE, useCovariateDemographics = TRUE,
+  useCovariateDemographicsGender = TRUE,
   useCovariateDemographicsRace = TRUE,
   useCovariateDemographicsEthnicity = TRUE,
   useCovariateDemographicsAge = TRUE, useCovariateDemographicsYear = TRUE,
@@ -54,6 +55,11 @@ cohort indexdate can appear. Date format is
 \item{studyEndDate}{A calendar date specifying the maximum date that a
 cohort indexdate can appear. Date format is
 'yyyymmdd'.}
+
+\item{exclusionConceptIds}{A list of CONCEPT_IDs used to restrict the cohorts,
+based on anydescendant conditions/drugs/procedures
+occurring at least onceanytime prior to the cohort
+index date.}
 
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will
 restrictcondition occurrences.  Only applicable if

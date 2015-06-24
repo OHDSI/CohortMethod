@@ -31,6 +31,12 @@
                     rmarkdown::pdf_document(latex_engine = "pdflatex",
                                             toc = TRUE,
                                             number_sections = TRUE))
+
+  rmarkdown::render("vignettes/MultipleAnalyses.Rmd",
+                    output_file = "../inst/doc/MultipleAnalyses.pdf",
+                    rmarkdown::pdf_document(latex_engine = "pdflatex",
+                                            toc = TRUE,
+                                            number_sections = TRUE))
 }
 
 .createArgFunctions <- function() {
@@ -46,8 +52,7 @@
                                                           "targetDrugConceptId",
                                                           "comparatorDrugConceptId",
                                                           "indicationConceptIds",
-                                                          "outcomeConceptIds",
-                                                          "exclusionConceptIds"),
+                                                          "outcomeConceptIds"),
                                           rCode = rCode)
   rCode <- OhdsiRTools::createArgFunction("createPs",
                                           excludeArgs = c("cohortMethodData", "outcomeConceptId"),
