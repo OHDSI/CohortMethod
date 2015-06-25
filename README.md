@@ -42,6 +42,7 @@ Dependencies
  * Cyclops
  * DatabaseConnector
  * SqlRender
+ * OhdsiRTools
 
 Getting Started
 ===============

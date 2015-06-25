@@ -174,21 +174,32 @@
 
 #' @keywords internal
 .multiAnalysesVignetteDataFetch <- function() {
-  # library(CohortMethod) library(SqlRender) setwd('s:/temp') options('fftempdir' = 's:/temp')
+  # library(CohortMethod);library(SqlRender);setwd('s:/temp');options('fftempdir' = 's:/temp')
 
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
-  server <- "RNDUSRDHIT07.jnj.com"
+  server <- "RNDUSRDHIT09.jnj.com"
+  # cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+  cdmDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
+  resultsDatabaseSchema <- "scratch.dbo"
+  resultsDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
+  port <- NULL
+
+  pw <- NULL
+  dbms <- "pdw"
+  user <- NULL
+  server <- "JRDUSAPSCTL01"
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
   resultsDatabaseSchema <- "scratch.dbo"
-  port <- NULL
+  port <- 17001
 
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                   server = server,
                                                                   user = user,
                                                                   password = pw,
                                                                   port = port)
+
   sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
                                 packageName = "CohortMethod",
                                 dbms = dbms,
@@ -211,45 +222,47 @@
   nsaids <- DatabaseConnector::querySql(connection, sql)
   nsaids <- nsaids$CONCEPT_ID
 
+  RJDBC::dbDisconnect(connection)
+
   drugComparatorOutcomes <- createDrugComparatorOutcomes(targetDrugConceptId = 1118084,
                                                          comparatorDrugConceptId = 1124300,
                                                          exclusionConceptIds = nsaids,
                                                          outcomeConceptIds = c(192671,
-                                                                                                                                                                               29735,
-                                                                                                                                                                               140673,
-                                                                                                                                                                               197494,
-                                                                                                                                                                               198185,
-                                                                                                                                                                               198199,
-                                                                                                                                                                               200528,
-                                                                                                                                                                               257315,
-                                                                                                                                                                               314658,
-                                                                                                                                                                               317376,
-                                                                                                                                                                               321319,
-                                                                                                                                                                               380731,
-                                                                                                                                                                               432661,
-                                                                                                                                                                               432867,
-                                                                                                                                                                               433516,
-                                                                                                                                                                               433701,
-                                                                                                                                                                               433753,
-                                                                                                                                                                               435140,
-                                                                                                                                                                               435459,
-                                                                                                                                                                               435524,
-                                                                                                                                                                               435783,
-                                                                                                                                                                               436665,
-                                                                                                                                                                               436676,
-                                                                                                                                                                               442619,
-                                                                                                                                                                               444252,
-                                                                                                                                                                               444429,
-                                                                                                                                                                               4131756,
-                                                                                                                                                                               4134120,
-                                                                                                                                                                               4134454,
-                                                                                                                                                                               4152280,
-                                                                                                                                                                               4165112,
-                                                                                                                                                                               4174262,
-                                                                                                                                                                               4182210,
-                                                                                                                                                                               4270490,
-                                                                                                                                                                               4286201,
-                                                                                                                                                                               4289933))
+                                                                               29735,
+                                                                               140673,
+                                                                               197494,
+                                                                               198185,
+                                                                               198199,
+                                                                               200528,
+                                                                               257315,
+                                                                               314658,
+                                                                               317376,
+                                                                               321319,
+                                                                               380731,
+                                                                               432661,
+                                                                               432867,
+                                                                               433516,
+                                                                               433701,
+                                                                               433753,
+                                                                               435140,
+                                                                               435459,
+                                                                               435524,
+                                                                               435783,
+                                                                               436665,
+                                                                               436676,
+                                                                               442619,
+                                                                               444252,
+                                                                               444429,
+                                                                               4131756,
+                                                                               4134120,
+                                                                               4134454,
+                                                                               4152280,
+                                                                               4165112,
+                                                                               4174262,
+                                                                               4182210,
+                                                                               4270490,
+                                                                               4286201,
+                                                                               4289933))
 
   drugComparatorOutcomesList <- list(drugComparatorOutcomes)
 
@@ -347,7 +360,12 @@
                                                     addExposureDaysToEnd = TRUE,
                                                     useCovariates = TRUE,
                                                     modelType = "cox",
-                                                    stratifiedCox = TRUE)
+                                                    stratifiedCox = TRUE,
+                                                    control = createControl(cvType = "auto",
+                                                                            startingVariance = 0.1,
+                                                                            selectorType = "byPid",
+                                                                            noiseLevel = "quiet",
+                                                                            minCVData = 10))
 
   cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                   description = "Matching plus full outcome model",
@@ -367,11 +385,18 @@
                 exposureTable = "drug_era",
                 outcomeDatabaseSchema = resultsDatabaseSchema,
                 outcomeTable = "outcomes",
-                outputFolder = "./CohortMethodOutput",
-                cmAnalysisList,
-                drugComparatorOutcomeList,
+                outputFolder = "s:/temp/CohortMethodOutput",
+                cmAnalysisList = cmAnalysisList,
+                drugComparatorOutcomesList = drugComparatorOutcomesList,
                 getDbCohortMethodDataThreads = 1,
                 createPsThreads = 1,
-                fitOutcomeModelThreads = 4)
+                fitOutcomeModelThreads = 10)
 
+  #cleanup:
+  sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
+  sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  connection <- DatabaseConnector::connect(connectionDetails)
+  DatabaseConnector::executeSql(connection, sql);
+  RJDBC::dbDisconnect(connection)
 }

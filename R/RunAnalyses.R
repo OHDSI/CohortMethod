@@ -89,12 +89,12 @@ runCmAnalyses <- function(connectionDetails,
   for (cmAnalysis in cmAnalysisList) {
     stopifnot(class(cmAnalysis) == "cmAnalysis")
   }
-  uniquedrugComparatorOutcomessList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
-                                                                          c("targetDrugConceptId",
-                                                                                                        "comparatorDrugConceptId",
-                                                                                                        "outcomeConceptIds",
-                                                                                                        "indicationConceptIds")))
-  if (length(uniquedrugComparatorOutcomessList) != length(drugComparatorOutcomesList)) {
+  uniquedrugComparatorOutcomesList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
+                                                                         c("targetDrugConceptId",
+                                                                           "comparatorDrugConceptId",
+                                                                           "outcomeConceptIds",
+                                                                           "indicationConceptIds")))
+  if (length(uniquedrugComparatorOutcomesList) != length(drugComparatorOutcomesList)) {
     stop("Duplicate drug-comparator-indication-outcomes combinations are not allowed")
   }
   uniqueAnalysisIds <- unlist(unique(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId")))
@@ -108,20 +108,20 @@ runCmAnalyses <- function(connectionDetails,
   objectsToCreate <- list()
   loadingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
                                                         c("getDbCohortMethodDataArgs",
-                                                                          "targetType",
-                                                                          "comparatorType",
-                                                                          "indicationType")))
+                                                          "targetType",
+                                                          "comparatorType",
+                                                          "indicationType")))
   for (i in 1:length(loadingArgsList)) {
     loadingArgs <- loadingArgsList[[i]]
 
 
     drugComparatorList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
                                                              c("targetDrugConceptId",
-                                                                                           "comparatorDrugConceptId",
-                                                                                           "indicationConceptIds",
-                                                                                           "exclusionConceptIds",
-                                                                                           "excludedCovariateConceptIds",
-                                                                                           "includedCovariateConceptIds")))
+                                                               "comparatorDrugConceptId",
+                                                               "indicationConceptIds",
+                                                               "exclusionConceptIds",
+                                                               "excludedCovariateConceptIds",
+                                                               "includedCovariateConceptIds")))
     for (drugComparator in drugComparatorList) {
       targetDrugConceptId <- .selectByType(loadingArgs$targetType,
                                            drugComparator$targetDrugConceptId,
@@ -139,16 +139,16 @@ runCmAnalyses <- function(connectionDetails,
                                                                 indicationConceptIds)
       if (!file.exists(cohortMethodDataFolder)) {
         getDbCohortMethodDataArgs <- loadingArgs$getDbCohortMethodDataArgs
-        exclusionConceptIds <- unique(c(drugComparatorOutcomess$exclusionConceptIds,
+        exclusionConceptIds <- unique(c(drugComparatorOutcomes$exclusionConceptIds,
                                         getDbCohortMethodDataArgs$exclusionConceptIds))
-        excludedCovariateConceptIds <- unique(c(drugComparatorOutcomess$excludedCovariateConceptIds,
+        excludedCovariateConceptIds <- unique(c(drugComparatorOutcomes$excludedCovariateConceptIds,
                                                 getDbCohortMethodDataArgs$excludedCovariateConceptIds))
-        includedCovariateConceptIds <- unique(c(drugComparatorOutcomess$includedCovariateConceptIds,
+        includedCovariateConceptIds <- unique(c(drugComparatorOutcomes$includedCovariateConceptIds,
                                                 getDbCohortMethodDataArgs$includedCovariateConceptIds))
 
-        drugComparatorOutcomess <- OhdsiRTools::matchInList(drugComparatorOutcomesList,
-                                                            drugComparator)
-        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomess,
+        drugComparatorOutcomes <- OhdsiRTools::matchInList(drugComparatorOutcomesList,
+                                                           drugComparator)
+        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomes,
                                                                        "outcomeConceptIds")))
         args <- list(connectionDetails = connectionDetails,
                      cdmDatabaseSchema = cdmDatabaseSchema,
@@ -185,17 +185,17 @@ runCmAnalyses <- function(connectionDetails,
   modelsToFit <- list()
   loadingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
                                                         c("getDbCohortMethodDataArgs",
-                                                                          "comparatorType",
-                                                                          "indicationType")))
+                                                          "comparatorType",
+                                                          "indicationType")))
   for (i in 1:length(loadingArgsList)) {
     loadingArgs <- loadingArgsList[[i]]
     drugComparatorList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
                                                              c("targetDrugConceptId",
-                                                                                           "comparatorDrugConceptId",
-                                                                                           "indicationConceptIds",
-                                                                                           "exclusionConceptIds",
-                                                                                           "excludedCovariateConceptIds",
-                                                                                           "includedCovariateConceptIds")))
+                                                               "comparatorDrugConceptId",
+                                                               "indicationConceptIds",
+                                                               "exclusionConceptIds",
+                                                               "excludedCovariateConceptIds",
+                                                               "includedCovariateConceptIds")))
     for (drugComparator in drugComparatorList) {
       targetDrugConceptId <- .selectByType(loadingArgs$targetType,
                                            drugComparator$targetDrugConceptId,
@@ -245,20 +245,22 @@ runCmAnalyses <- function(connectionDetails,
   OhdsiRTools::stopCluster(cluster)
 
   writeLines("*** Fitting outcome models ***")
+  outcomeReference <- data.frame()
   modelsToFit <- list()
   allButFitOutcomeModelArgsList <- unique(OhdsiRTools::excludeFromList(cmAnalysisList,
                                                                        c("analysisId",
-                                                                                         "fitOutcomeModel",
-                                                                                         "fitOutcomeModelArgs")))
+                                                                         "description",
+                                                                         "fitOutcomeModel",
+                                                                         "fitOutcomeModelArgs")))
   for (i in 1:length(loadingArgsList)) {
     loadingArgs <- loadingArgsList[[i]]
     drugComparatorList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
                                                              c("targetDrugConceptId",
-                                                                                           "comparatorDrugConceptId",
-                                                                                           "indicationConceptIds",
-                                                                                           "exclusionConceptIds",
-                                                                                           "excludedCovariateConceptIds",
-                                                                                           "includedCovariateConceptIds")))
+                                                               "comparatorDrugConceptId",
+                                                               "indicationConceptIds",
+                                                               "exclusionConceptIds",
+                                                               "excludedCovariateConceptIds",
+                                                               "includedCovariateConceptIds")))
     for (drugComparator in drugComparatorList) {
       targetDrugConceptId <- .selectByType(loadingArgs$targetType,
                                            drugComparator$targetDrugConceptId,
@@ -287,19 +289,43 @@ runCmAnalyses <- function(connectionDetails,
                                         j)
         allButFitOutcomeModelArgsSubset <- OhdsiRTools::matchInList(OhdsiRTools::matchInList(allButFitOutcomeModelArgsList,
                                                                                              loadingArgs), createPsArgs)
-        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomess,
+        drugComparatorOutcomes <- OhdsiRTools::matchInList(drugComparatorOutcomesList, drugComparator)
+        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomes,
                                                                        "outcomeConceptIds")))
         for (outcomeConceptId in outcomeConceptIds) {
           for (allButFitOutcomeModelArgs in allButFitOutcomeModelArgsSubset) {
-          modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder,
-                                                         psFileName = psFileName,
-                                                         outcomeConceptId = outcomeConceptId,
-                                                         allButFitOutcomeModelArgs = allButFitOutcomeModelArgs)
+            cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, allButFitOutcomeModelArgs)
+            analysisIdToFile <- data.frame(analysisId = unlist(OhdsiRTools::selectFromList(cmAnalysisSubset,"analysisId")))
+            analysisIdToFile$outcomeModelFile <- ""
+            for (cmAnalysisArgs in cmAnalysisSubset){
+              analysisFolder <- paste(outputFolder, "/Analysis_", cmAnalysisArgs$analysisId, sep = "")
+              if (!file.exists(analysisFolder))
+                dir.create(analysisFolder)
+              outcomeModelFile <- .createOutcomeModelFileName(analysisFolder,
+                                                              drugComparator$targetDrugConceptId,
+                                                              drugComparator$comparatorDrugConceptId,
+                                                              drugComparator$indicationConceptIds,
+                                                              outcomeConceptId)
+              analysisIdToFile$outcomeModelFile[analysisIdToFile$analysisId == cmAnalysisArgs$analysisId] <- outcomeModelFile
+            }
+            modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder,
+                                                           psFileName = psFileName,
+                                                           outcomeConceptId = outcomeConceptId,
+                                                           allButFitOutcomeModelArgs = allButFitOutcomeModelArgs,
+                                                           analysisIdToFile = analysisIdToFile)
+            outcomeReferenceChunk <- analysisIdToFile
+            outcomeReferenceChunk$targetDrugConceptId <- drugComparator$targetDrugConceptId
+            outcomeReferenceChunk$comparatorDrugConceptId <- drugComparator$comparatorDrugConceptId
+            outcomeReferenceChunk$indicationConceptIds <- drugComparator$indicationConceptIds
+            outcomeReferenceChunk$psFile <- psFileName
+            outcomeReferenceChunk$cohortMethodDataFolder <- cohortMethodDataFolder
+            outcomeReference <- rbind(outcomeReference, outcomeReferenceChunk)
           }
         }
       }
     }
   }
+  write.csv(outcomeReference, file.path(outputFolder, "outcomeModelReference.csv"), row.names = FALSE)
   cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
   OhdsiRTools::clusterRequire(cluster, "CohortMethod")
   doFitOutcomeModel <- function(params, cmAnalysisList, outputFolder) {
@@ -314,7 +340,7 @@ runCmAnalyses <- function(connectionDetails,
 
         # Exclude people with prior outcome:
         ps <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId ==
-          outcomeConceptId])), ]
+                                                                             params$outcomeConceptId])), ]
 
         if (params$allButFitOutcomeModelArgs$trimByPs) {
           args <- list(data = ps)
@@ -343,32 +369,9 @@ runCmAnalyses <- function(connectionDetails,
           ps <- do.call("stratifyByPsAndCovariates", args)
         }
       }
-      .createOutcomeModelFileName <- function(folder,
-                                              targetDrugConceptId,
-                                              comparatorDrugConceptId,
-                                              indicationConceptIds,
-                                              outcomeConceptId) {
-        name <- paste("om_t", targetDrugConceptId, "_c", comparatorDrugConceptId, sep = "")
-        if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0) {
-          name <- paste(name, "_i", indicationConceptIds[1], sep = "")
-          if (length(indicationConceptIds) > 1) {
-          name <- paste(name, "etc", sep = "")
-          }
-        }
-        name <- paste(name, "_o", outcomeConceptId, sep = "")
-        name <- paste(name, ".rda", sep = "")
-        return(file.path(folder, name))
-      }
 
       for (cmAnalysis in cmAnalysisSubset) {
-        analysisFolder <- paste(outputFolder, "/Analysis_", cmAnalysis$analysisId, sep = "")
-        if (!file.exists(analysisFolder))
-          dir.create(analysisFolder)
-        outcomeModelFile <- .createOutcomeModelFileName(analysisFolder,
-                                                        drugComparator$targetDrugConceptId,
-                                                        drugComparator$comparatorDrugConceptId,
-                                                        drugComparator$indicationConceptIds,
-                                                        outcomeConceptId)
+        outcomeModelFile = params$analysisIdToFile$outcomeModelFile[params$analysisIdToFile$analysisId == cmAnalysis$analysisId]
         if (!file.exists(outcomeModelFile)) {
           args <- list(outcomeConceptId = outcomeConceptId,
                        cohortMethodData = cohortMethodData,
@@ -406,7 +409,6 @@ runCmAnalyses <- function(connectionDetails,
       name <- paste(name, "etc", sep = "")
     }
   }
-  name <- paste(name, ".rda", sep = "")
   return(file.path(folder, name))
 }
 
@@ -424,7 +426,24 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
   name <- paste(name, "_p", psArgsId, sep = "")
-  name <- paste(name, ".rda", sep = "")
+  name <- paste(name, ".rds", sep = "")
+  return(file.path(folder, name))
+}
+
+.createOutcomeModelFileName <- function(folder,
+                                        targetDrugConceptId,
+                                        comparatorDrugConceptId,
+                                        indicationConceptIds,
+                                        outcomeConceptId) {
+  name <- paste("om_t", targetDrugConceptId, "_c", comparatorDrugConceptId, sep = "")
+  if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0) {
+    name <- paste(name, "_i", indicationConceptIds[1], sep = "")
+    if (length(indicationConceptIds) > 1) {
+      name <- paste(name, "etc", sep = "")
+    }
+  }
+  name <- paste(name, "_o", outcomeConceptId, sep = "")
+  name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
 
