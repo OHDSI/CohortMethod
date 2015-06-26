@@ -365,7 +365,8 @@
                                                                             startingVariance = 0.1,
                                                                             selectorType = "byPid",
                                                                             noiseLevel = "quiet",
-                                                                            minCVData = 10))
+                                                                            fold = 5,
+                                                                            minCVData = 25))
 
   cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                   description = "Matching plus full outcome model",
@@ -379,18 +380,18 @@
 
   cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
 
-  runCmAnalyses(connectionDetails = connectionDetails,
-                cdmDatabaseSchema = cdmDatabaseSchema,
-                exposureDatabaseSchema = cdmDatabaseSchema,
-                exposureTable = "drug_era",
-                outcomeDatabaseSchema = resultsDatabaseSchema,
-                outcomeTable = "outcomes",
-                outputFolder = "s:/temp/CohortMethodOutput",
-                cmAnalysisList = cmAnalysisList,
-                drugComparatorOutcomesList = drugComparatorOutcomesList,
-                getDbCohortMethodDataThreads = 1,
-                createPsThreads = 1,
-                fitOutcomeModelThreads = 10)
+  outcomeReference <- runCmAnalyses(connectionDetails = connectionDetails,
+                                    cdmDatabaseSchema = cdmDatabaseSchema,
+                                    exposureDatabaseSchema = cdmDatabaseSchema,
+                                    exposureTable = "drug_era",
+                                    outcomeDatabaseSchema = resultsDatabaseSchema,
+                                    outcomeTable = "outcomes",
+                                    outputFolder = "s:/temp/CohortMethodOutput",
+                                    cmAnalysisList = cmAnalysisList,
+                                    drugComparatorOutcomesList = drugComparatorOutcomesList,
+                                    getDbCohortMethodDataThreads = 1,
+                                    createPsThreads = 1,
+                                    fitOutcomeModelThreads = 10)
 
   #cleanup:
   sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
@@ -399,4 +400,47 @@
   connection <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::executeSql(connection, sql);
   RJDBC::dbDisconnect(connection)
+
+  cohortMethodData <- loadCohortMethodData(outcomeReference$cohortMethodDataFolder[1])
+  summary(cohortMethodData)
+  analysisSummary <- summarizeAnalyses(outcomeReference)
+  library(EmpiricalCalibration)
+  negControls <- analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeConceptId != 192671,]
+  plotForest(negControls$logRr, negControls$seLogRr, as.character(1:nrow(negControls)))
+  null <- fitNull(negControls$logRr, negControls$seLogRr)
+  plotCalibrationEffect(negControls$logRr, negControls$seLogRr, null = null)
+
+  analysisSummary[analysisSummary$analysisId == 1 & analysisSummary$outcomeConceptId == 192671,]
+  analysisSummary[analysisSummary$analysisId == 2 & analysisSummary$outcomeConceptId == 192671,]
+  analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeConceptId == 192671,]
+  analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeConceptId == 192671,]
+
+  cohortMethodData1 <- loadCohortMethodData('s:/temp/vignetteCohortData')
+  summary(cohortMethodData1)
+
+  ps <- readRDS(outcomeReference$psFile[1])
+  plotPs(ps)
+
+  outcomeModel <- fitOutcomeModel(outcomeConceptId = 192671,
+                                  cohortMethodData = cohortMethodData,
+                                  riskWindowStart = 0,
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE,
+                                  useCovariates = FALSE,
+                                  modelType = "cox",
+                                  stratifiedCox = FALSE)
+
+  outcomeModel <- fitOutcomeModel(outcomeConceptId = 192671,
+                                  cohortMethodData = cohortMethodData,
+                                  subPopulation = strata,
+                                  riskWindowStart = 0,
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE,
+                                  useCovariates = FALSE,
+                                  modelType = "cox",
+                                  stratifiedCox = TRUE)
+
+  ps <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId == 192671, ])),]
+  strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  summary(outcomeModel)
 }

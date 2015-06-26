@@ -172,15 +172,16 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
-  OhdsiRTools::clusterRequire(cluster, "CohortMethod")
   createCmDataObject <- function(params) {
     cohortMethodData <- do.call("getDbCohortMethodData", params$args)
     saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
   }
-  dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createCmDataObject)
-  OhdsiRTools::stopCluster(cluster)
-
+  if (length(objectsToCreate) != 0){
+    cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createCmDataObject)
+    OhdsiRTools::stopCluster(cluster)
+  }
   writeLines("*** Fitting propensity score models ***")
   modelsToFit <- list()
   loadingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
@@ -230,8 +231,6 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  cluster <- OhdsiRTools::makeCluster(createPsThreads)
-  OhdsiRTools::clusterRequire(cluster, "CohortMethod")
   fitPSModel <- function(params) {
     if (params$createPsArgs$createPs) {
       cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
@@ -241,9 +240,12 @@ runCmAnalyses <- function(connectionDetails,
       saveRDS(ps, file = params$psFileName)
     }
   }
-  dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitPSModel)
-  OhdsiRTools::stopCluster(cluster)
-
+  if (length(modelsToFit) != 0){
+    cluster <- OhdsiRTools::makeCluster(createPsThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitPSModel)
+    OhdsiRTools::stopCluster(cluster)
+  }
   writeLines("*** Fitting outcome models ***")
   outcomeReference <- data.frame()
   modelsToFit <- list()
@@ -308,15 +310,18 @@ runCmAnalyses <- function(connectionDetails,
                                                               outcomeConceptId)
               analysisIdToFile$outcomeModelFile[analysisIdToFile$analysisId == cmAnalysisArgs$analysisId] <- outcomeModelFile
             }
-            modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder,
-                                                           psFileName = psFileName,
-                                                           outcomeConceptId = outcomeConceptId,
-                                                           allButFitOutcomeModelArgs = allButFitOutcomeModelArgs,
-                                                           analysisIdToFile = analysisIdToFile)
+            if (any(!file.exists(analysisIdToFile$outcomeModelFile))){
+              modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder,
+                                                             psFileName = psFileName,
+                                                             outcomeConceptId = outcomeConceptId,
+                                                             allButFitOutcomeModelArgs = allButFitOutcomeModelArgs,
+                                                             analysisIdToFile = analysisIdToFile)
+            }
             outcomeReferenceChunk <- analysisIdToFile
             outcomeReferenceChunk$targetDrugConceptId <- drugComparator$targetDrugConceptId
             outcomeReferenceChunk$comparatorDrugConceptId <- drugComparator$comparatorDrugConceptId
             outcomeReferenceChunk$indicationConceptIds <- drugComparator$indicationConceptIds
+            outcomeReferenceChunk$outcomeConceptId <- outcomeConceptId
             outcomeReferenceChunk$psFile <- psFileName
             outcomeReferenceChunk$cohortMethodDataFolder <- cohortMethodDataFolder
             outcomeReference <- rbind(outcomeReference, outcomeReferenceChunk)
@@ -326,8 +331,7 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
   write.csv(outcomeReference, file.path(outputFolder, "outcomeModelReference.csv"), row.names = FALSE)
-  cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
-  OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+
   doFitOutcomeModel <- function(params, cmAnalysisList, outputFolder) {
     cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, params$allButFitOutcomeModelArgs)
     fitOutcomeModels <- unlist(OhdsiRTools::selectFromList(cmAnalysisSubset, "fitOutcomeModel"))
@@ -373,7 +377,7 @@ runCmAnalyses <- function(connectionDetails,
       for (cmAnalysis in cmAnalysisSubset) {
         outcomeModelFile = params$analysisIdToFile$outcomeModelFile[params$analysisIdToFile$analysisId == cmAnalysis$analysisId]
         if (!file.exists(outcomeModelFile)) {
-          args <- list(outcomeConceptId = outcomeConceptId,
+          args <- list(outcomeConceptId = params$outcomeConceptId,
                        cohortMethodData = cohortMethodData,
                        subPopulation = ps)
           args <- append(args, cmAnalysis$fitOutcomeModelArgs)
@@ -383,12 +387,18 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  dummy <- OhdsiRTools::clusterApply(cluster,
-                                     modelsToFit,
-                                     doFitOutcomeModel,
-                                     cmAnalysisList = cmAnalysisList,
-                                     outputFolder = outputFolder)
-  OhdsiRTools::stopCluster(cluster)
+
+  if (length(modelsToFit) != 0){
+    cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster,
+                                       modelsToFit,
+                                       doFitOutcomeModel,
+                                       cmAnalysisList = cmAnalysisList,
+                                       outputFolder = outputFolder)
+    OhdsiRTools::stopCluster(cluster)
+  }
+  return(outcomeReference)
 }
 
 .createCohortMethodDataFileName <- function(folder,
@@ -464,3 +474,40 @@ runCmAnalyses <- function(connectionDetails,
   }
 }
 
+#' Create a summary report of the analyses
+#'
+#' @param outcomeReference  A data.frame as created by the \code{\link{runAnalyses}} function.
+#'
+#' @export
+summarizeAnalyses <- function(outcomeReference) {
+  columns <- c("analysisId","targetDrugConceptId","comparatorDrugConceptId")
+  if (!is.null(outcomeReference$indicationConceptIds)) {
+    columns <- c(columns, "indicationConceptIds")
+  }
+  columns <- c(columns, "outcomeConceptId")
+  result <- outcomeReference[,columns]
+  result$rr <- 0
+  result$ci95lb <- 0
+  result$ci95ub <- 0
+  result$treated <- 0
+  result$comparator <- 0
+  result$eventsTreated <- 0
+  result$eventsComparator <- 0
+  result$logRr <- 0
+  result$seLogRr <- 0
+  for (i in 1:nrow(outcomeReference)) {
+    outcomeModel <- readRDS(outcomeReference$outcomeModelFile[i])
+    result$rr[i] <- if (is.null(coef(outcomeModel))) NA else exp(coef(outcomeModel))
+    result$ci95lb[i] <- if (is.null(coef(outcomeModel))) NA else exp(confint(outcomeModel)[1])
+    result$ci95ub[i] <- if (is.null(coef(outcomeModel))) NA else exp(confint(outcomeModel)[2])
+    result$treated[i] <- sum(outcomeModel$data$treatment == 1)
+    result$comparator[i] <- sum(outcomeModel$data$treatment == 0)
+    result$eventsTreated[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 1])
+    result$eventsComparator[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 0])
+    result$logRr[i] <- if (is.null(coef(outcomeModel))) NA else coef(outcomeModel)
+    #se <- (coef(outcomeModel) - confint(outcomeModel)[1] )/qnorm(0.975)
+    #result$seLogRr[i] <- se
+    result$seLogRr[i] <- if (is.null(coef(outcomeModel))) NA else outcomeModel$treatmentEstimate$seLogRr
+  }
+  return(result)
+}

@@ -388,8 +388,17 @@ fitOutcomeModel <- function(outcomeConceptId,
         prior$exclude <- 1  # Exclude treatment variable from regularization
  else prior$exclude <- c(0, 1)  # Exclude treatment variable and intercept from regularization
     } else prior <- createPrior("none")  #Only one variable, which we're not going to regularize, so effectively no prior
-    fit <- Cyclops::fitCyclopsModel(dataObject$cyclopsData, prior = prior, control = control)
-    if (fit$return_flag == "ILLCONDITIONED") {
+    fit <- tryCatch({
+      Cyclops::fitCyclopsModel(dataObject$cyclopsData, prior = prior, control = control)
+    }, error = function(e) {
+      e$message
+    })
+    if (is.character(fit)){
+      coefficients <- c(0)
+      treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
+      priorVariance <- 0
+      status <- fit
+    } else if (fit$return_flag == "ILLCONDITIONED") {
       coefficients <- c(0)
       treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
       priorVariance <- 0
