@@ -230,12 +230,6 @@ createDataForModelFit <- function(outcomeConceptId,
                                   modelType = "cox") {
   if (!(modelType %in% c("lr", "clr", "pr", "cpr", "cox")))
     stop("Unknown model type")
-  t <- cohortMethodData$outcomes$outcomeId == outcomeConceptId
-  maxValue <- max(sapply(bit::chunk(t), function(i) {
-    max(t[i])
-  }))
-  if (maxValue != 1)
-    stop("Outcome concept ID has no events. Cannot fit model.")
   if ((modelType == "lr" | modelType == "pr"))
     useStrata <- FALSE
   if ((modelType == "clr" | modelType == "cpr"))
@@ -244,7 +238,7 @@ createDataForModelFit <- function(outcomeConceptId,
     stop("Conditional regression specified, but no strata provided")
   if (useStrata)
     writeLines("Fitting stratified model") else writeLines("Fitting unstratified model")
-  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude)) {
+  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude) | !ffbase::any.ff(cohortMethodData$outcomes$outcomeId == outcomeConceptId)) {
     outcomes <- cohortMethodData$outcomes
     cohorts <- ff::as.ram(cohortMethodData$cohort)
   } else {

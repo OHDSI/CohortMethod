@@ -10,8 +10,9 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
-  drugComparatorOutcomesList, getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1, fitOutcomeModelThreads = 1)
+  drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
+  getDbCohortMethodDataThreads = 1, createPsThreads = 1,
+  fitOutcomeModelThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the
@@ -57,6 +58,11 @@ the \code{\link{createCmAnalysis}} function.}
 \item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes} as
 created using the \code{\link{createdrugComparatorOutcomes}}
 function.}
+
+\item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome
+(i.e. after people who already had the outcome are removed)? If
+false, a single propensity model will be fitted, and people who
+had the outcome previously will be removed afterwards.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}

@@ -8,7 +8,7 @@ testCode <- function() {
                                                           comparatorDrugConceptId = 739138,
                                                           outcomeConceptId = c(194133, 123))
 
-  drugComparatorOutcomesList <- list(drugComparatorOutcomes1, drugComparatorOutcomes2)
+  drugComparatorOutcomesList <- list(drugComparatorOutcomes1)
 
   saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
                                  "s:/temp/drugComparatorOutcomesList.json.txt")
@@ -133,6 +133,8 @@ testCode <- function() {
 
 
 
+  cmAnalysisList <- loadCmAnalysisList("s:/temp/cohortMethodAnalysisList.json.txt")
+  drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.json.txt")
 
 
   # Settings for running SQL against JnJ Sql Server:
@@ -153,14 +155,14 @@ testCode <- function() {
                                                                   port = port)
 
 
-  runCmAnalyses(connectionDetails = connectionDetails,
-                cdmDatabaseSchema = cdmDatabaseSchema,
-                outputFolder = "s:/temp/cmOutput",
-                cohortMethodAnalysisList = cohortMethodAnalysisList,
-                drugComparatorOutcomesList = drugComparatorOutcomesList,
-                getDbCohortMethodDataThreads = 2,
-                createPsThreads = 1,
-                fitOutcomeModelThreads = 1)
+  ref <- runCmAnalyses(connectionDetails = connectionDetails,
+                       cdmDatabaseSchema = cdmDatabaseSchema,
+                       outputFolder = "s:/temp/cmOutput",
+                       cmAnalysisList = cmAnalysisList,
+                       drugComparatorOutcomesList = drugComparatorOutcomesList,
+                       getDbCohortMethodDataThreads = 2,
+                       createPsThreads = 1,
+                       fitOutcomeModelThreads = 1)
 
 
 
