@@ -103,7 +103,7 @@ constructEras <- function(connectionDetails,
                           rollUpVocabularyId = "RxNorm",
                           cdmVersion = "5") {
   if (connectionDetails$dbms == "pdw")
-	stop("Currently not supporting Microsoft PDW")
+    stop("Currently not supporting Microsoft PDW")
   if (!rollUp)
     rollUpConceptClassId <- ""
   if (sourceTable == "drug_exposure") {

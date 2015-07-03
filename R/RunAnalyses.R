@@ -28,50 +28,59 @@
 #' function will extract the data and fit the propensity model only once, and re-use this in all the
 #' analysis.
 #'
-#' @param connectionDetails              An R object of type \code{connectionDetails} created using the
-#'                                       function \code{createConnectionDetails} in the
-#'                                       \code{DatabaseConnector} package.
-#' @param cdmDatabaseSchema              The name of the database schema that contains the OMOP CDM
-#'                                       instance. Requires read permissions to this database. On SQL
-#'                                       Server, this should specifiy both the database and the schema,
-#'                                       so for example 'cdm_instance.dbo'.
-#' @param oracleTempSchema               For Oracle only: the name of the database schema where you
-#'                                       want all temporary tables to be managed. Requires
-#'                                       create/insert permissions to this database.
-#' @param exposureDatabaseSchema         The name of the database schema that is the location where the
-#'                                       exposure data used to define the exposure cohorts is
-#'                                       available. If exposureTable = DRUG_ERA, exposureDatabaseSchema
-#'                                       is not used by assumed to be cdmSchema.  Requires read
-#'                                       permissions to this database.
-#' @param exposureTable                  The tablename that contains the exposure cohorts.  If
-#'                                       exposureTable <> DRUG_ERA, then expectation is exposureTable
-#'                                       has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
-#'                                       COHORT_START_DATE, COHORT_END_DATE.
-#' @param outcomeDatabaseSchema          The name of the database schema that is the location where the
-#'                                       data used to define the outcome cohorts is available. If
-#'                                       exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
-#'                                       used by assumed to be cdmSchema.  Requires read permissions to
-#'                                       this database.
-#' @param outcomeTable                   The tablename that contains the outcome cohorts.  If
-#'                                       outcomeTable <> CONDITION_OCCURRENCE, then expectation is
-#'                                       outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
-#'                                       SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
-#' @param outputFolder                   Name of the folder where all the outputs will written to.
-#' @param cmAnalysisList                 A list of objects of type \code{cmAnalysis} as created using
-#'                                       the \code{\link{createCmAnalysis}} function.
-#' @param drugComparatorOutcomesList     A list of objects of type \code{drugComparatorOutcomes} as
-#'                                       created using the \code{\link{createdrugComparatorOutcomes}}
-#'                                       function.
-#' @param refitPsForEveryOutcome         Should the propensity model be fitted for every outcome
-#'                                       (i.e. after people who already had the outcome are removed)? If
-#'                                       false, a single propensity model will be fitted, and people who
-#'                                       had the outcome previously will be removed afterwards.
-#' @param getDbCohortMethodDataThreads   The number of parallel threads to use for building the
-#'                                       cohortMethod data objects.
-#' @param createPsThreads                The number of parallel threads to use for fitting the
-#'                                       propensity models.
-#' @param fitOutcomeModelThreads         The number of parallel threads to use for fitting the outcome
-#'                                       models.
+#' @param connectionDetails                     An R object of type \code{connectionDetails} created
+#'                                              using the function \code{createConnectionDetails} in
+#'                                              the \code{DatabaseConnector} package.
+#' @param cdmDatabaseSchema                     The name of the database schema that contains the OMOP
+#'                                              CDM instance. Requires read permissions to this
+#'                                              database. On SQL Server, this should specifiy both the
+#'                                              database and the schema, so for example
+#'                                              'cdm_instance.dbo'.
+#' @param oracleTempSchema                      For Oracle only: the name of the database schema where
+#'                                              you want all temporary tables to be managed. Requires
+#'                                              create/insert permissions to this database.
+#' @param exposureDatabaseSchema                The name of the database schema that is the location
+#'                                              where the exposure data used to define the exposure
+#'                                              cohorts is available. If exposureTable = DRUG_ERA,
+#'                                              exposureDatabaseSchema is not used by assumed to be
+#'                                              cdmSchema.  Requires read permissions to this database.
+#' @param exposureTable                         The tablename that contains the exposure cohorts.  If
+#'                                              exposureTable <> DRUG_ERA, then expectation is
+#'                                              exposureTable has format of COHORT table:
+#'                                              COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                              COHORT_END_DATE.
+#' @param outcomeDatabaseSchema                 The name of the database schema that is the location
+#'                                              where the data used to define the outcome cohorts is
+#'                                              available. If exposureTable = CONDITION_ERA,
+#'                                              exposureDatabaseSchema is not used by assumed to be
+#'                                              cdmSchema.  Requires read permissions to this database.
+#' @param outcomeTable                          The tablename that contains the outcome cohorts.  If
+#'                                              outcomeTable <> CONDITION_OCCURRENCE, then expectation
+#'                                              is outcomeTable has format of COHORT table:
+#'                                              COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                              COHORT_END_DATE.
+#' @param outputFolder                          Name of the folder where all the outputs will written
+#'                                              to.
+#' @param cmAnalysisList                        A list of objects of type \code{cmAnalysis} as created
+#'                                              using the \code{\link{createCmAnalysis}} function.
+#' @param drugComparatorOutcomesList            A list of objects of type \code{drugComparatorOutcomes}
+#'                                              as created using the
+#'                                              \code{\link{createdrugComparatorOutcomes}} function.
+#' @param refitPsForEveryOutcome                Should the propensity model be fitted for every outcome
+#'                                              (i.e. after people who already had the outcome are
+#'                                              removed)? If false, a single propensity model will be
+#'                                              fitted, and people who had the outcome previously will
+#'                                              be removed afterwards.
+#' @param underSampleComparatorToTreatedRatio   If the comparator group size exceeds the treated group
+#'                                              size by this factor, the comparator group will be
+#'                                              down-sampled before fitting the PS model. This can be
+#'                                              useful when the comparator group is extremely large.
+#' @param getDbCohortMethodDataThreads          The number of parallel threads to use for building the
+#'                                              cohortMethod data objects.
+#' @param createPsThreads                       The number of parallel threads to use for fitting the
+#'                                              propensity models.
+#' @param fitOutcomeModelThreads                The number of parallel threads to use for fitting the
+#'                                              outcome models.
 #'
 #' @export
 runCmAnalyses <- function(connectionDetails,
@@ -85,6 +94,7 @@ runCmAnalyses <- function(connectionDetails,
                           cmAnalysisList,
                           drugComparatorOutcomesList,
                           refitPsForEveryOutcome = FALSE,
+                          underSampleComparatorToTreatedRatio = 0,
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
                           fitOutcomeModelThreads = 1) {
@@ -154,26 +164,27 @@ runCmAnalyses <- function(connectionDetails,
       for (j in 1:length(createPsArgsList)) {
         createPsArgs <- createPsArgsList[[j]]
         if (createPsArgs$createPs) {
-        sharedPsFile <- .createPsFileName(outputFolder,
-                                          i,
-                                          targetDrugConceptId,
-                                          comparatorDrugConceptId,
-                                          indicationConceptIds,
-                                          j)
+          sharedPsFile <- .createPsFileName(outputFolder,
+                                            i,
+                                            targetDrugConceptId,
+                                            comparatorDrugConceptId,
+                                            indicationConceptIds,
+                                            j)
         } else {
           sharedPsFile <- ""
         }
         allButFitOutcomeModelArgsSubset <- OhdsiRTools::matchInList(OhdsiRTools::matchInList(allButFitOutcomeModelArgsList,
                                                                                              loadingArgs), createPsArgs)
         for (k in 1:length(allButFitOutcomeModelArgsSubset)) {
-          allButFitOutcomeModelArgs = allButFitOutcomeModelArgsSubset[[k]]
+          allButFitOutcomeModelArgs <- allButFitOutcomeModelArgsSubset[[k]]
           cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, allButFitOutcomeModelArgs)
-          for (cmAnalysisArgs in cmAnalysisSubset){
-            analysisFolder <- file.path(outputFolder,paste("Analysis_", cmAnalysisArgs$analysisId, sep = ""))
+          for (cmAnalysisArgs in cmAnalysisSubset) {
+            analysisFolder <- file.path(outputFolder,
+                                        paste("Analysis_", cmAnalysisArgs$analysisId, sep = ""))
             if (!file.exists(analysisFolder))
               dir.create(analysisFolder)
             for (outcomeConceptId in outcomeConceptIds) {
-              if (cmAnalysisArgs$createPs){
+              if (cmAnalysisArgs$createPs) {
                 psFileName <- .createPsOutcomeFileName(outputFolder,
                                                        i,
                                                        drugComparator$targetDrugConceptId,
@@ -184,7 +195,8 @@ runCmAnalyses <- function(connectionDetails,
               } else {
                 psFileName <- ""
               }
-              if (cmAnalysisArgs$trimByPs || cmAnalysisArgs$trimByPsToEquipoise || cmAnalysisArgs$matchOnPs || cmAnalysisArgs$matchOnPsAndCovariates || cmAnalysisArgs$stratifyByPs || cmAnalysisArgs$stratifyByPsAndCovariates){
+              if (cmAnalysisArgs$trimByPs || cmAnalysisArgs$trimByPsToEquipoise || cmAnalysisArgs$matchOnPs ||
+                  cmAnalysisArgs$matchOnPsAndCovariates || cmAnalysisArgs$stratifyByPs || cmAnalysisArgs$stratifyByPsAndCovariates) {
                 subPopFileName <- .createSubPopFileName(outputFolder,
                                                         i,
                                                         drugComparator$targetDrugConceptId,
@@ -196,7 +208,7 @@ runCmAnalyses <- function(connectionDetails,
               } else {
                 subPopFileName <- ""
               }
-              if (cmAnalysisArgs$fitOutcomeModel){
+              if (cmAnalysisArgs$fitOutcomeModel) {
                 outcomeModelFileName <- .createOutcomeModelFileName(analysisFolder,
                                                                     drugComparator$targetDrugConceptId,
                                                                     drugComparator$comparatorDrugConceptId,
@@ -208,10 +220,14 @@ runCmAnalyses <- function(connectionDetails,
               outcomeReferenceRow <- data.frame(analysisId = cmAnalysisArgs$analysisId,
                                                 targetDrugConceptId = drugComparator$targetDrugConceptId,
                                                 comparatorDrugConceptId = drugComparator$comparatorDrugConceptId,
-                                                indicationConceptIds = paste(drugComparator$indicationConceptIds,collapse=","),
-                                                exclusionConceptIds = paste(drugComparator$exclusionConceptIds,collapse=","),
-                                                excludedCovariateConceptIds = paste(drugComparator$excludedCovariateConceptIds,collapse=","),
-                                                includedCovariateConceptIds = paste(drugComparator$includedCovariateConceptIds,collapse=","),
+                                                indicationConceptIds = paste(drugComparator$indicationConceptIds,
+                                                                             collapse = ","),
+                                                exclusionConceptIds = paste(drugComparator$exclusionConceptIds,
+                                                                            collapse = ","),
+                                                excludedCovariateConceptIds = paste(drugComparator$excludedCovariateConceptIds,
+                                                                                    collapse = ","),
+                                                includedCovariateConceptIds = paste(drugComparator$includedCovariateConceptIds,
+                                                                                    collapse = ","),
                                                 outcomeConceptId = outcomeConceptId,
                                                 cohortMethodDataFolder = cohortMethodDataFolder,
                                                 sharedPsFile = sharedPsFile,
@@ -226,23 +242,28 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  write.csv(outcomeReference, file.path(outputFolder, "outcomeModelReference.csv"), row.names = FALSE)
+  write.csv(outcomeReference, file.path(outputFolder,
+                                        "outcomeModelReference.csv"), row.names = FALSE)
 
   writeLines("*** Creating cohortMethodData objects ***")
   objectsToCreate <- list()
-  for (cohortMethodDataFolder in unique(outcomeReference$cohortMethodDataFolder)){
+  for (cohortMethodDataFolder in unique(outcomeReference$cohortMethodDataFolder)) {
     if (cohortMethodDataFolder != "" && !file.exists((cohortMethodDataFolder))) {
-      refRow <- outcomeReference[outcomeReference$cohortMethodDataFolder == cohortMethodDataFolder,][1,]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
+      refRow <- outcomeReference[outcomeReference$cohortMethodDataFolder == cohortMethodDataFolder, ][1, ]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                              list(analysisId = refRow$analysisId))[[1]]
       getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
-      indicationConceptIds <- as.numeric(unlist(strsplit(refRow$indicationConceptIds,",")))
-      exclusionConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$exclusionConceptIds,","))),
+      indicationConceptIds <- as.numeric(unlist(strsplit(refRow$indicationConceptIds, ",")))
+      exclusionConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$exclusionConceptIds, ","))),
                                       getDbCohortMethodDataArgs$exclusionConceptIds))
-      excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds,","))),
+      excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds,
+                                                                         ","))),
                                               getDbCohortMethodDataArgs$excludedCovariateConceptIds))
-      includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds,","))),
+      includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds,
+                                                                         ","))),
                                               getDbCohortMethodDataArgs$includedCovariateConceptIds))
-      outcomeConceptIds <- unique(outcomeReference$outcomeConceptId[outcomeReference$cohortMethodDataFolder == cohortMethodDataFolder])
+      outcomeConceptIds <- unique(outcomeReference$outcomeConceptId[outcomeReference$cohortMethodDataFolder ==
+                                                                      cohortMethodDataFolder])
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
                    exposureDatabaseSchema = exposureDatabaseSchema,
@@ -268,7 +289,7 @@ runCmAnalyses <- function(connectionDetails,
     cohortMethodData <- do.call("getDbCohortMethodData", params$args)
     saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
   }
-  if (length(objectsToCreate) != 0){
+  if (length(objectsToCreate) != 0) {
     cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
     dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createCmDataObject)
@@ -279,26 +300,29 @@ runCmAnalyses <- function(connectionDetails,
   modelsToFit <- list()
   if (refitPsForEveryOutcome) {
     # Refit PS model for every outcome
-    for (psFile in unique(outcomeReference$psFile)){
+    for (psFile in unique(outcomeReference$psFile)) {
       if (psFile != "" && !file.exists((psFile))) {
-        refRow <- outcomeReference[outcomeReference$psFile == psFile,][1,]
-        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
-        outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$psFile == psFile])
+        refRow <- outcomeReference[outcomeReference$psFile == psFile, ][1, ]
+        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                                list(analysisId = refRow$analysisId))[[1]]
+        outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$psFile ==
+                                                                       psFile])
         args <- analysisRow$createPsArgs
         args$outcomeConceptId <- outcomeConceptId
-        modelsToFit[[length(modelsToFit) + 1]] <- list(args = args,
-                                                       psFile = psFile)
+        modelsToFit[[length(modelsToFit) + 1]] <- list(args = args, psFile = psFile)
       }
     }
   } else {
     # Don't refit PS model for every outcome
-    for (sharedPsFile in unique(outcomeReference$sharedPsFile)){
+    for (sharedPsFile in unique(outcomeReference$sharedPsFile)) {
       if (sharedPsFile != "") {
-        refRow <- outcomeReference[outcomeReference$sharedPsFile == sharedPsFile,][1,]
-        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
-        idToFile <- unique(outcomeReference[outcomeReference$sharedPsFile == sharedPsFile, c("outcomeConceptId","psFile")])
-        idToFile <- idToFile[!file.exists(idToFile$psFile),]
-        if (nrow(idToFile) != 0){
+        refRow <- outcomeReference[outcomeReference$sharedPsFile == sharedPsFile, ][1, ]
+        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                                list(analysisId = refRow$analysisId))[[1]]
+        idToFile <- unique(outcomeReference[outcomeReference$sharedPsFile == sharedPsFile,
+                                            c("outcomeConceptId", "psFile")])
+        idToFile <- idToFile[!file.exists(idToFile$psFile), ]
+        if (nrow(idToFile) != 0) {
           modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
                                                          args = analysisRow$createPsArg,
                                                          idToFile = idToFile,
@@ -307,24 +331,46 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  fitPSModel <- function(params, refitPsForEveryOutcome) {
+  fitPSModel <- function(params, refitPsForEveryOutcome, underSampleComparatorToTreatedRatio) {
+
+    fitModel <- function(cohortMethodData, args, underSampleComparatorToTreatedRatio) {
+      if (underSampleComparatorToTreatedRatio != 0) {
+        treatedSize <- sum(cohortMethodData$cohorts$treatment)
+        comparatorSize <- nrow(cohortMethodData$cohorts) - treatedSize
+        if (comparatorSize/treatedSize > underSampleComparatorToTreatedRatio) {
+          underSample <- TRUE
+        }
+      }
+
+      if (underSample) {
+        cohortMethodDataSample <- sampleComparator(cohortMethodData,
+                                                   underSampleComparatorToTreatedRatio)
+        args$cohortMethodData <- cohortMethodDataSample
+        psSample <- do.call("createPs", args)
+        ps <- recomputePsForFullData(psSample, cohortMethodDataSample, cohortMethodData)
+      } else {
+        args$cohortMethodData < cohortMethodData
+        ps <- do.call("createPs", args)
+      }
+      return(ps)
+    }
+
     cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    args <- list(cohortMethodData = cohortMethodData)
-    args <- append(args, params$createPsArgs)
     if (refitPsForEveryOutcome) {
+      args <- params$args
       args$outcomeConceptId <- params$outcomeConceptId
-      ps <- do.call("createPs", args)
+      ps <- fitModel(cohortMethodData, args, underSampleComparatorToTreatedRatio)
       saveRDS(ps, params$psFile)
     } else {
       # Fit model once for all outcomes:
-      if (file.exists(params$sharedPsFile)){
+      if (file.exists(params$sharedPsFile)) {
         ps <- readRDS(params$sharedPsFile)
       } else {
-        ps <- do.call("createPs", args)
+        ps <- fitModel(cohortMethodData, params$args, underSampleComparatorToTreatedRatio)
         saveRDS(ps, params$sharedPsFile)
       }
       # For every outcome, filter people with prior outcomes:
-      for (i in 1:nrow(params$idToFile)){
+      for (i in 1:nrow(params$idToFile)) {
         outcomeConceptId <- params$idToFile$outcomeConceptId[i]
         psFile <- params$idToFile$psFile[i]
         if (!file.exists(psFile)) {
@@ -339,23 +385,29 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  if (length(modelsToFit) != 0){
+  if (length(modelsToFit) != 0) {
     cluster <- OhdsiRTools::makeCluster(createPsThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitPSModel,refitPsForEveryOutcome)
+    dummy <- OhdsiRTools::clusterApply(cluster,
+                                       modelsToFit,
+                                       fitPSModel,
+                                       refitPsForEveryOutcome,
+                                       underSampleComparatorToTreatedRatio)
     OhdsiRTools::stopCluster(cluster)
   }
 
   writeLines("*** Trimming/Matching/Stratifying ***")
   tasks <- list()
-  for (subPopFile in unique(outcomeReference$subPopFile)){
+  for (subPopFile in unique(outcomeReference$subPopFile)) {
     if (subPopFile != "" && !file.exists((subPopFile))) {
-      refRow <- outcomeReference[outcomeReference$subPopFile == subPopFile,][1,]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
-      outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$subPopFile == subPopFile])
+      refRow <- outcomeReference[outcomeReference$subPopFile == subPopFile, ][1, ]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                              list(analysisId = refRow$analysisId))[[1]]
+      outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$subPopFile ==
+                                                                     subPopFile])
       tasks[[length(tasks) + 1]] <- list(psFile = refRow$psFile,
-                                               args = analysisRow,
-                                               subPopFile = subPopFile)
+                                         args = analysisRow,
+                                         subPopFile = subPopFile)
     }
   }
   trimMatchStratify <- function(params) {
@@ -388,7 +440,7 @@ runCmAnalyses <- function(connectionDetails,
     }
     saveRDS(ps, params$subPopFile)
   }
-  if (length(tasks) != 0){
+  if (length(tasks) != 0) {
     cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
     dummy <- OhdsiRTools::clusterApply(cluster, tasks, trimMatchStratify)
@@ -397,11 +449,13 @@ runCmAnalyses <- function(connectionDetails,
 
   writeLines("*** Fitting outcome models ***")
   modelsToFit <- list()
-  for (outcomeModelFile in unique(outcomeReference$outcomeModelFile)){
+  for (outcomeModelFile in unique(outcomeReference$outcomeModelFile)) {
     if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
-      refRow <- outcomeReference[outcomeReference$outcomeModelFile == outcomeModelFile,][1,]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
-      outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$outcomeModelFile == outcomeModelFile])
+      refRow <- outcomeReference[outcomeReference$outcomeModelFile == outcomeModelFile, ][1, ]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                              list(analysisId = refRow$analysisId))[[1]]
+      outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$outcomeModelFile ==
+                                                                     outcomeModelFile])
       args <- analysisRow$fitOutcomeModelArgs
       args$outcomeConceptId <- outcomeConceptId
       modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
@@ -412,23 +466,20 @@ runCmAnalyses <- function(connectionDetails,
   }
   doFitOutcomeModel <- function(params) {
     cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    if (params$subPopFile != ""){
+    if (params$subPopFile != "") {
       subPopulation <- readRDS(params$subPopFile)
     } else {
       subPopulation <- NULL
     }
-    args <- list(cohortMethodData = cohortMethodData,
-                 subPopulation = subPopulation)
+    args <- list(cohortMethodData = cohortMethodData, subPopulation = subPopulation)
     args <- append(args, params$args)
     outcomeModel <- do.call("fitOutcomeModel", args)
     saveRDS(outcomeModel, params$outcomeModelFile)
   }
-  if (length(modelsToFit) != 0){
+  if (length(modelsToFit) != 0) {
     cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster,
-                                       modelsToFit,
-                                       doFitOutcomeModel)
+    dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, doFitOutcomeModel)
     OhdsiRTools::stopCluster(cluster)
   }
   invisible(outcomeReference)
@@ -543,7 +594,7 @@ runCmAnalyses <- function(connectionDetails,
     return(value)
   } else {
     if (!is.list(value) || is.null(value[type])) {
-      stop(paste(label, "type not found:", loadingArgs$comparatorType))
+      stop(paste(label, "type not found:", type))
     }
     return(value[type])
   }
@@ -551,16 +602,16 @@ runCmAnalyses <- function(connectionDetails,
 
 #' Create a summary report of the analyses
 #'
-#' @param outcomeReference  A data.frame as created by the \code{\link{runAnalyses}} function.
+#' @param outcomeReference   A data.frame as created by the \code{\link{runAnalyses}} function.
 #'
 #' @export
 summarizeAnalyses <- function(outcomeReference) {
-  columns <- c("analysisId","targetDrugConceptId","comparatorDrugConceptId")
+  columns <- c("analysisId", "targetDrugConceptId", "comparatorDrugConceptId")
   if (!is.null(outcomeReference$indicationConceptIds)) {
     columns <- c(columns, "indicationConceptIds")
   }
   columns <- c(columns, "outcomeConceptId")
-  result <- outcomeReference[,columns]
+  result <- outcomeReference[, columns]
   result$rr <- 0
   result$ci95lb <- 0
   result$ci95ub <- 0
@@ -572,15 +623,20 @@ summarizeAnalyses <- function(outcomeReference) {
   result$seLogRr <- 0
   for (i in 1:nrow(outcomeReference)) {
     outcomeModel <- readRDS(outcomeReference$outcomeModelFile[i])
-    result$rr[i] <- if (is.null(coef(outcomeModel))) NA else exp(coef(outcomeModel))
-    result$ci95lb[i] <- if (is.null(coef(outcomeModel))) NA else exp(confint(outcomeModel)[1])
-    result$ci95ub[i] <- if (is.null(coef(outcomeModel))) NA else exp(confint(outcomeModel)[2])
+    result$rr[i] <- if (is.null(coef(outcomeModel)))
+      NA else exp(coef(outcomeModel))
+    result$ci95lb[i] <- if (is.null(coef(outcomeModel)))
+      NA else exp(confint(outcomeModel)[1])
+    result$ci95ub[i] <- if (is.null(coef(outcomeModel)))
+      NA else exp(confint(outcomeModel)[2])
     result$treated[i] <- sum(outcomeModel$data$treatment == 1)
     result$comparator[i] <- sum(outcomeModel$data$treatment == 0)
     result$eventsTreated[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 1])
     result$eventsComparator[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 0])
-    result$logRr[i] <- if (is.null(coef(outcomeModel))) NA else coef(outcomeModel)
-    result$seLogRr[i] <- if (is.null(coef(outcomeModel))) NA else outcomeModel$treatmentEstimate$seLogRr
+    result$logRr[i] <- if (is.null(coef(outcomeModel)))
+      NA else coef(outcomeModel)
+    result$seLogRr[i] <- if (is.null(coef(outcomeModel)))
+      NA else outcomeModel$treatmentEstimate$seLogRr
   }
   return(result)
 }

@@ -238,7 +238,8 @@ createDataForModelFit <- function(outcomeConceptId,
     stop("Conditional regression specified, but no strata provided")
   if (useStrata)
     writeLines("Fitting stratified model") else writeLines("Fitting unstratified model")
-  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude) | !ffbase::any.ff(cohortMethodData$outcomes$outcomeId == outcomeConceptId)) {
+  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude) | !ffbase::any.ff(cohortMethodData$outcomes$outcomeId ==
+    outcomeConceptId)) {
     outcomes <- cohortMethodData$outcomes
     cohorts <- ff::as.ram(cohortMethodData$cohort)
   } else {
@@ -387,7 +388,7 @@ fitOutcomeModel <- function(outcomeConceptId,
     }, error = function(e) {
       e$message
     })
-    if (is.character(fit)){
+    if (is.character(fit)) {
       coefficients <- c(0)
       treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
       priorVariance <- 0

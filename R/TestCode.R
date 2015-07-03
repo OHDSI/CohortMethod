@@ -6,7 +6,7 @@ testCode <- function() {
 
   drugComparatorOutcomes1 <- createDrugComparatorOutcomes(targetDrugConceptId = 755695,
                                                           comparatorDrugConceptId = 739138,
-                                                          outcomeConceptId = c(194133, 123))
+                                                          outcomeConceptIds = c(194133, 123))
 
   drugComparatorOutcomesList <- list(drugComparatorOutcomes1)
 
@@ -134,6 +134,7 @@ testCode <- function() {
                        outputFolder = "s:/temp/cmOutput",
                        cmAnalysisList = cmAnalysisList,
                        drugComparatorOutcomesList = drugComparatorOutcomesList,
+                       underSampleComparatorToTreatedRatio = 1,
                        getDbCohortMethodDataThreads = 2,
                        createPsThreads = 1,
                        fitOutcomeModelThreads = 1)

@@ -11,58 +11,68 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
-  getDbCohortMethodDataThreads = 1, createPsThreads = 1,
-  fitOutcomeModelThreads = 1)
+  underSampleComparatorToTreatedRatio = 0, getDbCohortMethodDataThreads = 1,
+  createPsThreads = 1, fitOutcomeModelThreads = 1)
 }
 \arguments{
-\item{connectionDetails}{An R object of type \code{connectionDetails} created using the
-function \code{createConnectionDetails} in the
-\code{DatabaseConnector} package.}
+\item{connectionDetails}{An R object of type \code{connectionDetails} created
+using the function \code{createConnectionDetails} in
+the \code{DatabaseConnector} package.}
 
-\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
-instance. Requires read permissions to this database. On SQL
-Server, this should specifiy both the database and the schema,
-so for example 'cdm_instance.dbo'.}
+\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP
+CDM instance. Requires read permissions to this
+database. On SQL Server, this should specifiy both the
+database and the schema, so for example
+'cdm_instance.dbo'.}
 
-\item{oracleTempSchema}{For Oracle only: the name of the database schema where you
-want all temporary tables to be managed. Requires
+\item{oracleTempSchema}{For Oracle only: the name of the database schema where
+you want all temporary tables to be managed. Requires
 create/insert permissions to this database.}
 
-\item{exposureDatabaseSchema}{The name of the database schema that is the location where the
-exposure data used to define the exposure cohorts is
-available. If exposureTable = DRUG_ERA, exposureDatabaseSchema
-is not used by assumed to be cdmSchema.  Requires read
-permissions to this database.}
+\item{exposureDatabaseSchema}{The name of the database schema that is the location
+where the exposure data used to define the exposure
+cohorts is available. If exposureTable = DRUG_ERA,
+exposureDatabaseSchema is not used by assumed to be
+cdmSchema.  Requires read permissions to this database.}
 
 \item{exposureTable}{The tablename that contains the exposure cohorts.  If
-exposureTable <> DRUG_ERA, then expectation is exposureTable
-has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
-COHORT_START_DATE, COHORT_END_DATE.}
+exposureTable <> DRUG_ERA, then expectation is
+exposureTable has format of COHORT table:
+COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+COHORT_END_DATE.}
 
-\item{outcomeDatabaseSchema}{The name of the database schema that is the location where the
-data used to define the outcome cohorts is available. If
-exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
-used by assumed to be cdmSchema.  Requires read permissions to
-this database.}
+\item{outcomeDatabaseSchema}{The name of the database schema that is the location
+where the data used to define the outcome cohorts is
+available. If exposureTable = CONDITION_ERA,
+exposureDatabaseSchema is not used by assumed to be
+cdmSchema.  Requires read permissions to this database.}
 
 \item{outcomeTable}{The tablename that contains the outcome cohorts.  If
-outcomeTable <> CONDITION_OCCURRENCE, then expectation is
-outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
-SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+outcomeTable <> CONDITION_OCCURRENCE, then expectation
+is outcomeTable has format of COHORT table:
+COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+COHORT_END_DATE.}
 
-\item{outputFolder}{Name of the folder where all the outputs will written to.}
+\item{outputFolder}{Name of the folder where all the outputs will written
+to.}
 
-\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
-the \code{\link{createCmAnalysis}} function.}
+\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created
+using the \code{\link{createCmAnalysis}} function.}
 
-\item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes} as
-created using the \code{\link{createdrugComparatorOutcomes}}
-function.}
+\item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes}
+as created using the
+\code{\link{createdrugComparatorOutcomes}} function.}
 
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome
-(i.e. after people who already had the outcome are removed)? If
-false, a single propensity model will be fitted, and people who
-had the outcome previously will be removed afterwards.}
+(i.e. after people who already had the outcome are
+removed)? If false, a single propensity model will be
+fitted, and people who had the outcome previously will
+be removed afterwards.}
+
+\item{underSampleComparatorToTreatedRatio}{If the comparator group size exceeds the treated group
+size by this factor, the comparator group will be
+down-sampled before fitting the PS model. This can be
+useful when the comparator group is extremely large.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
@@ -70,8 +80,8 @@ cohortMethod data objects.}
 \item{createPsThreads}{The number of parallel threads to use for fitting the
 propensity models.}
 
-\item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the outcome
-                                      models.}
+\item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the
+                                             outcome models.}
 }
 \description{
 Run a list of analyses

@@ -97,7 +97,10 @@ createCmAnalysis <- function(analysisId = 1,
   if (!createPs && (trimByPs | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
-  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) && (fitOutcomeModelArgs$modelType %in% c("clr","cpr") || (fitOutcomeModelArgs$modelType == "cox" && fitOutcomeModelArgs$stratifiedCox))){
+  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
+    (fitOutcomeModelArgs$modelType %in% c("clr",
+                                          "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
+      fitOutcomeModelArgs$stratifiedCox))) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!createPs) {
@@ -181,16 +184,16 @@ loadCmAnalysisList <- function(file) {
         class(cmAnalysisList[[i]][[j]]) <- "args"
       }
     }
-    if (!is.null(cmAnalysisList[[i]]$createPsArgs$prior)){
+    if (!is.null(cmAnalysisList[[i]]$createPsArgs$prior)) {
       class(cmAnalysisList[[i]]$createPsArgs$prior) <- "cyclopsPrior"
     }
-    if (!is.null(cmAnalysisList[[i]]$createPsArgs$control)){
+    if (!is.null(cmAnalysisList[[i]]$createPsArgs$control)) {
       class(cmAnalysisList[[i]]$createPsArgs$control) <- "cyclopsControl"
     }
-    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior)){
+    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior)) {
       class(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "cyclopsPrior"
     }
-    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$control)){
+    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$control)) {
       class(cmAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "cyclopsControl"
     }
   }
