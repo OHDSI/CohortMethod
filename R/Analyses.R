@@ -72,8 +72,8 @@ createCmAnalysis <- function(analysisId = 1,
                              comparatorType = NULL,
                              indicationType = NULL,
                              getDbCohortMethodDataArgs,
-                             createPs = TRUE,
-                             createPsArgs,
+                             createPs = FALSE,
+                             createPsArgs = NULL,
                              trimByPs = FALSE,
                              trimByPsArgs = NULL,
                              trimByPsToEquipoise = FALSE,
@@ -94,8 +94,11 @@ createCmAnalysis <- function(analysisId = 1,
   if (trimByPs && trimByPsToEquipoise) {
     stop("Cannot trim to fraction and equipoise at the same time")
   }
-  if (!createPs && (trimByPs | matchOnPsAndCovariates | stratifyByPs)) {
+  if (!createPs && (trimByPs | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
+  }
+  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) && (fitOutcomeModelArgs$modelType %in% c("clr","cpr") || (fitOutcomeModelArgs$modelType == "cox" && fitOutcomeModelArgs$stratifiedCox))){
+    stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!createPs) {
     createPsArgs <- NULL
@@ -178,10 +181,18 @@ loadCmAnalysisList <- function(file) {
         class(cmAnalysisList[[i]][[j]]) <- "args"
       }
     }
-    class(cmAnalysisList[[i]]$createPsArgs$prior) <- "cyclopsPrior"
-    class(cmAnalysisList[[i]]$createPsArgs$control) <- "cyclopsControl"
-    class(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "cyclopsPrior"
-    class(cmAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "cyclopsControl"
+    if (!is.null(cmAnalysisList[[i]]$createPsArgs$prior)){
+      class(cmAnalysisList[[i]]$createPsArgs$prior) <- "cyclopsPrior"
+    }
+    if (!is.null(cmAnalysisList[[i]]$createPsArgs$control)){
+      class(cmAnalysisList[[i]]$createPsArgs$control) <- "cyclopsControl"
+    }
+    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior)){
+      class(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "cyclopsPrior"
+    }
+    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$control)){
+      class(cmAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "cyclopsControl"
+    }
   }
   return(cmAnalysisList)
 }

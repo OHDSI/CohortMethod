@@ -109,8 +109,13 @@ runCmAnalyses <- function(connectionDetails,
   if (!file.exists(outputFolder))
     dir.create(outputFolder)
 
-  writeLines("*** Creating cohortMethodData objects ***")
-  objectsToCreate <- list()
+  ### Create reference table ###
+  allButFitOutcomeModelArgsList <- unique(OhdsiRTools::excludeFromList(cmAnalysisList,
+                                                                       c("analysisId",
+                                                                         "description",
+                                                                         "fitOutcomeModel",
+                                                                         "fitOutcomeModelArgs")))
+  outcomeReference <- data.frame()
   loadingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
                                                         c("getDbCohortMethodDataArgs",
                                                           "targetType",
@@ -118,8 +123,6 @@ runCmAnalyses <- function(connectionDetails,
                                                           "indicationType")))
   for (i in 1:length(loadingArgsList)) {
     loadingArgs <- loadingArgsList[[i]]
-
-
     drugComparatorList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
                                                              c("targetDrugConceptId",
                                                                "comparatorDrugConceptId",
@@ -128,81 +131,9 @@ runCmAnalyses <- function(connectionDetails,
                                                                "excludedCovariateConceptIds",
                                                                "includedCovariateConceptIds")))
     for (drugComparator in drugComparatorList) {
-      targetDrugConceptId <- .selectByType(loadingArgs$targetType,
-                                           drugComparator$targetDrugConceptId,
-                                           "target")
-      comparatorDrugConceptId <- .selectByType(loadingArgs$comparatorType,
-                                               drugComparator$comparatorDrugConceptId,
-                                               "comparator")
-      indicationConceptIds <- .selectByType(loadingArgs$indicationType,
-                                            drugComparator$indicationConceptIds,
-                                            "indication")
-      cohortMethodDataFolder <- .createCohortMethodDataFileName(outputFolder,
-                                                                i,
-                                                                targetDrugConceptId,
-                                                                comparatorDrugConceptId,
-                                                                indicationConceptIds)
-      if (!file.exists(cohortMethodDataFolder)) {
-        getDbCohortMethodDataArgs <- loadingArgs$getDbCohortMethodDataArgs
-        exclusionConceptIds <- unique(c(drugComparatorOutcomes$exclusionConceptIds,
-                                        getDbCohortMethodDataArgs$exclusionConceptIds))
-        excludedCovariateConceptIds <- unique(c(drugComparatorOutcomes$excludedCovariateConceptIds,
-                                                getDbCohortMethodDataArgs$excludedCovariateConceptIds))
-        includedCovariateConceptIds <- unique(c(drugComparatorOutcomes$includedCovariateConceptIds,
-                                                getDbCohortMethodDataArgs$includedCovariateConceptIds))
-
-        drugComparatorOutcomes <- OhdsiRTools::matchInList(drugComparatorOutcomesList,
-                                                           drugComparator)
-        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomes,
-                                                                       "outcomeConceptIds")))
-        args <- list(connectionDetails = connectionDetails,
-                     cdmDatabaseSchema = cdmDatabaseSchema,
-                     exposureDatabaseSchema = exposureDatabaseSchema,
-                     exposureTable = exposureTable,
-                     outcomeDatabaseSchema = outcomeDatabaseSchema,
-                     outcomeTable = outcomeTable,
-                     outcomeConceptIds = outcomeConceptIds,
-                     targetDrugConceptId = targetDrugConceptId,
-                     comparatorDrugConceptId = comparatorDrugConceptId,
-                     indicationConceptIds = indicationConceptIds,
-                     exclusionConceptIds = exclusionConceptIds,
-                     excludedCovariateConceptIds = excludedCovariateConceptIds,
-                     includedCovariateConceptIds = includedCovariateConceptIds)
-        getDbCohortMethodDataArgs$exclusionConceptIds <- NULL
-        getDbCohortMethodDataArgs$excludedCovariateConceptIds <- NULL
-        getDbCohortMethodDataArgs$includedCovariateConceptIds <- NULL
-        args <- append(args, getDbCohortMethodDataArgs)
-        objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args,
-                                                               cohortMethodDataFolder = cohortMethodDataFolder)
-      }
-    }
-  }
-  createCmDataObject <- function(params) {
-    cohortMethodData <- do.call("getDbCohortMethodData", params$args)
-    saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
-  }
-  if (length(objectsToCreate) != 0){
-    cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createCmDataObject)
-    OhdsiRTools::stopCluster(cluster)
-  }
-  writeLines("*** Fitting propensity score models ***")
-  modelsToFit <- list()
-  loadingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
-                                                        c("getDbCohortMethodDataArgs",
-                                                          "comparatorType",
-                                                          "indicationType")))
-  for (i in 1:length(loadingArgsList)) {
-    loadingArgs <- loadingArgsList[[i]]
-    drugComparatorList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
-                                                             c("targetDrugConceptId",
-                                                               "comparatorDrugConceptId",
-                                                               "indicationConceptIds",
-                                                               "exclusionConceptIds",
-                                                               "excludedCovariateConceptIds",
-                                                               "includedCovariateConceptIds")))
-    for (drugComparator in drugComparatorList) {
+      drugComparatorOutcomes <- OhdsiRTools::matchInList(drugComparatorOutcomesList, drugComparator)
+      outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomes,
+                                                                     "outcomeConceptIds")))
       targetDrugConceptId <- .selectByType(loadingArgs$targetType,
                                            drugComparator$targetDrugConceptId,
                                            "target")
@@ -222,173 +153,74 @@ runCmAnalyses <- function(connectionDetails,
                                                              c("createPs", "createPsArgs")))
       for (j in 1:length(createPsArgsList)) {
         createPsArgs <- createPsArgsList[[j]]
-        drugComparatorOutcomes <- OhdsiRTools::matchInList(drugComparatorOutcomesList, drugComparator)
-        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomes,
-                                                                       "outcomeConceptIds")))
-        outcomeToFileName <- data.frame(outcomeConceptId = outcomeConceptIds, fileName = "", stringsAsFactors = FALSE)
-        for (outcomeConceptId in outcomeConceptIds) {
-          fileName <- .createPsOutcomeFileName(outputFolder,
-                                               i,
-                                               targetDrugConceptId,
-                                               comparatorDrugConceptId,
-                                               indicationConceptIds,
-                                               j,
-                                               outcomeConceptId)
-          outcomeToFileName$fileName[outcomeToFileName$outcomeConceptId == outcomeConceptId] <- fileName
-        }
-        if (any(!file.exists(outcomeToFileName$fileName))){
-          if (refitPsForEveryOutcome){
-            psFileName <- NULL
-          } else {
-            psFileName <- .createPsFileName(outputFolder,
-                                            i,
-                                            targetDrugConceptId,
-                                            comparatorDrugConceptId,
-                                            indicationConceptIds,
-                                            j)
-          }
-          modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder,
-                                                         createPsArgs = createPsArgs,
-                                                         psFileName = psFileName,
-                                                         outcomeToFileName = outcomeToFileName)
-        }
-      }
-    }
-  }
-  fitPSModel <- function(params, refitPsForEveryOutcome) {
-    if (params$createPsArgs$createPs) {
-      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-      args <- list(cohortMethodData = cohortMethodData)
-      args <- append(args, params$createPsArgs$createPsArgs)
-      if (refitPsForEveryOutcome) {
-        for (outcomeConceptId in params$outcomeToFileName$outcomeConceptId){
-          fileName <- params$outcomeToFileName$fileName[params$outcomeToFileName$outcomeConceptId == outcomeConceptId]
-          if (!file.exists(fileName)) {
-            args$outcomeConceptID <- outcomeConceptId
-            ps <- do.call("createPs", args)
-            saveRDS(ps, fileName)
-          }
-        }
-      } else {
-        if (file.exists(params$psFileName)){
-          ps <- readRDS(params$psFileName)
+        if (createPsArgs$createPs) {
+        sharedPsFile <- .createPsFileName(outputFolder,
+                                          i,
+                                          targetDrugConceptId,
+                                          comparatorDrugConceptId,
+                                          indicationConceptIds,
+                                          j)
         } else {
-          ps <- do.call("createPs", args)
-          saveRDS(ps, params$psFileName)
+          sharedPsFile <- ""
         }
-        for (outcomeConceptId in params$outcomeToFileName$outcomeConceptId){
-          fileName <- params$outcomeToFileName$fileName[params$outcomeToFileName$outcomeConceptId == outcomeConceptId]
-          if (!file.exists(fileName)) {
-            if (ffbase::any.ff(cohortMethodData$exclude$outcomeId == outcomeConceptId)) {
-              filteredPs <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId ==
-                                                                                           outcomeConceptId])), ]
-            } else {
-              filteredPs <- ps
-            }
-            saveRDS(filteredPs, fileName)
-          }
-        }
-      }
-    }
-  }
-  if (length(modelsToFit) != 0){
-    cluster <- OhdsiRTools::makeCluster(createPsThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitPSModel, refitPsForEveryOutcome)
-    OhdsiRTools::stopCluster(cluster)
-  }
-
-
-  writeLines("*** Fitting outcome models ***")
-  outcomeReference <- data.frame()
-  modelsToFit <- list()
-  allButFitOutcomeModelArgsList <- unique(OhdsiRTools::excludeFromList(cmAnalysisList,
-                                                                       c("analysisId",
-                                                                         "description",
-                                                                         "fitOutcomeModel",
-                                                                         "fitOutcomeModelArgs")))
-  for (i in 1:length(loadingArgsList)) {
-    loadingArgs <- loadingArgsList[[i]]
-    drugComparatorList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
-                                                             c("targetDrugConceptId",
-                                                               "comparatorDrugConceptId",
-                                                               "indicationConceptIds",
-                                                               "exclusionConceptIds",
-                                                               "excludedCovariateConceptIds",
-                                                               "includedCovariateConceptIds")))
-    for (drugComparator in drugComparatorList) {
-      targetDrugConceptId <- .selectByType(loadingArgs$targetType,
-                                           drugComparator$targetDrugConceptId,
-                                           "target")
-      comparatorDrugConceptId <- .selectByType(loadingArgs$comparatorType,
-                                               drugComparator$comparatorDrugConceptId,
-                                               "comparator")
-      indicationConceptIds <- .selectByType(loadingArgs$indicationType,
-                                            drugComparator$indicationConceptIds,
-                                            "indication")
-      cohortMethodDataFolder <- .createCohortMethodDataFileName(outputFolder,
-                                                                i,
-                                                                targetDrugConceptId,
-                                                                comparatorDrugConceptId,
-                                                                indicationConceptIds)
-      cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, loadingArgs)
-      createPsArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisSubset,
-                                                             c("createPs", "createPsArgs")))
-      for (j in 1:length(createPsArgsList)) {
         allButFitOutcomeModelArgsSubset <- OhdsiRTools::matchInList(OhdsiRTools::matchInList(allButFitOutcomeModelArgsList,
                                                                                              loadingArgs), createPsArgs)
-        drugComparatorOutcomes <- OhdsiRTools::matchInList(drugComparatorOutcomesList, drugComparator)
-        outcomeConceptIds <- unique(unlist(OhdsiRTools::selectFromList(drugComparatorOutcomes,
-                                                                       "outcomeConceptIds")))
-        for (outcomeConceptId in outcomeConceptIds) {
-          for (k in 1:length(allButFitOutcomeModelArgsSubset)) {
-            allButFitOutcomeModelArgs = allButFitOutcomeModelArgsSubset[[k]]
-            cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, allButFitOutcomeModelArgs)
-            analysisIdToFile <- data.frame(analysisId = unlist(OhdsiRTools::selectFromList(cmAnalysisSubset,"analysisId")))
-            analysisIdToFile$outcomeModelFile <- ""
-            for (cmAnalysisArgs in cmAnalysisSubset){
-              analysisFolder <- paste(outputFolder, "/Analysis_", cmAnalysisArgs$analysisId, sep = "")
-              if (!file.exists(analysisFolder))
-                dir.create(analysisFolder)
-              outcomeModelFile <- .createOutcomeModelFileName(analysisFolder,
-                                                              drugComparator$targetDrugConceptId,
-                                                              drugComparator$comparatorDrugConceptId,
-                                                              drugComparator$indicationConceptIds,
-                                                              outcomeConceptId)
-              analysisIdToFile$outcomeModelFile[analysisIdToFile$analysisId == cmAnalysisArgs$analysisId] <- outcomeModelFile
+        for (k in 1:length(allButFitOutcomeModelArgsSubset)) {
+          allButFitOutcomeModelArgs = allButFitOutcomeModelArgsSubset[[k]]
+          cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, allButFitOutcomeModelArgs)
+          for (cmAnalysisArgs in cmAnalysisSubset){
+            analysisFolder <- file.path(outputFolder,paste("Analysis_", cmAnalysisArgs$analysisId, sep = ""))
+            if (!file.exists(analysisFolder))
+              dir.create(analysisFolder)
+            for (outcomeConceptId in outcomeConceptIds) {
+              if (cmAnalysisArgs$createPs){
+                psFileName <- .createPsOutcomeFileName(outputFolder,
+                                                       i,
+                                                       drugComparator$targetDrugConceptId,
+                                                       drugComparator$comparatorDrugConceptId,
+                                                       drugComparator$indicationConceptIds,
+                                                       j,
+                                                       outcomeConceptId)
+              } else {
+                psFileName <- ""
+              }
+              if (cmAnalysisArgs$trimByPs || cmAnalysisArgs$trimByPsToEquipoise || cmAnalysisArgs$matchOnPs || cmAnalysisArgs$matchOnPsAndCovariates || cmAnalysisArgs$stratifyByPs || cmAnalysisArgs$stratifyByPsAndCovariates){
+                subPopFileName <- .createSubPopFileName(outputFolder,
+                                                        i,
+                                                        drugComparator$targetDrugConceptId,
+                                                        drugComparator$comparatorDrugConceptId,
+                                                        drugComparator$indicationConceptIds,
+                                                        j,
+                                                        k,
+                                                        outcomeConceptId)
+              } else {
+                subPopFileName <- ""
+              }
+              if (cmAnalysisArgs$fitOutcomeModel){
+                outcomeModelFileName <- .createOutcomeModelFileName(analysisFolder,
+                                                                    drugComparator$targetDrugConceptId,
+                                                                    drugComparator$comparatorDrugConceptId,
+                                                                    drugComparator$indicationConceptIds,
+                                                                    outcomeConceptId)
+              } else {
+                outcomeModelFileName <- ""
+              }
+              outcomeReferenceRow <- data.frame(analysisId = cmAnalysisArgs$analysisId,
+                                                targetDrugConceptId = drugComparator$targetDrugConceptId,
+                                                comparatorDrugConceptId = drugComparator$comparatorDrugConceptId,
+                                                indicationConceptIds = paste(drugComparator$indicationConceptIds,collapse=","),
+                                                exclusionConceptIds = paste(drugComparator$exclusionConceptIds,collapse=","),
+                                                excludedCovariateConceptIds = paste(drugComparator$excludedCovariateConceptIds,collapse=","),
+                                                includedCovariateConceptIds = paste(drugComparator$includedCovariateConceptIds,collapse=","),
+                                                outcomeConceptId = outcomeConceptId,
+                                                cohortMethodDataFolder = cohortMethodDataFolder,
+                                                sharedPsFile = sharedPsFile,
+                                                psFile = psFileName,
+                                                subPopFile = subPopFileName,
+                                                outcomeModelFile = outcomeModelFileName,
+                                                stringsAsFactors = FALSE)
+              outcomeReference <- rbind(outcomeReference, outcomeReferenceRow)
             }
-            psFileName <- .createPsOutcomeFileName(outputFolder,
-                                                   i,
-                                                   drugComparator$targetDrugConceptId,
-                                                   drugComparator$comparatorDrugConceptId,
-                                                   drugComparator$indicationConceptIds,
-                                                   j,
-                                                   outcomeConceptId)
-            subPopFileName <- .createSubPopFileName(outputFolder,
-                                                    i,
-                                                    drugComparator$targetDrugConceptId,
-                                                    drugComparator$comparatorDrugConceptId,
-                                                    drugComparator$indicationConceptIds,
-                                                    j,
-                                                    k,
-                                                    outcomeConceptId)
-            if (any(!file.exists(analysisIdToFile$outcomeModelFile))){
-               modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = cohortMethodDataFolder,
-                                                             psFileName = psFileName,
-                                                             subPopFileName = subPopFileName,
-                                                             outcomeConceptId = outcomeConceptId,
-                                                             allButFitOutcomeModelArgs = allButFitOutcomeModelArgs,
-                                                             analysisIdToFile = analysisIdToFile)
-            }
-            outcomeReferenceChunk <- analysisIdToFile
-            outcomeReferenceChunk$targetDrugConceptId <- drugComparator$targetDrugConceptId
-            outcomeReferenceChunk$comparatorDrugConceptId <- drugComparator$comparatorDrugConceptId
-            outcomeReferenceChunk$indicationConceptIds <- drugComparator$indicationConceptIds
-            outcomeReferenceChunk$outcomeConceptId <- outcomeConceptId
-            outcomeReferenceChunk$psFile <- psFileName
-            outcomeReferenceChunk$subPopFile <- subPopFileName
-            outcomeReferenceChunk$cohortMethodDataFolder <- cohortMethodDataFolder
-            outcomeReference <- rbind(outcomeReference, outcomeReferenceChunk)
           }
         }
       }
@@ -396,70 +228,207 @@ runCmAnalyses <- function(connectionDetails,
   }
   write.csv(outcomeReference, file.path(outputFolder, "outcomeModelReference.csv"), row.names = FALSE)
 
-  doFitOutcomeModel <- function(params, cmAnalysisList, outputFolder) {
-    cmAnalysisSubset <- OhdsiRTools::matchInList(cmAnalysisList, params$allButFitOutcomeModelArgs)
-    fitOutcomeModels <- unlist(OhdsiRTools::selectFromList(cmAnalysisSubset, "fitOutcomeModel"))
-    if (any(fitOutcomeModels)) {
-      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-      if (!params$allButFitOutcomeModelArgs$createPs) {
-        ps <- NULL
-      } else {
-        if (file.exists(params$subPopFileName)){
-          ps <- readRDS(params$subPopFileName)
-        } else {
-          ps <- readRDS(params$psFileName)
-          if (params$allButFitOutcomeModelArgs$trimByPs) {
-            args <- list(data = ps)
-            args <- append(args, params$allButFitOutcomeModelArgs$trimByPsArgs)
-            ps <- do.call("trimByPs", args)
-          } else if (params$allButFitOutcomeModelArgs$trimByPsToEquipoise) {
-            args <- list(data = ps)
-            args <- append(args, params$allButFitOutcomeModelArgs$trimByPsToEquipoisesArgs)
-            ps <- do.call("trimByPsToEquipoise", args)
-          }
-          if (params$allButFitOutcomeModelArgs$matchOnPs) {
-            args <- list(data = ps)
-            args <- append(args, params$allButFitOutcomeModelArgs$matchOnPsArgs)
-            ps <- do.call("matchOnPs", args)
-          } else if (params$allButFitOutcomeModelArgs$matchOnPsAndCovariates) {
-            args <- list(data = ps)
-            args <- append(args, params$allButFitOutcomeModelArgs$matchOnPsAndCovariatesArgs)
-            ps <- do.call("matchOnPsAndCovariates", args)
-          } else if (params$allButFitOutcomeModelArgs$stratifyByPs) {
-            args <- list(data = ps)
-            args <- append(args, params$allButFitOutcomeModelArgs$stratifyByPsArgs)
-            ps <- do.call("stratifyByPs", args)
-          } else if (params$allButFitOutcomeModelArgs$stratifyByPsAndCovariates) {
-            args <- list(data = ps)
-            args <- append(args, params$allButFitOutcomeModelArgs$stratifyByPsAndCovariatesArgs)
-            ps <- do.call("stratifyByPsAndCovariates", args)
-          }
-          saveRDS(ps, params$subPopFileName)
-        }
-      }
+  writeLines("*** Creating cohortMethodData objects ***")
+  objectsToCreate <- list()
+  for (cohortMethodDataFolder in unique(outcomeReference$cohortMethodDataFolder)){
+    if (cohortMethodDataFolder != "" && !file.exists((cohortMethodDataFolder))) {
+      refRow <- outcomeReference[outcomeReference$cohortMethodDataFolder == cohortMethodDataFolder,][1,]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
+      getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
+      indicationConceptIds <- as.numeric(unlist(strsplit(refRow$indicationConceptIds,",")))
+      exclusionConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$exclusionConceptIds,","))),
+                                      getDbCohortMethodDataArgs$exclusionConceptIds))
+      excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds,","))),
+                                              getDbCohortMethodDataArgs$excludedCovariateConceptIds))
+      includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds,","))),
+                                              getDbCohortMethodDataArgs$includedCovariateConceptIds))
+      outcomeConceptIds <- unique(outcomeReference$outcomeConceptId[outcomeReference$cohortMethodDataFolder == cohortMethodDataFolder])
+      args <- list(connectionDetails = connectionDetails,
+                   cdmDatabaseSchema = cdmDatabaseSchema,
+                   exposureDatabaseSchema = exposureDatabaseSchema,
+                   exposureTable = exposureTable,
+                   outcomeDatabaseSchema = outcomeDatabaseSchema,
+                   outcomeTable = outcomeTable,
+                   outcomeConceptIds = outcomeConceptIds,
+                   targetDrugConceptId = targetDrugConceptId,
+                   comparatorDrugConceptId = comparatorDrugConceptId,
+                   indicationConceptIds = indicationConceptIds,
+                   exclusionConceptIds = exclusionConceptIds,
+                   excludedCovariateConceptIds = excludedCovariateConceptIds,
+                   includedCovariateConceptIds = includedCovariateConceptIds)
+      getDbCohortMethodDataArgs$exclusionConceptIds <- NULL
+      getDbCohortMethodDataArgs$excludedCovariateConceptIds <- NULL
+      getDbCohortMethodDataArgs$includedCovariateConceptIds <- NULL
+      args <- append(args, getDbCohortMethodDataArgs)
+      objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args,
+                                                             cohortMethodDataFolder = cohortMethodDataFolder)
+    }
+  }
+  createCmDataObject <- function(params) {
+    cohortMethodData <- do.call("getDbCohortMethodData", params$args)
+    saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
+  }
+  if (length(objectsToCreate) != 0){
+    cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createCmDataObject)
+    OhdsiRTools::stopCluster(cluster)
+  }
 
-      for (cmAnalysis in cmAnalysisSubset) {
-        outcomeModelFile = params$analysisIdToFile$outcomeModelFile[params$analysisIdToFile$analysisId == cmAnalysis$analysisId]
-        if (!file.exists(outcomeModelFile)) {
-          args <- list(outcomeConceptId = params$outcomeConceptId,
-                       cohortMethodData = cohortMethodData,
-                       subPopulation = ps)
-          args <- append(args, cmAnalysis$fitOutcomeModelArgs)
-          outcomeModel <- do.call("fitOutcomeModel", args)
-          saveRDS(outcomeModel, outcomeModelFile)
+  writeLines("*** Fitting propensity score models ***")
+  modelsToFit <- list()
+  if (refitPsForEveryOutcome) {
+    # Refit PS model for every outcome
+    for (psFile in unique(outcomeReference$psFile)){
+      if (psFile != "" && !file.exists((psFile))) {
+        refRow <- outcomeReference[outcomeReference$psFile == psFile,][1,]
+        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
+        outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$psFile == psFile])
+        args <- analysisRow$createPsArgs
+        args$outcomeConceptId <- outcomeConceptId
+        modelsToFit[[length(modelsToFit) + 1]] <- list(args = args,
+                                                       psFile = psFile)
+      }
+    }
+  } else {
+    # Don't refit PS model for every outcome
+    for (sharedPsFile in unique(outcomeReference$sharedPsFile)){
+      if (sharedPsFile != "") {
+        refRow <- outcomeReference[outcomeReference$sharedPsFile == sharedPsFile,][1,]
+        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
+        idToFile <- unique(outcomeReference[outcomeReference$sharedPsFile == sharedPsFile, c("outcomeConceptId","psFile")])
+        idToFile <- idToFile[!file.exists(idToFile$psFile),]
+        if (nrow(idToFile) != 0){
+          modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                                                         args = analysisRow$createPsArg,
+                                                         idToFile = idToFile,
+                                                         sharedPsFile = sharedPsFile)
         }
       }
     }
   }
+  fitPSModel <- function(params, refitPsForEveryOutcome) {
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+    args <- list(cohortMethodData = cohortMethodData)
+    args <- append(args, params$createPsArgs)
+    if (refitPsForEveryOutcome) {
+      args$outcomeConceptId <- params$outcomeConceptId
+      ps <- do.call("createPs", args)
+      saveRDS(ps, params$psFile)
+    } else {
+      # Fit model once for all outcomes:
+      if (file.exists(params$sharedPsFile)){
+        ps <- readRDS(params$sharedPsFile)
+      } else {
+        ps <- do.call("createPs", args)
+        saveRDS(ps, params$sharedPsFile)
+      }
+      # For every outcome, filter people with prior outcomes:
+      for (i in 1:nrow(params$idToFile)){
+        outcomeConceptId <- params$idToFile$outcomeConceptId[i]
+        psFile <- params$idToFile$psFile[i]
+        if (!file.exists(psFile)) {
+          if (ffbase::any.ff(cohortMethodData$exclude$outcomeId == outcomeConceptId)) {
+            filteredPs <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId ==
+                                                                                         outcomeConceptId])), ]
+          } else {
+            filteredPs <- ps
+          }
+          saveRDS(filteredPs, psFile)
+        }
+      }
+    }
+  }
+  if (length(modelsToFit) != 0){
+    cluster <- OhdsiRTools::makeCluster(createPsThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitPSModel,refitPsForEveryOutcome)
+    OhdsiRTools::stopCluster(cluster)
+  }
 
+  writeLines("*** Trimming/Matching/Stratifying ***")
+  tasks <- list()
+  for (subPopFile in unique(outcomeReference$subPopFile)){
+    if (subPopFile != "" && !file.exists((subPopFile))) {
+      refRow <- outcomeReference[outcomeReference$subPopFile == subPopFile,][1,]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
+      outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$subPopFile == subPopFile])
+      tasks[[length(tasks) + 1]] <- list(psFile = refRow$psFile,
+                                               args = analysisRow,
+                                               subPopFile = subPopFile)
+    }
+  }
+  trimMatchStratify <- function(params) {
+    ps <- readRDS(params$psFile)
+    if (params$args$trimByPs) {
+      args <- list(data = ps)
+      args <- append(args, params$args$trimByPsArgs)
+      ps <- do.call("trimByPs", args)
+    } else if (params$args$trimByPsToEquipoise) {
+      args <- list(data = ps)
+      args <- append(args, params$args$trimByPsToEquipoisesArgs)
+      ps <- do.call("trimByPsToEquipoise", args)
+    }
+    if (params$args$matchOnPs) {
+      args <- list(data = ps)
+      args <- append(args, params$args$matchOnPsArgs)
+      ps <- do.call("matchOnPs", args)
+    } else if (params$args$matchOnPsAndCovariates) {
+      args <- list(data = ps)
+      args <- append(args, params$args$matchOnPsAndCovariatesArgs)
+      ps <- do.call("matchOnPsAndCovariates", args)
+    } else if (params$args$stratifyByPs) {
+      args <- list(data = ps)
+      args <- append(args, params$args$stratifyByPsArgs)
+      ps <- do.call("stratifyByPs", args)
+    } else if (params$args$stratifyByPsAndCovariates) {
+      args <- list(data = ps)
+      args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
+      ps <- do.call("stratifyByPsAndCovariates", args)
+    }
+    saveRDS(ps, params$subPopFile)
+  }
+  if (length(tasks) != 0){
+    cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster, tasks, trimMatchStratify)
+    OhdsiRTools::stopCluster(cluster)
+  }
+
+  writeLines("*** Fitting outcome models ***")
+  modelsToFit <- list()
+  for (outcomeModelFile in unique(outcomeReference$outcomeModelFile)){
+    if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
+      refRow <- outcomeReference[outcomeReference$outcomeModelFile == outcomeModelFile,][1,]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,list(analysisId = refRow$analysisId))[[1]]
+      outcomeConceptId <- unique(outcomeReference$outcomeConceptId[outcomeReference$outcomeModelFile == outcomeModelFile])
+      args <- analysisRow$fitOutcomeModelArgs
+      args$outcomeConceptId <- outcomeConceptId
+      modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                                                     args = args,
+                                                     subPopFile = refRow$subPopFile,
+                                                     outcomeModelFile = outcomeModelFile)
+    }
+  }
+  doFitOutcomeModel <- function(params) {
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+    if (params$subPopFile != ""){
+      subPopulation <- readRDS(params$subPopFile)
+    } else {
+      subPopulation <- NULL
+    }
+    args <- list(cohortMethodData = cohortMethodData,
+                 subPopulation = subPopulation)
+    args <- append(args, params$args)
+    outcomeModel <- do.call("fitOutcomeModel", args)
+    saveRDS(outcomeModel, params$outcomeModelFile)
+  }
   if (length(modelsToFit) != 0){
     cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
     dummy <- OhdsiRTools::clusterApply(cluster,
                                        modelsToFit,
-                                       doFitOutcomeModel,
-                                       cmAnalysisList = cmAnalysisList,
-                                       outputFolder = outputFolder)
+                                       doFitOutcomeModel)
     OhdsiRTools::stopCluster(cluster)
   }
   invisible(outcomeReference)
@@ -611,8 +580,6 @@ summarizeAnalyses <- function(outcomeReference) {
     result$eventsTreated[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 1])
     result$eventsComparator[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 0])
     result$logRr[i] <- if (is.null(coef(outcomeModel))) NA else coef(outcomeModel)
-    #se <- (coef(outcomeModel) - confint(outcomeModel)[1] )/qnorm(0.975)
-    #result$seLogRr[i] <- se
     result$seLogRr[i] <- if (is.null(coef(outcomeModel))) NA else outcomeModel$treatmentEstimate$seLogRr
   }
   return(result)
