@@ -12,7 +12,8 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
   underSampleComparatorToTreatedRatio = 0, getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1, fitOutcomeModelThreads = 1)
+  createPsThreads = 1, trimMatchStratifyThreads = 1,
+  fitOutcomeModelThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created

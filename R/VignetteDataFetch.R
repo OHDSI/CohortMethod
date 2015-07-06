@@ -305,9 +305,12 @@
                                                      useCovariateInteractionMonth = FALSE,
                                                      deleteCovariatesSmallCount = 100)
 
-  createPsArgs <- createCreatePsArgs()  # Using only defaults
+  createPsArgs <- createCreatePsArgs( control = createControl(noiseLevel = "silent",
+                                                              cvType = "auto",
+                                                              startingVariance = 0.1,
+                                                              threads = 10))  # Using only defaults
 
-  matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 1)
+  matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
   fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0,
                                                     riskWindowEnd = 30,
@@ -329,6 +332,12 @@
   stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
 
   cmAnalysis2 <- createCmAnalysis(analysisId = 2,
+                                  description = "simple outcome model, no propensity score",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
+
+  cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                   description = "Stratification plus simple outcome model",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
                                   createPs = TRUE,
@@ -345,7 +354,7 @@
                                                     modelType = "cox",
                                                     stratifiedCox = TRUE)
 
-  cmAnalysis3 <- createCmAnalysis(analysisId = 3,
+  cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                   description = "Matching plus stratified outcome model",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
                                   createPs = TRUE,
@@ -366,9 +375,10 @@
                                                                             selectorType = "byPid",
                                                                             noiseLevel = "quiet",
                                                                             fold = 5,
-                                                                            minCVData = 25))
+                                                                            minCVData = 25,
+                                                                            threads = 10))
 
-  cmAnalysis4 <- createCmAnalysis(analysisId = 4,
+  cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                   description = "Matching plus full outcome model",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
                                   createPs = TRUE,
@@ -378,7 +388,13 @@
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
-  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
+  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5)
+
+  saveCmAnalysisList(cmAnalysisList, "s:/temp/cmAnalysisList.txt")
+  saveDrugComparatorOutcomesList(drugComparatorOutcomesList, "s:/temp/drugComparatorOutcomesList.txt")
+
+  cmAnalysisList <- loadCmAnalysisList("s:/temp/cmAnalysisList.txt")
+  drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.txt")
 
   outcomeReference <- runCmAnalyses(connectionDetails = connectionDetails,
                                     cdmDatabaseSchema = cdmDatabaseSchema,
@@ -391,6 +407,7 @@
                                     drugComparatorOutcomesList = drugComparatorOutcomesList,
                                     getDbCohortMethodDataThreads = 1,
                                     createPsThreads = 1,
+                                    trimMatchStratifyThreads = 24,
                                     fitOutcomeModelThreads = 10)
 
   #cleanup:

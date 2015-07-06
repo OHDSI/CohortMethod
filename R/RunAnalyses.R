@@ -97,6 +97,7 @@ runCmAnalyses <- function(connectionDetails,
                           underSampleComparatorToTreatedRatio = 0,
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
+                          trimMatchStratifyThreads = 1,
                           fitOutcomeModelThreads = 1) {
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {
     stopifnot(class(drugComparatorOutcomes) == "drugComparatorOutcomes")
@@ -441,7 +442,7 @@ runCmAnalyses <- function(connectionDetails,
     saveRDS(ps, params$subPopFile)
   }
   if (length(tasks) != 0) {
-    cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
+    cluster <- OhdsiRTools::makeCluster(trimMatchStratifyThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
     dummy <- OhdsiRTools::clusterApply(cluster, tasks, trimMatchStratify)
     OhdsiRTools::stopCluster(cluster)
