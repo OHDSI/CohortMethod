@@ -84,12 +84,12 @@ double auc(std::vector<double> propensityScores, std::vector<int> treatment) {
 }
 
 // [[Rcpp::export(".bySum")]]
-DataFrame bySum(std::vector<double> values, std::vector<double> bins) {
+DataFrame bySum(List ffValues, List ffBins) {
 
   using namespace ohdsi::cohortMethod;
 
   try {
-    std::map<double,double> map = BySum::bySum(values, bins);
+    std::map<double,double> map = BySum::bySum(ffValues, ffBins);
     std::vector<double> bins;
     std::vector<double> sums;
     for(std::map<double,double>::iterator iter = map.begin(); iter != map.end(); ++iter){

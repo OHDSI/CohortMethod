@@ -125,21 +125,7 @@ recomputePsForFullData <- function(psSample, cohortMethodDataSample, cohortMetho
     coefficients <- coefficients[coefficients$beta != 0, ]
     prediction <- merge(cohortMethodData$covariates, ff::as.ffdf(coefficients), by = "covariateId")
     prediction$value <- prediction$covariateValue * prediction$beta
-    # Sum value over rowIds: (can't fit in memory, so do in chunks)
-    chunks <- bit::chunk(prediction)
-    parts <- result <- vector("list", length(chunks))
-    for (i in 1:length(chunks)) {
-      sums <- cmBySum(prediction$value[chunks[[i]]], prediction$rowId[chunks[[i]]])
-      if (i > 1) {
-        if (parts[[i - 1]]$bins[nrow(parts[[i - 1]])] == sums$bins[1]) {
-          parts[[i - 1]]$sums[nrow(parts[[i - 1]])] <- parts[[i - 1]]$sums[nrow(parts[[i - 1]])] +
-                                                       sums$sums[1]
-          sums <- sums[2:nrow(sums)]
-        }
-      }
-      parts[[i]] <- sums
-    }
-    prediction <- do.call(rbind, parts)
+    prediction <- cmBySum(prediction$value, prediction$rowId)
     colnames(prediction) <- c("rowId", "value")
     prediction$value <- prediction$value + intercept
     link <- function(x) {

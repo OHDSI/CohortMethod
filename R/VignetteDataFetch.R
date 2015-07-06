@@ -18,11 +18,10 @@
 
 #' @keywords internal
 .singleStudyVignetteDataFetch <- function() {
-  # This function should be used to fetch the data that is used in the vignettes. library(SqlRender)
-  # library(DatabaseConnector) library(CohortMethod) setwd('s:/temp')
-  # setwd('c:/users/mschuemi/git/CohortMethod')
+  # This function should be used to fetch the data that is used in the vignettes.
+  # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod); setwd('s:/temp'); options('fftempdir' = 's:/temp')
 
-  # If ff is complaining it can't find the temp folder, use options('fftempdir' = 's:/temp')
+
 
   pw <- NULL
   dbms <- "sql server"
@@ -127,10 +126,11 @@
   vignettePs <- ps
   save(vignettePs, file = "data/vignettePs.rda", compress = "xz")
 
-  # load('data/vignettePs.rda') ps <- vignettePs psTrimmed <- trimByPsToEquipoise(ps)
+  # load('vignettePs.rda'); ps <- vignettePs; psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 3)
-  save(vignetteBalance, file = "data/vignetteBalance.rda", compress = "xz")
+
+    save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
 
   # load('vignetteBalance.rda')
 

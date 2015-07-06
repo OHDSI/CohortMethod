@@ -23,17 +23,27 @@
 
 #include "BySum.h"
 
-namespace ohdsi {
-	namespace cohortMethod {
 
-	std::map<double, double> BySum::bySum(const std::vector<double> &values, const std::vector<double> &bins){
-	    std::map<double, double> binToValue;
-      for (unsigned int i = 0; i < bins.size(); i++){
-        binToValue[bins[i]] = binToValue[bins[i]] + values[i];
-      }
-			return binToValue;
-		}
+namespace ohdsi {
+namespace cohortMethod {
+
+std::map<double, double> BySum::bySum(const List &ffValues, const List &ffBins){
+  std::map<double, double> binToValue;
+  Environment bit = Environment::namespace_env("bit");
+  Function chunk = bit["chunk"];
+  List chunks = chunk(ffValues);
+  Environment ff = Environment::namespace_env("ff");
+  Function subset = ff["[.ff"];
+  for (unsigned int i = 0; i < chunks.size(); i++){
+    NumericVector bins = subset(ffBins, chunks[i]);
+    NumericVector values = subset(ffValues, chunks[i]);
+    for (unsigned int j = 0; j < bins.size(); j++){
+      binToValue[bins[j]] = binToValue[bins[j]] + values[j];
+    }
   }
+  return binToValue;
+}
+}
 }
 
 #endif // __BySum_cpp__

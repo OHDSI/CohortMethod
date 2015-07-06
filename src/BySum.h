@@ -23,13 +23,16 @@
 
 #include <vector>
 #include <map>
+#include <Rcpp.h>
+
+using namespace Rcpp;
 
 namespace ohdsi {
 	namespace cohortMethod {
 
 		struct BySum {
 		public:
-			static std::map<double, double> bySum(const std::vector<double> &values, const std::vector<double> &bins);
+			static std::map<double, double> bySum(const List &ffValues, const List &ffBins);
 		};
 	}
 }

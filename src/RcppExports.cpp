@@ -44,14 +44,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // bySum
-DataFrame bySum(std::vector<double> values, std::vector<double> bins);
-RcppExport SEXP CohortMethod_bySum(SEXP valuesSEXP, SEXP binsSEXP) {
+DataFrame bySum(List ffValues, List ffBins);
+RcppExport SEXP CohortMethod_bySum(SEXP ffValuesSEXP, SEXP ffBinsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< std::vector<double> >::type values(valuesSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type bins(binsSEXP);
-    __result = Rcpp::wrap(bySum(values, bins));
+    Rcpp::traits::input_parameter< List >::type ffValues(ffValuesSEXP);
+    Rcpp::traits::input_parameter< List >::type ffBins(ffBinsSEXP);
+    __result = Rcpp::wrap(bySum(ffValues, ffBins));
     return __result;
 END_RCPP
 }

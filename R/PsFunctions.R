@@ -656,33 +656,15 @@ cmBySum <- function(values, bins) {
 }
 
 quickSum <- function(data, squared = FALSE) {
-  result <- NULL
-  for (i in bit::chunk(data)) {
-    if (squared) {
-      x <- cmBySum(data$covariateValue[i]^2, data$covariateId[i])
-    } else {
-      x <- cmBySum(data$covariateValue[i], data$covariateId[i])
-    }
-    if (is.null(result)) {
-      colnames(x) <- c("covariateId", "s")
-      result <- x
-    } else {
-      colnames(x) <- c("covariateId", "value")
-      result <- merge(result, x, all = TRUE)
-      result$s[is.na(result$s)] <- 0
-      result$value[is.na(result$value)] <- 0
-      result$s <- result$s + result$value
-      result$value <- NULL
-    }
-  }
   if (squared) {
-    colnames(result)[colnames(result) == "s"] <- "sumSqr"
+      x <- cmBySum(data$covariateValue^2, data$covariateId)
+      colnames(x) <- c("covariateId", "sumSqr")
   } else {
-    colnames(result)[colnames(result) == "s"] <- "sum"
+      x <- cmBySum(data$covariateValue, data$covariateId)
+      colnames(x) <- c("covariateId", "sum")
   }
-
-  result$covariateId <- as.numeric(result$covariateId)
-  return(result)
+  x$covariateId <- as.numeric(x$covariateId)
+  return(x)
 }
 
 computeMeansPerGroup <- function(cohorts, covariates) {
