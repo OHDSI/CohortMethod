@@ -18,17 +18,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database = 'CDM4_SIM' } 
-{DEFAULT @target_drug_concept_id = '' } 
-{DEFAULT @comparator_drug_concept_id = '' } 
-{DEFAULT @has_indication_concept_ids = FALSE } 
-{DEFAULT @washout_window = 183 } 
-{DEFAULT @indication_lookback_window = 183 } 
-{DEFAULT @study_start_date = '' } 
-{DEFAULT @study_end_date = '' } 
-{DEFAULT @has_exclusion_concept_ids = FALSE } 
-{DEFAULT @exposure_database_schema = 'CDM4_SIM' } 
-{DEFAULT @exposure_table = 'drug_era' } 
+{DEFAULT @cdm_database = 'CDM4_SIM' }
+{DEFAULT @target_drug_concept_id = '' }
+{DEFAULT @comparator_drug_concept_id = '' }
+{DEFAULT @has_indication_concept_ids = FALSE }
+{DEFAULT @washout_window = 183 }
+{DEFAULT @indication_lookback_window = 183 }
+{DEFAULT @study_start_date = '' }
+{DEFAULT @study_end_date = '' }
+{DEFAULT @has_exclusion_concept_ids = FALSE }
+{DEFAULT @exposure_database_schema = 'CDM4_SIM' }
+{DEFAULT @exposure_table = 'drug_era' }
 
 USE @cdm_database;
 
@@ -47,19 +47,19 @@ IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 SELECT DISTINCT raw_cohorts.treatment,
 	raw_cohorts.person_id,
 	raw_cohorts.cohort_start_date,
-	{@study_end_date != '' } ? { CASE 
+	{@study_end_date != '' } ? { CASE
 		WHEN raw_cohorts.cohort_end_date <= CAST('@study_end_date' AS DATE)
 			THEN raw_cohorts.cohort_end_date
 		ELSE CAST('@study_end_date' AS DATE)
 		END } : {raw_cohorts.cohort_end_date} AS cohort_end_date,
-	{@study_end_date != '' } ? { CASE 
+	{@study_end_date != '' } ? { CASE
 		WHEN op1.observation_period_end_date <= CAST('@study_end_date' AS DATE)
 			THEN op1.observation_period_end_date
 		ELSE CAST('@study_end_date' AS DATE)
 		END } : {op1.observation_period_end_date} AS observation_period_end_date
 INTO #new_user_cohort
 FROM (
-	{@exposure_table == 'drug_era' } ? { SELECT CASE 
+	{@exposure_table == 'drug_era' } ? { SELECT CASE
 			WHEN ca1.ancestor_concept_id = @target_drug_concept_id
 				THEN 1
 			WHEN ca1.ancestor_concept_id = @comparator_drug_concept_id
@@ -75,10 +75,10 @@ FROM (
 	WHERE ca1.ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
 	GROUP BY ca1.ancestor_concept_id,
 		de1.person_id } : {
-	SELECT CASE 
-			WHEN c1.cohort_definition_id = @target_drug_concept_id
+	SELECT CASE
+			WHEN c1.cohort_concept_id = @target_drug_concept_id
 				THEN 1
-			WHEN c1.cohort_definition_id = @comparator_drug_concept_id
+			WHEN c1.cohort_concept_id = @comparator_drug_concept_id
 				THEN 0
 			ELSE - 1
 			END AS treatment,
@@ -86,8 +86,8 @@ FROM (
 		min(c1.cohort_start_date) AS cohort_start_date,
 		min(c1.cohort_end_date) AS cohort_end_date
 	FROM @exposure_database_schema.@exposure_table c1
-	WHERE c1.cohort_definition_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
-	GROUP BY c1.cohort_definition_id,
+	WHERE c1.cohort_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+	GROUP BY c1.cohort_concept_id,
 		c1.subject_id }
 	) raw_cohorts
 INNER JOIN observation_period op1
@@ -104,7 +104,7 @@ SELECT DISTINCT treatment,
 	cohort_end_date,
 	observation_period_end_date
 INTO #indicated_cohort
-FROM #new_user_cohort new_user_cohort 
+FROM #new_user_cohort new_user_cohort
 INNER JOIN (
 		SELECT person_id,
 			condition_start_date AS indication_date
@@ -143,7 +143,7 @@ LEFT JOIN (
 WHERE both_cohorts.person_id IS NULL;
 
 /* apply exclusion criteria  */
-SELECT non_overlap_cohort.treatment AS cohort_definition_id,
+SELECT non_overlap_cohort.treatment AS cohort_concept_id,
 	non_overlap_cohort.person_id AS subject_id,
 	non_overlap_cohort.cohort_start_date,
 	non_overlap_cohort.cohort_end_date

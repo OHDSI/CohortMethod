@@ -259,10 +259,10 @@ runCmAnalyses <- function(connectionDetails,
                                       getDbCohortMethodDataArgs$exclusionConceptIds))
       excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds,
                                                                          ","))),
-                                              getDbCohortMethodDataArgs$excludedCovariateConceptIds))
+                                              getDbCohortMethodDataArgs$covariateSettings$excludedCovariateConceptIds))
       includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds,
                                                                          ","))),
-                                              getDbCohortMethodDataArgs$includedCovariateConceptIds))
+                                              getDbCohortMethodDataArgs$covariateSettings$includedCovariateConceptIds))
       outcomeConceptIds <- unique(outcomeReference$outcomeConceptId[outcomeReference$cohortMethodDataFolder ==
                                                                       cohortMethodDataFolder])
       args <- list(connectionDetails = connectionDetails,
@@ -275,12 +275,10 @@ runCmAnalyses <- function(connectionDetails,
                    targetDrugConceptId = targetDrugConceptId,
                    comparatorDrugConceptId = comparatorDrugConceptId,
                    indicationConceptIds = indicationConceptIds,
-                   exclusionConceptIds = exclusionConceptIds,
-                   excludedCovariateConceptIds = excludedCovariateConceptIds,
-                   includedCovariateConceptIds = includedCovariateConceptIds)
+                   exclusionConceptIds = exclusionConceptIds)
       getDbCohortMethodDataArgs$exclusionConceptIds <- NULL
-      getDbCohortMethodDataArgs$excludedCovariateConceptIds <- NULL
-      getDbCohortMethodDataArgs$includedCovariateConceptIds <- NULL
+      getDbCohortMethodDataArgs$covariateSettings$excludedCovariateConceptIds <- excludedCovariateConceptIds
+      getDbCohortMethodDataArgs$covariateSettings$includedCovariateConceptIds <- includedCovariateConceptIds
       args <- append(args, getDbCohortMethodDataArgs)
       objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args,
                                                              cohortMethodDataFolder = cohortMethodDataFolder)

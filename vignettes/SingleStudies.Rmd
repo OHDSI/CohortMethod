@@ -78,14 +78,14 @@ IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
   DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-  cohort_definition_id INT,
+  cohort_concept_id INT,
   cohort_start_date DATE,
 	cohort_end_date DATE,
 	subject_id BIGINT
 	);
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_definition_id,
+	cohort_concept_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -98,7 +98,7 @@ FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1118084;-- celecoxib	
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_definition_id,
+	cohort_concept_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -111,7 +111,7 @@ FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1124300; --diclofenac
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_definition_id,
+	cohort_concept_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -150,9 +150,9 @@ In this code, we first read the SQL from the file into memory. In the next line,
 If all went well, we now have a table with the events of interest. We can see how many events per type:
 
 ```{r tidy=FALSE,eval=FALSE}
-sql <- paste("SELECT cohort_definition_id, COUNT(*) AS count",
+sql <- paste("SELECT cohort_concept_id, COUNT(*) AS count",
              "FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed",
-             "GROUP BY cohort_definition_id")
+             "GROUP BY cohort_concept_id")
 sql <- renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 

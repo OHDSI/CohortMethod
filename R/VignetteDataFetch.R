@@ -1,6 +1,6 @@
 # @file VignetteDataFetch.R
 #
-# Copyright 2014 Observational Health Data Sciences and Informatics
+# Copyright 2015 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -31,6 +31,13 @@
   resultsDatabaseSchema <- "scratch.dbo"
   port <- NULL
 
+  dbms <- "postgresql"
+  user <- "postgres"
+  server <- "localhost/ohdsi"
+  cdmDatabaseSchema <- "cdm_truven_ccae_6k"
+  resultsDatabaseSchema <- "scratch"
+  port <- NULL
+
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                   server = server,
                                                                   user = user,
@@ -46,7 +53,7 @@
   DatabaseConnector::executeSql(connection, sql)
 
   # Check number of subjects per cohort:
-  sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
+  sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_concept_id"
   sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::querySql(connection, sql)
@@ -57,6 +64,41 @@
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   nsaids <- DatabaseConnector::querySql(connection, sql)
   nsaids <- nsaids$CONCEPT_ID
+
+  covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                               useCovariateConditionOccurrence = TRUE,
+                                               useCovariateConditionOccurrence365d = TRUE,
+                                               useCovariateConditionOccurrence30d = TRUE,
+                                               useCovariateConditionOccurrenceInpt180d = TRUE,
+                                               useCovariateConditionEra = TRUE,
+                                               useCovariateConditionEraEver = TRUE,
+                                               useCovariateConditionEraOverlap = TRUE,
+                                               useCovariateConditionGroup = TRUE,
+                                               useCovariateDrugExposure = TRUE,
+                                               useCovariateDrugExposure365d = TRUE,
+                                               useCovariateDrugExposure30d = TRUE,
+                                               useCovariateDrugEra = TRUE,
+                                               useCovariateDrugEra365d = TRUE,
+                                               useCovariateDrugEra30d = TRUE,
+                                               useCovariateDrugEraEver = TRUE,
+                                               useCovariateDrugEraOverlap = TRUE,
+                                               useCovariateDrugGroup = TRUE,
+                                               useCovariateProcedureOccurrence = TRUE,
+                                               useCovariateProcedureOccurrence365d = TRUE,
+                                               useCovariateProcedureOccurrence30d = TRUE,
+                                               useCovariateProcedureGroup = TRUE,
+                                               useCovariateObservation = TRUE,
+                                               useCovariateObservation365d = TRUE,
+                                               useCovariateObservation30d = TRUE,
+                                               useCovariateObservationBelow = TRUE,
+                                               useCovariateObservationAbove = TRUE,
+                                               useCovariateObservationCount365d = TRUE,
+                                               useCovariateConceptCounts = TRUE,
+                                               useCovariateRiskScores = TRUE,
+                                               useCovariateInteractionYear = FALSE,
+                                               useCovariateInteractionMonth = FALSE,
+                                               excludedCovariateConceptIds = nsaids,
+                                               deleteCovariatesSmallCount = 1)
 
   # Load data:
   cohortMethodData <- getDbCohortMethodData(connectionDetails,
@@ -76,41 +118,8 @@
                                             exposureTable = "coxibVsNonselVsGiBleed",
                                             outcomeDatabaseSchema = resultsDatabaseSchema,
                                             outcomeTable = "coxibVsNonselVsGiBleed",
-                                            useCovariateDemographics = TRUE,
-                                            useCovariateConditionOccurrence = TRUE,
-                                            useCovariateConditionOccurrence365d = TRUE,
-                                            useCovariateConditionOccurrence30d = TRUE,
-                                            useCovariateConditionOccurrenceInpt180d = TRUE,
-                                            useCovariateConditionEra = TRUE,
-                                            useCovariateConditionEraEver = TRUE,
-                                            useCovariateConditionEraOverlap = TRUE,
-                                            useCovariateConditionGroup = TRUE,
-                                            useCovariateDrugExposure = TRUE,
-                                            useCovariateDrugExposure365d = TRUE,
-                                            useCovariateDrugExposure30d = TRUE,
-                                            useCovariateDrugEra = TRUE,
-                                            useCovariateDrugEra365d = TRUE,
-                                            useCovariateDrugEra30d = TRUE,
-                                            useCovariateDrugEraEver = TRUE,
-                                            useCovariateDrugEraOverlap = TRUE,
-                                            useCovariateDrugGroup = TRUE,
-                                            useCovariateProcedureOccurrence = TRUE,
-                                            useCovariateProcedureOccurrence365d = TRUE,
-                                            useCovariateProcedureOccurrence30d = TRUE,
-                                            useCovariateProcedureGroup = TRUE,
-                                            useCovariateObservation = TRUE,
-                                            useCovariateObservation365d = TRUE,
-                                            useCovariateObservation30d = TRUE,
-                                            useCovariateObservationBelow = TRUE,
-                                            useCovariateObservationAbove = TRUE,
-                                            useCovariateObservationCount365d = TRUE,
-                                            useCovariateConceptCounts = TRUE,
-                                            useCovariateRiskScores = TRUE,
-                                            useCovariateInteractionYear = FALSE,
-                                            useCovariateInteractionMonth = FALSE,
-                                            excludedCovariateConceptIds = nsaids,
                                             excludeDrugsFromCovariates = FALSE,
-                                            deleteCovariatesSmallCount = 100)
+                                            covariateSettings = covariateSettings)
 
   saveCohortMethodData(cohortMethodData, "c:/temp/vignetteCohortMethodData")
 
@@ -130,7 +139,7 @@
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 3)
 
-    save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
+  save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
 
   # load('vignetteBalance.rda')
 

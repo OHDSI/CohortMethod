@@ -49,26 +49,27 @@
 #'                                     database.
 #' @param exposureTable                The tablename that contains the exposure cohorts.  If
 #'                                     exposureTable <> DRUG_ERA, then expectation is exposureTable has
-#'                                     format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+#'                                     format of COHORT table: cohort_concept_id, SUBJECT_ID,
 #'                                     COHORT_START_DATE, COHORT_END_DATE.
 #' @param excludeDrugsFromCovariates   Should the target and comparator drugs (and their descendant
 #'                                     concepts) be excluded from the covariates? Note that this will
 #'                                     work if the drugs are actualy drug concept IDs (and not cohort
 #'                                     IDs).
-#' @template GetCovariatesParams
+#' @param covariateSettings         An object of type \code{covariateSettings} as created using the
+#'                                  \code{createCovariateSettings} function in the \code{PatientLevelPrediction} package..
 #' @template GetOutcomesParams
 #' @param targetDrugConceptId          A unique identifier to define the target cohort.  If
 #'                                     exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID
 #'                                     and all descendant concepts within that CONCEPT_ID will be used
 #'                                     to define the cohort.  If exposureTable <> DRUG_ERA,
-#'                                     targetDrugConceptId is used to select the COHORT_DEFINITION_ID
+#'                                     targetDrugConceptId is used to select the cohort_concept_id
 #'                                     in the cohort-like table.
 #' @param comparatorDrugConceptId      A unique identifier to define the comparator cohort.  If
 #'                                     exposureTable = DRUG_ERA, comparatorDrugConceptId is a
 #'                                     CONCEPT_ID and all descendant concepts within that CONCEPT_ID
 #'                                     will be used to define the cohort.  If exposureTable <>
 #'                                     DRUG_ERA, comparatorDrugConceptId is used to select the
-#'                                     COHORT_DEFINITION_ID in the cohort-like table.
+#'                                     cohort_concept_id in the cohort-like table.
 #' @param indicationConceptIds         A list of CONCEPT_IDs used to restrict the target and comparator
 #'                                     cohorts, based on any descendant condition of this list
 #'                                     occurring at least once within the indicationLookbackWindow
@@ -122,52 +123,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   outcomeDatabaseSchema = cdmDatabaseSchema,
                                   outcomeTable = "condition_occurrence",
                                   excludeDrugsFromCovariates = TRUE,
-                                  useCovariateDemographics = TRUE,
-                                  useCovariateDemographicsGender = TRUE,
-                                  useCovariateDemographicsRace = TRUE,
-                                  useCovariateDemographicsEthnicity = TRUE,
-                                  useCovariateDemographicsAge = TRUE,
-                                  useCovariateDemographicsYear = TRUE,
-                                  useCovariateDemographicsMonth = TRUE,
-                                  useCovariateConditionOccurrence = TRUE,
-                                  useCovariateConditionOccurrence365d = TRUE,
-                                  useCovariateConditionOccurrence30d = TRUE,
-                                  useCovariateConditionOccurrenceInpt180d = TRUE,
-                                  useCovariateConditionEra = FALSE,
-                                  useCovariateConditionEraEver = FALSE,
-                                  useCovariateConditionEraOverlap = FALSE,
-                                  useCovariateConditionGroup = FALSE,
-                                  useCovariateConditionGroupMeddra = FALSE,
-                                  useCovariateConditionGroupSnomed = FALSE,
-                                  useCovariateDrugExposure = FALSE,
-                                  useCovariateDrugExposure365d = FALSE,
-                                  useCovariateDrugExposure30d = FALSE,
-                                  useCovariateDrugEra = FALSE,
-                                  useCovariateDrugEra365d = FALSE,
-                                  useCovariateDrugEra30d = FALSE,
-                                  useCovariateDrugEraOverlap = FALSE,
-                                  useCovariateDrugEraEver = FALSE,
-                                  useCovariateDrugGroup = FALSE,
-                                  useCovariateProcedureOccurrence = FALSE,
-                                  useCovariateProcedureOccurrence365d = FALSE,
-                                  useCovariateProcedureOccurrence30d = FALSE,
-                                  useCovariateProcedureGroup = FALSE,
-                                  useCovariateObservation = FALSE,
-                                  useCovariateObservation365d = FALSE,
-                                  useCovariateObservation30d = FALSE,
-                                  useCovariateObservationBelow = FALSE,
-                                  useCovariateObservationAbove = FALSE,
-                                  useCovariateObservationCount365d = FALSE,
-                                  useCovariateConceptCounts = FALSE,
-                                  useCovariateRiskScores = FALSE,
-                                  useCovariateRiskScoresCharlson = FALSE,
-                                  useCovariateRiskScoresDCSI = FALSE,
-                                  useCovariateRiskScoresCHADS2 = FALSE,
-                                  useCovariateInteractionYear = FALSE,
-                                  useCovariateInteractionMonth = FALSE,
-                                  excludedCovariateConceptIds = c(),
-                                  includedCovariateConceptIds = c(),
-                                  deleteCovariatesSmallCount = 100) {
+                                  covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
     stop("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
@@ -188,7 +144,7 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(conn, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
-    excludedCovariateConceptIds <- c(excludedCovariateConceptIds, conceptIds)
+    covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds, conceptIds)
   }
 
   if (is.null(indicationConceptIds) || length(indicationConceptIds) == 0) {
@@ -272,7 +228,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                 "sql server",
                                                 connectionDetails$dbms,
                                                 oracleTempSchema)$sql
-  notExcludedCountSql <- "SELECT COUNT(*) AS not_excluded_count, cohort_definition_id AS treatment FROM #cohort_person GROUP BY cohort_definition_id"
+  notExcludedCountSql <- "SELECT COUNT(*) AS not_excluded_count, cohort_concept_id AS treatment FROM #cohort_person GROUP BY cohort_concept_id"
   notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql,
                                                  "sql server",
                                                  connectionDetails$dbms,
@@ -296,56 +252,11 @@ getDbCohortMethodData <- function(connectionDetails,
   writeLines(paste("Loading took", signif(delta, 3), attr(delta, "units")))
 
   writeLines("\nConstructing baseline covariates")
-  covariateData <- getDbCovariates(connection = conn,
-                                   oracleTempSchema = oracleTempSchema,
-                                   cdmDatabaseSchema = cdmDatabaseSchema,
-                                   useExistingCohortPerson = TRUE,
-                                   useCovariateDemographics = useCovariateDemographics,
-                                   useCovariateDemographicsGender = useCovariateDemographicsGender,
-                                   useCovariateDemographicsRace = useCovariateDemographicsRace,
-                                   useCovariateDemographicsEthnicity = useCovariateDemographicsEthnicity,
-                                   useCovariateDemographicsAge = useCovariateDemographicsAge,
-                                   useCovariateDemographicsYear = useCovariateDemographicsYear,
-                                   useCovariateDemographicsMonth = useCovariateDemographicsMonth,
-                                   useCovariateConditionOccurrence = useCovariateConditionOccurrence,
-                                   useCovariateConditionOccurrence365d = useCovariateConditionOccurrence365d,
-                                   useCovariateConditionOccurrence30d = useCovariateConditionOccurrence30d,
-                                   useCovariateConditionOccurrenceInpt180d = useCovariateConditionOccurrenceInpt180d,
-                                   useCovariateConditionEra = useCovariateConditionEra,
-                                   useCovariateConditionEraEver = useCovariateConditionEraEver,
-                                   useCovariateConditionEraOverlap = useCovariateConditionEraOverlap,
-                                   useCovariateConditionGroup = useCovariateConditionGroup,
-                                   useCovariateConditionGroupMeddra = useCovariateConditionGroupMeddra,
-                                   useCovariateConditionGroupSnomed = useCovariateConditionGroupSnomed,
-                                   useCovariateDrugExposure = useCovariateDrugExposure,
-                                   useCovariateDrugExposure365d = useCovariateDrugExposure365d,
-                                   useCovariateDrugExposure30d = useCovariateDrugExposure30d,
-                                   useCovariateDrugEra = useCovariateDrugEra,
-                                   useCovariateDrugEra365d = useCovariateDrugEra365d,
-                                   useCovariateDrugEra30d = useCovariateDrugEra30d,
-                                   useCovariateDrugEraOverlap = useCovariateDrugEraOverlap,
-                                   useCovariateDrugEraEver = useCovariateDrugEraEver,
-                                   useCovariateDrugGroup = useCovariateDrugGroup,
-                                   useCovariateProcedureOccurrence = useCovariateProcedureOccurrence,
-                                   useCovariateProcedureOccurrence365d = useCovariateProcedureOccurrence365d,
-                                   useCovariateProcedureOccurrence30d = useCovariateProcedureOccurrence30d,
-                                   useCovariateProcedureGroup = useCovariateProcedureGroup,
-                                   useCovariateObservation = useCovariateObservation,
-                                   useCovariateObservation365d = useCovariateObservation365d,
-                                   useCovariateObservation30d = useCovariateObservation30d,
-                                   useCovariateObservationBelow = useCovariateObservationBelow,
-                                   useCovariateObservationAbove = useCovariateObservationAbove,
-                                   useCovariateObservationCount365d = useCovariateObservationCount365d,
-                                   useCovariateConceptCounts = useCovariateConceptCounts,
-                                   useCovariateRiskScores = useCovariateRiskScores,
-                                   useCovariateRiskScoresCharlson = useCovariateRiskScoresCharlson,
-                                   useCovariateRiskScoresDCSI = useCovariateRiskScoresDCSI,
-                                   useCovariateRiskScoresCHADS2 = useCovariateRiskScoresCHADS2,
-                                   useCovariateInteractionYear = useCovariateInteractionYear,
-                                   useCovariateInteractionMonth = useCovariateInteractionMonth,
-                                   excludedCovariateConceptIds = excludedCovariateConceptIds,
-                                   includedCovariateConceptIds = includedCovariateConceptIds,
-                                   deleteCovariatesSmallCount = deleteCovariatesSmallCount)
+  covariateData <- PatientLevelPrediction::getDbCovariateData(connection = conn,
+                                                              oracleTempSchema = oracleTempSchema,
+                                                              cdmDatabaseSchema = cdmDatabaseSchema,
+                                                              useExistingCohortPerson = TRUE,
+                                                              covariateSettings = covariateSettings)
   names(covariateData$covariates)[names(covariateData$covariates) == "personId"] <- "rowId"
   covariateData$covariates$cohortStartDate <- NULL
   covariateData$covariates$cohortDefinitionId <- NULL
@@ -384,10 +295,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    has_indication_concept_ids = hasIndicationConceptIds,
                                                    has_exclusion_concept_ids = hasExclusionConceptIds)
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
-
-
   RJDBC::dbDisconnect(conn)
-
   return(result)
 }
 
@@ -465,7 +373,7 @@ loadCohortMethodData <- function(file, readOnly = FALSE) {
                  metaData = mget("metaData",
                                  envir = e,
                                  ifnotfound = list(NULL))[[1]]  #For backwards compatibility
-)
+  )
   # Open all ffdfs to prevent annoying messages later:
   open(result$outcomes, readonly = readOnly)
   open(result$cohorts, readonly = readOnly)
@@ -498,10 +406,10 @@ summary.cohortMethodData <- function(object, ...) {
     outcomeCounts$eventCount[i] <- ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] <- 0 else {
-      t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
-      outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
-                                                                                                     t == TRUE)]))
-    }
+        t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+        outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
+                                                                                                       t == TRUE)]))
+      }
   }
 
   result <- list(metaData = object$metaData,
@@ -535,4 +443,40 @@ print.summary.cohortMethodData <- function(x, ...) {
   writeLines("Covariates:")
   writeLines(paste("Number of covariates:", x$covariateCount))
   writeLines(paste("Number of non-zero covariate values:", x$covariateValueCount))
+}
+
+
+#' Extract covariate names
+#'
+#' @description
+#' Extracts covariate names using a regular-expression.
+#'
+#' @details
+#' This function extracts covariate names that match a regular-expression for a
+#' \code{cohortMethodData} or \code{covariateData} object.
+#'
+#' @param object    An R object of type \code{cohortMethodData} or \code{covariateData}.
+#' @param pattern   A regular expression with which to name covariate names
+#'
+#' @return
+#' Returns a \code{data.frame} containing information about covariates that match a regular
+#' expression.  This \code{data.frame} has the following columns: \describe{
+#' \item{covariateId}{Numerical identifier for use in model fitting using these covariates}
+#' \item{covariateName}{Text identifier} \item{analysisId}{Analysis identifier} \item{conceptId}{OMOP
+#' common data model concept identifier, or 0} }
+#'
+#' @export
+grepCovariateNames <- function(pattern, object) {
+  if (is.null(object$covariateRef)) {
+    stop("object does not contain a covariateRef")
+  }
+  select <- ffbase::ffwhich(object$covariateRef, grepl(pattern, covariateName))
+  if (is.null(select)) {
+    data.frame(covariateId = numeric(0),
+               covariateName = character(0),
+               analysisID = numeric(0),
+               conceptId = numeric(0))
+  } else {
+    ff::as.ram(object$covariateRef[select, ])
+  }
 }

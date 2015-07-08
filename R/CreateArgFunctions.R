@@ -5,215 +5,26 @@
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param washoutWindow                             The mininum required continuous observation time
-#'                                                  prior to indexdate for a person to be included in
-#'                                                  the cohort.
-#' @param indicationLookbackWindow                  NA
-#' @param studyStartDate                            A calendar date specifying the minimum date that a
-#'                                                  cohort indexdate can appear. Date format is
-#'                                                  'yyyymmdd'.
-#' @param studyEndDate                              A calendar date specifying the maximum date that a
-#'                                                  cohort indexdate can appear. Date format is
-#'                                                  'yyyymmdd'.
-#' @param exclusionConceptIds                       A list of CONCEPT_IDs used to restrict the cohorts,
-#'                                                  based on anydescendant conditions/drugs/procedures
-#'                                                  occurring at least onceanytime prior to the cohort
-#'                                                  index date.
-#' @param outcomeConditionTypeConceptIds            A list of TYPE_CONCEPT_ID values that will
-#'                                                  restrictcondition occurrences.  Only applicable if
-#'                                                  outcomeTable =CONDITION_OCCURRENCE.
-#' @param excludeDrugsFromCovariates                Should the target and comparator drugs (and their
-#'                                                  descendantconcepts) be excluded from the
-#'                                                  covariates? Note that this willwork if the drugs
-#'                                                  are actualy drug concept IDs (and not cohortIDs).
-#' @param useCovariateDemographics                  A boolean value (TRUE/FALSE) to determine
-#'                                                  ifdemographic covariates (age in 5-yr
-#'                                                  increments,gender, race, ethnicity, year of index
-#'                                                  date, monthof index date) will be created and
-#'                                                  included infuture models.
-#' @param useCovariateDemographicsGender            A boolean value (TRUE/FALSE) to determine if
-#'                                                  gendershould be included in the model.
-#' @param useCovariateDemographicsRace              A boolean value (TRUE/FALSE) to determine if
-#'                                                  raceshould be included in the model.
-#' @param useCovariateDemographicsEthnicity         A boolean value (TRUE/FALSE) to determine
-#'                                                  ifethnicity should be included in the model.
-#' @param useCovariateDemographicsAge               A boolean value (TRUE/FALSE) to determine if age(in
-#'                                                  5 year increments) should be included in themodel.
-#' @param useCovariateDemographicsYear              A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcalendar year should be included in the model.
-#' @param useCovariateDemographicsMonth             A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcalendar month should be included in the model.
-#' @param useCovariateConditionOccurrence           A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates derived from CONDITION_OCCURRENCE
-#'                                                  tablewill be created and included in future models.
-#' @param useCovariateConditionOccurrence365d       A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of condition in
-#'                                                  365dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateConditionOccurrence
-#'                                                  =TRUE.
-#' @param useCovariateConditionOccurrence30d        A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of condition in
-#'                                                  30dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateConditionOccurrence
-#'                                                  =TRUE.
-#' @param useCovariateConditionOccurrenceInpt180d   A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of condition
-#'                                                  withininpatient type in 180d window prior to or on
-#'                                                  cohortindex date.  Only applicable
-#'                                                  ifuseCovariateConditionOccurrence = TRUE.
-#' @param useCovariateConditionEra                  A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates derived from CONDITION_ERA table will
-#'                                                  becreated and included in future models.
-#' @param useCovariateConditionEraEver              A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of condition era
-#'                                                  anytimeprior to or on cohort index date.  Only
-#'                                                  applicableif useCovariateConditionEra = TRUE.
-#' @param useCovariateConditionEraOverlap           A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of condition era
-#'                                                  thatoverlaps the cohort index date.  Only
-#'                                                  applicable ifuseCovariateConditionEra = TRUE.
-#' @param useCovariateConditionGroup                A boolean value (TRUE/FALSE) to determine if
-#'                                                  allCONDITION_OCCURRENCE and CONDITION_ERA
-#'                                                  covariatesshould be aggregated or rolled-up to
-#'                                                  higher-levelconcepts based on vocabluary
-#'                                                  classification.
-#' @param useCovariateConditionGroupMeddra          A boolean value (TRUE/FALSE) to determine if
-#'                                                  allCONDITION_OCCURRENCE and CONDITION_ERA
-#'                                                  covariatesshould be aggregated or rolled-up to
-#'                                                  higher-levelconcepts based on the MEDDRA
-#'                                                  classification.
-#' @param useCovariateConditionGroupSnomed          A boolean value (TRUE/FALSE) to determine if
-#'                                                  allCONDITION_OCCURRENCE and CONDITION_ERA
-#'                                                  covariatesshould be aggregated or rolled-up to
-#'                                                  higher-levelconcepts based on the SNOMED
-#'                                                  classification.
-#' @param useCovariateDrugExposure                  A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates derived from DRUG_EXPOSURE table will
-#'                                                  becreated and included in future models.
-#' @param useCovariateDrugExposure365d              A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of drug in 365d
-#'                                                  windowprior to or on cohort index date.  Only
-#'                                                  applicableif useCovariateDrugExposure = TRUE.
-#' @param useCovariateDrugExposure30d               A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of drug in 30d
-#'                                                  windowprior to or on cohort index date.  Only
-#'                                                  applicableif useCovariateDrugExposure = TRUE.
-#' @param useCovariateDrugEra                       A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates derived from DRUG_ERA table will
-#'                                                  becreated and included in future models.
-#' @param useCovariateDrugEra365d                   A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of drug era in
-#'                                                  365dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEra30d                    A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of drug era in 30d
-#'                                                  windowprior to or on cohort index date.  Only
-#'                                                  applicableif useCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEraOverlap                A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of drug era that
-#'                                                  overlapsthe cohort index date.  Only applicable
-#'                                                  ifuseCovariateDrugEra = TRUE.
-#' @param useCovariateDrugEraEver                   A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of drug era anytime
-#'                                                  priorto or on cohort index date.  Only applicable
-#'                                                  ifuseCovariateDrugEra = TRUE.
-#' @param useCovariateDrugGroup                     A boolean value (TRUE/FALSE) to determine if
-#'                                                  allDRUG_EXPOSURE and DRUG_ERA covariates should
-#'                                                  beaggregated or rolled-up to higher-level concepts
-#'                                                  ofdrug classes based on vocabluary classification.
-#' @param useCovariateProcedureOccurrence           A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates derived from PROCEDURE_OCCURRENCE
-#'                                                  tablewill be created and included in future models.
-#' @param useCovariateProcedureOccurrence365d       A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of procedure in
-#'                                                  365dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateProcedureOccurrence
-#'                                                  =TRUE.
-#' @param useCovariateProcedureOccurrence30d        A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of procedure in
-#'                                                  30dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateProcedureOccurrence
-#'                                                  =TRUE.
-#' @param useCovariateProcedureGroup                A boolean value (TRUE/FALSE) to determine if
-#'                                                  allPROCEDURE_OCCURRENCE covariates should
-#'                                                  beaggregated or rolled-up to higher-level
-#'                                                  conceptsbased on vocabluary classification.
-#' @param useCovariateObservation                   A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates derived from OBSERVATION table will
-#'                                                  becreated and included in future models.
-#' @param useCovariateObservation365d               A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of observation in
-#'                                                  365dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservation30d                A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of observation in
-#'                                                  30dwindow prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateObservation = TRUE.
-#' @param useCovariateObservationBelow              A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of observation with
-#'                                                  anumeric value below normal range for latest
-#'                                                  valuewithin 180d of cohort index.  Only applicable
-#'                                                  ifuseCovariateObservation = TRUE.
-#' @param useCovariateObservationAbove              A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for presence/absence of observation with
-#'                                                  anumeric value above normal range for latest
-#'                                                  valuewithin 180d of cohort index.  Only applicable
-#'                                                  ifuseCovariateObservation = TRUE.
-#' @param useCovariateObservationCount365d          A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatlook for the count of each observation concept
-#'                                                  in365d window prior to or on cohort index date.
-#'                                                  Onlyapplicable if useCovariateObservation = TRUE.
-#' @param useCovariateConceptCounts                 A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatcount the number of concepts that a person
-#'                                                  haswithin each domain (CONDITION, DRUG,
-#'                                                  PROCEDURE,OBSERVATION)
-#' @param useCovariateRiskScores                    A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatcalculate various Risk Scores, including
-#'                                                  Charlson,DCSI.
-#' @param useCovariateRiskScoresCharlson            A boolean value (TRUE/FALSE) to determine if
-#'                                                  theCharlson comorbidity index should be included
-#'                                                  inthe model.
-#' @param useCovariateRiskScoresDCSI                A boolean value (TRUE/FALSE) to determine if
-#'                                                  theDCSI score should be included in the model.
-#' @param useCovariateRiskScoresCHADS2              A boolean value (TRUE/FALSE) to determine if
-#'                                                  theCHADS2 score should be included in the model.
-#' @param useCovariateInteractionYear               A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatrepresent interaction terms between all
-#'                                                  othercovariates and the year of the cohort index
-#'                                                  date.
-#' @param useCovariateInteractionMonth              A boolean value (TRUE/FALSE) to determine
-#'                                                  ifcovariates will be created and used in models
-#'                                                  thatrepresent interaction terms between all
-#'                                                  othercovariates and the month of the cohort index
-#'                                                  date.
-#' @param excludedCovariateConceptIds               A list of concept IDs that should NOT be used
-#'                                                  toconstruct covariates.
-#' @param includedCovariateConceptIds               A list of concept IDs that should be used
-#'                                                  toconstruct covariates.
-#' @param deleteCovariatesSmallCount                A numeric value used to remove covariates thatoccur
-#'                                                  in both cohorts fewer
-#'                                                  thandeleteCovariateSmallCounts time.
+#' @param washoutWindow                    The mininum required continuous observation time prior to
+#'                                         indexdate for a person to be included in the cohort.
+#' @param indicationLookbackWindow         NA
+#' @param studyStartDate                   A calendar date specifying the minimum date that a cohort
+#'                                         indexdate can appear. Date format is 'yyyymmdd'.
+#' @param studyEndDate                     A calendar date specifying the maximum date that a cohort
+#'                                         indexdate can appear. Date format is 'yyyymmdd'.
+#' @param exclusionConceptIds              A list of CONCEPT_IDs used to restrict the cohorts, based on
+#'                                         anydescendant conditions/drugs/procedures occurring at least
+#'                                         onceanytime prior to the cohort index date.
+#' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrictcondition
+#'                                         occurrences.  Only applicable if outcomeTable
+#'                                         =CONDITION_OCCURRENCE.
+#' @param excludeDrugsFromCovariates       Should the target and comparator drugs (and their
+#'                                         descendantconcepts) be excluded from the covariates? Note
+#'                                         that this willwork if the drugs are actualy drug concept IDs
+#'                                         (and not cohortIDs).
+#' @param covariateSettings                An object of type covariateSettings as created using
+#'                                         thecreateCovariateSettings function in the
+#'                                         PatientLevelPrediction package..
 #'
 #' @export
 createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
@@ -223,52 +34,7 @@ createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
                                             exclusionConceptIds = c(),
                                             outcomeConditionTypeConceptIds = c(),
                                             excludeDrugsFromCovariates = TRUE,
-                                            useCovariateDemographics = TRUE,
-                                            useCovariateDemographicsGender = TRUE,
-                                            useCovariateDemographicsRace = TRUE,
-                                            useCovariateDemographicsEthnicity = TRUE,
-                                            useCovariateDemographicsAge = TRUE,
-                                            useCovariateDemographicsYear = TRUE,
-                                            useCovariateDemographicsMonth = TRUE,
-                                            useCovariateConditionOccurrence = TRUE,
-                                            useCovariateConditionOccurrence365d = TRUE,
-                                            useCovariateConditionOccurrence30d = TRUE,
-                                            useCovariateConditionOccurrenceInpt180d = TRUE,
-                                            useCovariateConditionEra = FALSE,
-                                            useCovariateConditionEraEver = FALSE,
-                                            useCovariateConditionEraOverlap = FALSE,
-                                            useCovariateConditionGroup = FALSE,
-                                            useCovariateConditionGroupMeddra = FALSE,
-                                            useCovariateConditionGroupSnomed = FALSE,
-                                            useCovariateDrugExposure = FALSE,
-                                            useCovariateDrugExposure365d = FALSE,
-                                            useCovariateDrugExposure30d = FALSE,
-                                            useCovariateDrugEra = FALSE,
-                                            useCovariateDrugEra365d = FALSE,
-                                            useCovariateDrugEra30d = FALSE,
-                                            useCovariateDrugEraOverlap = FALSE,
-                                            useCovariateDrugEraEver = FALSE,
-                                            useCovariateDrugGroup = FALSE,
-                                            useCovariateProcedureOccurrence = FALSE,
-                                            useCovariateProcedureOccurrence365d = FALSE,
-                                            useCovariateProcedureOccurrence30d = FALSE,
-                                            useCovariateProcedureGroup = FALSE,
-                                            useCovariateObservation = FALSE,
-                                            useCovariateObservation365d = FALSE,
-                                            useCovariateObservation30d = FALSE,
-                                            useCovariateObservationBelow = FALSE,
-                                            useCovariateObservationAbove = FALSE,
-                                            useCovariateObservationCount365d = FALSE,
-                                            useCovariateConceptCounts = FALSE,
-                                            useCovariateRiskScores = FALSE,
-                                            useCovariateRiskScoresCharlson = FALSE,
-                                            useCovariateRiskScoresDCSI = FALSE,
-                                            useCovariateRiskScoresCHADS2 = FALSE,
-                                            useCovariateInteractionYear = FALSE,
-                                            useCovariateInteractionMonth = FALSE,
-                                            excludedCovariateConceptIds = c(),
-                                            includedCovariateConceptIds = c(),
-                                            deleteCovariatesSmallCount = 100) {
+                                            covariateSettings) {
   # First: get default values:
   analysis <- list()
   for (name in names(formals(createGetDbCohortMethodDataArgs))) {

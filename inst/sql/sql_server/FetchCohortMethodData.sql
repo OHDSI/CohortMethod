@@ -1,5 +1,5 @@
 SELECT subject_id AS row_id,
-	cohort_definition_id AS treatment,
+	cohort_concept_id AS treatment,
 	cohort_start_date,
 	DATEDIFF(dd, cohort_start_date, observation_period_end_date) AS time_to_obs_period_end,
 	DATEDIFF(dd, cohort_start_date, cohort_end_date) AS time_to_cohort_end

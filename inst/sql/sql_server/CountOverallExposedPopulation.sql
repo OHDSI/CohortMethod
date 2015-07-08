@@ -29,7 +29,7 @@ SELECT COUNT(DISTINCT raw_cohorts.person_id) AS exposed_count,
 raw_cohorts.treatment
 FROM (
 {@exposure_table == 'drug_era'} ? {
-  SELECT CASE 
+  SELECT CASE
   WHEN ca1.ancestor_concept_id = @target_drug_concept_id
   THEN 1
   WHEN ca1.ancestor_concept_id = @comparator_drug_concept_id
@@ -44,10 +44,10 @@ FROM (
   ON de1.drug_concept_id = ca1.descendant_concept_id
   WHERE ca1.ancestor_concept_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 } : {
-  SELECT CASE 
-  WHEN c1.cohort_definition_id = @target_drug_concept_id
+  SELECT CASE
+  WHEN c1.cohort_concept_id = @target_drug_concept_id
   THEN 1
-  WHEN c1.cohort_definition_id = @comparator_drug_concept_id
+  WHEN c1.cohort_concept_id = @comparator_drug_concept_id
   THEN 0
   ELSE - 1
   END AS treatment,
@@ -55,7 +55,7 @@ FROM (
   c1.cohort_start_date AS cohort_start_date,
   c1.cohort_end_date AS cohort_end_date
   FROM @exposure_database_schema.@exposure_table c1
-  WHERE c1.cohort_definition_id in (@target_drug_concept_id,@comparator_drug_concept_id)
+  WHERE c1.cohort_concept_id in (@target_drug_concept_id,@comparator_drug_concept_id)
 }
 ) raw_cohorts
 INNER JOIN observation_period op1
