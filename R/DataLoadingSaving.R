@@ -55,15 +55,16 @@
 #'                                     concepts) be excluded from the covariates? Note that this will
 #'                                     work if the drugs are actualy drug concept IDs (and not cohort
 #'                                     IDs).
-#' @param covariateSettings         An object of type \code{covariateSettings} as created using the
-#'                                  \code{createCovariateSettings} function in the \code{PatientLevelPrediction} package..
+#' @param covariateSettings            An object of type \code{covariateSettings} as created using the
+#'                                     \code{createCovariateSettings} function in the
+#'                                     \code{PatientLevelPrediction} package..
 #' @template GetOutcomesParams
 #' @param targetDrugConceptId          A unique identifier to define the target cohort.  If
 #'                                     exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID
 #'                                     and all descendant concepts within that CONCEPT_ID will be used
 #'                                     to define the cohort.  If exposureTable <> DRUG_ERA,
-#'                                     targetDrugConceptId is used to select the cohort_concept_id
-#'                                     in the cohort-like table.
+#'                                     targetDrugConceptId is used to select the cohort_concept_id in
+#'                                     the cohort-like table.
 #' @param comparatorDrugConceptId      A unique identifier to define the comparator cohort.  If
 #'                                     exposureTable = DRUG_ERA, comparatorDrugConceptId is a
 #'                                     CONCEPT_ID and all descendant concepts within that CONCEPT_ID
@@ -87,6 +88,7 @@
 #'                                     date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate                 A calendar date specifying the maximum date that a cohort index
 #'                                     date can appear. Date format is 'yyyymmdd'.
+#' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
 #'
 #' @return
 #' Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
@@ -122,6 +124,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   exposureTable = "drug_era",
                                   outcomeDatabaseSchema = cdmDatabaseSchema,
                                   outcomeTable = "condition_occurrence",
+                                  cdmVersion = "4",
                                   excludeDrugsFromCovariates = TRUE,
                                   covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
@@ -131,6 +134,12 @@ getDbCohortMethodData <- function(connectionDetails,
 
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
   conn <- DatabaseConnector::connect(connectionDetails)
+
+  if (cdmVersion == "4") {
+    cohortDefinitionId <- "cohort_concept_id"
+  } else {
+    cohortDefinitionId <- "cohort_definition_id"
+  }
 
   if (excludeDrugsFromCovariates) {
     if (exposureTable != "drug_era")
@@ -144,7 +153,8 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(conn, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
-    covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds, conceptIds)
+    covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
+                                                       conceptIds)
   }
 
   if (is.null(indicationConceptIds) || length(indicationConceptIds) == 0) {
@@ -192,7 +202,9 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    study_end_date = studyEndDate,
                                                    has_exclusion_concept_ids = hasExclusionConceptIds,
                                                    exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = exposureTable)
+                                                   exposure_table = exposureTable,
+                                                   cdm_version = cdmVersion,
+                                                   cohort_definition_id = cohortDefinitionId)
 
   writeLines("Executing multiple queries. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)
@@ -202,7 +214,9 @@ getDbCohortMethodData <- function(connectionDetails,
   cohortSql <- SqlRender::loadRenderTranslateSql("FetchCohortMethodData.sql",
                                                  packageName = "CohortMethod",
                                                  dbms = connectionDetails$dbms,
-                                                 oracleTempSchema = oracleTempSchema)
+                                                 oracleTempSchema = oracleTempSchema,
+                                                 cdm_version = cdmVersion,
+                                                 cohort_definition_id = cohortDefinitionId)
   rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -212,7 +226,9 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    study_start_date = studyStartDate,
                                                    study_end_date = studyEndDate,
                                                    exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = tolower(exposureTable))
+                                                   exposure_table = tolower(exposureTable),
+                                                   cdm_version = cdmVersion,
+                                                   cohort_definition_id = cohortDefinitionId)
   newUserCountSql <- "SELECT COUNT(*) AS new_user_count, treatment FROM #new_user_cohort GROUP BY treatment"
   newUserCountSql <- SqlRender::translateSql(newUserCountSql,
                                              "sql server",
@@ -228,7 +244,9 @@ getDbCohortMethodData <- function(connectionDetails,
                                                 "sql server",
                                                 connectionDetails$dbms,
                                                 oracleTempSchema)$sql
-  notExcludedCountSql <- "SELECT COUNT(*) AS not_excluded_count, cohort_concept_id AS treatment FROM #cohort_person GROUP BY cohort_concept_id"
+  notExcludedCountSql <- "SELECT COUNT(*) AS not_excluded_count, @cohort_definition_id AS treatment FROM #cohort_person GROUP BY @cohort_definition_id"
+  notExcludedCountSql <- SqlRender::renderSql(notExcludedCountSql,
+                                              cohort_definition_id = cohortDefinitionId)$sql
   notExcludedCountSql <- SqlRender::translateSql(notExcludedCountSql,
                                                  "sql server",
                                                  connectionDetails$dbms,
@@ -256,7 +274,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                               oracleTempSchema = oracleTempSchema,
                                                               cdmDatabaseSchema = cdmDatabaseSchema,
                                                               useExistingCohortPerson = TRUE,
-                                                              covariateSettings = covariateSettings)
+                                                              covariateSettings = covariateSettings,
+                                                              cdmVersion = cdmVersion)
   names(covariateData$covariates)[names(covariateData$covariates) == "personId"] <- "rowId"
   covariateData$covariates$cohortStartDate <- NULL
   covariateData$covariates$cohortDefinitionId <- NULL
@@ -284,7 +303,8 @@ getDbCohortMethodData <- function(connectionDetails,
                             outcomeDatabaseSchema = outcomeDatabaseSchema,
                             outcomeTable = outcomeTable,
                             outcomeConceptIds = outcomeConceptIds,
-                            outcomeConditionTypeConceptIds = outcomeConditionTypeConceptIds)
+                            outcomeConditionTypeConceptIds = outcomeConditionTypeConceptIds,
+                            cdmVersion = cdmVersion)
   }
 
   # Remove temp tables:
@@ -373,7 +393,7 @@ loadCohortMethodData <- function(file, readOnly = FALSE) {
                  metaData = mget("metaData",
                                  envir = e,
                                  ifnotfound = list(NULL))[[1]]  #For backwards compatibility
-  )
+)
   # Open all ffdfs to prevent annoying messages later:
   open(result$outcomes, readonly = readOnly)
   open(result$cohorts, readonly = readOnly)
@@ -406,10 +426,10 @@ summary.cohortMethodData <- function(object, ...) {
     outcomeCounts$eventCount[i] <- ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] <- 0 else {
-        t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
-        outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
-                                                                                                       t == TRUE)]))
-      }
+      t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+      outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
+                                                                                                     t == TRUE)]))
+    }
   }
 
   result <- list(metaData = object$metaData,

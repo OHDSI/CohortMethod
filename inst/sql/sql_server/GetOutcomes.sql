@@ -23,6 +23,8 @@ limitations under the License.
 {DEFAULT @outcome_table = 'condition_occurrence' } /*outcome_table: @outcome_table*/ /*the table that contains the outcome information (condition_occurrence or COHORT)*/
 {DEFAULT @outcome_concept_ids = '' } /*outcome_concept_ids: @outcome_concept_ids*/
 {DEFAULT @outcome_condition_type_concept_ids = '' } /*outcome_condition_type_concept_ids: @outcome_condition_type_concept_ids*/ /*condition type only applies if @outcome_table = condition_occurrence*/
+{DEFAULT @cdm_version = '4'}
+{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 
 USE @cdm_database;
 
@@ -33,7 +35,7 @@ IF OBJECT_ID('tempdb..#cohort_excluded_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_excluded_person;
 
 {@outcome_table == 'condition_occurrence' } ? {
-SELECT cp1.cohort_concept_id,
+SELECT cp1.@cohort_definition_id,
 	cp1.subject_id as person_id,
 	ca1.ancestor_concept_id AS outcome_id,
 	datediff(dd, cp1.cohort_start_date, co1.condition_start_date) AS time_to_event
@@ -55,12 +57,12 @@ INNER JOIN (
 WHERE {@outcome_condition_type_concept_ids != '' } ? { co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 	AND } co1.condition_start_date > cp1.cohort_start_date
 	AND co1.condition_start_date <= observation_period_end_date
-GROUP BY cp1.cohort_concept_id,
+GROUP BY cp1.@cohort_definition_id,
 	cp1.subject_id,
 	datediff(dd, cp1.cohort_start_date, co1.condition_start_date),
 	ca1.ancestor_concept_id } : { {@outcome_table == 'condition_era' } ? {
 
-SELECT cp1.cohort_concept_id,
+SELECT cp1.@cohort_definition_id,
 	cp1.subject_id AS person_id,
 	ca1.ancestor_concept_id AS outcome_id,
 	datediff(dd, cp1.cohort_start_date, co1.condition_era_start_date) AS time_to_event
@@ -82,14 +84,14 @@ INNER JOIN (
 WHERE {@outcome_condition_type_concept_ids != '' } ? { co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 	AND } co1.condition_era_start_date > cp1.cohort_start_date
 	AND co1.condition_era_start_date <= observation_period_end_date
-GROUP BY cp1.cohort_concept_id,
+GROUP BY cp1.@cohort_definition_id,
 	cp1.subject_id,
 	datediff(dd, cp1.cohort_start_date, co1.condition_era_start_date),
 	ca1.ancestor_concept_id } : {
 
-SELECT cp1.cohort_concept_id,
+SELECT cp1.@cohort_definition_id,
 	cp1.subject_id AS person_id,
-	co1.cohort_concept_id AS outcome_id,
+	co1.@cohort_definition_id AS outcome_id,
 	datediff(dd, cp1.cohort_start_date, co1.cohort_start_date) AS time_to_event
   INTO #cohort_outcome
 FROM #cohort_person cp1
@@ -99,17 +101,17 @@ AND cp1.cohort_start_date >= observation_period_start_date
 AND cp1.cohort_start_date <= observation_period_end_date
 INNER JOIN @outcome_database_schema.@outcome_table co1
 	ON cp1.subject_id = co1.subject_id
-WHERE co1.cohort_concept_id IN (@outcome_concept_ids)
+WHERE co1.@cohort_definition_id IN (@outcome_concept_ids)
 	AND co1.cohort_start_date > cp1.cohort_start_date
 	AND co1.cohort_start_Date <= observation_period_end_date
-GROUP BY cp1.cohort_concept_id,
+GROUP BY cp1.@cohort_definition_id,
 	cp1.subject_id,
 	datediff(dd, cp1.cohort_start_date, co1.cohort_start_date),
-	co1.cohort_concept_id } };
+	co1.@cohort_definition_id } };
 
 ---find people to exclude from each analysis (if outcome occurs prior to index)
 {@outcome_table == 'condition_occurrence' } ? {
-SELECT DISTINCT cp1.cohort_concept_id,
+SELECT DISTINCT cp1.@cohort_definition_id,
 	cp1.subject_id AS person_id,
 	ca1.ancestor_concept_id AS outcome_id
     INTO #cohort_excluded_person
@@ -126,7 +128,7 @@ INNER JOIN (
 WHERE {@outcome_condition_type_concept_ids != '' } ? { co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 	AND } co1.condition_start_date < cp1.cohort_start_date } : { {@outcome_table == 'condition_era' } ? {
 
-SELECT DISTINCT cp1.cohort_concept_id,
+SELECT DISTINCT cp1.@cohort_definition_id,
 	cp1.subject_id AS person_id,
 	ca1.ancestor_concept_id AS outcome_id
    INTO #cohort_excluded_person
@@ -143,12 +145,12 @@ INNER JOIN (
 WHERE {@outcome_condition_type_concept_ids != '' } ? { co1.condition_type_concept_id IN (@outcome_condition_type_concept_ids)
 	AND } co1.condition_era_start_date < cp1.cohort_start_date } : {
 
-SELECT DISTINCT cp1.cohort_concept_id,
+SELECT DISTINCT cp1.@cohort_definition_id,
 	cp1.subject_id AS person_id,
-	co1.cohort_concept_id AS outcome_id
+	co1.@cohort_definition_id AS outcome_id
      INTO #cohort_excluded_person
 FROM #cohort_person cp1
 INNER JOIN @outcome_database_schema.@outcome_table co1
 	ON cp1.subject_id = co1.subject_id
-WHERE co1.cohort_concept_id IN (@outcome_concept_ids)
+WHERE co1.@cohort_definition_id IN (@outcome_concept_ids)
 	AND co1.cohort_start_date < cp1.cohort_start_date } };

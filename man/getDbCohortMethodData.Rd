@@ -12,8 +12,8 @@ getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
   outcomeConditionTypeConceptIds = c(),
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "condition_occurrence", excludeDrugsFromCovariates = TRUE,
-  covariateSettings)
+  outcomeTable = "condition_occurrence", cdmVersion = "4",
+  excludeDrugsFromCovariates = TRUE, covariateSettings)
 }
 \arguments{
 \item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
@@ -33,8 +33,8 @@ permissions to this database.}
 exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID
 and all descendant concepts within that CONCEPT_ID will be used
 to define the cohort.  If exposureTable <> DRUG_ERA,
-targetDrugConceptId is used to select the cohort_concept_id
-in the cohort-like table.}
+targetDrugConceptId is used to select the cohort_concept_id in
+the cohort-like table.}
 
 \item{comparatorDrugConceptId}{A unique identifier to define the comparator cohort.  If
 exposureTable = DRUG_ERA, comparatorDrugConceptId is a
@@ -60,7 +60,7 @@ indicationConceptIds != ''.}
 date can appear. Date format is 'yyyymmdd'.}
 
 \item{studyEndDate}{A calendar date specifying the maximum date that a cohort index
-                                    date can appear. Date format is 'yyyymmdd'.}
+date can appear. Date format is 'yyyymmdd'.}
 
 \item{exclusionConceptIds}{A list of CONCEPT_IDs used to restrict the cohorts, based on any
 descendant conditions/drugs/procedures occurring at least once
@@ -100,13 +100,16 @@ outcomeTable has format of COHORT table:
 COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
 
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+
 \item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their descendant
 concepts) be excluded from the covariates? Note that this will
 work if the drugs are actualy drug concept IDs (and not cohort
 IDs).}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
-\code{createCovariateSettings} function in the \code{PatientLevelPrediction} package..}
+\code{createCovariateSettings} function in the
+\code{PatientLevelPrediction} package..}
 }
 \value{
 Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their

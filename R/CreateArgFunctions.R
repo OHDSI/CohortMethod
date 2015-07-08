@@ -18,6 +18,8 @@
 #' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrictcondition
 #'                                         occurrences.  Only applicable if outcomeTable
 #'                                         =CONDITION_OCCURRENCE.
+#' @param cdmVersion                       Define the OMOP CDM version used: currently support "4" and
+#'                                         "5".
 #' @param excludeDrugsFromCovariates       Should the target and comparator drugs (and their
 #'                                         descendantconcepts) be excluded from the covariates? Note
 #'                                         that this willwork if the drugs are actualy drug concept IDs
@@ -33,6 +35,7 @@ createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
                                             studyEndDate = "",
                                             exclusionConceptIds = c(),
                                             outcomeConditionTypeConceptIds = c(),
+                                            cdmVersion = "4",
                                             excludeDrugsFromCovariates = TRUE,
                                             covariateSettings) {
   # First: get default values:

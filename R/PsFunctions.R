@@ -657,11 +657,11 @@ cmBySum <- function(values, bins) {
 
 quickSum <- function(data, squared = FALSE) {
   if (squared) {
-      x <- cmBySum(data$covariateValue^2, data$covariateId)
-      colnames(x) <- c("covariateId", "sumSqr")
+    x <- cmBySum(data$covariateValue^2, data$covariateId)
+    colnames(x) <- c("covariateId", "sumSqr")
   } else {
-      x <- cmBySum(data$covariateValue, data$covariateId)
-      colnames(x) <- c("covariateId", "sum")
+    x <- cmBySum(data$covariateValue, data$covariateId)
+    colnames(x) <- c("covariateId", "sum")
   }
   x$covariateId <- as.numeric(x$covariateId)
   return(x)

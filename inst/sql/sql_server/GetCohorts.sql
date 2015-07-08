@@ -29,6 +29,8 @@ limitations under the License.
 {DEFAULT @has_exclusion_concept_ids = FALSE }
 {DEFAULT @exposure_database_schema = 'CDM4_SIM' }
 {DEFAULT @exposure_table = 'drug_era' }
+{DEFAULT @cdm_version = '4'}
+{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 
 USE @cdm_database;
 
@@ -76,9 +78,9 @@ FROM (
 	GROUP BY ca1.ancestor_concept_id,
 		de1.person_id } : {
 	SELECT CASE
-			WHEN c1.cohort_concept_id = @target_drug_concept_id
+			WHEN c1.@cohort_definition_id = @target_drug_concept_id
 				THEN 1
-			WHEN c1.cohort_concept_id = @comparator_drug_concept_id
+			WHEN c1.@cohort_definition_id = @comparator_drug_concept_id
 				THEN 0
 			ELSE - 1
 			END AS treatment,
@@ -86,8 +88,8 @@ FROM (
 		min(c1.cohort_start_date) AS cohort_start_date,
 		min(c1.cohort_end_date) AS cohort_end_date
 	FROM @exposure_database_schema.@exposure_table c1
-	WHERE c1.cohort_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
-	GROUP BY c1.cohort_concept_id,
+	WHERE c1.@cohort_definition_id IN (@target_drug_concept_id, @comparator_drug_concept_id)
+	GROUP BY c1.@cohort_definition_id,
 		c1.subject_id }
 	) raw_cohorts
 INNER JOIN observation_period op1
@@ -143,7 +145,7 @@ LEFT JOIN (
 WHERE both_cohorts.person_id IS NULL;
 
 /* apply exclusion criteria  */
-SELECT non_overlap_cohort.treatment AS cohort_concept_id,
+SELECT non_overlap_cohort.treatment AS @cohort_definition_id,
 	non_overlap_cohort.person_id AS subject_id,
 	non_overlap_cohort.cohort_start_date,
 	non_overlap_cohort.cohort_end_date

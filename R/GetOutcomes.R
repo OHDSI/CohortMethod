@@ -38,6 +38,7 @@
 #'                            'cdm_instance.dbo'.
 #' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
+#' @param cdmVersion          Define the OMOP CDM version used: currently support "4" and "5".
 #' @template GetOutcomesParams
 #'
 #' @return
@@ -52,12 +53,19 @@ getDbOutcomes <- function(connectionDetails = NULL,
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_occurrence",
                           outcomeConceptIds = "",
-                          outcomeConditionTypeConceptIds = "") {
+                          outcomeConditionTypeConceptIds = "",
+                          cdmVersion = "4") {
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
   if (is.null(connectionDetails) && is.null(connection))
     stop("Either connectionDetails or connection has to be specified")
   if (!is.null(connectionDetails) && !is.null(connection))
     stop("Cannot specify both connectionDetails and connection")
+
+  if (cdmVersion == "4") {
+    cohortDefinitionId <- "cohort_concept_id"
+  } else {
+    cohortDefinitionId <- "cohort_definition_id"
+  }
 
   if (is.null(connection)) {
     conn <- DatabaseConnector::connect(connectionDetails)
@@ -83,7 +91,9 @@ getDbOutcomes <- function(connectionDetails = NULL,
                                                    outcome_database_schema = outcomeDatabaseSchema,
                                                    outcome_table = outcomeTable,
                                                    outcome_concept_ids = outcomeConceptIds,
-                                                   outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds)
+                                                   outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
+                                                   cdm_version = cdmVersion,
+                                                   cohort_definition_id = cohortDefinitionId)
 
   writeLines("Executing multiple queries. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)

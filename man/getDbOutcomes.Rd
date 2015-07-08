@@ -8,7 +8,7 @@ getDbOutcomes(connectionDetails = NULL, connection = NULL,
   cdmDatabaseSchema, oracleTempSchema = cdmDatabaseSchema, cohortMethodData,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", outcomeConceptIds = "",
-  outcomeConditionTypeConceptIds = "")
+  outcomeConditionTypeConceptIds = "", cdmVersion = "4")
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the function
@@ -47,6 +47,8 @@ COHORT_DEFINITION_ID field.}
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
 condition occurrences.  Only applicable if outcomeTable =
 CONDITION_OCCURRENCE.}
+
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
 
 \item{oracleTempSchemaA}{schema where temp tables can be created in Oracle.}
 }
