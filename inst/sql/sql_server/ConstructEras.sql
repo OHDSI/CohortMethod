@@ -69,11 +69,11 @@ AS (
 		ON ancestor_concept_id = ancestor.concept_id
 {@cdm_version == 4} ? {
 	WHERE ancestor.vocabulary_id = @roll_up_vocabulary_id
-		AND ancestor.concept_class = '@roll_up_concept_class_id'
+		AND ancestor.concept_class_id = '@roll_up_concept_class_id'
 } : {
 	WHERE ancestor.vocabulary_id = '@roll_up_vocabulary_id'
 		AND ancestor.concept_class_id  = '@roll_up_concept_class_id'
-}		
+}
 }
 	),
 cte_end_dates (
@@ -95,7 +95,7 @@ AS -- the magic
 				PARTITION BY person_id,
 				concept_id ORDER BY event_date,
 					event_type rows unbounded preceding
-				) AS start_ordinal, -- this pulls the current start down from the prior rows so that the nulls from the end dates will contain a value we can compare with 
+				) AS start_ordinal, -- this pulls the current start down from the prior rows so that the nulls from the end dates will contain a value we can compare with
 			ROW_NUMBER() OVER (
 				PARTITION BY person_id,
 				concept_id ORDER BY event_date,
@@ -112,9 +112,9 @@ AS -- the magic
 					concept_id ORDER BY start_date
 					) AS start_ordinal
 			FROM cte_source_periods
-			
+
 			UNION ALL
-			
+
 			-- pad the end dates by 30 to allow a grace period for overlapping ranges.
 			SELECT person_id,
 				concept_id,
@@ -153,11 +153,11 @@ AS (
 {!@create_target_table} ? {
 INSERT INTO @target_database_schema.@target_table (
 {@target_id != ''} ? {@target_id,}
-	@target_person_id, 
-	@target_concept_id, 
+	@target_person_id,
+	@target_concept_id,
 {@source_type_concept_id != '' & @target_type_concept_id != ''} ? {@target_type_concept_id,}
-	@target_start_date, 
-{@target_count != ''} ? {@target_count,}	
+	@target_start_date,
+{@target_count != ''} ? {@target_count,}
 	@target_end_date)
 }
 SELECT {@target_id != ''} ? {ROW_NUMBER() OVER (ORDER BY person_id) AS @target_id,}
@@ -165,9 +165,9 @@ SELECT {@target_id != ''} ? {ROW_NUMBER() OVER (ORDER BY person_id) AS @target_i
 	concept_id AS @target_concept_id,
 {@source_type_concept_id != '' & @target_type_concept_id != ''} ? {	type_concept_id AS @target_type_concept_id,}
 	MIN(start_date) AS @target_start_date,
-{@target_count != ''} ? {	COUNT(*) AS @target_count,}	
+{@target_count != ''} ? {	COUNT(*) AS @target_count,}
 	end_date AS @target_end_date
-{@create_target_table} ? {INTO @target_database_schema.@target_table}	
+{@create_target_table} ? {INTO @target_database_schema.@target_table}
 FROM cte_ends
 GROUP BY person_id,
 	concept_id,

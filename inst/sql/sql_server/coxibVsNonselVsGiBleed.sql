@@ -1,5 +1,5 @@
 /***********************************
-File coxibVsNonselVsGiBleed.sql 
+File coxibVsNonselVsGiBleed.sql
 ***********************************/
 
 IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
@@ -23,7 +23,7 @@ SELECT 1, -- Exposure
 	drug_era_end_date,
 	person_id
 FROM @cdmDatabaseSchema.drug_era
-WHERE drug_concept_id = 1118084;-- celecoxib	
+WHERE drug_concept_id = 1118084;-- celecoxib
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
@@ -56,4 +56,4 @@ WHERE condition_concept_id IN (
 		FROM @cdmDatabaseSchema.concept_ancestor
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
-	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
+	AND visit_occurrence.visit_concept_id IN (9201, 9203);

@@ -18,57 +18,57 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database = 'CDM4_SIM' } 
-{DEFAULT @use_existing_cohort_person = TRUE } 
-{DEFAULT @cohort_database_schema = 'CDM4_SIM' } 
-{DEFAULT @cohort_table = 'cohort' } 
-{DEFAULT @cohort_concept_ids = '0,1' } 
-{DEFAULT @use_covariate_demographics = TRUE} 
-{DEFAULT @use_covariate_demographics_age = TRUE} 
-{DEFAULT @use_covariate_demographics_gender = TRUE} 
-{DEFAULT @use_covariate_demographics_race = TRUE} 
-{DEFAULT @use_covariate_demographics_ethnicity = TRUE} 
-{DEFAULT @use_covariate_demographics_year = TRUE} 
-{DEFAULT @use_covariate_demographics_month = TRUE} 
-{DEFAULT @use_covariate_condition_occurrence = TRUE} 
-{DEFAULT @use_covariate_condition_occurrence_365d = TRUE} 
-{DEFAULT @use_covariate_condition_occurrence_30d = TRUE} 
-{DEFAULT @use_covariate_condition_occurrence_inpt180d = TRUE} 
-{DEFAULT @use_covariate_condition_era = FALSE} 
-{DEFAULT @use_covariate_condition_era_ever = TRUE} 
-{DEFAULT @use_covariate_condition_era_overlap = TRUE} 
-{DEFAULT @use_covariate_condition_group = FALSE} 
-{DEFAULT @use_covariate_condition_group_meddra = TRUE} 
-{DEFAULT @use_covariate_condition_group_snomed = TRUE} 
-{DEFAULT @use_covariate_drug_exposure = FALSE} 
-{DEFAULT @use_covariate_drug_exposure_365d = TRUE} 
-{DEFAULT @use_covariate_drug_exposure_30d = TRUE} 
-{DEFAULT @use_covariate_drug_era = FALSE} 
-{DEFAULT @use_covariate_drug_era_365d = TRUE} 
-{DEFAULT @use_covariate_drug_era_30d = TRUE} 
-{DEFAULT @use_covariate_drug_era_overlap = TRUE} 
-{DEFAULT @use_covariate_drug_era_ever = TRUE} 
-{DEFAULT @use_covariate_drug_group = FALSE} 
-{DEFAULT @use_covariate_procedure_occurrence = FALSE} 
-{DEFAULT @use_covariate_procedure_occurrence_365d = TRUE} 
-{DEFAULT @use_covariate_procedure_occurrence_30d = TRUE} 
-{DEFAULT @use_covariate_procedure_group = FALSE} 
-{DEFAULT @use_covariate_observation = FALSE} 
-{DEFAULT @use_covariate_observation_365d = TRUE} 
-{DEFAULT @use_covariate_observation_30d = TRUE} 
-{DEFAULT @use_covariate_observation_below = TRUE} 
-{DEFAULT @use_covariate_observation_above = TRUE} 
-{DEFAULT @use_covariate_observation_count365d = TRUE} 
-{DEFAULT @use_covariate_concept_counts = FALSE} 
-{DEFAULT @use_covariate_risk_scores = FALSE} 
-{DEFAULT @use_covariate_risk_scores_Charlson = TRUE} 
-{DEFAULT @use_covariate_risk_scores_DCSI = TRUE} 
-{DEFAULT @use_covariate_risk_scores_CHADS2 = TRUE} 
-{DEFAULT @use_covariate_interaction_year = FALSE} 
-{DEFAULT @use_covariate_interaction_month = FALSE} 
-{DEFAULT @has_excluded_covariate_concept_ids} 
-{DEFAULT @has_included_covariate_concept_ids} 
-{DEFAULT @delete_covariates_small_count = 100 } 
+{DEFAULT @cdm_database = 'CDM4_SIM' }
+{DEFAULT @use_existing_cohort_person = TRUE }
+{DEFAULT @cohort_database_schema = 'CDM4_SIM' }
+{DEFAULT @cohort_table = 'cohort' }
+{DEFAULT @cohort_concept_ids = '0,1' }
+{DEFAULT @use_covariate_demographics = TRUE}
+{DEFAULT @use_covariate_demographics_age = TRUE}
+{DEFAULT @use_covariate_demographics_gender = TRUE}
+{DEFAULT @use_covariate_demographics_race = TRUE}
+{DEFAULT @use_covariate_demographics_ethnicity = TRUE}
+{DEFAULT @use_covariate_demographics_year = TRUE}
+{DEFAULT @use_covariate_demographics_month = TRUE}
+{DEFAULT @use_covariate_condition_occurrence = TRUE}
+{DEFAULT @use_covariate_condition_occurrence_365d = TRUE}
+{DEFAULT @use_covariate_condition_occurrence_30d = TRUE}
+{DEFAULT @use_covariate_condition_occurrence_inpt180d = TRUE}
+{DEFAULT @use_covariate_condition_era = FALSE}
+{DEFAULT @use_covariate_condition_era_ever = TRUE}
+{DEFAULT @use_covariate_condition_era_overlap = TRUE}
+{DEFAULT @use_covariate_condition_group = FALSE}
+{DEFAULT @use_covariate_condition_group_meddra = TRUE}
+{DEFAULT @use_covariate_condition_group_snomed = TRUE}
+{DEFAULT @use_covariate_drug_exposure = FALSE}
+{DEFAULT @use_covariate_drug_exposure_365d = TRUE}
+{DEFAULT @use_covariate_drug_exposure_30d = TRUE}
+{DEFAULT @use_covariate_drug_era = FALSE}
+{DEFAULT @use_covariate_drug_era_365d = TRUE}
+{DEFAULT @use_covariate_drug_era_30d = TRUE}
+{DEFAULT @use_covariate_drug_era_overlap = TRUE}
+{DEFAULT @use_covariate_drug_era_ever = TRUE}
+{DEFAULT @use_covariate_drug_group = FALSE}
+{DEFAULT @use_covariate_procedure_occurrence = FALSE}
+{DEFAULT @use_covariate_procedure_occurrence_365d = TRUE}
+{DEFAULT @use_covariate_procedure_occurrence_30d = TRUE}
+{DEFAULT @use_covariate_procedure_group = FALSE}
+{DEFAULT @use_covariate_observation = FALSE}
+{DEFAULT @use_covariate_observation_365d = TRUE}
+{DEFAULT @use_covariate_observation_30d = TRUE}
+{DEFAULT @use_covariate_observation_below = TRUE}
+{DEFAULT @use_covariate_observation_above = TRUE}
+{DEFAULT @use_covariate_observation_count365d = TRUE}
+{DEFAULT @use_covariate_concept_counts = FALSE}
+{DEFAULT @use_covariate_risk_scores = FALSE}
+{DEFAULT @use_covariate_risk_scores_Charlson = TRUE}
+{DEFAULT @use_covariate_risk_scores_DCSI = TRUE}
+{DEFAULT @use_covariate_risk_scores_CHADS2 = TRUE}
+{DEFAULT @use_covariate_interaction_year = FALSE}
+{DEFAULT @use_covariate_interaction_month = FALSE}
+{DEFAULT @has_excluded_covariate_concept_ids}
+{DEFAULT @has_included_covariate_concept_ids}
+{DEFAULT @delete_covariates_small_count = 100 }
 
 USE @cdm_database;
 
@@ -148,7 +148,7 @@ INNER JOIN person p1
 WHERE p1.gender_concept_id IN (
 		SELECT concept_id
 		FROM concept
-		WHERE LOWER(concept_class) = 'gender'
+		WHERE LOWER(concept_class_id) = 'gender'
 		);
 
 
@@ -171,7 +171,7 @@ LEFT JOIN (
 	SELECT concept_id,
 		concept_name
 	FROM concept
-	WHERE LOWER(concept_class) = 'gender'
+	WHERE LOWER(concept_class_id) = 'gender'
 	) v1
 	ON p1.covariate_id = v1.concept_id;
 
@@ -192,7 +192,7 @@ INNER JOIN person p1
 WHERE p1.race_concept_id IN (
 		SELECT concept_id
 		FROM concept
-		WHERE LOWER(concept_class) = 'race'
+		WHERE LOWER(concept_class_id) = 'race'
 		);
 
 
@@ -214,7 +214,7 @@ LEFT JOIN (
 	SELECT concept_id,
 		concept_name
 	FROM concept
-	WHERE LOWER(concept_class) = 'race'
+	WHERE LOWER(concept_class_id) = 'race'
 	) v1
 	ON p1.covariate_id = v1.concept_id;
 
@@ -235,7 +235,7 @@ INNER JOIN person p1
 WHERE p1.ethnicity_concept_id IN (
 		SELECT concept_id
 		FROM concept
-		WHERE LOWER(concept_class) = 'ethnicity'
+		WHERE LOWER(concept_class_id) = 'ethnicity'
 		);
 
 
@@ -258,7 +258,7 @@ LEFT JOIN (
 	SELECT concept_id,
 		concept_name
 	FROM concept
-	WHERE LOWER(concept_class) = 'ethnicity'
+	WHERE LOWER(concept_class_id) = 'ethnicity'
 	) v1
 	ON p1.covariate_id = v1.concept_id;
 
@@ -623,8 +623,8 @@ INNER JOIN concept_ancestor ca1
 	ON ccr1.concept_id = ca1.descendant_concept_id
 INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
-WHERE c1.vocabulary_id = 15
-	AND c1.concept_class <> 'System Organ Class'
+WHERE lower(c1.vocabulary_id) = 'meddra'
+	AND c1.concept_class_id <> 'System Organ Class'
 	AND c1.concept_id NOT IN (36302170, 36303153, 36313966)
 {@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
 {@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}
@@ -649,8 +649,8 @@ INNER JOIN concept_ancestor ca1
 	ON ccr1.concept_id = ca1.descendant_concept_id
 INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
-WHERE c1.vocabulary_id = 1
-  AND c1.concept_class = 'Clinical finding'
+WHERE lower(c1.vocabulary_id) = 'snomed'
+  AND c1.concept_class_id = 'Clinical finding'
   AND ca1.min_levels_of_separation = 1
   AND c1.concept_id NOT IN (select distinct descendant_concept_id from concept_ancestor where ancestor_concept_id = 441480 /*clinical finding*/ and max_levels_of_separation <= 2)
 {@has_excluded_covariate_concept_ids} ? {  AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
@@ -809,7 +809,7 @@ INTO #cov_de_365d
 FROM #cohort_person cp1
 INNER JOIN drug_exposure de1
 	ON cp1.subject_id = de1.person_id
-WHERE de1.drug_concept_id != 0 
+WHERE de1.drug_concept_id != 0
 {@has_excluded_covariate_concept_ids} ? {  AND de1.drug_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
 {@has_included_covariate_concept_ids} ? {  AND de1.drug_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND de1.drug_exposure_start_date <= cp1.cohort_start_date
@@ -1087,11 +1087,11 @@ INNER JOIN concept_ancestor ca1
 	ON ccr1.concept_id = ca1.descendant_concept_id
 INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
-WHERE c1.vocabulary_id = 21
+WHERE lower(c1.vocabulary_id) = 'atc'
 	AND len(c1.concept_code) IN (1, 3, 5)
 	AND c1.concept_id != 0
 {@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}	
+{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}
 ;
 
 
@@ -1307,11 +1307,11 @@ INNER JOIN procedure_occurrence po1
 	ON cp1.subject_id = po1.person_id
 WHERE po1.procedure_concept_id  != 0
 {@has_excluded_covariate_concept_ids} ? {	AND po1.procedure_concept_id  NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {	AND po1.procedure_concept_id  IN (SELECT concept_id FROM #included_cov)}		
+{@has_included_covariate_concept_ids} ? {	AND po1.procedure_concept_id  IN (SELECT concept_id FROM #included_cov)}
 	AND po1.procedure_date <= cp1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
-	
+
 INSERT INTO #cov_ref (
   covariate_id,
   covariate_name,
@@ -1350,7 +1350,7 @@ INNER JOIN procedure_occurrence po1
 	ON cp1.subject_id = po1.person_id
 WHERE po1.procedure_concept_id  != 0
 {@has_excluded_covariate_concept_ids} ? {	AND po1.procedure_concept_id  NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {	AND po1.procedure_concept_id  IN (SELECT concept_id FROM #included_cov)}	
+{@has_included_covariate_concept_ids} ? {	AND po1.procedure_concept_id  IN (SELECT concept_id FROM #included_cov)}
 	AND po1.procedure_date <= cp1.cohort_start_date
 	AND po1.procedure_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -1407,12 +1407,12 @@ INNER JOIN concept_ancestor ca1
 	ON ccr1.concept_id = ca1.descendant_concept_id
 INNER JOIN concept c1
 	ON ca1.ancestor_concept_id = c1.concept_id
-WHERE c1.vocabulary_id = 1
+WHERE lower(c1.vocabulary_id) = 'snomed'
 	AND ca1.min_levels_of_separation <= 2
 	AND c1.concept_id NOT IN (0,
 	76094,67368, 46042, 40949, 31332, 28263, 24955, 18791, 13449, 12571, 10678, 10592, 9878, 9727, 9652, 9451, 9192, 8975, 8930, 8786, 8370, 8161, 7763, 7059, 6923, 6752, 6690, 6611, 6336, 6264, 6204, 6003, 5783)
 {@has_excluded_covariate_concept_ids} ? {	AND c1.concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}		
+{@has_included_covariate_concept_ids} ? {	AND c1.concept_id IN (SELECT concept_id FROM #included_cov)}
 ;
 
 
@@ -1526,7 +1526,7 @@ INNER JOIN observation o1
 	ON cp1.subject_id = o1.person_id
 WHERE o1.observation_concept_id != 0
 {@has_excluded_covariate_concept_ids} ? {	AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}		
+{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND o1.observation_date <= cp1.cohort_start_date
 	AND o1.observation_date >= dateadd(dd, - 365, cp1.cohort_start_date);
 
@@ -1570,7 +1570,7 @@ INNER JOIN observation o1
 	ON cp1.subject_id = o1.person_id
 WHERE o1.observation_concept_id != 0
 {@has_excluded_covariate_concept_ids} ? {	AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}	
+{@has_included_covariate_concept_ids} ? {	AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}
 	AND o1.observation_date <= cp1.cohort_start_date
 	AND o1.observation_date >= dateadd(dd, - 30, cp1.cohort_start_date);
 
@@ -1628,7 +1628,7 @@ FROM (
 		ON cp1.subject_id = o1.person_id
 	WHERE o1.observation_concept_id != 0
 {@has_excluded_covariate_concept_ids} ? {		AND o1.observation_concept_id NOT IN (SELECT concept_id FROM #excluded_cov)}
-{@has_included_covariate_concept_ids} ? {		AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}	
+{@has_included_covariate_concept_ids} ? {		AND o1.observation_concept_id IN (SELECT concept_id FROM #included_cov)}
 		AND o1.observation_date <= cp1.cohort_start_date
 		AND o1.observation_date >= dateadd(dd, - 180, cp1.cohort_start_date)
 		AND o1.value_as_number >= 0
@@ -1956,7 +1956,7 @@ INNER JOIN visit_occurrence vo1
 	ON cp1.subject_id = vo1.person_id
 WHERE vo1.visit_start_date <= cp1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, cp1.cohort_start_date)
-	AND vo1.place_of_service_concept_id = 9201
+	AND vo1.visit_concept_id = 9201
 GROUP BY cp1.cohort_start_date,
 	cp1.cohort_definition_id,
 	cp1.subject_id;
@@ -1989,7 +1989,7 @@ INNER JOIN visit_occurrence vo1
 	ON cp1.subject_id = vo1.person_id
 WHERE vo1.visit_start_date <= cp1.cohort_start_date
 	AND vo1.visit_start_date >= dateadd(dd, - 365, cp1.cohort_start_date)
-	AND vo1.place_of_service_concept_id = 9203
+	AND vo1.visit_concept_id = 9203
 GROUP BY cp1.cohort_start_date,
 	cp1.cohort_definition_id,
 	cp1.subject_id;
@@ -2308,8 +2308,8 @@ SELECT 'Retinopathy' AS DCSI_category,
 	target_concept_id,
 	1 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '250.5%'
 		OR source_code IN ('362.01', '362.1', '362.83', '362.53', '362.81', '362.82')
@@ -2327,8 +2327,8 @@ SELECT 'Retinopathy' AS DCSI_category,
 	target_concept_id,
 	2 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '361%'
 		OR source_code LIKE '369%'
@@ -2347,8 +2347,8 @@ SELECT 'Nephropathy' AS DCSI_category,
 	target_concept_id,
 	1 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code IN ('250.4', '580', '581', '581.81', '582', '583')
 		OR source_code LIKE '580%'
@@ -2369,8 +2369,8 @@ SELECT 'Nephropathy' AS DCSI_category,
 	target_concept_id,
 	2 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code IN ('585', '586', '593.9')
 		OR source_code LIKE '585%'
@@ -2390,8 +2390,8 @@ SELECT 'Neuropathy' AS DCSI_category,
 	target_concept_id,
 	1 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code IN ('356.9', '250.6', '358.1', '951.0', '951.1', '951.3', '713.5', '357.2', '596.54', '337.0', '337.1', '564.5', '536.3', '458.0')
 		OR (
@@ -2425,8 +2425,8 @@ SELECT 'Cerebrovascular' AS DCSI_category,
 	target_concept_id,
 	1 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (source_code LIKE '435%')
 ORDER BY source_code;
 
@@ -2441,8 +2441,8 @@ SELECT 'Cerebrovascular' AS DCSI_category,
 	target_concept_id,
 	2 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code IN ('431', '433', '434', '436')
 		OR source_code LIKE '431%'
@@ -2463,8 +2463,8 @@ SELECT 'Cardiovascular' AS DCSI_category,
 	target_concept_id,
 	1 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '440%'
 		OR source_code LIKE '411%'
@@ -2485,8 +2485,8 @@ SELECT 'Cardiovascular' AS DCSI_category,
 	target_concept_id,
 	2 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '410%'
 		OR source_code LIKE '427.1%'
@@ -2511,8 +2511,8 @@ SELECT 'Peripheral vascular disease' AS DCSI_category,
 	target_concept_id,
 	1 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '250.7%'
 		OR source_code LIKE '442.3%'
@@ -2533,8 +2533,8 @@ SELECT 'Peripheral vascular disease' AS DCSI_category,
 	target_concept_id,
 	2 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '785.4%'
 		OR source_code LIKE '707.1%'
@@ -2554,8 +2554,8 @@ SELECT 'Metabolic' AS DCSI_category,
 	target_concept_id,
 	2 AS DCSI_score
 FROM SOURCE_TO_CONCEPT_MAP
-WHERE SOURCE_VOCABULARY_ID = 2
-	AND target_vocabulary_id = 1
+WHERE lower(source_vocabulary_id) = 'icd9cm'
+	AND lower(target_vocabulary_id) = 'snomed'
 	AND (
 		source_code LIKE '250.1%'
 		OR source_code LIKE '250.2%'
