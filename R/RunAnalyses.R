@@ -83,6 +83,8 @@
 #'                                              validation when estimating the hyperparameter for the
 #'                                              propensity model. Note that the total number of CV threads
 #'                                              at one time could be `createPsThreads * psCvThreads`.
+#' @param computeCovarBalThreads                The number of parallel threads to use for computing the
+#'                                              covariate balance.
 #' @param fitOutcomeModelThreads                The number of parallel threads to use for fitting the
 #'                                              outcome models.
 #' @param outcomeCvThreads                      The number of parallel threads to use for the cross-
@@ -216,8 +218,21 @@ runCmAnalyses <- function(connectionDetails,
                                                         j,
                                                         k,
                                                         outcomeConceptId)
+                if (cmAnalysisArgs$computeCovariateBalance){
+                  covarBalFileName <- .createCovariateBalanceFileName(outputFolder,
+                                                                      i,
+                                                                      drugComparator$targetDrugConceptId,
+                                                                      drugComparator$comparatorDrugConceptId,
+                                                                      drugComparator$indicationConceptIds,
+                                                                      j,
+                                                                      k,
+                                                                      outcomeConceptId)
+                } else {
+                  covarBalFileName <- ""
+                }
               } else {
                 subPopFileName <- ""
+                covarBalFileName <- ""
               }
               if (cmAnalysisArgs$fitOutcomeModel) {
                 outcomeModelFileName <- .createOutcomeModelFileName(analysisFolder,
@@ -244,6 +259,7 @@ runCmAnalyses <- function(connectionDetails,
                                                 sharedPsFile = sharedPsFile,
                                                 psFile = psFileName,
                                                 subPopFile = subPopFileName,
+                                                covariateBalanceFile = covarBalFileName,
                                                 outcomeModelFile = outcomeModelFileName,
                                                 stringsAsFactors = FALSE)
               outcomeReference <- rbind(outcomeReference, outcomeReferenceRow)
@@ -459,6 +475,33 @@ runCmAnalyses <- function(connectionDetails,
     OhdsiRTools::stopCluster(cluster)
   }
 
+  writeLines("*** Computing covariate balance ***")
+  tasks <- list()
+  for (covariateBalanceFile in unique(outcomeReference$covariateBalanceFile)) {
+    if (covariateBalanceFile != "" && !file.exists((covariateBalanceFile))) {
+      refRow <- outcomeReference[outcomeReference$covariateBalanceFile == covariateBalanceFile, ][1, ]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                              list(analysisId = refRow$analysisId))[[1]]
+      tasks[[length(tasks) + 1]] <- list(subPopFile = refRow$subPopFile,
+                                         outcomeConceptId = refRow$outcomeConceptId,
+                                         cohortMethodDataFolder = cohortMethodDataFolder,
+                                         covariateBalanceFile = covariateBalanceFile)
+    }
+  }
+  computeCovarBal <- function(params) {
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+    subPop <- readRDS(params$subPopFile)
+    balance <- computeCovariateBalance(subPop, cohortMethodData, params$outcomeConceptId)
+    saveRDS(balance, params$covariateBalanceFile)
+  }
+  if (length(tasks) != 0) {
+    cluster <- OhdsiRTools::makeCluster(computeCovarBalThreads)
+    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+    dummy <- OhdsiRTools::clusterApply(cluster, tasks, computeCovarBal)
+    OhdsiRTools::stopCluster(cluster)
+  }
+  ################
+
   writeLines("*** Fitting outcome models ***")
   modelsToFit <- list()
   for (outcomeModelFile in unique(outcomeReference$outcomeModelFile)) {
@@ -566,6 +609,28 @@ runCmAnalyses <- function(connectionDetails,
                                   strataArgsId,
                                   outcomeConceptId) {
   name <- paste("sub_a", argsId, "_t", targetDrugConceptId, "_c", comparatorDrugConceptId, sep = "")
+  if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0) {
+    name <- paste(name, "_i", indicationConceptIds[1], sep = "")
+    if (length(indicationConceptIds) > 1) {
+      name <- paste(name, "etc", sep = "")
+    }
+  }
+  name <- paste(name, "_p", psArgsId, sep = "")
+  name <- paste(name, "_s", strataArgsId, sep = "")
+  name <- paste(name, "_o", outcomeConceptId, sep = "")
+  name <- paste(name, ".rds", sep = "")
+  return(file.path(folder, name))
+}
+
+.createCovariateBalanceFileName <- function(folder,
+                                            argsId,
+                                            targetDrugConceptId,
+                                            comparatorDrugConceptId,
+                                            indicationConceptIds,
+                                            psArgsId,
+                                            strataArgsId,
+                                            outcomeConceptId) {
+  name <- paste("bal_a", argsId, "_t", targetDrugConceptId, "_c", comparatorDrugConceptId, sep = "")
   if (!is.null(indicationConceptIds) && length(indicationConceptIds) != 0) {
     name <- paste(name, "_i", indicationConceptIds[1], sep = "")
     if (length(indicationConceptIds) > 1) {

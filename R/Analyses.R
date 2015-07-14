@@ -60,6 +60,8 @@
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the \code{\link{ stratifyByPsAndCovariates}} function.
+#' @param computeCovariateBalance         Should the \code{\link{computeCovariateBalance}} function be used in
+#'                                        this analysis?
 #' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
@@ -86,6 +88,7 @@ createCmAnalysis <- function(analysisId = 1,
                              stratifyByPsArgs = NULL,
                              stratifyByPsAndCovariates = FALSE,
                              stratifyByPsAndCovariatesArgs = NULL,
+                             computeCovariateBalance = FALSE,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
@@ -102,6 +105,9 @@ createCmAnalysis <- function(analysisId = 1,
                                           "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
       fitOutcomeModelArgs$stratifiedCox))) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
+  }
+  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
+    stop("Cannot compute covariate balance without stratification or matching")
   }
   if (!createPs) {
     createPsArgs <- NULL

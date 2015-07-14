@@ -137,7 +137,7 @@ drugComparatorOutcomesList <- list(dcos)
 
 We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. In this example, we also specify that people with prior exposure to any NSAID should be excluded when investigating these drugs and outcomes. We furthermore specify that NSAIDS cannot be in the list of covariates. We use some SQL against the vocabulary to find the concept IDs of all NSAIDS.
 
-A convenient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomeList` function, and we can load it again using the `loadDrugComparatorOutcomeList` function.
+A convenient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomesList` function, and we can load it again using the `loadDrugComparatorOutcomesList` function.
 
 # Specifying analyses
 
@@ -251,6 +251,7 @@ cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
+                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
@@ -268,6 +269,7 @@ cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
+                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs3)
 ```
@@ -331,7 +333,7 @@ The same mechanism can be used to specifiy types for the targetConceptId and the
 
 # Executing multiple analyses
 
-We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()`function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomeList)` (if all analyses specify an outcome model should be fitted).
+We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()`function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
 
 ```{r tidy=FALSE,eval=FALSE}
 result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -342,7 +344,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         outcomeTable = "outcomes",
                         outputFolder = "./CohortMethodOutput",
                         cmAnalysisList = cmAnalysisList,
-                        drugComparatorOutcomeList = drugComparatorOutcomeList,
+                        drugComparatorOutcomesList = drugComparatorOutcomesList,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 1,

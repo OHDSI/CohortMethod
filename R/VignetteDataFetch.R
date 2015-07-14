@@ -347,6 +347,7 @@
                                   createPsArgs = createPsArgs,
                                   matchOnPs = TRUE,
                                   matchOnPsArgs = matchOnPsArgs,
+                                  computeCovariateBalance = TRUE,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
@@ -364,6 +365,7 @@
                                   createPsArgs = createPsArgs,
                                   matchOnPs = TRUE,
                                   matchOnPsArgs = matchOnPsArgs,
+                                  computeCovariateBalance = TRUE,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
@@ -384,7 +386,7 @@
                           outcomeTable = "outcomes",
                           outputFolder = "./CohortMethodOutput",
                           cmAnalysisList = cmAnalysisList,
-                          drugComparatorOutcomeList = drugComparatorOutcomeList,
+                          drugComparatorOutcomesList = drugComparatorOutcomesList,
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
                           psCvThreads = 10,

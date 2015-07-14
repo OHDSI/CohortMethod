@@ -12,8 +12,8 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
   underSampleComparatorToTreatedRatio = 0, getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1, trimMatchStratifyThreads = 1,
-  fitOutcomeModelThreads = 1)
+  createPsThreads = 1, psCvThreads = 1, trimMatchStratifyThreads = 1,
+  fitOutcomeModelThreads = 1, outcomeCvThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created
@@ -81,8 +81,21 @@ cohortMethod data objects.}
 \item{createPsThreads}{The number of parallel threads to use for fitting the
 propensity models.}
 
+\item{psCvThreads}{The number of parallel threads to use for the cross-
+validation when estimating the hyperparameter for the
+propensity model. Note that the total number of CV threads
+at one time could be `createPsThreads * psCvThreads`.}
+
 \item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the
-                                             outcome models.}
+outcome models.}
+
+\item{outcomeCvThreads}{The number of parallel threads to use for the cross-
+                                             validation when estimating the hyperparameter for the
+                                             outcome model. Note that the total number of CV threads
+                                             at one time could be `fitOutcomeModelThreads * outcomeCvThreads`.}
+
+\item{computeCovarBalThreads}{The number of parallel threads to use for computing the
+covariate balance.}
 }
 \description{
 Run a list of analyses
