@@ -1,10 +1,10 @@
 /***********************************
-File vignetteOutcomes.sql
+File VignetteOutcomes.sql
 ***********************************/
 IF OBJECT_ID('@resultsDatabaseSchema.outcomes', 'U') IS NOT NULL
   DROP TABLE @resultsDatabaseSchema.outcomes;
 
-SELECT ancestor_concept_id AS cohort_definition_id,
+SELECT ancestor_concept_id AS cohort_concept_id,
 	condition_start_date AS cohort_start_date,
 	condition_end_date AS cohort_end_date,
 	condition_occurrence.person_id AS subject_id

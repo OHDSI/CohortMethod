@@ -465,7 +465,6 @@ print.summary.cohortMethodData <- function(x, ...) {
   writeLines(paste("Number of non-zero covariate values:", x$covariateValueCount))
 }
 
-
 #' Extract covariate names
 #'
 #' @description

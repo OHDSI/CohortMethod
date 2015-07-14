@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 ```
 # Introduction
 
-This vignette describes how you can use the `CohortMethod` package to perform a single new-user cohort study. We will walk through all the steps needed to perform an examplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective nonsteroidal anti-inflammatory drugs (NSAIDs) on gastrointestinal (GI) bleeding-related hospitalization. For simplicity, we focus on one coxib -- celecoxib -- and one non-selective NSAID -- diclofenac.
+This vignette describes how you can use the `CohortMethod` package to perform a single new-user cohort study. We will walk through all the steps needed to perform an exemplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective non-steroidal anti-inflammatory drugs (NSAIDs) on gastrointestinal (GI) bleeding-related hospitalization. For simplicity, we focus on one coxib -- celecoxib -- and one non-selective NSAID -- diclofenac.
 
 # Installation instructions
 
@@ -62,13 +62,16 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
+cdmVersion <- "4"
 ```
 
-The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables, which we'll use later to tell R where the data in CDM format live, and where we want to write intermediate and result tables. Note that for Microsoft SQL Server, these variables need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables,as well as the CDM version. We'll use these later to tell R where the data in CDM format live, where we want to write intermediate and result tables, and what version CDM is used. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. We do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
+We need to define the exposures and outcomes for our study. One way to do this is by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. For CDM v4, this means it should have the fields `cohort_concept_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`. For CDM v4, the `cohort_concept_id` field must be called `cohort_definition_id`. 
+
+For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
 ```sql
 /***********************************
@@ -178,61 +181,68 @@ sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 nsaids <- querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
-  
- #Load data:
-cohortData <- getDbCohortData(connectionDetails,
-                              cdmDatabaseSchema = cdmDatabaseSchema,
-                              oracleTempSchema = resultsDatabaseSchema,
-                              targetDrugConceptId = 1,
-                              comparatorDrugConceptId = 2, 
-                              indicationConceptIds = c(),
-                              washoutWindow = 183, 
-                              indicationLookbackWindow = 183,
-                              studyStartDate = "", 
-                              studyEndDate = "", 
-                              exclusionConceptIds = nsaids,
-                              outcomeConceptIds = 3, 
-                              outcomeConditionTypeConceptIds = c(), 
-                              exposureDatabaseSchema = resultsDatabaseSchema,
-                              exposureTable = "coxibVsNonselVsGiBleed",
-                              outcomeDatabaseSchema = resultsDatabaseSchema,
-                              outcomeTable = "coxibVsNonselVsGiBleed",
-                              useCovariateDemographics = TRUE,
-                              useCovariateConditionOccurrence = TRUE,
-                              useCovariateConditionOccurrence365d = TRUE,
-                              useCovariateConditionOccurrence30d = TRUE,
-                              useCovariateConditionOccurrenceInpt180d = TRUE,
-                              useCovariateConditionEra = TRUE,
-                              useCovariateConditionEraEver = TRUE,
-                              useCovariateConditionEraOverlap = TRUE,
-                              useCovariateConditionGroup = TRUE,
-                              useCovariateDrugExposure = TRUE,
-                              useCovariateDrugExposure365d = TRUE,
-                              useCovariateDrugExposure30d = TRUE,
-                              useCovariateDrugEra = TRUE,
-                              useCovariateDrugEra365d = TRUE,
-                              useCovariateDrugEra30d = TRUE,
-                              useCovariateDrugEraEver = TRUE,
-                              useCovariateDrugEraOverlap = TRUE,
-                              useCovariateDrugGroup = TRUE,
-                              useCovariateProcedureOccurrence = TRUE,
-                              useCovariateProcedureOccurrence365d = TRUE,
-                              useCovariateProcedureOccurrence30d = TRUE,
-                              useCovariateProcedureGroup = TRUE,
-                              useCovariateObservation = TRUE,
-                              useCovariateObservation365d = TRUE,
-                              useCovariateObservation30d = TRUE,
-                              useCovariateObservationBelow = TRUE,
-                              useCovariateObservationAbove = TRUE,
-                              useCovariateObservationCount365d = TRUE,
-                              useCovariateConceptCounts = TRUE,
-                              useCovariateRiskScores = TRUE,
-                              useCovariateInteractionYear = FALSE,
-                              useCovariateInteractionMonth = FALSE,
-                              excludedCovariateConceptIds = nsaids, 
-                              excludeDrugsFromCovariates = FALSE,
-                              deleteCovariatesSmallCount = 100)
- cohortData
+
+# Define which types of covariates must be constructed:
+covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                         useCovariateConditionOccurrence = TRUE,
+                                         useCovariateConditionOccurrence365d = TRUE,
+                                         useCovariateConditionOccurrence30d = TRUE,
+                                         useCovariateConditionOccurrenceInpt180d = TRUE,
+                                         useCovariateConditionEra = TRUE,
+                                         useCovariateConditionEraEver = TRUE,
+                                         useCovariateConditionEraOverlap = TRUE,
+                                         useCovariateConditionGroup = TRUE,
+                                         useCovariateDrugExposure = TRUE,
+                                         useCovariateDrugExposure365d = TRUE,
+                                         useCovariateDrugExposure30d = TRUE,
+                                         useCovariateDrugEra = TRUE,
+                                         useCovariateDrugEra365d = TRUE,
+                                         useCovariateDrugEra30d = TRUE,
+                                         useCovariateDrugEraEver = TRUE,
+                                         useCovariateDrugEraOverlap = TRUE,
+                                         useCovariateDrugGroup = TRUE,
+                                         useCovariateProcedureOccurrence = TRUE,
+                                         useCovariateProcedureOccurrence365d = TRUE,
+                                         useCovariateProcedureOccurrence30d = TRUE,
+                                         useCovariateProcedureGroup = TRUE,
+                                         useCovariateObservation = TRUE,
+                                         useCovariateObservation365d = TRUE,
+                                         useCovariateObservation30d = TRUE,
+                                         useCovariateObservationCount365d = TRUE,
+                                         useCovariateMeasurement365d = TRUE,
+                                         useCovariateMeasurement30d = TRUE,
+                                         useCovariateMeasurementCount365d = TRUE,
+                                         useCovariateMeasurementBelow = TRUE,
+                                         useCovariateMeasurementAbove = TRUE,
+                                         useCovariateConceptCounts = TRUE,
+                                         useCovariateRiskScores = TRUE,
+                                         useCovariateInteractionYear = FALSE,
+                                         useCovariateInteractionMonth = FALSE,
+                                         excludedCovariateConceptIds = nsaids,
+                                         deleteCovariatesSmallCount = 100)
+
+#Load data:
+cohortMethodData <- getDbCohortMethodData(connectionDetails,
+                                          cdmDatabaseSchema = cdmDatabaseSchema,
+                                          oracleTempSchema = resultsDatabaseSchema,
+                                          targetDrugConceptId = 1,
+                                          comparatorDrugConceptId = 2,
+                                          indicationConceptIds = c(),
+                                          washoutWindow = 183,
+                                          indicationLookbackWindow = 183,
+                                          studyStartDate = "",
+                                          studyEndDate = "",
+                                          exclusionConceptIds = nsaids,
+                                          outcomeConceptIds = 3,
+                                          outcomeConditionTypeConceptIds = c(),
+                                          exposureDatabaseSchema = resultsDatabaseSchema,
+                                          exposureTable = "coxibVsNonselVsGiBleed",
+                                          outcomeDatabaseSchema = resultsDatabaseSchema,
+                                          outcomeTable = "coxibVsNonselVsGiBleed",
+                                          excludeDrugsFromCovariates = FALSE,
+                                          covariateSettings = covarSettings,
+                                          cdmVersion = cdmVersion)
+cohortData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("c:/temp/vignetteCohortData")){
@@ -250,6 +260,7 @@ There are many parameters, but they are all documented in the `CohortMethod` man
 All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
 
 We can use the generic `summary()` function to view some more information of the data we extracted:
+
 ```{r tidy=TRUE,eval=FALSE}
 summary(cohortData)
 ```
@@ -271,7 +282,7 @@ We can use the `loadCohortData()` function to load the data in a future session.
 
 # Propensity scores
 
-The `CohortMethod` can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handfull of predefined covariates, `CohortMethod` typically uses thousands to millions of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
+The `CohortMethod` can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handful of predefined covariates, `CohortMethod` typically uses thousands to millions of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
 
 ## Fitting a propensity model
 
@@ -287,7 +298,7 @@ ps <- vignettePs
 
 The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. Note that we have to tell `createPs()` what the `outcomeConceptId` is for which we will use the model so it can remove subjects who had the outcome prior to the index date before fitting the model. 
 
-To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behaviour, including using multiple CPUs to speed-up the cross-validation. 
+To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behavior, including using multiple CPUs to speed-up the cross-validation. 
 
 ## Propensity score diagnostics
 
@@ -411,7 +422,7 @@ outcomeModel <- vignetteOutcomeModel2
 outcomeModel
 ```
 
-Note that we define the subpopulation to be only those in the `strata` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+Note that we define the sub-population to be only those in the `strata` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
 
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the `Cyclops` package. (Note that the treatment variable is automatically excluded from regularization.)
 

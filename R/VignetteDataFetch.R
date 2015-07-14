@@ -22,7 +22,7 @@
   # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod); setwd('s:/temp');
   # options('fftempdir' = 's:/temp')
 
-
+  # setwd("C:/Users/mschuemi/git\CohortMethod/data")
 
   pw <- NULL
   dbms <- "sql server"
@@ -38,6 +38,14 @@
   cdmDatabaseSchema <- "vocabulary5"
   resultsDatabaseSchema <- "scratch"
   port <- NULL
+
+  pw <- NULL
+  dbms <- "pdw"
+  user <- NULL
+  server <- "JRDUSAPSCTL01"
+  cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+  resultsDatabaseSchema <- "scratch.dbo"
+  port <- 17001
 
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                   server = server,
@@ -91,15 +99,18 @@
                                                useCovariateObservation = TRUE,
                                                useCovariateObservation365d = TRUE,
                                                useCovariateObservation30d = TRUE,
-                                               useCovariateObservationBelow = TRUE,
-                                               useCovariateObservationAbove = TRUE,
                                                useCovariateObservationCount365d = TRUE,
+                                               useCovariateMeasurement365d = TRUE,
+                                               useCovariateMeasurement30d = TRUE,
+                                               useCovariateMeasurementCount365d = TRUE,
+                                               useCovariateMeasurementBelow = TRUE,
+                                               useCovariateMeasurementAbove = TRUE,
                                                useCovariateConceptCounts = TRUE,
                                                useCovariateRiskScores = TRUE,
                                                useCovariateInteractionYear = FALSE,
                                                useCovariateInteractionMonth = FALSE,
                                                excludedCovariateConceptIds = nsaids,
-                                               deleteCovariatesSmallCount = 1)
+                                               deleteCovariatesSmallCount = 100)
 
   # Load data:
   cohortMethodData <- getDbCohortMethodData(connectionDetails,
@@ -123,27 +134,25 @@
                                             covariateSettings = covariateSettings,
                                             cdmVersion = "5")
 
-  saveCohortMethodData(cohortMethodData, "c:/temp/vignetteCohortMethodData")
+  saveCohortMethodData(cohortMethodData, "s:/temp/vignetteCohortMethodData")
 
-  # vignetteSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
-  # save(vignetteSimulationProfile, file = 'vignetteSimulationProfile.rda')
+  # cohortMethodData <- loadCohortMethodData("s:/temp/vignetteCohortMethodData")
 
-  # cohortMethodData <- loadCohortMethodData('vignetteCohortMethodData')
-  # setwd('C:/Users/mschuemi/git/CohortMethod')
   ps <- createPs(cohortMethodData, outcomeConceptId = 3, control = createControl(cvType = "auto",
                                                                                  startingVariance = 0.1,
                                                                                  noiseLevel = "quiet",
                                                                                  threads = 10))
   vignettePs <- ps
-  save(vignettePs, file = "data/vignettePs.rda", compress = "xz")
+  save(vignettePs, file = "vignettePs.rda", compress = "xz")
 
-  # load('vignettePs.rda'); ps <- vignettePs; psTrimmed <- trimByPsToEquipoise(ps)
+  # load("vignettePs.rda"); ps <- vignettePs;
+
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 3)
 
   save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
 
-  # load('vignetteBalance.rda')
+  # load("vignetteBalance.rda")
 
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortMethodData = cohortMethodData,
@@ -154,7 +163,7 @@
                                   modelType = "cox",
                                   stratifiedCox = FALSE)
   vignetteOutcomeModel1 <- outcomeModel
-  save(vignetteOutcomeModel1, file = "data/vignetteOutcomeModel1.rda", compress = "xz")
+  save(vignetteOutcomeModel1, file = "vignetteOutcomeModel1.rda", compress = "xz")
 
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortMethodData = cohortMethodData,
@@ -166,7 +175,7 @@
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
   vignetteOutcomeModel2 <- outcomeModel
-  save(vignetteOutcomeModel2, file = "data/vignetteOutcomeModel2.rda", compress = "xz")
+  save(vignetteOutcomeModel2, file = "vignetteOutcomeModel2.rda", compress = "xz")
 
   outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
                                   cohortMethodData = cohortMethodData,
@@ -178,8 +187,7 @@
                                   modelType = "cox",
                                   stratifiedCox = TRUE)
   vignetteOutcomeModel3 <- outcomeModel
-  save(vignetteOutcomeModel3, file = "data/vignetteOutcomeModel3.rda", compress = "xz")
-
+  save(vignetteOutcomeModel3, file = "vignetteOutcomeModel3.rda", compress = "xz")
 }
 
 
@@ -235,95 +243,56 @@
 
   RJDBC::dbDisconnect(connection)
 
-  drugComparatorOutcomes <- createDrugComparatorOutcomes(targetDrugConceptId = 1118084,
-                                                         comparatorDrugConceptId = 1124300,
-                                                         exclusionConceptIds = nsaids,
-                                                         outcomeConceptIds = c(192671,
-                                                                               29735,
-                                                                               140673,
-                                                                               197494,
-                                                                               198185,
-                                                                               198199,
-                                                                               200528,
-                                                                               257315,
-                                                                               314658,
-                                                                               317376,
-                                                                               321319,
-                                                                               380731,
-                                                                               432661,
-                                                                               432867,
-                                                                               433516,
-                                                                               433701,
-                                                                               433753,
-                                                                               435140,
-                                                                               435459,
-                                                                               435524,
-                                                                               435783,
-                                                                               436665,
-                                                                               436676,
-                                                                               442619,
-                                                                               444252,
-                                                                               444429,
-                                                                               4131756,
-                                                                               4134120,
-                                                                               4134454,
-                                                                               4152280,
-                                                                               4165112,
-                                                                               4174262,
-                                                                               4182210,
-                                                                               4270490,
-                                                                               4286201,
-                                                                               4289933))
+  dcos <- createDrugComparatorOutcomes(targetDrugConceptId = 1118084,
+                                       comparatorDrugConceptId = 1124300,
+                                       exclusionConceptIds = nsaids,
+                                       excludedCovariateConceptIds = nsaids,
+                                       outcomeConceptIds = c(192671, 29735, 140673, 197494, 198185, 198199, 200528, 257315, 314658, 317376, 321319, 380731, 432661, 432867, 433516, 433701, 433753, 435140, 435459, 435524, 435783, 436665, 436676, 442619, 444252, 444429, 4131756, 4134120, 4134454, 4152280, 4165112, 4174262, 4182210, 4270490, 4286201, 4289933))
+  drugComparatorOutcomesList <- list(dcos)
 
-  drugComparatorOutcomesList <- list(drugComparatorOutcomes)
-
-  covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                               useCovariateConditionOccurrence = TRUE,
-                                               useCovariateConditionOccurrence365d = TRUE,
-                                               useCovariateConditionOccurrence30d = TRUE,
-                                               useCovariateConditionOccurrenceInpt180d = TRUE,
-                                               useCovariateConditionEra = TRUE,
-                                               useCovariateConditionEraEver = TRUE,
-                                               useCovariateConditionEraOverlap = TRUE,
-                                               useCovariateConditionGroup = TRUE,
-                                               useCovariateDrugExposure = TRUE,
-                                               useCovariateDrugExposure365d = TRUE,
-                                               useCovariateDrugExposure30d = TRUE,
-                                               useCovariateDrugEra = TRUE,
-                                               useCovariateDrugEra365d = TRUE,
-                                               useCovariateDrugEra30d = TRUE,
-                                               useCovariateDrugEraEver = TRUE,
-                                               useCovariateDrugEraOverlap = TRUE,
-                                               useCovariateDrugGroup = TRUE,
-                                               useCovariateProcedureOccurrence = TRUE,
-                                               useCovariateProcedureOccurrence365d = TRUE,
-                                               useCovariateProcedureOccurrence30d = TRUE,
-                                               useCovariateProcedureGroup = TRUE,
-                                               useCovariateObservation = TRUE,
-                                               useCovariateObservation365d = TRUE,
-                                               useCovariateObservation30d = TRUE,
-                                               useCovariateObservationBelow = TRUE,
-                                               useCovariateObservationAbove = TRUE,
-                                               useCovariateObservationCount365d = TRUE,
-                                               useCovariateConceptCounts = TRUE,
-                                               useCovariateRiskScores = TRUE,
-                                               useCovariateInteractionYear = FALSE,
-                                               useCovariateInteractionMonth = FALSE,
-                                               deleteCovariatesSmallCount = 100)
-
+  covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                           useCovariateConditionOccurrence = TRUE,
+                                           useCovariateConditionOccurrence365d = TRUE,
+                                           useCovariateConditionOccurrence30d = TRUE,
+                                           useCovariateConditionOccurrenceInpt180d = TRUE,
+                                           useCovariateConditionEra = TRUE,
+                                           useCovariateConditionEraEver = TRUE,
+                                           useCovariateConditionEraOverlap = TRUE,
+                                           useCovariateConditionGroup = TRUE,
+                                           useCovariateDrugExposure = TRUE,
+                                           useCovariateDrugExposure365d = TRUE,
+                                           useCovariateDrugExposure30d = TRUE,
+                                           useCovariateDrugEra = TRUE,
+                                           useCovariateDrugEra365d = TRUE,
+                                           useCovariateDrugEra30d = TRUE,
+                                           useCovariateDrugEraEver = TRUE,
+                                           useCovariateDrugEraOverlap = TRUE,
+                                           useCovariateDrugGroup = TRUE,
+                                           useCovariateProcedureOccurrence = TRUE,
+                                           useCovariateProcedureOccurrence365d = TRUE,
+                                           useCovariateProcedureOccurrence30d = TRUE,
+                                           useCovariateProcedureGroup = TRUE,
+                                           useCovariateObservation = TRUE,
+                                           useCovariateObservation365d = TRUE,
+                                           useCovariateObservation30d = TRUE,
+                                           useCovariateObservationCount365d = TRUE,
+                                           useCovariateMeasurement365d = TRUE,
+                                           useCovariateMeasurement30d = TRUE,
+                                           useCovariateMeasurementCount365d = TRUE,
+                                           useCovariateMeasurementBelow = TRUE,
+                                           useCovariateMeasurementAbove = TRUE,
+                                           useCovariateConceptCounts = TRUE,
+                                           useCovariateRiskScores = TRUE,
+                                           useCovariateInteractionYear = FALSE,
+                                           useCovariateInteractionMonth = FALSE,
+                                           excludedCovariateConceptIds = nsaids,
+                                           deleteCovariatesSmallCount = 100)
   getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutWindow = 183,
                                                      indicationLookbackWindow = 183,
                                                      studyStartDate = "",
                                                      studyEndDate = "",
-                                                     excludeDrugsFromCovariates = TRUE,
-                                                     covariateSettings = covariateSettings)
-
-  createPsArgs <- createCreatePsArgs(control = createControl(noiseLevel = "silent",
-                                                             cvType = "auto",
-                                                             startingVariance = 0.1,
-                                                             threads = 10))  # Using only defaults
-
-  matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
+                                                     excludeDrugsFromCovariates = FALSE,
+                                                     covariateSettings = covarSettings)
 
   fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0,
                                                     riskWindowEnd = 30,
@@ -333,6 +302,16 @@
                                                     stratifiedCox = FALSE)
 
   cmAnalysis1 <- createCmAnalysis(analysisId = 1,
+                                  description = "No matching, simple outcome model",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
+
+  createPsArgs <- createCreatePsArgs() # Using only defaults
+
+  matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
+
+  cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                   description = "Matching plus simple outcome model",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
                                   createPs = TRUE,
@@ -343,12 +322,6 @@
                                   fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
   stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
-
-  cmAnalysis2 <- createCmAnalysis(analysisId = 2,
-                                  description = "simple outcome model, no propensity score",
-                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                  fitOutcomeModel = TRUE,
-                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
   cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                   description = "Stratification plus simple outcome model",
@@ -382,14 +355,7 @@
                                                     addExposureDaysToEnd = TRUE,
                                                     useCovariates = TRUE,
                                                     modelType = "cox",
-                                                    stratifiedCox = TRUE,
-                                                    control = createControl(cvType = "auto",
-                                                                            startingVariance = 0.1,
-                                                                            selectorType = "byPid",
-                                                                            noiseLevel = "quiet",
-                                                                            fold = 5,
-                                                                            minCVData = 25,
-                                                                            threads = 10))
+                                                    stratifiedCox = TRUE)
 
   cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                   description = "Matching plus full outcome model",
@@ -407,23 +373,23 @@
   saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
                                  "s:/temp/drugComparatorOutcomesList.txt")
 
-  cmAnalysisList <- loadCmAnalysisList("s:/temp/cmAnalysisList.txt")
-  drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.txt")
+  # cmAnalysisList <- loadCmAnalysisList("s:/temp/cmAnalysisList.txt")
+  # drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.txt")
 
-  outcomeReference <- runCmAnalyses(connectionDetails = connectionDetails,
-                                    cdmDatabaseSchema = cdmDatabaseSchema,
-                                    exposureDatabaseSchema = cdmDatabaseSchema,
-                                    exposureTable = "drug_era",
-                                    outcomeDatabaseSchema = resultsDatabaseSchema,
-                                    outcomeTable = "outcomes",
-                                    outputFolder = "s:/temp/CohortMethodOutput",
-                                    cmAnalysisList = cmAnalysisList,
-                                    drugComparatorOutcomesList = drugComparatorOutcomesList,
-                                    getDbCohortMethodDataThreads = 1,
-                                    createPsThreads = 1,
-                                    trimMatchStratifyThreads = 24,
-                                    fitOutcomeModelThreads = 10)
-
+  result <- runCmAnalyses(connectionDetails = connectionDetails,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          exposureDatabaseSchema = cdmDatabaseSchema,
+                          exposureTable = "drug_era",
+                          outcomeDatabaseSchema = resultsDatabaseSchema,
+                          outcomeTable = "outcomes",
+                          outputFolder = "./CohortMethodOutput",
+                          cmAnalysisList = cmAnalysisList,
+                          drugComparatorOutcomeList = drugComparatorOutcomeList,
+                          getDbCohortMethodDataThreads = 1,
+                          createPsThreads = 1,
+                          psCvThreads = 10,
+                          fitOutcomeModelThreads = 4,
+                          outcomeCvThreads = 10)
   # cleanup:
   sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
   sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
