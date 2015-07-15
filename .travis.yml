@@ -19,7 +19,7 @@ install:
 
 script: ./travis-tool.sh run_tests
 
-on_failure:
+after_failure:
   - ./travis-tool.sh dump_logs
 
 notifications:
@@ -32,3 +32,5 @@ notifications:
 
 after_success:
   - Rscript -e 'library(covr);codecov()'
+  # Rebuild docker container
+  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/development/trigger/e51f720d-c4e7-45df-b042-5d8a362bd7e0/

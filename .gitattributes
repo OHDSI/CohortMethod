@@ -3,6 +3,8 @@
 
 # Explicitly declare text files you want to always be normalized and converted
 # to native line endings on checkout.
+DESCRIPTION text
+NAMESPACE text
 *.R text
 *.Rd text
 .cproject text
