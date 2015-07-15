@@ -246,7 +246,7 @@ cohortData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("c:/temp/vignetteCohortData")){
-  cohortData <- loadCohortData("c:/temp/vignetteCohortData")
+  cohortData <- loadCohortMethodData("c:/temp/vignetteCohortData")
 } 
 ```
 ```{r echo=FALSE,message=FALSE}
@@ -278,7 +278,7 @@ Creating the `cohortData` file can take considerable computing time, and it is p
 saveCohortData(cohortData, "coxibVsNonselVsGiBleed")
 ```
 
-We can use the `loadCohortData()` function to load the data in a future session.
+We can use the `loadCohortMethodData()` function to load the data in a future session.
 
 # Propensity scores
 

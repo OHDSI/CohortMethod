@@ -85,6 +85,7 @@
 #'                                              at one time could be `createPsThreads * psCvThreads`.
 #' @param computeCovarBalThreads                The number of parallel threads to use for computing the
 #'                                              covariate balance.
+#' @param trimMatchStratifyThreads              The number of parallel threads to use for trimming, matching and stratifying.
 #' @param fitOutcomeModelThreads                The number of parallel threads to use for fitting the
 #'                                              outcome models.
 #' @param outcomeCvThreads                      The number of parallel threads to use for the cross-
@@ -109,6 +110,7 @@ runCmAnalyses <- function(connectionDetails,
                           createPsThreads = 1,
                           psCvThreads = 1,
                           trimMatchStratifyThreads = 1,
+						  computeCovarBalThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1) {
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {

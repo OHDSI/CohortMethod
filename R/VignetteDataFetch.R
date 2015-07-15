@@ -19,10 +19,10 @@
 #' @keywords internal
 .singleStudyVignetteDataFetch <- function() {
   # This function should be used to fetch the data that is used in the vignettes.
-  # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod); setwd('s:/temp');
-  # options('fftempdir' = 's:/temp')
+  # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod); setwd('s:/temp');options('fftempdir' = 's:/temp')
 
-  # setwd("C:/Users/mschuemi/git\CohortMethod/data")
+
+  # setwd("C:/Users/mschuemi/git/CohortMethod/data")
 
   pw <- NULL
   dbms <- "sql server"
@@ -132,7 +132,7 @@
                                             outcomeTable = "coxibVsNonselVsGiBleed",
                                             excludeDrugsFromCovariates = FALSE,
                                             covariateSettings = covariateSettings,
-                                            cdmVersion = "5")
+                                            cdmVersion = "4")
 
   saveCohortMethodData(cohortMethodData, "s:/temp/vignetteCohortMethodData")
 
@@ -209,7 +209,7 @@
   dbms <- "pdw"
   user <- NULL
   server <- "JRDUSAPSCTL01"
-  cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+  cdmDatabaseSchema <- "cdm_truven_ccae.dbo"
   resultsDatabaseSchema <- "scratch.dbo"
   port <- 17001
 
@@ -229,7 +229,7 @@
   DatabaseConnector::executeSql(connection, sql)
 
   # Check number of subjects per cohort:
-  sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_definition_id"
+  sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_concept_id"
   sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::querySql(connection, sql)
@@ -390,6 +390,8 @@
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
                           psCvThreads = 10,
+						  computeCovarBalThreads = 10,
+						  trimMatchStratifyThreads = 10,
                           fitOutcomeModelThreads = 4,
                           outcomeCvThreads = 10)
   # cleanup:
