@@ -116,25 +116,10 @@ recomputePsForFullData <- function(psSample, cohortMethodDataSample, cohortMetho
   y.odds.new <- y.bar.new/(1 - y.bar.new)
   delta <- log(y.odds) - log(y.odds.new)
   coefficients[1] <- coefficients[1] - delta  # Equation (7) in King and Zeng (2001)
-
-  predictOnFullData <- function(coefficients, cohortMethodData) {
-    intercept <- coefficients[1]
-    coefficients <- coefficients[2:length(coefficients)]
-    coefficients <- data.frame(beta = as.numeric(coefficients),
-                               covariateId = as.numeric(names(coefficients)))
-    coefficients <- coefficients[coefficients$beta != 0, ]
-    prediction <- merge(cohortMethodData$covariates, ff::as.ffdf(coefficients), by = "covariateId")
-    prediction$value <- prediction$covariateValue * prediction$beta
-    prediction <- cmBySum(prediction$value, prediction$rowId)
-    colnames(prediction) <- c("rowId", "value")
-    prediction$value <- prediction$value + intercept
-    link <- function(x) {
-      return(1/(1 + exp(0 - x)))
-    }
-    prediction$value <- link(prediction$value)
-    return(prediction)
-  }
-  prediction <- predictOnFullData(coefficients, cohortMethodData)
+  prediction <- PatientLevelPrediction::predictFfdf(coefficients,
+                                                    cohortMethodData$outcomes,
+                                                    cohortMethodData$covariates,
+                                                    modelType = "logistic")
   prediction <- merge(prediction,
                       ffbase::subset.ffdf(cohortMethodData$cohorts, select = c(rowId, treatment)))
 

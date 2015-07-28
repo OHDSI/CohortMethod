@@ -650,17 +650,12 @@ stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortMethodData
   return(stratifyByPs(data, numberOfStrata, stratificationColumns))
 }
 
-# A faster version of ffbase::bySum. Doesn't require the bins to be converted to characters
-cmBySum <- function(values, bins) {
-  .Call("CohortMethod_bySum", PACKAGE = "CohortMethod", values, bins)
-}
-
 quickSum <- function(data, squared = FALSE) {
   if (squared) {
-    x <- cmBySum(data$covariateValue^2, data$covariateId)
+    x <- PatientLevelPrediction::bySumFf(data$covariateValue^2, data$covariateId)
     colnames(x) <- c("covariateId", "sumSqr")
   } else {
-    x <- cmBySum(data$covariateValue, data$covariateId)
+    x <- PatientLevelPrediction::bySumFf(data$covariateValue, data$covariateId)
     colnames(x) <- c("covariateId", "sum")
   }
   x$covariateId <- as.numeric(x$covariateId)

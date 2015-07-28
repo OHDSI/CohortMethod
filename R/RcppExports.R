@@ -13,7 +13,3 @@
     .Call('CohortMethod_auc', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
-.bySum <- function(ffValues, ffBins) {
-    .Call('CohortMethod_bySum', PACKAGE = 'CohortMethod', ffValues, ffBins)
-}
-
