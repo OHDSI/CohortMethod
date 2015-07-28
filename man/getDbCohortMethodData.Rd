@@ -140,5 +140,12 @@ Similarly, outcomes are identified using the condition_occurrence or condition_e
 through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
 schema. Covariates are automatically extracted from the appropriate tables within the CDM.This
 function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
+
+Important: The target and comparator drug must not be included in the covariates, including any
+descendant concepts. If the \code{targetDrugConceptId} and \code{comparatorDrugConceptId} arguments represent
+real concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically the drugs
+and their descendants will be excluded from the covariates. However, if the \code{targetDrugConceptId} and
+\code{comparatorDrugConceptId} arguments do not represent concept IDs, you will need to manually add the drugs
+and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
 }
 
