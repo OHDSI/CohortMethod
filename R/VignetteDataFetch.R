@@ -107,6 +107,9 @@
                                                useCovariateMeasurementAbove = TRUE,
                                                useCovariateConceptCounts = TRUE,
                                                useCovariateRiskScores = TRUE,
+                                               useCovariateRiskScoresCharlson = TRUE,
+                                               useCovariateRiskScoresDCSI = TRUE,
+                                               useCovariateRiskScoresCHADS2 = TRUE,
                                                useCovariateInteractionYear = FALSE,
                                                useCovariateInteractionMonth = FALSE,
                                                excludedCovariateConceptIds = nsaids,
@@ -193,14 +196,14 @@
 
 #' @keywords internal
 .multiAnalysesVignetteDataFetch <- function() {
-  # library(CohortMethod);library(SqlRender);setwd('s:/temp');options('fftempdir' = 's:/temp')
+  # library(CohortMethod);library(SqlRender);setwd('s:/temp');options('fftempdir' = 's:/fftemp')
 
   pw <- NULL
   dbms <- "sql server"
   user <- NULL
   server <- "RNDUSRDHIT09.jnj.com"
-  # cdmDatabaseSchema <- 'cdm_truven_mdcd.dbo'
-  cdmDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
+  cdmDatabaseSchema <- 'cdm_truven_mdcd.dbo'
+  #cdmDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
   resultsDatabaseSchema <- "scratch.dbo"
   resultsDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
   port <- NULL
@@ -247,7 +250,7 @@
                                        comparatorDrugConceptId = 1124300,
                                        exclusionConceptIds = nsaids,
                                        excludedCovariateConceptIds = nsaids,
-                                       outcomeConceptIds = c(192671, 29735, 140673, 197494, 198185, 198199, 200528, 257315, 314658, 317376, 321319, 380731, 432661, 432867, 433516, 433701, 433753, 435140, 435459, 435524, 435783, 436665, 436676, 442619, 444252, 444429, 4131756, 4134120, 4134454, 4152280, 4165112, 4174262, 4182210, 4270490, 4286201, 4289933))
+                                       outcomeConceptIds = c(192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310))
   drugComparatorOutcomesList <- list(dcos)
 
   covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
@@ -283,9 +286,12 @@
                                            useCovariateMeasurementAbove = TRUE,
                                            useCovariateConceptCounts = TRUE,
                                            useCovariateRiskScores = TRUE,
+                                           useCovariateRiskScoresCharlson = TRUE,
+                                           useCovariateRiskScoresDCSI = TRUE,
+                                           useCovariateRiskScoresCHADS2 = TRUE,
                                            useCovariateInteractionYear = FALSE,
                                            useCovariateInteractionMonth = FALSE,
-                                           excludedCovariateConceptIds = nsaids,
+                                           excludedCovariateConceptIds = c(),
                                            deleteCovariatesSmallCount = 100)
   getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutWindow = 183,
                                                      indicationLookbackWindow = 183,
@@ -390,8 +396,8 @@
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
                           psCvThreads = 10,
-						  computeCovarBalThreads = 10,
-						  trimMatchStratifyThreads = 10,
+                          computeCovarBalThreads = 2,
+                          trimMatchStratifyThreads = 10,
                           fitOutcomeModelThreads = 4,
                           outcomeCvThreads = 10)
   # cleanup:

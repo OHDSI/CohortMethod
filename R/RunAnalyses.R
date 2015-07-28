@@ -364,6 +364,7 @@ runCmAnalyses <- function(connectionDetails,
   fitPSModel <- function(params, refitPsForEveryOutcome, underSampleComparatorToTreatedRatio) {
 
     fitModel <- function(cohortMethodData, args, underSampleComparatorToTreatedRatio) {
+      underSample <- FALSE
       if (underSampleComparatorToTreatedRatio != 0) {
         treatedSize <- sum(cohortMethodData$cohorts$treatment)
         comparatorSize <- nrow(cohortMethodData$cohorts) - treatedSize
@@ -371,7 +372,6 @@ runCmAnalyses <- function(connectionDetails,
           underSample <- TRUE
         }
       }
-
       if (underSample) {
         cohortMethodDataSample <- sampleComparator(cohortMethodData,
                                                    underSampleComparatorToTreatedRatio)
@@ -379,7 +379,7 @@ runCmAnalyses <- function(connectionDetails,
         psSample <- do.call("createPs", args)
         ps <- recomputePsForFullData(psSample, cohortMethodDataSample, cohortMethodData)
       } else {
-        args$cohortMethodData < cohortMethodData
+        args$cohortMethodData <- cohortMethodData
         ps <- do.call("createPs", args)
       }
       return(ps)

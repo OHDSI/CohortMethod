@@ -216,6 +216,9 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                          useCovariateMeasurementAbove = TRUE,
                                          useCovariateConceptCounts = TRUE,
                                          useCovariateRiskScores = TRUE,
+                                         useCovariateRiskScoresCharlson = TRUE,
+                                         useCovariateRiskScoresDCSI = TRUE,
+                                         useCovariateRiskScoresCHADS2 = TRUE,                                         
                                          useCovariateInteractionYear = FALSE,
                                          useCovariateInteractionMonth = FALSE,
                                          excludedCovariateConceptIds = nsaids,
@@ -256,6 +259,9 @@ if (file.exists("c:/temp/vignetteCohortData")){
 ```
 
 There are many parameters, but they are all documented in the `CohortMethod` manual. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. Note that in this example, we do not restrict the study to people having a particular indication  via `indicationConceptIds = c()`, but this is something you would often want to do. We do instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
+
+**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetDrugConceptId` and `comparatorDrugConceptId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument to TRUE and automatically the drugs
+and their descendants will be excluded from the covariates. However, if the `targetDrugConceptId` and `comparatorDrugConceptId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument.
 
 All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
 

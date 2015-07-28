@@ -77,6 +77,9 @@ We create a text file called *VignetteOutcomes.sql* with the following content:
 /***********************************
 File VignetteOutcomes.sql
 ***********************************/
+IF OBJECT_ID('@resultsDatabaseSchema.outcomes', 'U') IS NOT NULL
+  DROP TABLE @resultsDatabaseSchema.outcomes;
+
 SELECT ancestor_concept_id AS cohort_concept_id,
 	condition_start_date AS cohort_start_date,
 	condition_end_date AS cohort_end_date,
@@ -87,11 +90,9 @@ INNER JOIN @cdmDatabaseSchema.visit_occurrence
 	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
 INNER JOIN @cdmDatabaseSchema.concept_ancestor
 	ON condition_concept_id = descendant_concept_id
-WHERE ancestor_concept_id IN (192671, 29735, 140673, 197494, 198185, 198199, 200528, 
-257315, 314658, 317376, 321319, 380731, 432661, 432867, 433516, 433701, 433753, 435140, 
-435459, 435524, 435783, 436665, 436676, 442619, 444252, 444429, 4131756, 4134120, 
-4134454, 4152280, 4165112, 4174262, 4182210, 4270490, 4286201, 4289933)
+WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203);
+
 ```
 
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
@@ -144,42 +145,46 @@ A convenient way to save `drugComparatorOutcomeList` to file is by using the `sa
 The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion function is available that has (almost) the same arguments. For example, for the `trimByPs()` function there is the `createTrimByPsArgs()` function. These companion functions can be used to create the arguments to be used during execution:
 
 ```{r tidy=FALSE,eval=TRUE}
-covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                         useCovariateConditionOccurrence = TRUE,
-                                         useCovariateConditionOccurrence365d = TRUE,
-                                         useCovariateConditionOccurrence30d = TRUE,
-                                         useCovariateConditionOccurrenceInpt180d = TRUE,
-                                         useCovariateConditionEra = TRUE,
-                                         useCovariateConditionEraEver = TRUE,
-                                         useCovariateConditionEraOverlap = TRUE,
-                                         useCovariateConditionGroup = TRUE,
-                                         useCovariateDrugExposure = TRUE,
-                                         useCovariateDrugExposure365d = TRUE,
-                                         useCovariateDrugExposure30d = TRUE,
-                                         useCovariateDrugEra = TRUE,
-                                         useCovariateDrugEra365d = TRUE,
-                                         useCovariateDrugEra30d = TRUE,
-                                         useCovariateDrugEraEver = TRUE,
-                                         useCovariateDrugEraOverlap = TRUE,
-                                         useCovariateDrugGroup = TRUE,
-                                         useCovariateProcedureOccurrence = TRUE,
-                                         useCovariateProcedureOccurrence365d = TRUE,
-                                         useCovariateProcedureOccurrence30d = TRUE,
-                                         useCovariateProcedureGroup = TRUE,
-                                         useCovariateObservation = TRUE,
-                                         useCovariateObservation365d = TRUE,
-                                         useCovariateObservation30d = TRUE,
-                                         useCovariateObservationCount365d = TRUE,
-                                         useCovariateMeasurement365d = TRUE,
-                                         useCovariateMeasurement30d = TRUE,
-                                         useCovariateMeasurementCount365d = TRUE,
-                                         useCovariateMeasurementBelow = TRUE,
-                                         useCovariateMeasurementAbove = TRUE,
-                                         useCovariateConceptCounts = TRUE,
-                                         useCovariateRiskScores = TRUE,
-                                         useCovariateInteractionYear = FALSE,
-                                         useCovariateInteractionMonth = FALSE,
-                                         deleteCovariatesSmallCount = 100)
+ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                           useCovariateConditionOccurrence = TRUE,
+                                           useCovariateConditionOccurrence365d = TRUE,
+                                           useCovariateConditionOccurrence30d = TRUE,
+                                           useCovariateConditionOccurrenceInpt180d = TRUE,
+                                           useCovariateConditionEra = TRUE,
+                                           useCovariateConditionEraEver = TRUE,
+                                           useCovariateConditionEraOverlap = TRUE,
+                                           useCovariateConditionGroup = TRUE,
+                                           useCovariateDrugExposure = TRUE,
+                                           useCovariateDrugExposure365d = TRUE,
+                                           useCovariateDrugExposure30d = TRUE,
+                                           useCovariateDrugEra = TRUE,
+                                           useCovariateDrugEra365d = TRUE,
+                                           useCovariateDrugEra30d = TRUE,
+                                           useCovariateDrugEraEver = TRUE,
+                                           useCovariateDrugEraOverlap = TRUE,
+                                           useCovariateDrugGroup = TRUE,
+                                           useCovariateProcedureOccurrence = TRUE,
+                                           useCovariateProcedureOccurrence365d = TRUE,
+                                           useCovariateProcedureOccurrence30d = TRUE,
+                                           useCovariateProcedureGroup = TRUE,
+                                           useCovariateObservation = TRUE,
+                                           useCovariateObservation365d = TRUE,
+                                           useCovariateObservation30d = TRUE,
+                                           useCovariateObservationCount365d = TRUE,
+                                           useCovariateMeasurement365d = TRUE,
+                                           useCovariateMeasurement30d = TRUE,
+                                           useCovariateMeasurementCount365d = TRUE,
+                                           useCovariateMeasurementBelow = TRUE,
+                                           useCovariateMeasurementAbove = TRUE,
+                                           useCovariateConceptCounts = TRUE,
+                                           useCovariateRiskScores = TRUE,
+                                           useCovariateRiskScoresCharlson = TRUE,
+                                           useCovariateRiskScoresDCSI = TRUE,
+                                           useCovariateRiskScoresCHADS2 = TRUE,
+                                           useCovariateInteractionYear = FALSE,
+                                           useCovariateInteractionMonth = FALSE,
+                                           excludedCovariateConceptIds = c(),
+                                           deleteCovariatesSmallCount = 100)
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutWindow = 183,
                                                    indicationLookbackWindow = 183,
