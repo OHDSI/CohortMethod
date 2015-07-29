@@ -74,8 +74,8 @@ be used in this analysis?}
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link{ stratifyByPsAndCovariates}} function.}
 
-\item{computeCovariateBalance}{Should the \code{\link{computeCovariateBalance}} function be used in
-this analysis?}
+\item{computeCovariateBalance}{Should the \code{\link{computeCovariateBalance}} function be
+used in this analysis?}
 
 \item{fitOutcomeModel}{Should the \code{\link{fitOutcomeModel}} function be used in
 this analysis?}

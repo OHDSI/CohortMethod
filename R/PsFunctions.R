@@ -28,7 +28,7 @@
 #'
 #' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
 #'                              \code{getDbCohortMethodData}.
-#' @param outcomeConceptId      The concept ID of the outcome. Persons marked for removal for the
+#' @param outcomeId             The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
 #' @param prior                 The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
@@ -41,19 +41,20 @@
 #' \code{createPs} creates propensity scores using a regularized logistic regression.
 #'
 #' @examples
-#' data(cohortDataSimulationProfile)
-#' cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = 1000)
+#' data(cohortMethodDataSimulationProfile)
+#' cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
 #' ps <- createPs(cohortMethodData)
 #'
 #' @export
 createPs <- function(cohortMethodData,
-                     outcomeConceptId = NULL,
+                     outcomeId = NULL,
                      excludeCovariateIds = NULL,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent",
                                              cvType = "auto",
                                              startingVariance = 0.1)) {
-  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude)) {
+  start <- Sys.time()
+  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
     cohortSubset <- cohortMethodData$cohorts
     if (is.null(excludeCovariateIds)) {
       covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
@@ -63,11 +64,11 @@ createPs <- function(cohortMethodData,
       covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
     }
   } else {
-    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
     t <- in.ff(cohortMethodData$cohorts$rowId,
                cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
     t <- in.ff(cohortMethodData$covariates$rowId,
                cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     if (is.null(excludeCovariateIds)) {
@@ -89,6 +90,8 @@ createPs <- function(cohortMethodData,
   data <- merge(data, ps, by = "rowId")
   attr(data, "coefficients") <- coef(cyclopsFit)
   attr(data, "priorVariance") <- cyclopsFit$variance[1]
+  delta <- Sys.time() - start
+  writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
   return(data)
 }
 
@@ -122,9 +125,9 @@ getPsModel <- function(propensityScore, cohortMethodData) {
 computePreferenceScore <- function(data, unfilteredData = NULL) {
   if (is.null(unfilteredData))
     proportion <- sum(data$treatment)/nrow(data) else proportion <- sum(unfilteredData$treatment)/nrow(unfilteredData)
-  x <- exp(log(data$propensityScore/(1 - data$propensityScore)) - log(proportion/(1 - proportion)))
-  data$preferenceScore <- x/(x + 1)
-  return(data)
+    x <- exp(log(data$propensityScore/(1 - data$propensityScore)) - log(proportion/(1 - proportion)))
+    data$preferenceScore <- x/(x + 1)
+    return(data)
 }
 
 #' Plot the propensity score distribution
@@ -199,13 +202,13 @@ plotPs <- function(data,
   if (type == "density") {
     plot <- ggplot2::ggplot(data,
                             ggplot2::aes(x = SCORE, color = GROUP, group = GROUP, fill = GROUP)) +
-            ggplot2::geom_density() +
-            ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                  rgb(0, 0, 0.8, alpha = 0.5))) +
-            ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                   rgb(0, 0, 0.8, alpha = 0.5))) +
-            ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-            ggplot2::scale_y_continuous("Density")
+      ggplot2::geom_density() +
+      ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                            rgb(0, 0, 0.8, alpha = 0.5))) +
+      ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                             rgb(0, 0, 0.8, alpha = 0.5))) +
+      ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
+      ggplot2::scale_y_continuous("Density")
     if (!is.null(attr(data, "strata"))) {
       strata <- data.frame(propensityScore = attr(data, "strata"))
       if (scale == "preference") {
@@ -223,13 +226,13 @@ plotPs <- function(data,
   } else {
     plot <- ggplot2::ggplot(data,
                             ggplot2::aes(x = SCORE, color = GROUP, group = GROUP, fill = GROUP)) +
-            ggplot2::geom_histogram(binwidth = binWidth, position = "identity") +
-            ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                  rgb(0, 0, 0.8, alpha = 0.5))) +
-            ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                   rgb(0, 0, 0.8, alpha = 0.5))) +
-            ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-            ggplot2::scale_y_continuous("Number of subjects")
+      ggplot2::geom_histogram(binwidth = binWidth, position = "identity") +
+      ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                            rgb(0, 0, 0.8, alpha = 0.5))) +
+      ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                             rgb(0, 0, 0.8, alpha = 0.5))) +
+      ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
+      ggplot2::scale_y_continuous("Number of subjects")
   }
 
   if (!is.null(fileName))
@@ -315,7 +318,7 @@ trimByPs <- function(data, trimFraction = 0.05) {
   cutoffTreated <- quantile(data$propensityScore[data$treatment == 1], 1 - trimFraction)
   cutoffComparator <- quantile(data$propensityScore[data$treatment == 0], trimFraction)
   result <- data[(data$propensityScore <= cutoffTreated & data$treatment == 1) | (data$propensityScore >=
-    cutoffComparator & data$treatment == 0), ]
+                                                                                    cutoffComparator & data$treatment == 0), ]
   return(result)
 }
 
@@ -703,7 +706,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'                            and/or trimming.
 #' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
-#' @param outcomeConceptId    The concept ID of the outcome. Persons marked for removal for the outcome
+#' @param outcomeId           The concept ID of the outcome. Persons marked for removal for the outcome
 #'                            will be removed when computing the balance before matching/trimming.
 #'
 #' @details
@@ -716,16 +719,17 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' Returns a date frame describing the covariate balance before and after matching/trimming.
 #'
 #' @export
-computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeConceptId = NULL) {
-  if (is.null(outcomeConceptId) | is.null(cohortMethodData$exclude)) {
+computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeId = NULL) {
+  start <- Sys.time()
+  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
     cohorts <- cohortMethodData$cohorts
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
   } else {
-    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
     t <- in.ff(cohortMethodData$cohorts$rowId,
                cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     cohorts <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortMethodData$exclude$outcomeId == outcomeConceptId
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
     t <- in.ff(cohortMethodData$covariates$rowId,
                cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     t <- t | cohortMethodData$covariates$covariateId == 1
@@ -752,6 +756,8 @@ computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcome
   balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
+  delta <- Sys.time() - start
+  writeLines(paste("COmputing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
 }
 
@@ -776,12 +782,12 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName = NULL) {
   limits <- c(0, max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE))
   plot <- ggplot2::ggplot(balance,
                           ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
-          ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
-          ggplot2::geom_abline(a = 1) +
-          ggplot2::geom_hline(yintercept = 0) +
-          ggplot2::ggtitle("Standardized difference of mean") +
-          ggplot2::scale_x_continuous("Before matching", limits = limits) +
-          ggplot2::scale_y_continuous("After matching", limits = limits)
+    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
+    ggplot2::geom_abline(a = 1) +
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::ggtitle("Standardized difference of mean") +
+    ggplot2::scale_x_continuous("Before matching", limits = limits) +
+    ggplot2::scale_y_continuous("After matching", limits = limits)
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 4, height = 4, dpi = 400)
   return(plot)
@@ -841,20 +847,20 @@ plotCovariateBalanceOfTopVariables <- function(balance,
                                              group = group,
                                              fill = group,
                                              shape = group)) +
-          ggplot2::geom_point() +
-          ggplot2::geom_vline(xintercept = 0) +
-          ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                rgb(0, 0, 0.8, alpha = 0.5))) +
-          ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                 rgb(0, 0, 0.8, alpha = 0.5))) +
-          ggplot2::scale_x_continuous("Standardized difference of mean") +
-          ggplot2::scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$covariateName) +
-          ggplot2::facet_grid(facet ~ ., scales = "free", space = "free") +
-          ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
-                         axis.title.y = ggplot2::element_blank(),
-                         legend.position = "top",
-                         legend.direction = "vertical",
-                         legend.title = ggplot2::element_blank())
+    ggplot2::geom_point() +
+    ggplot2::geom_vline(xintercept = 0) +
+    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                          rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                           rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_x_continuous("Standardized difference of mean") +
+    ggplot2::scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$covariateName) +
+    ggplot2::facet_grid(facet ~ ., scales = "free", space = "free") +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
+                   axis.title.y = ggplot2::element_blank(),
+                   legend.position = "top",
+                   legend.direction = "vertical",
+                   legend.title = ggplot2::element_blank())
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 10, height = max(2 + n * 0.2, 5), dpi = 400)
   return(plot)

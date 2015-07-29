@@ -4,26 +4,26 @@
 \alias{createDrugComparatorOutcomes}
 \title{Create drug-comparator-outcomes combinations.}
 \usage{
-createDrugComparatorOutcomes(targetDrugConceptId, comparatorDrugConceptId,
-  outcomeConceptIds, indicationConceptIds = c(), exclusionConceptIds = c(),
+createDrugComparatorOutcomes(targetId, comparatorId, outcomeIds,
+  indicationConceptIds = c(), exclusionConceptIds = c(),
   excludedCovariateConceptIds = c(), includedCovariateConceptIds = c())
 }
 \arguments{
-\item{targetDrugConceptId}{A concept ID indentifying the target drug in the exposure
+\item{targetId}{A concept ID indentifying the target drug in the exposure
 table. If multiple strategies for picking the target will be
 tested in the analysis, a named list of numbers can be provided
 instead. In the analysis, the name of the number to be used can
 be specified using the #' \code{targetType} parameter in the
 \code{\link{createCmAnalysis}} function.}
 
-\item{comparatorDrugConceptId}{A concept ID indentifying the comparator drug in the exposure
+\item{comparatorId}{A concept ID indentifying the comparator drug in the exposure
 table. If multiple strategies for picking the comparator will
 be tested in the analysis, a named list of numbers can be
 provided instead. In the analysis, the name of the number to be
 used can be specified using the #' \code{comparatorType}
 parameter in the \code{\link{createCmAnalysis}} function.}
 
-\item{outcomeConceptIds}{A vector of concept IDs indentifying the outcome(s) in the
+\item{outcomeIds}{A vector of concept IDs indentifying the outcome(s) in the
 outcome table.}
 
 \item{indicationConceptIds}{A vector of concept IDs identifying conditions that are

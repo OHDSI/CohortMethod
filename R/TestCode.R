@@ -4,9 +4,9 @@ testCode <- function() {
   library(CohortMethod)
   options(fftempdir = "s:/temp")
 
-  drugComparatorOutcomes1 <- createDrugComparatorOutcomes(targetDrugConceptId = 755695,
-                                                          comparatorDrugConceptId = 739138,
-                                                          outcomeConceptIds = c(194133, 123))
+  drugComparatorOutcomes1 <- createDrugComparatorOutcomes(targetId = 755695,
+                                                          comparatorId = 739138,
+                                                          outcomeIds = c(194133, 123))
 
   drugComparatorOutcomesList <- list(drugComparatorOutcomes1)
 
@@ -41,11 +41,17 @@ testCode <- function() {
                                                useCovariateObservation = TRUE,
                                                useCovariateObservation365d = TRUE,
                                                useCovariateObservation30d = TRUE,
-                                               useCovariateObservationBelow = TRUE,
-                                               useCovariateObservationAbove = TRUE,
                                                useCovariateObservationCount365d = TRUE,
+                                               useCovariateMeasurement365d = TRUE,
+                                               useCovariateMeasurement30d = TRUE,
+                                               useCovariateMeasurementCount365d = TRUE,
+                                               useCovariateMeasurementBelow = TRUE,
+                                               useCovariateMeasurementAbove = TRUE,
                                                useCovariateConceptCounts = TRUE,
                                                useCovariateRiskScores = TRUE,
+                                               useCovariateRiskScoresCharlson = TRUE,
+                                               useCovariateRiskScoresDCSI = TRUE,
+                                               useCovariateRiskScoresCHADS2 = TRUE,
                                                useCovariateInteractionYear = FALSE,
                                                useCovariateInteractionMonth = FALSE,
                                                deleteCovariatesSmallCount = 100)

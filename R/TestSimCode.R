@@ -14,8 +14,8 @@ testSimCode <- function() {
 
   summary(cohortMethodData)
 
-  ps <- createPs(cohortMethodData, outcomeConceptId = 194133, prior = createPrior("laplace", 0.1))
-  # ps <- createPs(cohortMethodData, outcomeConceptId = 194133)
+  ps <- createPs(cohortMethodData, outcomeId = 194133, prior = createPrior("laplace", 0.1))
+  # ps <- createPs(cohortMethodData, outcomeId = 194133)
 
   coefs <- attr(ps, "coefficients")
   coefs <- coefs[order(names(coefs))]
@@ -43,7 +43,7 @@ testSimCode <- function() {
 
   plotPs(strata, ps)  #Plot matched PS distributions
 
-  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 194133)
 
   plotCovariateBalanceScatterPlot(balance, fileName = "balanceScatterplot.png")
 

@@ -4,16 +4,16 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortMethodData, outcomeConceptId = NULL,
-  excludeCovariateIds = NULL, prior = createPrior("laplace", exclude = c(0),
-  useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
-  cvType = "auto", startingVariance = 0.1))
+createPs(cohortMethodData, outcomeId = NULL, excludeCovariateIds = NULL,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+  control = createControl(noiseLevel = "silent", cvType = "auto",
+  startingVariance = 0.1))
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
+\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the
 outcome will be removed prior to creating the propensity score model.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
@@ -32,8 +32,8 @@ for details.}
 \code{createPs} creates propensity scores using a regularized logistic regression.
 }
 \examples{
-data(cohortDataSimulationProfile)
-cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = 1000)
+data(cohortMethodDataSimulationProfile)
+cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
 ps <- createPs(cohortMethodData)
 }
 

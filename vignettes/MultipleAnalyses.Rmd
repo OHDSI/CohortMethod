@@ -127,11 +127,11 @@ sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 nsaids <- querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
 
-dcos <- createDrugComparatorOutcomes(targetDrugConceptId = 1118084,
-                                     comparatorDrugConceptId = 1124300,
+dcos <- createDrugComparatorOutcomes(targetId = 1118084,
+                                     comparatorId = 1124300,
                                      exclusionConceptIds = nsaids,
                                      excludedCovariateConceptIds = nsaids,
-                                     outcomeConceptIds = c(192671, 29735, 140673, 197494, 198185, 198199, 200528, 257315, 314658, 317376, 321319, 380731, 432661, 432867, 433516, 433701, 433753, 435140, 435459, 435524, 435783, 436665, 436676, 442619, 444252, 444429, 4131756, 4134120, 4134454, 4152280, 4165112, 4174262, 4182210, 4270490, 4286201, 4289933))
+                                     outcomeIds = c(192671, 29735, 140673, 197494, 198185, 198199, 200528, 257315, 314658, 317376, 321319, 380731, 432661, 432867, 433516, 433701, 433753, 435140, 435459, 435524, 435783, 436665, 436676, 442619, 444252, 444429, 4131756, 4134120, 4134454, 4152280, 4165112, 4174262, 4182210, 4270490, 4286201, 4289933))
 
 drugComparatorOutcomesList <- list(dcos)
 ```
@@ -297,9 +297,9 @@ In the situation where the comparator choice becomes part of the analyses, we ca
 comparatorIds = list(drugInSameClass = 1124300,
                      drugWithSameIndication = 1125315)
 
-dcos <- createDrugComparatorOutcomes(targetDrugConceptId = 1118084,
-                                     comparatorDrugConceptId = comparatorIds,
-                                     outcomeConceptIds = 192671)
+dcos <- createDrugComparatorOutcomes(targetId = 1118084,
+                                     comparatorId = comparatorIds,
+                                     outcomeIds = 192671)
 
 drugComparatorOutcomesList2 <- list(dcos)
 ```

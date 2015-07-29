@@ -4,7 +4,7 @@
 \alias{fitOutcomeModel}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-fitOutcomeModel(outcomeConceptId, cohortMethodData, subPopulation = NULL,
+fitOutcomeModel(outcomeId, cohortMethodData, subPopulation = NULL,
   stratifiedCox = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
@@ -12,7 +12,7 @@ fitOutcomeModel(outcomeConceptId, cohortMethodData, subPopulation = NULL,
   selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the
+\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the
 outcome will be removed prior to creating the outcome model.}
 
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using

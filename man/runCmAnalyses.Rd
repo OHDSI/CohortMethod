@@ -84,10 +84,12 @@ propensity models.}
 
 \item{psCvThreads}{The number of parallel threads to use for the cross-
 validation when estimating the hyperparameter for the
-propensity model. Note that the total number of CV threads
-at one time could be `createPsThreads * psCvThreads`.}
+propensity model. Note that the total number of CV
+threads at one time could be `createPsThreads *
+psCvThreads`.}
 
-\item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming, matching and stratifying.}
+\item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming,
+matching and stratifying.}
 
 \item{computeCovarBalThreads}{The number of parallel threads to use for computing the
 covariate balance.}
@@ -98,7 +100,8 @@ outcome models.}
 \item{outcomeCvThreads}{The number of parallel threads to use for the cross-
                                              validation when estimating the hyperparameter for the
                                              outcome model. Note that the total number of CV threads
-                                             at one time could be `fitOutcomeModelThreads * outcomeCvThreads`.}
+                                             at one time could be `fitOutcomeModelThreads *
+                                             outcomeCvThreads`.}
 }
 \description{
 Run a list of analyses

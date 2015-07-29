@@ -37,9 +37,9 @@ NULL
 #' A simulation profile
 #' @docType data
 #' @keywords datasets
-#' @name cohortDataSimulationProfile
+#' @name cohortMethodDataSimulationProfile
 #' @usage
-#' data(cohortDataSimulationProfile)
+#' data(cohortMethodDataSimulationProfile)
 NULL
 
 #' Propensity scores for the vignette

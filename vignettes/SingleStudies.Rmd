@@ -228,15 +228,15 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
 cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
                                           oracleTempSchema = resultsDatabaseSchema,
-                                          targetDrugConceptId = 1,
-                                          comparatorDrugConceptId = 2,
+                                          targetId = 1,
+                                          comparatorId = 2,
                                           indicationConceptIds = c(),
                                           washoutWindow = 183,
                                           indicationLookbackWindow = 183,
                                           studyStartDate = "",
                                           studyEndDate = "",
                                           exclusionConceptIds = nsaids,
-                                          outcomeConceptIds = 3,
+                                          outcomeIds = 3,
                                           outcomeConditionTypeConceptIds = c(),
                                           exposureDatabaseSchema = resultsDatabaseSchema,
                                           exposureTable = "coxibVsNonselVsGiBleed",
@@ -245,43 +245,43 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           excludeDrugsFromCovariates = FALSE,
                                           covariateSettings = covarSettings,
                                           cdmVersion = cdmVersion)
-cohortData
+cohortMethodData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("c:/temp/vignetteCohortData")){
-  cohortData <- loadCohortMethodData("c:/temp/vignetteCohortData")
+if (file.exists("c:/temp/vignettecohortMethodData")){
+  cohortMethodData <- loadCohortMethodData("c:/temp/vignetteCohortMethodData")
 } 
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignetteCohortData")){
-  cohortData
+if (file.exists("c:/temp/vignettecohortMethodData")){
+  cohortMethodData
 }
 ```
 
 There are many parameters, but they are all documented in the `CohortMethod` manual. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. Note that in this example, we do not restrict the study to people having a particular indication  via `indicationConceptIds = c()`, but this is something you would often want to do. We do instruct that people with prior exposure to any NSAID should be excluded, and that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
 
-**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetDrugConceptId` and `comparatorDrugConceptId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument to TRUE and automatically the drugs
-and their descendants will be excluded from the covariates. However, if the `targetDrugConceptId` and `comparatorDrugConceptId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument.
+**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetId` and `comparatorId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument to TRUE and automatically the drugs
+and their descendants will be excluded from the covariates. However, if the `targetId` and `comparatorId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument.
 
-All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
+All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
 
 We can use the generic `summary()` function to view some more information of the data we extracted:
 
 ```{r tidy=TRUE,eval=FALSE}
-summary(cohortData)
+summary(cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignetteCohortData")){
-  summary(cohortData)
+if (file.exists("c:/temp/vignettecohortMethodData")){
+  summary(cohortMethodData)
 }
 ```
 
 ### Saving the data to file
 
-Creating the `cohortData` file can take considerable computing time, and it is probably a good idea to save it for future sessions. Because `cohortData` uses `ff`, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortData()` function:
+Creating the `cohortMethodData` file can take considerable computing time, and it is probably a good idea to save it for future sessions. Because `cohortMethodData` uses `ff`, we cannot use R's regular save function. Instead, we'll have to use the `savecohortMethodData()` function:
 
 ```{r tidy=TRUE,eval=FALSE}
-saveCohortData(cohortData, "coxibVsNonselVsGiBleed")
+savecohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed")
 ```
 
 We can use the `loadCohortMethodData()` function to load the data in a future session.
@@ -292,17 +292,17 @@ The `CohortMethod` can use propensity scores to adjust for potential confounders
 
 ## Fitting a propensity model
 
-We can fit a propensity model using the covariates constructed by the `getDbCohortData()` function:
+We can fit a propensity model using the covariates constructed by the `getDbcohortMethodData()` function:
 
 ```{r tidy=TRUE,eval=FALSE}
-ps <- createPs(cohortData, outcomeConceptId = 3)
+ps <- createPs(cohortMethodData, outcomeId = 3)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 data(vignettePs)
 ps <- vignettePs
 ```
 
-The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. Note that we have to tell `createPs()` what the `outcomeConceptId` is for which we will use the model so it can remove subjects who had the outcome prior to the index date before fitting the model. 
+The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. Note that we have to tell `createPs()` what the `outcomeId` is for which we will use the model so it can remove subjects who had the outcome prior to the index date before fitting the model. 
 
 To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behavior, including using multiple CPUs to speed-up the cross-validation. 
 
@@ -323,12 +323,12 @@ plotPs(ps, scale = "preference")
 It is also possible to inspect the propensity model itself by showing the covariates that have non-zero coefficients:
 
 ```{r tidy=TRUE,eval=FALSE}
-propensityModel <- getPsModel(ps, cohortData)
+propensityModel <- getPsModel(ps, cohortMethodData)
 head(propensityModel)  
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignetteCohortData")){
-  propensityModel <- getPsModel(ps, cohortData)
+if (file.exists("c:/temp/vignettecohortMethodData")){
+  propensityModel <- getPsModel(ps, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
     x[nc > (n-3)] <- paste('...',substr(x[nc > (n-3)], nc[nc > (n-3)]-n+1, nc[nc > (n-3)]),sep="")
@@ -371,7 +371,7 @@ Note that for both stratification and matching it is possible to specify additio
 To evaluate whether our use of the propensity score is indeed making the two cohorts more comparable, we can compute the covariate balance before and after trimming, matching, and/or stratifying:
 
 ```{r tidy=TRUE,eval=FALSE}
-balance <- computeCovariateBalance(strata, cohortData, outcomeConceptId = 3)
+balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 3)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 data(vignetteBalance)
@@ -392,8 +392,8 @@ In theory we could fit an outcome model without using the propensity scores. In 
 
 
 ```{r tidy=FALSE,eval=FALSE}
-outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
-                                cohortData = cohortData,
+outcomeModel <- fitOutcomeModel(outcomeId = 3,
+                                cohortMethodData = cohortMethodData,
                                 riskWindowStart = 0, 
                                 riskWindowEnd = 30,
                                 addExposureDaysToEnd = TRUE,
@@ -411,8 +411,8 @@ outcomeModel
 But of course we want to make use of the matching done on the propensity score:
 
 ```{r tidy=FALSE,eval=FALSE}
-outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
-                                cohortData = cohortData,
+outcomeModel <- fitOutcomeModel(outcomeId = 3,
+                                cohortMethodData = cohortMethodData,
                                 subPopulation = strata,
                                 riskWindowStart = 0, 
                                 riskWindowEnd = 30,
@@ -433,8 +433,8 @@ Note that we define the sub-population to be only those in the `strata` object, 
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the `Cyclops` package. (Note that the treatment variable is automatically excluded from regularization.)
 
 ```{r tidy=FALSE,eval=FALSE}
-outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
-                                cohortData = cohortData,
+outcomeModel <- fitOutcomeModel(outcomeId = 3,
+                                cohortMethodData = cohortMethodData,
                                 subPopulation = strata,
                                 riskWindowStart = 0, 
                                 riskWindowEnd = 30,
@@ -462,13 +462,13 @@ confint(outcomeModel)
 We can also see the covariates that ended up in the outcome model:
 
 ```{r tidy=TRUE,eval=FALSE}
-fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
 head(fullOutcomeModel)
 ```
 ```{r echo=FALSE,message=FALSE}
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignetteCohortData")){
-  fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortData)
+if (file.exists("c:/temp/vignettecohortMethodData")){
+  fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
   head(fullOutcomeModel)  
 }

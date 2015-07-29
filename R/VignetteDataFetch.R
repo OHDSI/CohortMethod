@@ -19,10 +19,11 @@
 #' @keywords internal
 .singleStudyVignetteDataFetch <- function() {
   # This function should be used to fetch the data that is used in the vignettes.
-  # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod); setwd('s:/temp');options('fftempdir' = 's:/temp')
+  # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod);
+  # setwd('s:/temp');options('fftempdir' = 's:/temp')
 
 
-  # setwd("C:/Users/mschuemi/git/CohortMethod/data")
+  # setwd('C:/Users/mschuemi/git/CohortMethod/data')
 
   pw <- NULL
   dbms <- "sql server"
@@ -119,15 +120,15 @@
   cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                             cdmDatabaseSchema = cdmDatabaseSchema,
                                             oracleTempSchema = resultsDatabaseSchema,
-                                            targetDrugConceptId = 1,
-                                            comparatorDrugConceptId = 2,
+                                            targetId = 1,
+                                            comparatorId = 2,
                                             indicationConceptIds = c(),
                                             washoutWindow = 183,
                                             indicationLookbackWindow = 183,
                                             studyStartDate = "",
                                             studyEndDate = "",
                                             exclusionConceptIds = nsaids,
-                                            outcomeConceptIds = 3,
+                                            outcomeIds = 3,
                                             outcomeConditionTypeConceptIds = c(),
                                             exposureDatabaseSchema = resultsDatabaseSchema,
                                             exposureTable = "coxibVsNonselVsGiBleed",
@@ -139,25 +140,25 @@
 
   saveCohortMethodData(cohortMethodData, "s:/temp/vignetteCohortMethodData")
 
-  # cohortMethodData <- loadCohortMethodData("s:/temp/vignetteCohortMethodData")
+  # cohortMethodData <- loadCohortMethodData('s:/temp/vignetteCohortMethodData')
 
-  ps <- createPs(cohortMethodData, outcomeConceptId = 3, control = createControl(cvType = "auto",
-                                                                                 startingVariance = 0.1,
-                                                                                 noiseLevel = "quiet",
-                                                                                 threads = 10))
+  ps <- createPs(cohortMethodData, outcomeId = 3, control = createControl(cvType = "auto",
+                                                                          startingVariance = 0.01,
+                                                                          noiseLevel = "quiet",
+                                                                          threads = 10))
   vignettePs <- ps
   save(vignettePs, file = "vignettePs.rda", compress = "xz")
 
-  # load("vignettePs.rda"); ps <- vignettePs;
+  # load('vignettePs.rda'); ps <- vignettePs;
 
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 3)
+  vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 3)
 
   save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
 
-  # load("vignetteBalance.rda")
+  # load('vignetteBalance.rda')
 
-  outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
+  outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                   cohortMethodData = cohortMethodData,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 30,
@@ -168,7 +169,7 @@
   vignetteOutcomeModel1 <- outcomeModel
   save(vignetteOutcomeModel1, file = "vignetteOutcomeModel1.rda", compress = "xz")
 
-  outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
+  outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                   cohortMethodData = cohortMethodData,
                                   subPopulation = strata,
                                   riskWindowStart = 0,
@@ -180,7 +181,7 @@
   vignetteOutcomeModel2 <- outcomeModel
   save(vignetteOutcomeModel2, file = "vignetteOutcomeModel2.rda", compress = "xz")
 
-  outcomeModel <- fitOutcomeModel(outcomeConceptId = 3,
+  outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                   cohortMethodData = cohortMethodData,
                                   subPopulation = strata,
                                   riskWindowStart = 0,
@@ -202,8 +203,8 @@
   dbms <- "sql server"
   user <- NULL
   server <- "RNDUSRDHIT09.jnj.com"
-  cdmDatabaseSchema <- 'cdm_truven_mdcd.dbo'
-  #cdmDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
+  cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+  # cdmDatabaseSchema <- 'cdm_truven_ccae_6k.dbo'
   resultsDatabaseSchema <- "scratch.dbo"
   resultsDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
   port <- NULL
@@ -246,11 +247,46 @@
 
   RJDBC::dbDisconnect(connection)
 
-  dcos <- createDrugComparatorOutcomes(targetDrugConceptId = 1118084,
-                                       comparatorDrugConceptId = 1124300,
+  dcos <- createDrugComparatorOutcomes(targetId = 1118084,
+                                       comparatorId = 1124300,
                                        exclusionConceptIds = nsaids,
                                        excludedCovariateConceptIds = nsaids,
-                                       outcomeConceptIds = c(192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310))
+                                       outcomeIds = c(192671,
+                                                      24609,
+                                                      29735,
+                                                      73754,
+                                                      80004,
+                                                      134718,
+                                                      139099,
+                                                      141932,
+                                                      192367,
+                                                      193739,
+                                                      194997,
+                                                      197236,
+                                                      199074,
+                                                      255573,
+                                                      257007,
+                                                      313459,
+                                                      314658,
+                                                      316084,
+                                                      319843,
+                                                      321596,
+                                                      374366,
+                                                      375292,
+                                                      380094,
+                                                      433753,
+                                                      433811,
+                                                      436665,
+                                                      436676,
+                                                      436940,
+                                                      437784,
+                                                      438134,
+                                                      440358,
+                                                      440374,
+                                                      443617,
+                                                      443800,
+                                                      4084966,
+                                                      4288310))
   drugComparatorOutcomesList <- list(dcos)
 
   covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
@@ -313,7 +349,7 @@
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
-  createPsArgs <- createCreatePsArgs() # Using only defaults
+  createPsArgs <- createCreatePsArgs()  # Using only defaults
 
   matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
@@ -381,8 +417,8 @@
   saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
                                  "s:/temp/drugComparatorOutcomesList.txt")
 
-  # cmAnalysisList <- loadCmAnalysisList("s:/temp/cmAnalysisList.txt")
-  # drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.txt")
+  # cmAnalysisList <- loadCmAnalysisList('s:/temp/cmAnalysisList.txt') drugComparatorOutcomesList <-
+  # loadDrugComparatorOutcomesList('s:/temp/drugComparatorOutcomesList.txt')
 
   result <- runCmAnalyses(connectionDetails = connectionDetails,
                           cdmDatabaseSchema = cdmDatabaseSchema,
@@ -412,16 +448,15 @@
   summary(cohortMethodData)
   analysisSummary <- summarizeAnalyses(outcomeReference)
   library(EmpiricalCalibration)
-  negControls <- analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeConceptId !=
-                                   192671, ]
+  negControls <- analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeId != 192671, ]
   plotForest(negControls$logRr, negControls$seLogRr, as.character(1:nrow(negControls)))
   null <- fitNull(negControls$logRr, negControls$seLogRr)
   plotCalibrationEffect(negControls$logRr, negControls$seLogRr, null = null)
 
-  analysisSummary[analysisSummary$analysisId == 1 & analysisSummary$outcomeConceptId == 192671, ]
-  analysisSummary[analysisSummary$analysisId == 2 & analysisSummary$outcomeConceptId == 192671, ]
-  analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeConceptId == 192671, ]
-  analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeConceptId == 192671, ]
+  analysisSummary[analysisSummary$analysisId == 1 & analysisSummary$outcomeId == 192671, ]
+  analysisSummary[analysisSummary$analysisId == 2 & analysisSummary$outcomeId == 192671, ]
+  analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeId == 192671, ]
+  analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeId == 192671, ]
 
   cohortMethodData1 <- loadCohortMethodData("s:/temp/vignetteCohortData")
   summary(cohortMethodData1)
@@ -429,7 +464,7 @@
   ps <- readRDS(outcomeReference$psFile[1])
   plotPs(ps)
 
-  outcomeModel <- fitOutcomeModel(outcomeConceptId = 192671,
+  outcomeModel <- fitOutcomeModel(outcomeId = 192671,
                                   cohortMethodData = cohortMethodData,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 30,
@@ -438,7 +473,7 @@
                                   modelType = "cox",
                                   stratifiedCox = FALSE)
 
-  outcomeModel <- fitOutcomeModel(outcomeConceptId = 192671,
+  outcomeModel <- fitOutcomeModel(outcomeId = 192671,
                                   cohortMethodData = cohortMethodData,
                                   subPopulation = strata,
                                   riskWindowStart = 0,

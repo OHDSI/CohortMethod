@@ -49,13 +49,13 @@
                                                           "exposureTable",
                                                           "outcomeDatabaseSchema",
                                                           "outcomeTable",
-                                                          "targetDrugConceptId",
-                                                          "comparatorDrugConceptId",
+                                                          "targetId",
+                                                          "comparatorId",
                                                           "indicationConceptIds",
-                                                          "outcomeConceptIds"),
+                                                          "outcomeIds"),
                                           rCode = rCode)
   rCode <- OhdsiRTools::createArgFunction("createPs",
-                                          excludeArgs = c("cohortMethodData", "outcomeConceptId"),
+                                          excludeArgs = c("cohortMethodData", "outcomeId"),
                                           rCode = rCode)
   rCode <- OhdsiRTools::createArgFunction("trimByPs", excludeArgs = c("data"), rCode = rCode)
   rCode <- OhdsiRTools::createArgFunction("trimByPsToEquipoise",
@@ -74,7 +74,7 @@
                                           excludeArgs = c("data", "cohortMethodData"),
                                           rCode = rCode)
   rCode <- OhdsiRTools::createArgFunction("fitOutcomeModel",
-                                          excludeArgs = c("outcomeConceptId",
+                                          excludeArgs = c("outcomeId",
                                                           "cohortMethodData",
                                                           "subPopulation"),
                                           rCode = rCode)

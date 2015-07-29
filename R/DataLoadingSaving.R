@@ -30,13 +30,13 @@
 #' through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
 #' schema. Covariates are automatically extracted from the appropriate tables within the CDM.This
 #' function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
-#'
 #' Important: The target and comparator drug must not be included in the covariates, including any
-#' descendant concepts. If the \code{targetDrugConceptId} and \code{comparatorDrugConceptId} arguments represent
-#' real concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically the drugs
-#' and their descendants will be excluded from the covariates. However, if the \code{targetDrugConceptId} and
-#' \code{comparatorDrugConceptId} arguments do not represent concept IDs, you will need to manually add the drugs
-#' and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
+#' descendant concepts. If the \code{targetId} and \code{comparatorId} arguments represent real
+#' concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically
+#' the drugs and their descendants will be excluded from the covariates. However, if the
+#' \code{targetId} and \code{comparatorId} arguments do not represent concept IDs, you will need to
+#' manually add the drugs and descendants to the \code{excludedCovariateConceptIds} of the
+#' \code{covariateSettings} argument.
 #'
 #' @param connectionDetails            An R object of type\cr\code{connectionDetails} created using the
 #'                                     function \code{createConnectionDetails} in the
@@ -66,18 +66,17 @@
 #'                                     \code{createCovariateSettings} function in the
 #'                                     \code{PatientLevelPrediction} package..
 #' @template GetOutcomesParams
-#' @param targetDrugConceptId          A unique identifier to define the target cohort.  If
-#'                                     exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID
-#'                                     and all descendant concepts within that CONCEPT_ID will be used
-#'                                     to define the cohort.  If exposureTable <> DRUG_ERA,
-#'                                     targetDrugConceptId is used to select the cohort_concept_id in
-#'                                     the cohort-like table.
-#' @param comparatorDrugConceptId      A unique identifier to define the comparator cohort.  If
-#'                                     exposureTable = DRUG_ERA, comparatorDrugConceptId is a
-#'                                     CONCEPT_ID and all descendant concepts within that CONCEPT_ID
-#'                                     will be used to define the cohort.  If exposureTable <>
-#'                                     DRUG_ERA, comparatorDrugConceptId is used to select the
-#'                                     cohort_concept_id in the cohort-like table.
+#' @param targetId                     A unique identifier to define the target cohort.  If
+#'                                     exposureTable = DRUG_ERA, targetId is a CONCEPT_ID and all
+#'                                     descendant concepts within that CONCEPT_ID will be used to
+#'                                     define the cohort.  If exposureTable <> DRUG_ERA, targetId is
+#'                                     used to select the cohort_concept_id in the cohort-like table.
+#' @param comparatorId                 A unique identifier to define the comparator cohort.  If
+#'                                     exposureTable = DRUG_ERA, comparatorId is a CONCEPT_ID and all
+#'                                     descendant concepts within that CONCEPT_ID will be used to
+#'                                     define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
+#'                                     is used to select the cohort_concept_id in the cohort-like
+#'                                     table.
 #' @param indicationConceptIds         A list of CONCEPT_IDs used to restrict the target and comparator
 #'                                     cohorts, based on any descendant condition of this list
 #'                                     occurring at least once within the indicationLookbackWindow
@@ -117,15 +116,15 @@
 getDbCohortMethodData <- function(connectionDetails,
                                   cdmDatabaseSchema,
                                   oracleTempSchema = cdmDatabaseSchema,
-                                  targetDrugConceptId,
-                                  comparatorDrugConceptId,
+                                  targetId,
+                                  comparatorId,
                                   indicationConceptIds = c(),
                                   washoutWindow = 183,
                                   indicationLookbackWindow = 183,
                                   studyStartDate = "",
                                   studyEndDate = "",
                                   exclusionConceptIds = c(),
-                                  outcomeConceptIds,
+                                  outcomeIds,
                                   outcomeConditionTypeConceptIds = c(),
                                   exposureDatabaseSchema = cdmDatabaseSchema,
                                   exposureTable = "drug_era",
@@ -151,11 +150,11 @@ getDbCohortMethodData <- function(connectionDetails,
   if (excludeDrugsFromCovariates) {
     if (exposureTable != "drug_era")
       warning("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
-    sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_drug_concept_id, @comparator_drug_concept_id)"
+    sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_id, @comparator_id)"
     sql <- SqlRender::renderSql(sql,
                                 cdm_database_schema = cdmDatabaseSchema,
-                                target_drug_concept_id = targetDrugConceptId,
-                                comparator_drug_concept_id = comparatorDrugConceptId)$sql
+                                target_id = targetId,
+                                comparator_id = comparatorId)$sql
     sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
     conceptIds <- DatabaseConnector::querySql(conn, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
@@ -200,8 +199,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
                                                    cdm_database = cdmDatabase,
-                                                   target_drug_concept_id = targetDrugConceptId,
-                                                   comparator_drug_concept_id = comparatorDrugConceptId,
+                                                   target_id = targetId,
+                                                   comparator_id = comparatorId,
                                                    has_indication_concept_ids = hasIndicationConceptIds,
                                                    washout_window = washoutWindow,
                                                    indication_lookback_window = indicationLookbackWindow,
@@ -228,8 +227,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
-                                                   target_drug_concept_id = targetDrugConceptId,
-                                                   comparator_drug_concept_id = comparatorDrugConceptId,
+                                                   target_id = targetId,
+                                                   comparator_id = comparatorId,
                                                    study_start_date = studyStartDate,
                                                    study_end_date = studyEndDate,
                                                    exposure_database_schema = exposureDatabaseSchema,
@@ -287,8 +286,8 @@ getDbCohortMethodData <- function(connectionDetails,
   covariateData$covariates$cohortStartDate <- NULL
   covariateData$covariates$cohortDefinitionId <- NULL
   metaData <- list(sql = c(renderedSql, covariateData$metaData$sql),
-                   targetDrugConceptId = targetDrugConceptId,
-                   comparatorDrugConceptId = comparatorDrugConceptId,
+                   targetId = targetId,
+                   comparatorId = comparatorId,
                    counts = counts,
                    call = match.call())
 
@@ -301,7 +300,7 @@ getDbCohortMethodData <- function(connectionDetails,
   }
   class(result) <- "cohortMethodData"
 
-  if (!missing(outcomeConceptIds) && !is.null(outcomeConceptIds)) {
+  if (!missing(outcomeIds) && !is.null(outcomeIds)) {
     writeLines("\nConstructing outcomes")
     result <- getDbOutcomes(connection = conn,
                             oracleTempSchema = oracleTempSchema,
@@ -309,7 +308,7 @@ getDbCohortMethodData <- function(connectionDetails,
                             cohortMethodData = result,
                             outcomeDatabaseSchema = outcomeDatabaseSchema,
                             outcomeTable = outcomeTable,
-                            outcomeConceptIds = outcomeConceptIds,
+                            outcomeIds = outcomeIds,
                             outcomeConditionTypeConceptIds = outcomeConditionTypeConceptIds,
                             cdmVersion = cdmVersion)
   }
@@ -417,23 +416,23 @@ loadCohortMethodData <- function(file, readOnly = FALSE) {
 print.cohortMethodData <- function(x, ...) {
   writeLines("CohortMethodData object")
   writeLines("")
-  writeLines(paste("Treatment concept ID:", x$metaData$targetDrugConceptId))
-  writeLines(paste("Comparator concept ID:", x$metaData$comparatorDrugConceptId))
-  writeLines(paste("Outcome concept ID(s):", paste(x$metaData$outcomeConceptIds, collapse = ",")))
+  writeLines(paste("Treatment concept ID:", x$metaData$targetId))
+  writeLines(paste("Comparator concept ID:", x$metaData$comparatorId))
+  writeLines(paste("Outcome concept ID(s):", paste(x$metaData$outcomeIds, collapse = ",")))
 }
 
 #' @export
 summary.cohortMethodData <- function(object, ...) {
   treatedPersons <- ffbase::sum.ff(object$cohorts$treatment)
   comparatorPersons <- nrow(object$cohorts) - treatedPersons
-  outcomeCounts <- data.frame(outcomeConceptId = object$metaData$outcomeConceptIds,
+  outcomeCounts <- data.frame(outcomeId = object$metaData$outcomeIds,
                               eventCount = 0,
                               personCount = 0)
   for (i in 1:nrow(outcomeCounts)) {
-    outcomeCounts$eventCount[i] <- ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+    outcomeCounts$eventCount[i] <- ffbase::sum.ff(object$outcomes$outcomeId == object$metaData$outcomeIds[i])
     if (outcomeCounts$eventCount[i] == 0)
       outcomeCounts$personCount[i] <- 0 else {
-      t <- (object$outcomes$outcomeId == object$metaData$outcomeConceptIds[i])
+      t <- (object$outcomes$outcomeId == object$metaData$outcomeIds[i])
       outcomeCounts$personCount[i] <- length(ffbase::unique.ff(object$outcomes$rowId[ffbase::ffwhich(t,
                                                                                                      t == TRUE)]))
     }
@@ -453,17 +452,17 @@ summary.cohortMethodData <- function(object, ...) {
 print.summary.cohortMethodData <- function(x, ...) {
   writeLines("CohortMethodData object summary")
   writeLines("")
-  writeLines(paste("Treatment concept ID:", x$metaData$targetDrugConceptId))
-  writeLines(paste("Comparator concept ID:", x$metaData$comparatorDrugConceptId))
-  writeLines(paste("Outcome concept ID(s):", paste(x$metaData$outcomeConceptIds, collapse = ",")))
+  writeLines(paste("Treatment concept ID:", x$metaData$targetId))
+  writeLines(paste("Comparator concept ID:", x$metaData$comparatorId))
+  writeLines(paste("Outcome concept ID(s):", paste(x$metaData$outcomeIds, collapse = ",")))
   writeLines("")
   writeLines(paste("Treated persons:", paste(x$treatedPersons)))
   writeLines(paste("Comparator persons:", paste(x$comparatorPersons)))
   writeLines("")
   writeLines("Outcome counts:")
   outcomeCounts <- x$outcomeCounts
-  rownames(outcomeCounts) <- outcomeCounts$outcomeConceptId
-  outcomeCounts$outcomeConceptId <- NULL
+  rownames(outcomeCounts) <- outcomeCounts$outcomeId
+  outcomeCounts$outcomeId <- NULL
   colnames(outcomeCounts) <- c("Event count", "Person count")
   printCoefmat(outcomeCounts)
   writeLines("")

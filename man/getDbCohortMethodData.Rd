@@ -5,10 +5,10 @@
 \title{Get the cohort data from the server}
 \usage{
 getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
-  oracleTempSchema = cdmDatabaseSchema, targetDrugConceptId,
-  comparatorDrugConceptId, indicationConceptIds = c(), washoutWindow = 183,
+  oracleTempSchema = cdmDatabaseSchema, targetId, comparatorId,
+  indicationConceptIds = c(), washoutWindow = 183,
   indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
-  exclusionConceptIds = c(), outcomeConceptIds,
+  exclusionConceptIds = c(), outcomeIds,
   outcomeConditionTypeConceptIds = c(),
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
@@ -29,19 +29,18 @@ so for example 'cdm_instance.dbo'.}
 all temporary tables to be managed. Requires create/insert
 permissions to this database.}
 
-\item{targetDrugConceptId}{A unique identifier to define the target cohort.  If
-exposureTable = DRUG_ERA, targetDrugConceptId is a CONCEPT_ID
-and all descendant concepts within that CONCEPT_ID will be used
-to define the cohort.  If exposureTable <> DRUG_ERA,
-targetDrugConceptId is used to select the cohort_concept_id in
-the cohort-like table.}
+\item{targetId}{A unique identifier to define the target cohort.  If
+exposureTable = DRUG_ERA, targetId is a CONCEPT_ID and all
+descendant concepts within that CONCEPT_ID will be used to
+define the cohort.  If exposureTable <> DRUG_ERA, targetId is
+used to select the cohort_concept_id in the cohort-like table.}
 
-\item{comparatorDrugConceptId}{A unique identifier to define the comparator cohort.  If
-exposureTable = DRUG_ERA, comparatorDrugConceptId is a
-CONCEPT_ID and all descendant concepts within that CONCEPT_ID
-will be used to define the cohort.  If exposureTable <>
-DRUG_ERA, comparatorDrugConceptId is used to select the
-cohort_concept_id in the cohort-like table.}
+\item{comparatorId}{A unique identifier to define the comparator cohort.  If
+exposureTable = DRUG_ERA, comparatorId is a CONCEPT_ID and all
+descendant concepts within that CONCEPT_ID will be used to
+define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
+is used to select the cohort_concept_id in the cohort-like
+table.}
 
 \item{indicationConceptIds}{A list of CONCEPT_IDs used to restrict the target and comparator
 cohorts, based on any descendant condition of this list
@@ -65,13 +64,6 @@ date can appear. Date format is 'yyyymmdd'.}
 \item{exclusionConceptIds}{A list of CONCEPT_IDs used to restrict the cohorts, based on any
 descendant conditions/drugs/procedures occurring at least once
 anytime prior to the cohort index date.}
-
-\item{outcomeConceptIds}{A list of CONCEPT_IDs used to define outcomes.  If
-outcomeTable = CONDITION_OCCURRENCE, the list is a set of
-ancestor CONCEPT_IDs, and all occurrences of all descendant
-concepts will be selected.  If outcomeTable <>
-CONDITION_OCCURRENCE, the list contains records found in
-COHORT_DEFINITION_ID field.}
 
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
 condition occurrences.  Only applicable if outcomeTable =
@@ -110,6 +102,13 @@ IDs).}
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
 \code{createCovariateSettings} function in the
 \code{PatientLevelPrediction} package..}
+
+\item{outcomeConceptIds}{A list of CONCEPT_IDs used to define outcomes.  If
+outcomeTable = CONDITION_OCCURRENCE, the list is a set of
+ancestor CONCEPT_IDs, and all occurrences of all descendant
+concepts will be selected.  If outcomeTable <>
+CONDITION_OCCURRENCE, the list contains records found in
+COHORT_DEFINITION_ID field.}
 }
 \value{
 Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
@@ -140,12 +139,12 @@ Similarly, outcomes are identified using the condition_occurrence or condition_e
 through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
 schema. Covariates are automatically extracted from the appropriate tables within the CDM.This
 function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
-
 Important: The target and comparator drug must not be included in the covariates, including any
-descendant concepts. If the \code{targetDrugConceptId} and \code{comparatorDrugConceptId} arguments represent
-real concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically the drugs
-and their descendants will be excluded from the covariates. However, if the \code{targetDrugConceptId} and
-\code{comparatorDrugConceptId} arguments do not represent concept IDs, you will need to manually add the drugs
-and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
+descendant concepts. If the \code{targetId} and \code{comparatorId} arguments represent real
+concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically
+the drugs and their descendants will be excluded from the covariates. However, if the
+\code{targetId} and \code{comparatorId} arguments do not represent concept IDs, you will need to
+manually add the drugs and descendants to the \code{excludedCovariateConceptIds} of the
+\code{covariateSettings} argument.
 }
 

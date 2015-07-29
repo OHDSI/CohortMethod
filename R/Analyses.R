@@ -60,8 +60,8 @@
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the \code{\link{ stratifyByPsAndCovariates}} function.
-#' @param computeCovariateBalance         Should the \code{\link{computeCovariateBalance}} function be used in
-#'                                        this analysis?
+#' @param computeCovariateBalance         Should the \code{\link{computeCovariateBalance}} function be
+#'                                        used in this analysis?
 #' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
@@ -211,19 +211,19 @@ loadCmAnalysisList <- function(file) {
 #' @details
 #' Create a set of hypotheses of interest, to be used with the \code{\link{runCmAnalyses}} function.
 #'
-#' @param targetDrugConceptId           A concept ID indentifying the target drug in the exposure
+#' @param targetId                      A concept ID indentifying the target drug in the exposure
 #'                                      table. If multiple strategies for picking the target will be
 #'                                      tested in the analysis, a named list of numbers can be provided
 #'                                      instead. In the analysis, the name of the number to be used can
 #'                                      be specified using the #' \code{targetType} parameter in the
 #'                                      \code{\link{createCmAnalysis}} function.
-#' @param comparatorDrugConceptId       A concept ID indentifying the comparator drug in the exposure
+#' @param comparatorId                  A concept ID indentifying the comparator drug in the exposure
 #'                                      table. If multiple strategies for picking the comparator will
 #'                                      be tested in the analysis, a named list of numbers can be
 #'                                      provided instead. In the analysis, the name of the number to be
 #'                                      used can be specified using the #' \code{comparatorType}
 #'                                      parameter in the \code{\link{createCmAnalysis}} function.
-#' @param outcomeConceptIds             A vector of concept IDs indentifying the outcome(s) in the
+#' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
 #'                                      outcome table.
 #' @param indicationConceptIds          A vector of concept IDs identifying conditions that are
 #'                                      required to appear prior to or on the index date. If multiple
@@ -243,9 +243,9 @@ loadCmAnalysisList <- function(file) {
 #'                                      concepts that are specific to the drug-comparator combination.
 #'
 #' @export
-createDrugComparatorOutcomes <- function(targetDrugConceptId,
-                                         comparatorDrugConceptId,
-                                         outcomeConceptIds,
+createDrugComparatorOutcomes <- function(targetId,
+                                         comparatorId,
+                                         outcomeIds,
                                          indicationConceptIds = c(),
                                          exclusionConceptIds = c(),
                                          excludedCovariateConceptIds = c(),

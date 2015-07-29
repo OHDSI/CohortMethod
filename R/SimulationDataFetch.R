@@ -19,7 +19,8 @@
 #' @keywords internal
 .simulationDataFetch <- function() {
   # This function should be used to create the simulation profile used in some of the unit tests
-  # library(CohortMethod) setwd('s:/temp') options('fftempdir' = 's:/temp')
+  # library(CohortMethod); options('fftempdir' = 's:/fftemp');
+  # setwd('C:/Users/mschuemi/git/CohortMethod/data')
 
   pw <- NULL
   dbms <- "sql server"
@@ -27,6 +28,14 @@
   server <- "RNDUSRDHIT07.jnj.com"
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
   port <- NULL
+
+  pw <- NULL
+  dbms <- "pdw"
+  user <- NULL
+  server <- "JRDUSAPSCTL01"
+  cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+  resultsDatabaseSchema <- "scratch.dbo"
+  port <- 17001
 
   connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                   server = server,
@@ -65,7 +74,11 @@
                                                useCovariateMeasurementCount365d = FALSE,
                                                useCovariateMeasurementBelow = FALSE,
                                                useCovariateMeasurementAbove = FALSE,
-                                               useCovariateRiskScores = TRUE,
+                                               useCovariateConceptCounts = FALSE,
+                                               useCovariateRiskScores = FALSE,
+                                               useCovariateRiskScoresCharlson = FALSE,
+                                               useCovariateRiskScoresDCSI = FALSE,
+                                               useCovariateRiskScoresCHADS2 = FALSE,
                                                useCovariateInteractionYear = FALSE,
                                                useCovariateInteractionMonth = FALSE,
                                                excludedCovariateConceptIds = c(4027133,
@@ -80,8 +93,8 @@
   # Load data:
   cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                             cdmDatabaseSchema = cdmDatabaseSchema,
-                                            targetDrugConceptId = 755695,
-                                            comparatorDrugConceptId = 739138,
+                                            targetId = 755695,
+                                            comparatorId = 739138,
                                             indicationConceptIds = 439926,
                                             washoutWindow = 183,
                                             indicationLookbackWindow = 183,
@@ -95,7 +108,7 @@
                                                                     2005890,
                                                                     43534760,
                                                                     21601019),
-                                            outcomeConceptIds = 194133,
+                                            outcomeIds = 194133,
                                             outcomeConditionTypeConceptIds = c(38000215,
                                                                                38000216,
                                                                                38000217,
@@ -106,15 +119,17 @@
                                             exposureTable = "drug_era",
                                             outcomeDatabaseSchema = cdmDatabaseSchema,
                                             outcomeTable = "condition_occurrence",
-                                            covariateSettings)
+                                            covariateSettings = covariateSettings)
 
   saveCohortMethodData(cohortMethodData, "s:/temp/simulationCohortMethodData")
 
   # cohortMethodData <- loadCohortMethodData('s:/temp/simulationCohortMethodData') ps <-
-  # createPs(cohortMethodData, outcomeConceptId = 194133, prior=createPrior('laplace',0.1))
+  # createPs(cohortMethodData, outcomeId = 194133, prior=createPrior('laplace',0.1))
 
-  cohortDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
-  save(cohortDataSimulationProfile,
-       file = "s:/temp/cohortDataSimulationProfile.rda",
+  cohortMethodDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
+  save(cohortMethodDataSimulationProfile,
+       file = "cohortMethodDataSimulationProfile.rda",
        compress = "xz")
+
+  # load('cohortMethodDataSimulationProfile.rda')
 }

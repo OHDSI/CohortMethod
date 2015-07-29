@@ -22,9 +22,9 @@ library("testthat")
 # (and does not throw an error) under a wide range of parameter settings
 set.seed(1234)
 print(getOption("fftempdir"))
-data(cohortDataSimulationProfile)
+data(cohortMethodDataSimulationProfile)
 sampleSize <- 1000
-cohortMethodData <- simulateCohortMethodData(cohortDataSimulationProfile, n = sampleSize)
+cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
 
 test_that("cohortMethodData functions", {
   s <- summary(cohortMethodData)
@@ -34,10 +34,10 @@ test_that("cohortMethodData functions", {
 
 test_that("Propensity score functions", {
   # Cross-validation:
-  ps <- createPs(cohortMethodData, outcomeConceptId = 194133)
+  ps <- createPs(cohortMethodData, outcomeId = 194133)
 
   ps <- createPs(cohortMethodData,
-                 outcomeConceptId = 194133,
+                 outcomeId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   expect_less_than(0.7, computePsAuc(ps)[1])
 
@@ -104,12 +104,12 @@ test_that("Propensity score functions", {
 
 test_that("Balance functions", {
   ps <- createPs(cohortMethodData,
-                 outcomeConceptId = 194133,
+                 outcomeId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeConceptId = 194133)
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 194133)
   expect_is(balance, "data.frame")
 
   p <- plotCovariateBalanceScatterPlot(balance)
@@ -121,7 +121,7 @@ test_that("Balance functions", {
 
 test_that("Outcome functions", {
   ps <- createPs(cohortMethodData,
-                 outcomeConceptId = 194133,
+                 outcomeId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
@@ -189,7 +189,7 @@ test_that("Outcome functions", {
 
 test_that("Functions on outcome model", {
   ps <- createPs(cohortMethodData,
-                 outcomeConceptId = 194133,
+                 outcomeId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   outcomeModel <- fitOutcomeModel(194133,

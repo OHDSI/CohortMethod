@@ -4,8 +4,7 @@
 \alias{computeCovariateBalance}
 \title{Compute covariate balance before and after matching and trimming}
 \usage{
-computeCovariateBalance(restrictedCohorts, cohortMethodData,
-  outcomeConceptId = NULL)
+computeCovariateBalance(restrictedCohorts, cohortMethodData, outcomeId = NULL)
 }
 \arguments{
 \item{restrictedCohorts}{A data frame containing the people that are remaining after matching
@@ -14,7 +13,7 @@ and/or trimming.}
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
-\item{outcomeConceptId}{The concept ID of the outcome. Persons marked for removal for the outcome
+\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the outcome
                            will be removed when computing the balance before matching/trimming.}
 }
 \value{

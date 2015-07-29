@@ -52,7 +52,7 @@ getDbOutcomes <- function(connectionDetails = NULL,
                           cohortMethodData,
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_occurrence",
-                          outcomeConceptIds = "",
+                          outcomeIds = "",
                           outcomeConditionTypeConceptIds = "",
                           cdmVersion = "4") {
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
@@ -90,7 +90,7 @@ getDbOutcomes <- function(connectionDetails = NULL,
                                                    cdm_database = cdmDatabase,
                                                    outcome_database_schema = outcomeDatabaseSchema,
                                                    outcome_table = outcomeTable,
-                                                   outcome_concept_ids = outcomeConceptIds,
+                                                   outcome_concept_ids = outcomeIds,
                                                    outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
                                                    cdm_version = cdmVersion,
                                                    cohort_definition_id = cohortDefinitionId)
@@ -136,13 +136,12 @@ getDbOutcomes <- function(connectionDetails = NULL,
   if (is.null(cohortMethodData$outcomes)) {
     cohortMethodData$outcomes <- outcomes
     cohortMethodData$exclude <- exclude
-    cohortMethodData$metaData$outcomeConceptIds <- outcomeConceptIds
+    cohortMethodData$metaData$outcomeIds <- outcomeIds
     cohortMethodData$metaData$sql <- c(cohortMethodData$metaData$sql, renderedSql)
   } else {
     ffbase::ffdfappend(cohortMethodData$outcomes, outcomes)
     ffbase::ffdfappend(cohortMethodData$exclude, exclude)
-    cohortMethodData$metaData$outcomeConceptIds <- rbind(cohortMethodData$metaData$outcomeConceptIds,
-                                                         outcomeConceptIds)
+    cohortMethodData$metaData$outcomeIds <- rbind(cohortMethodData$metaData$outcomeIds, outcomeIds)
     cohortMethodData$metaData$sql <- c(cohortMethodData$metaData$sql, renderedSql)
   }
   return(cohortMethodData)

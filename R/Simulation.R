@@ -48,10 +48,10 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   psTrimmed <- trimByPsToEquipoise(propensityScore)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  outcomeModels <- vector("list", length(cohortMethodData$metaData$outcomeConceptIds))
-  for (i in 1:length(cohortMethodData$metaData$outcomeConceptIds)) {
-    outcomeConceptId <- cohortMethodData$metaData$outcomeConceptIds[i]
-    outcomeModel <- fitOutcomeModel(outcomeConceptId,
+  outcomeModels <- vector("list", length(cohortMethodData$metaData$outcomeIds))
+  for (i in 1:length(cohortMethodData$metaData$outcomeIds)) {
+    outcomeId <- cohortMethodData$metaData$outcomeIds[i]
+    outcomeModel <- fitOutcomeModel(outcomeId,
                                     cohortMethodData,
                                     strata,
                                     useCovariates = TRUE,
@@ -160,7 +160,7 @@ simulateCohortMethodData <- function(cohortDataSimulationProfile, n = 10000) {
 
   writeLines("Generating outcomes")
   allOutcomes <- data.frame()
-  for (i in 1:length(cohortDataSimulationProfile$metaData$outcomeConceptIds)) {
+  for (i in 1:length(cohortDataSimulationProfile$metaData$outcomeIds)) {
     betas <- cohortDataSimulationProfile$outcomeModels[[i]]
     intercept <- betas[1]
     betas <- betas[2:length(betas)]
@@ -177,7 +177,7 @@ simulateCohortMethodData <- function(cohortDataSimulationProfile, n = 10000) {
       temp$timeToObsPeriodEnd]
     outcomeRows <- sum(temp$nOutcomes)
     outcomes <- data.frame(rowId = rep(0, outcomeRows),
-                           outcomeId = rep(cohortDataSimulationProfile$metaData$outcomeConceptIds[i],
+                           outcomeId = rep(cohortDataSimulationProfile$metaData$outcomeIds[i],
                                            outcomeRows),
                            timeToEvent = rep(0, outcomeRows))
     cursor <- 1
