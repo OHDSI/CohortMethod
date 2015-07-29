@@ -83,6 +83,10 @@ createPs <- function(cohortMethodData,
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
+  cfs <- coef(cyclopsFit)
+  if (all(cfs[2:length(cfs)] == 0)){
+   warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+  }
   pred <- predict(cyclopsFit)
 
   colnames(ps)[colnames(ps) == "y"] <- "treatment"
