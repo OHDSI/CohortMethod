@@ -17,6 +17,8 @@ output:
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)
+data(vignetteAnalysisSummary)
+analysisSum <- vignetteAnalysisSummary
 knitr::opts_chunk$set(
   cache=FALSE,
   comment = "#>",
@@ -39,7 +41,8 @@ An analysis will be executed by calling these functions in sequence:
 2. `createPs()` (optional)
 3. `trimByPs()` or `trimByPsToEquipoise()` (optional)
 4. `matchOnPs()`, `matchOnPsAndCovariates()`, `stratifyByPs()`, or `stratifyByPsAndCovariates()` (optional)
-5. `fitOutcomeModel()` (optional)
+5. `computeCovariateBalance()` (optional)
+6. `fitOutcomeModel()` (optional)
 
 When you provide several analyses to the `CohortMethod` package, it will determine whether any of the analyses have anything in common, and will take advantage of this fact. For example, if we specify several analyses that only differ in the way the outcome model is fitted, then `CohortMethod` will extract the data and fit the propensity model only once, and re-use this in all the analyses. 
 
@@ -69,7 +72,7 @@ cdmVersion <- "4"
 
 The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables,as well as the CDM version. We'll use these later to tell R where the data in CDM format live, where we want to write intermediate and result tables, and what version CDM is used. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
-We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls.
+We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome. 
 
 We create a text file called *VignetteOutcomes.sql* with the following content:
 
@@ -90,7 +93,10 @@ INNER JOIN @cdmDatabaseSchema.visit_occurrence
 	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
 INNER JOIN @cdmDatabaseSchema.concept_ancestor
 	ON condition_concept_id = descendant_concept_id
-WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
+WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099, 
+141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 
+316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 
+436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
 	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203);
 
 ```
@@ -131,7 +137,15 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
                                      exclusionConceptIds = nsaids,
                                      excludedCovariateConceptIds = nsaids,
-                                     outcomeIds = c(192671, 29735, 140673, 197494, 198185, 198199, 200528, 257315, 314658, 317376, 321319, 380731, 432661, 432867, 433516, 433701, 433753, 435140, 435459, 435524, 435783, 436665, 436676, 442619, 444252, 444429, 4131756, 4134120, 4134454, 4152280, 4165112, 4174262, 4182210, 4270490, 4286201, 4289933))
+                                     outcomeIds = c(192671, 29735, 140673, 197494, 
+                                                    198185, 198199, 200528, 257315, 
+                                                    314658, 317376, 321319, 380731, 
+                                                    432661, 432867, 433516, 433701, 
+                                                    433753, 435140, 435459, 435524, 
+                                                    435783, 436665, 436676, 442619, 
+                                                    444252, 444429, 4131756, 4134120, 
+                                                    4134454, 4152280, 4165112, 4174262, 
+                                                    4182210, 4270490, 4286201, 4289933))
 
 drugComparatorOutcomesList <- list(dcos)
 ```
@@ -341,23 +355,25 @@ The same mechanism can be used to specifiy types for the targetConceptId and the
 We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()`function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
 
 ```{r tidy=FALSE,eval=FALSE}
-result <- runCmAnalyses(connectionDetails = connectionDetails,
-                        cdmDatabaseSchema = cdmDatabaseSchema,
-                        exposureDatabaseSchema = cdmDatabaseSchema,
-                        exposureTable = "drug_era",
-                        outcomeDatabaseSchema = resultsDatabaseSchema,
-                        outcomeTable = "outcomes",
-                        outputFolder = "./CohortMethodOutput",
-                        cmAnalysisList = cmAnalysisList,
-                        drugComparatorOutcomesList = drugComparatorOutcomesList,
-                        getDbCohortMethodDataThreads = 1,
-                        createPsThreads = 1,
-                        psCvThreads = 1,
-                        fitOutcomeModelThreads = 4,
-                        outcomeCvThreads = 1)
+  result <- runCmAnalyses(connectionDetails = connectionDetails,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          exposureDatabaseSchema = cdmDatabaseSchema,
+                          exposureTable = "drug_era",
+                          outcomeDatabaseSchema = resultsDatabaseSchema,
+                          outcomeTable = "outcomes",
+                          outputFolder = "./CohortMethodOutput",
+                          cmAnalysisList = cmAnalysisList,
+                          drugComparatorOutcomesList = drugComparatorOutcomesList,
+                          getDbCohortMethodDataThreads = 1,
+                          createPsThreads = 1,
+                          psCvThreads = 10,
+                          computeCovarBalThreads = 2,
+                          trimMatchStratifyThreads = 10,
+                          fitOutcomeModelThreads = 4,
+                          outcomeCvThreads = 10)
 ```
 
-In the code above, we provide the arguments for connecting to the database, which schemas and tables to use, as well as the analyses and hypotheses of interest. The `outputFolder` specifies where the outcome models and intermediate files will be written. We also instruct `CohortMethod` to use 4 threads when fitting the outcome model. Multithreading can significantly reduce execution time, but can require more system resources such as memory.
+In the code above, we provide the arguments for connecting to the database, which schemas and tables to use, as well as the analyses and hypotheses of interest. The `outputFolder` specifies where the outcome models and intermediate files will be written. We also instruct `CohortMethod` to use multiple threads for various stages in the analyses, meaning these will be executed in parallel on multiple CPUs in the computer. Multithreading can significantly reduce execution time, but will require more system resources such as memory and temporary disk space. 
 
 ## Restarting
 
@@ -365,7 +381,82 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 
 # Retrieving the results
 
-The result of the `runCmAnalyses()` is a data frame, 
+The result of the `runCmAnalyses()` is a data frame with one row per drug-target(-indication)-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our drug, comparator, outcome of intererst, and last analysis:
+
+```{r tidy=FALSE,eval=FALSE}
+psFile <- result$psFile[result$targetId == 1118084 & 
+                        result$comparatorId == 1124300 & 
+                        result$outcomeId == 192671 &
+                        result$analysisId == 5]
+ps <- readRDS(psFile)
+plotPs(ps)
+```
+```{r echo=FALSE,message=FALSE}
+if (file.exists("s:/temp/CohortMethodOutput/outcomeModelReference.rds")){
+  result <- readRDS("s:/temp/CohortMethodOutput/outcomeModelReference.rds")
+  setwd("s:/temp")
+  psFile <- result$psFile[result$targetId == 1118084 & 
+                            result$comparatorId == 1124300 & 
+                            result$outcomeId == 192671 &
+                            result$analysisId == 5]
+  ps <- readRDS(psFile)
+  plotPs(ps)
+}
+```
+
+Note that some of the file names will appear several times in the table. For example, analysis 4 and 5 only differ in terms of the outcome model, and will share the same propensity score files.
+
+We can create a summary of the results using `summarizeAnalyses()`:
+```{r tidy=FALSE,eval=FALSE}
+analysisSum <- summarizeAnalyses(result)
+head(analysisSum)
+```
+```{r echo=FALSE,message=FALSE}
+head(analysisSum)
+```
+
+This tells us, per drug-target(-indication)-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
+
+## Empirical calibration
+
+Now that we have produced estimates for all outcomes including our negative controls, we can perform empirical calibration to estimate the bias of the various analyses included in our study. We will create the calibration effect plots for every analysis ID. In each plot, the blue dots represent our negative control outcomes, and the yellow diamond represents our health outcome of interest: GI bleed. An unbiased, well-calibrated analysis should have 95% of the negative controls between the dashed lines (ie. 95% should have p > .05).
+
+```{r tidy=FALSE,eval=FALSE}
+install_github("ohdsi/EmpiricalCalibration")
+```
+```{r tidy=FALSE,warning=FALSE,message=FALSE}
+library(EmpiricalCalibration)
+
+# Analysis 1: No matching, simple outcome model
+negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 192671, ]
+hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+
+# Analysis 2: Matching plus simple outcome model
+negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
+hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+
+# Analysis 3: Stratification plus simple outcome model
+negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
+hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+
+# Analysis 4: Matching plus stratified outcome model
+negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
+hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+
+# Analysis 5: Matching plus full outcome model
+negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
+hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
 
 # Acknowledgments
 

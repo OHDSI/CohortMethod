@@ -82,6 +82,14 @@ NULL
 #' data(vignetteOutcomeModel3)
 NULL
 
+#' Analysis summary data for the vignette
+#' @docType data
+#' @keywords datasets
+#' @name vignetteAnalysisSummary
+#' @usage
+#' data(vignetteAnalysisSummary)
+NULL
+
 .onLoad <- function(libname, pkgname) {
   missing(libname)  # suppresses R CMD check note
   missing(pkgname)  # suppresses R CMD check note

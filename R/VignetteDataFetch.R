@@ -197,7 +197,11 @@
 
 #' @keywords internal
 .multiAnalysesVignetteDataFetch <- function() {
-  # library(CohortMethod);library(SqlRender);setwd('s:/temp');options('fftempdir' = 's:/fftemp')
+  # library(CohortMethod);library(SqlRender)
+  options('fftempdir' = 's:/fftemp')
+  setwd("s:/temp")
+  dataFolder <- "C:/Users/mschuemi/git/CohortMethod/data"
+
 
   pw <- NULL
   dbms <- "sql server"
@@ -444,47 +448,16 @@
   DatabaseConnector::executeSql(connection, sql)
   RJDBC::dbDisconnect(connection)
 
-  cohortMethodData <- loadCohortMethodData(outcomeReference$cohortMethodDataFolder[1])
-  summary(cohortMethodData)
-  analysisSummary <- summarizeAnalyses(outcomeReference)
-  library(EmpiricalCalibration)
-  negControls <- analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeId != 192671, ]
-  plotForest(negControls$logRr, negControls$seLogRr, as.character(1:nrow(negControls)))
-  null <- fitNull(negControls$logRr, negControls$seLogRr)
-  plotCalibrationEffect(negControls$logRr, negControls$seLogRr, null = null)
+  #result <- readRDS("s:/temp/CohortMethodOutput/outcomeModelReference.rds")
 
-  analysisSummary[analysisSummary$analysisId == 1 & analysisSummary$outcomeId == 192671, ]
-  analysisSummary[analysisSummary$analysisId == 2 & analysisSummary$outcomeId == 192671, ]
-  analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeId == 192671, ]
-  analysisSummary[analysisSummary$analysisId == 4 & analysisSummary$outcomeId == 192671, ]
+  #cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
+  #summary(cohortMethodData)
+  analysisSummary <- summarizeAnalyses(result)
+  vignetteAnalysisSummary <- analysisSummary
+  save(vignetteAnalysisSummary, file = file.path(dataFolder,"vignetteAnalysisSummary.rda"), compress = "xz")
 
-  cohortMethodData1 <- loadCohortMethodData("s:/temp/vignetteCohortData")
-  summary(cohortMethodData1)
+  # library(EmpiricalCalibration)
+  negControls <- analysisSummary[analysisSummary$analysisId == 5 & analysisSummary$outcomeId != 192671, ]
+  hoi <-  analysisSummary[analysisSummary$analysisId == 5 & analysisSummary$outcomeId == 192671, ]
 
-  ps <- readRDS(outcomeReference$psFile[1])
-  plotPs(ps)
-
-  outcomeModel <- fitOutcomeModel(outcomeId = 192671,
-                                  cohortMethodData = cohortMethodData,
-                                  riskWindowStart = 0,
-                                  riskWindowEnd = 30,
-                                  addExposureDaysToEnd = TRUE,
-                                  useCovariates = FALSE,
-                                  modelType = "cox",
-                                  stratifiedCox = FALSE)
-
-  outcomeModel <- fitOutcomeModel(outcomeId = 192671,
-                                  cohortMethodData = cohortMethodData,
-                                  subPopulation = strata,
-                                  riskWindowStart = 0,
-                                  riskWindowEnd = 30,
-                                  addExposureDaysToEnd = TRUE,
-                                  useCovariates = FALSE,
-                                  modelType = "cox",
-                                  stratifiedCox = TRUE)
-
-  ps <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId ==
-                                                                       192671, ])), ]
-  strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  summary(outcomeModel)
 }

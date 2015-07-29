@@ -248,12 +248,12 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
 cohortMethodData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("c:/temp/vignettecohortMethodData")){
-  cohortMethodData <- loadCohortMethodData("c:/temp/vignetteCohortMethodData")
+if (file.exists("s:/temp/vignettecohortMethodData")){
+  cohortMethodData <- loadCohortMethodData("s:/temp/vignetteCohortMethodData")
 } 
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/vignettecohortMethodData")){
   cohortMethodData
 }
 ```
@@ -271,7 +271,7 @@ We can use the generic `summary()` function to view some more information of the
 summary(cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/vignettecohortMethodData")){
   summary(cohortMethodData)
 }
 ```
@@ -327,7 +327,7 @@ propensityModel <- getPsModel(ps, cohortMethodData)
 head(propensityModel)  
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/vignettecohortMethodData")){
   propensityModel <- getPsModel(ps, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
@@ -467,7 +467,7 @@ head(fullOutcomeModel)
 ```
 ```{r echo=FALSE,message=FALSE}
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("c:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/vignettecohortMethodData")){
   fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
   head(fullOutcomeModel)  

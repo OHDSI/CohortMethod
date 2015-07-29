@@ -41,6 +41,7 @@ Suggests:
     pROC,
     gnm,
     knitr,
-    rmarkdown
+    rmarkdown,
+    EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
