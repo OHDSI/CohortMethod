@@ -4,13 +4,15 @@
 \alias{calculateBias}
 \title{Calculates bias and relative risk for each covariate}
 \usage{
-calculateBias(data, cohortData)
+calculateBias(data, cohortData, RR0Constant)
 }
 \arguments{
 \item{data}{Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
 \code{treatment}, \code{outcome}}
 
 \item{cohortData}{\code{cohortData} object constructed by \code{getDbCohortData}}
+
+\item{RR0Constant}{Large constant to use when RR = 0 to prevent divide by zero error}
 }
 \value{
 Returns ffdf object with the following columns: \describe{

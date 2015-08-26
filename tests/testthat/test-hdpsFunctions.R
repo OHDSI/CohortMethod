@@ -225,30 +225,29 @@ test_that("expandCovariates", {
 })
 
 test_that("calculateBias", {
-#   Covariate1:
-#                   Outcome       No-Outcome      Treatment     No-Treatment
-#   Covariate         2               3               1             4
-#   No-Covariate      1               3               2             2
-#
-#       RR  = 1.6
-#       PC1 = 0.3333333
-#       PC0 = 0.6666667
-#       Bias = 0.8571429
-#       abs(log(bias)) = 0.1541507
-#
-#   Covariate2:
-#                   Outcome       No-Outcome      Treatment     No-Treatment
-#   Covariate         1               4               2             3
-#   No-Covariate      2               2               1             3
-#
-#       RR  = 0.4
-#       PC1 = 0.6666667
-#       PC0 = 0.5
-#       Bias = 1.142857
-#       abs(log(bias)) = 0.1335314
-
+  #   Covariate1:
+  #                   Outcome       No-Outcome      Treatment     No-Treatment
+  #   Covariate         2               3               1             4
+  #   No-Covariate      1               3               2             2
+  #
+  #       RR  = 1.6
+  #       PC1 = 0.3333333
+  #       PC0 = 0.6666667
+  #       Bias = 0.8571429
+  #       abs(log(bias)) = 0.1541507
+  #
+  #   Covariate2:
+  #                   Outcome       No-Outcome      Treatment     No-Treatment
+  #   Covariate         1               4               2             3
+  #   No-Covariate      2               2               1             3
+  #
+  #       RR  = 0.4
+  #       PC1 = 0.6666667
+  #       PC0 = 0.5
+  #       Bias = 1.142857
+  #       abs(log(bias)) = 0.1335314
   covariates = ffdf(rowId = ff(vmode = "double", c(1, 2, 3, 4, 5, 1, 6, 7, 8, 9)),
-                    covariateId = ff(vmode = "integer", c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2)),
+                    covariateId = ff(vmode = "integer", factor(c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2))),
                     treatment = ff(vmode = "double", c(0, 0, 1, 0, 0, 0, 0, 1, 1, 0)),
                     outcome = ff(vmode = "double", c(0, 1, 1, 0, 0, 0, 0, 1, 0, 0)))
   cohorts = ffdf(rowId = ff(vmode = "double", c(1, 2, 3, 4, 5, 6, 7, 8, 9)),
@@ -257,29 +256,55 @@ test_that("calculateBias", {
                   outcome = ff(vmode = "double", c(1, 1, 1)))
   cohortData = list(cohorts = cohorts, outcomes = outcomes)
 
-  result = calculateBias(covariates, cohortData)[[1]]
-  expect_that(result$covariateId, equals(ff(vmode = "integer", factor(c(1,2)))))
+  result = calculateBias(covariates, cohortData, RR0Constant = 99999)[[1]]
+  expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c(1,2)))))
   expect_that(result$RR, equals(ff(vmode = "double", c(1.6, 0.4))))
   expect_that(result$bias, equals(ff(vmode = "double", c(0.1541507, 0.1335314))))
+
+
+  #   Covariate1:
+  #                   Outcome       No-Outcome      Treatment     No-Treatment
+  #   Covariate         0               2               1             1
+  #   No-Covariate      1               3               1             3
+  #
+  #       RR  = 0
+  #       PC1 = 0.5
+  #       PC0 = 0.25
+  #       Bias (C = 10) = 1.714286
+  #       abs(log(bias)) = 0.5389965
+  covariates = ffdf(rowId = ff(vmode = "double", c(1, 2)),
+                    covariateId = ff(vmode = "integer", factor(c(1, 1))),
+                    treatment = ff(vmode = "double", c(1, 0)),
+                    outcome = ff(vmode = "double", c(0, 0)))
+  cohorts = ffdf(rowId = ff(vmode = "double", c(1, 2, 3, 4, 5, 6)),
+                 treatment = ff(vmode = "double", c(1, 0, 1, 0, 0, 0)))
+  outcomes = ffdf(rowId = ff(vmode = "double", c(4)),
+                  outcome = ff(vmode = "double", c(1)))
+  cohortData = list(cohorts = cohorts, outcomes = outcomes)
+
+  result = calculateBias(covariates, cohortData, RR0Constant = 10)[[1]]
+  expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c(1)))))
+  expect_that(result$RR, equals(ff(vmode = "double", c(0))))
+  expect_that(result$bias, equals(ff(vmode = "double", c(0.5389965))))
 })
 
 test_that("removeLowBias", {
-#   Covariate       Bias
-#       1           10
-#       2           6
-#       3           5
-#  ----------------------
-#       4           7
-#       5           6
-#       6           2
+  #   Covariate       RR          Bias
+  #       1           1           10
+  #       2           1           6
+  #       3           1           5
+  #  ----------------------
+  #       4           1           7
+  #       5           1           6
+  #       6           0           2
   rowId1 = ff(vmode = "double", length = 3)
-  covariateId1 = ff(vmode = "integer", initdata = factor(c(1,2,3)))
+  covariateId1 = ff(vmode = "integer", initdata = factor(c(1, 2, 3)))
   treatment1 = ff(vmode = "double", length = 3)
   outcome1 = ff(vmode = "double", length = 3)
   data1 = ffdf(rowId = rowId1, covariateId = covariateId1, treatment = treatment1, outcome = outcome1)
 
   rowId2 = ff(vmode = "double", length = 3)
-  covariateId2 = ff(vmode = "integer", initdata = factor(c(4,5,6)))
+  covariateId2 = ff(vmode = "integer", initdata = factor(c(4, 5, 6)))
   treatment2 = ff(vmode = "double", length = 3)
   outcome2 = ff(vmode = "double", length = 3)
   data2 = ffdf(rowId = rowId2, covariateId = covariateId2, treatment = treatment2, outcome = outcome2)
@@ -287,22 +312,35 @@ test_that("removeLowBias", {
   data = list(data1, data2)
 
   bias1 = ff(vmode = "double", c(10, 6, 5))
-  bias1 = ffdf(covariateId = covariateId1, bias = bias1)
+  RR1 = ff(vmode = "double", c(1, 1, 1))
+  bias1 = ffdf(covariateId = covariateId1, RR = RR1, bias = bias1)
 
-  bias2 = ff(vmode = "double", c(7,6,2))
-  bias2 = ffdf(covariateId = covariateId2, bias = bias2)
+  bias2 = ff(vmode = "double", c(7, 6, 2))
+  RR2 = ff(vmode = "double", c(1, 1, 0))
+  bias2 = ffdf(covariateId = covariateId2, RR = RR2, bias = bias2)
 
   bias = list(bias1, bias2)
 
-  result = removeLowBias(data, bias, 2)
+  result = removeLowBias(data, bias, 2, TRUE)
   expect_that(result[[1]]$covariateId[], equals(factor("1")))
   expect_that(result[[2]]$covariateId[], equals(factor("4")))
 
-  result = removeLowBias(data, bias, 1)
+  result = removeLowBias(data, bias, 1, TRUE)
   expect_that(result[[1]]$covariateId[], equals(factor("1")))
   expect_that(result[[2]], equals(NULL))
 
-  result = removeLowBias(data, NULL, 5)[[1]]
+  result = removeLowBias(data, bias, 6, FALSE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("1", "2", "3"))))
+  expect_that(result[[2]]$covariateId[], equals(factor(c("4", "5"))))
+
+  RR3 = ff(vmode = "double", c(0, 0, 0))
+  bias3 = ffdf(covariateId = covariateId2, RR = RR3, bias = ff(vmode = "double", c(7,6,2)))
+  bias = list(bias1, bias3)
+  result = removeLowBias(data, bias, 6, FALSE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("1", "2", "3"))))
+  expect_that(result[[2]], equals(NULL))
+
+  result = removeLowBias(data, NULL, 5, TRUE)[[1]]
   expect_that(result, equals(NULL))
 })
 

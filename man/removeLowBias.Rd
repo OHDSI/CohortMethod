@@ -4,7 +4,7 @@
 \alias{removeLowBias}
 \title{Keeps only covariates with highest bias.}
 \usage{
-removeLowBias(data, bias, cutoffIndex)
+removeLowBias(data, bias, cutoffIndex, includeRR0)
 }
 \arguments{
 \item{data}{List covariate information for data dimensions, as ffdf objects with columns \code{rowId}, \code{covariateId},
@@ -13,6 +13,8 @@ removeLowBias(data, bias, cutoffIndex)
 \item{bias}{List of bias for each data dimension's covariates, as ffdf objects with columns \code{covariateId}, \code{RR}, \code{bias}}
 
 \item{cutoffIndex}{Number of total covariates to keep}
+
+\item{includeRR0}{Boolean to keep covariates with RR = 0}
 }
 \value{
 Returns \code{data} with only the highest bias covariates.

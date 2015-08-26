@@ -405,6 +405,7 @@ expandCovariates <- function(data) {
 #' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
 #' \code{treatment}, \code{outcome}
 #' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
+#' @param RR0Constant Large constant to use when RR = 0 to prevent divide by zero error
 #'
 #' @return
 #' Returns ffdf object with the following columns: \describe{
@@ -413,7 +414,7 @@ expandCovariates <- function(data) {
 #' \item{bias}{The value of abs(log(bias)) for each covariate, ranked decreasingly}}
 #' Returns list to work with sapply.
 #' @export
-calculateBias <- function(data, cohortData) {
+calculateBias <- function(data, cohortData, RR0Constant) {
   if (is.null(data)) {return(list(NULL))}
   totalPopulation = length(cohortData$cohorts$rowId)
   t = cohortData$cohorts$treatment
@@ -470,7 +471,7 @@ calculateBias <- function(data, cohortData) {
     bias[i]=(PC1[i]*((1/RR[i])-1)+1) / (PC0[i]*((1/RR[i])-1)+1)
   }
   for(i in which(RR==0)) {
-    bias[i]=(PC1[i] * 99999 + 1) / (PC0[i] * 99999 + 1)
+    bias[i]=(PC1[i] * RR0Constant + 1) / (PC0[i] * RR0Constant + 1)
   }
   bias = abs(log(bias))
 
@@ -492,13 +493,19 @@ calculateBias <- function(data, cohortData) {
 #' \code{treatment}, \code{outcome}
 #' @param bias List of bias for each data dimension's covariates, as ffdf objects with columns \code{covariateId}, \code{RR}, \code{bias}
 #' @param cutoffIndex Number of total covariates to keep
+#' @param includeRR0 Boolean to keep covariates with RR = 0
 #'
 #' @return
 #' Returns \code{data} with only the highest bias covariates.
 #' @export
-removeLowBias <- function(data, bias, cutoffIndex) {
+removeLowBias <- function(data, bias, cutoffIndex, includeRR0) {
   bias = combineFunction(bias, ffbase::ffdfrbind.fill)
   if (is.null(bias)) {return(list(NULL))}
+  if (!includeRR0) {
+    t = ffbase::ffwhich(bias, bias$RR > 0)
+    if (is.null(t)) {return(list(NULL))}
+    bias = bias[t,]
+  }
   bias = bias[ff::fforder(bias$bias, decreasing = TRUE),]
   finalIndex = min(dim(bias)[1], cutoffIndex)
   #data = sapply(data, removeLowBiasHelper, bias, bias$bias[finalIndex])

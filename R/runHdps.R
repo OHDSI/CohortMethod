@@ -23,6 +23,9 @@
 #' @param lowPopCutoff Cutoff for discarding rare covariates
 #' @param dimensionCutoff Number of most prevalent covariates to include from each data dimension
 #' @param biasCutoff Number of covariates to include in propensity score model (minus the demographics covariates)
+#' @param dropRareAfterExpand Boolean for dropping codes below lowPopCutoff after expanding covariates
+#' @param includeRR0 Boolean for including covariates with large bias due to zero RR
+#' @param RR0Constant Large constant to use for handling zero RR covariates
 #'
 #' @return
 #' Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}
@@ -36,7 +39,10 @@ runHdps <- function(cohortData, connectionDetails,
                     predefinedExcludeConceptIds = c(),
                     lowPopCutoff = 100,
                     dimensionCutoff = 200,
-                    biasCutoff = 500) {
+                    biasCutoff = 500,
+                    dropRareAfterExpand = FALSE,
+                    includeRR0 = TRUE,
+                    RR0Constant = 99999) {
   connection <- connect(connectionDetails)
   dimensions = c()
   if (useConditionICD9 == TRUE) {
@@ -78,9 +84,9 @@ runHdps <- function(cohortData, connectionDetails,
     newData = combineData(cohortData, uniqueCodes, dimCovariateId)
     newData = sapply(newData, removeRareCodes, lowPopCutoff, dimensionCutoff)
     newData = sapply(newData, expandCovariates)
-    #newData = sapply(newData, removeRareCodes, lowPopCutoff)
-    bias = sapply(newData, calculateBias, cohortData)
-    newData = removeLowBias(newData, bias, biasCutoff)
+    if (dropRareAfterExpand) {newData = sapply(newData, removeRareCodes, lowPopCutoff)}
+    bias = sapply(newData, calculateBias, cohortData, RR0Constant)
+    newData = removeLowBias(newData, bias, biasCutoff, includeRR0)
 
     newCovariates = combineFunction(newData, ffbase::ffdfrbind.fill)
     newCovariates = combineWithOtherCovariates(newCovariates, demographicsCovariates, predefinedCovariates)
