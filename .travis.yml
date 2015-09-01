@@ -27,9 +27,10 @@ notifications:
   recipients:
     - msuchard@gmail.com
     - schuemie@ohdsi.org
+    - yuxitian@gmail.com
   email:
     on_success: change
-    on_failure: change
+    on_failure: always
 
 after_success:
   - Rscript -e 'library(covr);codecov()'
