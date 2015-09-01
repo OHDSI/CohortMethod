@@ -10,12 +10,12 @@ before_install:
 install:
   - ./travis-tool.sh install_deps
   - ./travis-tool.sh install_r_binary rJava
-  - ./travis-tool.sh install_github OHDSI/Cyclops
-  - ./travis-tool.sh install_github OHDSI/SqlRender
-  - ./travis-tool.sh install_github OHDSI/DatabaseConnector
-  - ./travis-tool.sh install_github OHDSI/OhdsiRTools
-  - ./travis-tool.sh install_github OHDSI/PatientLevelPrediction@HDPS
-  - ./travis-tool.sh install_github OHDSI/EmpiricalCalibration
+  - ./travis-tool.sh install_github OHDSI/Cyclops OHDSI/SqlRender OHDSI/DatabaseConnector OHDSI/PatientLevelPrediction@HDPS OHDSI/EmpiricalCalibration
+#  - ./travis-tool.sh install_github OHDSI/SqlRender
+#  - ./travis-tool.sh install_github OHDSI/DatabaseConnector
+#  - ./travis-tool.sh install_github OHDSI/OhdsiRTools
+#  - ./travis-tool.sh install_github OHDSI/PatientLevelPrediction@HDPS
+#  - ./travis-tool.sh install_github OHDSI/EmpiricalCalibration
   - ./travis-tool.sh install_github jimhester/covr
 
 script: ./travis-tool.sh run_tests
