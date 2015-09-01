@@ -14,7 +14,7 @@ install:
   - ./travis-tool.sh install_github OHDSI/SqlRender
   - ./travis-tool.sh install_github OHDSI/DatabaseConnector
   - ./travis-tool.sh install_github OHDSI/OhdsiRTools
-  - ./travis-tool.sh install_github OHDSI/PatientLevelPrediction
+  - ./travis-tool.sh install_github OHDSI/PatientLevelPrediction@HDPS
   - ./travis-tool.sh install_github OHDSI/EmpiricalCalibration
   - ./travis-tool.sh install_github jimhester/covr
 
