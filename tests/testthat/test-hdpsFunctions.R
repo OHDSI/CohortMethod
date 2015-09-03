@@ -36,6 +36,7 @@ test_that("getConceptId", {
   x = combineFunction(list(x1, x2, x3, x4), ffdfrbind.fill)
   y = list(covariateRef = x)
   expect_that(getConceptId(1, y), equals(ff(vmode="double", initdata = c(100, 101, 103))))
+  expect_that(getConceptId(3, y), equals(ff(vmode="double", initdata = c(-1))))
 })
 
 test_that("getCovariateId", {
@@ -56,6 +57,10 @@ test_that("covariateIdToFactor", {
   codes = ffdf(SOURCE_CODE = ff(vmode = "integer", factor(c("a", "b", "c"))), TARGET_CONCEPT_ID = ff(vmode = "double", c(101, 102, 103)))
   result = covariateIdToFactor(codes)[[1]]
   expect_that(result$SOURCE_CODE, equals(codes$SOURCE_CODE))
+
+  codes = data.frame(X = c(), Y = c())
+  result = covariateIdToFactor(codes)[[1]]
+  expect_that(result, equals(NULL))
 })
 
 test_that("deletePredefinedCodes", {

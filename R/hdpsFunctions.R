@@ -86,7 +86,11 @@ getDimensionSql <- function(dimensionInfo) {
 #' Returns a \code{ff_vector} of type \code{double} of concept IDs
 #' @export
 getConceptId <- function(analysisId, cohortData) {
-  return(cohortData$covariateRef$conceptId[cohortData$covariateRef$analysisId==analysisId])
+  result = cohortData$covariateRef$conceptId[cohortData$covariateRef$analysisId==analysisId]
+  if (is.null(result)) {
+    result = ff::ff(vmode = "double", c(-1))
+  }
+  return(result)
 }
 
 
@@ -154,6 +158,9 @@ sqlMapply <- function(connection, sqlList, paramNames, parameters) {
 #' Returns the input codes with \code{SOURCE_CODE} as a factor
 #' @export
 covariateIdToFactor <- function(codes) {
+  if (is.data.frame(codes) & dim(codes)[1]==0) {
+    return(list(NULL))
+  }
   if (!ff::is.factor.ff(codes$SOURCE_CODE)) {
     codes$SOURCE_CODE = ff::ff(vmode = "integer", factor(codes$SOURCE_CODE[]))
   }
@@ -169,7 +176,7 @@ covariateIdToFactor <- function(codes) {
 #' Returns \code{rawCodes} with all instances of (\code{TARGET_CONCEPT_ID} = predefined covariate) removed
 #' @export
 deletePredefinedCodes <- function(rawCodes, predefinedConceptIds) {
-  if (dim(rawCodes)[[1]] == 0) {stop("no source code mappings found for data dimension. check sql query or turn of flag for data dimension")}
+  if (is.null(rawCodes)) {return(list(NULL))}
   if (!is.null(predefinedConceptIds)) {
     t = ffbase::ffmatch(rawCodes$TARGET_CONCEPT_ID, ff::as.ff(predefinedConceptIds))
     rows = ffbase::ffwhich(t, is.na(t))
