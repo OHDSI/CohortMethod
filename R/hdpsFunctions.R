@@ -308,7 +308,8 @@ combineDataHelper <- function(sourceId, rowIds, treatments, outcomes) {
 #' This function removes data for covariates that have insufficient number of unique pataients.
 #'
 #' @details
-#' If prevalence of a covariate is > 0.5 among people in data dimension, prevalence is subtracted from 1
+#' If prevalence of a covariate is > 0.5 among people in data dimension, prevalence is subtracted from 1.
+#' Tie breaking is as follows (respectively): prevalence (unique people), total occurrences, covariate name
 #'
 #' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
 #' \code{treatment}, \code{outcome}
@@ -320,11 +321,16 @@ combineDataHelper <- function(sourceId, rowIds, treatments, outcomes) {
 #' @export
 removeRareCodes <- function(data, lowPopCutoff, dimensionCutoff=NULL) {
   if (is.null(data)) {return(list(NULL))}
+  data = data[ff::fforder(data$covariateId),]
+
   data1 = unique(data)
   totalPeople = length(unique(data$rowId))
   counts = ffbase::table.ff(data1$covariateId)
   counts[which(counts>(totalPeople/2))] = totalPeople - counts[which(counts>(totalPeople/2))]
-  counts = counts[order(counts, decreasing = TRUE)]
+  countsTotal = ffbase::table.ff(data$covariateId)
+  counts = counts[order(names(counts))]
+  countsTotal = countsTotal[order(names(countsTotal))]
+  counts = counts[order(counts, countsTotal, decreasing = TRUE)]
   dimensionCutoff = if(is.null(dimensionCutoff)) length(counts) else (min(length(counts), dimensionCutoff))
 
   lowPopCutoff = which(counts<lowPopCutoff)[1]

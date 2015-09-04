@@ -185,26 +185,26 @@ test_that("removeRareCodes",{
   #     5             2
   #     6             4
   #     7             3
-  rowId = ff(vmode="double", c(1,2,3,4,5,6,7,8,1,2,1,2,3,4,5,1,2,3,7,8,8,8,1,2,3,4,8,9,10))
-  covariateId = ff(vmode="integer", factor(c(1,1,1,1,1,1,1,1,2,2,3,3,3,3,3,4,4,4,5,5,5,5,6,6,6,6,7,7,7)))
-  treatment = ff(vmode="double", initdata=0, length=29)
-  outcome = ff(vmode="double", initdata=0, length=29)
+  rowId = ff(vmode="double",               c(1,2,3,4,5,6,7,8,1,2,1,2,3,4,5,1,2,3,7,8,8,8,1,2,3,4,8,9,9,10,1,2,3,4))
+  covariateId = ff(vmode="integer", factor(c(1,1,1,1,1,1,1,1,2,2,3,3,3,3,3,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8)))
+  treatment = ff(vmode="double", initdata=0, length=34)
+  outcome = ff(vmode="double", initdata=0, length=34)
   data = ffdf(rowId=rowId, covariateId=covariateId, treatment=treatment, outcome=outcome)
 
   result = removeRareCodes(data, 100, 8)[[1]]
   expect_that(result, equals(NULL))
 
   result = removeRareCodes(data, 3, 8)[[1]]
-  expect_that(length(unique(result$covariateId)), equals(4))
-  expect_that(unique(result$covariateId), is_equivalent_to(ff(vmode="double", c(3,4,6,7))))
+  expect_that(length(unique(result$covariateId)), equals(5))
+  expect_that(unique(result$covariateId), is_equivalent_to(ff(vmode="double", c(3,4,6,7,8))))
 
   result = removeRareCodes(data, 3, 2)[[1]]
   expect_that(length(unique(result$covariateId)), equals(2))
   expect_that(unique(result$covariateId), is_equivalent_to(ff(vmode="double", c(3,6))))
 
-  result = removeRareCodes(data, 3, 3)[[1]]
-  expect_that(length(unique(result$covariateId)), equals(3))
-  expect_that(unique(result$covariateId), is_equivalent_to(ff(vmode="double", c(3,4,6))))
+  result = removeRareCodes(data, 3, 4)[[1]]
+  expect_that(length(unique(result$covariateId)), equals(4))
+  expect_that(unique(result$covariateId), is_equivalent_to(ff(vmode="double", c(3,6,7,8))))
 
   result = removeRareCodes(NULL, 3, 3)[[1]]
   expect_that(result, equals(NULL))

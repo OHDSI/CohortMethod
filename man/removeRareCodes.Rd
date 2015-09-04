@@ -21,6 +21,7 @@ Returns \code{data} with rare codes removed. Returns a list to work with sapply.
 This function removes data for covariates that have insufficient number of unique pataients.
 }
 \details{
-If prevalence of a covariate is > 0.5 among people in data dimension, prevalence is subtracted from 1
+If prevalence of a covariate is > 0.5 among people in data dimension, prevalence is subtracted from 1.
+Tie breaking is as follows (respectively): prevalence (unique people), total occurrences, covariate name
 }
 
