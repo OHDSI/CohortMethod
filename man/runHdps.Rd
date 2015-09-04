@@ -8,8 +8,8 @@ runHdps(cohortData, connectionDetails, useConditionICD9 = TRUE,
   useDrug = TRUE, useProcedureCPT4 = TRUE, demographicsAnalysisIds = c(2,
   3, 5, 6), predefinedIncludeConceptIds = c(),
   predefinedExcludeConceptIds = c(), lowPopCutoff = 100,
-  dimensionCutoff = 200, biasCutoff = 500, dropRareAfterExpand = FALSE,
-  includeRR0 = TRUE, RR0Constant = 99999)
+  dimensionCutoff = 200, rankCutoff = 500, dropRareAfterExpand = FALSE,
+  useExpRank = FALSE, fudge = 0)
 }
 \arguments{
 \item{cohortData}{\code{cohortData} object constructed by \code{getDbCohortData}}
@@ -32,13 +32,13 @@ runHdps(cohortData, connectionDetails, useConditionICD9 = TRUE,
 
 \item{dimensionCutoff}{Number of most prevalent covariates to include from each data dimension}
 
-\item{biasCutoff}{Number of covariates to include in propensity score model (minus the demographics covariates)}
+\item{rankCutoff}{Number of covariates to include in propensity score model (minus the demographics covariates)}
 
 \item{dropRareAfterExpand}{Boolean for dropping codes below lowPopCutoff after expanding covariates}
 
-\item{includeRR0}{Boolean for including covariates with large bias due to zero RR}
+\item{useExpRank}{Use exposure rank instead of bias rank}
 
-\item{RR0Constant}{Large constant to use for handling zero RR covariates}
+\item{fudge}{Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded}
 }
 \value{
 Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}

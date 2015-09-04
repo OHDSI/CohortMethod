@@ -22,10 +22,10 @@
 #' @param predefinedExcludeConceptIds Vector of predefined concept IDs to exclude as covariates
 #' @param lowPopCutoff Cutoff for discarding rare covariates
 #' @param dimensionCutoff Number of most prevalent covariates to include from each data dimension
-#' @param biasCutoff Number of covariates to include in propensity score model (minus the demographics covariates)
+#' @param rankCutoff Number of covariates to include in propensity score model (minus the demographics covariates)
 #' @param dropRareAfterExpand Boolean for dropping codes below lowPopCutoff after expanding covariates
-#' @param includeRR0 Boolean for including covariates with large bias due to zero RR
-#' @param RR0Constant Large constant to use for handling zero RR covariates
+#' @param fudge Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded
+#' @param useExpRank Use exposure rank instead of bias rank
 #'
 #' @return
 #' Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}
@@ -39,10 +39,10 @@ runHdps <- function(cohortData, connectionDetails,
                     predefinedExcludeConceptIds = c(),
                     lowPopCutoff = 100,
                     dimensionCutoff = 200,
-                    biasCutoff = 500,
+                    rankCutoff = 500,
                     dropRareAfterExpand = FALSE,
-                    includeRR0 = TRUE,
-                    RR0Constant = 99999) {
+                    useExpRank = FALSE,
+                    fudge = 0) {
   connection <- connect(connectionDetails)
   dimensions = c()
   if (useConditionICD9 == TRUE) {
@@ -85,8 +85,8 @@ runHdps <- function(cohortData, connectionDetails,
     newData = sapply(newData, removeRareCodes, lowPopCutoff, dimensionCutoff)
     newData = sapply(newData, expandCovariates)
     if (dropRareAfterExpand) {newData = sapply(newData, removeRareCodes, lowPopCutoff)}
-    bias = sapply(newData, calculateBias, cohortData, RR0Constant)
-    newData = removeLowBias(newData, bias, biasCutoff, includeRR0)
+    rankings = sapply(newData, calculateBias, cohortData, fudge)
+    newData = removeLowRank(newData, rankings, rankCutoff, useExpRank)
 
     newCovariates = combineFunction(newData, ffbase::ffdfrbind.fill)
     newCovariates = combineWithOtherCovariates(newCovariates, demographicsCovariates, predefinedCovariates)

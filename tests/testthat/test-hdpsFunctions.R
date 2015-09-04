@@ -242,7 +242,7 @@ test_that("expandCovariates", {
   expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c("banana")))))
 })
 
-test_that("calculateBias", {
+test_that("calculateRanks", {
   #   Covariate1:
   #                   Outcome       No-Outcome      Treatment     No-Treatment
   #   Covariate         2               3               1             4
@@ -250,9 +250,11 @@ test_that("calculateBias", {
   #
   #       RR  = 1.6
   #       PC1 = 0.3333333
-  #       PC0 = 0.6666667
-  #       Bias = 0.8571429
-  #       abs(log(bias)) = 0.1541507
+  #       PC0 = 0.6666667 -> 0.3333333
+  #       Bias = 1
+  #       biasRank = 0
+  #       RRce = 1
+  #       expRank = 0
   #
   #   Covariate2:
   #                   Outcome       No-Outcome      Treatment     No-Treatment
@@ -260,10 +262,12 @@ test_that("calculateBias", {
   #   No-Covariate      2               2               1             3
   #
   #       RR  = 0.4
-  #       PC1 = 0.6666667
+  #       PC1 = 0.6666667 -> 0.3333333
   #       PC0 = 0.5
-  #       Bias = 1.142857
-  #       abs(log(bias)) = 0.1335314
+  #       Bias = 0.8571428
+  #       biasRank = 0.1541507
+  #       RRce = 0.6666667
+  #       expRank = 0.4054651
   covariates = ffdf(rowId = ff(vmode = "double", c(1, 2, 3, 4, 5, 1, 6, 7, 8, 9)),
                     covariateId = ff(vmode = "integer", factor(c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2))),
                     treatment = ff(vmode = "double", c(0, 0, 1, 0, 0, 0, 0, 1, 1, 0)),
@@ -274,10 +278,11 @@ test_that("calculateBias", {
                   outcome = ff(vmode = "double", c(1, 1, 1)))
   cohortData = list(cohorts = cohorts, outcomes = outcomes)
 
-  result = calculateBias(covariates, cohortData, RR0Constant = 99999)[[1]]
-  expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c(1,2)))))
-  expect_that(result$RR, equals(ff(vmode = "double", c(1.6, 0.4))))
-  expect_that(result$bias, equals(ff(vmode = "double", c(0.1541507, 0.1335314))))
+  result = calculateRanks(covariates, cohortData, 0)[[1]]
+  expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c(2,1)))))
+  expect_that(result$biasRank, equals(ff(vmode = "double", c(0.1541507, 0))))
+  expect_that(result$expRank, equals(ff(vmode = "double", c(0.4054651, 0))))
+
 
 
   #   Covariate1:
@@ -286,10 +291,14 @@ test_that("calculateBias", {
   #   No-Covariate      1               3               1             3
   #
   #       RR  = 0
+  #       RR (fudge = 0.01) = 0.01975272
   #       PC1 = 0.5
   #       PC0 = 0.25
-  #       Bias (C = 10) = 1.714286
-  #       abs(log(bias)) = 0.5389965
+  #       Bias (fudge=0) = NA
+  #       Bias (fudge=0.01) = 1.925409
+  #       abs(log(bias)) = 0.6551384
+  #       RRce = 2
+  #       expRank = 0.6931472
   covariates = ffdf(rowId = ff(vmode = "double", c(1, 2)),
                     covariateId = ff(vmode = "integer", factor(c(1, 1))),
                     treatment = ff(vmode = "double", c(1, 0)),
@@ -300,65 +309,88 @@ test_that("calculateBias", {
                   outcome = ff(vmode = "double", c(1)))
   cohortData = list(cohorts = cohorts, outcomes = outcomes)
 
-  result = calculateBias(covariates, cohortData, RR0Constant = 10)[[1]]
+  result = calculateRanks(covariates, cohortData, 0)[[1]]
   expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c(1)))))
-  expect_that(result$RR, equals(ff(vmode = "double", c(0))))
-  expect_that(result$bias, equals(ff(vmode = "double", c(0.5389965))))
+  expect_that(result$biasRank, equals(ff(vmode = "double", c(NA))))
+  expect_that(result$expRank, equals(ff(vmode = "double", c(0.6931472))))
+
+  result = calculateRanks(covariates, cohortData, 0.01)[[1]]
+  expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c(1)))))
+  expect_that(result$biasRank, equals(ff(vmode = "double", c(0.6551384))))
+  expect_that(result$expRank, equals(ff(vmode = "double", c(0.6931472))))
 })
 
-test_that("removeLowBias", {
-  #   Covariate       RR          Bias
-  #       1           1           10
-  #       2           1           6
-  #       3           1           5
+test_that("removeLowRanks", {
+  #   Covariate       biasRank    expRank     PC1       PC0
+  #       1           10          1           0.6       0.4
+  #       2           6           2           0         0
+  #       3           5           2           0         0
   #  ----------------------
-  #       4           1           7
-  #       5           1           6
-  #       6           0           2
+  #       4           7           1           0.6       0.4
+  #       5           6           1           0.8       0
+  #       6           2           1           0.6       0.5
+
+# removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
   rowId1 = ff(vmode = "double", length = 3)
   covariateId1 = ff(vmode = "integer", initdata = factor(c(1, 2, 3)))
   treatment1 = ff(vmode = "double", length = 3)
   outcome1 = ff(vmode = "double", length = 3)
   data1 = ffdf(rowId = rowId1, covariateId = covariateId1, treatment = treatment1, outcome = outcome1)
-
   rowId2 = ff(vmode = "double", length = 3)
   covariateId2 = ff(vmode = "integer", initdata = factor(c(4, 5, 6)))
   treatment2 = ff(vmode = "double", length = 3)
   outcome2 = ff(vmode = "double", length = 3)
   data2 = ffdf(rowId = rowId2, covariateId = covariateId2, treatment = treatment2, outcome = outcome2)
-
   data = list(data1, data2)
 
   bias1 = ff(vmode = "double", c(10, 6, 5))
-  RR1 = ff(vmode = "double", c(1, 1, 1))
-  bias1 = ffdf(covariateId = covariateId1, RR = RR1, bias = bias1)
-
+  exp1 = ff(vmode = "double", c(1, 2, 2))
+  pc11 = ff(vmode = "double", c(0.6, 0, 0))
+  pc10 = ff(vmode = "double", c(0.4, 0, 0))
+  ranks1 = ffdf(covariateId = covariateId1, biasRank = bias1, expRank = exp1, PC1 = pc11, PC0 = pc10)
   bias2 = ff(vmode = "double", c(7, 6, 2))
-  RR2 = ff(vmode = "double", c(1, 1, 0))
-  bias2 = ffdf(covariateId = covariateId2, RR = RR2, bias = bias2)
+  exp2 = ff(vmode = "double", c(1, 1, 1))
+  pc21 = ff(vmode = "double", c(0.6, 0.8, 0.6))
+  pc20 = ff(vmode = "double", c(0.4, 0, 0.5))
+  ranks2 = ffdf(covariateId = covariateId2, biasRank = bias2, expRank = exp2, PC1 = pc21, PC0 = pc20)
+  ranks = list(ranks1, ranks2)
 
-  bias = list(bias1, bias2)
+  result = removeLowRank(data, ranks, 1, FALSE)
+  expect_that(result[[1]]$covariateId[], equals(factor("1")))
+  expect_that(result[[2]], equals(NULL))
 
-  result = removeLowBias(data, bias, 2, TRUE)
+  result = removeLowRank(data, ranks, 2, FALSE)
   expect_that(result[[1]]$covariateId[], equals(factor("1")))
   expect_that(result[[2]]$covariateId[], equals(factor("4")))
 
-  result = removeLowBias(data, bias, 1, TRUE)
-  expect_that(result[[1]]$covariateId[], equals(factor("1")))
-  expect_that(result[[2]], equals(NULL))
+  result = removeLowRank(data, ranks, 3, FALSE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("1", "2"))))
+  expect_that(result[[2]]$covariateId[], equals(factor(c("4"))))
 
-  result = removeLowBias(data, bias, 6, FALSE)
-  expect_that(result[[1]]$covariateId[], equals(factor(c("1", "2", "3"))))
-  expect_that(result[[2]]$covariateId[], equals(factor(c("4", "5"))))
+  ranks[[1]]$biasRank = ff(vmode = "double", c(1, 2, 1))
+  ranks[[2]]$biasRank = ff(vmode = "double", c(1, 1, 1))
 
-  RR3 = ff(vmode = "double", c(0, 0, 0))
-  bias3 = ffdf(covariateId = covariateId2, RR = RR3, bias = ff(vmode = "double", c(7,6,2)))
-  bias = list(bias1, bias3)
-  result = removeLowBias(data, bias, 6, FALSE)
-  expect_that(result[[1]]$covariateId[], equals(factor(c("1", "2", "3"))))
-  expect_that(result[[2]], equals(NULL))
+  result = removeLowRank(data, ranks, 1, TRUE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("2"))))
+  expect_that(result[[2]]$covariateId[], equals(NULL))
 
-  result = removeLowBias(data, NULL, 5, TRUE)[[1]]
+  result = removeLowRank(data, ranks, 3, TRUE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("2","3"))))
+  expect_that(result[[2]]$covariateId[], equals(factor(c("5"))))
+
+  result = removeLowRank(data, ranks, 4, TRUE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("2","3"))))
+  expect_that(result[[2]]$covariateId[], equals(factor(c("5","6"))))
+
+  result = removeLowRank(data, ranks, 5, TRUE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("1","2","3"))))
+  expect_that(result[[2]]$covariateId[], equals(factor(c("5","6"))))
+
+  result = removeLowRank(data, ranks, 8, TRUE)
+  expect_that(result[[1]]$covariateId[], equals(factor(c("1","2","3"))))
+  expect_that(result[[2]]$covariateId[], equals(factor(c("4","5","6"))))
+
+  result = removeLowRank(data, NULL, 5, TRUE)[[1]]
   expect_that(result, equals(NULL))
 })
 

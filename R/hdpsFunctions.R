@@ -336,11 +336,8 @@ removeRareCodes <- function(data, lowPopCutoff, dimensionCutoff=NULL) {
   lowPopCutoff = which(counts<lowPopCutoff)[1]
   finalCutoff = if(is.na(lowPopCutoff)) dimensionCutoff else min(lowPopCutoff-1, dimensionCutoff)
   if (finalCutoff==0) {return(NULL)}
-  #dimensionCutoff = counts[dimensionCutoff]
-  #data = as.ffdf(data[counts[data$covariateId[]]>=max(lowPopCutoff, dimensionCutoff),])
   t = ffbase::ffmatch(data$covariateId, ff::as.ff(factor(names(counts[1:finalCutoff]))))
   data = data[ffbase::ffwhich(t,!is.na(t)),]
-  #rownames(data) <- NULL
   data$covariateId = ffbase::droplevels.ff(data$covariateId)
   return(list(data))
 }
@@ -410,25 +407,25 @@ expandCovariates <- function(data) {
 }
 
 
-#' Calculates bias and relative risk for each covariate
+#' Calculates bias and exp ranks for each covariate
 #'
 #' @description
-#' This function calculates the bias, as described in the hdps implementation, and the relative risk of each \code{covariateId} for a
+#' This function calculates the bias and exp ranks, as described in the hdps implementation, and the relative risk of each \code{covariateId} for a
 #' data dimension.
 #'
 #' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
 #' \code{treatment}, \code{outcome}
 #' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param RR0Constant Large constant to use when RR = 0 to prevent divide by zero error
+#' @param fudge Constant to avoid divide by zero
 #'
 #' @return
 #' Returns ffdf object with the following columns: \describe{
 #' \item{covariateId}{Covariate identifier}
-#' \item{RR}{Relative risk of covariate on outcome}
-#' \item{bias}{The value of abs(log(bias)) for each covariate, ranked decreasingly}}
+#' \item{biasRank}{The value of abs(log(bias)) for each covariate, ranked decreasingly}
+#' \item{expRank}{The value of abs(log(RRce)) for each covariate, ranked decreasingly}}
 #' Returns list to work with sapply.
 #' @export
-calculateBias <- function(data, cohortData, RR0Constant) {
+calculateRanks <- function(data, cohortData, fudge) {
   if (is.null(data)) {return(list(NULL))}
   totalPopulation = length(cohortData$cohorts$rowId)
   t = cohortData$cohorts$treatment
@@ -475,22 +472,26 @@ calculateBias <- function(data, cohortData, RR0Constant) {
   PC1 = PC1 / totalExposedPopulation
   PC0 = PC0 / totalComparatorPopulation
 
-  RR = (RRa*(RRc+RRd)) / (RRc*(RRa+RRb))
+  PC1[PC1>0.5] = (1-PC1)[PC1>0.5]
+  PC0[PC0>0.5] = (1-PC0)[PC0>0.5]
 
-  bias = rep(0,length(RR))
-  for(i in which(RR>=1)) {
-    bias[i]=(PC1[i]*(RR[i]-1)+1) / (PC0[i]*(RR[i]-1)+1)
-  }
-  for(i in which(RR<1 & RR>0)) {
-    bias[i]=(PC1[i]*((1/RR[i])-1)+1) / (PC0[i]*((1/RR[i])-1)+1)
-  }
-  for(i in which(RR==0)) {
-    bias[i]=(PC1[i] * RR0Constant + 1) / (PC0[i] * RR0Constant + 1)
-  }
-  bias = abs(log(bias))
+  RRcd = ((RRa+fudge)*(RRc+RRd+fudge)) / ((RRc+fudge)*(RRa+RRb+fudge))
+  RRce = PC1/PC0
 
-  result = data.frame(covariateId=tempCovariatesId, RR=RR, bias=bias)
-  result = result[order(result$bias,decreasing=TRUE),]
+  bias = rep(0,length(RRcd))
+  bias[RRcd>=1] = (PC1[RRcd>=1]*(RRcd[RRcd>=1]-1)+1) / (PC0[RRcd>=1]*(RRcd[RRcd>=1]-1)+1)
+  bias[RRcd<1] = (PC1[RRcd<1]*((1/RRcd[RRcd<1])-1)+1) / (PC0[RRcd<1]*((1/RRcd[RRcd<1])-1)+1)
+
+  RRcd[RRcd==0] = NA
+  RRcd[RRcd==Inf] = NA
+  RRce[RRce==0] = NA
+  RRce[RRce==Inf] = NA
+  bias[is.na(RRcd)] = NA
+
+  biasRank = abs(log(bias))
+  expRank = abs(log(RRce))
+
+  result = data.frame(covariateId=tempCovariatesId, biasRank = biasRank, expRank = expRank, PC0 = PC0, PC1 = PC1)
   result = ff::as.ffdf(result)
   rownames(result) <- NULL
 
@@ -501,47 +502,48 @@ calculateBias <- function(data, cohortData, RR0Constant) {
 #' Keeps only covariates with highest bias.
 #'
 #' @description
-#' This function eliminates data associated with covariates that have low bias. Only the top \code{cutoffIndex} codes are kept.
+#' This function eliminates data associated with covariates that have low bias. Only the top \code{rankCutoff} codes are kept.
 #'
 #' @param data List covariate information for data dimensions, as ffdf objects with columns \code{rowId}, \code{covariateId},
 #' \code{treatment}, \code{outcome}
-#' @param bias List of bias for each data dimension's covariates, as ffdf objects with columns \code{covariateId}, \code{RR}, \code{bias}
-#' @param cutoffIndex Number of total covariates to keep
-#' @param includeRR0 Boolean to keep covariates with RR = 0
+#' @param rankings List of bias and exposure rankings for each data dimension's covariates, as ffdf objects
+#' @param rankCutoff Number of total covariates to keep
+#' @param useExpRank Boolean to use exposure rank instead of bias rank
 #'
 #' @return
 #' Returns \code{data} with only the highest bias covariates.
 #' @export
-removeLowBias <- function(data, bias, cutoffIndex, includeRR0) {
-  bias = combineFunction(bias, ffbase::ffdfrbind.fill)
-  if (is.null(bias)) {return(list(NULL))}
-  if (!includeRR0) {
-    t = ffbase::ffwhich(bias, bias$RR > 0)
-    if (is.null(t)) {return(list(NULL))}
-    bias = bias[t,]
+removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
+  rankings = combineFunction(rankings, ffbase::ffdfrbind.fill)
+  if (is.null(rankings)) {return(list(NULL))}
+  if (useExpRank) {
+    rankings = rankings[ff::fforder(rankings$expRank*-1, rankings$biasRank*-1, rankings$PC1*-1, rankings$PC0*-1, rankings$covariateId, decreasing = FALSE),]
+    t = match(NA, rankings$expRank)
   }
-  bias = bias[ff::fforder(bias$bias, decreasing = TRUE),]
-  finalIndex = min(dim(bias)[1], cutoffIndex)
-  #data = sapply(data, removeLowBiasHelper, bias, bias$bias[finalIndex])
-  data = sapply(data, removeLowBiasHelper, bias, finalIndex)
+  else {
+    rankings = rankings[ff::fforder(rankings$biasRank*-1, rankings$expRank*-1, rankings$covariateId, decreasing = FALSE),]
+    t = match(NA, rankings$biasRank)
+  }
+  finalCutoff = if(is.na(t)) dim(rankings)[1] else t
+  finalCutoff = min(finalCutoff, rankCutoff)
+  if (finalCutoff==0) {return(list(NULL))}
+  rankNames = rankings$covariateId[ff::ff(vmode = "integer", 1:finalCutoff)]
+  data = sapply(data, removeLowRankHelper, rankNames)
   return(data)
 }
 
 
-#' Helper for removeLowBias
+#' Helper for removeLowRank
 #'
 #' @param data Covariate information for each data dimension,
-#' @param bias Bias information for all covariates
-#' @param index Index to cut off
+#' @param rankNames Names of covariates to keep
 #'
 #' @return
 #' Returns \code{data} with proper codes removed
 #' @export
-removeLowBiasHelper <- function(data, bias, index) {
-  #t = bias$bias[ffmatch(data$covariateId, bias$covariateId)] >= index
-  #data = data[ffwhich(t,t==TRUE),]
+removeLowRankHelper <- function(data, rankNames) {
   if (is.null(data)) {return(list(NULL))}
-  t = ffbase::ffmatch(data$covariateId, ff::as.ff(bias$covariateId[1:index]))
+  t = ffbase::ffmatch(data$covariateId, rankNames)
   rows = ffbase::ffwhich(t, !is.na(t))
   if (is.null(rows)) {return(list(NULL))}
   data = data[rows,]
