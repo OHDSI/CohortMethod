@@ -381,8 +381,8 @@ expandCovariates <- function(data) {
   uniqueData$median = covariateIdStats$median[ffbase::ffmatch(uniqueData$covariateId, covariateIdStats$covariateId)]
   uniqueData$thirdQuartile = covariateIdStats$thirdQuartile[ffbase::ffmatch(uniqueData$covariateId, covariateIdStats$covariateId)]
 
-  sporadicIndex = ffbase::ffwhich(uniqueData, uniqueData$counts > uniqueData$median)
-  frequentIndex = ffbase::ffwhich(uniqueData, uniqueData$counts > uniqueData$thirdQuartile)
+  sporadicIndex = ffbase::ffwhich(uniqueData, (uniqueData$counts >= uniqueData$median) & (uniqueData$median != 1))
+  frequentIndex = ffbase::ffwhich(uniqueData, (uniqueData$counts >= uniqueData$thirdQuartile) & (uniqueData$thirdQuartile != uniqueData$median))
 
   if(!is.null(sporadicIndex)) {
     sporadicData = uniqueData[sporadicIndex,]

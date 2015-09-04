@@ -227,6 +227,19 @@ test_that("expandCovariates", {
 
   result = expandCovariates(NULL)[[1]]
   expect_that(result, equals(NULL))
+
+  #   Covariate1: (1, 1, 1, 2)
+  #     median = 1
+  #     3rd quartile = 1
+  rowId = ff(vmode = "double", c(1, 2, 3, 4, 4))
+  covariateId = ff(vmode = "integer", initdata = factor("banana"), length = 5)
+  treatment = ff(vmode = "double", length = 5)
+  outcome = ff(vmode = "double", length = 5)
+  data = ffdf(rowId = rowId, covariateId = covariateId, treatment = treatment, outcome = outcome)
+
+  result = expandCovariates(data)[[1]]
+  expect_that(length(unique(result$covariateId)), equals(1))
+  expect_that(result$covariateId, is_equivalent_to(ff(vmode = "integer", factor(c("banana")))))
 })
 
 test_that("calculateBias", {
