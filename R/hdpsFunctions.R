@@ -84,6 +84,7 @@ getDimensionSql <- function(dimensionInfo) {
 #' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
 #' @return
 #' Returns a \code{ff_vector} of type \code{double} of concept IDs
+#' Returns (-1) if there are no matching concept IDs
 #' @export
 getConceptId <- function(analysisId, cohortData) {
   result = cohortData$covariateRef$conceptId[cohortData$covariateRef$analysisId==analysisId]

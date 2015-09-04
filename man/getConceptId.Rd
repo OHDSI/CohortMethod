@@ -13,6 +13,7 @@ getConceptId(analysisId, cohortData)
 }
 \value{
 Returns a \code{ff_vector} of type \code{double} of concept IDs
+Returns (-1) if there are no matching concept IDs
 }
 \description{
 Retrieves list of concept IDs that match the analysisId for a data dimension. These concept IDs will be used to query the CDM for
