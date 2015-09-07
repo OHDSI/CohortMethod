@@ -647,7 +647,7 @@ plotKaplanMeier <- function(outcomeModel,
                      lower = sv$lower)
   levels(data$strata)[levels(data$strata) == "treatment=0"] <- comparatorLabel
   levels(data$strata)[levels(data$strata) == "treatment=1"] <- treatmentLabel
-  levels(data$strata) <- c(treatmentLabel, comparatorLabel)
+  data$strata <- factor(data$strata, levels = c(treatmentLabel, comparatorLabel))
   dataAtT <- aggregate(n.censor ~ time, data, sum)
   dataAtT$cumSum <- cumsum(dataAtT$n.censor)
   cutoff <- min(dataAtT$time[dataAtT$cumSum >= dataCutoff * sum(dataAtT$n.censor)])
