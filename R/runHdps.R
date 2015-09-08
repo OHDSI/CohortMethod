@@ -12,8 +12,8 @@
 #' calculated, and the highest \code{biasCutoff} codes across all data dimensions are selected for inclusion. Demographic information of
 #' age, sex, race, and year are also included. \code{cohortData$covariates} and \code{cohortData$covariateRef} are altered accordingly.
 #'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
 #' @param connectionDetails An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.
+#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortMethodData}
 #' @param useConditionICD9 Boolean to include ICD9 diagnosis codes
 #' @param useDrug Boolean to include drugs
 #' @param useProcedureCPT4 Boolean to include CPT4 procedure codes
@@ -30,7 +30,7 @@
 #' @return
 #' Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}
 #' @export
-runHdps <- function(cohortData, connectionDetails,
+runHdps <- function(connectionDetails, cohortData,
                     useConditionICD9 = TRUE,
                     useDrug = TRUE,
                     useProcedureCPT4 = TRUE,

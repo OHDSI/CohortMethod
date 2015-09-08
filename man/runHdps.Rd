@@ -4,7 +4,7 @@
 \alias{runHdps}
 \title{Runs hdps implementation}
 \usage{
-runHdps(cohortData, connectionDetails, useConditionICD9 = TRUE,
+runHdps(connectionDetails, cohortData, useConditionICD9 = TRUE,
   useDrug = TRUE, useProcedureCPT4 = TRUE, demographicsAnalysisIds = c(2,
   3, 5, 6), predefinedIncludeConceptIds = c(),
   predefinedExcludeConceptIds = c(), lowPopCutoff = 100,
@@ -12,9 +12,9 @@ runHdps(cohortData, connectionDetails, useConditionICD9 = TRUE,
   useExpRank = FALSE, fudge = 0)
 }
 \arguments{
-\item{cohortData}{\code{cohortData} object constructed by \code{getDbCohortData}}
-
 \item{connectionDetails}{An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.}
+
+\item{cohortData}{\code{cohortData} object constructed by \code{getDbCohortMethodData}}
 
 \item{useConditionICD9}{Boolean to include ICD9 diagnosis codes}
 
