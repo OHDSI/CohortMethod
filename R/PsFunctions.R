@@ -762,7 +762,8 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' @export
 computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeId = NULL) {
   start <- Sys.time()
-  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
+  if (is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
+                                                                              outcomeId)) {
     cohorts <- cohortMethodData$cohorts
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
   } else {
