@@ -729,6 +729,7 @@ summarizeAnalyses <- function(outcomeReference) {
   result$rr <- 0
   result$ci95lb <- 0
   result$ci95ub <- 0
+  result$p <- 1
   result$treated <- 0
   result$comparator <- 0
   result$eventsTreated <- 0
@@ -743,6 +744,12 @@ summarizeAnalyses <- function(outcomeReference) {
       NA else exp(confint(outcomeModel)[1])
     result$ci95ub[i] <- if (is.null(coef(outcomeModel)))
       NA else exp(confint(outcomeModel)[2])
+    if (is.null(coef(outcomeModel))) {
+      result$p[i] <- NA
+    } else {
+      z <- coef(outcomeModel)/outcomeModel$treatmentEstimate$seLogRr
+      result$p[i] <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+    }
     result$treated[i] <- sum(outcomeModel$data$treatment == 1)
     result$comparator[i] <- sum(outcomeModel$data$treatment == 0)
     result$eventsTreated[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 1])
