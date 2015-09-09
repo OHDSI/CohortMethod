@@ -87,7 +87,11 @@ createDataForModelFitCox <- function(useStrata, useCovariates, cohorts, covariat
 
 createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
   if (nrow(outcomes) == 0) {
-    data <- ff::as.ram(cohorts[, c("treatment", "rowId", "stratumId", "timeToCensor")])
+    if (useStrata) {
+      data <- ff::as.ram(cohorts[, c("treatment", "rowId", "stratumId", "timeToCensor")])
+    } else {
+      data <- ff::as.ram(cohorts[, c("treatment", "rowId", "timeToCensor")])
+    }
     data$y <- 0
   } else {
     outcomes <- ff::as.ram(outcomes)
@@ -156,7 +160,11 @@ createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, cova
 
 createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
   if (nrow(outcomes) == 0) {
-    data <- ff::as.ram(cohorts[, c("treatment", "rowId", "stratumId")])
+    if (useStrata) {
+      data <- ff::as.ram(cohorts[, c("treatment", "rowId", "stratumId")])
+    } else {
+      data <- ff::as.ram(cohorts[, c("treatment", "rowId")])
+    }
     data$y <- 0
   } else {
     outcomes <- ff::as.ram(outcomes)
