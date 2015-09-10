@@ -62,7 +62,7 @@ getDimensionTable <- function(dimensions) {
 #' Returns the numeric value for \code{analysisId}
 #' @export
 getDimensionAnalysisId <- function(dimensionInfo) {
-  return(list(dimensionInfo$analysisId))
+  return(dimensionInfo$analysisId)
 }
 
 
@@ -73,7 +73,7 @@ getDimensionAnalysisId <- function(dimensionInfo) {
 #' Returns the sql query string
 #' @export
 getDimensionSql <- function(dimensionInfo) {
-  return(list(dimensionInfo$sql))
+  return(dimensionInfo$sql)
 }
 
 
@@ -91,7 +91,7 @@ getConceptId <- function(analysisId, cohortData) {
   if (is.null(result)) {
     result = ff::ff(vmode = "double", c(-1))
   }
-  return(list(result))
+  return(result)
 }
 
 
@@ -103,8 +103,7 @@ getConceptId <- function(analysisId, cohortData) {
 #' Returns a \code{ff_vector} of type \code{double} of covariate IDs
 #' @export
 getCovariateId <- function(analysisId, cohortData) {
-  result = cohortData$covariateRef$covariateId[cohortData$covariateRef$analysisId==analysisId]
-  return(list(result))
+  return(cohortData$covariateRef$covariateId[cohortData$covariateRef$analysisId==analysisId])
 }
 
 

@@ -130,6 +130,6 @@ savecohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed")
 cohortMethodData = loadCohortMethodData("coxibVsNonselVsGiBleed")
 
 # HDPS implementation:
-cohortMethodData1 = runHdps(cohortMethodData, connectionDetails)
-ps <- createPs(cohortMethodData1, outcomeId = 3)
-propensityModel <- getPsModel(ps, cohortMethodData1)
+screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData)
+hdPs <- createPs(screenedCohortMethodData, outcomeId = 3)
+hdpsPropensityModel <- getPsModel(hdPs, screenedCohortMethodData)

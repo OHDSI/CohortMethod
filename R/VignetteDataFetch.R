@@ -20,7 +20,7 @@
 .singleStudyVignetteDataFetch <- function() {
   # This function should be used to fetch the data that is used in the vignettes.
   # library(SqlRender);library(DatabaseConnector) ;library(CohortMethod);
-  # setwd('s:/temp');options('fftempdir' = 's:/temp')
+  # setwd('s:/temp');options('fftempdir' = 's:/fftemp')
 
 
   # setwd('C:/Users/mschuemi/git/CohortMethod/data')
@@ -156,7 +156,7 @@
 
   save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
 
-  # load('vignetteBalance.rda')
+  # load('vignetteBalance.rda'); balance <- vignetteBalance
 
   outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                   cohortMethodData = cohortMethodData,
