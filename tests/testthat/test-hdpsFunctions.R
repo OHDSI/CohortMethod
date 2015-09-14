@@ -116,6 +116,16 @@ test_that("deleteRepeatCodes", {
   expect_that(result, equals(NULL))
 })
 
+test_that("appendAnalysisId", {
+  sourceCodes = ff(vmode = "integer", factor(c("1", "1", "a", "b")))
+  targetCodes = ff(vmode = "double", c(1, 2, 3, 3))
+  codes = ffdf(SOURCE_CODE = sourceCodes, TARGET_CONCEPT_ID = targetCodes)
+
+  result = appendAnalysisId(codes, 100)[[1]]
+  expect_that(result$SOURCE_CODE, is_equivalent_to(ff(vmode = "integer", factor(c("1001", "1001", "100a", "100b")))))
+  expect_that(result$TARGET_CONCEPT_ID, equals(codes$TARGET_CONCEPT_ID))
+} )
+
 test_that("combineData",{
   #   rowId     covariateId     treatment     outcome
   #   1         apple           1             1

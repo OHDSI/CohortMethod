@@ -80,12 +80,13 @@ runHdps <- function(connectionDetails, cohortData,
     rawCodes = sapply(rawCodes, deletePredefinedCodes, predefinedExcludeConceptIds)
     truncatedCodes = mapply(truncateRawCodes, rawCodes, dimensionTable)
     uniqueCodes = sapply(truncatedCodes, deleteRepeatCodes)
+    uniqueCodes = mapply(appendAnalysisId, uniqueCodes, dimAnalysisId)
 
-    newData = combineData(cohortData, uniqueCodes, dimCovariateId)
+    newData = combineData(cohortData, uniqueCodes, dimCovariateId) # loss of unique covariate Ids -> need to append analysisId onto the new codes
     newData = sapply(newData, removeRareCodes, lowPopCutoff, dimensionCutoff)
     newData = sapply(newData, expandCovariates)
     if (dropRareAfterExpand) {newData = sapply(newData, removeRareCodes, lowPopCutoff)}
-    rankings = sapply(newData, calculateBias, cohortData, fudge)
+    rankings = sapply(newData, calculateRanks, cohortData, fudge)
     newData = removeLowRank(newData, rankings, rankCutoff, useExpRank)
 
     newCovariates = combineFunction(newData, ffbase::ffdfrbind.fill)

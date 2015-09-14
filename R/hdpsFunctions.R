@@ -60,7 +60,6 @@ getDimensionTable <- function(dimensions) {
 #' @param dimensionInfo Information for a data dimension, as acquired from \code{getDimensionTable}
 #' @return
 #' Returns the numeric value for \code{analysisId}
-#' @export
 getDimensionAnalysisId <- function(dimensionInfo) {
   return(dimensionInfo$analysisId)
 }
@@ -71,7 +70,6 @@ getDimensionAnalysisId <- function(dimensionInfo) {
 #' @param dimensionInfo Information for a data dimension, as acquired from \code{getDimensionTable}
 #' @return
 #' Returns the sql query string
-#' @export
 getDimensionSql <- function(dimensionInfo) {
   return(dimensionInfo$sql)
 }
@@ -85,7 +83,6 @@ getDimensionSql <- function(dimensionInfo) {
 #' @return
 #' Returns a \code{ff_vector} of type \code{double} of concept IDs
 #' Returns (-1) if there are no matching concept IDs
-#' @export
 getConceptId <- function(analysisId, cohortData) {
   result = cohortData$covariateRef$conceptId[cohortData$covariateRef$analysisId==analysisId]
   if (is.null(result)) {
@@ -101,7 +98,6 @@ getConceptId <- function(analysisId, cohortData) {
 #' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
 #' @return
 #' Returns a \code{ff_vector} of type \code{double} of covariate IDs
-#' @export
 getCovariateId <- function(analysisId, cohortData) {
   return(cohortData$covariateRef$covariateId[cohortData$covariateRef$analysisId==analysisId])
 }
@@ -129,7 +125,6 @@ getCovariateId <- function(analysisId, cohortData) {
 #'
 #' @return
 #' Returns list of completed sql queries.
-#' @export
 sqlMapply <- function(connection, sqlList, paramNames, parameters) {
   d = length(sqlList)
   p = length(paramNames)
@@ -157,7 +152,6 @@ sqlMapply <- function(connection, sqlList, paramNames, parameters) {
 #'
 #' @return
 #' Returns the input codes with \code{SOURCE_CODE} as a factor
-#' @export
 covariateIdToFactor <- function(codes) {
   if (is.data.frame(codes) & dim(codes)[1]==0) {
     return(list(NULL))
@@ -175,7 +169,6 @@ covariateIdToFactor <- function(codes) {
 #'
 #' @return
 #' Returns \code{rawCodes} with all instances of (\code{TARGET_CONCEPT_ID} = predefined covariate) removed
-#' @export
 deletePredefinedCodes <- function(rawCodes, predefinedConceptIds) {
   if (is.null(rawCodes)) {return(list(NULL))}
   if (!is.null(predefinedConceptIds)) {
@@ -203,7 +196,6 @@ deletePredefinedCodes <- function(rawCodes, predefinedConceptIds) {
 #'
 #' @return
 #' Returns \code{rawCodes} with \code{SOURCE_CODE} truncated if required
-#' @export
 truncateRawCodes <- function(rawCodes, dimensionTable) {
   if (is.null(rawCodes)) {return(list(NULL))}
   f = dimensionTable$truncate
@@ -225,7 +217,6 @@ truncateRawCodes <- function(rawCodes, dimensionTable) {
 #'
 #' @return
 #' Returns \code{codes} with relevant rows deleted.
-#' @export
 deleteRepeatCodes <- function(codes) {
   if (is.null(codes)) {return(list(NULL))}
   codes = unique(codes)
@@ -233,6 +224,25 @@ deleteRepeatCodes <- function(codes) {
   codes = ff::as.ffdf(codes[counts[as.character(codes$TARGET_CONCEPT_ID[])]==1,])
   rownames(codes) = NULL
   codes$SOURCE_CODE = ffbase::droplevels.ff(codes$SOURCE_CODE)
+  return(list(codes))
+}
+
+#' Appends analysis Id onto new codes
+#'
+#' @description
+#' This function puts the analysisId in front of the new codes. This is to prevent confusion in situations
+#' where ICD9 codes are used for both inpatient and outpatient purposes
+#'
+#' @param codes \code{ffdf} with columns: \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
+#' @param analysisId identifier for data dimension
+#'
+#' @return
+#' Returns \code{codes} with analysisId added
+appendAnalysisId <- function(codes, analysisId) {
+  if (is.null(codes)) {return(list(NULL))}
+  covariateId = as.character(codes$SOURCE_CODE[])
+  covariateId = paste(analysisId, covariateId, sep = "")
+  codes$SOURCE_CODE = ff::ff(vmode = "integer", factor(covariateId))
   return(list(codes))
 }
 
@@ -256,7 +266,6 @@ deleteRepeatCodes <- function(codes) {
 #' \item{covariateId}{New source code for data dimension}
 #' \item{treatment}{1 if patient is in treatment cohort; 0 otherwise}
 #' \item{outcome}{1 if patient is in outcome cohort; 0 otherwise} }
-#' @export
 combineData <- function(cohortData, codes, dimCovariateId) {
   covariateIds = combineFunction(dimCovariateId, ffbase::ffappend)
   if (is.null(covariateIds)) {return(NULL)}
@@ -289,7 +298,6 @@ combineData <- function(cohortData, codes, dimCovariateId) {
 #' @return
 #' Returns ffdf object with the four combined ff vectors, only on covariate indices appropriate for that data dimension.
 #' \code{covariateId} is converted to a factor, if it is not already one.
-#' @export
 combineDataHelper <- function(sourceId, rowIds, treatments, outcomes) {
   if (is.null(sourceId)) {return(NULL)}
   toKeep = ffbase::ffwhich(sourceId, !is.na(sourceId))
@@ -540,7 +548,6 @@ removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
 #'
 #' @return
 #' Returns \code{data} with proper codes removed
-#' @export
 removeLowRankHelper <- function(data, rankNames) {
   if (is.null(data)) {return(list(NULL))}
   t = ffbase::ffmatch(data$covariateId, rankNames)
@@ -563,7 +570,6 @@ removeLowRankHelper <- function(data, rankNames) {
 #'
 #' @return
 #' Returns aggregated output of applying FUN to data
-#' @export
 combineFunction <- function(data, FUN) {
   t = sapply(data, function(x){return(!is.null(x))})
   data = data[which(t==TRUE)]
@@ -594,7 +600,6 @@ combineFunction <- function(data, FUN) {
 #'
 #' @return
 #' Returns one ffdf object with columns \code{rowId}, \code{covariateId}, \code{covariateValue}.
-#' @export
 combineWithOtherCovariates <- function(newCovariates, demographicsCovariates, predefinedCovariates) {
   if (!is.null(newCovariates)) {
     newCovariates = ff::ffdf(rowId = newCovariates$rowId,
@@ -625,7 +630,6 @@ combineWithOtherCovariates <- function(newCovariates, demographicsCovariates, pr
 #'
 #' @return
 #' Returns combined \code{covariateRef}, with demographics covariates changed to new index.
-#' @export
 combineWithOtherCovariateRef <- function(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef, covariateIdIndex) {
   if (!is.null(demographicsCovariateRef)) {
     demographicsCovariateRef$covariateId = covariateIdIndex$index[ffbase::ffmatch(demographicsCovariateRef$covariateId, covariateIdIndex$covariateId)]
@@ -664,7 +668,6 @@ combineWithOtherCovariateRef <- function(newCovariateRef, demographicsCovariateR
 #' \item{covariateName}{New name for covariate, with appropriate recurrence tag}
 #' \item{analysisId}{Analysis identifier for data dimension}
 #' \item{conceptId}{Concept identifier for covariate. 0 if code was truncated} }
-#' @export
 createNewCovRef <- function(data, dimensionInfo, rawCodes, covariateIdIndex, cohortData) {
   if (is.null(data)) {return(NULL)}
   truncatedNames = dimensionInfo$truncatedNames
@@ -687,7 +690,8 @@ createNewCovRef <- function(data, dimensionInfo, rawCodes, covariateIdIndex, coh
       covariateName = rep("covariate name not available", length(newCovariateId))
     } else {
       newNames = eval(parse(text = truncatedNames))
-      covariateName = newNames$name[match(uniqueCovariateIdRoots, newNames$code)]
+      uniqueCovariateIdRoots1 = substring(uniqueCovariateIdRoots, 4)
+      covariateName = newNames$name[match(uniqueCovariateIdRoots1, newNames$code)]
       f <- function(a,b){if (is.na(b)) {return(paste(a, "covariate name not available", sep=" "))} else return(paste(a,b,sep=" "))}
       covariateName = mapply(f,uniqueCovariateIdRecurrence, covariateName, USE.NAMES = FALSE)
     }
@@ -699,8 +703,8 @@ createNewCovRef <- function(data, dimensionInfo, rawCodes, covariateIdIndex, coh
                 conceptId = ff::ff(vmode = "double", length = d, initdata = 0)))
   } else {
     newCovariateId = covariateIdIndex$index[ffbase::ffmatch(uniqueCovariateId, covariateIdIndex$covariateId)]
-    conceptIds = rawCodes$TARGET_CONCEPT_ID[ffbase::ffmatch(ff::ff(vmode = "integer", factor(uniqueCovariateIdRoots)), rawCodes$SOURCE_CODE)]
-    #covariateName = cohortData$covariateRef$covariateName[ffmatch(conceptIds, cohortData$covariateRef$conceptId)]
+    uniqueCovariateIdRoots1 = substring(uniqueCovariateIdRoots, 4)
+    conceptIds = rawCodes$TARGET_CONCEPT_ID[ffbase::ffmatch(ff::ff(vmode = "integer", factor(uniqueCovariateIdRoots1)), rawCodes$SOURCE_CODE)]
     foo = ff::ffdf(x1 = conceptIds, x2 = conceptIds)
     t = ff::ffapply(X=foo, AFUN=function(a){return(ffbase::ffwhich(cohortData$covariateRef, cohortData$covariateRef$conceptId==a["x1"] & cohortData$covariateRef$analysisId == analysisId))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
     t = combineFunction(t, ffbase::ffappend)
@@ -728,7 +732,6 @@ createNewCovRef <- function(data, dimensionInfo, rawCodes, covariateIdIndex, coh
 #'
 #' @return
 #' Returns ffdf object with columns \code{covariateId} and \code{index}
-#' @export
 createCovariateIndex <- function(covariates) {
   if (is.null(covariates)) {return(NULL)}
   uniqueCovariateId = unique(covariates$covariateId)
@@ -745,7 +748,6 @@ createCovariateIndex <- function(covariates) {
 #'
 #' @return
 #' Returns input \code{covariates} with \code{covariateId} converted to new index, which is numeric
-#' @export
 convertCovariateId <- function(covariates, index) {
   if (is.null(covariates)) {return(NULL)}
   covariates$covariateId = index$index[ffbase::ffmatch(covariates$covariateId, index$covariateId)]
@@ -759,7 +761,6 @@ convertCovariateId <- function(covariates, index) {
 #'
 #' @return
 #' Returns ffdf of elements of \code{cohortData$covariateRef} that relate to demographic information.
-#' @export
 getDemographicsCovariateRef <- function(cohortData, analysisIds) {
   if (is.null(analysisIds)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(analysisIds))
@@ -776,7 +777,6 @@ getDemographicsCovariateRef <- function(cohortData, analysisIds) {
 #'
 #' @return
 #' Returns ffdf of elements of \code{cohortData$covariates} that relate to demographic information.
-#' @export
 getDemographicsCovariates <- function(cohortData, covariateRef) {
   if (is.null(covariateRef)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariates$covariateId, covariateRef$covariateId)
@@ -791,7 +791,6 @@ getDemographicsCovariates <- function(cohortData, covariateRef) {
 #'
 #' @return
 #' Returns ffdf of elements of \code{cohortData$covariateRef} that relate to predefined covariates.
-#' @export
 getPredefinedCovariateRef <- function(cohortData, conceptIds) {
   if (is.null(conceptIds)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
@@ -808,7 +807,6 @@ getPredefinedCovariateRef <- function(cohortData, conceptIds) {
 #'
 #' @return
 #' Returns ffdf of elements of \code{cohortData$covariates} that relate to predefined covariates.
-#' @export
 getPredefinedCovariates <- function(cohortData, predefinedCovariateRef) {
   if (is.null(predefinedCovariateRef)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariates$covariateId, predefinedCovariateRef$covariateId)
@@ -821,7 +819,6 @@ getPredefinedCovariates <- function(cohortData, predefinedCovariateRef) {
 #' This function saves a list of ffdf objects in a new folder. The names of the ffdf elements are also preserved.
 #' @param ffdfList List of ffdf objects to save
 #' @param file Name of folder to create / save in
-#' @export
 saveFfdfList <- function (ffdfList, file) {
   front = "ffbase::save.ffdf("
   back = "dir = file, overwrite=T)"
@@ -849,7 +846,6 @@ saveFfdfList <- function (ffdfList, file) {
 #' @description
 #' Loads list of ffdf objects saved by \code{saveFfdfList}
 #' @param file Name of folder
-#' @export
 loadFfdfList <- function (file) {
 
   if (!file.exists(file))
@@ -898,7 +894,6 @@ loadFfdfList <- function (file) {
 #' Returns \code{data.frame} with columns: \describe{
 #' \item{code}{Truncated ICD9 codes to 3 digits}
 #' \item{name}{Name of ICD9 code} }
-#' @export
 processICD9Dx <- function(file) {
 
   icd9codes = read.delim(file, header=FALSE)
@@ -929,7 +924,6 @@ processICD9Dx <- function(file) {
 #' Returns \code{data.frame} with columns: \describe{
 #' \item{code}{Truncated ICD9 codes to 3 digits}
 #' \item{name}{Name of ICD9 code} }
-#' @export
 getICD9Dx <- function(file) {
   e = new.env()
   load(file, envir = e)
