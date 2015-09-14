@@ -21,12 +21,17 @@ Returns a date frame describing the covariate balance before and after matching/
 }
 \description{
 For every covariate, prevalence in treatment and comparator groups before and after
-matching/trimming are computed.
+matching/trimming are computed. When variable ratio matching was used the balance score will be corrected according the method
+described in Austin et al (2008).
 }
 \details{
 The restrictedCohorts data frame should have at least the following columns: \tabular{lll}{
 \verb{rowId} \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 \verb{treatment} \tab(integer) \tab Column indicating whether the person is in the treated (1) or
 comparator (0)\cr \tab \tab group \cr }
+}
+\references{
+Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one matching on the
+propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 }
 

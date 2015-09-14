@@ -676,26 +676,58 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 
   t <- cohorts$treatment == 1
   t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
-  treated <- quickSum(covariates[ffbase::ffwhich(t, t == TRUE), ])
+  covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+  treated <- quickSum(covariatesSubset)
+  treatedSqr <- quickSum(covariatesSubset, squared = TRUE)
+  treated <- merge(treated, treatedSqr)
+  treated$sdTreated <- sqrt((treated$sumSqr - (treated$sum^2/nTreated))/nTreated)
   treated$meanTreated <- treated$sum/nTreated
   colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
 
-  t <- cohorts$treatment == 0
-  t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
-  comparator <- quickSum(covariates[ffbase::ffwhich(t, t == TRUE), ])
-  comparator$meanComparator <- comparator$sum/nComparator
-  colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
+  if (!is.null(cohorts$stratumId)) {
+    t <- ffbase::subset.ffdf(cohorts, treatment == 0)
+    t <- aggregate(rowId ~ stratumId, t, length)
+  }
+  if (!is.null(cohorts$stratumId) && max(t$rowId) > 1) {
+    # Variable ratio matching detected: weigh by size of matched set
+    w <- t
+    w$weight <- 1/w$rowId
+    w$rowId <- NULL
+    w <- merge(w, ffbase::subset.ffdf(cohorts, treatment == 0))
+    w <- w [,c("rowId","weight")]
+    t <- cohorts$treatment == 0
+    t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
+    covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+    covariatesSubset <- merge(covariatesSubset, ff::as.ffdf(w))
+    t <- covariatesSubset$covariateValue
+    covariatesSubset$covariateValue <- covariatesSubset$covariateValue * covariatesSubset$weight
+    comparator <- quickSum(covariatesSubset)
+    comparator$meanComparator <- comparator$sum/sum(w$weight)
+    covariatesSubset$covariateValue <- t
+    covariatesSubset <- merge(covariatesSubset, ff::as.ffdf(comparator))
+    covariatesSubset$covariateValue <- covariatesSubset$weight * (covariatesSubset$covariateValue - covariatesSubset$meanComparator) ^ 2
+    comparatorSqr <- quickSum(covariatesSubset)
+    colnames(comparatorSqr)[colnames(comparatorSqr) == "sum"] <- "sumSqr"
+    comparator <- merge(comparator, comparatorSqr)
+    comparator$sdComparator <- comparator$sumSqr * sum(w$weight)/(sum(w$weight) ^ 2 - sum(w$weight^2))
+    colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
+  } else {
+    # Used one-on-one ratio matching, no need to weigh
+    t <- cohorts$treatment == 0
+    t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
+    covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+    comparator <- quickSum(covariatesSubset)
+    comparatorSqr <- quickSum(covariatesSubset, squared = TRUE)
+    comparator <- merge(comparator, comparatorSqr)
+    comparator$sdComparator <- sqrt((comparator$sumSqr - (comparator$sum^2/nComparator))/nComparator)
+    comparator$meanComparator <- comparator$sum/nComparator
+    colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
+  }
 
-  t <- in.ff(covariates$rowId, cohorts$rowId)
-  covsInCohorts <- covariates[ffbase::ffwhich(t, t == TRUE), ]
-  overall <- quickSum(covsInCohorts)
-  overallSqr <- quickSum(covsInCohorts, squared = TRUE)
-  overall <- merge(overall, overallSqr)
-  overall$sd <- sqrt((overall$sumSqr - (overall$sum^2/nOverall))/nOverall)
-  overall <- data.frame(covariateId = overall$covariateId, sd = overall$sd)
 
-  result <- merge(treated, comparator)
-  result <- merge(result, overall)
+  result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")])
+  result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
+  result <- result[,c("covariateId","meanTreated","meanComparator","sumTreated","sumComparator","sd")]
   return(result)
 }
 
@@ -704,7 +736,8 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'
 #' @description
 #' For every covariate, prevalence in treatment and comparator groups before and after
-#' matching/trimming are computed.
+#' matching/trimming are computed. When variable ratio matching was used the balance score will be corrected according the method
+#' described in Austin et al (2008).
 #'
 #' @param restrictedCohorts   A data frame containing the people that are remaining after matching
 #'                            and/or trimming.
@@ -722,10 +755,15 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' @return
 #' Returns a date frame describing the covariate balance before and after matching/trimming.
 #'
+#' @references
+#' Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one matching on the
+#' propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
+#'
 #' @export
 computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeId = NULL) {
   start <- Sys.time()
-  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
+  if (is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
+                                                                              outcomeId)) {
     cohorts <- cohortMethodData$cohorts
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
   } else {
@@ -761,7 +799,7 @@ computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcome
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   delta <- Sys.time() - start
-  writeLines(paste("COmputing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  writeLines(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
 }
 

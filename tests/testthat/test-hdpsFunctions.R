@@ -18,13 +18,13 @@ test_that("getDimensionTable", {
 
 test_that("getDimensionAnalysisId", {
   dimensions = c("conditionICD9")
-  analysisId = getDimensionAnalysisId(getDimensionTable(dimensions)[[1]])
+  analysisId = getDimensionAnalysisId(getDimensionTable(dimensions)[[1]])[[1]]
   expect_that(analysisId, equals(104))
 })
 
 test_that("getDimensionSql", {
   dimensions = c("conditionICD9")
-  sql = getDimensionSql(getDimensionTable(dimensions)[[1]])
+  sql = getDimensionSql(getDimensionTable(dimensions)[[1]])[[1]]
   expect_that(sql, is_a("character"))
 })
 
@@ -35,8 +35,8 @@ test_that("getConceptId", {
   x4 = ffdf(analysisId = as.ff(1), conceptId = as.ff(103))
   x = combineFunction(list(x1, x2, x3, x4), ffdfrbind.fill)
   y = list(covariateRef = x)
-  expect_that(getConceptId(1, y), equals(ff(vmode="double", initdata = c(100, 101, 103))))
-  expect_that(getConceptId(3, y), equals(ff(vmode="double", initdata = c(-1))))
+  expect_that(getConceptId(1, y)[[1]], equals(ff(vmode="double", initdata = c(100, 101, 103))))
+  expect_that(getConceptId(3, y)[[1]], equals(ff(vmode="double", initdata = c(-1))))
 })
 
 test_that("getCovariateId", {
@@ -46,7 +46,7 @@ test_that("getCovariateId", {
   x4 = ffdf(analysisId = as.ff(1), covariateId = as.ff(103))
   x = combineFunction(list(x1, x2, x3, x4), ffdfrbind.fill)
   y = list(covariateRef = x)
-  expect_that(getCovariateId(1, y), equals(ff(vmode="double", initdata = c(100, 101, 103))))
+  expect_that(getCovariateId(1, y)[[1]], equals(ff(vmode="double", initdata = c(100, 101, 103))))
 })
 
 test_that("covariateIdToFactor", {
