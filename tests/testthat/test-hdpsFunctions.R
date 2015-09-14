@@ -496,12 +496,13 @@ test_that("combineWithOtherCovariateRef", {
 })
 
 test_that("createNewCovRef", {
-  covariateIdIndex = ffdf(covariateId = ff(vmode = "integer", factor(c("1", "1_sporadic", "1_frequent", "2", "2_sporadic", "2_frequent"))),
+  covariateIdIndex = ffdf(covariateId = ff(vmode = "integer", factor(c("9991", "9991_sporadic", "9991_frequent",
+                                                                       "9992", "9992_sporadic", "9992_frequent"))),
                           index = ff(vmode = "double", c(101, 102, 103, 104, 105, 106)))
   dimensionInfo = data.frame(analysisId = 1,
                              truncate = "yes",
                              truncatedNames = "data.frame(code = c(\"1\",\"2\"), name = c(\"apple\", \"banana\"))", stringsAsFactors = FALSE)
-  data = ffdf(covariateId = ff(vmode = "integer", factor(c("1", "1_sporadic", "2", "2_frequent"))))
+  data = ffdf(covariateId = ff(vmode = "integer", factor(c("9991", "9991_sporadic", "9992", "9992_frequent"))))
 
   result = createNewCovRef(data, dimensionInfo, NULL, covariateIdIndex, NULL)
   expect_that(result$covariateId, equals(ff(vmode = "double", c(101, 102, 104, 106))))
@@ -510,7 +511,8 @@ test_that("createNewCovRef", {
   expect_that(result$conceptId, equals(ff(vmode = "double", c(0, 0, 0, 0))))
 
 
-  covariateIdIndex = ffdf(covariateId = ff(vmode = "integer", factor(c("1", "1_sporadic", "1_frequent", "2", "2_sporadic", "2_frequent"))),
+  covariateIdIndex = ffdf(covariateId = ff(vmode = "integer", factor(c("9991", "9991_sporadic", "9991_frequent",
+                                                                       "9992", "9992_sporadic", "9992_frequent"))),
                           index = ff(vmode = "double", c(101, 102, 103, 104, 105, 106)))
   dimensionInfo = data.frame(analysisId = 2, truncate = "", truncatedNames = "")
   rawCodes = ffdf(SOURCE_CODE = ff(vmode = "integer", factor(c("1", "2"))),
@@ -518,7 +520,7 @@ test_that("createNewCovRef", {
   cohortData = list(covariateRef = ffdf(conceptId = ff(vmode = "double", c(1, 2)),
                                         covariateName = ff(vmode = "integer", factor(c("grape", "orange"))),
                                         analysisId = ff(vmode = "double", c(2, 2))))
-  data = ffdf(covariateId = ff(vmode = "integer", factor(c("1", "1_frequent", "2", "2_sporadic"))))
+  data = ffdf(covariateId = ff(vmode = "integer", factor(c("9991", "9991_frequent", "9992", "9992_sporadic"))))
 
   result = createNewCovRef(data, dimensionInfo, rawCodes, covariateIdIndex, cohortData)
   expect_that(result$covariateId, equals(ff(vmode = "double", c(101, 103, 104, 105))))
