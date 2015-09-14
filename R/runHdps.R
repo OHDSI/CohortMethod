@@ -82,7 +82,7 @@ runHdps <- function(connectionDetails, cohortData,
     uniqueCodes = sapply(truncatedCodes, deleteRepeatCodes)
     uniqueCodes = mapply(appendAnalysisId, uniqueCodes, dimAnalysisId)
 
-    newData = combineData(cohortData, uniqueCodes, dimCovariateId) # loss of unique covariate Ids -> need to append analysisId onto the new codes
+    newData = combineData(cohortData, uniqueCodes, dimCovariateId)
     newData = sapply(newData, removeRareCodes, lowPopCutoff, dimensionCutoff)
     newData = sapply(newData, expandCovariates)
     if (dropRareAfterExpand) {newData = sapply(newData, removeRareCodes, lowPopCutoff)}

@@ -131,5 +131,14 @@ cohortMethodData = loadCohortMethodData("coxibVsNonselVsGiBleed")
 
 # HDPS implementation:
 screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData)
-hdPs <- createPs(screenedCohortMethodData, outcomeId = 3)
+hdPs <- createPs(screenedCohortMethodData, outcomeId = 3,
+                 prior = createPrior("none")) # turn-off regularization)
 hdpsPropensityModel <- getPsModel(hdPs, screenedCohortMethodData)
+
+# Example of selecting demographics to include
+screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData, demographicsAnalysisIds = c(3,5,6)) # exclude sex
+
+# Example of selecting conceptIds to include/exclude if available
+screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData, predefinedIncludeConceptIds = c(1, 2)) # include covariateIds
+screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData, predefinedExcludeConceptIds = c(1, 2)) # exclude covariateIds
+
