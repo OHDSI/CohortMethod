@@ -4,23 +4,17 @@
 \alias{runHdps}
 \title{Runs hdps implementation}
 \usage{
-runHdps(connectionDetails, cohortData, useConditionICD9 = TRUE,
-  useDrug = TRUE, useProcedureCPT4 = TRUE, demographicsAnalysisIds = c(2,
-  3, 5, 6), predefinedIncludeConceptIds = c(),
-  predefinedExcludeConceptIds = c(), lowPopCutoff = 100,
-  dimensionCutoff = 200, rankCutoff = 500, dropRareAfterExpand = FALSE,
-  useExpRank = FALSE, fudge = 0)
+runHdps(cohortData, useInpatientDiagnosis = TRUE,
+  useOutpatientDiagnosis = TRUE, useDrugIngredient = TRUE,
+  useInpatientProcedure = TRUE, useOutpatientProcedure = TRUE,
+  demographicsAnalysisIds = c(2, 3, 5, 6), predefinedIncludeICD9Dx = c(),
+  predefinedIncludeConceptIds = c(), predefinedExcludeICD9Dx = c(),
+  predefinedExcludeConceptIds = c(), icd9AnalysisIds = c(104, 105, 106, 107,
+  108, 109), dimensionCutoff = 200, rankCutoff = 500, useExpRank = FALSE,
+  fudge = 0)
 }
 \arguments{
-\item{connectionDetails}{An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.}
-
 \item{cohortData}{\code{cohortData} object constructed by \code{getDbCohortMethodData}}
-
-\item{useConditionICD9}{Boolean to include ICD9 diagnosis codes}
-
-\item{useDrug}{Boolean to include drugs}
-
-\item{useProcedureCPT4}{Boolean to include CPT4 procedure codes}
 
 \item{demographicsAnalysisIds}{Vector of analysis identifiers that correspond to demographics covariates}
 
@@ -28,17 +22,25 @@ runHdps(connectionDetails, cohortData, useConditionICD9 = TRUE,
 
 \item{predefinedExcludeConceptIds}{Vector of predefined concept IDs to exclude as covariates}
 
-\item{lowPopCutoff}{Cutoff for discarding rare covariates}
-
 \item{dimensionCutoff}{Number of most prevalent covariates to include from each data dimension}
 
 \item{rankCutoff}{Number of covariates to include in propensity score model (minus the demographics covariates)}
 
-\item{dropRareAfterExpand}{Boolean for dropping codes below lowPopCutoff after expanding covariates}
-
 \item{useExpRank}{Use exposure rank instead of bias rank}
 
 \item{fudge}{Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded}
+
+\item{connectionDetails}{An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.}
+
+\item{useConditionICD9}{Boolean to include ICD9 diagnosis codes}
+
+\item{useDrug}{Boolean to include drugs}
+
+\item{useProcedureCPT4}{Boolean to include CPT4 procedure codes}
+
+\item{lowPopCutoff}{Cutoff for discarding rare covariates}
+
+\item{dropRareAfterExpand}{Boolean for dropping codes below lowPopCutoff after expanding covariates}
 }
 \value{
 Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}

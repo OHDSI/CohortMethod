@@ -1,53 +1,24 @@
-#' Loads up data dimensions.
-#'
-#' @description
-#' This function loads up information related to each data dimension provided. Data dimensions are hard coded here
-#'
-#' @details
-#' If a code is not truncated, it's covariate name remains unchanged. If it is truncated and no name table is available, truncatedNames = ""
-#' and the covariate name will become "covariate name not available."
-#'
-#' @param dimensions A character vector of data dimension names
-#'
-#' @return
-#' Returns an list of \code{data.frame}, one for each data dimension. Each \code{data.frame} has the following columns: \describe{
-#' \item{name}{Name of data dimension}
-#' \item{analysisId}{Analysis identifier}
-#' \item{sql}{Sql query (as string) that will retrieve mapping from OMOP concept ID to source code for specific data dimension}
-#' \item{truncate}{String that can be parsed and evaluated into a function that truncates source code to desired granularity}
-#' \item{truncatedNames}{String that can be parsed and evluated to return a \code{data.frame} with columns \code{code} and \code{name}.
-#' This is for cases where the source code is truncated and new names for truncated codes are available} }
-#' @export
 getDimensionTable <- function(dimensions) {
   if (is.null(dimensions)) {return(NULL)}
-  dimensionTable = data.frame(name = c(), analysisId = c(), sql = c(), truncate = c(), row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = data.frame(dimName = c(), analysisId = c(), names = c(), row.names = NULL, stringsAsFactors = FALSE)
 
-  # Condition, ICD9 Code
-  conditionICD9Dimension = data.frame(name = "conditionICD9", analysisId = 104,
-                                      sql = "SELECT source_code, target_concept_id FROM source_to_concept_map WHERE source_vocabulary_id=2 AND target_concept_id in (@listIds)",
-                                      truncate = "function(code){return(gsub(\"\\\\..*\",\"\",code))}",
-                                      truncatedNames = "getICD9Dx(\"vignettes/ICD9Dx.Rdata\")",
-                                      row.names = NULL, stringsAsFactors = FALSE)
-  dimensionTable = rbind(dimensionTable, conditionICD9Dimension)
+  inpatientDiagnosis = data.frame(dimName = "inpatientDiagnosis", analysisId = 104, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, inpatientDiagnosis)
 
-  # Drug, Concept Id
-  drugDimension = data.frame(name = "drug", analysisId = 505,
-                             sql = "SELECT concept_id as source_code, concept_id as target_concept_id FROM concept WHERE concept_id in (@listIds)",
-                             truncate = "",
-                             truncatedNames = "",
-                             row.names = NULL, stringsAsFactors = FALSE)
-  dimensionTable = rbind(dimensionTable, drugDimension)
+  outpatientDiagnosis = data.frame(dimName = "outpatientDiagnosis", analysisId = 107, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, outpatientDiagnosis)
 
-  # Procedure, CPT4 Code
-  procedureCPT4Dimension = data.frame(name = "procedureCPT4", analysisId = 703,
-                                      sql = "SELECT source_code, target_concept_id FROM source_to_concept_map WHERE source_vocabulary_id=4 AND target_concept_id in (@listIds)",
-                                      truncate = "",
-                                      truncatedNames = "",
-                                      row.names = NULL, stringsAsFactors = FALSE)
-  dimensionTable = rbind(dimensionTable, procedureCPT4Dimension)
+  drugIngredient = data.frame(dimName = "drugIngredient", analysisId = 403, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, drugIngredient)
+
+  inpatientProcedure = data.frame(dimName = "inpatientProcedure", analysisId = 703, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, inpatientProcedure)
+
+  outpatientProcedure = data.frame(dimName = "outpatientProcedure", analysisId = 706, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, outpatientProcedure)
 
   f <- function(dimName) {
-    row = match(dimName, dimensionTable$name)
+    row = match(dimName, dimensionTable$dimName)
     if (is.na(row)) {stop(paste("must give valid data dimension: ", dimName, sep=""))}
     return(list(dimensionTable[row,]))
   }
@@ -64,376 +35,55 @@ getDimensionAnalysisId <- function(dimensionInfo) {
   return(list(dimensionInfo$analysisId))
 }
 
-
-#' Retrieves sql query
-#' @description Retrieves \code{sql} from data dimension information
-#' @param dimensionInfo Information for a data dimension, as acquired from \code{getDimensionTable}
-#' @return
-#' Returns the sql query string
-getDimensionSql <- function(dimensionInfo) {
-  return(list(dimensionInfo$sql))
-}
-
-
-#' Retrieves conceptId that matches analysisId
-#' @description Retrieves list of concept IDs that match the analysisId for a data dimension. These concept IDs will be used to query the CDM for
-#' the source codes for that data dimension.
-#' @param analysisId Analysis ID for data dimension
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @return
-#' Returns a \code{ff_vector} of type \code{double} of concept IDs
-#' Returns (-1) if there are no matching concept IDs
-getConceptId <- function(analysisId, cohortData) {
-  result = cohortData$covariateRef$conceptId[cohortData$covariateRef$analysisId==analysisId]
-  if (is.null(result)) {
-    result = ff::ff(vmode = "double", c(-1))
-  }
+separateCovariates <- function(analysisId, covariates) {
+  result = sapply(c(analysisId, analysisId+1, analysisId+2), separateCovariatesHelper, covariates)
   return(list(result))
 }
 
-
-#' Retrieves covariateId that matches analysisId
-#' @description Retrieves list of covariate IDs that match the analysisId for a data dimension.
-#' @param analysisId Analysis ID for data dimension
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @return
-#' Returns a \code{ff_vector} of type \code{double} of covariate IDs
-getCovariateId <- function(analysisId, cohortData) {
-  result = cohortData$covariateRef$covariateId[cohortData$covariateRef$analysisId==analysisId]
-  return(list(result))
+separateCovariatesHelper <- function(analysisId, covariates) {
+  t = covariates$covariateId %% 1000 == analysisId
+  if (all(!t)) {return(list(NULL))}
+  return(list(covariates[ffbase::ffwhich(t,t==TRUE),]))
 }
 
+removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
+  data1 = data[[1]]
+  if (is.null(data1)) {return(list(NULL))}
+  counts = ffbase::table.ff(ff::ff(vmode = "integer", data1$covariateId %/% 1000))
+  counts[which(counts>(totalPopulation/2))] = totalPopulation - counts[which(counts>(totalPopulation/2))]
+  counts = counts[order(counts, decreasing = TRUE)]
+  finalCutoff = min(length(counts), dimensionCutoff)
+  x = ff::as.ff(as.double(names(counts[1:finalCutoff])))
+  y = ffbase::ffmatch(data1$covariateId %/% 1000, x)
+  data1 = data1[ffbase::ffwhich(y,!is.na(y)),]
 
-#' Applies mapply to sql queries
-#'
-#' @description
-#' This function works like \code{mapply} for a list of sql queries. Each sql query will be rendered, translated, and executed with proper
-#' parameters.
-#'
-#' @details
-#' This function currently assumes that all sql queries use the same parameters, and that values for each parameter are provided.
-#' Here is a visualization of how the function works:
-#'
-#' sqlMapply(connection, sqlList = list("query1 @@a @@b @@c", "query2 @@a @@b @@c"), paramNames = list("a", "b", "c"),
-#' parameters = list(list(1,2), list(3,4), list(5,6)))
-#'
-#' -> list(SqlRender::renderSql("query1 @@a @@b @@c", a = 1, b = 3, c = 5), SqlRender::renderSql("query2 @@a @@b @@c", a = 2, b = 4, c = 6)
-#'
-#' @param connection Connection to sql database
-#' @param sqlList List of sql queries to execute
-#' @param paramNames List of parameter names
-#' @param parameters List of list of parameters to substitute. length(parameters) = length(paramNames); length(parameters[[1]]) = length(sqlList)
-#'
-#' @return
-#' Returns list of completed sql queries.
-sqlMapply <- function(connection, sqlList, paramNames, parameters) {
-  d = length(sqlList)
-  p = length(paramNames)
-  result = list()
-
-  for (i in 1:d) {
-    t = ""
-    for (k in 1:p) {
-      t = paste(t, paramNames[[k]], "=", "parameters[[", k, "]][[", i, "]][]", if(k==p) ")" else ",", sep="")
-    }
-    t = paste("renderedSql <- SqlRender::renderSql(\"",sqlList[[i]],"\",",t,sep="")
-    eval(parse(text=t))
-    result[[i]] = DatabaseConnector::querySql.ffdf(connection, renderedSql$sql)
+  data2 = data[[2]]
+  if (!is.null(data2)) {
+    y = ffbase::ffmatch(data[[2]]$covariateId %/% 1000, x)
+    data2 = data[[2]][ffbase::ffwhich(y,!is.na(y)),]
   }
-  names(result) = names(sqlList)
-  return(result)
-}
 
-#' Converts covariateId of rawCodes to a factor
-#'
-#' @description
-#' This function converts the SOURCE_CODE column acquired from the OMOP database to a factor, if it weren't already a factor
-#'
-#' @param codes Ffdf object with columns \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
-#'
-#' @return
-#' Returns the input codes with \code{SOURCE_CODE} as a factor
-covariateIdToFactor <- function(codes) {
-  if (is.data.frame(codes) & dim(codes)[1]==0) {
-    return(list(NULL))
+  data3 = data[[3]]
+  if (!is.null(data3)) {
+    y = ffbase::ffmatch(data[[3]]$covariateId %/% 1000, x)
+    data3 = data[[3]][ffbase::ffwhich(y,!is.na(y)),]
   }
-  if (!ff::is.factor.ff(codes$SOURCE_CODE)) {
-    codes$SOURCE_CODE = ff::ff(vmode = "integer", factor(codes$SOURCE_CODE[]))
-  }
-  return(list(codes))
+
+  return(list(data1, data2, data3))
 }
 
-#' Removes predefined codes from data dimensions
-#'
-#' @param rawCodes Ffdf object with columns: \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
-#' @param predefinedConceptIds Vector of concept identifiers for predefined covariates
-#'
-#' @return
-#' Returns \code{rawCodes} with all instances of (\code{TARGET_CONCEPT_ID} = predefined covariate) removed
-deletePredefinedCodes <- function(rawCodes, predefinedConceptIds) {
-  if (is.null(rawCodes)) {return(list(NULL))}
-  if (!is.null(predefinedConceptIds)) {
-    t = ffbase::ffmatch(rawCodes$TARGET_CONCEPT_ID, ff::as.ff(predefinedConceptIds))
-    rows = ffbase::ffwhich(t, is.na(t))
-    if (is.null(rows)) {return(list(NULL))}
-    rawCodes = rawCodes[rows,]
-    rawCodes$SOURCE_CODE = ffbase::droplevels.ff(rawCodes$SOURCE_CODE)
-  }
-    return(list(rawCodes))
-}
-
-
-#' Applies truncating function to source codes
-#'
-#' @description
-#' Truncates source codes according to data dimension
-#'
-#' @details
-#' The input is obtained from the CDM, and the \code{SOURCE_CODE} can be a factor (integer) or a number (double).
-#' Returns a list to work properly with mapply.
-#'
-#' @param rawCodes Ffdf object with columns: \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
-#' @param dimensionTable Data dimension information, including truncating function
-#'
-#' @return
-#' Returns \code{rawCodes} with \code{SOURCE_CODE} truncated if required
-truncateRawCodes <- function(rawCodes, dimensionTable) {
-  if (is.null(rawCodes)) {return(list(NULL))}
-  f = dimensionTable$truncate
-  if (f!="") {
-    rawCodes$SOURCE_CODE = ff::ff(vmode = "integer", factor(sapply(rawCodes$SOURCE_CODE[], eval(parse(text=f)))))
-    rawCodes$SOURCE_CODE = ffbase::droplevels.ff(rawCodes$SOURCE_CODE)
-  }
-  return(list(rawCodes))
-}
-
-
-#' Keeps only unique code mappings
-#'
-#' @description
-#' This function deletes duplicate entries in the truncated codes, and also ambiguous mappings from one
-#' \code{TARGET_CONCEPT_ID} to multiple \code{SOURCE_CODE}
-#'
-#' @param codes \code{ffdf} with columns: \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
-#'
-#' @return
-#' Returns \code{codes} with relevant rows deleted.
-deleteRepeatCodes <- function(codes) {
-  if (is.null(codes)) {return(list(NULL))}
-  codes = unique(codes)
-  counts = table(codes$TARGET_CONCEPT_ID[])
-  codes = ff::as.ffdf(codes[counts[as.character(codes$TARGET_CONCEPT_ID[])]==1,])
-  rownames(codes) = NULL
-  codes$SOURCE_CODE = ffbase::droplevels.ff(codes$SOURCE_CODE)
-  return(list(codes))
-}
-
-#' Appends analysis Id onto new codes
-#'
-#' @description
-#' This function puts the analysisId in front of the new codes. This is to prevent confusion in situations
-#' where ICD9 codes are used for both inpatient and outpatient purposes
-#'
-#' @param codes \code{ffdf} with columns: \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
-#' @param analysisId identifier for data dimension
-#'
-#' @return
-#' Returns \code{codes} with analysisId added
-appendAnalysisId <- function(codes, analysisId) {
-  if (is.null(codes)) {return(list(NULL))}
-  covariateId = as.character(codes$SOURCE_CODE[])
-  covariateId = paste(analysisId, covariateId, sep = "")
-  codes$SOURCE_CODE = ff::ff(vmode = "integer", factor(covariateId))
-  return(list(codes))
-}
-
-
-#' Combines covariate, treatment, and outcome
-#'
-#' @description
-#' This function combines covariate, treatment, and outcome information, then lists them by data dimension.
-#' It breaks down \code{cohortData$covariates} by data dimension, converts the \code{covariateId} to the \code{SOURCE_CODE}
-#' that matches the \code{conceptId} associated with that \code{covariateId}, then adds \code{treatment} and \code{outcome}
-#' as binary indicators for that patient (\code{rowId}).
-#'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param codes List of \code{ffdf} source code mappings for each data dimension with columns:
-#' \code{SOURCE_CODE} and \code{TARGET_CONCEPT_ID}
-#' @param dimCovariateId List of \code{ff_vector} covariate identifiers for each data dimension
-#'
-#' @return
-#' Returns \code{list} of \code{ffdf} by data dimension with the following columns: \describe{
-#' \item{rowId}{Patient identifier}
-#' \item{covariateId}{New source code for data dimension}
-#' \item{treatment}{1 if patient is in treatment cohort; 0 otherwise}
-#' \item{outcome}{1 if patient is in outcome cohort; 0 otherwise} }
-combineData <- function(cohortData, codes, dimCovariateId) {
-  covariateIds = combineFunction(dimCovariateId, ffbase::ffappend)
-  if (is.null(covariateIds)) {return(NULL)}
-  covariateIdKeep = ff::ff(vmode = "double", length = dim(cohortData$covariates)[1])
-  t = ffbase::ffmatch(cohortData$covariates$covariateId, covariateIds)
-  r = ffbase::ffwhich(t, !is.na(t))
-  if (!is.null(r)) {covariateIdKeep[r[]] = 1}
-
-  rowIds = cohortData$covariates$rowId
-  conceptIds = cohortData$covariateRef$conceptId[ffbase::ffmatch(cohortData$covariates$covariateId, cohortData$covariateRef$covariateId)]
-  conceptIds = conceptIds * covariateIdKeep
-  sourceIds = sapply(codes, f <- function(code) {if (is.null(code)) {return(NULL)} else return(code$SOURCE_CODE[ffbase::ffmatch(conceptIds, code$TARGET_CONCEPT_ID)])})
-  treatments = cohortData$cohorts$treatment[ffbase::ffmatch(cohortData$covariates$rowId, cohortData$cohorts$rowId)]
-  outcomes = !is.na(ffbase::ffmatch(cohortData$covariates$rowId, cohortData$outcomes$rowId))
-  outcomes = ff::as.ff(sapply(outcomes[], function(bool){if(bool){return(1)}else return(0)}))
-
-  newData = sapply(sourceIds, combineDataHelper, rowIds, treatments, outcomes)
-  return(newData)
-}
-
-
-#' Helper for combineData
-#'
-#' @param sourceId An ff vector of with length = length(\code{cohortData$covariates}) of converted source codes for a data
-#' dimension.
-#' @param rowIds An ff vector of patient identifiers
-#' @param treatments An ff vector of binary treatment identifier for each entry of \code{cohortData$covariates}
-#' @param outcomes An ff vector of binary outcome identifier for each entry of \code{cohortData$covariates}
-#'
-#' @return
-#' Returns ffdf object with the four combined ff vectors, only on covariate indices appropriate for that data dimension.
-#' \code{covariateId} is converted to a factor, if it is not already one.
-combineDataHelper <- function(sourceId, rowIds, treatments, outcomes) {
-  if (is.null(sourceId)) {return(NULL)}
-  toKeep = ffbase::ffwhich(sourceId, !is.na(sourceId))
-  result = ff::ffdf(rowId = rowIds[toKeep], covariateId = sourceId[toKeep], treatment = treatments[toKeep], outcome = outcomes[toKeep])
-  if (!is.factor(result$covariateId[1])) {
-    result$covariateId = ff::ff(vmode="integer", initdata = factor(result$covariateId[]))
-  }
-  result$covariateId = ffbase::droplevels.ff(result$covariateId)
-  return(result)
-}
-
-
-#' Removes codes with insufficient patients
-#'
-#' @description
-#' This function removes data for covariates that have insufficient number of unique pataients.
-#'
-#' @details
-#' If prevalence of a covariate is > 0.5 among people in data dimension, prevalence is subtracted from 1.
-#' Tie breaking is as follows (respectively): prevalence (unique people), total occurrences, covariate name
-#'
-#' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
-#' \code{treatment}, \code{outcome}
-#' @param lowPopCutoff Threshold for number of unique patients that need to have a \code{covariateId} to keep data
-#' @param dimensionCutoff Maximum number of covariates to keep from this data dimension, ordered by prevalence.
-#'
-#' @return
-#' Returns \code{data} with rare codes removed. Returns a list to work with sapply.
-#' @export
-removeRareCodes <- function(data, lowPopCutoff, dimensionCutoff=NULL) {
+addTreatmentAndOutcome <- function(data, cohortData) {
   if (is.null(data)) {return(list(NULL))}
-  data = data[ff::fforder(data$covariateId),]
-
-  data1 = unique(data)
-  totalPeople = length(unique(data$rowId))
-  counts = ffbase::table.ff(data1$covariateId)
-  counts[which(counts>(totalPeople/2))] = totalPeople - counts[which(counts>(totalPeople/2))]
-  countsTotal = ffbase::table.ff(data$covariateId)
-  counts = counts[order(names(counts))]
-  countsTotal = countsTotal[order(names(countsTotal))]
-  counts = counts[order(counts, countsTotal, decreasing = TRUE)]
-  dimensionCutoff = if(is.null(dimensionCutoff)) length(counts) else (min(length(counts), dimensionCutoff))
-
-  lowPopCutoff = which(counts<lowPopCutoff)[1]
-  finalCutoff = if(is.na(lowPopCutoff)) dimensionCutoff else min(lowPopCutoff-1, dimensionCutoff)
-  if (finalCutoff==0) {return(NULL)}
-  t = ffbase::ffmatch(data$covariateId, ff::as.ff(factor(names(counts[1:finalCutoff]))))
-  data = data[ffbase::ffwhich(t,!is.na(t)),]
-  data$covariateId = ffbase::droplevels.ff(data$covariateId)
+  treatment = cohortData$cohorts$treatment[ffbase::ffmatch(data$rowId, cohortData$cohorts$rowId)]
+  outcome = ff::ff(vmode = "double", initdata = 0, length = dim(data)[[1]])
+  x = ffbase::ffmatch(data$rowId, cohortData$outcomes$rowId)
+  y = ffbase::ffwhich(x, !is.na(x))
+  outcome[y] = ff::as.ff(rep(1,length(y)))
+  data$treatment = treatment
+  data$outcome = outcome
   return(list(data))
 }
 
-
-#' Adds new covariates for sporadic and frequent occurrences
-#'
-#' @description
-#' This function adds new covariates named sporadic and frequent according to hdps implementation, for a data dimension.
-#'
-#' @details
-#' Sporadic indicates a code occurs for a patient more than the median occurrences for that code; frequent indicates more than 75th percentile.
-#' Once the new codes are generated, repeated codes in the original data are dropped so that "occurs at least once" is a binary variable.
-#'
-#' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
-#' \code{treatment}, \code{outcome}
-#'
-#' @return
-#' Returns data as ffdf object with same columns, with added lines for sporadic and frequent codes. Sporadic codes are designated by
-#' appending "_sporadic" to the \code{covariateId}, while frequent codes are designated by appending "_frequent" to the \code{covariateId}.
-#' @export
-expandCovariates <- function(data) {
-  if (is.null(data)) {return(list(NULL))}
-  data = data[ff::fforder(data$covariateId, data$rowId),]
-  uniqueData = unique(data)
-  uniqueData = uniqueData[ff::fforder(uniqueData$covariateId, uniqueData$rowId),]
-
-  uniqueDataIndex = ffbase::ffdfmatch(uniqueData, data)
-  uniqueDataNextIndex = c(uniqueDataIndex[2:length(uniqueDataIndex)], length(data$rowId)+1)
-  uniqueData$counts = ff::as.ff(uniqueDataNextIndex) - uniqueDataIndex
-
-  uniqueCovariateId = unique(data$covariateId)
-  foo = ff::ffdf(x1 = uniqueCovariateId, x2 = uniqueCovariateId)
-  covariateIdCounts = ff::ffapply(X=foo, AFUN=function(a){return(uniqueData$counts[ffbase::ffwhich(uniqueData, uniqueData$covariateId==a["x1"])])}, MARGIN=1,RETURN=TRUE, CFUN="list")[[1]]
-
-  covariateIdStats = sapply(covariateIdCounts, function(a){return(ffbase::quantile.ff(a))})
-  covariateIdStats = ff::ffdf(covariateId = uniqueCovariateId, median = ff::as.ff(covariateIdStats[3,]), thirdQuartile = ff::as.ff(covariateIdStats[4,]))
-  uniqueData$median = covariateIdStats$median[ffbase::ffmatch(uniqueData$covariateId, covariateIdStats$covariateId)]
-  uniqueData$thirdQuartile = covariateIdStats$thirdQuartile[ffbase::ffmatch(uniqueData$covariateId, covariateIdStats$covariateId)]
-
-  sporadicIndex = ffbase::ffwhich(uniqueData, (uniqueData$counts >= uniqueData$median) & (uniqueData$median != 1))
-  frequentIndex = ffbase::ffwhich(uniqueData, (uniqueData$counts >= uniqueData$thirdQuartile) & (uniqueData$thirdQuartile != uniqueData$median))
-
-  if(!is.null(sporadicIndex)) {
-    sporadicData = uniqueData[sporadicIndex,]
-    sporadicCovariateId = as.character(sporadicData$covariateId[])
-    sporadicCovariateId = paste(sporadicCovariateId, "_sporadic", sep = "")
-    sporadicData$covariateId = ff::ff(vmode="integer", factor(sporadicCovariateId))
-    sporadicData$counts <- NULL
-    sporadicData$median <- NULL
-    sporadicData$thirdQuartile <- NULL
-    data = ffbase::ffdfrbind.fill(data, sporadicData)
-  }
-
-  if(!is.null(frequentIndex)) {
-    frequentData = uniqueData[frequentIndex,]
-    frequentCovariateId = as.character(frequentData$covariateId[])
-    frequentCovariateId = paste(frequentCovariateId, "_frequent", sep = "")
-    frequentData$covariateId = ff::ff(vmode="integer", factor(frequentCovariateId))
-    frequentData$counts <- NULL
-    frequentData$median <- NULL
-    frequentData$thirdQuartile <- NULL
-    data = ffbase::ffdfrbind.fill(data, frequentData)
-  }
-  data = unique(data)
-  return(list(data))
-}
-
-
-#' Calculates bias and exp ranks for each covariate
-#'
-#' @description
-#' This function calculates the bias and exp ranks, as described in the hdps implementation, and the relative risk of each \code{covariateId} for a
-#' data dimension.
-#'
-#' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
-#' \code{treatment}, \code{outcome}
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param fudge Constant to avoid divide by zero
-#'
-#' @return
-#' Returns ffdf object with the following columns: \describe{
-#' \item{covariateId}{Covariate identifier}
-#' \item{biasRank}{The value of abs(log(bias)) for each covariate, ranked decreasingly}
-#' \item{expRank}{The value of abs(log(RRce)) for each covariate, ranked decreasingly}}
-#' Returns list to work with sapply.
-#' @export
 calculateRanks <- function(data, cohortData, fudge) {
   if (is.null(data)) {return(list(NULL))}
   totalPopulation = length(cohortData$cohorts$rowId)
@@ -442,39 +92,16 @@ calculateRanks <- function(data, cohortData, fudge) {
   totalComparatorPopulation = length(ffbase::ffwhich(t,t==0))
   totalOutcomePopulation = length(unique(cohortData$outcomes$rowId))
 
-  tempCovariatesId = c()
-  PC1 = c(0)
-  PC0 = c(0)
-  RRa = c(0)
-  RRb = c(0)
+  uniqueCovariateId = unique(data$covariateId)
+  foo = ff::ffdf(x1 = uniqueCovariateId, x2 = uniqueCovariateId)
 
-  d = dim(data)[1]
-  if (d==0) {
-    return()
-  }
+  xt = data$covariateId * 10 + data$treatment
+  xo = data$covariateId * 10 + data$outcome
 
-  data = data[ff::fforder(data$covariateId),]
-
-  f = function(a) {return(as.character(a))}
-  covariateIds = sapply(data$covariateId[], f)
-  treatments = data$treatment[]
-  outcomes = data$outcome[]
-
-  tempCovariatesId = c(covariateIds[1])
-
-  for(i in 1:d) {
-    if (covariateIds[i]!=tempCovariatesId[1]) {
-      tempCovariatesId = c(covariateIds[i],tempCovariatesId)
-      PC1=c(0,PC1)
-      PC0=c(0,PC0)
-      RRa=c(0,RRa)
-      RRb=c(0,RRb)
-    }
-    if (treatments[i]==1) {PC1[1]=PC1[1]+1}
-    if (treatments[i]==0) {PC0[1]=PC0[1]+1}
-    if (outcomes[i]==1) {RRa[1]=RRa[1]+1}
-    if (outcomes[i]==0) {RRb[1]=RRb[1]+1}
-  }
+  PC1 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+  PC0 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+  RRa = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+  RRb = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
 
   RRc = totalOutcomePopulation - RRa
   RRd = totalPopulation - RRa - RRb - RRc
@@ -500,65 +127,82 @@ calculateRanks <- function(data, cohortData, fudge) {
   biasRank = abs(log(bias))
   expRank = abs(log(RRce))
 
-  result = data.frame(covariateId=tempCovariatesId, biasRank = biasRank, expRank = expRank, PC0 = PC0, PC1 = PC1)
-  result = ff::as.ffdf(result)
-  rownames(result) <- NULL
-
+  result = ff::ffdf(covariateId=uniqueCovariateId, biasRank = ff::as.ff(biasRank), expRank = ff::as.ff(expRank), PC0 = ff::as.ff(PC0), PC1 = ff::as.ff(PC1))
   return(list(result))
 }
 
-
-#' Keeps only covariates with highest bias.
-#'
-#' @description
-#' This function eliminates data associated with covariates that have low bias. Only the top \code{rankCutoff} codes are kept.
-#'
-#' @param data List covariate information for data dimensions, as ffdf objects with columns \code{rowId}, \code{covariateId},
-#' \code{treatment}, \code{outcome}
-#' @param rankings List of bias and exposure rankings for each data dimension's covariates, as ffdf objects
-#' @param rankCutoff Number of total covariates to keep
-#' @param useExpRank Boolean to use exposure rank instead of bias rank
-#'
-#' @return
-#' Returns \code{data} with only the highest bias covariates.
-#' @export
 removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
   rankings = combineFunction(rankings, ffbase::ffdfrbind.fill)
   if (is.null(rankings)) {return(list(NULL))}
   if (useExpRank) {
     rankings = rankings[ff::fforder(rankings$expRank*-1, rankings$biasRank*-1, rankings$PC1*-1, rankings$PC0*-1, rankings$covariateId, decreasing = FALSE),]
-    t = match(NA, rankings$expRank)
+    t = ffbase::ffwhich(rankings, is.na(rankings$expRank))
   }
   else {
     rankings = rankings[ff::fforder(rankings$biasRank*-1, rankings$expRank*-1, rankings$covariateId, decreasing = FALSE),]
-    t = match(NA, rankings$biasRank)
+    t = ffbase::ffwhich(rankings, is.na(rankings$biasRank))
   }
-  finalCutoff = if(is.na(t)) dim(rankings)[1] else t
+  finalCutoff = if(is.null(t)) dim(rankings)[1] else t[1]
   finalCutoff = min(finalCutoff, rankCutoff)
   if (finalCutoff==0) {return(list(NULL))}
-  rankNames = rankings$covariateId[ff::ff(vmode = "integer", 1:finalCutoff)]
-  data = sapply(data, removeLowRankHelper, rankNames)
+  toKeep = rankings$covariateId[ff::as.ff(1:finalCutoff)]
+  data = sapply(data, removeLowRankHelper, toKeep)
   return(data)
 }
 
-
-#' Helper for removeLowRank
-#'
-#' @param data Covariate information for each data dimension,
-#' @param rankNames Names of covariates to keep
-#'
-#' @return
-#' Returns \code{data} with proper codes removed
-removeLowRankHelper <- function(data, rankNames) {
+removeLowRankHelper <- function(data, toKeep) {
   if (is.null(data)) {return(list(NULL))}
-  t = ffbase::ffmatch(data$covariateId, rankNames)
+  t = ffbase::ffmatch(data$covariateId, toKeep)
   rows = ffbase::ffwhich(t, !is.na(t))
-  if (is.null(rows)) {return(list(NULL))}
   data = data[rows,]
-  data$covariateId = ffbase::droplevels.ff(data$covariateId)
   return(list(data))
 }
 
+getNewCovariateRef <- function(covariates, cohortData) {
+  covariateId = unique(covariates$covariateId)
+  t = ffbase::ffmatch(cohortData$covariateRef$covariateId, covariateId)
+  return(cohortData$covariateRef[ffbase::ffwhich(t, !is.na(t)),])
+}
+
+getPredefinedCovariateRef <- function(cohortData, conceptIds, icd9, icd9AnalysisIds) {
+  if (is.null(conceptIds) & is.null(icd9)) {return(NULL)}
+  x = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
+  y = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(icd9AnalysisIds))
+  t = ffbase::ffwhich(cohortData$covariateRef, !is.na(x) & is.na(y))
+  if (is.null(t)) result1 = NULL else result1 = cohortData$covariateRef[t,]
+  x = ffbase::ffmatch(cohortData$covariateRef$covariateId %/% 1000, ff::as.ff(icd9))
+  t = ffbase::ffwhich(cohortData$covariateRef, !is.na(x) & !is.na(y))
+  if (is.null(t)) result2 = NULL else result2 = cohortData$covariateRef[t,]
+  result = combineFunction(list(result1, result2), ffbase::ffdfrbind.fill)
+  if (!is.null(result)) result$covariateName = ffbase::droplevels.ff(result$covariateName)
+  return(result)
+}
+
+getPredefinedCovariates <- function(cohortData, predefinedCovariateRef) {
+  if (is.null(predefinedCovariateRef)) {return(NULL)}
+  t = ffbase::ffmatch(cohortData$covariates$covariateId, predefinedCovariateRef$covariateId)
+  return(cohortData$covariates[ffbase::ffwhich(t, !is.na(t)),])
+}
+
+removePredefinedCovariates <- function(cohortData, conceptIds, icd9, icd9AnalysisIds) {
+  covariates = cohortData$covariates
+  x = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(icd9AnalysisIds))
+  if (!is.null(conceptIds)) {
+    y = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
+    t = ffbase::ffwhich(cohortData$covariateRef, !is.na(y) & is.na(x))
+    t = ffbase::ffmatch(covariates$covariateId, cohortData$covariateRef$covariateId[t])
+    t = ffbase::ffwhich(t, is.na(t))
+    covariates = covariates[t,]
+  }
+  if (!is.null(icd9)) {
+    y = ffbase::ffmatch(cohortData$covariateRef$covariateId %/% 1000, ff::as.ff(icd9))
+    t = ffbase::ffwhich(cohortData$covariateRef, !is.na(y) & !is.na(x))
+    t = ffbase::ffmatch(covariates$covariateId, cohortData$covariateRef$covariateId[t])
+    t = ffbase::ffwhich(t, is.na(t))
+    covariates = covariates[t,]
+  }
+  return(covariates)
+}
 
 #' Sequentially applies FUN to elements of data
 #'
@@ -582,177 +226,6 @@ combineFunction <- function(data, FUN) {
     result = FUN(result, data[[i+1]])
   }
   return(result)
-}
-
-
-#' Combines covariate information from data dimensions with that from demographics and predefined.
-#'
-#' @description
-#' This function combines the covariate information from all the data dimensions with that from demographics covariates and predefined covariates.
-#'
-#' @details
-#' The \code{covariateValue} for the data dimensions is set to be 1. The \code{treatment} and \code{outcome} columns are dropped to match
-#' the format of \code{cohortData}.
-#'
-#' @param newCovariates An ffdf object with columns \code{rowId}, \code{covariateId}, \code{treatment}, \code{outcome}. This includes all
-#' of the data dimensions and the expanded covariates with "_sporadic" and "_frequent" tags.
-#' @param demographicsCovariates An ffdf object with columns \code{rowId}, \code{covariateId}, \code{covariateValue}.
-#' @param predefinedCovariates An ffdf object with columns \code{rowId}, \code{covariateId}, \code{covariateValue}.
-#'
-#' @return
-#' Returns one ffdf object with columns \code{rowId}, \code{covariateId}, \code{covariateValue}.
-combineWithOtherCovariates <- function(newCovariates, demographicsCovariates, predefinedCovariates) {
-  if (!is.null(newCovariates)) {
-    newCovariates = ff::ffdf(rowId = newCovariates$rowId,
-                         covariateId = newCovariates$covariateId,
-                         covariateValue = ff::ff(vmode="double", initdata = 1, length=dim(newCovariates)[1]))
-  }
-  if (!is.null(demographicsCovariates)) {
-    demographicsCovariates$covariateId = ff::ff(vmode="integer", initdata = factor(demographicsCovariates$covariateId[]))
-  }
-  if (!is.null(predefinedCovariates)) {
-    predefinedCovariates$covariateId = ff::ff(vmode="integer", initdata = factor(predefinedCovariates$covariateId[]))
-  }
-  return(combineFunction(list(newCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill))
-}
-
-
-#' Combines new covariateRef entries with those from demographics and predefined.
-#'
-#' @description
-#' This function combines the new \code{covariateRef} entries for the data dimensions with the demographics \code{covariateRef} entries
-#' from cohortData. The demographics \code{covariateId} column is changed into the new index given in \code{covariateIdIndex}.
-#'
-#' @param newCovariateRef New covariate reference entries generated via \code{createNewCovRef}
-#' @param demographicsCovariateRef Covariate reference entries for demographics covariates
-#' @param predefinedCovariateRef Covariate reference entries for predefined covariates
-#' @param covariateIdIndex Index from \code{covariateId} of data dimensions and demographics to a numeric index that fits format of
-#' \code{cohortData}. Generated by \code{createCovariateIndex}, has columns \code{covariateId} and \code{index}.
-#'
-#' @return
-#' Returns combined \code{covariateRef}, with demographics covariates changed to new index.
-combineWithOtherCovariateRef <- function(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef, covariateIdIndex) {
-  if (!is.null(demographicsCovariateRef)) {
-    demographicsCovariateRef$covariateId = covariateIdIndex$index[ffbase::ffmatch(demographicsCovariateRef$covariateId, covariateIdIndex$covariateId)]
-    demographicsCovariateRef$covariateName = ffbase::droplevels.ff(demographicsCovariateRef$covariateName)
-  }
-  if (!is.null(predefinedCovariateRef)) {
-    predefinedCovariateRef$covariateId = covariateIdIndex$index[ffbase::ffmatch(predefinedCovariateRef$covariateId, covariateIdIndex$covariateId)]
-    predefinedCovariateRef$covariateName = ffbase::droplevels.ff(predefinedCovariateRef$covariateName)
-  }
-  return(combineFunction(list(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill))
-}
-
-
-#' Generates new covariateRef entries
-#'
-#' @description
-#' This function creates \code{covariateRef} entries for each data dimension. The new \code{covariateName} is taken from cohortData, if there
-#' was no truncation of codes, or generated via the \code{truncatedNames} entry in \code{dimensionInfo}. Additionally, the appropriate
-#' marker of "(once)", "(sporadic)", or "(frequent)" is appended to the beginning of the \code{covariateName}.
-#'
-#' @details
-#' If there is no \code{truncatedNames} for a truncated code, the \code{covariateName} is "covariate name not available."
-#' Furthermore, if a code was truncated for a data dimension, then \code{conceptId} is meaningless and will display 0.
-#'
-#' @param data Covariate information for data dimension, as ffdf object with columns \code{rowId}, \code{covariateId},
-#' \code{treatment}, \code{outcome}
-#' @param dimensionInfo The dimensionTable entry for data dimension, which includes the \code{truncatedNames} entry
-#' @param rawCodes An ffdf object of the mapping from concept ID (column \code{TARGET_CONCEPT_ID}) to data dimension code
-#' (column \code{SOURCE_CODE})
-#' @param covariateIdIndex Index to convert \code{covariateId} of \code{data}, which is type \code{factor}, to a numeric index.
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#'
-#' @return
-#' Returns ffdf object with columns: \describe{
-#' \item{covariateId}{Newly indexed covariate identifier}
-#' \item{covariateName}{New name for covariate, with appropriate recurrence tag}
-#' \item{analysisId}{Analysis identifier for data dimension}
-#' \item{conceptId}{Concept identifier for covariate. 0 if code was truncated} }
-createNewCovRef <- function(data, dimensionInfo, rawCodes, covariateIdIndex, cohortData) {
-  if (is.null(data)) {return(NULL)}
-  truncatedNames = dimensionInfo$truncatedNames
-  analysisId = dimensionInfo$analysisId
-  TRUNCATE = (dimensionInfo$truncate != "")
-
-  uniqueCovariateId = unique(data$covariateId)
-  uniqueCovariateIdRoots = gsub("_.*$","",uniqueCovariateId[])
-  recurring = grep("_", uniqueCovariateId[], invert = FALSE)
-  notRecurring = grep("_", uniqueCovariateId[], invert = TRUE)
-
-  uniqueCovariateIdRecurrence = rep("", length(uniqueCovariateId[]))
-  uniqueCovariateIdRecurrence[notRecurring] = "(once)"
-  uniqueCovariateIdRecurrence[recurring] = gsub(".*_", "(", uniqueCovariateId[recurring])
-  uniqueCovariateIdRecurrence[recurring] = gsub("$", ")", uniqueCovariateIdRecurrence[recurring])
-
-  if (TRUNCATE) {
-    newCovariateId = covariateIdIndex$index[ffbase::ffmatch(uniqueCovariateId, covariateIdIndex$covariateId)]
-    if (truncatedNames == "") {
-      covariateName = rep("covariate name not available", length(newCovariateId))
-    } else {
-      newNames = eval(parse(text = truncatedNames))
-      uniqueCovariateIdRoots1 = substring(uniqueCovariateIdRoots, 4)
-      covariateName = newNames$name[match(uniqueCovariateIdRoots1, newNames$code)]
-      f <- function(a,b){if (is.na(b)) {return(paste(a, "covariate name not available", sep=" "))} else return(paste(a,b,sep=" "))}
-      covariateName = mapply(f,uniqueCovariateIdRecurrence, covariateName, USE.NAMES = FALSE)
-    }
-
-    d = length(newCovariateId)
-    return(ff::ffdf(covariateId = newCovariateId,
-                covariateName = ff::ff(vmode = "integer", factor(covariateName)),
-                analysisId = ff::ff(vmode = "double", length = d, initdata = analysisId),
-                conceptId = ff::ff(vmode = "double", length = d, initdata = 0)))
-  } else {
-    newCovariateId = covariateIdIndex$index[ffbase::ffmatch(uniqueCovariateId, covariateIdIndex$covariateId)]
-    uniqueCovariateIdRoots1 = substring(uniqueCovariateIdRoots, 4)
-    conceptIds = rawCodes$TARGET_CONCEPT_ID[ffbase::ffmatch(ff::ff(vmode = "integer", factor(uniqueCovariateIdRoots1)), rawCodes$SOURCE_CODE)]
-    foo = ff::ffdf(x1 = conceptIds, x2 = conceptIds)
-    t = ff::ffapply(X=foo, AFUN=function(a){return(ffbase::ffwhich(cohortData$covariateRef, cohortData$covariateRef$conceptId==a["x1"] & cohortData$covariateRef$analysisId == analysisId))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-    t = combineFunction(t, ffbase::ffappend)
-    covariateName = cohortData$covariateRef$covariateName[t]
-
-    f <- function(a,b){if (is.na(b)) {return(a)} else return(paste(a,b,sep=" "))}
-    covariateName = mapply(f, uniqueCovariateIdRecurrence, covariateName[], USE.NAMES = FALSE)
-
-    d = length(newCovariateId)
-
-    return(ff::ffdf(covariateId = newCovariateId,
-                covariateName = ff::ff(vmode = "integer", factor(covariateName)),
-                analysisId = ff::ff(vmode = "double", length = d, initdata = analysisId),
-                conceptId = conceptIds))
-  }
-}
-
-
-#' Creates numeric covariateId index
-#'
-#' @description
-#' Creates numeric covariateId index from covariates.
-#'
-#' @param covariates Covariate information of combined data dimension and demographic data. Includes column \code{covariateId}
-#'
-#' @return
-#' Returns ffdf object with columns \code{covariateId} and \code{index}
-createCovariateIndex <- function(covariates) {
-  if (is.null(covariates)) {return(NULL)}
-  uniqueCovariateId = unique(covariates$covariateId)
-  d = length(uniqueCovariateId)
-  result = ff::ffdf(covariateId=uniqueCovariateId,index=ff::ff(vmode="double",1:d))
-  return(result)
-}
-
-
-#' Converts covariateId to new index
-#'
-#' @param covariates Covariates to convert to new index; covariateId is a factor. Has columns \code{rowId}, \code{covariateId}, \code{covariateValue}
-#' @param index Index to use. Has column \code{covariateId} which match those from \code{covariates}, and column \code{index}
-#'
-#' @return
-#' Returns input \code{covariates} with \code{covariateId} converted to new index, which is numeric
-convertCovariateId <- function(covariates, index) {
-  if (is.null(covariates)) {return(NULL)}
-  covariates$covariateId = index$index[ffbase::ffmatch(covariates$covariateId, index$covariateId)]
-  return(covariates)
 }
 
 #' Retrieves demographics elements of covariate Ref
@@ -783,151 +256,3 @@ getDemographicsCovariates <- function(cohortData, covariateRef) {
   t = ffbase::ffmatch(cohortData$covariates$covariateId, covariateRef$covariateId)
   return(cohortData$covariates[ffbase::ffwhich(t,!is.na(t)),])
 }
-
-
-#' Retrieves predefined elements of covariate Ref
-#'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param conceptIds Vector of concept identifiers associated with predfined covariates.
-#'
-#' @return
-#' Returns ffdf of elements of \code{cohortData$covariateRef} that relate to predefined covariates.
-getPredefinedCovariateRef <- function(cohortData, conceptIds) {
-  if (is.null(conceptIds)) {return(NULL)}
-  t = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
-  result = cohortData$covariateRef[ffbase::ffwhich(t,!is.na(t)),]
-  result$covariateName = ffbase::droplevels.ff(result$covariateName)
-  return(result)
-}
-
-
-#' Retrieves prefefined elements of covariates
-#'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param predefinedCovariateRef Ffdf of covariate reference entries associated with predefined covariates.
-#'
-#' @return
-#' Returns ffdf of elements of \code{cohortData$covariates} that relate to predefined covariates.
-getPredefinedCovariates <- function(cohortData, predefinedCovariateRef) {
-  if (is.null(predefinedCovariateRef)) {return(NULL)}
-  t = ffbase::ffmatch(cohortData$covariates$covariateId, predefinedCovariateRef$covariateId)
-  return(cohortData$covariates[ffbase::ffwhich(t,!is.na(t)),])
-}
-
-
-#' Saves a list of ffdf objects
-#' @description
-#' This function saves a list of ffdf objects in a new folder. The names of the ffdf elements are also preserved.
-#' @param ffdfList List of ffdf objects to save
-#' @param file Name of folder to create / save in
-saveFfdfList <- function (ffdfList, file) {
-  front = "ffbase::save.ffdf("
-  back = "dir = file, overwrite=T)"
-
-  middle = ""
-  d = length(ffdfList)
-
-  for (i in 1:d) {
-    text = paste("item", i, "<- ffdfList[[", i, "]]", sep="")
-    eval(parse(text=text))
-    middle = paste(middle, "item", i,",", sep="")
-  }
-
-  text = paste(front, middle, back, sep="")
-  eval(parse(text=text))
-
-  listNames = names(ffdfList)
-  nItems = length(ffdfList)
-  save(listNames, file = file.path(file, "listNames.Rdata"))
-  save(nItems, file = file.path(file, "nItems.Rdata"))
-}
-
-
-#' Loads list of ffdf objects
-#' @description
-#' Loads list of ffdf objects saved by \code{saveFfdfList}
-#' @param file Name of folder
-loadFfdfList <- function (file) {
-
-  if (!file.exists(file))
-    stop(paste("Cannot find folder", file))
-  if (!file.info(file)$isdir)
-    stop(paste("Not a folder", file))
-
-  temp <- setwd(file)
-  absolutePath <- setwd(temp)
-
-  e <- new.env()
-  ffbase::load.ffdf(absolutePath, e)
-  load(file.path(absolutePath, "listNames.Rdata"), e)
-  load(file.path(absolutePath, "nItems.Rdata"), e)
-
-  listNames = get("listNames", envir = e)
-  nItems = get("nItems", envir = e)
-
-  front = "list("
-  back = ")"
-  middle = ""
-
-  for (i in 1:nItems) {
-    text = paste(if(!is.null(listNames)) listNames[i] else "",
-                 if(!is.null(listNames)) "=" else "",
-                 "get(\"item", i, "\",envir=e)", sep="")
-    if (i==1) {
-      middle = paste(middle, text, sep="")
-    } else {
-      middle = paste(middle, text, sep=",")
-    }
-  }
-  text = paste(front, middle, back, sep="")
-  result = eval(parse(text=text))
-  return(result)
-}
-
-
-#' Function used to load and process ICD9 codes
-#'
-#' @description
-#' This function was used in processing ICD9Dx.txt
-#' @param file File name
-#'
-#' @return
-#' Returns \code{data.frame} with columns: \describe{
-#' \item{code}{Truncated ICD9 codes to 3 digits}
-#' \item{name}{Name of ICD9 code} }
-processICD9Dx <- function(file) {
-
-  icd9codes = read.delim(file, header=FALSE)
-  f <- function(x){return(as.character(x))}
-  codes = sapply(icd9codes, f)
-  codes = as.vector(codes)
-
-  f <- function(x){return(strsplit(x, " "))}
-  codes = sapply(codes,f)
-
-  f <- function(x){return(list(data.frame(code=x[[1]], name=combineFunction(x[-1], function(a,b){return(paste(a,b,sep=" "))}))))}
-  codes = sapply(codes, f)
-  codes = combineFunction(codes, rbind)
-  codes = codes[grep("^...0{0,}$", codes$code),]
-  codes$code = substr(codes$code, 1, 3)
-
-  return(codes)
-}
-
-
-#' Loads ICD9 truncated names table
-#'
-#' @description
-#' This function loads the saved table that contains the names of ICD9 codes truncated to 3 digits from the file ICD9Dx.Rdata
-#' @param file Name of file
-#'
-#' @return
-#' Returns \code{data.frame} with columns: \describe{
-#' \item{code}{Truncated ICD9 codes to 3 digits}
-#' \item{name}{Name of ICD9 code} }
-getICD9Dx <- function(file) {
-  e = new.env()
-  load(file, envir = e)
-  return(get("codes", e))
-}
-

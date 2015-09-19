@@ -56,49 +56,60 @@ nsaids <- querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
 
 
-# Define which types of covariates must be constructed:
-covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                         useCovariateConditionOccurrence = TRUE,
-                                         useCovariateConditionOccurrence365d = FALSE,
-                                         useCovariateConditionOccurrence30d = FALSE,
-                                         useCovariateConditionOccurrenceInpt180d = FALSE,
-                                         useCovariateConditionOccurrence180d = TRUE,
-                                         useCovariateConditionEra = FALSE,
-                                         useCovariateConditionEraEver = FALSE,
-                                         useCovariateConditionEraOverlap = FALSE,
-                                         useCovariateConditionGroup = FALSE,
-                                         useCovariateDrugExposure = FALSE,
-                                         useCovariateDrugExposure365d = FALSE,
-                                         useCovariateDrugExposure30d = FALSE,
-                                         useCovariateDrugEra = TRUE,
-                                         useCovariateDrugEra365d = FALSE,
-                                         useCovariateDrugEra30d = FALSE,
-                                         useCovariateDrugEraEver = FALSE,
-                                         useCovariateDrugEraOverlap = FALSE,
-                                         useCovariateDrugEra180d = TRUE,
-                                         useCovariateDrugGroup = FALSE,
-                                         useCovariateProcedureOccurrence = TRUE,
-                                         useCovariateProcedureOccurrence365d = FALSE,
-                                         useCovariateProcedureOccurrence30d = FALSE,
-                                         useCovariateProcedureOccurrence180d = TRUE,
-                                         useCovariateProcedureGroup = FALSE,
-                                         useCovariateObservation = FALSE,
-                                         useCovariateObservation365d = FALSE,
-                                         useCovariateObservation30d = FALSE,
-                                         useCovariateObservationCount365d = FALSE,
-                                         useCovariateMeasurement365d = FALSE,
-                                         useCovariateMeasurement30d = FALSE,
-                                         useCovariateMeasurementCount365d = FALSE,
-                                         useCovariateMeasurementBelow = FALSE,
-                                         useCovariateMeasurementAbove = FALSE,
-                                         useCovariateConceptCounts = FALSE,
-                                         useCovariateRiskScores = FALSE,
-                                         useCovariateRiskScoresCharlson = FALSE,
-                                         useCovariateRiskScoresDCSI = FALSE,
-                                         useCovariateRiskScoresCHADS2 = FALSE,
-                                         useCovariateInteractionYear = FALSE,
-                                         useCovariateInteractionMonth = FALSE,
-                                         excludedCovariateConceptIds = nsaids)
+covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                             useCovariateConditionOccurrence = TRUE,
+                                             useCovariateConditionOccurrence365d = FALSE,
+                                             useCovariateConditionOccurrence30d = FALSE,
+                                             useCovariateConditionOccurrenceInpt180d = FALSE,
+                                             useCovariate3DigitIcd9Inpatient180d = TRUE,
+                                             useCovariate3DigitIcd9Inpatient180dMedF = TRUE,
+                                             useCovariate3DigitIcd9Inpatient180d75F = TRUE,
+                                             useCovariate3DigitIcd9Outpatient180d = TRUE,
+                                             useCovariate3DigitIcd9Outpatient180dMedF = TRUE,
+                                             useCovariate3DigitIcd9Outpatient180d75F = TRUE,
+                                             useCovariateConditionEra = FALSE,
+                                             useCovariateConditionEraEver = FALSE,
+                                             useCovariateConditionEraOverlap = FALSE,
+                                             useCovariateConditionGroup = FALSE,
+                                             useCovariateDrugExposure = TRUE,
+                                             useCovariateDrugExposure365d = FALSE,
+                                             useCovariateDrugExposure30d = FALSE,
+                                             useCovariateIngredientExposure180d = TRUE,
+                                             useCovariateIngredientExposure180dMedF = TRUE,
+                                             useCovariateIngredientExposure180d75F = TRUE,
+                                             useCovariateDrugEra = FALSE,
+                                             useCovariateDrugEra365d = FALSE,
+                                             useCovariateDrugEra30d = FALSE,
+                                             useCovariateDrugEraEver = FALSE,
+                                             useCovariateDrugEraOverlap = FALSE,
+                                             useCovariateDrugGroup = FALSE,
+                                             useCovariateProcedureOccurrence = TRUE,
+                                             useCovariateProcedureOccurrence365d = FALSE,
+                                             useCovariateProcedureOccurrence30d = FALSE,
+                                             useCovariateProcedureOccurrenceInpatient180d = TRUE,
+                                             useCovariateProcedureOccurrenceInpatient180dMedF = TRUE,
+                                             useCovariateProcedureOccurrenceInpatient180d75F = TRUE,
+                                             useCovariateProcedureOccurrenceOutpatient180d = TRUE,
+                                             useCovariateProcedureOccurrenceOutpatient180dMedF = TRUE,
+                                             useCovariateProcedureOccurrenceOutpatient180d75F = TRUE,
+                                             useCovariateProcedureGroup = FALSE,
+                                             useCovariateObservation = FALSE,
+                                             useCovariateObservation365d = FALSE,
+                                             useCovariateObservation30d = FALSE,
+                                             useCovariateObservationCount365d = FALSE,
+                                             useCovariateMeasurement365d = FALSE,
+                                             useCovariateMeasurement30d = FALSE,
+                                             useCovariateMeasurementCount365d = FALSE,
+                                             useCovariateMeasurementBelow = FALSE,
+                                             useCovariateMeasurementAbove = FALSE,
+                                             useCovariateConceptCounts = FALSE,
+                                             useCovariateRiskScores = FALSE,
+                                             useCovariateRiskScoresCharlson = FALSE,
+                                             useCovariateRiskScoresDCSI = FALSE,
+                                             useCovariateRiskScoresCHADS2 = FALSE,
+                                             useCovariateInteractionYear = FALSE,
+                                             useCovariateInteractionMonth = FALSE,
+                                             deleteCovariatesSmallCount = 100)
 
 
 # Load data:
@@ -120,25 +131,28 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           outcomeDatabaseSchema = resultsDatabaseSchema,
                                           outcomeTable = "coxibVsNonselVsGiBleed",
                                           excludeDrugsFromCovariates = FALSE,
-                                          covariateSettings = covarSettings,
+                                          covariateSettings = covariateSettings,
                                           cdmVersion = cdmVersion)
 
 # Save cohort method data:
-savecohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed")
+saveCohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed")
 
 # Load cohort method data:
 cohortMethodData = loadCohortMethodData("coxibVsNonselVsGiBleed")
 
 # HDPS implementation:
-screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData)
+screenedCohortMethodData = runHdps(cohortData = cohortMethodData)
 hdPs <- createPs(screenedCohortMethodData, outcomeId = 3,
                  prior = createPrior("none")) # turn-off regularization)
 hdpsPropensityModel <- getPsModel(hdPs, screenedCohortMethodData)
 
 # Example of selecting demographics to include
-screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData, demographicsAnalysisIds = c(3,5,6)) # exclude sex
+screenedCohortMethodData = runHdps(cohortData = cohortMethodData, demographicsAnalysisIds = c(3,5,6)) # excludes sex
 
 # Example of selecting conceptIds to include/exclude if available
-screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData, predefinedIncludeConceptIds = c(1, 2)) # include covariateIds
-screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData, predefinedExcludeConceptIds = c(1, 2)) # exclude covariateIds
+# For ICD9 codes, replace 'E' with '10' and 'V' with '11'
+screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData,
+                                   predefinedIncludeConceptIds = c(2414398), predefinedIncludeICD9Dx = c(218)) # include covariateIds
+screenedCohortMethodData = runHdps(connectionDetails = connectionDetails, cohortData = cohortMethodData,
+                                   predefinedExcludeConceptIds = c(2414398), predefinedExcludeICD9Dx = c(218)) # exclude covariateIds
 
