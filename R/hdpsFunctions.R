@@ -5,8 +5,8 @@ getDimensionTable <- function(dimensions) {
   inpatientDiagnosis = data.frame(dimName = "inpatientDiagnosis", analysisId = 104, row.names = NULL, stringsAsFactors = FALSE)
   dimensionTable = rbind(dimensionTable, inpatientDiagnosis)
 
-  outpatientDiagnosis = data.frame(dimName = "outpatientDiagnosis", analysisId = 107, row.names = NULL, stringsAsFactors = FALSE)
-  dimensionTable = rbind(dimensionTable, outpatientDiagnosis)
+  ambulatoryDiagnosis = data.frame(dimName = "ambulatoryDiagnosis", analysisId = 107, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, ambulatoryDiagnosis)
 
   drugIngredient = data.frame(dimName = "drugIngredient", analysisId = 403, row.names = NULL, stringsAsFactors = FALSE)
   dimensionTable = rbind(dimensionTable, drugIngredient)
@@ -14,8 +14,8 @@ getDimensionTable <- function(dimensions) {
   inpatientProcedure = data.frame(dimName = "inpatientProcedure", analysisId = 703, row.names = NULL, stringsAsFactors = FALSE)
   dimensionTable = rbind(dimensionTable, inpatientProcedure)
 
-  outpatientProcedure = data.frame(dimName = "outpatientProcedure", analysisId = 706, row.names = NULL, stringsAsFactors = FALSE)
-  dimensionTable = rbind(dimensionTable, outpatientProcedure)
+  ambulatoryProcedure = data.frame(dimName = "ambulatoryProcedure", analysisId = 706, row.names = NULL, stringsAsFactors = FALSE)
+  dimensionTable = rbind(dimensionTable, ambulatoryProcedure)
 
   f <- function(dimName) {
     row = match(dimName, dimensionTable$dimName)

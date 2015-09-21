@@ -34,10 +34,10 @@ runHdps <- function(
                     #connectionDetails,
                     cohortData,
                     useInpatientDiagnosis = TRUE,
-                    useOutpatientDiagnosis = TRUE,
+                    useAmbulatoryDiagnosis = TRUE,
                     useDrugIngredient = TRUE,
                     useInpatientProcedure = TRUE,
-                    useOutpatientProcedure = TRUE,
+                    useAmbulatoryProcedure = TRUE,
                     demographicsAnalysisIds = c(2,3,5,6),
                     predefinedIncludeICD9Dx = c(),
                     predefinedIncludeConceptIds = c(),
@@ -55,8 +55,8 @@ runHdps <- function(
   if (useInpatientDiagnosis == TRUE) {
     dimensions = c(dimensions, "inpatientDiagnosis")
   }
-  if (useOutpatientDiagnosis == TRUE) {
-    dimensions = c(dimensions, "outpatientDiagnosis")
+  if (useAmbulatoryDiagnosis == TRUE) {
+    dimensions = c(dimensions, "ambulatoryDiagnosis")
   }
   if (useDrugIngredient == TRUE) {
     dimensions = c(dimensions, "drugIngredient")
@@ -64,8 +64,8 @@ runHdps <- function(
   if (useInpatientProcedure == TRUE) {
     dimensions = c(dimensions, "inpatientProcedure")
   }
-  if (useOutpatientProcedure == TRUE) {
-    dimensions = c(dimensions, "outpatientProcedure")
+  if (useAmbulatoryProcedure == TRUE) {
+    dimensions = c(dimensions, "ambulatoryProcedure")
   }
 #   if (useConditionICD9 == TRUE) {
 #     dimensions = c(dimensions, "conditionICD9")
