@@ -88,7 +88,8 @@ createPs <- function(cohortMethodData,
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   if (stopOnHighCorrelation) {
     suspect <- Cyclops::univariableCorrelation(cyclopsData, threshold = 0.5)
-    if (length(suspect) > 1 || !is.na(suspect[1])) {
+    suspect <- suspect[!is.na(suspect)]
+    if (length(suspect) != 0) {
       covariateIds <- as.numeric(names(suspect))
       t <-in.ff(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds))
       ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(t, t == TRUE),])
