@@ -289,6 +289,7 @@ getDbCohortMethodData <- function(connectionDetails,
                    targetId = targetId,
                    comparatorId = comparatorId,
                    counts = counts,
+                   deletedCovariateIds = covariateData$metaData$deletedCovariateIds,
                    call = match.call())
 
   result <- list(cohorts = cohorts,
