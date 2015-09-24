@@ -5,9 +5,9 @@
 \title{Create propensity scores}
 \usage{
 createPs(cohortMethodData, outcomeId = NULL, excludeCovariateIds = NULL,
-  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-  control = createControl(noiseLevel = "silent", cvType = "auto",
-  startingVariance = 0.1))
+  stopOnHighCorrelation = TRUE, prior = createPrior("laplace", exclude =
+  c(0), useCrossValidation = TRUE), control = createControl(noiseLevel =
+  "silent", cvType = "auto", startingVariance = 0.1))
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
@@ -17,6 +17,11 @@ createPs(cohortMethodData, outcomeId = NULL, excludeCovariateIds = NULL,
 outcome will be removed prior to creating the propensity score model.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
+
+\item{stopOnHighCorrelation}{If true, the function will test each covariate for correlation with the
+treatment assignment. If any covariate has an unusually high correlation
+(either positive or negative), this will be reported and the function
+will stop.}
 
 \item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
 for details.}
