@@ -87,7 +87,7 @@ createPs <- function(cohortMethodData,
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   if (stopOnHighCorrelation) {
-    suspect <- Cyclops::univariableCorrelation(cyclopsData, threshold = 0.5)
+    suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
     suspect <- suspect[!is.na(suspect)]
     if (length(suspect) != 0) {
       covariateIds <- as.numeric(names(suspect))
