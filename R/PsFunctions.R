@@ -31,6 +31,10 @@
 #' @param outcomeId             The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
+#' @param stopOnHighCorrelation If true, the function will test each covariate for correlation with the
+#'                              treatment assignment. If any covariate has an unusually high correlation
+#'                              (either positive or negative), this will be reported and the function
+#'                              will stop.
 #' @param prior                 The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
 #'                              for details.
 #' @param control               The control object used to control the cross-validation used to
@@ -49,6 +53,7 @@
 createPs <- function(cohortMethodData,
                      outcomeId = NULL,
                      excludeCovariateIds = NULL,
+                     stopOnHighCorrelation = TRUE,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent",
                                              cvType = "auto",
@@ -81,6 +86,18 @@ createPs <- function(cohortMethodData,
   }
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
+  if (stopOnHighCorrelation) {
+    suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
+    suspect <- suspect[!is.na(suspect)]
+    if (length(suspect) != 0) {
+      covariateIds <- as.numeric(names(suspect))
+      t <-in.ff(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds))
+      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(t, t == TRUE),])
+      writeLines("High correlation between covariate(s) and treatment detected:")
+      print(ref)
+      stop("High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?")
+    }
+  }
   ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
   cfs <- coef(cyclopsFit)
