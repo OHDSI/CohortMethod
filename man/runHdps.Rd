@@ -24,6 +24,8 @@ runHdps(cohortData, useInpatientDiagnosis = TRUE,
 
 \item{useInpatientProcedure}{boolean to use inpatient procedure codes}
 
+\item{useAmbulatoryProcedure}{boolean to use ambulatory procedure codes}
+
 \item{demographicsAnalysisIds}{Vector of analysis identifiers that correspond to demographics covariates}
 
 \item{predefinedIncludeICD9Dx}{Vector of predefined icd9 condition codes to include as covariates}
@@ -34,6 +36,8 @@ runHdps(cohortData, useInpatientDiagnosis = TRUE,
 
 \item{predefinedExcludeConceptIds}{Vector of predefined concept IDs to exclude as covariates}
 
+\item{icd9AnalysisIds}{Analysis IDs that contain icd9 condition codes}
+
 \item{dimensionCutoff}{Number of most prevalent covariates to include from each data dimension}
 
 \item{rankCutoff}{Number of covariates to include in propensity score model (minus the demographics covariates)}
@@ -41,10 +45,6 @@ runHdps(cohortData, useInpatientDiagnosis = TRUE,
 \item{useExpRank}{Use exposure rank instead of bias rank}
 
 \item{fudge}{Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded}
-
-\item{connectionDetails}{An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.}
-
-\item{useOutpatientProcedure}{boolean to use ambulatory procedure codes}
 }
 \value{
 Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}

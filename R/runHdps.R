@@ -12,18 +12,18 @@
 #' calculated, and the highest \code{biasCutoff} codes across all data dimensions are selected for inclusion. Demographic information of
 #' age, sex, race, and year are also included. \code{cohortData$covariates} and \code{cohortData$covariateRef} are altered accordingly.
 #'
-#' @param connectionDetails An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.
 #' @param cohortData \code{cohortData} object constructed by \code{getDbCohortMethodData}
 #' @param useInpatientDiagnosis boolean to use inpatient icd9 condition codes
 #' @param useAmbulatoryDiagnosis boolean to use ambulatory icd9 condition codes
 #' @param useDrugIngredient boolean to use drug ingredient codes
 #' @param useInpatientProcedure boolean to use inpatient procedure codes
-#' @param useOutpatientProcedure boolean to use ambulatory procedure codes
+#' @param useAmbulatoryProcedure boolean to use ambulatory procedure codes
 #' @param demographicsAnalysisIds Vector of analysis identifiers that correspond to demographics covariates
-#' @param predefinedIncludeConceptIds Vector of predefined concept IDs to include as covariates
-#' @param predefinedExcludeConceptIds Vector of predefined concept IDs to exclude as covariates
 #' @param predefinedIncludeICD9Dx Vector of predefined icd9 condition codes to include as covariates
+#' @param predefinedIncludeConceptIds Vector of predefined concept IDs to include as covariates
 #' @param predefinedExcludeICD9Dx Vector of predefined icd9 condition codes to exclude as covariates
+#' @param predefinedExcludeConceptIds Vector of predefined concept IDs to exclude as covariates
+#' @param icd9AnalysisIds Analysis IDs that contain icd9 condition codes
 #' @param dimensionCutoff Number of most prevalent covariates to include from each data dimension
 #' @param rankCutoff Number of covariates to include in propensity score model (minus the demographics covariates)
 #' @param fudge Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded
