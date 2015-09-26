@@ -14,25 +14,25 @@
 #'
 #' @param connectionDetails An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.
 #' @param cohortData \code{cohortData} object constructed by \code{getDbCohortMethodData}
-#' @param useConditionICD9 Boolean to include ICD9 diagnosis codes
-#' @param useDrug Boolean to include drugs
-#' @param useProcedureCPT4 Boolean to include CPT4 procedure codes
+#' @param useInpatientDiagnosis boolean to use inpatient icd9 condition codes
+#' @param useAmbulatoryDiagnosis boolean to use ambulatory icd9 condition codes
+#' @param useDrugIngredient boolean to use drug ingredient codes
+#' @param useInpatientProcedure boolean to use inpatient procedure codes
+#' @param useOutpatientProcedure boolean to use ambulatory procedure codes
 #' @param demographicsAnalysisIds Vector of analysis identifiers that correspond to demographics covariates
 #' @param predefinedIncludeConceptIds Vector of predefined concept IDs to include as covariates
 #' @param predefinedExcludeConceptIds Vector of predefined concept IDs to exclude as covariates
-#' @param lowPopCutoff Cutoff for discarding rare covariates
+#' @param predefinedIncludeICD9Dx Vector of predefined icd9 condition codes to include as covariates
+#' @param predefinedExcludeICD9Dx Vector of predefined icd9 condition codes to exclude as covariates
 #' @param dimensionCutoff Number of most prevalent covariates to include from each data dimension
 #' @param rankCutoff Number of covariates to include in propensity score model (minus the demographics covariates)
-#' @param dropRareAfterExpand Boolean for dropping codes below lowPopCutoff after expanding covariates
 #' @param fudge Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded
 #' @param useExpRank Use exposure rank instead of bias rank
 #'
 #' @return
 #' Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}
 #' @export
-runHdps <- function(
-                    #connectionDetails,
-                    cohortData,
+runHdps <- function(cohortData,
                     useInpatientDiagnosis = TRUE,
                     useAmbulatoryDiagnosis = TRUE,
                     useDrugIngredient = TRUE,
@@ -44,13 +44,10 @@ runHdps <- function(
                     predefinedExcludeICD9Dx = c(),
                     predefinedExcludeConceptIds = c(),
                     icd9AnalysisIds = c(104, 105, 106, 107, 108, 109),
-                    #lowPopCutoff = 100,
                     dimensionCutoff = 200,
                     rankCutoff = 500,
-                    #dropRareAfterExpand = FALSE,
                     useExpRank = FALSE,
                     fudge = 0) {
-  #connection <- connect(connectionDetails)
   dimensions = c()
   if (useInpatientDiagnosis == TRUE) {
     dimensions = c(dimensions, "inpatientDiagnosis")
@@ -67,16 +64,6 @@ runHdps <- function(
   if (useAmbulatoryProcedure == TRUE) {
     dimensions = c(dimensions, "ambulatoryProcedure")
   }
-#   if (useConditionICD9 == TRUE) {
-#     dimensions = c(dimensions, "conditionICD9")
-#   }
-#   if (useDrug == TRUE) {
-#     dimensions = c(dimensions, "drug")
-#   }
-#   if (useProcedureCPT4 == TRUE) {
-#     dimensions = c(dimensions, "procedureCPT4")
-#   }
-
   demographicsCovariateRef = getDemographicsCovariateRef(cohortData, demographicsAnalysisIds)
   demographicsCovariates = getDemographicsCovariates(cohortData, demographicsCovariateRef)
   predefinedCovariateRef = getPredefinedCovariateRef(cohortData, predefinedIncludeConceptIds, predefinedIncludeICD9Dx, icd9AnalysisIds)
@@ -91,11 +78,6 @@ runHdps <- function(
     cohortData$covariateRef = newCovariateRef
     return(cohortData)
   } else {
-    #dimAnalysisId = sapply(dimensionTable, getDimensionAnalysisId)
-    #dimSql = sapply(dimensionTable, getDimensionSql)
-    #dimConceptId = sapply(dimAnalysisId, getConceptId, cohortData)
-    #dimCovariateId = sapply(dimAnalysisId, getCovariateId, cohortData)
-
     newCovariates = removePredefinedCovariates(cohortData, c(predefinedIncludeConceptIds, predefinedExcludeConceptIds),
                                                c(predefinedIncludeICD9Dx, predefinedExcludeICD9Dx), icd9AnalysisIds)
     dimAnalysisId = sapply(dimensionTable, getDimensionAnalysisId)
@@ -111,30 +93,6 @@ runHdps <- function(
     newCovariateRef = getNewCovariateRef(newCovariates, cohortData)
     newCovariates = combineFunction(list(newCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
     newCovariateRef = combineFunction(list(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
-
-    #rawCodes = sqlMapply(connection, dimSql, list("listIds"), list(dimConceptId))
-    #rawCodes = sapply(rawCodes, covariateIdToFactor)
-    #rawCodes = sapply(rawCodes, deletePredefinedCodes, predefinedIncludeConceptIds)
-    #rawCodes = sapply(rawCodes, deletePredefinedCodes, predefinedExcludeConceptIds)
-    #truncatedCodes = mapply(truncateRawCodes, rawCodes, dimensionTable)
-    #uniqueCodes = sapply(truncatedCodes, deleteRepeatCodes)
-    #uniqueCodes = mapply(appendAnalysisId, uniqueCodes, dimAnalysisId)
-
-    #newData = combineData(cohortData, uniqueCodes, dimCovariateId)
-    #newData = sapply(newData, removeRareCodes, lowPopCutoff, dimensionCutoff)
-    #newData = sapply(newData, expandCovariates)
-    #if (dropRareAfterExpand) {newData = sapply(newData, removeRareCodes, lowPopCutoff)}
-    #rankings = sapply(newData, calculateRanks, cohortData, fudge)
-    #newData = removeLowRank(newData, rankings, rankCutoff, useExpRank)
-
-    #newCovariates = combineFunction(newData, ffbase::ffdfrbind.fill)
-    #newCovariates = combineWithOtherCovariates(newCovariates, demographicsCovariates, predefinedCovariates)
-    #covariateIdIndex = createCovariateIndex(newCovariates)
-    #newCovariates = convertCovariateId(newCovariates, covariateIdIndex)
-
-    #newCovariateRefList = mapply(createNewCovRef, newData, dimensionTable, rawCodes, list(covariateIdIndex), list(cohortData))
-    #newCovariateRef = combineFunction(newCovariateRefList, ffbase::ffdfrbind.fill)
-    #newCovariateRef = combineWithOtherCovariateRef(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef, covariateIdIndex)
 
     cohortData$covariates = newCovariates
     cohortData$covariateRef = newCovariateRef

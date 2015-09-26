@@ -5,8 +5,8 @@
 \title{Runs hdps implementation}
 \usage{
 runHdps(cohortData, useInpatientDiagnosis = TRUE,
-  useOutpatientDiagnosis = TRUE, useDrugIngredient = TRUE,
-  useInpatientProcedure = TRUE, useOutpatientProcedure = TRUE,
+  useAmbulatoryDiagnosis = TRUE, useDrugIngredient = TRUE,
+  useInpatientProcedure = TRUE, useAmbulatoryProcedure = TRUE,
   demographicsAnalysisIds = c(2, 3, 5, 6), predefinedIncludeICD9Dx = c(),
   predefinedIncludeConceptIds = c(), predefinedExcludeICD9Dx = c(),
   predefinedExcludeConceptIds = c(), icd9AnalysisIds = c(104, 105, 106, 107,
@@ -16,9 +16,21 @@ runHdps(cohortData, useInpatientDiagnosis = TRUE,
 \arguments{
 \item{cohortData}{\code{cohortData} object constructed by \code{getDbCohortMethodData}}
 
+\item{useInpatientDiagnosis}{boolean to use inpatient icd9 condition codes}
+
+\item{useAmbulatoryDiagnosis}{boolean to use ambulatory icd9 condition codes}
+
+\item{useDrugIngredient}{boolean to use drug ingredient codes}
+
+\item{useInpatientProcedure}{boolean to use inpatient procedure codes}
+
 \item{demographicsAnalysisIds}{Vector of analysis identifiers that correspond to demographics covariates}
 
+\item{predefinedIncludeICD9Dx}{Vector of predefined icd9 condition codes to include as covariates}
+
 \item{predefinedIncludeConceptIds}{Vector of predefined concept IDs to include as covariates}
+
+\item{predefinedExcludeICD9Dx}{Vector of predefined icd9 condition codes to exclude as covariates}
 
 \item{predefinedExcludeConceptIds}{Vector of predefined concept IDs to exclude as covariates}
 
@@ -32,15 +44,7 @@ runHdps(cohortData, useInpatientDiagnosis = TRUE,
 
 \item{connectionDetails}{An R object of type connectionDetails created using the function createConnectionDetails in the DatabaseConnector package.}
 
-\item{useConditionICD9}{Boolean to include ICD9 diagnosis codes}
-
-\item{useDrug}{Boolean to include drugs}
-
-\item{useProcedureCPT4}{Boolean to include CPT4 procedure codes}
-
-\item{lowPopCutoff}{Cutoff for discarding rare covariates}
-
-\item{dropRareAfterExpand}{Boolean for dropping codes below lowPopCutoff after expanding covariates}
+\item{useOutpatientProcedure}{boolean to use ambulatory procedure codes}
 }
 \value{
 Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}
