@@ -691,19 +691,24 @@ computeMeansPerGroup <- function(cohorts, covariates) {
   nTreated <- ffbase::sum.ff(cohorts$treatment == 1)
   nComparator <- nOverall - nTreated
 
-  t = ffbase::ffmatch(covariates$rowId, cohorts$rowId)
+  t = ffbase::ffmatch(covariates$rowId, cohorts$rowId) # keep only covariates that correspond to people in cohorts
   t = ffbase::ffwhich(t, !is.na(t))
   covariates = covariates[t,]
 
   covariates$treatment = cohorts$treatment[ffbase::ffmatch(covariates$rowId, cohorts$rowId)]
-  xt = PatientLevelPrediction::bySumFf(covariates$covariateValue * covariates$treatment, covariates$covariateId) # sum treated
+  xt = PatientLevelPrediction::bySumFf(covariates$treatment, covariates$covariateId)
   xt$means = xt$sums / nTreated
-  xt = ff::as.ffdf(xt)
-  covariates$tAvg = xt$means[ffbase::ffmatch(covariates$covariateId, xt$bins)]
-  st = PatientLevelPrediction::bySumFf(covariates$treatment * (covariates$covariateValue - covariates$tAvg)^2, covariates$covariateId) # s^2 for treated
-  nt = PatientLevelPrediction::bySumFf(covariates$treatment, covariates$covariateId) # number treated with nonzero values
-  st$sums = (st$sums + (nTreated - nt$sums) * xt$means[]^2) / (nTreated - 1) # add zero covariates to s^2
-  covariates$tAvg <- NULL
+  xt$std = xt$means*(1-xt$means)
+
+#   covariates$treatment = cohorts$treatment[ffbase::ffmatch(covariates$rowId, cohorts$rowId)]
+#   xt = PatientLevelPrediction::bySumFf(covariates$covariateValue * covariates$treatment, covariates$covariateId) # sum treated
+#   xt$means = xt$sums / nTreated
+#   xt = ff::as.ffdf(xt)
+#   covariates$tAvg = xt$means[ffbase::ffmatch(covariates$covariateId, xt$bins)]
+#   st = PatientLevelPrediction::bySumFf(covariates$treatment * (covariates$covariateValue - covariates$tAvg)^2, covariates$covariateId) # s^2 for treated
+#   nt = PatientLevelPrediction::bySumFf(covariates$treatment, covariates$covariateId) # number treated with nonzero values
+#   st$sums = (st$sums + (nTreated - nt$sums) * xt$means[]^2) / (nTreated - 1) # add zero covariates to s^2
+#   covariates$tAvg <- NULL
 
 #   t <- cohorts$treatment == 1
 #   t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
@@ -758,14 +763,19 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #     colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   } else {
     # Used one-on-one ratio matching, no need to weigh
-    xc = PatientLevelPrediction::bySumFf(covariates$covariateValue * (1 - covariates$treatment), covariates$covariateId) # sum comparator
+
+    xc = PatientLevelPrediction::bySumFf((1 - covariates$treatment), covariates$covariateId)
     xc$means = xc$sums / nComparator
-    xc = ff::as.ffdf(xc)
-    covariates$cAvg = xc$means[ffbase::ffmatch(covariates$covariateId, xc$bins)]
-    sc = PatientLevelPrediction::bySumFf((1 - covariates$treatment) * (covariates$covariateValue - covariates$cAvg)^2, covariates$covariateId) # s^2 for comparator
-    nc = PatientLevelPrediction::bySumFf((1 - covariates$treatment), covariates$covariateId) # number treated with nonzero values
-    sc$sums = (sc$sums + (nTreated - nc$sums) * xc$means[]^2) / (nComparator - 1) # add zero covariates to s^2
-    covariates$cAvg <- NULL
+    xc$std = xc$means*(1-xc$means)
+
+#     xc = PatientLevelPrediction::bySumFf(covariates$covariateValue * (1 - covariates$treatment), covariates$covariateId) # sum comparator
+#     xc$means = xc$sums / nComparator
+#     xc = ff::as.ffdf(xc)
+#     covariates$cAvg = xc$means[ffbase::ffmatch(covariates$covariateId, xc$bins)]
+#     sc = PatientLevelPrediction::bySumFf((1 - covariates$treatment) * (covariates$covariateValue - covariates$cAvg)^2, covariates$covariateId) # s^2 for comparator
+#     nc = PatientLevelPrediction::bySumFf((1 - covariates$treatment), covariates$covariateId) # number treated with nonzero values
+#     sc$sums = (sc$sums + (nTreated - nc$sums) * xc$means[]^2) / (nComparator - 1) # add zero covariates to s^2
+#     covariates$cAvg <- NULL
 
 #     t <- cohorts$treatment == 0
 #     t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
@@ -778,11 +788,14 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #     colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   }
 
-  xt = as.data.frame(xt)
-  xc = as.data.frame(xc)
+#   xt = as.data.frame(xt)
+#   xc = as.data.frame(xc)
 
-  treated = data.frame(covariateId = xt$bins, meanTreated = xt$means, sumTreated = xt$sums, sdTreated = st$sums)
-  comparator = data.frame(covariateId = xc$bins, meanComparator = xc$means, sumComparator = xc$sums, sdComparator = sc$sums)
+#   treated = data.frame(covariateId = xt$bins, meanTreated = xt$means, sumTreated = xt$sums, sdTreated = st$sums)
+#   comparator = data.frame(covariateId = xc$bins, meanComparator = xc$means, sumComparator = xc$sums, sdComparator = sc$sums)
+
+  treated = data.frame(covariateId = xt$bins, meanTreated = xt$means, sumTreated = xt$sums, sdTreated = xt$std)
+  comparator = data.frame(covariateId = xc$bins, meanComparator = xc$means, sumComparator = xc$sums, sdComparator = xc$std)
 
   result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")])
   result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
