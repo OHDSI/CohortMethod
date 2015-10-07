@@ -18,15 +18,13 @@
 #' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrictcondition
 #'                                         occurrences.  Only applicable if outcomeTable
 #'                                         =CONDITION_OCCURRENCE.
-#' @param cdmVersion                       Define the OMOP CDM version used: currently support "4" and
-#'                                         "5".
 #' @param excludeDrugsFromCovariates       Should the target and comparator drugs (and their
 #'                                         descendantconcepts) be excluded from the covariates? Note
 #'                                         that this willwork if the drugs are actualy drug concept IDs
 #'                                         (and not cohortIDs).
 #' @param covariateSettings                An object of type covariateSettings as created using
-#'                                         thecreateCovariateSettings function in the
-#'                                         PatientLevelPrediction package..
+#'                                         thecreateCovariateSettings function in
+#'                                         thePatientLevelPrediction package..
 #'
 #' @export
 createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
@@ -35,7 +33,6 @@ createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
                                             studyEndDate = "",
                                             exclusionConceptIds = c(),
                                             outcomeConditionTypeConceptIds = c(),
-                                            cdmVersion = "4",
                                             excludeDrugsFromCovariates = TRUE,
                                             covariateSettings) {
   # First: get default values:
@@ -58,14 +55,19 @@ createGetDbCohortMethodDataArgs <- function(washoutWindow = 183,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param excludeCovariateIds   Exclude these covariates from the propensity model.
-#' @param prior                 The prior used to fit the model. See createPriorfor details.
-#' @param control               The control object used to control the cross-validation used
-#'                              todetermine the hyperparameters of the prior (if applicable).
-#'                              SeecreateControl for details.
+#' @param excludeCovariateIds     Exclude these covariates from the propensity model.
+#' @param stopOnHighCorrelation   If true, the function will test each covariate for correlation with
+#'                                thetreatment assignment. If any covariate has an unusually high
+#'                                correlation(either positive or negative), this will be reported and
+#'                                the functionwill stop.
+#' @param prior                   The prior used to fit the model. See createPriorfor details.
+#' @param control                 The control object used to control the cross-validation used
+#'                                todetermine the hyperparameters of the prior (if applicable).
+#'                                SeecreateControl for details.
 #'
 #' @export
 createCreatePsArgs <- function(excludeCovariateIds = NULL,
+                               stopOnHighCorrelation = TRUE,
                                prior = createPrior("laplace",
                                                    exclude = c(0),
                                                    useCrossValidation = TRUE),
