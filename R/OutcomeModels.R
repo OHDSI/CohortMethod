@@ -99,7 +99,7 @@ createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, cova
     outcomes <- aggregate(y ~ rowId, data = outcomes, sum)  #count outcome per person
     if (useStrata) {
       data <- merge(cohorts[,
-                            c("treatment", "rowId", "stratumId", "timeToCensor")],
+                    c("treatment", "rowId", "stratumId", "timeToCensor")],
                     outcomes,
                     all.x = TRUE)
     } else {
@@ -247,7 +247,7 @@ createDataForModelFit <- function(outcomeId,
   if (useStrata)
     writeLines("Fitting stratified model") else writeLines("Fitting unstratified model")
   if (is.null(outcomeId) | is.null(cohortMethodData$exclude) | !ffbase::any.ff(cohortMethodData$outcomes$outcomeId ==
-                                                                               outcomeId)) {
+    outcomeId)) {
     outcomes <- cohortMethodData$outcomes
     cohorts <- ff::as.ram(cohortMethodData$cohort)
   } else {
@@ -277,14 +277,14 @@ createDataForModelFit <- function(outcomeId,
   if (addExposureDaysToEnd)
     cohorts$timeToCensor <- cohorts$timeToCensor + cohorts$timeToCohortEnd
   cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <- cohorts$timeToObsPeriodEnd[cohorts$timeToCensor >
-                                                                                                          cohorts$timeToObsPeriodEnd]
+    cohorts$timeToObsPeriodEnd]
 
   outcomes <- tryCatch({
     merge(outcomes, ff::as.ffdf(cohorts))
   }, warning = function(w) {
     if (w$message == "No match found, returning NULL as ffdf can not contain 0 rows")
       data.frame()  #No events within selected population, return empty data.frame
-    else merge(outcomes, ff::as.ffdf(cohorts))
+ else merge(outcomes, ff::as.ffdf(cohorts))
   })
   if (nrow(outcomes) != 0)
     outcomes <- tryCatch({
@@ -292,7 +292,7 @@ createDataForModelFit <- function(outcomeId,
     }, error = function(e) {
       if (e$message == "no applicable method for 'as.hi' applied to an object of class \"NULL\"") {
         data.frame(ff::as.ram(outcomes)[0,
-                                        ])  #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
+                   ])  #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
       } else {
         stop(as.character(e$message))
       }
@@ -390,13 +390,18 @@ fitOutcomeModel <- function(outcomeId,
     if (useCovariates) {
       if (dataObject$useStrata | modelType == "cox")
         prior$exclude <- 1  # Exclude treatment variable from regularization
-      else prior$exclude <- c(0, 1)  # Exclude treatment variable and intercept from regularization
+ else prior$exclude <- c(0, 1)  # Exclude treatment variable and intercept from regularization
     } else prior <- createPrior("none")  #Only one variable, which we're not going to regularize, so effectively no prior
-    fit <- tryCatch({
-      Cyclops::fitCyclopsModel(dataObject$cyclopsData, prior = prior, control = control)
-    }, error = function(e) {
-      e$message
-    })
+    if (sum(dataObject$data$y[dataObject$data$treatment == 0]) == 0 || sum(dataObject$data$y[dataObject$data$treatment ==
+      1]) == 0) {
+      fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
+    } else {
+      fit <- tryCatch({
+        Cyclops::fitCyclopsModel(dataObject$cyclopsData, prior = prior, control = control)
+      }, error = function(e) {
+        e$message
+      })
+    }
     if (is.character(fit)) {
       coefficients <- c(0)
       treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
@@ -442,7 +447,7 @@ fitOutcomeModel <- function(outcomeId,
     comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
     notPriorCount <- data.frame(treatment = c(0, 1),
                                 notPriorCount = c(counts$notExcludedCount[counts$treatment ==
-                                                                            0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$treatment == 1] - treatedWithPriorOutcome))
+      0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$treatment == 1] - treatedWithPriorOutcome))
     counts <- merge(counts, notPriorCount)
   }
   if (!is.null(subPopulation)) {
@@ -682,15 +687,15 @@ plotKaplanMeier <- function(outcomeModel,
     plot <- plot + ggplot2::geom_ribbon(color = rgb(0, 0, 0, alpha = 0))
 
   plot <- plot +
-    ggplot2::geom_step(size = 1) +
-    ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.8),
-                                           rgb(0, 0, 0.8, alpha = 0.8))) +
-    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.3),
-                                          rgb(0, 0, 0.8, alpha = 0.3))) +
-    ggplot2::scale_x_continuous(xlabs, limits = xlims) +
-    ggplot2::scale_y_continuous(ylabs, limits = ylims) +
-    ggplot2::ggtitle(main) +
-    ggplot2::theme(legend.title = ggplot2::element_blank())
+          ggplot2::geom_step(size = 1) +
+          ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.8),
+                                                 rgb(0, 0, 0.8, alpha = 0.8))) +
+          ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.3),
+                                                rgb(0, 0, 0.8, alpha = 0.3))) +
+          ggplot2::scale_x_continuous(xlabs, limits = xlims) +
+          ggplot2::scale_y_continuous(ylabs, limits = ylims) +
+          ggplot2::ggtitle(main) +
+          ggplot2::theme(legend.title = ggplot2::element_blank())
 
   if (censorMarks == TRUE)
     plot <- plot + ggplot2::geom_point(data = subset(data, n.censor >= 1),
