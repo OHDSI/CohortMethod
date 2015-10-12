@@ -57,7 +57,7 @@ createDataForModelFitCox <- function(useStrata, useCovariates, cohorts, covariat
     } else {
       outcomes <- ff::as.ffdf(data[, c("rowId", "y", "time")])
       idx <- ffbase::ffmatch(covariates$rowId, outcomes$rowId)
-      idx <- ffbase::ffwhich(idx, idx == TRUE)
+      idx <- ffbase::ffwhich(idx, is.na(idx) == FALSE)
       covariates <- covariates[idx, ]
       result$cyclopsData <- Cyclops::convertToCyclopsData(outcomes,
                                                           covariates,
