@@ -24,7 +24,7 @@
 
 createDataForModelFitCox <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
   if (nrow(outcomes) == 0) {
-    data <- ff::as.ram(cohorts)
+    data <- cohorts
     data$timeToEvent <- NA
   } else {
     outcomes <- aggregate(timeToEvent ~ rowId, data = outcomes, min)  #keep first outcome per person
@@ -91,13 +91,12 @@ createDataForModelFitCox <- function(useStrata, useCovariates, cohorts, covariat
 createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
   if (nrow(outcomes) == 0) {
     if (useStrata) {
-      data <- ff::as.ram(cohorts[, c("treatment", "rowId", "stratumId", "timeToCensor")])
+      data <- cohorts[, c("treatment", "rowId", "stratumId", "timeToCensor")]
     } else {
-      data <- ff::as.ram(cohorts[, c("treatment", "rowId", "timeToCensor")])
+      data <- cohorts[, c("treatment", "rowId", "timeToCensor")]
     }
     data$y <- 0
   } else {
-    outcomes <- ff::as.ram(outcomes)
     outcomes$y <- 1
     outcomes <- aggregate(y ~ rowId, data = outcomes, sum)  #count outcome per person
     if (useStrata) {
@@ -132,8 +131,11 @@ createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, cova
                                                           addIntercept = FALSE,
                                                           quiet = TRUE)
     } else {
-      covariates <- merge(covariates, ff::as.ffdf(data[, c("rowId", "y", "time")]))
-      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(data),
+      outcomes <- ff::as.ffdf(data[, c("rowId", "y", "time")])
+      idx <- ffbase::ffmatch(covariates$rowId, outcomes$rowId)
+      idx <- ffbase::ffwhich(idx, is.na(idx) == FALSE)
+      covariates <- covariates[idx, ]
+      result$cyclopsData <- Cyclops::convertToCyclopsData(outcomes,
                                                           covariates,
                                                           modelType = "pr",
                                                           quiet = TRUE)
@@ -164,13 +166,13 @@ createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, cova
 createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
   if (nrow(outcomes) == 0) {
     if (useStrata) {
-      data <- ff::as.ram(cohorts[, c("treatment", "rowId", "stratumId")])
+      data <- cohorts[, c("treatment", "rowId", "stratumId")]
     } else {
-      data <- ff::as.ram(cohorts[, c("treatment", "rowId")])
+      data <- cohorts[, c("treatment", "rowId")]
     }
     data$y <- 0
   } else {
-    outcomes <- ff::as.ram(outcomes)
+    outcomes <- outcomes
     outcomes$y <- 1
     outcomes <- aggregate(y ~ rowId, data = outcomes, max)  #Keep one outcome per person
     if (useStrata) {
@@ -198,9 +200,10 @@ createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, cov
                                                           addIntercept = FALSE,
                                                           quiet = TRUE)
     } else {
-      t <- ffbase::ffmatch(x = covariates$rowId, table = ff::as.ff(data$rowId), nomatch = 0L) >
-        0L
-      covariates <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+      outcomes <- ff::as.ffdf(data[, c("rowId", "y")])
+      idx <- ffbase::ffmatch(covariates$rowId, outcomes$rowId)
+      idx <- ffbase::ffwhich(idx, is.na(idx) == FALSE)
+      covariates <- covariates[idx, ]
       result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(data),
                                                           covariates,
                                                           modelType = "lr",
@@ -247,67 +250,51 @@ createDataForModelFit <- function(outcomeId,
     useStrata <- TRUE
   if (useStrata & (is.null(subPopulation) | is.null(subPopulation$stratumId)))
     stop("Conditional regression specified, but no strata provided")
-  if (useStrata)
-    writeLines("Fitting stratified model") else writeLines("Fitting unstratified model")
-  if (is.null(outcomeId) | is.null(cohortMethodData$exclude) | !ffbase::any.ff(cohortMethodData$outcomes$outcomeId ==
-                                                                               outcomeId)) {
-    outcomes <- cohortMethodData$outcomes
-    cohorts <- ff::as.ram(cohortMethodData$cohort)
+  if (useStrata) {
+    writeLines("Fitting stratified model")
+  } else {
+    writeLines("Fitting unstratified model")
+  }
+  cohorts <- ff::as.ram(cohortMethodData$cohorts)
+  if (is.null(outcomeId)) {
+    outcomes <- ff::as.ram(cohortMethodData$outcomes)
   } else {
     t <- cohortMethodData$outcomes$outcomeId == outcomeId
-    t <- ffbase::ffwhich(t, t == TRUE)
-    outcomes <- cohortMethodData$outcomes[t, ]
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- ffbase::ffwhich(t, t == TRUE)
-    if (is.null(t)) {
-      # None need to be excluded
-      cohorts <- ff::as.ram(cohortMethodData$cohort)
+    if (!ffbase::any.ff(t)) {
+      outcomes <- data.frame()
     } else {
-      t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[t])
-      cohorts <- ff::as.ram(cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ])
+      t <- ffbase::ffwhich(t, t == TRUE)
+      outcomes <- ff::as.ram(cohortMethodData$outcomes[t, ])
+      if (!is.null(cohortMethodData$exclude)){
+        t <- cohortMethodData$exclude$outcomeId == outcomeId
+        if (ffbase::any.ff(t)) {
+          t <- ffbase::ffwhich(t, t == TRUE)
+          excludeRowIds <- ff::as.ram(cohortMethodData$exclude$rowId[t])
+          outcomes <- outcomes[!(outcomes$rowId %in% excludeRowIds),]
+          cohorts <- cohorts[!(cohorts$rowId %in% excludeRowIds),]
+        }
+      }
     }
   }
-
   if (!is.null(subPopulation))
     cohorts <- merge(subPopulation, cohorts)  #keeping only persons that have been matched
-
-  if (useCovariates) {
-    covariates <- cohortMethodData$covariates
-  }
 
   # Censor outcomes outside of risk window:
   cohorts$timeToCensor <- riskWindowEnd
   if (addExposureDaysToEnd)
     cohorts$timeToCensor <- cohorts$timeToCensor + cohorts$timeToCohortEnd
-  cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <- cohorts$timeToObsPeriodEnd[cohorts$timeToCensor >
-                                                                                                          cohorts$timeToObsPeriodEnd]
+  cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <- cohorts$timeToObsPeriodEnd[cohorts$timeToCensor >                                                                                                          cohorts$timeToObsPeriodEnd]
+  outcomes <- merge(outcomes, cohorts)
+  outcomes <- outcomes[outcomes$timeToEvent >= riskWindowStart & outcomes$timeToEvent <= outcomes$timeToCensor,]
 
-  outcomes <- tryCatch({
-    merge(outcomes, ff::as.ffdf(cohorts))
-  }, warning = function(w) {
-    if (w$message == "No match found, returning NULL as ffdf can not contain 0 rows")
-      data.frame()  #No events within selected population, return empty data.frame
-    else merge(outcomes, ff::as.ffdf(cohorts))
-  })
-  if (nrow(outcomes) != 0)
-    outcomes <- tryCatch({
-      ffbase::subset.ffdf(outcomes, timeToEvent >= riskWindowStart & timeToEvent <= timeToCensor)
-    }, error = function(e) {
-      if (e$message == "no applicable method for 'as.hi' applied to an object of class \"NULL\"") {
-        data.frame(ff::as.ram(outcomes)[0,
-                                        ])  #subset.ffdf throws an error if zero rows meet all criteria, so just return empty data.frame with same columns
-      } else {
-        stop(as.character(e$message))
-      }
-    })
   if (modelType == "cox") {
-    return(createDataForModelFitCox(useStrata, useCovariates, cohorts, covariates, outcomes))
+    return(createDataForModelFitCox(useStrata, useCovariates, cohorts, cohortMethodData$covariates, outcomes))
   }
   if (modelType == "pr" | modelType == "cpr") {
-    return(createDataForModelFitPoisson(useStrata, useCovariates, cohorts, covariates, outcomes))
+    return(createDataForModelFitPoisson(useStrata, useCovariates, cohorts, cohortMethodData$covariates, outcomes))
   }
   if (modelType == "lr" | modelType == "clr") {
-    return(createDataForModelFitLogistic(useStrata, useCovariates, cohorts, covariates, outcomes))
+    return(createDataForModelFitLogistic(useStrata, useCovariates, cohorts, cohortMethodData$covariates, outcomes))
   }
 }
 
