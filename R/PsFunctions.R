@@ -102,7 +102,7 @@ createPs <- function(cohortMethodData,
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
   cfs <- coef(cyclopsFit)
   if (all(cfs[2:length(cfs)] == 0)){
-   warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+    warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
   }
   pred <- predict(cyclopsFit)
 
@@ -712,22 +712,36 @@ computeMeansPerGroup <- function(cohorts, covariates) {
     w$rowId <- NULL
     w <- merge(w, ffbase::subset.ffdf(cohorts, treatment == 0))
     w <- w [,c("rowId","weight")]
+    w$weight <- w$weight / sum(w$weight) # Normalize so sum(w) == 1
     t <- cohorts$treatment == 0
     t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
     covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
-    covariatesSubset <- merge(covariatesSubset, ff::as.ffdf(w))
-    t <- covariatesSubset$covariateValue
-    covariatesSubset$covariateValue <- covariatesSubset$covariateValue * covariatesSubset$weight
-    comparator <- quickSum(covariatesSubset)
-    comparator$meanComparator <- comparator$sum/sum(w$weight)
-    covariatesSubset$covariateValue <- t
-    covariatesSubset <- merge(covariatesSubset, ff::as.ffdf(comparator))
-    covariatesSubset$covariateValue <- covariatesSubset$weight * (covariatesSubset$covariateValue - covariatesSubset$meanComparator) ^ 2
-    comparatorSqr <- quickSum(covariatesSubset)
-    colnames(comparatorSqr)[colnames(comparatorSqr) == "sum"] <- "sumSqr"
-    comparator <- merge(comparator, comparatorSqr)
-    comparator$sdComparator <- comparator$sumSqr * sum(w$weight)/(sum(w$weight) ^ 2 - sum(w$weight^2))
-    colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
+    covariatesSubset <- ffbase::merge.ffdf(covariatesSubset, ff::as.ffdf(w))
+    # weightedSd2 <- sqrt((sum(w*x^2) - weightedMu^2)* sum(w) / (sum(w)^2 - sum(w^2)))
+    covariatesSubset$wValue <- covariatesSubset$weight * covariatesSubset$covariateValue
+    covariatesSubset$wValueSquared <- covariatesSubset$wValue * covariatesSubset$covariateValue
+
+    # Compute sum
+    comparator <- PatientLevelPrediction::bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
+    colnames(comparator)[colnames(comparator) == "bins"] <- "covariateId"
+    colnames(comparator)[colnames(comparator) == "sums"] <- "sumComparator"
+
+    # Compute weighted mean (no need to divide by sum(w) because it is 1)
+    wMean <- PatientLevelPrediction::bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
+    colnames(wMean)[colnames(wMean) == "bins"] <- "covariateId"
+    colnames(wMean)[colnames(wMean) == "sums"] <- "meanComparator"
+    comparator <- merge(comparator, wMean)
+
+    # Compute weighted standard deviation
+    wValueSquared <- PatientLevelPrediction::bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
+    colnames(wValueSquared)[colnames(wValueSquared) == "bins"] <- "covariateId"
+    colnames(wValueSquared)[colnames(wValueSquared) == "sums"] <- "wValueSquared"
+    comparator <- merge(comparator, wMean)
+    sumW <- 1
+    sumWSquared <- sum(w$weight^2)
+    comparator <- merge(comparator, wValueSquared)
+    comparator$variance <- (comparator$wValueSquared - comparator$meanComparator^2) * sumW / (sumW^2 - sumWSquared)
+    comparator$sdComparator <- sqrt(comparator$variance)
   } else {
     # Used one-on-one ratio matching, no need to weigh
     t <- cohorts$treatment == 0
@@ -780,7 +794,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeId = NULL) {
   start <- Sys.time()
   if (is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
-                                                                              outcomeId)) {
+                                                                                 outcomeId)) {
     cohorts <- cohortMethodData$cohorts
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
   } else {
