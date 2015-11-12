@@ -7,7 +7,7 @@
 createGetDbCohortMethodDataArgs(washoutWindow = 183,
   indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
   exclusionConceptIds = c(), outcomeConditionTypeConceptIds = c(),
-  cdmVersion = "4", excludeDrugsFromCovariates = TRUE, covariateSettings)
+  excludeDrugsFromCovariates = TRUE, covariateSettings)
 }
 \arguments{
 \item{washoutWindow}{The mininum required continuous observation time prior to
@@ -29,17 +29,14 @@ onceanytime prior to the cohort index date.}
 occurrences.  Only applicable if outcomeTable
 =CONDITION_OCCURRENCE.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
-"5".}
-
 \item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their
 descendantconcepts) be excluded from the covariates? Note
 that this willwork if the drugs are actualy drug concept IDs
 (and not cohortIDs).}
 
 \item{covariateSettings}{An object of type covariateSettings as created using
-                                        thecreateCovariateSettings function in the
-                                        PatientLevelPrediction package..}
+                                        thecreateCovariateSettings function in
+                                        thePatientLevelPrediction package..}
 }
 \description{
 Create a parameter object for the function getDbCohortMethodData

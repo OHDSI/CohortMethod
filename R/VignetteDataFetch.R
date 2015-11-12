@@ -457,7 +457,11 @@
   save(vignetteAnalysisSummary, file = file.path(dataFolder,"vignetteAnalysisSummary.rda"), compress = "xz")
 
   # library(EmpiricalCalibration)
-  negControls <- analysisSummary[analysisSummary$analysisId == 5 & analysisSummary$outcomeId != 192671, ]
-  hoi <-  analysisSummary[analysisSummary$analysisId == 5 & analysisSummary$outcomeId == 192671, ]
+  for (i in 1:5){
+    negControls <- analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId != 192671, ]
+    hoi <-  analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId == 192671, ]
+    fileName <- paste("s:/temp/CaliPlot_",i,".png",sep="")
+    plotCalibrationEffect(negControls$logRr, negControls$seLogRr, hoi$logRr, hoi$seLogRr, fileName = fileName)
+  }
 
 }

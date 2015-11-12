@@ -275,16 +275,12 @@ getDbCohortMethodData <- function(connectionDetails,
   delta <- Sys.time() - start
   writeLines(paste("Loading took", signif(delta, 3), attr(delta, "units")))
 
-  writeLines("\nConstructing baseline covariates")
+  covariateSettings$useCovariateCohortIdIs1 <- TRUE
   covariateData <- PatientLevelPrediction::getDbCovariateData(connection = conn,
                                                               oracleTempSchema = oracleTempSchema,
                                                               cdmDatabaseSchema = cdmDatabaseSchema,
-                                                              useExistingCohortPerson = TRUE,
                                                               covariateSettings = covariateSettings,
                                                               cdmVersion = cdmVersion)
-  names(covariateData$covariates)[names(covariateData$covariates) == "personId"] <- "rowId"
-  covariateData$covariates$cohortStartDate <- NULL
-  covariateData$covariates$cohortDefinitionId <- NULL
   metaData <- list(sql = c(renderedSql, covariateData$metaData$sql),
                    targetId = targetId,
                    comparatorId = comparatorId,

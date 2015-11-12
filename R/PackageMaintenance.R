@@ -49,6 +49,7 @@
                                                           "exposureTable",
                                                           "outcomeDatabaseSchema",
                                                           "outcomeTable",
+                                                          "cdmVersion",
                                                           "targetId",
                                                           "comparatorId",
                                                           "indicationConceptIds",

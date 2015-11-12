@@ -4,7 +4,7 @@
 \alias{createCreatePsArgs}
 \title{Create a parameter object for the function createPs}
 \usage{
-createCreatePsArgs(excludeCovariateIds = NULL,
+createCreatePsArgs(excludeCovariateIds = NULL, stopOnHighCorrelation = TRUE,
   prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
   control = createControl(noiseLevel = "silent", cvType = "auto",
   startingVariance = 0.1))
@@ -12,11 +12,16 @@ createCreatePsArgs(excludeCovariateIds = NULL,
 \arguments{
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
+\item{stopOnHighCorrelation}{If true, the function will test each covariate for correlation with
+thetreatment assignment. If any covariate has an unusually high
+correlation(either positive or negative), this will be reported and
+the functionwill stop.}
+
 \item{prior}{The prior used to fit the model. See createPriorfor details.}
 
 \item{control}{The control object used to control the cross-validation used
-                             todetermine the hyperparameters of the prior (if applicable).
-                             SeecreateControl for details.}
+                               todetermine the hyperparameters of the prior (if applicable).
+                               SeecreateControl for details.}
 }
 \description{
 Create a parameter object for the function createPs
