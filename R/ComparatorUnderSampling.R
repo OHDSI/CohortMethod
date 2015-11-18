@@ -117,7 +117,7 @@ recomputePsForFullData <- function(psSample, cohortMethodDataSample, cohortMetho
   delta <- log(y.odds) - log(y.odds.new)
   coefficients[1] <- coefficients[1] - delta  # Equation (7) in King and Zeng (2001)
   prediction <- PatientLevelPrediction::predictFfdf(coefficients,
-                                                    cohortMethodData$outcomes,
+                                                    cohortMethodData$cohorts,
                                                     cohortMethodData$covariates,
                                                     modelType = "logistic")
   prediction <- merge(prediction,

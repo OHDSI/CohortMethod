@@ -150,3 +150,18 @@ test_that("matching with extra two variables", {
   }
 })
 
+test_that("comparator undersampling", {
+  set.seed(1234)
+  data(cohortMethodDataSimulationProfile)
+  sampleSize <- 1000
+  cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
+  cohortMethodDataSample <- sampleComparator(cohortMethodData, 0.5)
+  summary(cohortMethodData)
+  summary(cohortMethodDataSample)
+  nrow(psSample)
+  psSample <- createPs(cohortMethodDataSample, prior = createPrior("laplace",0.1, exclude = 0))
+  ps <- recomputePsForFullData(psSample, cohortMethodDataSample, cohortMethodData)
+  expect_equal(nrow(ps), sampleSize)
+})
+
+
