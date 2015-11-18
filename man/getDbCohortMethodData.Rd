@@ -65,6 +65,13 @@ date can appear. Date format is 'yyyymmdd'.}
 descendant conditions/drugs/procedures occurring at least once
 anytime prior to the cohort index date.}
 
+\item{outcomeIds}{A list of CONCEPT_IDs used to define outcomes.  If
+outcomeTable = CONDITION_OCCURRENCE, the list is a set of
+ancestor CONCEPT_IDs, and all occurrences of all descendant
+concepts will be selected.  If outcomeTable <>
+CONDITION_OCCURRENCE, the list contains records found in
+COHORT_DEFINITION_ID field.}
+
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
 condition occurrences.  Only applicable if outcomeTable =
 CONDITION_OCCURRENCE.}
@@ -102,13 +109,6 @@ IDs).}
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
 \code{createCovariateSettings} function in the
 \code{PatientLevelPrediction} package..}
-
-\item{outcomeConceptIds}{A list of CONCEPT_IDs used to define outcomes.  If
-outcomeTable = CONDITION_OCCURRENCE, the list is a set of
-ancestor CONCEPT_IDs, and all occurrences of all descendant
-concepts will be selected.  If outcomeTable <>
-CONDITION_OCCURRENCE, the list contains records found in
-COHORT_DEFINITION_ID field.}
 }
 \value{
 Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their

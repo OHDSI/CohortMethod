@@ -21,6 +21,10 @@ set of analysis choices.}
 
 \item{description}{A short description of the analysis.}
 
+\item{targetType}{If more than one target is provided for each
+drugComparatorOutcome, this field should be used to select
+the specific target to use in this analysis.}
+
 \item{comparatorType}{If more than one comparator is provided for each
 drugComparatorOutcome, this field should be used to select
 the specific comparator to use in this analysis.}
@@ -30,49 +34,49 @@ drugComparatorOutcome, this field should be used to select
 the specific indication to use in this analysis.}
 
 \item{getDbCohortMethodDataArgs}{An object representing the arguments to be used when calling
-the \code{\link{ getDbCohortMethodData}} function.}
+the \code{\link{getDbCohortMethodData}} function.}
 
 \item{createPs}{Should the \code{\link{createPs}} function be used in this
 analysis?}
 
 \item{createPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{ createPs}} function.}
+the \code{\link{createPs}} function.}
 
 \item{trimByPs}{Should the \code{\link{trimByPs}} function be used in this
 analysis?}
 
 \item{trimByPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{ trimByPs}} function.}
+the \code{\link{trimByPs}} function.}
 
 \item{trimByPsToEquipoise}{Should the \code{\link{trimByPsToEquipoise}} function be used
 in this analysis?}
 
 \item{trimByPsToEquipoiseArgs}{An object representing the arguments to be used when calling
-the \code{\link{ trimByPsToEquipoise}} function.}
+the \code{\link{trimByPsToEquipoise}} function.}
 
 \item{matchOnPs}{Should the \code{\link{matchOnPs}} function be used in this
 analysis?}
 
 \item{matchOnPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{ matchOnPs}} function.}
+the \code{\link{matchOnPs}} function.}
 
 \item{matchOnPsAndCovariates}{Should the \code{\link{matchOnPsAndCovariates}} function be
 used in this analysis?}
 
 \item{matchOnPsAndCovariatesArgs}{An object representing the arguments to be used when calling
-the \code{\link{ matchOnPsAndCovariates}} function.}
+the \code{\link{matchOnPsAndCovariates}} function.}
 
 \item{stratifyByPs}{Should the \code{\link{stratifyByPs}} function be used in
 this analysis?}
 
 \item{stratifyByPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{ stratifyByPs}} function.}
+the \code{\link{stratifyByPs}} function.}
 
 \item{stratifyByPsAndCovariates}{Should the \code{\link{stratifyByPsAndCovariates}} function
 be used in this analysis?}
 
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
-the \code{\link{ stratifyByPsAndCovariates}} function.}
+the \code{\link{stratifyByPsAndCovariates}} function.}
 
 \item{computeCovariateBalance}{Should the \code{\link{computeCovariateBalance}} function be
 used in this analysis?}
@@ -81,7 +85,7 @@ used in this analysis?}
 this analysis?}
 
 \item{fitOutcomeModelArgs}{An object representing the arguments to be used when calling
-                                       the \code{\link{ fitOutcomeModel}} function.}
+                                       the \code{\link{fitOutcomeModel}} function.}
 }
 \description{
 Create a CohortMethod analysis specification

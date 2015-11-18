@@ -22,6 +22,8 @@ Requires read permissions to this database. On SQL Server, this should
 specifiy both the database and the schema, so for example
 'cdm_instance.dbo'.}
 
+\item{oracleTempSchema}{Schema where temp tables can be created in Oracle.}
+
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
@@ -37,20 +39,18 @@ outcomeTable has format of COHORT table:
 COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
 
-\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
-condition occurrences.  Only applicable if outcomeTable =
-CONDITION_OCCURRENCE.}
-
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
-
-\item{oracleTempSchemaA}{schema where temp tables can be created in Oracle.}
-
-\item{outcomeConceptIds}{A list of CONCEPT_IDs used to define outcomes.  If
+\item{outcomeIds}{A list of CONCEPT_IDs used to define outcomes.  If
 outcomeTable = CONDITION_OCCURRENCE, the list is a set of
 ancestor CONCEPT_IDs, and all occurrences of all descendant
 concepts will be selected.  If outcomeTable <>
 CONDITION_OCCURRENCE, the list contains records found in
 COHORT_DEFINITION_ID field.}
+
+\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
+condition occurrences.  Only applicable if outcomeTable =
+CONDITION_OCCURRENCE.}
+
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
 }
 \value{
 The original \code{cohortMethodData} object with the new outcome data added.

@@ -55,6 +55,8 @@ is outcomeTable has format of COHORT table:
 COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
 
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+
 \item{outputFolder}{Name of the folder where all the outputs will written
 to.}
 
@@ -63,7 +65,7 @@ using the \code{\link{createCmAnalysis}} function.}
 
 \item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes}
 as created using the
-\code{\link{createdrugComparatorOutcomes}} function.}
+\code{\link{createDrugComparatorOutcomes}} function.}
 
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome
 (i.e. after people who already had the outcome are

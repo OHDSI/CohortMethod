@@ -24,6 +24,9 @@
 #' @param analysisId                      An integer that will be used later to refer to this specific
 #'                                        set of analysis choices.
 #' @param description                     A short description of the analysis.
+#' @param targetType                      If more than one target is provided for each
+#'                                        drugComparatorOutcome, this field should be used to select
+#'                                        the specific target to use in this analysis.
 #' @param comparatorType                  If more than one comparator is provided for each
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific comparator to use in this analysis.
@@ -31,41 +34,41 @@
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific indication to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
-#'                                        the \code{\link{ getDbCohortMethodData}} function.
+#'                                        the \code{\link{getDbCohortMethodData}} function.
 #' @param createPs                        Should the \code{\link{createPs}} function be used in this
 #'                                        analysis?
 #' @param createPsArgs                    An object representing the arguments to be used when calling
-#'                                        the \code{\link{ createPs}} function.
+#'                                        the \code{\link{createPs}} function.
 #' @param trimByPs                        Should the \code{\link{trimByPs}} function be used in this
 #'                                        analysis?
 #' @param trimByPsArgs                    An object representing the arguments to be used when calling
-#'                                        the \code{\link{ trimByPs}} function.
+#'                                        the \code{\link{trimByPs}} function.
 #' @param trimByPsToEquipoise             Should the \code{\link{trimByPsToEquipoise}} function be used
 #'                                        in this analysis?
 #' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
-#'                                        the \code{\link{ trimByPsToEquipoise}} function.
+#'                                        the \code{\link{trimByPsToEquipoise}} function.
 #' @param matchOnPs                       Should the \code{\link{matchOnPs}} function be used in this
 #'                                        analysis?
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
-#'                                        the \code{\link{ matchOnPs}} function.
+#'                                        the \code{\link{matchOnPs}} function.
 #' @param matchOnPsAndCovariates          Should the \code{\link{matchOnPsAndCovariates}} function be
 #'                                        used in this analysis?
 #' @param matchOnPsAndCovariatesArgs      An object representing the arguments to be used when calling
-#'                                        the \code{\link{ matchOnPsAndCovariates}} function.
+#'                                        the \code{\link{matchOnPsAndCovariates}} function.
 #' @param stratifyByPs                    Should the \code{\link{stratifyByPs}} function be used in
 #'                                        this analysis?
 #' @param stratifyByPsArgs                An object representing the arguments to be used when calling
-#'                                        the \code{\link{ stratifyByPs}} function.
+#'                                        the \code{\link{stratifyByPs}} function.
 #' @param stratifyByPsAndCovariates       Should the \code{\link{stratifyByPsAndCovariates}} function
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
-#'                                        the \code{\link{ stratifyByPsAndCovariates}} function.
+#'                                        the \code{\link{stratifyByPsAndCovariates}} function.
 #' @param computeCovariateBalance         Should the \code{\link{computeCovariateBalance}} function be
 #'                                        used in this analysis?
 #' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
-#'                                        the \code{\link{ fitOutcomeModel}} function.
+#'                                        the \code{\link{fitOutcomeModel}} function.
 #'
 #' @export
 createCmAnalysis <- function(analysisId = 1,
