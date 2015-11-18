@@ -325,8 +325,8 @@ runCmAnalyses <- function(connectionDetails,
                    outcomeTable = outcomeTable,
                    cdmVersion = cdmVersion,
                    outcomeIds = outcomeIds,
-                   targetId = targetId,
-                   comparatorId = comparatorId,
+                   targetId = refRow$targetId,
+                   comparatorId = refRow$comparatorId,
                    indicationConceptIds = indicationConceptIds,
                    exclusionConceptIds = exclusionConceptIds)
       getDbCohortMethodDataArgs$exclusionConceptIds <- NULL
