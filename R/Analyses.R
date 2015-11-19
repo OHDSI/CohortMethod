@@ -104,9 +104,9 @@ createCmAnalysis <- function(analysisId = 1,
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
-    (fitOutcomeModelArgs$modelType %in% c("clr",
-                                          "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
-      fitOutcomeModelArgs$stratifiedCox))) {
+      (fitOutcomeModelArgs$modelType %in% c("clr",
+                                            "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
+                                                       fitOutcomeModelArgs$stratifiedCox))) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
@@ -170,7 +170,59 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
-  write(rjson::toJSON(cmAnalysisList), file)
+  write(toJsonWithAttr(cmAnalysisList), file)
+}
+
+convertAttrToMember <- function(object){
+  if (is.list(object)){
+    if (length(object) > 0) {
+      for (i in 1:length(object)) {
+        if (!is.null(object[[i]])){
+          object[[i]] <- convertAttrToMember(object[[i]])
+        }
+      }
+    }
+    a <- names(attributes(object))
+    a <- a[a != "names"]
+    if (length(a) > 0) {
+      object[paste("attr",a, sep = "_")] <- attributes(object)[a]
+    }
+  }
+  return(object)
+}
+
+toJsonWithAttr <- function(object){
+  object <- convertAttrToMember(object)
+  return (jsonlite::toJSON(object, pretty = TRUE, force = TRUE, null = "null", auto_unbox = TRUE))
+}
+
+convertMemberToAttr <-  function(object){
+  if (is.list(object)){
+    if (length(object) > 0) {
+      for (i in 1:length(object)) {
+        if (!is.null(object[[i]])){
+          object[[i]] <- convertMemberToAttr(object[[i]])
+        }
+      }
+      attrNames <- names(object)[grep("^attr_", names(object))]
+      cleanNames <- gsub("^attr_", "", attrNames)
+      if (any(cleanNames == "class")){
+        class(object) <- object$attr_class
+        object$attr_class <- NULL
+        attrNames <- attrNames[attrNames != "attr_class"]
+        cleanNames <- cleanNames[cleanNames != "class"]
+      }
+      attributes(object)[cleanNames] <- object[attrNames]
+      object[attrNames] <- NULL
+    }
+  }
+  return(object)
+}
+
+fromJsonWithAttr <- function(file) {
+  object <- jsonlite::fromJSON(file, simplifyVector = TRUE, simplifyDataFrame = FALSE)
+  object <- convertMemberToAttr(object)
+  return(object)
 }
 
 #' Load a list of cmAnalysis from file
@@ -185,28 +237,7 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
-  cmAnalysisList <- rjson::fromJSON(file = file)
-  for (i in 1:length(cmAnalysisList)) {
-    class(cmAnalysisList[[i]]) <- "cmAnalysis"
-    for (j in 1:length(cmAnalysisList[[i]])) {
-      if (is.list(cmAnalysisList[[i]][[j]])) {
-        class(cmAnalysisList[[i]][[j]]) <- "args"
-      }
-    }
-    if (!is.null(cmAnalysisList[[i]]$createPsArgs$prior)) {
-      class(cmAnalysisList[[i]]$createPsArgs$prior) <- "cyclopsPrior"
-    }
-    if (!is.null(cmAnalysisList[[i]]$createPsArgs$control)) {
-      class(cmAnalysisList[[i]]$createPsArgs$control) <- "cyclopsControl"
-    }
-    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior)) {
-      class(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "cyclopsPrior"
-    }
-    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$control)) {
-      class(cmAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "cyclopsControl"
-    }
-  }
-  return(cmAnalysisList)
+  return(fromJsonWithAttr(file))
 }
 
 #' Create drug-comparator-outcomes combinations.
@@ -285,7 +316,7 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
   for (i in 1:length(drugComparatorOutcomesList)) {
     stopifnot(class(drugComparatorOutcomesList[[i]]) == "drugComparatorOutcomes")
   }
-  write(rjson::toJSON(drugComparatorOutcomesList), file)
+  write(toJsonWithAttr(drugComparatorOutcomesList), file)
 }
 
 #' Load a list of drugComparatorOutcomes from file
@@ -300,9 +331,5 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
 #'
 #' @export
 loadDrugComparatorOutcomesList <- function(file) {
-  drugComparatorOutcomesList <- rjson::fromJSON(file = file)
-  for (i in 1:length(drugComparatorOutcomesList)) {
-    class(drugComparatorOutcomesList[[i]]) <- "drugComparatorOutcomes"
-  }
-  return(drugComparatorOutcomesList)
+  return(fromJsonWithAttr(file))
 }

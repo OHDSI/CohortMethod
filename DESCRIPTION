@@ -34,7 +34,7 @@ Imports:
     RJDBC,
     SqlRender (>= 1.1.1),
     survival,
-    rjson,
+    jsonlite,
     OhdsiRTools
 Suggests:
     testthat,
