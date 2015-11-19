@@ -510,8 +510,8 @@ runCmAnalyses <- function(connectionDetails,
                                               list(analysisId = refRow$analysisId))[[1]]
       tasks[[length(tasks) + 1]] <- list(subPopFile = refRow$subPopFile,
                                          outcomeId = refRow$outcomeId,
-                                         cohortMethodDataFolder = cohortMethodDataFolder,
-                                         covariateBalanceFile = covariateBalanceFile)
+                                         cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                                         covariateBalanceFile = refRow$covariateBalanceFile)
     }
   }
   computeCovarBal <- function(params) {
