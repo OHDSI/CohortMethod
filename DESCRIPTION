@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 1.1.2
-Date: 2015-10-12
+Version: 1.1.3
+Date: 2015-11-18
 Author: Martijn J. Schuemie [aut, cre],
   Marc A. Suchard [aut],
   Patrick B. Ryan [aut]
@@ -34,7 +34,7 @@ Imports:
     RJDBC,
     SqlRender (>= 1.1.1),
     survival,
-    rjson,
+    jsonlite,
     OhdsiRTools
 Suggests:
     testthat,

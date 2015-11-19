@@ -31,6 +31,7 @@
 #' @importFrom survival survfit Surv
 #' @import Cyclops
 #' @import DatabaseConnector
+#' @import PatientLevelPrediction
 #' @useDynLib CohortMethod
 NULL
 

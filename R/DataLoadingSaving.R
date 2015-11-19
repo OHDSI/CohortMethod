@@ -281,12 +281,11 @@ getDbCohortMethodData <- function(connectionDetails,
                                                               cdmDatabaseSchema = cdmDatabaseSchema,
                                                               covariateSettings = covariateSettings,
                                                               cdmVersion = cdmVersion)
-  metaData <- list(sql = c(renderedSql, covariateData$metaData$sql),
-                   targetId = targetId,
-                   comparatorId = comparatorId,
-                   counts = counts,
-                   deletedCovariateIds = covariateData$metaData$deletedCovariateIds,
-                   call = match.call())
+  metaData <- covariateData$metaData
+  metaData$targetId <- targetId
+  metaData$comparatorId <- comparatorId
+  metaData$counts <- counts
+  metaData$call <- match.call()
 
   result <- list(cohorts = cohorts,
                  covariates = covariateData$covariates,

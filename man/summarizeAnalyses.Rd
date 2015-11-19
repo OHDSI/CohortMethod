@@ -7,7 +7,7 @@
 summarizeAnalyses(outcomeReference)
 }
 \arguments{
-\item{outcomeReference}{A data.frame as created by the \code{\link{runAnalyses}} function.}
+\item{outcomeReference}{A data.frame as created by the \code{\link{runCmAnalyses}} function.}
 }
 \value{
 A data frame with the following columns:

@@ -24,6 +24,9 @@
 #' @param analysisId                      An integer that will be used later to refer to this specific
 #'                                        set of analysis choices.
 #' @param description                     A short description of the analysis.
+#' @param targetType                      If more than one target is provided for each
+#'                                        drugComparatorOutcome, this field should be used to select
+#'                                        the specific target to use in this analysis.
 #' @param comparatorType                  If more than one comparator is provided for each
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific comparator to use in this analysis.
@@ -31,41 +34,41 @@
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific indication to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
-#'                                        the \code{\link{ getDbCohortMethodData}} function.
+#'                                        the \code{\link{getDbCohortMethodData}} function.
 #' @param createPs                        Should the \code{\link{createPs}} function be used in this
 #'                                        analysis?
 #' @param createPsArgs                    An object representing the arguments to be used when calling
-#'                                        the \code{\link{ createPs}} function.
+#'                                        the \code{\link{createPs}} function.
 #' @param trimByPs                        Should the \code{\link{trimByPs}} function be used in this
 #'                                        analysis?
 #' @param trimByPsArgs                    An object representing the arguments to be used when calling
-#'                                        the \code{\link{ trimByPs}} function.
+#'                                        the \code{\link{trimByPs}} function.
 #' @param trimByPsToEquipoise             Should the \code{\link{trimByPsToEquipoise}} function be used
 #'                                        in this analysis?
 #' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
-#'                                        the \code{\link{ trimByPsToEquipoise}} function.
+#'                                        the \code{\link{trimByPsToEquipoise}} function.
 #' @param matchOnPs                       Should the \code{\link{matchOnPs}} function be used in this
 #'                                        analysis?
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
-#'                                        the \code{\link{ matchOnPs}} function.
+#'                                        the \code{\link{matchOnPs}} function.
 #' @param matchOnPsAndCovariates          Should the \code{\link{matchOnPsAndCovariates}} function be
 #'                                        used in this analysis?
 #' @param matchOnPsAndCovariatesArgs      An object representing the arguments to be used when calling
-#'                                        the \code{\link{ matchOnPsAndCovariates}} function.
+#'                                        the \code{\link{matchOnPsAndCovariates}} function.
 #' @param stratifyByPs                    Should the \code{\link{stratifyByPs}} function be used in
 #'                                        this analysis?
 #' @param stratifyByPsArgs                An object representing the arguments to be used when calling
-#'                                        the \code{\link{ stratifyByPs}} function.
+#'                                        the \code{\link{stratifyByPs}} function.
 #' @param stratifyByPsAndCovariates       Should the \code{\link{stratifyByPsAndCovariates}} function
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
-#'                                        the \code{\link{ stratifyByPsAndCovariates}} function.
+#'                                        the \code{\link{stratifyByPsAndCovariates}} function.
 #' @param computeCovariateBalance         Should the \code{\link{computeCovariateBalance}} function be
 #'                                        used in this analysis?
 #' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
-#'                                        the \code{\link{ fitOutcomeModel}} function.
+#'                                        the \code{\link{fitOutcomeModel}} function.
 #'
 #' @export
 createCmAnalysis <- function(analysisId = 1,
@@ -101,9 +104,9 @@ createCmAnalysis <- function(analysisId = 1,
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
-    (fitOutcomeModelArgs$modelType %in% c("clr",
-                                          "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
-      fitOutcomeModelArgs$stratifiedCox))) {
+      (fitOutcomeModelArgs$modelType %in% c("clr",
+                                            "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
+                                                       fitOutcomeModelArgs$stratifiedCox))) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
@@ -167,7 +170,59 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
-  write(rjson::toJSON(cmAnalysisList), file)
+  write(toJsonWithAttr(cmAnalysisList), file)
+}
+
+convertAttrToMember <- function(object){
+  if (is.list(object)){
+    if (length(object) > 0) {
+      for (i in 1:length(object)) {
+        if (!is.null(object[[i]])){
+          object[[i]] <- convertAttrToMember(object[[i]])
+        }
+      }
+    }
+    a <- names(attributes(object))
+    a <- a[a != "names"]
+    if (length(a) > 0) {
+      object[paste("attr",a, sep = "_")] <- attributes(object)[a]
+    }
+  }
+  return(object)
+}
+
+toJsonWithAttr <- function(object){
+  object <- convertAttrToMember(object)
+  return (jsonlite::toJSON(object, pretty = TRUE, force = TRUE, null = "null", auto_unbox = TRUE))
+}
+
+convertMemberToAttr <-  function(object){
+  if (is.list(object)){
+    if (length(object) > 0) {
+      for (i in 1:length(object)) {
+        if (!is.null(object[[i]])){
+          object[[i]] <- convertMemberToAttr(object[[i]])
+        }
+      }
+      attrNames <- names(object)[grep("^attr_", names(object))]
+      cleanNames <- gsub("^attr_", "", attrNames)
+      if (any(cleanNames == "class")){
+        class(object) <- object$attr_class
+        object$attr_class <- NULL
+        attrNames <- attrNames[attrNames != "attr_class"]
+        cleanNames <- cleanNames[cleanNames != "class"]
+      }
+      attributes(object)[cleanNames] <- object[attrNames]
+      object[attrNames] <- NULL
+    }
+  }
+  return(object)
+}
+
+fromJsonWithAttr <- function(file) {
+  object <- jsonlite::fromJSON(file, simplifyVector = TRUE, simplifyDataFrame = FALSE)
+  object <- convertMemberToAttr(object)
+  return(object)
 }
 
 #' Load a list of cmAnalysis from file
@@ -182,28 +237,7 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
-  cmAnalysisList <- rjson::fromJSON(file = file)
-  for (i in 1:length(cmAnalysisList)) {
-    class(cmAnalysisList[[i]]) <- "cmAnalysis"
-    for (j in 1:length(cmAnalysisList[[i]])) {
-      if (is.list(cmAnalysisList[[i]][[j]])) {
-        class(cmAnalysisList[[i]][[j]]) <- "args"
-      }
-    }
-    if (!is.null(cmAnalysisList[[i]]$createPsArgs$prior)) {
-      class(cmAnalysisList[[i]]$createPsArgs$prior) <- "cyclopsPrior"
-    }
-    if (!is.null(cmAnalysisList[[i]]$createPsArgs$control)) {
-      class(cmAnalysisList[[i]]$createPsArgs$control) <- "cyclopsControl"
-    }
-    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior)) {
-      class(cmAnalysisList[[i]]$fitOutcomeModelArgs$prior) <- "cyclopsPrior"
-    }
-    if (!is.null(cmAnalysisList[[i]]$fitOutcomeModelArgs$control)) {
-      class(cmAnalysisList[[i]]$fitOutcomeModelArgs$control) <- "cyclopsControl"
-    }
-  }
-  return(cmAnalysisList)
+  return(fromJsonWithAttr(file))
 }
 
 #' Create drug-comparator-outcomes combinations.
@@ -282,7 +316,7 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
   for (i in 1:length(drugComparatorOutcomesList)) {
     stopifnot(class(drugComparatorOutcomesList[[i]]) == "drugComparatorOutcomes")
   }
-  write(rjson::toJSON(drugComparatorOutcomesList), file)
+  write(toJsonWithAttr(drugComparatorOutcomesList), file)
 }
 
 #' Load a list of drugComparatorOutcomes from file
@@ -297,9 +331,5 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
 #'
 #' @export
 loadDrugComparatorOutcomesList <- function(file) {
-  drugComparatorOutcomesList <- rjson::fromJSON(file = file)
-  for (i in 1:length(drugComparatorOutcomesList)) {
-    class(drugComparatorOutcomesList[[i]]) <- "drugComparatorOutcomes"
-  }
-  return(drugComparatorOutcomesList)
+  return(fromJsonWithAttr(file))
 }

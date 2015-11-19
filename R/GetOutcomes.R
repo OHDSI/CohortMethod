@@ -31,7 +31,7 @@
 #'                            \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' @param connection          A connection to the server containing the schema as created using the
 #'                            \code{connect} function in the \code{DatabaseConnector} package.
-#' @param oracleTempSchemaA   schema where temp tables can be created in Oracle.
+#' @param oracleTempSchema    Schema where temp tables can be created in Oracle.
 #' @param cdmDatabaseSchema   The name of the database schema that contains the OMOP CDM instance.
 #'                            Requires read permissions to this database. On SQL Server, this should
 #'                            specifiy both the database and the schema, so for example

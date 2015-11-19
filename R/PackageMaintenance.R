@@ -19,7 +19,6 @@
 .formatAndCheckCode <- function() {
   OhdsiRTools::formatRFolder()
   OhdsiRTools::checkUsagePackage("CohortMethod")
-  OhdsiRTools::ohdsiLintrFolder()
 }
 
 .createManualAndVignettes <- function() {
