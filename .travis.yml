@@ -17,6 +17,11 @@ install:
   - ./travis-tool.sh install_github OHDSI/PatientLevelPrediction
   - ./travis-tool.sh install_github OHDSI/EmpiricalCalibration
   - ./travis-tool.sh install_github jimhester/covr
+  - ./travis-tool.sh install_github eddelbuettel/drat  
+
+before_script:
+  - export PKG_NAME=$(Rscript -e 'cat(paste0(devtools::as.package(".")$package))')
+  - export PKG_TARBALL=$(Rscript -e 'pkg <- devtools::as.package("."); cat(paste0(pkg$package,"_",pkg$version,".tar.gz"))')
 
 script: ./travis-tool.sh run_tests
 
@@ -35,3 +40,9 @@ after_success:
   - Rscript -e 'library(covr);codecov()'
   # Rebuild docker container
   - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/development/trigger/e51f720d-c4e7-45df-b042-5d8a362bd7e0/
+  # Deploy to drat repo
+  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh  
+
+env:
+  global:
+    secure: QSpg1qmSlWWOMpHMRqke7Ww/hIlQJ0fwMPTfr8knDbKPHipuz0Q0H0AFiL7jhOeguZ7iJDdORsu7OY/G+b6hIDqb4eI6WRko749FdKPcklrL0dmWEtqTBhXlM32/LUCkKCu+jsvMpRELFgwC+ZEtIYBKe1n/CAJjVvlZRebkvgE=
