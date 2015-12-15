@@ -219,3 +219,110 @@ simulateCohortMethodData <- function(cohortDataSimulationProfile, n = 10000) {
   return(result)
 }
 
+#' @export
+simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000) {
+  propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1))
+  psTrimmed <- trimByPsToEquipoise(propensityScore)
+  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  outcomeId <- cohortMethodData$metaData$outcomeIds[1]
+
+  outcomeModel <- fitOutcomeModel(outcomeId,
+                                  cohortMethodData,
+                                  strata,
+                                  useCovariates = TRUE,
+                                  modelType = "cox",
+                                  prior = Cyclops::createPrior("laplace", 0.1),
+                                  returnFit = TRUE,
+                                  stratifiedCox = FALSE)
+  fit = outcomeModel$fit
+  data = outcomeModel$data
+  data = data[order(data$time),]
+
+  accDenom = getAccDenom(fit$interface)
+  times = getTimes(fit$interface)
+  y = getY(fit$interface)
+
+  s0 = calculateBaselineSurvivalFunction(accDenom, times, y)
+  x = calculateXB(ff::as.ff(data$rowId),
+                  cohortMethodData$covariates,
+                  ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$coefficients))), beta = ff::as.ff(outcomeModel$coefficients)))
+  ids = ff::as.ff(sample(data$rowId, n, replace = TRUE))
+  sTimes = generateEventTimes(x, ids, ff::as.ff(times), s0)
+
+
+  return (s0)
+}
+
+calculateXB <- function(rowId, covariates, coef) {
+  coef = coef[ffbase::ffwhich(coef,coef$beta>0),]
+  covariates = covariates[ffwhich(covariates, in.ff(covariates$rowId, rowId)),]
+  covariates = covariates[ffwhich(covariates, in.ff(covariates$covariateId, coef$covariateId)),]
+  covariates = ffbase::merge.ffdf(covariates, coef)
+  covariates$value = covariates$covariateValue * covariates$beta
+  temp = ff::as.ffdf(PatientLevelPrediction::bySumFf(covariates$value, covariates$rowId))
+  result = ff::ffdf(rowId = rowId, xb = ff::ff(vmode = "double", initdata = 0, length = length(rowId)))
+  t = ffbase::ffmatch(temp$bins, result$rowId)
+  result$xb[t] = temp$sums
+  result$exb = exp(result$xb)
+  return(result)
+}
+
+calculateBaselineSurvivalFunction <- function(accDenom, times, y) {
+  a = times*y
+  b = c(a[-1],-1)
+  c = a==b&a!=0
+  d = times[which(c==FALSE)]
+
+  e = c(d[-1],-1)
+  f = d==e
+  newAccDenom = accDenom[which(f==FALSE)]
+  newTimes = unique(times)
+  n = length(newTimes)
+
+  t = table(a)
+  t = t[-1]
+  g = match(names(t),newTimes)
+  newY = rep(0, n)
+  newY[g] = t
+
+  l = newY/newAccDenom
+  L = rep(0, n)
+  A = sum(l[1:n])
+  L[1] = A
+  for (i in 2:n) {
+    A = A - l[i]
+    L[i] = A
+  }
+  S = exp(-L)
+  return(ff::as.ff(S))
+}
+
+generateEventTimes <- function(x, ids, times, baseline) {
+  n = length(ids)
+
+  S = merge.ffdf(ff::ffdf(rowId = ids), x)
+  S$R = ff::as.ff(runif(n))
+  S$value = S$R^(1/S$exb)
+
+  S = S[ff::fforder(S$value),]
+  S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
+  k = 1;
+  K = length(s0)
+
+  for (i in 1:n) {
+    if (k<=K) {
+      while(S$value[i] >= s0[k]) {k=k+1}
+    }
+    S$timeIndex[i] = k-1
+  }
+
+  S$times = ff::ff(vmode = "double", initdata = times[1]+1, length = n)
+  t = ffbase::ffwhich(S, S$timeIndex>0)
+  S$times[t] = unique(times)[S$timeIndex[t]]
+
+  return(ff::ffdf(rowId = S$rowId, time = S$times))
+}
+
+
+
+

@@ -9,7 +9,7 @@ fitOutcomeModel(outcomeId, cohortMethodData, subPopulation = NULL,
   addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
   modelType = "cox", prior = createPrior("laplace", useCrossValidation =
   TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
-  selectorType = "byPid", noiseLevel = "quiet"))
+  selectorType = "byPid", noiseLevel = "quiet"), returnFit = FALSE)
 }
 \arguments{
 \item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the

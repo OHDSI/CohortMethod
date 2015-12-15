@@ -283,7 +283,7 @@ createDataForModelFit <- function(outcomeId,
   cohorts$timeToCensor <- riskWindowEnd
   if (addExposureDaysToEnd)
     cohorts$timeToCensor <- cohorts$timeToCensor + cohorts$timeToCohortEnd
-  cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <- cohorts$timeToObsPeriodEnd[cohorts$timeToCensor >                                                                                                          cohorts$timeToObsPeriodEnd]
+  cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <- cohorts$timeToObsPeriodEnd[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd]
   outcomes <- merge(outcomes, cohorts)
   outcomes <- outcomes[outcomes$timeToEvent >= riskWindowStart & outcomes$timeToEvent <= outcomes$timeToCensor,]
 
@@ -359,7 +359,8 @@ fitOutcomeModel <- function(outcomeId,
                             control = createControl(cvType = "auto",
                                                     startingVariance = 0.1,
                                                     selectorType = "byPid",
-                                                    noiseLevel = "quiet")) {
+                                                    noiseLevel = "quiet"),
+                            returnFit = FALSE) {
   dataObject <- createDataForModelFit(outcomeId,
                                       cohortMethodData,
                                       subPopulation,
@@ -460,6 +461,7 @@ fitOutcomeModel <- function(outcomeId,
                        data = dataObject$data,
                        counts = counts,
                        status = status)
+  if (returnFit) outcomeModel$fit = fit
   class(outcomeModel) <- "outcomeModel"
   return(outcomeModel)
 }
