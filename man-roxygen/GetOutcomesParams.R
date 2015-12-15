@@ -8,7 +8,7 @@
 #'                                         outcomeTable has format of COHORT table:
 #'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 #'                                         COHORT_END_DATE.
-#' @param outcomeConceptIds                A list of CONCEPT_IDs used to define outcomes.  If
+#' @param outcomeIds                       A list of CONCEPT_IDs used to define outcomes.  If
 #'                                         outcomeTable = CONDITION_OCCURRENCE, the list is a set of
 #'                                         ancestor CONCEPT_IDs, and all occurrences of all descendant
 #'                                         concepts will be selected.  If outcomeTable <>

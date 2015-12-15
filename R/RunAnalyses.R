@@ -36,6 +36,7 @@
 #'                                              database. On SQL Server, this should specifiy both the
 #'                                              database and the schema, so for example
 #'                                              'cdm_instance.dbo'.
+#' @param cdmVersion                            Define the OMOP CDM version used: currently support "4" and "5".
 #' @param oracleTempSchema                      For Oracle only: the name of the database schema where
 #'                                              you want all temporary tables to be managed. Requires
 #'                                              create/insert permissions to this database.
@@ -65,7 +66,7 @@
 #'                                              using the \code{\link{createCmAnalysis}} function.
 #' @param drugComparatorOutcomesList            A list of objects of type \code{drugComparatorOutcomes}
 #'                                              as created using the
-#'                                              \code{\link{createdrugComparatorOutcomes}} function.
+#'                                              \code{\link{createDrugComparatorOutcomes}} function.
 #' @param refitPsForEveryOutcome                Should the propensity model be fitted for every outcome
 #'                                              (i.e. after people who already had the outcome are
 #'                                              removed)? If false, a single propensity model will be
@@ -325,8 +326,8 @@ runCmAnalyses <- function(connectionDetails,
                    outcomeTable = outcomeTable,
                    cdmVersion = cdmVersion,
                    outcomeIds = outcomeIds,
-                   targetId = targetId,
-                   comparatorId = comparatorId,
+                   targetId = refRow$targetId,
+                   comparatorId = refRow$comparatorId,
                    indicationConceptIds = indicationConceptIds,
                    exclusionConceptIds = exclusionConceptIds)
       getDbCohortMethodDataArgs$exclusionConceptIds <- NULL
@@ -509,8 +510,8 @@ runCmAnalyses <- function(connectionDetails,
                                               list(analysisId = refRow$analysisId))[[1]]
       tasks[[length(tasks) + 1]] <- list(subPopFile = refRow$subPopFile,
                                          outcomeId = refRow$outcomeId,
-                                         cohortMethodDataFolder = cohortMethodDataFolder,
-                                         covariateBalanceFile = covariateBalanceFile)
+                                         cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                                         covariateBalanceFile = refRow$covariateBalanceFile)
     }
   }
   computeCovarBal <- function(params) {
@@ -698,7 +699,7 @@ runCmAnalyses <- function(connectionDetails,
 
 #' Create a summary report of the analyses
 #'
-#' @param outcomeReference   A data.frame as created by the \code{\link{runAnalyses}} function.
+#' @param outcomeReference   A data.frame as created by the \code{\link{runCmAnalyses}} function.
 #'
 #' @return
 #' A data frame with the following columns:
