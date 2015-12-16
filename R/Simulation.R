@@ -234,29 +234,66 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000) {
                                   prior = Cyclops::createPrior("laplace", 0.1),
                                   returnFit = TRUE,
                                   stratifiedCox = FALSE)
+  ids = ff::ffdf(newId = ff::as.ff(1:n),
+                 rowId = ff::as.ff(sample(outcomeModel$data$rowId, n, replace = TRUE)))
+  sTimes = simulateTimes(outcomeModel, ids)
+  names(sTimes)[match("time", names(sTimes))] = "sTime"
+
+
+  cohortMethodData1 = invertOutcome(cohortMethodData, outcomeId)
+  outcomeModel1 <- fitOutcomeModel(outcomeId,
+                                  cohortMethodData1,
+                                  strata,
+                                  useCovariates = TRUE,
+                                  modelType = "cox",
+                                  prior = Cyclops::createPrior("laplace", 0.1),
+                                  returnFit = TRUE,
+                                  stratifiedCox = FALSE)
+  cTimes = simulateTimes(outcomeModel1, ids)
+  names(cTimes)[match("time", names(cTimes))] = "cTime"
+
+  times = ffbase::merge.ffdf(sTimes, cTimes)
+  times$y = ff::ff(vmode = "double", initdata = 0, length = n)
+  t = ffbase::ffwhich(times, times$sTime<times$cTime)
+  times$y[t] = ff::ff(vmode = "double", initdata = 1, length = length(t))
+  times$time = times$cTime
+  times$time[t] = times$sTime[t]
+
+  return (times)
+}
+
+simulateTimes <- function(outcomeModel, ids) {
   fit = outcomeModel$fit
   data = outcomeModel$data
   data = data[order(data$time),]
 
-  accDenom = getAccDenom(fit$interface)
-  times = getTimes(fit$interface)
-  y = getY(fit$interface)
+  accDenom = ff::as.ff(getAccDenom(fit$interface))
+  times = ff::as.ff(getTimes(fit$interface))
+  y = ff::as.ff(getY(fit$interface))
 
-  s0 = calculateBaselineSurvivalFunction(accDenom, times, y)
+  baseline = calculateBaselineSurvivalFunction(accDenom, times, y)
   x = calculateXB(ff::as.ff(data$rowId),
                   cohortMethodData$covariates,
                   ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$coefficients))), beta = ff::as.ff(outcomeModel$coefficients)))
-  ids = ff::as.ff(sample(data$rowId, n, replace = TRUE))
-  sTimes = generateEventTimes(x, ids, ff::as.ff(times), s0)
+  return(generateEventTimes(x, ids, times, baseline))
+}
 
+invertOutcome <- function(cohortMethodData, outcomeId) {
+  ids = unique(cohortMethodData$outcomes$rowId)
 
-  return (s0)
+  newOutcomes = cohortMethodData$cohorts[ffbase::ffwhich(cohortMethodData$cohorts, !in.ff(cohortMethodData$cohorts$rowId, ids)),]
+  newOutcomes = ff::ffdf(rowId = newOutcomes$rowId,
+                   outcomeId = ff::ff(vmode = "double", initdata = outcomeId, length = length(newOutcomes$rowId)),
+                   timeToEvent = newOutcomes$timeToObsPeriodEnd)
+  result = cohortMethodData
+  result$outcomes = newOutcomes
+  return(result)
 }
 
 calculateXB <- function(rowId, covariates, coef) {
   coef = coef[ffbase::ffwhich(coef,coef$beta>0),]
-  covariates = covariates[ffwhich(covariates, in.ff(covariates$rowId, rowId)),]
-  covariates = covariates[ffwhich(covariates, in.ff(covariates$covariateId, coef$covariateId)),]
+  covariates = covariates[ffbase::ffwhich(covariates, in.ff(covariates$rowId, rowId)),]
+  covariates = covariates[ffbase::ffwhich(covariates, in.ff(covariates$covariateId, coef$covariateId)),]
   covariates = ffbase::merge.ffdf(covariates, coef)
   covariates$value = covariates$covariateValue * covariates$beta
   temp = ff::as.ffdf(PatientLevelPrediction::bySumFf(covariates$value, covariates$rowId))
@@ -269,50 +306,44 @@ calculateXB <- function(rowId, covariates, coef) {
 
 calculateBaselineSurvivalFunction <- function(accDenom, times, y) {
   a = times*y
-  b = c(a[-1],-1)
+  b = ff::ff(vmode = "double", initdata = c(a[-1],-1))
   c = a==b&a!=0
-  d = times[which(c==FALSE)]
+  d = times[ffbase::ffwhich(c, c==FALSE)]
 
-  e = c(d[-1],-1)
+  e = ff::ff(vmode = "double", initdata = c(d[-1],-1))
   f = d==e
-  newAccDenom = accDenom[which(f==FALSE)]
+  newAccDenom = accDenom[ffbase::ffwhich(f, f==FALSE)]
   newTimes = unique(times)
   n = length(newTimes)
 
-  t = table(a)
+  t = table(a[])
   t = t[-1]
-  g = match(names(t),newTimes)
-  newY = rep(0, n)
-  newY[g] = t
+  g = ffbase::ffmatch(ff::as.ff(as.numeric(names(t))), newTimes)
+  newY = ff::ff(vmode = "double", initdata = 0, length = n)
+  newY[g] = ff::ff(vmode = "double", initdata = t)
 
   l = newY/newAccDenom
-  L = rep(0, n)
-  A = sum(l[1:n])
-  L[1] = A
-  for (i in 2:n) {
-    A = A - l[i]
-    L[i] = A
+  L = ff::ff(vmode = "double", initdata = 0, length = n)
+  for (i in 1:n) {
+    L[i] = sum(l[i:n])
   }
-  S = exp(-L)
-  return(ff::as.ff(S))
+  return(1/exp(L))
 }
 
 generateEventTimes <- function(x, ids, times, baseline) {
-  n = length(ids)
+  n = length(ids$newId)
 
-  S = merge.ffdf(ff::ffdf(rowId = ids), x)
+  S = ffbase::merge.ffdf(ids, x)
   S$R = ff::as.ff(runif(n))
   S$value = S$R^(1/S$exb)
 
   S = S[ff::fforder(S$value),]
   S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
   k = 1;
-  K = length(s0)
+  K = length(baseline)
 
   for (i in 1:n) {
-    if (k<=K) {
-      while(S$value[i] >= s0[k]) {k=k+1}
-    }
+    while((k<=K) && (S$value[i] >= baseline[k])) {k=k+1}
     S$timeIndex[i] = k-1
   }
 
@@ -320,7 +351,7 @@ generateEventTimes <- function(x, ids, times, baseline) {
   t = ffbase::ffwhich(S, S$timeIndex>0)
   S$times[t] = unique(times)[S$timeIndex[t]]
 
-  return(ff::ffdf(rowId = S$rowId, time = S$times))
+  return(ff::ffdf(newId = S$newId, rowId = S$rowId, time = S$times))
 }
 
 
