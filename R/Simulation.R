@@ -220,8 +220,8 @@ simulateCohortMethodData <- function(cohortDataSimulationProfile, n = 10000) {
 }
 
 #' @export
-simulateCohortMethodDataTest <- function(cohortMethodData, n = 100000, replaceBeta = FALSE, newBeta=0) {
-  propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1))
+simulateCohortMethodDataTest <- function(cohortMethodData, n = 100000, replaceBeta = FALSE, newBeta=0, excludeCovariateIds = NULL) {
+  propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1), excludeCovariateIds = excludeCovariateIds)
   psTrimmed <- trimByPsToEquipoise(propensityScore)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   outcomeId <- cohortMethodData$metaData$outcomeIds[1]

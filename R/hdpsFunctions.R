@@ -74,14 +74,15 @@ separateCovariatesHelper <- function(analysisId, covariates) {
 #' Returns list of 3 ffdf with only the kept covariates
 removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
   data1 = data[[1]]
-  if (is.null(data1)) {return(list(NULL))}
-  counts = ffbase::table.ff(ff::ff(vmode = "integer", data1$covariateId %/% 1000))
-  counts[which(counts>(totalPopulation/2))] = totalPopulation - counts[which(counts>(totalPopulation/2))]
-  counts = counts[order(counts, decreasing = TRUE)]
-  finalCutoff = min(length(counts), dimensionCutoff)
-  x = ff::as.ff(as.double(names(counts[1:finalCutoff])))
-  y = ffbase::ffmatch(data1$covariateId %/% 1000, x)
-  data1 = data1[ffbase::ffwhich(y,!is.na(y)),]
+  if (!is.null(data1)) {
+    counts = ffbase::table.ff(ff::ff(vmode = "integer", data1$covariateId %/% 1000))
+    counts[which(counts>(totalPopulation/2))] = totalPopulation - counts[which(counts>(totalPopulation/2))]
+    counts = counts[order(counts, decreasing = TRUE)]
+    finalCutoff = min(length(counts), dimensionCutoff)
+    x = ff::as.ff(as.double(names(counts[1:finalCutoff])))
+    y = ffbase::ffmatch(data1$covariateId %/% 1000, x)
+    data1 = data1[ffbase::ffwhich(y,!is.na(y)),]
+  }
 
   data2 = data[[2]]
   if (!is.null(data2)) {
