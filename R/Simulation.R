@@ -220,57 +220,99 @@ simulateCohortMethodData <- function(cohortDataSimulationProfile, n = 10000) {
 }
 
 #' @export
-simulateCohortMethodDataTest <- function(cohortMethodData, n = 100000, replaceBeta = FALSE, newBeta=0, excludeCovariateIds = NULL) {
+simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
+                                         simulateTreatment = FALSE,
+                                         replaceBeta = FALSE,
+                                         newBeta=0,
+                                         excludeCovariateIds = NULL) {
+
   propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1), excludeCovariateIds = excludeCovariateIds)
+  propensityModel <- attr(propensityScore, "coefficients")
+
+  if (simulateTreatment) {
+    covariates = cohortMethodData$covariates[ffbase::ffwhich(cohortMethodData$covariates, !in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(c(1, excludeCovariateIds)))),]
+    covariateIds = unique(covariates$covariateId[])
+    covariateIds = covariateIds[which(covariateIds!=1)]
+    propensityModel = rnorm(length(covariateIds)+1)
+    names(propensityModel) = c("(Intercept)", covariateIds)
+    betas = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(propensityModel[2:length(propensityModel)]))),
+                     beta = ff::as.ff(propensityModel[2:length(propensityModel)]))
+    temp = ffbase::merge.ffdf(covariates, betas)
+    temp$value = temp$covariateValue * temp$beta
+    temp = ff::as.ffdf(PatientLevelPrediction::bySumFf(temp$value, temp$rowId))
+    names(temp) = c("rowId", "value")
+    temp$value = temp$value + ff::ff(vmode = "double", initdata = propensityModel[1], length = nrow(temp))
+    temp$propensityScore = 1 / (1 + exp(-1 * temp$value))
+    temp$rand = ff::as.ff(runif(nrow(temp)))
+    temp$value = ff::as.ff(as.integer((temp$rand < temp$propensityScore)[]))
+    temp$rand <- NULL
+    propensityScore = data.frame(rowId = temp$rowId[], propensityScore = temp$propensityScore[], treatment = temp$value[])
+    cohorts = ffbase::merge.ffdf(cohortMethodData$cohorts, temp)
+    cohorts$treatment = cohorts$value
+    cohorts$value <- NULL
+    cohorts$propensityScore <- NULL
+    cohortMethodData$cohorts = cohorts
+    t = ffbase::ffwhich(temp, temp$value == 1)
+    covariates = ffbase::ffdfrbind.fill(ff::ffdf(rowId = temp$rowId[t],
+                                                 covariateId = ff::ff(vmode = "double", initdata = 1, length = length(t)),
+                                                 covariateValue = ff::ff(vmode = "double", initdata = 1, length = length(t))),
+                                        covariates)
+    cohortMethodData$covariates = covariates
+  }
+
   psTrimmed <- trimByPsToEquipoise(propensityScore)
-  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  #strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   outcomeId <- cohortMethodData$metaData$outcomeIds[1]
 
+  # generate outcome model for outcome
   outcomeModel <- fitOutcomeModel(outcomeId,
                                   cohortMethodData,
-                                  strata,
+                                  psTrimmed,
                                   useCovariates = TRUE,
                                   modelType = "cox",
                                   prior = Cyclops::createPrior("laplace", 0.1),
                                   returnFit = TRUE,
                                   stratifiedCox = FALSE)
-  ids = ff::ffdf(newId = ff::ff(vmode = "double", initdata = 1:n),
-                 rowId = ff::as.ff(sample(outcomeModel$data$rowId, n, replace = TRUE)))
   if (replaceBeta) {
     Cyclops::setExposureBeta(outcomeModel$fit$interface, newBeta)
     outcomeModel$coefficients[1] = newBeta
   }
-  sTimes = simulateTimes(outcomeModel, ids)
-  names(sTimes)[match("time", names(sTimes))] = "sTime"
+  effectSize = outcomeModel$coefficients[1]
 
+  # generate outcome model for censor
   cohortMethodData1 = invertOutcome(cohortMethodData, outcomeId)
   outcomeModel1 <- fitOutcomeModel(outcomeId,
                                    cohortMethodData1,
-                                   strata,
+                                   psTrimmed,
                                    useCovariates = TRUE,
                                    modelType = "cox",
                                    prior = Cyclops::createPrior("laplace", 0.1),
                                    returnFit = TRUE,
                                    stratifiedCox = FALSE,
                                    control = createControl(maxIterations = 10000))
+
+  ids = ff::ffdf(newId = ff::ff(vmode = "double", initdata = 1:n),
+                 rowId = ff::as.ff(sample(outcomeModel$data$rowId, n, replace = TRUE)))
+
+  # generate event times
+  sTimes = simulateTimes(outcomeModel, ids)
+  names(sTimes)[match("time", names(sTimes))] = "sTime"
+
+  # generate censor times
   cTimes = simulateTimes(outcomeModel1, ids)
   names(cTimes)[match("time", names(cTimes))] = "cTime"
 
+  # combine event and censor times
   times = ffbase::merge.ffdf(sTimes, cTimes)
   times$y = ff::ff(vmode = "double", initdata = 0, length = n)
   t = ffbase::ffwhich(times, times$sTime<times$cTime)
   times$y[t] = ff::ff(vmode = "double", initdata = 1, length = length(t))
   times$timeToEvent = times$cTime
   times$timeToEvent[t] = times$sTime[t]
-
-
   times$rowId <- NULL
   times$sTime <- NULL
-  outcomes = times[ffbase::ffwhich(times, times$y==1),]
-  outcomes$y = ff::ff(vmode = "double", initdata = outcomeId, length = length(outcomes$y))
-  names(outcomes)[match("y", names(outcomes))] = "outcomeId"
-  outcomes$cTime <- NULL
-  names(outcomes)[match("newId", names(outcomes))] = "rowId"
+
+  # generate cohorts
   cohorts = ffbase::merge.ffdf(ids, cohortMethodData$cohorts)
   cohorts$rowId <- NULL
   cohorts = ffbase::merge.ffdf(cohorts, times)
@@ -279,6 +321,15 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 100000, replaceBe
   cohorts$cTime <- NULL
   cohorts$timeToEvent <- NULL
   names(cohorts)[match("newId", names(cohorts))] = "rowId"
+
+  # generate outcomes
+  outcomes = times[ffbase::ffwhich(times, times$y==1),]
+  outcomes$y = ff::ff(vmode = "double", initdata = outcomeId, length = length(outcomes$y))
+  names(outcomes)[match("y", names(outcomes))] = "outcomeId"
+  outcomes$cTime <- NULL
+  names(outcomes)[match("newId", names(outcomes))] = "rowId"
+
+  # generate covariates
   covariates = NULL
   ids1 = ids
   while(dim(ids1)[1]!=0) {
@@ -289,19 +340,22 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 100000, replaceBe
   }
   covariates$rowId <- covariates$newId
   covariates$newId <- NULL
+
+  # generate covariate ref
   covariateRef = ffbase::merge.ffdf(cohortMethodData$covariateRef, covariates)
   covariateRef$rowId <- NULL
   covariateRef$covariateValue <- NULL
 
+  result = list(outcomes = outcomes,
+                cohorts = cohorts,
+                covariates = covariates,
+                exclude = NULL,
+                covariateRef = covariateRef,
+                metaData = cohortMethodData$metaData)
 
-  result = cohortMethodData
-  result$outcomes = outcomes
-  result$cohorts = cohorts
-  result$covariates = covariates
-  result$covariateRef = covariateRef
-  result$exclude <- NULL
-
-  return (result)
+  return (list(cohortMethodData = result,
+               propensityModel = propensityModel,
+               effectSize = effectSize))
 }
 
 simulateTimes <- function(outcomeModel, ids) {
