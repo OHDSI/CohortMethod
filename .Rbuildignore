@@ -5,3 +5,4 @@ standalone
 ^\.travis\.yml$
 extras
 ^\.git
+deploy.sh
