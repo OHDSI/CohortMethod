@@ -242,7 +242,7 @@ plotPs <- function(data,
       } else {
         strata$SCORE <- strata$propensityScore
       }
-      plot <- plot + ggplot2::geom_vline(x = strata$SCORE, color = rgb(0, 0, 0, alpha = 0.5))
+      plot <- plot + ggplot2::geom_vline(xintercept = strata$SCORE, color = rgb(0, 0, 0, alpha = 0.5))
     }
   } else {
     plot <- ggplot2::ggplot(data,
