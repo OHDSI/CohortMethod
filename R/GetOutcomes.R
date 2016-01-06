@@ -131,6 +131,10 @@ getDbOutcomes <- function(connectionDetails = NULL,
     warning("No data found")
   } else {
     open(outcomes)
+    if (nrow(exclude) == 0) {
+      # Dirty: if exclude is empty, add a dummy row. Will remove this once we add ability to have zero rows to ff:
+      exclude <- ff::as.ffdf(data.frame(rowId = -1, outcomeId = -1))
+    }
     open(exclude)
   }
   if (is.null(cohortMethodData$outcomes)) {
