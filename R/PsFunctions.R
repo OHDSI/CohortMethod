@@ -863,7 +863,7 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName = NULL) {
   plot <- ggplot2::ggplot(balance,
                           ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
     ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
-    ggplot2::geom_abline(a = 1) +
+    ggplot2::geom_abline(slope = 1, intercept = 0) +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::ggtitle("Standardized difference of mean") +
     ggplot2::scale_x_continuous("Before matching", limits = limits) +
