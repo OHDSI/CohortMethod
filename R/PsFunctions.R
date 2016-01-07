@@ -808,6 +808,13 @@ computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcome
     t <- t | cohortMethodData$covariates$covariateId == 1
     covariates <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
   }
+  # Try to undo normalization of covariate values:
+  normFactors <- attr(cohortMethodData$covariates,"normFactors")
+  if (!is.null(normFactors)){
+    covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(normFactors))
+    covariates$covariateValue <- covariates$covariateValue * covariates$maxs
+    covariates$maxs <- NULL
+  }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
   afterMatching <- computeMeansPerGroup(ff::as.ffdf(restrictedCohorts), covariates)
