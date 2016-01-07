@@ -94,7 +94,7 @@ FROM (
 	) raw_cohorts
 INNER JOIN observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
-WHERE raw_cohorts.cohort_start_date <= op1.observation_period_end_date
+WHERE raw_cohorts.cohort_start_date < op1.observation_period_end_date
 	AND raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, observation_period_start_date) {@study_start_date != '' } ? {AND raw_cohorts.cohort_start_date >= CAST('@study_start_date' AS DATE) } {@study_end_date != '' } ? {AND raw_cohorts.cohort_start_date <= CAST('@study_end_date' AS DATE) };
 
 {@has_indication_concept_ids} ? {
