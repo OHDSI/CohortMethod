@@ -617,6 +617,7 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
 #'                              be shown.
 #' @param treatmentLabel        A label to us for the treated cohort.
 #' @param comparatorLabel       A label to us for the comparator cohort.
+#' @param title                 The main title of the plot.
 #' @param fileName              Name of the file where the plot should be saved, for example
 #'                              'plot.png'. See the function \code{ggsave} in the ggplot2 package for
 #'                              supported file formats.
@@ -636,6 +637,7 @@ plotKaplanMeier <- function(outcomeModel,
                             dataCutoff = 0.99,
                             treatmentLabel = "Treated",
                             comparatorLabel = "Comparator",
+                            title = "Kaplan-Meier Plot",
                             fileName = NULL) {
   if (class(outcomeModel) != "outcomeModel")
     stop("Object not of class outcomeModel")
@@ -661,7 +663,6 @@ plotKaplanMeier <- function(outcomeModel,
   cutoff <- min(dataAtT$time[dataAtT$cumSum >= dataCutoff * sum(dataAtT$n.censor)])
   xlabs <- "Time in days"
   ylabs <- "Survival probability"
-  main <- "Kaplan-Meier Plot"
   xlims <- c(0, cutoff)
   data <- data[data$time <= cutoff, ]
   if (includeZero) {
@@ -689,7 +690,7 @@ plotKaplanMeier <- function(outcomeModel,
                                           rgb(0, 0, 0.8, alpha = 0.3))) +
     ggplot2::scale_x_continuous(xlabs, limits = xlims) +
     ggplot2::scale_y_continuous(ylabs, limits = ylims) +
-    ggplot2::ggtitle(main) +
+    ggplot2::ggtitle(title) +
     ggplot2::theme(legend.title = ggplot2::element_blank())
 
   if (censorMarks == TRUE)

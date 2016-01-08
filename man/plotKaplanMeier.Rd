@@ -7,7 +7,7 @@
 plotKaplanMeier(outcomeModel, censorMarks = FALSE,
   confidenceIntervals = TRUE, includeZero = TRUE, dataCutoff = 0.99,
   treatmentLabel = "Treated", comparatorLabel = "Comparator",
-  fileName = NULL)
+  title = "Kaplan-Meier Plot", fileName = NULL)
 }
 \arguments{
 \item{outcomeModel}{An object of type \code{outcomeModel} as generated using he
@@ -26,6 +26,8 @@ be shown.}
 \item{treatmentLabel}{A label to us for the treated cohort.}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
+
+\item{title}{The main title of the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example
 'plot.png'. See the function \code{ggsave} in the ggplot2 package for
