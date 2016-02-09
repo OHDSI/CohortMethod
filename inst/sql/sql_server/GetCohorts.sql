@@ -95,7 +95,9 @@ FROM (
 INNER JOIN observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
 WHERE raw_cohorts.cohort_start_date < op1.observation_period_end_date
-	AND raw_cohorts.cohort_start_date >= dateadd(dd, @washout_window, observation_period_start_date) {@study_start_date != '' } ? {AND raw_cohorts.cohort_start_date >= CAST('@study_start_date' AS DATE) } {@study_end_date != '' } ? {AND raw_cohorts.cohort_start_date <= CAST('@study_end_date' AS DATE) };
+	AND raw_cohorts.cohort_start_date >= DATEADD(dd, @washout_window, observation_period_start_date) 
+{@study_start_date != '' } ? {AND raw_cohorts.cohort_start_date >= CAST('@study_start_date' AS DATE) } 
+{@study_end_date != '' } ? {AND raw_cohorts.cohort_start_date < CAST('@study_end_date' AS DATE) };
 
 {@has_indication_concept_ids} ? {
 
@@ -119,7 +121,7 @@ INNER JOIN (
 				)
 		) indication
 ON new_user_cohort.person_id = indication.person_id
-	AND new_user_cohort.cohort_start_date <= dateadd(dd, @indication_lookback_window, indication_date)
+	AND new_user_cohort.cohort_start_date <= DATEADD(dd, @indication_lookback_window, indication_date)
 	AND new_user_cohort.cohort_start_date >= indication_date
 ;
 }
@@ -128,7 +130,8 @@ ON new_user_cohort.person_id = indication.person_id
 SELECT treatment,
 	new_user_cohort.person_id,
 	cohort_start_date,
-	cohort_end_date
+	cohort_end_date,
+	observation_period_end_date
 INTO #non_overlap_cohort
 FROM {@has_indication_concept_ids} ? { #indicated_cohort new_user_cohort } : { #new_user_cohort new_user_cohort }
 LEFT JOIN (
@@ -148,7 +151,8 @@ WHERE both_cohorts.person_id IS NULL;
 SELECT non_overlap_cohort.treatment AS @cohort_definition_id,
 	non_overlap_cohort.person_id AS subject_id,
 	non_overlap_cohort.cohort_start_date,
-	non_overlap_cohort.cohort_end_date
+	non_overlap_cohort.cohort_end_date,
+	non_overlap_cohort.observation_period_end_date
 INTO #cohort_person
 FROM #non_overlap_cohort non_overlap_cohort {@has_exclusion_concept_ids} ? {
 LEFT JOIN (

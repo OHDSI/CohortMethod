@@ -38,13 +38,9 @@ IF OBJECT_ID('tempdb..#cohort_excluded_person', 'U') IS NOT NULL
 SELECT cp1.@cohort_definition_id,
 	cp1.subject_id as person_id,
 	ca1.ancestor_concept_id AS outcome_id,
-	datediff(dd, cp1.cohort_start_date, co1.condition_start_date) AS time_to_event
+	DATEDIFF(dd, cp1.cohort_start_date, co1.condition_start_date) AS time_to_event
   INTO #cohort_outcome
 FROM #cohort_person cp1
-INNER JOIN observation_period
-ON cp1.subject_id = observation_period.person_id
-AND cp1.cohort_start_date >= observation_period_start_date
-AND cp1.cohort_start_date <= observation_period_end_date
 INNER JOIN condition_occurrence co1
 	ON cp1.subject_id = co1.person_id
 INNER JOIN (
@@ -59,19 +55,15 @@ WHERE {@outcome_condition_type_concept_ids != '' } ? { co1.condition_type_concep
 	AND co1.condition_start_date <= observation_period_end_date
 GROUP BY cp1.@cohort_definition_id,
 	cp1.subject_id,
-	datediff(dd, cp1.cohort_start_date, co1.condition_start_date),
+	DATEDIFF(dd, cp1.cohort_start_date, co1.condition_start_date),
 	ca1.ancestor_concept_id } : { {@outcome_table == 'condition_era' } ? {
 
 SELECT cp1.@cohort_definition_id,
 	cp1.subject_id AS person_id,
 	ca1.ancestor_concept_id AS outcome_id,
-	datediff(dd, cp1.cohort_start_date, co1.condition_era_start_date) AS time_to_event
+	DATEDIFF(dd, cp1.cohort_start_date, co1.condition_era_start_date) AS time_to_event
   INTO #cohort_outcome
 FROM #cohort_person cp1
-INNER JOIN observation_period
-ON cp1.subject_id = observation_period.person_id
-AND cp1.cohort_start_date >= observation_period_start_date
-AND cp1.cohort_start_date <= observation_period_end_date
 INNER JOIN condition_era co1
 	ON cp1.subject_id = co1.person_id
 INNER JOIN (
@@ -95,10 +87,6 @@ SELECT cp1.@cohort_definition_id,
 	datediff(dd, cp1.cohort_start_date, co1.cohort_start_date) AS time_to_event
   INTO #cohort_outcome
 FROM #cohort_person cp1
-INNER JOIN observation_period
-ON cp1.subject_id = observation_period.person_id
-AND cp1.cohort_start_date >= observation_period_start_date
-AND cp1.cohort_start_date <= observation_period_end_date
 INNER JOIN @outcome_database_schema.@outcome_table co1
 	ON cp1.subject_id = co1.subject_id
 WHERE co1.@cohort_definition_id IN (@outcome_concept_ids)
