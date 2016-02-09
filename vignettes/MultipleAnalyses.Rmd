@@ -9,11 +9,12 @@ output:
   html_document:
     number_sections: yes
     toc: yes
+vignette: >
+  %\VignetteIndexEntry{Multiple analyses using CohortMethod}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
-<!--
-%\VignetteEngine{knitr}
-%\VignetteIndexEntry{Multiple analyses using CohortMethod}
--->
+
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)

@@ -14,7 +14,10 @@ conn <- tryCatch({
   "No connection"
 })
 hasConnection <- (class(conn) == "JDBCConnection")
-dbDisconnect(conn)
+
+if (hasConnection) {
+  dbDisconnect(conn)
+}
 
 cdmDatabaseSchema <- "CDM_TRUVEN_CCAE_6K.dbo"
 
