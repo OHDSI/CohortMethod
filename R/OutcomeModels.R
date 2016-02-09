@@ -276,6 +276,13 @@ createDataForModelFit <- function(outcomeId,
       }
     }
   }
+  # Remove people with outcomes between index date and risk window start:
+  if (riskWindowStart > 0) {
+    excludeRowIds <- outcomes$rowId[outcomes$timeToEvent < riskWindowStart]
+    outcomes <- outcomes[!(outcomes$rowId %in% excludeRowIds),]
+    cohorts <- cohorts[!(cohorts$rowId %in% excludeRowIds),]
+  }
+
   if (!is.null(subPopulation))
     cohorts <- merge(subPopulation, cohorts)  #keeping only persons that have been matched
 
