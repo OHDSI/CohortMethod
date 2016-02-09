@@ -1,6 +1,6 @@
 # @file PackageMaintenance
 #
-# Copyright 2015 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -19,7 +19,7 @@
 # Format and check code:
 OhdsiRTools::formatRFolder()
 OhdsiRTools::checkUsagePackage("CohortMethod")
-
+OhdsiRTools::updateCopyrightYearFolder()
 
 # Create manual and vignettes:
 shell("rm extras/CohortMethod.pdf")
