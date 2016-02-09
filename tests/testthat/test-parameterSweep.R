@@ -126,6 +126,22 @@ test_that("Outcome functions", {
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
+  # Test if people with outcomes after index date but before risk window start are removed:
+  outcomeModel <- fitOutcomeModel(194133,
+                                  cohortMethodData,
+                                  strata,
+                                  stratifiedCox = stratifiedCox,
+                                  riskWindowStart = 100,
+                                  riskWindowEnd = 365,
+                                  addExposureDaysToEnd = FALSE,
+                                  useCovariates = FALSE,
+                                  modelType = "clr",
+                                  prior = createPrior("laplace", 0.1))
+  outcomes <- ff::as.ram(cohortMethodData$outcomes)
+  personsWithOutcomesBeforeRiskWindow <- outcomes$rowId[outcomes$timeToEvent < 100]
+  personsThatShouldHaveBeenRemoved <- sum(outcomeModel$data$rowId %in% personsWithOutcomesBeforeRiskWindow)
+  expect_equal(personsThatShouldHaveBeenRemoved, 0)
+
   logRrs <- c()
   # params <- c()
   for (type in c("logistic", "poisson", "survival")) {
@@ -172,6 +188,8 @@ test_that("Outcome functions", {
                                           modelType = modelType,
                                           prior = createPrior("laplace", 0.1))
           expect_is(outcomeModel, "outcomeModel")
+          omSum <- summary(outcomeModel)
+          expect_equal(omSum$counts[1,1], omSum$counts[1,2])
           logRrs <- c(logRrs, coef(outcomeModel))
           # params <-
           # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
