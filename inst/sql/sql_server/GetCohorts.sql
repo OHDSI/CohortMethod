@@ -61,7 +61,8 @@ SELECT DISTINCT raw_cohorts.treatment,
 		END } : {op1.observation_period_end_date} AS observation_period_end_date
 INTO #new_user_cohort
 FROM (
-	{@exposure_table == 'drug_era' } ? { SELECT CASE
+	{@exposure_table == 'drug_era' } ? { 
+	SELECT CASE
 			WHEN ca1.ancestor_concept_id = @target_id
 				THEN 1
 			WHEN ca1.ancestor_concept_id = @comparator_id
@@ -69,8 +70,8 @@ FROM (
 			ELSE - 1
 			END AS treatment,
 		de1.person_id,
-		min(de1.drug_era_start_date) AS cohort_start_date,
-		min(de1.drug_era_end_date) AS cohort_end_date
+		MIN(de1.drug_era_start_date) AS cohort_start_date,
+		MIN(de1.drug_era_end_date) AS cohort_end_date
 	FROM drug_era de1
 	INNER JOIN concept_ancestor ca1
 		ON de1.drug_concept_id = ca1.descendant_concept_id
@@ -85,8 +86,8 @@ FROM (
 			ELSE - 1
 			END AS treatment,
 		c1.subject_id AS person_id,
-		min(c1.cohort_start_date) AS cohort_start_date,
-		min(c1.cohort_end_date) AS cohort_end_date
+		MIN(c1.cohort_start_date) AS cohort_start_date,
+		MIN(c1.cohort_end_date) AS cohort_end_date
 	FROM @exposure_database_schema.@exposure_table c1
 	WHERE c1.@cohort_definition_id IN (@target_id, @comparator_id)
 	GROUP BY c1.@cohort_definition_id,
@@ -94,8 +95,8 @@ FROM (
 	) raw_cohorts
 INNER JOIN observation_period op1
 	ON raw_cohorts.person_id = op1.person_id
-WHERE raw_cohorts.cohort_start_date < op1.observation_period_end_date
-	AND raw_cohorts.cohort_start_date >= DATEADD(dd, @washout_window, observation_period_start_date) 
+WHERE raw_cohorts.cohort_start_date <= op1.observation_period_end_date
+	AND raw_cohorts.cohort_start_date >= DATEADD(DAY, @washout_window, observation_period_start_date) 
 {@study_start_date != '' } ? {AND raw_cohorts.cohort_start_date >= CAST('@study_start_date' AS DATE) } 
 {@study_end_date != '' } ? {AND raw_cohorts.cohort_start_date < CAST('@study_end_date' AS DATE) };
 

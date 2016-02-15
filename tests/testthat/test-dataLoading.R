@@ -44,11 +44,11 @@ test_that("Data loading functions", {
     cohorts <- ff::as.ram(cohortMethodData$cohort)
 
     # Test if none of the observation period end dates exceeds the study end date (should truncate at study end date):
-    opEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$timeToObsPeriodEnd > as.Date("2003-12-30"))
+    opEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$timeToObsPeriodEnd - 1 > as.Date("2003-12-30"))
     expect_equal(opEndDatesPastStudyEnd, 0)
 
     # Test if none of the cohort end dates exceeds the study end date (should truncate at study end date):
-    cohortEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$timeToCohortEnd > as.Date("2003-12-30"))
+    cohortEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$timeToCohortEnd - 1 > as.Date("2003-12-30"))
     expect_equal(cohortEndDatesPastStudyEnd, 0)
 
     # People with 0 days of observation time should have been removed:
@@ -56,5 +56,9 @@ test_that("Data loading functions", {
 
     # People with 0 days of exposure should have been removed:
     expect_equal(sum(cohorts$timeToCohortEnd == 0), 0)
+
+    # People with 0 days until outcome should have been removed:
+    outcomes <- ff::as.ram(cohortMethodData$outcomes)
+    expect_equal(sum(outcomes$timeToEvent == 0), 0)
   }
 })
