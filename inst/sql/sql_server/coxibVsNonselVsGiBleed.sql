@@ -6,14 +6,14 @@ IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
   DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-  cohort_concept_id INT,
+  cohort_definition_id INT,
   cohort_start_date DATE,
 	cohort_end_date DATE,
 	subject_id BIGINT
 	);
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_concept_id,
+	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -26,7 +26,7 @@ FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1118084;-- celecoxib
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_concept_id,
+	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -39,7 +39,7 @@ FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1124300; --diclofenac
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_concept_id,
+	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -56,4 +56,4 @@ WHERE condition_concept_id IN (
 		FROM @cdmDatabaseSchema.concept_ancestor
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
-	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203);
+	AND visit_occurrence.visit_concept_id IN (9201, 9203);

@@ -18,8 +18,8 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)
-data(vignetteAnalysisSummary)
-analysisSum <- vignetteAnalysisSummary
+if (file.exists("S:/temp"))
+  setwd("s:/temp")
 knitr::opts_chunk$set(
   cache=FALSE,
   comment = "#>",
@@ -68,7 +68,7 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
-cdmVersion <- "4"
+cdmVersion <- "5"
 ```
 
 The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables,as well as the CDM version. We'll use these later to tell R where the data in CDM format live, where we want to write intermediate and result tables, and what version CDM is used. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
@@ -84,7 +84,7 @@ File VignetteOutcomes.sql
 IF OBJECT_ID('@resultsDatabaseSchema.outcomes', 'U') IS NOT NULL
   DROP TABLE @resultsDatabaseSchema.outcomes;
 
-SELECT ancestor_concept_id AS cohort_concept_id,
+SELECT ancestor_concept_id AS cohort_definition_id,
 	condition_start_date AS cohort_start_date,
 	condition_end_date AS cohort_end_date,
 	condition_occurrence.person_id AS subject_id
@@ -94,13 +94,13 @@ INNER JOIN @cdmDatabaseSchema.visit_occurrence
 	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
 INNER JOIN @cdmDatabaseSchema.concept_ancestor
 	ON condition_concept_id = descendant_concept_id
-WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099, 
-141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 
-316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 
+WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099,
+141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658,
+316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676,
 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
-	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203);
-
+	AND visit_occurrence.visit_concept_id IN (9201, 9203);
 ```
+Note for CDM V4 'visit_concept_id' should be 'place_of_service_concept_id', and 'cohort_definition_id' should be 'cohort_concept_id'.
 
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
@@ -362,6 +362,7 @@ We can now run the analyses against the hypotheses of interest using the `runCmA
                           exposureTable = "drug_era",
                           outcomeDatabaseSchema = resultsDatabaseSchema,
                           outcomeTable = "outcomes",
+                          cdmVersion = cdmVersion,
                           outputFolder = "./CohortMethodOutput",
                           cmAnalysisList = cmAnalysisList,
                           drugComparatorOutcomesList = drugComparatorOutcomesList,
@@ -393,9 +394,8 @@ ps <- readRDS(psFile)
 plotPs(ps)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/CohortMethodOutput/outcomeModelReference.rds")){
-  result <- readRDS("s:/temp/CohortMethodOutput/outcomeModelReference.rds")
-  setwd("s:/temp")
+if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")){
+  result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
   psFile <- result$psFile[result$targetId == 1118084 & 
                             result$comparatorId == 1124300 & 
                             result$outcomeId == 192671 &
@@ -413,7 +413,10 @@ analysisSum <- summarizeAnalyses(result)
 head(analysisSum)
 ```
 ```{r echo=FALSE,message=FALSE}
-head(analysisSum)
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  analysisSum <- readRDS("s:/temp/cohortMethodVignette2/analysisSummary.rds")
+  head(analysisSum)
+}
 ```
 
 This tells us, per drug-target(-indication)-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
@@ -423,9 +426,7 @@ This tells us, per drug-target(-indication)-outcome-analysis combination, the es
 Now that we have produced estimates for all outcomes including our negative controls, we can perform empirical calibration to estimate the bias of the various analyses included in our study. We will create the calibration effect plots for every analysis ID. In each plot, the blue dots represent our negative control outcomes, and the yellow diamond represents our health outcome of interest: GI bleed. An unbiased, well-calibrated analysis should have 95% of the negative controls between the dashed lines (ie. 95% should have p > .05).
 
 ```{r tidy=FALSE,eval=FALSE}
-install_github("ohdsi/EmpiricalCalibration")
-```
-```{r tidy=FALSE,warning=FALSE,message=FALSE}
+install.packages("EmpiricalCalibration")
 library(EmpiricalCalibration)
 
 # Analysis 1: No matching, simple outcome model
@@ -433,30 +434,79 @@ negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 19
 hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  library(EmpiricalCalibration)
+  negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 192671, ]
+  hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+}
+```
 
+```{r tidy=FALSE,eval=FALSE}
 # Analysis 2: Matching plus simple outcome model
 negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
+  hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+}
+```
 
+```{r tidy=FALSE,eval=FALSE}
 # Analysis 3: Stratification plus simple outcome model
 negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
+  hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+}
+```
 
+```{r tidy=FALSE,eval=FALSE}
 # Analysis 4: Matching plus stratified outcome model
 negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
+  hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+}
+```
 
+```{r tidy=FALSE,eval=FALSE}
 # Analysis 5: Matching plus full outcome model
 negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
+  hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+}
 ```
 
 # Acknowledgments
@@ -474,6 +524,3 @@ citation("Cyclops")
 ```
 
 This work is supported in part through the National Science Foundation grant IIS 1251151.
-
-
-

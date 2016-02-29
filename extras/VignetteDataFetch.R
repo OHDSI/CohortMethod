@@ -23,48 +23,61 @@ library(CohortMethod);
 setwd('s:/temp')
 options('fftempdir' = 's:/fftemp')
 
-
-# setwd('C:/Users/mschuemi/git/CohortMethod/data')
-
-pw <- NULL
 dbms <- "sql server"
 user <- NULL
+pw <- NULL
 server <- "RNDUSRDHIT07.jnj.com"
 cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- NULL
+extraSettings <- NULL
 
 dbms <- "postgresql"
 user <- "postgres"
+pw <- Sys.getenv("pwPostgres")
 server <- "localhost/ohdsi"
 cdmDatabaseSchema <- "vocabulary5"
 resultsDatabaseSchema <- "scratch"
 port <- NULL
+extraSettings <- NULL
 
-pw <- NULL
 dbms <- "pdw"
 user <- NULL
+pw <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcr_v5.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
+cdmVersion <- "5"
+extraSettings <- NULL
+
+dbms <- "redshift"
+user <- "mschuemi"
+pw <- Sys.getenv("pwRedShift")
+server <- "hicoe.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/truven_mdcr"
+cdmDatabaseSchema <- "cdm"
+resultsDatabaseSchema <- "scratch_mschuemi_22"
+port <- 5439
+cdmVersion <- "5"
+extraSettings <- "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 server = server,
                                                                 user = user,
                                                                 password = pw,
-                                                                port = port)
+                                                                port = port,
+                                                                extraSettings = extraSettings)
+connection <- DatabaseConnector::connect(connectionDetails)
+
 sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
                               packageName = "CohortMethod",
                               dbms = dbms,
                               cdmDatabaseSchema = cdmDatabaseSchema,
                               resultsDatabaseSchema = resultsDatabaseSchema)
-
-connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
 
 # Check number of subjects per cohort:
-sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_concept_id"
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
 sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 DatabaseConnector::querySql(connection, sql)
@@ -75,6 +88,8 @@ sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 nsaids <- DatabaseConnector::querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
+
+dbDisconnect(connection)
 
 covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                              useCovariateConditionOccurrence = TRUE,
@@ -118,6 +133,8 @@ covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                              deleteCovariatesSmallCount = 100)
 
 # Load data:
+
+debug(lowLevelQuerySql.ffdf)
 cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
                                           oracleTempSchema = resultsDatabaseSchema,
@@ -137,27 +154,32 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           outcomeTable = "coxibVsNonselVsGiBleed",
                                           excludeDrugsFromCovariates = FALSE,
                                           covariateSettings = covariateSettings,
-                                          cdmVersion = "4")
+                                          cdmVersion = cdmVersion)
+# Error executing SQL: Error in .jcall(res@jr, "V", "close"): java.sql.SQLException: [Amazon](500150) Error setting/closing connection: Not Connected.
+# After removing on.exit clearResults:
+# Error executing SQL: Error in .jcall(rp, "I", "fetch", as.integer(n), block): java.sql.SQLException: [Amazon][JDBC](10060) Connection has been closed.
+# table has 148734670 rows
 
-saveCohortMethodData(cohortMethodData, "s:/temp/vignetteCohortMethodData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
 
-# cohortMethodData <- loadCohortMethodData('s:/temp/vignetteCohortMethodData')
+# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
 
 ps <- createPs(cohortMethodData, outcomeId = 3, control = createControl(cvType = "auto",
                                                                         startingVariance = 0.01,
                                                                         noiseLevel = "quiet",
-                                                                        threads = 10))
-vignettePs <- ps
-save(vignettePs, file = "vignettePs.rda", compress = "xz")
+                                                                        tolerance  = 1e-07,
+                                                                        cvRepetitions = 10,
+                                                                        threads = 30))
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 
-# load('vignettePs.rda'); ps <- vignettePs;
+# ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
 
 strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-vignetteBalance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 3)
+balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 3)
 
-save(vignetteBalance, file = "vignetteBalance.rda", compress = "xz")
+saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
-# load('vignetteBalance.rda'); balance <- vignetteBalance
+# balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
 
 outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                 cohortMethodData = cohortMethodData,
@@ -167,8 +189,7 @@ outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                 useCovariates = FALSE,
                                 modelType = "cox",
                                 stratifiedCox = FALSE)
-vignetteOutcomeModel1 <- outcomeModel
-save(vignetteOutcomeModel1, file = "vignetteOutcomeModel1.rda", compress = "xz")
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
 
 outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                 cohortMethodData = cohortMethodData,
@@ -179,8 +200,7 @@ outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                 useCovariates = FALSE,
                                 modelType = "cox",
                                 stratifiedCox = TRUE)
-vignetteOutcomeModel2 <- outcomeModel
-save(vignetteOutcomeModel2, file = "vignetteOutcomeModel2.rda", compress = "xz")
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
 
 outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                 cohortMethodData = cohortMethodData,
@@ -190,18 +210,23 @@ outcomeModel <- fitOutcomeModel(outcomeId = 3,
                                 addExposureDaysToEnd = TRUE,
                                 useCovariates = TRUE,
                                 modelType = "cox",
-                                stratifiedCox = TRUE)
-vignetteOutcomeModel3 <- outcomeModel
-save(vignetteOutcomeModel3, file = "vignetteOutcomeModel3.rda", compress = "xz")
+                                stratifiedCox = TRUE,
+                                control = createControl(cvType = "auto",
+                                                        startingVariance = 0.1,
+                                                        selectorType = "byPid",
+                                                        cvRepetitions = 10,
+                                                        tolerance = 1e-07,
+                                                        threads = 30,
+                                                        noiseLevel = "quiet"))
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 
 
 
-# Fetch data for multiple analyses vignette:
+#### Fetch data for multiple analyses vignette ####
 library(CohortMethod)
 library(SqlRender)
 options('fftempdir' = 's:/fftemp')
 setwd("s:/temp")
-dataFolder <- "C:/Users/mschuemi/git/CohortMethod/data"
 
 
 pw <- NULL
@@ -213,20 +238,23 @@ cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 resultsDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
 port <- NULL
+cdmVersion <- "4"
 
 pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_ccae.dbo"
+cdmDatabaseSchema <- "cdm_truven_ccae_v5.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
+cdmVersion <- "5"
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 server = server,
                                                                 user = user,
                                                                 password = pw,
                                                                 port = port)
+connection <- DatabaseConnector::connect(connectionDetails)
 
 sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
                               packageName = "CohortMethod",
@@ -234,11 +262,11 @@ sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
                               cdmDatabaseSchema = cdmDatabaseSchema,
                               resultsDatabaseSchema = resultsDatabaseSchema)
 
-connection <- DatabaseConnector::connect(connectionDetails)
+
 DatabaseConnector::executeSql(connection, sql)
 
 # Check number of subjects per cohort:
-sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_concept_id"
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_definition_id"
 sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 DatabaseConnector::querySql(connection, sql)
@@ -354,7 +382,11 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
-createPsArgs <- createCreatePsArgs()  # Using only defaults
+createPsArgs <- createCreatePsArgs(control = createControl(cvType = "auto",
+                                                           startingVariance = 0.01,
+                                                           noiseLevel = "quiet",
+                                                           tolerance  = 5e-07,
+                                                           cvRepetitions = 1))
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
@@ -403,7 +435,13 @@ fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(riskWindowStart = 0,
                                                   addExposureDaysToEnd = TRUE,
                                                   useCovariates = TRUE,
                                                   modelType = "cox",
-                                                  stratifiedCox = TRUE)
+                                                  stratifiedCox = TRUE,
+                                                  control = createControl(cvType = "auto",
+                                                                          startingVariance = 0.1,
+                                                                          selectorType = "byPid",
+                                                                          cvRepetitions = 10,
+                                                                          tolerance = 1e-07,
+                                                                          noiseLevel = "quiet"))
 
 cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 description = "Matching plus full outcome model",
@@ -418,12 +456,13 @@ cmAnalysis5 <- createCmAnalysis(analysisId = 5,
 
 cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5)
 
-saveCmAnalysisList(cmAnalysisList, "s:/temp/cmAnalysisList.txt")
+saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodVignette2/cmAnalysisList.txt")
 saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
-                               "s:/temp/drugComparatorOutcomesList.txt")
+                               "s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt")
 
-# cmAnalysisList <- loadCmAnalysisList('s:/temp/cmAnalysisList.txt') drugComparatorOutcomesList <-
-# loadDrugComparatorOutcomesList('s:/temp/drugComparatorOutcomesList.txt')
+# cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.txt')
+
+# drugComparatorOutcomesList <- loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
@@ -431,16 +470,20 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
-                        outputFolder = "./CohortMethodOutput",
+                        outputFolder = "s:/temp/cohortMethodVignette2",
+                        cdmVersion = cdmVersion,
                         cmAnalysisList = cmAnalysisList,
                         drugComparatorOutcomesList = drugComparatorOutcomesList,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
-                        psCvThreads = 10,
-                        computeCovarBalThreads = 2,
-                        trimMatchStratifyThreads = 10,
+                        psCvThreads = 30,
+                        computeCovarBalThreads = 3,
+                        trimMatchStratifyThreads = 4,
                         fitOutcomeModelThreads = 4,
-                        outcomeCvThreads = 10)
+                        outcomeCvThreads = 30)
+
+analysisSum <- summarizeAnalyses(result)
+saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 # cleanup:
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
 sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
@@ -449,18 +492,17 @@ connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
 RJDBC::dbDisconnect(connection)
 
-#result <- readRDS("s:/temp/CohortMethodOutput/outcomeModelReference.rds")
+#result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
 
 #cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
 #summary(cohortMethodData)
 analysisSummary <- summarizeAnalyses(result)
-vignetteAnalysisSummary <- analysisSummary
-save(vignetteAnalysisSummary, file = file.path(dataFolder,"vignetteAnalysisSummary.rda"), compress = "xz")
+saveRDS(analysisSummary, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 
-# library(EmpiricalCalibration)
+library(EmpiricalCalibration)
 for (i in 1:5){
   negControls <- analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId != 192671, ]
   hoi <-  analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId == 192671, ]
-  fileName <- paste("s:/temp/CaliPlot_",i,".png",sep="")
+  fileName <- paste("s:/temp/cohortMethodVignette2/CaliPlot_",i,".png",sep="")
   plotCalibrationEffect(negControls$logRr, negControls$seLogRr, hoi$logRr, hoi$seLogRr, fileName = fileName)
 }

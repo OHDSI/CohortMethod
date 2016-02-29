@@ -208,6 +208,10 @@ plotPs <- function(data,
     if (!("propensityScore" %in% colnames(unfilteredData)))
       stop("Missing column propensityScore in unfilteredData")
   }
+  if (type != "density" && type != "histogram")
+    stop(paste("Unknown type '", type, "', please choose either 'density' or 'histogram'"), sep = "")
+  if (scale != "propensity" && scale != "preference")
+    stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"), sep = "")
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -461,6 +465,9 @@ matchOnPs <- function(data,
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data)))
     stop("Missing column propensityScore in data")
+  if (caliperScale != "standardized" && caliperScale != "propensity score")
+    stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
+
 
   data <- data[order(data$propensityScore), ]
   if (caliper <= 0) {
@@ -560,6 +567,9 @@ matchOnPsAndCovariates <- function(data,
                                    maxRatio = 1,
                                    cohortMethodData,
                                    covariateIds) {
+  if (caliperScale != "standardized" && caliperScale != "propensity score")
+    stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
+
   data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
                                                                     covariateIds,

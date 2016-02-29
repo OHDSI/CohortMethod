@@ -62,34 +62,34 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
-cdmVersion <- "4"
+cdmVersion <- "5"
 ```
 
 The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables,as well as the CDM version. We'll use these later to tell R where the data in CDM format live, where we want to write intermediate and result tables, and what version CDM is used. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. One way to do this is by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. For CDM v4, this means it should have the fields `cohort_concept_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`. For CDM v4, the `cohort_concept_id` field must be called `cohort_definition_id`. 
+We need to define the exposures and outcomes for our study. One way to do this is by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. For CDM v5+, this means it should have the fields `cohort_definition_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`. For CDM v4, the `cohort_definition_id` field must be called `cohort_concept_id`. 
 
 For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
 ```sql
 /***********************************
-File coxibVsNonselVsGiBleed.sql 
+File coxibVsNonselVsGiBleed.sql
 ***********************************/
 
 IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
   DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-  cohort_concept_id INT,
+  cohort_definition_id INT,
   cohort_start_date DATE,
 	cohort_end_date DATE,
 	subject_id BIGINT
 	);
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_concept_id,
+	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -99,10 +99,10 @@ SELECT 1, -- Exposure
 	drug_era_end_date,
 	person_id
 FROM @cdmDatabaseSchema.drug_era
-WHERE drug_concept_id = 1118084;-- celecoxib	
+WHERE drug_concept_id = 1118084;-- celecoxib
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_concept_id,
+	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -115,7 +115,7 @@ FROM @cdmDatabaseSchema.drug_era
 WHERE drug_concept_id = 1124300; --diclofenac
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_concept_id,
+	cohort_definition_id,
 	cohort_start_date,
 	cohort_end_date,
 	subject_id
@@ -132,8 +132,9 @@ WHERE condition_concept_id IN (
 		FROM @cdmDatabaseSchema.concept_ancestor
 		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
 		)
-	AND visit_occurrence.place_of_service_concept_id IN (9201, 9203); 
+	AND visit_occurrence.visit_concept_id IN (9201, 9203);
 ```
+Note on CDM V4 'visit_concept_id' should be 'place_of_service_concept_id', and 'cohort_definition_id' should be 'cohort_concept_id'.
 
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
@@ -154,16 +155,16 @@ In this code, we first read the SQL from the file into memory. In the next line,
 If all went well, we now have a table with the events of interest. We can see how many events per type:
 
 ```{r tidy=FALSE,eval=FALSE}
-sql <- paste("SELECT cohort_concept_id, COUNT(*) AS count",
+sql <- paste("SELECT cohort_definition_id, COUNT(*) AS count",
              "FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed",
-             "GROUP BY cohort_concept_id")
+             "GROUP BY cohort_definition_id")
 sql <- renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
 querySql(connection, sql)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,3),count=c(128785,417027,419141))
+data.frame(cohort_concept_id = c(1,2,3),count=c(129173,420205,422274))
 ```
 
 ## Extracting the data from the server
@@ -248,12 +249,12 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
 cohortMethodData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/vignettecohortMethodData")){
-  cohortMethodData <- loadCohortMethodData("s:/temp/vignetteCohortMethodData")
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
+  cohortMethodData <- loadCohortMethodData("s:/temp/cohortMethodVignette/cohortMethodData")
 } 
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
   cohortMethodData
 }
 ```
@@ -271,7 +272,7 @@ We can use the generic `summary()` function to view some more information of the
 summary(cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
   summary(cohortMethodData)
 }
 ```
@@ -298,8 +299,9 @@ We can fit a propensity model using the covariates constructed by the `getDbcoho
 ps <- createPs(cohortMethodData, outcomeId = 3)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-data(vignettePs)
-ps <- vignettePs
+if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+  ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
+}
 ```
 
 The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. Note that we have to tell `createPs()` what the `outcomeId` is for which we will use the model so it can remove subjects who had the outcome prior to the index date before fitting the model. 
@@ -310,14 +312,24 @@ To fit the propensity model, `Cyclops` needs to know the hyperparameter value wh
 
 We can compute the area under the receiver-operator curve (AUC) for the propensity score model:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 computePsAuc(ps)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+  computePsAuc(ps)
+}
 ```
 
 We can also plot the propensity score distribution, although we prefer the preference score distribution:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 plotPs(ps, scale = "preference")
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+  plotPs(ps, scale = "preference")
+}
 ```
 
 It is also possible to inspect the propensity model itself by showing the covariates that have non-zero coefficients:
@@ -327,7 +339,7 @@ propensityModel <- getPsModel(ps, cohortMethodData)
 head(propensityModel)  
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
   propensityModel <- getPsModel(ps, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
@@ -345,23 +357,41 @@ One advantage of using the regularization when fitting the propensity model is t
 
 We can use the propensity scores to trim, stratify, or match our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 psTrimmed <- trimByPsToEquipoise(ps)  
 plotPs(psTrimmed, ps, scale = "preference")
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+  psTrimmed <- trimByPsToEquipoise(ps)  
+  plotPs(psTrimmed, ps, scale = "preference")
+}
 ```
 
 Instead (or additionally), we could stratify the population based on the propensity score:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 psStratified <- stratifyByPs(ps, numberOfStrata = 5)  
 plotPs(psStratified, ps, scale = "preference")
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+  psStratified <- stratifyByPs(ps, numberOfStrata = 5)  
+  plotPs(psStratified, ps, scale = "preference")
+}
 ```
 
 We can also match subjects based on propensity scores. In this example, we're using one-to-one matching:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   plotPs(strata, ps)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+  strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  plotPs(strata, ps)
+}
 ```
 
 Note that for both stratification and matching it is possible to specify additional matching criteria such as age and sex using the `stratifyByPsAndCovariates()` and `matchOnPsAndCovariates()` functions, respectively.
@@ -374,12 +404,25 @@ To evaluate whether our use of the propensity score is indeed making the two coh
 balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 3)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-data(vignetteBalance)
-balance <- vignetteBalance
+if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+  balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
+}
 ```
-```{r tidy=TRUE,eval=TRUE,warning=FALSE,fig.width=8,fig.height=5}
+```{r tidy=TRUE,eval=FALSE}
 plotCovariateBalanceScatterPlot(balance)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
+if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+  plotCovariateBalanceScatterPlot(balance)
+}
+```
+```{r tidy=TRUE,eval=FALSE}
 plotCovariateBalanceOfTopVariables(balance)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
+if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+  plotCovariateBalanceOfTopVariables(balance)
+}
 ```
 
 # Outcome models
@@ -403,9 +446,10 @@ outcomeModel <- fitOutcomeModel(outcomeId = 3,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-data(vignetteOutcomeModel1)
-outcomeModel <- vignetteOutcomeModel1
-outcomeModel
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel1.rds")) {
+  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel1.rds")
+  outcomeModel
+}
 ```
 
 But of course we want to make use of the matching done on the propensity score:
@@ -423,9 +467,10 @@ outcomeModel <- fitOutcomeModel(outcomeId = 3,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-data(vignetteOutcomeModel2)
-outcomeModel <- vignetteOutcomeModel2
-outcomeModel
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2.rds")) {
+  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel2.rds")
+  outcomeModel
+}
 ```
 
 Note that we define the sub-population to be only those in the `strata` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
@@ -445,18 +490,40 @@ outcomeModel <- fitOutcomeModel(outcomeId = 3,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-data(vignetteOutcomeModel3)
-outcomeModel <- vignetteOutcomeModel3
-outcomeModel
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel3.rds")
+  outcomeModel
+}
 ```
 
 ## Inpecting the outcome model
 We can inspect more details of the outcome model:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 summary(outcomeModel)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+  summary(outcomeModel)
+}
+```
+
+```{r tidy=TRUE,eval=FALSE}
 coef(outcomeModel)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+  coef(outcomeModel)
+}
+```
+
+```{r tidy=TRUE,eval=FALSE}
 confint(outcomeModel)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+  confint(outcomeModel)
+}
 ```
 
 We can also see the covariates that ended up in the outcome model:
@@ -466,8 +533,7 @@ fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
 head(fullOutcomeModel)
 ```
 ```{r echo=FALSE,message=FALSE}
-```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/vignettecohortMethodData")){
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")){
   fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
   head(fullOutcomeModel)  
@@ -478,16 +544,26 @@ if (file.exists("s:/temp/vignettecohortMethodData")){
 
 We can create the Kaplan-Meier plot:
 
-```{r tidy=TRUE,eval=TRUE}
+```{r tidy=TRUE,eval=FALSE}
 plotKaplanMeier(outcomeModel, includeZero = FALSE)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+  plotKaplanMeier(outcomeModel, includeZero = FALSE)
+}
 ```
 
 ## Attrition diagram
 
 We can also investigate how we got to the study population by drawing the attrition diagram:
 
-```{r tidy=TRUE,eval=TRUE,fig.width=5,fig.height=6}
+```{r tidy=TRUE,eval=FALSE}
 drawAttritionDiagram(outcomeModel)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=5,fig.height=6}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+  drawAttritionDiagram(outcomeModel)
+}
 ```
 
 # Acknowledgments
