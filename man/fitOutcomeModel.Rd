@@ -4,11 +4,12 @@
 \alias{fitOutcomeModel}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-fitOutcomeModel(outcomeId, cohortMethodData, subPopulation = NULL,
-  stratifiedCox = TRUE, riskWindowStart = 0, riskWindowEnd = 9999,
-  addExposureDaysToEnd = FALSE, useCovariates = TRUE, fitModel = TRUE,
-  modelType = "cox", prior = createPrior("laplace", useCrossValidation =
-  TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
+fitOutcomeModel(outcomeId, cohortMethodData, excludePriorOutcome = TRUE,
+  subPopulation = NULL, stratifiedCox = TRUE, riskWindowStart = 0,
+  riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
+  useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
+  prior = createPrior("laplace", useCrossValidation = TRUE),
+  control = createControl(cvType = "auto", startingVariance = 0.1,
   selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
@@ -17,6 +18,8 @@ outcome will be removed prior to creating the outcome model.}
 
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
+
+\item{excludePriorOutcome}{Remove people that have the outcome prior to the risk window start date?}
 
 \item{subPopulation}{A data frame specifying the (matched and/or trimmed) subpopulation to
 be used in the study, as well as their strata (for conditional

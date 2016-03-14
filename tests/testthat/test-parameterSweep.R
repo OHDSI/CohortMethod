@@ -104,12 +104,16 @@ test_that("Propensity score functions", {
 
 test_that("Balance functions", {
   ps <- createPs(cohortMethodData,
+                 excludePriorOutcome = FALSE,
                  outcomeId = 194133,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 194133)
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 194133, excludePriorOutcome = FALSE)
+  expect_is(balance, "data.frame")
+
+  balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 194133, excludePriorOutcome = TRUE)
   expect_is(balance, "data.frame")
 
   p <- plotCovariateBalanceScatterPlot(balance)
@@ -122,6 +126,7 @@ test_that("Balance functions", {
 test_that("Outcome functions", {
   ps <- createPs(cohortMethodData,
                  outcomeId = 194133,
+                 excludePriorOutcome = FALSE,
                  prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
@@ -129,6 +134,7 @@ test_that("Outcome functions", {
   # Test if people with outcomes after index date but before risk window start are removed:
   outcomeModel <- fitOutcomeModel(194133,
                                   cohortMethodData,
+                                  TRUE,
                                   strata,
                                   stratifiedCox = stratifiedCox,
                                   riskWindowStart = 100,
@@ -148,51 +154,58 @@ test_that("Outcome functions", {
     for (stratified in c(TRUE, FALSE)) {
       for (useCovariates in c(TRUE, FALSE)) {
         for (addExposureDaysToEnd in c(TRUE, FALSE)) {
-          writeLines(paste("type:",
-                           type,
-                           ",stratified:",
-                           stratified,
-                           ",useCovariates:",
-                           useCovariates,
-                           ",addExposureDaysToEnd:",
-                           addExposureDaysToEnd))
-          stratifiedCox <- NULL
-          if (type == "logistic")
-          if (stratified) {
-            modelType <- "clr"
-          } else {
-            modelType <- "lr"
+          for (excludePriorOutcome in c(TRUE, FALSE)) {
+            writeLines(paste("type:",
+                             type,
+                             ",stratified:",
+                             stratified,
+                             ",useCovariates:",
+                             useCovariates,
+                             ",addExposureDaysToEnd:",
+                             addExposureDaysToEnd))
+            stratifiedCox <- NULL
+            if (type == "logistic")
+              if (stratified) {
+                modelType <- "clr"
+              } else {
+                modelType <- "lr"
+              }
+            if (type == "poisson")
+              if (stratified) {
+                modelType <- "cpr"
+              } else {
+                modelType <- "pr"
+              }
+            if (type == "survival")
+              if (stratified) {
+                modelType <- "cox"
+                stratifiedCox <- TRUE
+              } else {
+                modelType <- "cox"
+                stratifiedCox <- FALSE
+              }
+            outcomeModel <- fitOutcomeModel(194133,
+                                            cohortMethodData,
+                                            excludePriorOutcome,
+                                            strata,
+                                            stratifiedCox = stratifiedCox,
+                                            riskWindowStart = 0,
+                                            riskWindowEnd = 365,
+                                            addExposureDaysToEnd = addExposureDaysToEnd,
+                                            useCovariates = useCovariates,
+                                            modelType = modelType,
+                                            prior = createPrior("laplace", 0.1))
+            expect_is(outcomeModel, "outcomeModel")
+            omSum <- summary(outcomeModel)
+            if (!excludePriorOutcome) { # Catching unrealistic situation where
+              # people with prior outcome were not excluded during matching, but
+              # were excluded in the outcome model fitting
+              expect_equal(omSum$counts[1,1], omSum$counts[1,2])
+            }
+            logRrs <- c(logRrs, coef(outcomeModel))
+            # params <-
+            # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
           }
-          if (type == "poisson")
-          if (stratified) {
-            modelType <- "cpr"
-          } else {
-            modelType <- "pr"
-          }
-          if (type == "survival")
-          if (stratified) {
-            modelType <- "cox"
-            stratifiedCox <- TRUE
-          } else {
-            modelType <- "cox"
-            stratifiedCox <- FALSE
-          }
-          outcomeModel <- fitOutcomeModel(194133,
-                                          cohortMethodData,
-                                          strata,
-                                          stratifiedCox = stratifiedCox,
-                                          riskWindowStart = 0,
-                                          riskWindowEnd = 365,
-                                          addExposureDaysToEnd = addExposureDaysToEnd,
-                                          useCovariates = useCovariates,
-                                          modelType = modelType,
-                                          prior = createPrior("laplace", 0.1))
-          expect_is(outcomeModel, "outcomeModel")
-          omSum <- summary(outcomeModel)
-          expect_equal(omSum$counts[1,1], omSum$counts[1,2])
-          logRrs <- c(logRrs, coef(outcomeModel))
-          # params <-
-          # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
         }
       }
     }
@@ -212,6 +225,7 @@ test_that("Functions on outcome model", {
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   outcomeModel <- fitOutcomeModel(194133,
                                   cohortMethodData,
+                                  TRUE,
                                   strata,
                                   riskWindowStart = 0,
                                   riskWindowEnd = 365,

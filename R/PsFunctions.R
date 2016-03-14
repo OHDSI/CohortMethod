@@ -28,6 +28,7 @@
 #'
 #' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
 #'                              \code{getDbCohortMethodData}.
+#' @param excludePriorOutcome   Remove people that have the outcome prior to the index date?
 #' @param outcomeId             The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
@@ -51,6 +52,7 @@
 #'
 #' @export
 createPs <- function(cohortMethodData,
+                     excludePriorOutcome = TRUE,
                      outcomeId = NULL,
                      excludeCovariateIds = NULL,
                      stopOnHighCorrelation = TRUE,
@@ -59,7 +61,7 @@ createPs <- function(cohortMethodData,
                                              cvType = "auto",
                                              startingVariance = 0.1)) {
   start <- Sys.time()
-  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
+  if (!excludePriorOutcome || is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
     cohortSubset <- cohortMethodData$cohorts
     if (is.null(excludeCovariateIds)) {
       covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
@@ -111,6 +113,7 @@ createPs <- function(cohortMethodData,
   data <- merge(data, ps, by = "rowId")
   attr(data, "coefficients") <- coef(cyclopsFit)
   attr(data, "priorVariance") <- cyclopsFit$variance[1]
+  attr(data, "excludePriorOutcome") <- excludePriorOutcome
   delta <- Sys.time() - start
   writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
   return(data)
@@ -855,6 +858,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'                            and/or trimming.
 #' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
+#' @param excludePriorOutcome Remove people that have the outcome prior to the index date?
 #' @param outcomeId           The concept ID of the outcome. Persons marked for removal for the outcome
 #'                            will be removed when computing the balance before matching/trimming.
 #'
@@ -872,9 +876,12 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 #'
 #' @export
-computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeId = NULL) {
+computeCovariateBalance <- function(restrictedCohorts,
+                                    cohortMethodData,
+                                    excludePriorOutcome = TRUE,
+                                    outcomeId = NULL) {
   start <- Sys.time()
-  if (is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
+  if (!excludePriorOutcome || is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
                                                                                  outcomeId)) {
     cohorts <- cohortMethodData$cohorts
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)

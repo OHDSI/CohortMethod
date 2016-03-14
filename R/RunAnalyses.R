@@ -429,7 +429,7 @@ runCmAnalyses <- function(connectionDetails,
         outcomeId <- params$idToFile$outcomeId[i]
         psFile <- params$idToFile$psFile[i]
         if (!file.exists(psFile)) {
-          if (ffbase::any.ff(cohortMethodData$exclude$outcomeId == outcomeId)) {
+          if (params$args$excludePriorOutcome && ffbase::any.ff(cohortMethodData$exclude$outcomeId == outcomeId)) {
             filteredPs <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId ==
                                                                                          outcomeId])), ]
           } else {

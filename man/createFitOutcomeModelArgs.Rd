@@ -4,14 +4,17 @@
 \alias{createFitOutcomeModelArgs}
 \title{Create a parameter object for the function fitOutcomeModel}
 \usage{
-createFitOutcomeModelArgs(stratifiedCox = TRUE, riskWindowStart = 0,
-  riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
+createFitOutcomeModelArgs(excludePriorOutcome = TRUE, stratifiedCox = TRUE,
+  riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
   useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
   prior = createPrior("laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", startingVariance = 0.1,
   selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
+\item{excludePriorOutcome}{Remove people that have the outcome prior to the risk window start
+date?}
+
 \item{stratifiedCox}{Specifically for Cox regressions: specify whether to use the
 stratadefined in subPopulation in the analysis. For Poissonregression
 and logistic regression, this is implied in 'clr' and'cpr'.}

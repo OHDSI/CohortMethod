@@ -235,6 +235,7 @@ createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, cov
 
 createDataForModelFit <- function(outcomeId,
                                   cohortMethodData,
+                                  excludePriorOutcome,
                                   subPopulation,
                                   useStrata,
                                   riskWindowStart = 0,
@@ -265,7 +266,7 @@ createDataForModelFit <- function(outcomeId,
     } else {
       t <- ffbase::ffwhich(t, t == TRUE)
       outcomes <- ff::as.ram(cohortMethodData$outcomes[t, ])
-      if (!is.null(cohortMethodData$exclude)){
+      if (excludePriorOutcome && !is.null(cohortMethodData$exclude)){
         t <- cohortMethodData$exclude$outcomeId == outcomeId
         if (ffbase::any.ff(t)) {
           t <- ffbase::ffwhich(t, t == TRUE)
@@ -277,7 +278,7 @@ createDataForModelFit <- function(outcomeId,
     }
   }
   # Remove people with outcomes between index date and risk window start:
-  if (riskWindowStart > 0) {
+  if (excludePriorOutcome && riskWindowStart > 0) {
     excludeRowIds <- outcomes$rowId[outcomes$timeToEvent < riskWindowStart]
     outcomes <- outcomes[!(outcomes$rowId %in% excludeRowIds),]
     cohorts <- cohorts[!(cohorts$rowId %in% excludeRowIds),]
@@ -314,6 +315,7 @@ createDataForModelFit <- function(outcomeId,
 #'                               outcome will be removed prior to creating the outcome model.
 #' @param cohortMethodData       An object of type \code{cohortMethodData} as generated using
 #'                               \code{getDbCohortMethodData}.
+#' @param excludePriorOutcome    Remove people that have the outcome prior to the risk window start date?
 #' @param subPopulation          A data frame specifying the (matched and/or trimmed) subpopulation to
 #'                               be used in the study, as well as their strata (for conditional
 #'                               models). This data frame should have at least a \code{RowId}, and a
@@ -354,6 +356,7 @@ createDataForModelFit <- function(outcomeId,
 #' @export
 fitOutcomeModel <- function(outcomeId,
                             cohortMethodData,
+                            excludePriorOutcome = TRUE,
                             subPopulation = NULL,
                             stratifiedCox = TRUE,
                             riskWindowStart = 0,
@@ -369,6 +372,7 @@ fitOutcomeModel <- function(outcomeId,
                                                     noiseLevel = "quiet")) {
   dataObject <- createDataForModelFit(outcomeId,
                                       cohortMethodData,
+                                      excludePriorOutcome,
                                       subPopulation,
                                       stratifiedCox,
                                       riskWindowStart,
@@ -436,7 +440,7 @@ fitOutcomeModel <- function(outcomeId,
   }
   counts <- cohortMethodData$metaData$counts
 
-  if (!is.null(outcomeId) & !is.null(cohortMethodData$exclude)) {
+  if (excludePriorOutcome && !is.null(outcomeId) && !is.null(cohortMethodData$exclude)) {
     t <- cohortMethodData$exclude$outcomeId == outcomeId
     t <- ffbase::ffwhich(t, t == TRUE)
     if (is.null(t)) {
@@ -463,6 +467,7 @@ fitOutcomeModel <- function(outcomeId,
                        priorVariance = priorVariance,
                        stratified = dataObject$useStrata,
                        usedCovariates = dataObject$useCovariates,
+                       excludePriorOutcome = excludePriorOutcome,
                        treatmentEstimate = treatmentEstimate,
                        data = dataObject$data,
                        counts = counts,
