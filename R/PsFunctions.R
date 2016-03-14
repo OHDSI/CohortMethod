@@ -116,6 +116,77 @@ createPs <- function(cohortMethodData,
   return(data)
 }
 
+#' @export
+createPsNew <- function(cohortMethodData,
+                        outcomeId = NULL,
+                        excludeCovariateIds = NULL,
+                        stopOnHighCorrelation = TRUE,
+                        prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+                        control = createControl(noiseLevel = "silent",
+                                                cvType = "auto",
+                                                startingVariance = 0.1)) {
+  start <- Sys.time()
+  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
+    cohortSubset <- cohortMethodData$cohorts
+    if (is.null(excludeCovariateIds)) {
+      covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
+    } else {
+      excludeCovariateIds <- c(excludeCovariateIds, 1)
+      t <- in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
+      covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+    }
+  } else {
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
+    t <- in.ff(cohortMethodData$cohorts$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
+    t <- in.ff(cohortMethodData$covariates$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    if (is.null(excludeCovariateIds)) {
+      excludeCovariateIds <- c(1)
+    } else {
+      excludeCovariateIds <- c(excludeCovariateIds, 1)
+    }
+    t <- t | in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
+    covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+  }
+  colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
+  cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
+  if (stopOnHighCorrelation) {
+    suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
+    suspect <- suspect[!is.na(suspect)]
+    if (length(suspect) != 0) {
+      covariateIds <- as.numeric(names(suspect))
+      t <-in.ff(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds))
+      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(t, t == TRUE),])
+      writeLines("High correlation between covariate(s) and treatment detected:")
+      print(ref)
+      stop("High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?")
+    }
+  }
+  ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
+  fitCyclopsModel(cyclopsData, prior = createPrior("normal", variance = prior$variance, exclude = c(0)), control = control)
+  cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
+  cfs <- coef(cyclopsFit)
+  if (all(cfs[2:length(cfs)] == 0)){
+    warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+  }
+  pred <- predict(cyclopsFit)
+
+  colnames(ps)[colnames(ps) == "y"] <- "treatment"
+  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred, "names")))
+  data <- merge(data, ps, by = "rowId")
+  attr(data, "coefficients") <- coef(cyclopsFit)
+  attr(data, "priorVariance") <- cyclopsFit$variance[1]
+  delta <- Sys.time() - start
+  writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
+  return(data)
+}
+
+
+
+
 #' Get the propensity model
 #'
 #' @description
