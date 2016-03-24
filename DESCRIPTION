@@ -4,19 +4,20 @@ Title: New-user cohort method with large scale propensity and outcome models
 Version: 1.1.3
 Date: 2015-11-18
 Author: Martijn J. Schuemie [aut, cre],
-  Marc A. Suchard [aut],
-  Patrick B. Ryan [aut]
+    Marc A. Suchard [aut],
+    Patrick B. Ryan [aut]
 Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
-Description: CohortMethod is an R package for performing new-user cohort studies in an
-  observational database in the OMOP Common Data Model. It extracts the necessary data
-  from a database in OMOP Common Data Model format, and uses a large set of covariates
-  for both the propensity and outcome model, including for example all drugs, diagnoses,
-  procedures, as well as age, comorbidity indexes, etc. Large scale regularized regression
-  is used to fit the propensity and outcome models. Functions are included for trimming,
-  stratifying and matching on propensity scores, as well as diagnostic functions, such as
-  propensity score distribution plots and plots showing covariate balance before and after
-  matching and/or trimming. Supported outcome models are (conditional) logistic regression,
-  (conditional) Poisson regression, and (stratified) Cox regression.
+Description: CohortMethod is an R package for performing new-user cohort studies
+    in an observational database in the OMOP Common Data Model. It extracts the
+    necessary data from a database in OMOP Common Data Model format, and uses a
+    large set of covariates for both the propensity and outcome model, including for
+    example all drugs, diagnoses, procedures, as well as age, comorbidity indexes,
+    etc. Large scale regularized regression is used to fit the propensity and
+    outcome models. Functions are included for trimming, stratifying and matching
+    on propensity scores, as well as diagnostic functions, such as propensity score
+    distribution plots and plots showing covariate balance before and after matching
+    and/or trimming. Supported outcome models are (conditional) logistic regression,
+    (conditional) Poisson regression, and (stratified) Cox regression.
 License: Apache License 2.0
 VignetteBuilder: knitr
 Depends:
@@ -45,3 +46,4 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
+RoxygenNote: 5.0.1

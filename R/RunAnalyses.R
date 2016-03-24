@@ -1,6 +1,6 @@
 # @file RunAnalyses.R
 #
-# Copyright 2015 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -429,7 +429,7 @@ runCmAnalyses <- function(connectionDetails,
         outcomeId <- params$idToFile$outcomeId[i]
         psFile <- params$idToFile$psFile[i]
         if (!file.exists(psFile)) {
-          if (ffbase::any.ff(cohortMethodData$exclude$outcomeId == outcomeId)) {
+          if (params$args$excludePriorOutcome && ffbase::any.ff(cohortMethodData$exclude$outcomeId == outcomeId)) {
             filteredPs <- ps[!(ps$rowId %in% ff::as.ram(cohortMethodData$exclude$rowId[cohortMethodData$exclude$outcomeId ==
                                                                                          outcomeId])), ]
           } else {
@@ -735,6 +735,8 @@ summarizeAnalyses <- function(outcomeReference) {
   result$p <- 1
   result$treated <- 0
   result$comparator <- 0
+  result$treatedDays <- NA
+  result$comparatorDays <- NA
   result$eventsTreated <- 0
   result$eventsComparator <- 0
   result$logRr <- 0
@@ -755,6 +757,10 @@ summarizeAnalyses <- function(outcomeReference) {
     }
     result$treated[i] <- sum(outcomeModel$data$treatment == 1)
     result$comparator[i] <- sum(outcomeModel$data$treatment == 0)
+    if (outcomeModel$modelType != "clr" && outcomeModel$modelType != "lr") {
+      result$treatedDays[i] <- sum(outcomeModel$data$time[outcomeModel$data$treatment == 1])
+      result$comparatorDays[i] <- sum(outcomeModel$data$time[outcomeModel$data$treatment == 0])
+    }
     result$eventsTreated[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 1])
     result$eventsComparator[i] <- sum(outcomeModel$data$y[outcomeModel$data$treatment == 0])
     result$logRr[i] <- if (is.null(coef(outcomeModel)))

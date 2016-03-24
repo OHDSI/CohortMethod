@@ -1,6 +1,6 @@
 # @file PsFunctions.R
 #
-# Copyright 2015 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -28,6 +28,7 @@
 #'
 #' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
 #'                              \code{getDbCohortMethodData}.
+#' @param excludePriorOutcome   Remove people that have the outcome prior to the index date?
 #' @param outcomeId             The concept ID of the outcome. Persons marked for removal for the
 #'                              outcome will be removed prior to creating the propensity score model.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
@@ -51,6 +52,7 @@
 #'
 #' @export
 createPs <- function(cohortMethodData,
+                     excludePriorOutcome = TRUE,
                      outcomeId = NULL,
                      excludeCovariateIds = NULL,
                      stopOnHighCorrelation = TRUE,
@@ -59,7 +61,7 @@ createPs <- function(cohortMethodData,
                                              cvType = "auto",
                                              startingVariance = 0.1)) {
   start <- Sys.time()
-  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
+  if (!excludePriorOutcome || is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
     cohortSubset <- cohortMethodData$cohorts
     if (is.null(excludeCovariateIds)) {
       covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
@@ -111,10 +113,82 @@ createPs <- function(cohortMethodData,
   data <- merge(data, ps, by = "rowId")
   attr(data, "coefficients") <- coef(cyclopsFit)
   attr(data, "priorVariance") <- cyclopsFit$variance[1]
+  attr(data, "excludePriorOutcome") <- excludePriorOutcome
   delta <- Sys.time() - start
   writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
   return(data)
 }
+
+#' @export
+createPsNew <- function(cohortMethodData,
+                        outcomeId = NULL,
+                        excludeCovariateIds = NULL,
+                        stopOnHighCorrelation = TRUE,
+                        prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+                        control = createControl(noiseLevel = "silent",
+                                                cvType = "auto",
+                                                startingVariance = 0.1)) {
+  start <- Sys.time()
+  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
+    cohortSubset <- cohortMethodData$cohorts
+    if (is.null(excludeCovariateIds)) {
+      covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
+    } else {
+      excludeCovariateIds <- c(excludeCovariateIds, 1)
+      t <- in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
+      covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+    }
+  } else {
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
+    t <- in.ff(cohortMethodData$cohorts$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
+    t <- cohortMethodData$exclude$outcomeId == outcomeId
+    t <- in.ff(cohortMethodData$covariates$rowId,
+               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
+    if (is.null(excludeCovariateIds)) {
+      excludeCovariateIds <- c(1)
+    } else {
+      excludeCovariateIds <- c(excludeCovariateIds, 1)
+    }
+    t <- t | in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
+    covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+  }
+  colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
+  cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
+  if (stopOnHighCorrelation) {
+    suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
+    suspect <- suspect[!is.na(suspect)]
+    if (length(suspect) != 0) {
+      covariateIds <- as.numeric(names(suspect))
+      t <-in.ff(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds))
+      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(t, t == TRUE),])
+      writeLines("High correlation between covariate(s) and treatment detected:")
+      print(ref)
+      stop("High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?")
+    }
+  }
+  ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
+  fitCyclopsModel(cyclopsData, prior = createPrior("normal", variance = prior$variance, exclude = c(0)), control = control)
+  cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
+  cfs <- coef(cyclopsFit)
+  if (all(cfs[2:length(cfs)] == 0)){
+    warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+  }
+  pred <- predict(cyclopsFit)
+
+  colnames(ps)[colnames(ps) == "y"] <- "treatment"
+  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred, "names")))
+  data <- merge(data, ps, by = "rowId")
+  attr(data, "coefficients") <- coef(cyclopsFit)
+  attr(data, "priorVariance") <- cyclopsFit$variance[1]
+  delta <- Sys.time() - start
+  writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
+  return(data)
+}
+
+
+
 
 #' Get the propensity model
 #'
@@ -208,6 +282,10 @@ plotPs <- function(data,
     if (!("propensityScore" %in% colnames(unfilteredData)))
       stop("Missing column propensityScore in unfilteredData")
   }
+  if (type != "density" && type != "histogram")
+    stop(paste("Unknown type '", type, "', please choose either 'density' or 'histogram'"), sep = "")
+  if (scale != "propensity" && scale != "preference")
+    stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"), sep = "")
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -242,7 +320,7 @@ plotPs <- function(data,
       } else {
         strata$SCORE <- strata$propensityScore
       }
-      plot <- plot + ggplot2::geom_vline(x = strata$SCORE, color = rgb(0, 0, 0, alpha = 0.5))
+      plot <- plot + ggplot2::geom_vline(xintercept = strata$SCORE, color = rgb(0, 0, 0, alpha = 0.5))
     }
   } else {
     plot <- ggplot2::ggplot(data,
@@ -461,6 +539,9 @@ matchOnPs <- function(data,
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data)))
     stop("Missing column propensityScore in data")
+  if (caliperScale != "standardized" && caliperScale != "propensity score")
+    stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
+
 
   data <- data[order(data$propensityScore), ]
   if (caliper <= 0) {
@@ -560,6 +641,9 @@ matchOnPsAndCovariates <- function(data,
                                    maxRatio = 1,
                                    cohortMethodData,
                                    covariateIds) {
+  if (caliperScale != "standardized" && caliperScale != "propensity score")
+    stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
+
   data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
                                                                     covariateIds,
@@ -773,6 +857,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'                            and/or trimming.
 #' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
+#' @param excludePriorOutcome Remove people that have the outcome prior to the index date?
 #' @param outcomeId           The concept ID of the outcome. Persons marked for removal for the outcome
 #'                            will be removed when computing the balance before matching/trimming.
 #'
@@ -790,9 +875,12 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 #'
 #' @export
-computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcomeId = NULL) {
+computeCovariateBalance <- function(restrictedCohorts,
+                                    cohortMethodData,
+                                    excludePriorOutcome = TRUE,
+                                    outcomeId = NULL) {
   start <- Sys.time()
-  if (is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
+  if (!excludePriorOutcome || is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
                                                                                  outcomeId)) {
     cohorts <- cohortMethodData$cohorts
     covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
@@ -806,6 +894,13 @@ computeCovariateBalance <- function(restrictedCohorts, cohortMethodData, outcome
                cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
     t <- t | cohortMethodData$covariates$covariateId == 1
     covariates <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
+  }
+  # Try to undo normalization of covariate values:
+  normFactors <- attr(cohortMethodData$covariates,"normFactors")
+  if (!is.null(normFactors)){
+    covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(normFactors))
+    covariates$covariateValue <- covariates$covariateValue * covariates$maxs
+    covariates$maxs <- NULL
   }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
@@ -855,7 +950,7 @@ plotCovariateBalanceScatterPlot <- function(balance, fileName = NULL) {
   plot <- ggplot2::ggplot(balance,
                           ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
     ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
-    ggplot2::geom_abline(a = 1) +
+    ggplot2::geom_abline(slope = 1, intercept = 0) +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::ggtitle("Standardized difference of mean") +
     ggplot2::scale_x_continuous("Before matching", limits = limits) +

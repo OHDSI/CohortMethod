@@ -1,6 +1,6 @@
 # @file CohortMethod.R
 #
-# Copyright 2014 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -235,6 +235,7 @@ createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, cov
 
 createDataForModelFit <- function(outcomeId,
                                   cohortMethodData,
+                                  excludePriorOutcome,
                                   subPopulation,
                                   useStrata,
                                   riskWindowStart = 0,
@@ -265,7 +266,7 @@ createDataForModelFit <- function(outcomeId,
     } else {
       t <- ffbase::ffwhich(t, t == TRUE)
       outcomes <- ff::as.ram(cohortMethodData$outcomes[t, ])
-      if (!is.null(cohortMethodData$exclude)){
+      if (excludePriorOutcome && !is.null(cohortMethodData$exclude)){
         t <- cohortMethodData$exclude$outcomeId == outcomeId
         if (ffbase::any.ff(t)) {
           t <- ffbase::ffwhich(t, t == TRUE)
@@ -276,6 +277,13 @@ createDataForModelFit <- function(outcomeId,
       }
     }
   }
+  # Remove people with outcomes between index date and risk window start:
+  if (excludePriorOutcome && riskWindowStart > 0) {
+    excludeRowIds <- outcomes$rowId[outcomes$timeToEvent < riskWindowStart]
+    outcomes <- outcomes[!(outcomes$rowId %in% excludeRowIds),]
+    cohorts <- cohorts[!(cohorts$rowId %in% excludeRowIds),]
+  }
+
   if (!is.null(subPopulation))
     cohorts <- merge(subPopulation, cohorts)  #keeping only persons that have been matched
 
@@ -307,6 +315,7 @@ createDataForModelFit <- function(outcomeId,
 #'                               outcome will be removed prior to creating the outcome model.
 #' @param cohortMethodData       An object of type \code{cohortMethodData} as generated using
 #'                               \code{getDbCohortMethodData}.
+#' @param excludePriorOutcome    Remove people that have the outcome prior to the risk window start date?
 #' @param subPopulation          A data frame specifying the (matched and/or trimmed) subpopulation to
 #'                               be used in the study, as well as their strata (for conditional
 #'                               models). This data frame should have at least a \code{RowId}, and a
@@ -347,6 +356,7 @@ createDataForModelFit <- function(outcomeId,
 #' @export
 fitOutcomeModel <- function(outcomeId,
                             cohortMethodData,
+                            excludePriorOutcome = TRUE,
                             subPopulation = NULL,
                             stratifiedCox = TRUE,
                             riskWindowStart = 0,
@@ -363,6 +373,7 @@ fitOutcomeModel <- function(outcomeId,
                             returnFit = FALSE) {
   dataObject <- createDataForModelFit(outcomeId,
                                       cohortMethodData,
+                                      excludePriorOutcome,
                                       subPopulation,
                                       stratifiedCox,
                                       riskWindowStart,
@@ -430,7 +441,7 @@ fitOutcomeModel <- function(outcomeId,
   }
   counts <- cohortMethodData$metaData$counts
 
-  if (!is.null(outcomeId) & !is.null(cohortMethodData$exclude)) {
+  if (excludePriorOutcome && !is.null(outcomeId) && !is.null(cohortMethodData$exclude)) {
     t <- cohortMethodData$exclude$outcomeId == outcomeId
     t <- ffbase::ffwhich(t, t == TRUE)
     if (is.null(t)) {
@@ -457,6 +468,7 @@ fitOutcomeModel <- function(outcomeId,
                        priorVariance = priorVariance,
                        stratified = dataObject$useStrata,
                        usedCovariates = dataObject$useCovariates,
+                       excludePriorOutcome = excludePriorOutcome,
                        treatmentEstimate = treatmentEstimate,
                        data = dataObject$data,
                        counts = counts,
@@ -619,6 +631,7 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
 #'                              be shown.
 #' @param treatmentLabel        A label to us for the treated cohort.
 #' @param comparatorLabel       A label to us for the comparator cohort.
+#' @param title                 The main title of the plot.
 #' @param fileName              Name of the file where the plot should be saved, for example
 #'                              'plot.png'. See the function \code{ggsave} in the ggplot2 package for
 #'                              supported file formats.
@@ -638,6 +651,7 @@ plotKaplanMeier <- function(outcomeModel,
                             dataCutoff = 0.99,
                             treatmentLabel = "Treated",
                             comparatorLabel = "Comparator",
+                            title = "Kaplan-Meier Plot",
                             fileName = NULL) {
   if (class(outcomeModel) != "outcomeModel")
     stop("Object not of class outcomeModel")
@@ -663,7 +677,6 @@ plotKaplanMeier <- function(outcomeModel,
   cutoff <- min(dataAtT$time[dataAtT$cumSum >= dataCutoff * sum(dataAtT$n.censor)])
   xlabs <- "Time in days"
   ylabs <- "Survival probability"
-  main <- "Kaplan-Meier Plot"
   xlims <- c(0, cutoff)
   data <- data[data$time <= cutoff, ]
   if (includeZero) {
@@ -691,7 +704,7 @@ plotKaplanMeier <- function(outcomeModel,
                                           rgb(0, 0, 0.8, alpha = 0.3))) +
     ggplot2::scale_x_continuous(xlabs, limits = xlims) +
     ggplot2::scale_y_continuous(ylabs, limits = ylims) +
-    ggplot2::ggtitle(main) +
+    ggplot2::ggtitle(title) +
     ggplot2::theme(legend.title = ggplot2::element_blank())
 
   if (censorMarks == TRUE)

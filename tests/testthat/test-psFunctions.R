@@ -161,4 +161,15 @@ test_that("comparator undersampling", {
   expect_equal(nrow(ps), sampleSize)
 })
 
+test_that("Error messages for wrong input", {
+  rowId <- 1:5
+  treatment <- c(1, 0, 1, 0, 1)
+  propensityScore <- c(0, 0.1, 0.3, 0.4, 1)
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  expect_error(matchOnPs(data, caliper = 0.1, maxRatio = 1, caliperScale = "qwerty"))
+  strata <- matchOnPs(data, caliper = 0.25, maxRatio = 1, caliperScale = "propensity score")
+  expect_error(plotPs(data, scale = "qwerty"))
+  expect_error(plotPs(data, type = "qwerty"))
+})
+
 
