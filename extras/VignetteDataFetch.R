@@ -157,26 +157,25 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
 # table has 148734670 rows
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
-# saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodData")
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
-# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodData')
+
 
 summary(cohortMethodData)
 getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                    outcomeId = 3,
-                                    firstExposureOnly = FALSE,
-                                    washoutPeriod = 0,
-                                    removeDuplicateSubjects = TRUE,
-                                    removeSubjectsWithPriorOutcome = TRUE,
-                                    priorOutcomeLookback = 365,
-                                    riskWindowStart = 0,
-                                    addExposureDaysToStart = FALSE,
-                                    riskWindowEnd = 0,
-                                    addExposureDaysToEnd = TRUE,
-                                    modelType = "logistic")
+                                  outcomeId = 3,
+                                  firstExposureOnly = FALSE,
+                                  washoutPeriod = 0,
+                                  removeDuplicateSubjects = TRUE,
+                                  removeSubjectsWithPriorOutcome = TRUE,
+                                  priorOutcomeLookback = 365,
+                                  riskWindowStart = 0,
+                                  addExposureDaysToStart = FALSE,
+                                  riskWindowEnd = 0,
+                                  addExposureDaysToEnd = TRUE,
+                                  modelType = "cox")
 
 getAttritionTable(studyPop)
 
@@ -208,53 +207,61 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        threads = 16))
 
 computePsAuc(ps)
+plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
+
 
 # ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
 
+# trimmed <- trimByPs(ps)
+# trimmed <- trimByPsToEquipoise(ps)
+# plotPs(trimmed, ps)
+
 strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-balance <- computeCovariateBalance(strata, cohortMethodData, outcomeId = 3)
+getAttritionTable(strata)
+
+# strata <- matchOnPsAndCovariates(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, cohortMethodData = cohortMethodData, covariateIds = 8507)
+# strata <- stratifyByPs(ps)
+# strata <- stratifyByPsAndCovariates(ps, cohortMethodData = cohortMethodData, covariateIds = 8507)
+# head(strata)
+
+plotPs(strata, ps)
+
+balance <- computeCovariateBalance(strata, cohortMethodData)
 
 saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 # balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
 
-outcomeModel <- fitOutcomeModel(outcomeId = 3,
-                                cohortMethodData = cohortMethodData,
-                                riskWindowStart = 0,
-                                riskWindowEnd = 30,
-                                addExposureDaysToEnd = TRUE,
-                                useCovariates = FALSE,
-                                modelType = "cox",
-                                stratifiedCox = FALSE)
-saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
+plotCovariateBalanceScatterPlot(balance)
+plotCovariateBalanceOfTopVariables(balance)
 
-outcomeModel <- fitOutcomeModel(outcomeId = 3,
-                                cohortMethodData = cohortMethodData,
-                                subPopulation = strata,
-                                riskWindowStart = 0,
-                                riskWindowEnd = 30,
-                                addExposureDaysToEnd = TRUE,
-                                useCovariates = FALSE,
-                                modelType = "cox",
-                                stratifiedCox = TRUE)
+outcomeModel <- fitOutcomeModel(population = studyPop,
+                                stratified = FALSE,
+                                useCovariates = FALSE)
+#getAttritionTable(outcomeModel)
+#outcomeModel
+#summary(outcomeModel)
+#coef(outcomeModel)
+#confint(outcomeModel)
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
+outcomeModel <- fitOutcomeModel(population = strata,
+                                stratified = TRUE,
+                                useCovariates = FALSE)
+
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
 
-outcomeModel <- fitOutcomeModel(outcomeId = 3,
+
+outcomeModel <- fitOutcomeModel(population = strata,
                                 cohortMethodData = cohortMethodData,
-                                subPopulation = strata,
-                                riskWindowStart = 0,
-                                riskWindowEnd = 30,
-                                addExposureDaysToEnd = TRUE,
+                                stratified = TRUE,
                                 useCovariates = TRUE,
-                                modelType = "cox",
-                                stratifiedCox = TRUE,
                                 control = createControl(cvType = "auto",
                                                         startingVariance = 0.1,
                                                         selectorType = "byPid",
-                                                        cvRepetitions = 10,
-                                                        tolerance = 1e-07,
-                                                        threads = 30,
+                                                        cvRepetitions = 1,
+                                                        tolerance = 2e-07,
+                                                        threads = 16,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 

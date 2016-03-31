@@ -4,20 +4,27 @@
 \alias{fitOutcomeModel}
 \title{Create an outcome model, and compute the relative risk}
 \usage{
-fitOutcomeModel(outcomeId, cohortMethodData, excludePriorOutcome = TRUE,
-  subPopulation = NULL, stratifiedCox = TRUE, riskWindowStart = 0,
-  riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
-  useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
-  prior = createPrior("laplace", useCrossValidation = TRUE),
-  control = createControl(cvType = "auto", startingVariance = 0.1,
+fitOutcomeModel(population, cohortMethodData, stratified = TRUE,
+  useCovariates = TRUE, prior = createPrior("laplace", useCrossValidation =
+  TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
   selectorType = "byPid", noiseLevel = "quiet"))
 }
 \arguments{
-\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the
-outcome will be removed prior to creating the outcome model.}
-
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
+
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the
+outcome model.}
+
+\item{prior}{The prior used to fit the model. See
+\code{\link[Cyclops]{createPrior}} for details.}
+
+\item{control}{The control object used to control the cross-validation used to
+determine the hyperparameters of the prior (if applicable). See
+\code{\link[Cyclops]{createControl}} for details.}
+
+\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the
+outcome will be removed prior to creating the outcome model.}
 
 \item{excludePriorOutcome}{Remove people that have the outcome prior to the risk window start date?}
 
@@ -39,20 +46,10 @@ specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in the
-outcome model.}
-
 \item{fitModel}{If false, the model will not be fit, and only summary statistics are
 available.}
 
 \item{modelType}{The type of model to be fitted. See details for options.}
-
-\item{prior}{The prior used to fit the model. See
-\code{\link[Cyclops]{createPrior}} for details.}
-
-\item{control}{The control object used to control the cross-validation used to
-determine the hyperparameters of the prior (if applicable). See
-\code{\link[Cyclops]{createControl}} for details.}
 }
 \value{
 An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and

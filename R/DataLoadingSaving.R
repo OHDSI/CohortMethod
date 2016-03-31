@@ -302,7 +302,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 
   covariates <- cohortMethodData$covariates
   covariateRef <- cohortMethodData$covariateRef
-  ffbase::save.ffdf(covariates, covariateRef, dir = file)
+  ffbase::save.ffdf(covariates, covariateRef, dir = file, clone = TRUE)
   saveRDS(cohortMethodData$cohorts, file = file.path(file, "cohorts.rds"))
   saveRDS(cohortMethodData$outcomes, file = file.path(file, "outcomes.rds"))
   saveRDS(cohortMethodData$metaData, file = file.path(file, "metaData.rds"))
@@ -327,7 +327,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' # todo
 #'
 #' @export
-loadCohortMethodData <- function(file, readOnly = FALSE) {
+loadCohortMethodData <- function(file, readOnly = TRUE) {
   if (!file.exists(file))
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)

@@ -21,291 +21,6 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-
-createDataForModelFitCox <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
-  if (nrow(outcomes) == 0) {
-    data <- cohorts
-    data$timeToEvent <- NA
-  } else {
-    outcomes <- aggregate(timeToEvent ~ rowId, data = outcomes, min)  #keep first outcome per person
-    data <- merge(cohorts, outcomes, all.x = TRUE)
-  }
-  data$y <- 0
-  data$y[!is.na(data$timeToEvent)] <- 1
-  data$time <- data$timeToEvent
-  data$time[is.na(data$time)] <- data$timeToCensor[is.na(data$time)]
-  data <- data[data$time > 0, ]
-  if (!useStrata)
-    data$stratumId <- NULL
-  result <- list(data = data,
-                 cyclopsData = NULL,
-                 zeroOutcomes = (nrow(outcomes) == 0),
-                 useStrata = useStrata,
-                 useCovariates = useCovariates)
-  if (result$zeroOutcomes)
-    return(result)
-  if (useCovariates) {
-    if (useStrata) {
-      informativeStrata <- unique(data$stratumId[data$y == 1])
-      informativeData <- data[data$stratumId %in% informativeStrata, ]
-      covariates <- merge(covariates,
-                          ff::as.ffdf(informativeData[, c("rowId", "y", "time", "stratumId")]))
-      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(informativeData),
-                                                          covariates,
-                                                          modelType = "cox",
-                                                          quiet = TRUE)
-    } else {
-      outcomes <- ff::as.ffdf(data[, c("rowId", "y", "time")])
-      idx <- ffbase::ffmatch(covariates$rowId, outcomes$rowId)
-      idx <- ffbase::ffwhich(idx, is.na(idx) == FALSE)
-      covariates <- covariates[idx, ]
-      result$cyclopsData <- Cyclops::convertToCyclopsData(outcomes,
-                                                          covariates,
-                                                          modelType = "cox",
-                                                          quiet = TRUE)
-    }
-  } else {
-    # don't use covariates
-    if (useStrata) {
-      covariates <- data[, c("rowId", "y", "time", "stratumId", "treatment")]
-      covariates$covariateId <- 1
-      colnames(covariates)[colnames(covariates) == "treatment"] <- "covariateValue"
-      result$cyclopsData <- Cyclops::convertToCyclopsData(data,
-                                                          covariates,
-                                                          modelType = "cox",
-                                                          quiet = TRUE)
-    } else {
-      data$stratumId <- NULL
-      covariates <- data[, c("rowId", "y", "time", "treatment")]
-      covariates$covariateId <- 1
-      colnames(covariates)[colnames(covariates) == "treatment"] <- "covariateValue"
-      result$cyclopsData <- Cyclops::convertToCyclopsData(data,
-                                                          covariates,
-                                                          modelType = "cox",
-                                                          quiet = TRUE)
-    }
-  }
-  return(result)
-}
-
-createDataForModelFitPoisson <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
-  if (nrow(outcomes) == 0) {
-    if (useStrata) {
-      data <- cohorts[, c("treatment", "rowId", "stratumId", "timeToCensor")]
-    } else {
-      data <- cohorts[, c("treatment", "rowId", "timeToCensor")]
-    }
-    data$y <- 0
-  } else {
-    outcomes$y <- 1
-    outcomes <- aggregate(y ~ rowId, data = outcomes, sum)  #count outcome per person
-    if (useStrata) {
-      data <- merge(cohorts[,
-                            c("treatment", "rowId", "stratumId", "timeToCensor")],
-                    outcomes,
-                    all.x = TRUE)
-    } else {
-      data <- merge(cohorts[, c("treatment", "rowId", "timeToCensor")], outcomes, all.x = TRUE)
-    }
-    data$y[is.na(data$y)] <- 0
-  }
-
-  colnames(data)[colnames(data) == "timeToCensor"] <- "time"
-  data <- data[data$time > 0, ]
-  result <- list(data = data,
-                 cyclopsData = NULL,
-                 zeroOutcomes = (nrow(outcomes) == 0),
-                 useStrata = useStrata,
-                 useCovariates = useCovariates)
-  if (result$zeroOutcomes)
-    return(result)
-  if (useCovariates) {
-    if (useStrata) {
-      informativeStrata <- unique(data$stratumId[data$y == 1])
-      informativeData <- data[data$stratumId %in% informativeStrata, ]
-      covariates <- merge(covariates,
-                          ff::as.ffdf(informativeData[, c("rowId", "y", "time", "stratumId")]))
-      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(informativeData),
-                                                          covariates,
-                                                          modelType = "cpr",
-                                                          addIntercept = FALSE,
-                                                          quiet = TRUE)
-    } else {
-      outcomes <- ff::as.ffdf(data[, c("rowId", "y", "time")])
-      idx <- ffbase::ffmatch(covariates$rowId, outcomes$rowId)
-      idx <- ffbase::ffwhich(idx, is.na(idx) == FALSE)
-      covariates <- covariates[idx, ]
-      result$cyclopsData <- Cyclops::convertToCyclopsData(outcomes,
-                                                          covariates,
-                                                          modelType = "pr",
-                                                          quiet = TRUE)
-    }
-  } else {
-    # don't use covariates
-    if (useStrata) {
-      covariates <- data[, c("rowId", "y", "time", "stratumId", "treatment")]
-      covariates$covariateId <- 1
-      colnames(covariates)[colnames(covariates) == "treatment"] <- "covariateValue"
-      result$cyclopsData <- Cyclops::convertToCyclopsData(data,
-                                                          covariates,
-                                                          modelType = "cpr",
-                                                          quiet = TRUE)
-    } else {
-      covariates <- data[, c("rowId", "y", "time", "treatment")]
-      covariates$covariateId <- 1
-      colnames(covariates)[colnames(covariates) == "treatment"] <- "covariateValue"
-      result$cyclopsData <- Cyclops::convertToCyclopsData(data,
-                                                          covariates,
-                                                          modelType = "pr",
-                                                          quiet = TRUE)
-    }
-  }
-  return(result)
-}
-
-createDataForModelFitLogistic <- function(useStrata, useCovariates, cohorts, covariates, outcomes) {
-  if (nrow(outcomes) == 0) {
-    if (useStrata) {
-      data <- cohorts[, c("treatment", "rowId", "stratumId")]
-    } else {
-      data <- cohorts[, c("treatment", "rowId")]
-    }
-    data$y <- 0
-  } else {
-    outcomes <- outcomes
-    outcomes$y <- 1
-    outcomes <- aggregate(y ~ rowId, data = outcomes, max)  #Keep one outcome per person
-    if (useStrata) {
-      data <- merge(cohorts[, c("treatment", "rowId", "stratumId")], outcomes, all.x = TRUE)
-    } else {
-      data <- merge(cohorts[, c("treatment", "rowId")], outcomes, all.x = TRUE)
-    }
-    data$y[is.na(data$y)] <- 0
-  }
-  result <- list(data = data,
-                 cyclopsData = NULL,
-                 zeroOutcomes = (nrow(outcomes) == 0),
-                 useStrata = useStrata,
-                 useCovariates = useCovariates)
-  if (result$zeroOutcomes)
-    return(result)
-  if (useCovariates) {
-    if (useStrata) {
-      informativeStrata <- unique(data$stratumId[data$y == 1])
-      informativeData <- data[data$stratumId %in% informativeStrata, ]
-      covariates <- merge(covariates, ff::as.ffdf(informativeData[, c("rowId", "stratumId")]))
-      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(informativeData),
-                                                          covariates,
-                                                          modelType = "clr",
-                                                          addIntercept = FALSE,
-                                                          quiet = TRUE)
-    } else {
-      outcomes <- ff::as.ffdf(data[, c("rowId", "y")])
-      idx <- ffbase::ffmatch(covariates$rowId, outcomes$rowId)
-      idx <- ffbase::ffwhich(idx, is.na(idx) == FALSE)
-      covariates <- covariates[idx, ]
-      result$cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(data),
-                                                          covariates,
-                                                          modelType = "lr",
-                                                          addIntercept = TRUE,
-                                                          quiet = TRUE)
-    }
-  } else {
-    # don't use covariates
-    if (useStrata) {
-      covariates <- data[, c("rowId", "stratumId", "treatment")]
-      covariates$covariateId <- 1
-      colnames(covariates)[colnames(covariates) == "treatment"] <- "covariateValue"
-      result$cyclopsData <- Cyclops::convertToCyclopsData(data,
-                                                          covariates,
-                                                          modelType = "clr",
-                                                          quiet = TRUE)
-    } else {
-      covariates <- data[, c("rowId", "treatment")]
-      covariates$covariateId <- 1
-      colnames(covariates)[colnames(covariates) == "treatment"] <- "covariateValue"
-      result$cyclopsData <- Cyclops::convertToCyclopsData(data,
-                                                          covariates,
-                                                          modelType = "lr",
-                                                          quiet = TRUE)
-    }
-  }
-  return(result)
-}
-
-createDataForModelFit <- function(outcomeId,
-                                  cohortMethodData,
-                                  excludePriorOutcome,
-                                  subPopulation,
-                                  useStrata,
-                                  riskWindowStart = 0,
-                                  riskWindowEnd = 9999,
-                                  addExposureDaysToEnd = FALSE,
-                                  useCovariates = TRUE,
-                                  modelType = "cox") {
-  if (!(modelType %in% c("lr", "clr", "pr", "cpr", "cox")))
-    stop("Unknown model type")
-  if ((modelType == "lr" | modelType == "pr"))
-    useStrata <- FALSE
-  if ((modelType == "clr" | modelType == "cpr"))
-    useStrata <- TRUE
-  if (useStrata & (is.null(subPopulation) | is.null(subPopulation$stratumId)))
-    stop("Conditional regression specified, but no strata provided")
-  if (useStrata) {
-    writeLines("Fitting stratified model")
-  } else {
-    writeLines("Fitting unstratified model")
-  }
-  cohorts <- ff::as.ram(cohortMethodData$cohorts)
-  if (is.null(outcomeId)) {
-    outcomes <- ff::as.ram(cohortMethodData$outcomes)
-  } else {
-    t <- cohortMethodData$outcomes$outcomeId == outcomeId
-    if (!ffbase::any.ff(t)) {
-      outcomes <- data.frame()
-    } else {
-      t <- ffbase::ffwhich(t, t == TRUE)
-      outcomes <- ff::as.ram(cohortMethodData$outcomes[t, ])
-      if (excludePriorOutcome && !is.null(cohortMethodData$exclude)){
-        t <- cohortMethodData$exclude$outcomeId == outcomeId
-        if (ffbase::any.ff(t)) {
-          t <- ffbase::ffwhich(t, t == TRUE)
-          excludeRowIds <- ff::as.ram(cohortMethodData$exclude$rowId[t])
-          outcomes <- outcomes[!(outcomes$rowId %in% excludeRowIds),]
-          cohorts <- cohorts[!(cohorts$rowId %in% excludeRowIds),]
-        }
-      }
-    }
-  }
-  # Remove people with outcomes between index date and risk window start:
-  if (excludePriorOutcome && riskWindowStart > 0) {
-    excludeRowIds <- outcomes$rowId[outcomes$timeToEvent < riskWindowStart]
-    outcomes <- outcomes[!(outcomes$rowId %in% excludeRowIds),]
-    cohorts <- cohorts[!(cohorts$rowId %in% excludeRowIds),]
-  }
-
-  if (!is.null(subPopulation))
-    cohorts <- merge(subPopulation, cohorts)  #keeping only persons that have been matched
-
-  # Censor outcomes outside of risk window:
-  cohorts$timeToCensor <- riskWindowEnd
-  if (addExposureDaysToEnd)
-    cohorts$timeToCensor <- cohorts$timeToCensor + cohorts$timeToCohortEnd
-  cohorts$timeToCensor[cohorts$timeToCensor > cohorts$timeToObsPeriodEnd] <- cohorts$timeToObsPeriodEnd[cohorts$timeToCensor >                                                                                                          cohorts$timeToObsPeriodEnd]
-  outcomes <- merge(outcomes, cohorts)
-  outcomes <- outcomes[outcomes$timeToEvent >= riskWindowStart & outcomes$timeToEvent <= outcomes$timeToCensor,]
-
-  if (modelType == "cox") {
-    return(createDataForModelFitCox(useStrata, useCovariates, cohorts, cohortMethodData$covariates, outcomes))
-  }
-  if (modelType == "pr" | modelType == "cpr") {
-    return(createDataForModelFitPoisson(useStrata, useCovariates, cohorts, cohortMethodData$covariates, outcomes))
-  }
-  if (modelType == "lr" | modelType == "clr") {
-    return(createDataForModelFitLogistic(useStrata, useCovariates, cohorts, cohortMethodData$covariates, outcomes))
-  }
-}
-
 #' Create an outcome model, and compute the relative risk
 #'
 #' @description
@@ -354,55 +69,79 @@ createDataForModelFit <- function(outcomeId,
 #' # todo
 #'
 #' @export
-fitOutcomeModel <- function(outcomeId,
+fitOutcomeModel <- function(population,
                             cohortMethodData,
-                            excludePriorOutcome = TRUE,
-                            subPopulation = NULL,
-                            stratifiedCox = TRUE,
-                            riskWindowStart = 0,
-                            riskWindowEnd = 9999,
-                            addExposureDaysToEnd = FALSE,
+                            stratified = TRUE,
                             useCovariates = TRUE,
-                            fitModel = TRUE,
-                            modelType = "cox",
                             prior = createPrior("laplace", useCrossValidation = TRUE),
                             control = createControl(cvType = "auto",
                                                     startingVariance = 0.1,
                                                     selectorType = "byPid",
                                                     noiseLevel = "quiet")) {
-  dataObject <- createDataForModelFit(outcomeId,
-                                      cohortMethodData,
-                                      excludePriorOutcome,
-                                      subPopulation,
-                                      stratifiedCox,
-                                      riskWindowStart,
-                                      riskWindowEnd,
-                                      addExposureDaysToEnd,
-                                      useCovariates,
-                                      modelType)
+  if (stratified && is.null(population$stratumId))
+    stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
+  if (is.null(population$outcome))
+    stop("No outcome variable found in population object. Use createStudyPopulation to create variable.")
+  if (missing(cohortMethodData) && useCovariates)
+    stop("Requested all covariates for model, but no cohortMethodData object specified")
+
   treatmentEstimate <- NULL
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
   status <- "NO MODEL FITTED"
-  if (dataObject$zeroOutcomes)
-    status <- "NO OUTCOMES REMAINING AFTER RESTRICTING TO SUBPOPULATION, CANNOT FIT"
-  if (fitModel & !is.null(dataObject$cyclopsData)) {
-    if (useCovariates) {
-      if (dataObject$useStrata | modelType == "cox")
-        prior$exclude <- 1  # Exclude treatment variable from regularization
-      else prior$exclude <- c(0, 1)  # Exclude treatment variable and intercept from regularization
-    } else prior <- createPrior("none")  #Only one variable, which we're not going to regularize, so effectively no prior
-    if (sum(dataObject$data$y[dataObject$data$treatment == 0]) == 0 || sum(dataObject$data$y[dataObject$data$treatment ==
-                                                                                             1]) == 0) {
-      fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
-    } else {
-      fit <- tryCatch({
-        Cyclops::fitCyclopsModel(dataObject$cyclopsData, prior = prior, control = control)
-      }, error = function(e) {
-        e$message
-      })
+  if (nrow(population) == 0) {
+    status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
+  } else if (sum(population$outcome) == 0) {
+    status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
+  } else if (sum(population$outcome[population$treatment == 0]) == 0 || sum(population$outcome[population$treatment == 1]) == 0) {
+    fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
+  } else {
+    cohorts <- ff::as.ffdf(population)
+    colnames(cohorts)[colnames(cohorts) == "outcome"] <- "y"
+    if (!stratified) {
+      cohorts$stratumId <- NULL
     }
+    modelType <- attr(population, "metaData")$modelType
+    if (useCovariates) {
+      if (stratified || modelType == "cox") {
+        prior$exclude <- 1  # Exclude treatment variable from regularization
+      } else {
+        prior$exclude <- c(0, 1)  # Exclude treatment variable and intercept from regularization
+      }
+      covariates <- limitCovariatesToPopulation(cohortMethodData$covariates, cohorts$rowId)
+      if (stratified) {
+        cols <- which(colnames(cohorts) %in% c("rowId","stratumId"))
+        covariates <- ffbase::merge.ffdf(covariates, ff::ffdf(rowId = ff::clone.ff(cohorts$rowId), stratumId = ff::clone.ff(cohorts$stratumId)))
+      }
+    } else {
+      prior <- createPrior("none")  #Only one variable, which we're not going to regularize, so effectively no prior
+      covariates <- ff::ffdf(rowId = ff::clone.ff(cohorts$rowId),
+                             covariateId = ff::ff(1, length = nrow(cohorts)),
+                             covariateValue = ff::clone.ff(cohorts$treatment),
+                             row.names = row.names(cohorts))
+      if (stratified) {
+        covariates$stratumId <- ff::clone.ff(cohorts$stratumId)
+      }
+    }
+    if (stratified || modelType == "cox") {
+      addIntercept <- FALSE
+    } else {
+      addIntercept <- TRUE
+    }
+    cyclopsData <- Cyclops::convertToCyclopsData(outcomes = cohorts,
+                                                 covariates = covariates,
+                                                 addIntercept = addIntercept,
+                                                 modelType = modelTypeToCyclopsModelType(modelType, stratified),
+                                                 checkSorting = TRUE,
+                                                 checkRowIds = FALSE,
+                                                 normalize = NULL,
+                                                 quiet = TRUE)
+    fit <- tryCatch({
+      Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+    }, error = function(e) {
+      e$message
+    })
     if (is.character(fit)) {
       coefficients <- c(0)
       treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
@@ -438,120 +177,82 @@ fitOutcomeModel <- function(outcomeId,
       priorVariance <- fit$variance[1]
     }
   }
-  counts <- cohortMethodData$metaData$counts
-
-  if (excludePriorOutcome && !is.null(outcomeId) && !is.null(cohortMethodData$exclude)) {
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- ffbase::ffwhich(t, t == TRUE)
-    if (is.null(t)) {
-      cohortSubset <- cohortMethodData$cohort
-    } else {
-      t <- in.ff(cohortMethodData$cohorts$rowId, cohortMethodData$exclude$rowId[t])
-      cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == TRUE), ]
-    }
-    treatedWithPriorOutcome <- ffbase::sum.ff(cohortSubset$treatment)
-    comparatorWithPriorOutcome <- nrow(cohortSubset) - treatedWithPriorOutcome
-    notPriorCount <- data.frame(treatment = c(0, 1),
-                                notPriorCount = c(counts$notExcludedCount[counts$treatment ==
-                                                                            0] - comparatorWithPriorOutcome, counts$notExcludedCount[counts$treatment == 1] - treatedWithPriorOutcome))
-    counts <- merge(counts, notPriorCount)
+  outcomeModel <- attr(population, "metaData")
+  outcomeModel$outcomeModelCoefficients <- coefficients
+  outcomeModel$outcomeModelPriorVariance <- priorVariance
+  outcomeModel$outcomeModelStratified <- stratified
+  outcomeModel$outcomeModelUseCovariates <- useCovariates
+  outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
+  outcomeModel$outcomeModelStatus <- status
+  outcomeModel$populationCounts <- getCounts(population, "Population count")
+  outcomeCounts <- data.frame(treatedPersons = length(unique(population$subjectId[population$treatment == 1 & population$outcome != 0])),
+                              comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$outcome != 0])),
+                              treatedExposures = length(population$subjectId[population$treatment == 1 & population$outcome != 0]),
+                              comparatorExposures = length(population$subjectId[population$treatment == 0 & population$outcome != 0]),
+                              treatedOutcomes = sum(population$outcome[population$treatment == 1]),
+                              comparatorOutcomes = sum(population$outcome[population$treatment == 0]))
+  outcomeModel$outcomeCounts <- outcomeCounts
+  if (modelType == "poisson" || modelType == "cox") {
+    timeAtRisk <- data.frame(treatedDays = sum(population$time[population$treatment == 1]),
+                             comparatorDays = sum(population$time[population$treatment == 0]))
+    outcomeModel$timeAtRisk <- timeAtRisk
   }
-  if (!is.null(subPopulation)) {
-    matchedTrimmedCount <- aggregate(rowId ~ treatment, data = subPopulation, length)
-    names(matchedTrimmedCount) <- c("treatment", "matchedTrimmedCount")
-    counts <- merge(counts, matchedTrimmedCount)
-  }
-  outcomeModel <- list(outcomeId = outcomeId,
-                       modelType = modelType,
-                       coefficients = coefficients,
-                       priorVariance = priorVariance,
-                       stratified = dataObject$useStrata,
-                       usedCovariates = dataObject$useCovariates,
-                       excludePriorOutcome = excludePriorOutcome,
-                       treatmentEstimate = treatmentEstimate,
-                       data = dataObject$data,
-                       counts = counts,
-                       status = status)
   class(outcomeModel) <- "outcomeModel"
   return(outcomeModel)
 }
 
+modelTypeToCyclopsModelType <- function(modelType, stratified) {
+  if (modelType == "logistic") {
+    if (stratified)
+      return("clr")
+    else
+      return("lr")
+  } else if (modelType == "poisson") {
+    if (stratified)
+      return("cpr")
+    else
+      return("pr")
+  } else if (modelType == "cox") {
+    return("cox")
+  } else
+    stop(paste("Unknown model type:", modelType))
+}
+
 #' @export
 summary.outcomeModel <- function(object, ...) {
-  if (object$modelType == "clr" || object$modelType == "lr") {
-    patientTable <- table(object$data$treatment)
-    eventTable <- table(object$data$treatment, object$data$y)
-
-    counts <- matrix(0, nrow = 2, ncol = 2)
-    counts[1, ] <- patientTable
-    if (ncol(eventTable) == 1)
-      counts[2, ] <- c(0, 0) else counts[2, ] <- eventTable[, 2]
-    colnames(counts) <- c("Comparator", "Treated")
-    rownames(counts) <- c("Nr. of persons", "Nr. of events")
-  } else {
-    patientTable <- table(object$data$treatment)
-    eventTable <- table(object$data$treatment, object$data$y)
-    timeTable <- aggregate(time ~ treatment, FUN = sum, data = object$data)[, 2]
-
-    counts <- matrix(0, nrow = 3, ncol = 2)
-    counts[1, ] <- patientTable
-    if (ncol(eventTable) == 1)
-      counts[2, ] <- c(0, 0) else counts[2, ] <- eventTable[, 2]
-    counts[3, ] <- timeTable
-    colnames(counts) <- c("Comparator", "Treated")
-    rownames(counts) <- c("Nr. of persons", "Nr. of events", "Person time (days)")
-  }
-
-
-  if (is.null(object$coefficients)) {
-    result <- list(modelType = object$modelType, counts = counts)
-  } else {
-    model <- c(length(object$coefficients), sum(object$coefficients != 0))
-    names(model) <- c("Nr. of betas", "Nr. of non-zero betas")
-    if (!is.null(object$data$stratumId)) {
-      model <- c(model, length(unique(object$data$stratumId)))
-      names(model)[length(model)] <- "Number of strata"
-    }
-
-    result <- list(modelType = object$modelType,
-                   counts = counts,
-                   model = model,
-                   priorVariance = object$priorVariance,
-                   coefficients = object$treatmentEstimate,
-                   status = object$status)
-  }
-  class(result) <- "summary.outcomeModel"
-  return(result)
+  class(object) <- "summary.outcomeModel"
+  return(object)
 }
 
 #' @export
 print.summary.outcomeModel <- function(x, ...) {
-  writeLines(paste("Model type:", x$modelType))
-  writeLines(paste("Status:", x$status))
+  print.outcomeModel(x)
+
   writeLines("")
-  writeLines("Counts")
-  printCoefmat(x$counts)
-  if (!is.null(x$model)) {
-    writeLines("")
-    writeLines("Model")
-    print(x$model)
+  writeLines("Population counts")
+  d <- x$populationCounts
+  row.names(d) <- "Count"
+  d$description <- NULL
+  printCoefmat(d)
 
-    writeLines("")
-    writeLines("Coefficients")
-    d <- x$coefficients
-    output <- data.frame(exp(d$logRr), exp(d$logLb95), exp(d$logUb95), d$logRr, d$seLogRr)
+  writeLines("")
+  writeLines("Outcome counts")
+  d <- x$outcomeCounts
+  row.names(d) <- "Count"
+  printCoefmat(d)
 
-    colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr", "seLogRr")
-    rownames(output) <- "treatment"
-    printCoefmat(output)
+  if (x$modelType == "poisson" || x$modelType == "cox") {
     writeLines("")
-    writeLines(paste("Prior variance:", x$priorVariance))
+    writeLines("Time at risk")
+    d <- x$timeAtRisk
+    row.names(d) <- "Days"
+    printCoefmat(d)
   }
 }
 
 #' @export
 coef.outcomeModel <- function(object, ...) {
-  return(object$treatmentEstimate$logRr)
+  return(object$outcomeModelTreatmentEstimate$logRr)
 }
 
 #' @export
@@ -559,20 +260,24 @@ confint.outcomeModel <- function(object, parm, level = 0.95, ...) {
   missing(parm)  # suppresses R CMD check note
   if (level != 0.95)
     stop("Only supporting 95% confidence interval")
-  return(c(object$treatmentEstimate$logLb95, object$treatmentEstimate$logUb95))
+  return(c(object$outcomeModelTreatmentEstimate$logLb95, object$outcomeModelTreatmentEstimate$logUb95))
 }
 
 #' @export
 print.outcomeModel <- function(x, ...) {
   writeLines(paste("Model type:", x$modelType))
-  writeLines(paste("Status:", x$status))
+  writeLines(paste("Stratified:", x$outcomeModelStratified))
+  writeLines(paste("Use covariates:", x$outcomeModelUseCovariates))
+  writeLines(paste("Status:", x$outcomeModelStatus))
 
-  d <- x$treatmentEstimate
+  d <- x$outcomeModelTreatmentEstimate
   output <- data.frame(exp(d$logRr), exp(d$logLb95), exp(d$logUb95), d$logRr, d$seLogRr)
   colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr", "seLogRr")
   rownames(output) <- "treatment"
   writeLines("")
-  writeLines(paste("Prior variance:", x$priorVariance))
+  if (!is.na(x$outcomeModelPriorVariance)) {
+    writeLines(paste("Prior variance:", x$outcomeModelPriorVariance))
+  }
   printCoefmat(output)
 }
 
@@ -595,7 +300,7 @@ print.outcomeModel <- function(x, ...) {
 #'
 #' @export
 getOutcomeModel <- function(outcomeModel, cohortMethodData) {
-  cfs <- outcomeModel$coefficients
+  cfs <- outcomeModel$outcomeModelCoefficients
 
   cfs <- cfs[cfs != 0]
   attr(cfs, "names")[attr(cfs, "names") == "(Intercept)"] <- 0
@@ -610,6 +315,7 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
   cfs <- ff::as.ram(cfs[, c("coefficient", "id", "covariateName")])
   cfs$covariateName <- as.character(cfs$covariateName)
   cfs <- cfs[order(-abs(cfs$coefficient)), ]
+  cfs$covariateName[cfs$id == 1] <- "Treatment"
   cfs$covariateName[cfs$id == 0] <- "Intercept"
   return(cfs)
 }

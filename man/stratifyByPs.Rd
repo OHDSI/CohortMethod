@@ -4,10 +4,10 @@
 \alias{stratifyByPs}
 \title{Stratify persons by propensity score}
 \usage{
-stratifyByPs(data, numberOfStrata = 5, stratificationColumns = c())
+stratifyByPs(population, numberOfStrata = 5, stratificationColumns = c())
 }
 \arguments{
-\item{data}{A data frame with the three columns described below}
+\item{population}{A data frame with the three columns described below}
 
 \item{numberOfStrata}{How many strata? The boundaries of the strata are automatically
 defined to contain equal numbers of treated persons.}
@@ -24,7 +24,7 @@ Returns a date frame with the same columns as the input data plus one extra colu
 stratification variables for stratifications can also be used.
 }
 \details{
-The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
+The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
 \verb{propensityScore} \tab(real) \tab Propensity score \cr }

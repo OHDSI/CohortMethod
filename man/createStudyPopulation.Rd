@@ -15,7 +15,8 @@ createStudyPopulation(cohortMethodData, outcomeId, firstExposureOnly = TRUE,
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
-\item{outcomeId}{The  ID of the outcome.}
+\item{outcomeId}{The  ID of the outcome. If not specified, no outcome-specific transformations will
+be performed.}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Note that
 this is typically done in the \code{createStudyPopulation} function,}

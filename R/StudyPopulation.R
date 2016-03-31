@@ -24,7 +24,8 @@
 #'
 #' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
 #'                              \code{getDbCohortMethodData}.
-#' @param outcomeId             The  ID of the outcome.
+#' @param outcomeId             The  ID of the outcome. If not specified, no outcome-specific transformations will
+#'                              be performed.
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Note that
 #'                                     this is typically done in the \code{createStudyPopulation} function,
 #' @param washoutPeriod                The mininum required continuous observation time prior to index
@@ -93,16 +94,20 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Removed subjects in both cohorts")))
   }
   if (removeSubjectsWithPriorOutcome) {
-    writeLines("Removing subjects with prior outcomes (if any)")
-    outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
-    if (addExposureDaysToStart) {
-      outcomes <- merge(outcomes, population[, c("rowId","daysToCohortEnd")])
-      priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart]
+    if (missing(outcomeId) || is.null(outcomeId)){
+      writeLines("No outcome specified so skipping removing people with prior outcomes")
     } else {
-      priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent < riskWindowStart]
+      writeLines("Removing subjects with prior outcomes (if any)")
+      outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+      if (addExposureDaysToStart) {
+        outcomes <- merge(outcomes, population[, c("rowId","daysToCohortEnd")])
+        priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart]
+      } else {
+        priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent < riskWindowStart]
+      }
+      population <- population[!(population$rowId %in% priorOutcomeRowIds), ]
+      metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("No prior outcome")))
     }
-    population <- population[!(population$rowId %in% priorOutcomeRowIds), ]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("No prior outcome")))
   }
   # Create risk windows:
   population$riskStart <- riskWindowStart
@@ -120,34 +125,41 @@ createStudyPopulation <- function(cohortMethodData,
   population <- population[!(population$rowId %in% noAtRiskTimeRowIds), ]
   metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have time at risk")))
 
-  # Select outcomes during time at risk
-  outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
-  outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
-  outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
+  if (missing(outcomeId) || is.null(outcomeId)){
+    writeLines("No outcome specified so not creating outcome and time variables")
+  } else {
+    # Select outcomes during time at risk
+    outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+    outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
+    outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
 
-  # Create outcome and time columns (modelType specific):
-  if (modelType == "logistic" || modelType == "cox") {
-    population$outcome <- 0
-    population$outcome[population$rowId %in% unique(outcomes$rowId)] <- 1
-  }
-  if (modelType == "cox") {
-    # Keep first event per person (in risk window):
-    outcomes <- outcomes[order(outcomes$rowId, outcomes$daysToEvent), ]
-    outcomes <- outcomes[!duplicated(outcomes$rowId), ]
+    # Create outcome and time columns (modelType specific):
+    if (modelType == "logistic" || modelType == "cox") {
+      population$outcome <- 0
+      population$outcome[population$rowId %in% unique(outcomes$rowId)] <- 1
+    }
+    if (modelType == "cox") {
+      # Keep first event per person (in risk window):
+      outcomes <- outcomes[order(outcomes$rowId, outcomes$daysToEvent), ]
+      outcomes <- outcomes[!duplicated(outcomes$rowId), ]
 
-    population <- merge(population, outcomes[, c("rowId", "daysToEvent")], all.x = TRUE)
-    population$time = population$riskEnd - population$riskStart
-    population$time[population$outcome == 1] <- population$daysToEvent[population$outcome == 1] - population$riskStart[population$outcome == 1]
-  }
-  if (modelType == "poisson") {
-    population$time = population$riskEnd - population$riskStart
-    outcomes <- aggregate(outcomeId ~ rowId, data = outcomes, length)
-    colnames(outcomes)[colnames(outcomes) == "outcomeId"] <- "outcome"
-    population <- merge(population, outcomes[, c("rowId", "outcome")], all.x = TRUE)
-    population$outcome[is.na(population$outcome)] <- 0
+      population <- merge(population, outcomes[, c("rowId", "daysToEvent")], all.x = TRUE)
+      population$time = population$riskEnd - population$riskStart
+      population$time[population$outcome == 1] <- population$daysToEvent[population$outcome == 1] - population$riskStart[population$outcome == 1]
+    }
+    if (modelType == "poisson") {
+      population$time = population$riskEnd - population$riskStart
+      outcomes <- aggregate(outcomeId ~ rowId, data = outcomes, length)
+      colnames(outcomes)[colnames(outcomes) == "outcomeId"] <- "outcome"
+      population <- merge(population, outcomes[, c("rowId", "outcome")], all.x = TRUE)
+      population$outcome[is.na(population$outcome)] <- 0
+    }
+    metaData$modelType <- modelType
   }
   if (dropExtraColumns) {
-    if (modelType == "cox" || modelType == "poisson") {
+    if (missing(outcomeId) || is.null(outcomeId)) {
+      population <- population[, c("rowId", "subjectId", "treatment", "cohortStartDate")]
+    } else if (modelType == "cox" || modelType == "poisson") {
       population <- population[, c("rowId", "subjectId", "treatment", "cohortStartDate", "outcome", "time")]
     } else {
       population <- population[, c("rowId", "subjectId", "treatment", "cohortStartDate", "outcome")]
@@ -157,27 +169,31 @@ createStudyPopulation <- function(cohortMethodData,
   return(population)
 }
 
-limitCovariatesToPopulation <- function(covariates, population) {
-  idx <- !is.na(ffbase::ffmatch(covariates$rowId, population$rowId))
+limitCovariatesToPopulation <- function(covariates, rowIds) {
+  idx <- !is.na(ffbase::ffmatch(covariates$rowId, rowIds))
   covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
   return(covariates)
 }
 
 #' Get the attrition table for a population
 #'
-#' @param population   Either an object of type \code{cohortMethodData} or a population object generated by functions
-#'                     like \code{createStudyPopulation}.
+#' @param object   Either an object of type \code{cohortMethodData}, a population object generated by functions
+#'                     like \code{createStudyPopulation}, or an object of type \code{outcomeModel}.
 #'
 #' @return
 #' A data frame specifiyng the number of people and exposures in the population after specific sets of filtering.
 #'
 #'
 #' @export
-getAttritionTable <- function(population) {
-  if (is(population, "cohortMethodData")) {
-    population = population$cohorts
+getAttritionTable <- function(object) {
+  if (is(object, "cohortMethodData")) {
+    object = object$cohorts
   }
-  return(attr(population, "metaData")$attrition)
+  if (is(object, "outcomeModel")){
+    return(object$attrition)
+  } else {
+    return(attr(object, "metaData")$attrition)
+  }
 }
 
 getCounts <- function(population, description = "") {
