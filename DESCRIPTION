@@ -24,7 +24,7 @@ Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 1.3.0),
     Cyclops (>= 1.2.0),
-    PatientLevelPrediction (>= 1.1.0)
+    FeatureExtraction
 Imports:
     bit,
     ggplot2,

@@ -45,7 +45,7 @@ dbms <- "pdw"
 user <- NULL
 pw <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcr_v5.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v5.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -92,84 +92,122 @@ nsaids <- nsaids$CONCEPT_ID
 dbDisconnect(connection)
 
 covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateConditionOccurrence = TRUE,
-                                             useCovariateConditionOccurrence365d = TRUE,
-                                             useCovariateConditionOccurrence30d = TRUE,
-                                             useCovariateConditionOccurrenceInpt180d = TRUE,
-                                             useCovariateConditionEra = TRUE,
-                                             useCovariateConditionEraEver = TRUE,
-                                             useCovariateConditionEraOverlap = TRUE,
-                                             useCovariateConditionGroup = TRUE,
-                                             useCovariateDrugExposure = TRUE,
-                                             useCovariateDrugExposure365d = TRUE,
-                                             useCovariateDrugExposure30d = TRUE,
-                                             useCovariateDrugEra = TRUE,
-                                             useCovariateDrugEra365d = TRUE,
-                                             useCovariateDrugEra30d = TRUE,
-                                             useCovariateDrugEraEver = TRUE,
-                                             useCovariateDrugEraOverlap = TRUE,
-                                             useCovariateDrugGroup = TRUE,
-                                             useCovariateProcedureOccurrence = TRUE,
-                                             useCovariateProcedureOccurrence365d = TRUE,
-                                             useCovariateProcedureOccurrence30d = TRUE,
-                                             useCovariateProcedureGroup = TRUE,
-                                             useCovariateObservation = TRUE,
-                                             useCovariateObservation365d = TRUE,
-                                             useCovariateObservation30d = TRUE,
-                                             useCovariateObservationCount365d = TRUE,
-                                             useCovariateMeasurement365d = TRUE,
-                                             useCovariateMeasurement30d = TRUE,
-                                             useCovariateMeasurementCount365d = TRUE,
-                                             useCovariateMeasurementBelow = TRUE,
-                                             useCovariateMeasurementAbove = TRUE,
-                                             useCovariateConceptCounts = TRUE,
-                                             useCovariateRiskScores = TRUE,
-                                             useCovariateRiskScoresCharlson = TRUE,
-                                             useCovariateRiskScoresDCSI = TRUE,
-                                             useCovariateRiskScoresCHADS2 = TRUE,
+                                             useCovariateConditionOccurrence = FALSE,
+                                             useCovariateConditionOccurrence365d = FALSE,
+                                             useCovariateConditionOccurrence30d = FALSE,
+                                             useCovariateConditionOccurrenceInpt180d = FALSE,
+                                             useCovariateConditionEra = FALSE,
+                                             useCovariateConditionEraEver = FALSE,
+                                             useCovariateConditionEraOverlap = FALSE,
+                                             useCovariateConditionGroup = FALSE,
+                                             useCovariateDrugExposure = FALSE,
+                                             useCovariateDrugExposure365d = FALSE,
+                                             useCovariateDrugExposure30d = FALSE,
+                                             useCovariateDrugEra = FALSE,
+                                             useCovariateDrugEra365d = FALSE,
+                                             useCovariateDrugEra30d = FALSE,
+                                             useCovariateDrugEraEver = FALSE,
+                                             useCovariateDrugEraOverlap = FALSE,
+                                             useCovariateDrugGroup = FALSE,
+                                             useCovariateProcedureOccurrence = FALSE,
+                                             useCovariateProcedureOccurrence365d = FALSE,
+                                             useCovariateProcedureOccurrence30d = FALSE,
+                                             useCovariateProcedureGroup = FALSE,
+                                             useCovariateObservation = FALSE,
+                                             useCovariateObservation365d = FALSE,
+                                             useCovariateObservation30d = FALSE,
+                                             useCovariateObservationCount365d = FALSE,
+                                             useCovariateMeasurement365d = FALSE,
+                                             useCovariateMeasurement30d = FALSE,
+                                             useCovariateMeasurementCount365d = FALSE,
+                                             useCovariateMeasurementBelow = FALSE,
+                                             useCovariateMeasurementAbove = FALSE,
+                                             useCovariateConceptCounts = FALSE,
+                                             useCovariateRiskScores = FALSE,
+                                             useCovariateRiskScoresCharlson = FALSE,
+                                             useCovariateRiskScoresDCSI = FALSE,
+                                             useCovariateRiskScoresCHADS2 = FALSE,
                                              useCovariateInteractionYear = FALSE,
                                              useCovariateInteractionMonth = FALSE,
                                              excludedCovariateConceptIds = nsaids,
                                              deleteCovariatesSmallCount = 100)
 
 # Load data:
-
-debug(lowLevelQuerySql.ffdf)
-cohortMethodData <- getDbCohortMethodData(connectionDetails,
+cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
                                           oracleTempSchema = resultsDatabaseSchema,
                                           targetId = 1,
                                           comparatorId = 2,
-                                          indicationConceptIds = c(),
-                                          washoutWindow = 183,
-                                          indicationLookbackWindow = 183,
+                                          outcomeIds = 3,
                                           studyStartDate = "",
                                           studyEndDate = "",
-                                          exclusionConceptIds = nsaids,
-                                          outcomeIds = 3,
-                                          outcomeConditionTypeConceptIds = c(),
                                           exposureDatabaseSchema = resultsDatabaseSchema,
                                           exposureTable = "coxibVsNonselVsGiBleed",
                                           outcomeDatabaseSchema = resultsDatabaseSchema,
                                           outcomeTable = "coxibVsNonselVsGiBleed",
+                                          cdmVersion = cdmVersion,
                                           excludeDrugsFromCovariates = FALSE,
-                                          covariateSettings = covariateSettings,
-                                          cdmVersion = cdmVersion)
+                                          firstExposureOnly = TRUE,
+                                          washoutPeriod = 180,
+                                          covariateSettings = covariateSettings)
+
 # Error executing SQL: Error in .jcall(res@jr, "V", "close"): java.sql.SQLException: [Amazon](500150) Error setting/closing connection: Not Connected.
 # After removing on.exit clearResults:
 # Error executing SQL: Error in .jcall(rp, "I", "fetch", as.integer(n), block): java.sql.SQLException: [Amazon][JDBC](10060) Connection has been closed.
 # table has 148734670 rows
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
+# saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodData")
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
+# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodData')
 
-ps <- createPs(cohortMethodData, outcomeId = 3, control = createControl(cvType = "auto",
-                                                                        startingVariance = 0.01,
-                                                                        noiseLevel = "quiet",
-                                                                        tolerance  = 1e-07,
-                                                                        cvRepetitions = 10,
-                                                                        threads = 30))
+summary(cohortMethodData)
+getAttritionTable(cohortMethodData)
+
+studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                    outcomeId = 3,
+                                    firstExposureOnly = FALSE,
+                                    washoutPeriod = 0,
+                                    removeDuplicateSubjects = TRUE,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    priorOutcomeLookback = 365,
+                                    riskWindowStart = 0,
+                                    addExposureDaysToStart = FALSE,
+                                    riskWindowEnd = 0,
+                                    addExposureDaysToEnd = TRUE,
+                                    modelType = "logistic")
+
+getAttritionTable(studyPop)
+
+insertDbPopulation(population = studyPop,
+                   cohortIds = c(100,101),
+                   connectionDetails = connectionDetails,
+                   cohortDatabaseSchema = resultsDatabaseSchema,
+                   cohortTable = "mschuemi_test",
+                   createTable = TRUE,
+                   dropTableIfExists = TRUE,
+                   cdmVersion = 5)
+
+# Check number of subjects per cohort:
+connection <- DatabaseConnector::connect(connectionDetails)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.mschuemi_test GROUP BY cohort_definition_id"
+sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
+sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+DatabaseConnector::querySql(connection, sql)
+dbDisconnect(connection)
+
+ps <- createPs(cohortMethodData = cohortMethodData,
+               population = studyPop,
+               prior = createPrior("laplace", exclude = c(0), variance = 0.01, useCrossValidation = FALSE),
+               control = createControl(cvType = "auto",
+                                       startingVariance = 0.01,
+                                       noiseLevel = "quiet",
+                                       tolerance  = 1e-07,
+                                       cvRepetitions = 10,
+                                       threads = 16))
+
+computePsAuc(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 
 # ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")

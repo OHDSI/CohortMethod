@@ -4,20 +4,18 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortMethodData, excludePriorOutcome = TRUE, outcomeId = NULL,
-  excludeCovariateIds = NULL, stopOnHighCorrelation = TRUE,
-  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-  control = createControl(noiseLevel = "silent", cvType = "auto",
-  startingVariance = 0.1))
+createPs(cohortMethodData, population, excludeCovariateIds = c(),
+  stopOnHighCorrelation = TRUE, prior = createPrior("laplace", exclude =
+  c(0), useCrossValidation = TRUE), control = createControl(noiseLevel =
+  "silent", cvType = "auto", startingVariance = 0.1))
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
-\item{excludePriorOutcome}{Remove people that have the outcome prior to the index date?}
-
-\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the
-outcome will be removed prior to creating the propensity score model.}
+\item{population}{A data frame describing the population. This should at least have a 'rowId' column
+corresponding to the rowId column in the \code{cohortMethodData} covariates object and a 'treatment' column.
+If population is not specified, the full population in the \code{cohortMethodData} will be used.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 

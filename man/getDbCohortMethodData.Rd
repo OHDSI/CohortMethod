@@ -5,15 +5,13 @@
 \title{Get the cohort data from the server}
 \usage{
 getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
-  oracleTempSchema = cdmDatabaseSchema, targetId, comparatorId,
-  indicationConceptIds = c(), washoutWindow = 183,
-  indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
-  exclusionConceptIds = c(), outcomeIds,
-  outcomeConditionTypeConceptIds = c(),
+  oracleTempSchema = cdmDatabaseSchema, targetId, comparatorId, outcomeIds,
+  studyStartDate = "", studyEndDate = "",
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "condition_occurrence", cdmVersion = "4",
-  excludeDrugsFromCovariates = TRUE, covariateSettings)
+  outcomeTable = "condition_occurrence", cdmVersion = "5",
+  excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
+  washoutPeriod = 0, covariateSettings)
 }
 \arguments{
 \item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
@@ -42,29 +40,6 @@ define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
 is used to select the cohort_concept_id in the cohort-like
 table.}
 
-\item{indicationConceptIds}{A list of CONCEPT_IDs used to restrict the target and comparator
-cohorts, based on any descendant condition of this list
-occurring at least once within the indicationLookbackWindow
-prior to the cohort index date. If no concept IDs are specified,
-the cohorts are not restricted to any indication.}
-
-\item{washoutWindow}{The mininum required continuous observation time prior to index
-date for a person to be included in the cohort.}
-
-\item{indicationLookbackWindow}{The window to look back prior to cohort index date to identify
-records of a indication condition.  Only applicable if
-indicationConceptIds != ''.}
-
-\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index
-date can appear. Date format is 'yyyymmdd'.}
-
-\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index
-date can appear. Date format is 'yyyymmdd'.}
-
-\item{exclusionConceptIds}{A list of CONCEPT_IDs used to restrict the cohorts, based on any
-descendant conditions/drugs/procedures occurring at least once
-anytime prior to the cohort index date.}
-
 \item{outcomeIds}{A list of CONCEPT_IDs used to define outcomes.  If
 outcomeTable = CONDITION_OCCURRENCE, the list is a set of
 ancestor CONCEPT_IDs, and all occurrences of all descendant
@@ -72,9 +47,11 @@ concepts will be selected.  If outcomeTable <>
 CONDITION_OCCURRENCE, the list contains records found in
 COHORT_DEFINITION_ID field.}
 
-\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
-condition occurrences.  Only applicable if outcomeTable =
-CONDITION_OCCURRENCE.}
+\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index
+date can appear. Date format is 'yyyymmdd'.}
+
+\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index
+date can appear. Date format is 'yyyymmdd'.}
 
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.
@@ -106,23 +83,30 @@ concepts) be excluded from the covariates? Note that this will
 work if the drugs are actualy drug concept IDs (and not cohort
 IDs).}
 
+\item{firstExposureOnly}{Should only the first exposure per subject be included? Note that
+this is typically done in the \code{createStudyPopulation} function,
+but can already be done here for efficiency reasons.}
+
+\item{washoutPeriod}{The mininum required continuous observation time prior to index
+date for a person to be included in the cohort. Note that
+this is typically done in the \code{createStudyPopulation} function,
+but can already be done here for efficiency reasons.}
+
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
 \code{createCovariateSettings} function in the
-\code{PatientLevelPrediction} package..}
+\code{FeatureExtraction} package.}
 }
 \value{
 Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
 outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for
 efficiency reasons. This object is a list with the following components: \describe{
-\item{outcomes}{An ffdf object listing the outcomes per person, including the time to event, and
-the outcome conncept ID. Outcomes are not yet filtered based on risk window, since this is done at
-a later stage.} \item{cohorts}{An ffdf object listing the persons in each cohort, listing their
+\item{outcomes}{A data frame listing the outcomes per person, including the time to event, and
+the outcome id. Outcomes are not yet filtered based on risk window, since this is done at
+a later stage.} \item{cohorts}{A data frame listing the persons in each cohort, listing their
 exposure status as well as the time to the end of the observation period and time to the end of the
 cohort (usually the end of the exposure era).} \item{covariates}{An ffdf object listing the
 baseline covariates per person in the two cohorts. This is done using a sparse representation:
-covariates with a value of 0 are omitted to save space.} \item{exclude}{An ffdf object listing for
-each outcome concept ID the persons that need to be excluded from the analysis because of prior
-outcomes.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
+covariates with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
 \item{metaData}{A list of objects with information on how the cohortMethodData object was
 constructed.} } The generic \code{summary()} function has been implemented for this object.
 }
@@ -137,8 +121,7 @@ date. The treatment and comparator cohorts can be identified using the drug_era 
 user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
 Similarly, outcomes are identified using the condition_occurrence or condition_era table, or
 through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
-schema. Covariates are automatically extracted from the appropriate tables within the CDM.This
-function calls the \code{getDbCovariates} and \code{getDbOutcomes} functions.
+schema. Covariates are automatically extracted from the appropriate tables within the CDM.
 Important: The target and comparator drug must not be included in the covariates, including any
 descendant concepts. If the \code{targetId} and \code{comparatorId} arguments represent real
 concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically
