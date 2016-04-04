@@ -22,11 +22,10 @@
 #' extract the data needed to perform the analysis.
 #'
 #' @details
-#' Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates
-#' at or before the index date are extracted, as well as outcomes occurring on or after the index
-#' date. The treatment and comparator cohorts can be identified using the drug_era table, or through
+#' Based on the arguments, the treatment and comparator cohorts are retrieved, as well as outcomes
+#' occurring in exposed subjects. The treatment and comparator cohorts can be identified using the drug_era table, or through
 #' user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
-#' Similarly, outcomes are identified using the condition_occurrence or condition_era table, or
+#' Similarly, outcomes are identified using the condition_era table or
 #' through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
 #' schema. Covariates are automatically extracted from the appropriate tables within the CDM.
 #' Important: The target and comparator drug must not be included in the covariates, including any
@@ -58,16 +57,13 @@
 #'                                     define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
 #'                                     is used to select the cohort_concept_id in the cohort-like
 #'                                     table.
-#' @param outcomeIds                       A list of CONCEPT_IDs used to define outcomes.  If
-#'                                         outcomeTable = CONDITION_OCCURRENCE, the list is a set of
-#'                                         ancestor CONCEPT_IDs, and all occurrences of all descendant
-#'                                         concepts will be selected.  If outcomeTable <>
-#'                                         CONDITION_OCCURRENCE, the list contains records found in
-#'                                         COHORT_DEFINITION_ID field.
+#' @param outcomeIds                   A list of cohort_definition_ids used to define outcomes.
 #' @param studyStartDate               A calendar date specifying the minimum date that a cohort index
 #'                                     date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate                 A calendar date specifying the maximum date that a cohort index
-#'                                     date can appear. Date format is 'yyyymmdd'.
+#'                                     date can appear. Date format is 'yyyymmdd'. Important: the study
+#'                                     end data is also used to truncate risk windows, meaning no outcomes
+#'                                     beyond the study end date will be considered.
 #' @param exposureDatabaseSchema       The name of the database schema that is the location where the
 #'                                     exposure data used to define the exposure cohorts is available.
 #'                                     If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used
@@ -95,6 +91,9 @@
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Note that
 #'                                     this is typically done in the \code{createStudyPopulation} function,
 #'                                     but can already be done here for efficiency reasons.
+#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator cohort? Note that
+#'                                     this is typically done in the \code{createStudyPopulation} function,
+#'                                     but can already be done here for efficiency reasons.
 #' @param washoutPeriod                The mininum required continuous observation time prior to index
 #'                                     date for a person to be included in the cohort. Note that
 #'                                     this is typically done in the \code{createStudyPopulation} function,
@@ -115,7 +114,7 @@
 #' baseline covariates per person in the two cohorts. This is done using a sparse representation:
 #' covariates with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
 #' \item{metaData}{A list of objects with information on how the cohortMethodData object was
-#' constructed.} } The generic \code{summary()} function has been implemented for this object.
+#' constructed.} } The generic \code()} and \code{summary()} functions have been implemented for this object.
 #'
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
@@ -133,6 +132,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   cdmVersion = "5",
                                   excludeDrugsFromCovariates = TRUE,
                                   firstExposureOnly = FALSE,
+                                  removeDuplicateSubjects = FALSE,
                                   washoutPeriod = 0,
                                   covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
@@ -172,6 +172,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    study_start_date = studyStartDate,
                                                    study_end_date = studyEndDate,
                                                    first_only = firstExposureOnly,
+                                                   remove_duplicate_subjects = removeDuplicateSubjects,
                                                    washout_period = washoutPeriod)
   DatabaseConnector::executeSql(connection, renderedSql)
 
@@ -188,7 +189,7 @@ getDbCohortMethodData <- function(connectionDetails,
                    comparatorId = comparatorId,
                    studyStartDate = studyStartDate,
                    studyEndDate = studyEndDate)
-  if (firstExposureOnly || washoutPeriod != 0) {
+  if (firstExposureOnly || removeDuplicateSubjects || washoutPeriod != 0) {
     rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
@@ -209,15 +210,18 @@ getDbCohortMethodData <- function(connectionDetails,
                          treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
                          comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
     metaData$attrition <- counts
-    if (firstExposureOnly && washoutPeriod == 0) {
-      label <- "First exposure only"
+    label <- c()
+    if (firstExposureOnly) {
+      label <- c(label,"first exp. only")
     }
-    if (firstExposureOnly && washoutPeriod != 0) {
-      label <- paste("First exposure only and requiring", washoutPeriod, "days of observation prior index date")
+    if (removeDuplicateSubjects) {
+      label <- c(label,"removed subs in both cohorts")
     }
-    if (!firstExposureOnly && washoutPeriod != 0) {
-      label <- paste("Requiring", washoutPeriod, "days of observation prior index date")
+    if (washoutPeriod) {
+      label <- c(label, paste(washoutPeriod, "days of obs. prior"))
     }
+    label <- paste(label, collapse = " & ")
+    substring(label, 1) <- toupper(substring(label, 1, 1))
     metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, label))
   } else {
     metaData$attrition <- getCounts(cohorts, "Original cohorts")
@@ -483,8 +487,20 @@ insertDbPopulation <- function(population,
   population$cohortEndDate <- NA
   colnames(population) <- SqlRender::camelCaseToSnakeCase(colnames(population))
   connection <- DatabaseConnector::connect(connectionDetails)
-  writeLines(paste("Writing", nrow(population), " rows to", paste(cohortDatabaseSchema, cohortTable, sep = ".")))
+  writeLines(paste("Writing", nrow(population), "rows to", paste(cohortDatabaseSchema, cohortTable, sep = ".")))
   start <- Sys.time()
+  if (!createTable) {
+    if (cdmVersion == "4") {
+      sql <- "DELETE FROM @table WHERE cohort_concept_id IN (@cohort_ids);"
+    } else {
+      sql <- "DELETE FROM @table WHERE cohort_definition_id IN (@cohort_ids);"
+    }
+    sql <- SqlRender::renderSql(sql,
+                                table = paste(cohortDatabaseSchema, cohortTable, sep = "."),
+                                cohort_ids = cohortIds)$sql
+    sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+    DatabaseConnector::executeSql(connection = connection, sql = sql, progressBar = FALSE, reportOverallTime = FALSE)
+  }
   DatabaseConnector::insertTable(connection = connection,
                                  tableName = paste(cohortDatabaseSchema, cohortTable, sep = "."),
                                  data = population,

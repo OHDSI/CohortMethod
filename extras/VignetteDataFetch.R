@@ -19,7 +19,7 @@
 # This code should be used to fetch the data that is used in the vignettes.
 library(SqlRender)
 library(DatabaseConnector)
-library(CohortMethod);
+library(CohortMethod)
 setwd('s:/temp')
 options('fftempdir' = 's:/fftemp')
 
@@ -92,41 +92,41 @@ nsaids <- nsaids$CONCEPT_ID
 dbDisconnect(connection)
 
 covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateConditionOccurrence = FALSE,
-                                             useCovariateConditionOccurrence365d = FALSE,
-                                             useCovariateConditionOccurrence30d = FALSE,
-                                             useCovariateConditionOccurrenceInpt180d = FALSE,
-                                             useCovariateConditionEra = FALSE,
-                                             useCovariateConditionEraEver = FALSE,
-                                             useCovariateConditionEraOverlap = FALSE,
-                                             useCovariateConditionGroup = FALSE,
-                                             useCovariateDrugExposure = FALSE,
-                                             useCovariateDrugExposure365d = FALSE,
-                                             useCovariateDrugExposure30d = FALSE,
-                                             useCovariateDrugEra = FALSE,
-                                             useCovariateDrugEra365d = FALSE,
-                                             useCovariateDrugEra30d = FALSE,
-                                             useCovariateDrugEraEver = FALSE,
-                                             useCovariateDrugEraOverlap = FALSE,
-                                             useCovariateDrugGroup = FALSE,
-                                             useCovariateProcedureOccurrence = FALSE,
-                                             useCovariateProcedureOccurrence365d = FALSE,
-                                             useCovariateProcedureOccurrence30d = FALSE,
-                                             useCovariateProcedureGroup = FALSE,
-                                             useCovariateObservation = FALSE,
-                                             useCovariateObservation365d = FALSE,
-                                             useCovariateObservation30d = FALSE,
-                                             useCovariateObservationCount365d = FALSE,
-                                             useCovariateMeasurement365d = FALSE,
-                                             useCovariateMeasurement30d = FALSE,
-                                             useCovariateMeasurementCount365d = FALSE,
-                                             useCovariateMeasurementBelow = FALSE,
-                                             useCovariateMeasurementAbove = FALSE,
-                                             useCovariateConceptCounts = FALSE,
-                                             useCovariateRiskScores = FALSE,
-                                             useCovariateRiskScoresCharlson = FALSE,
-                                             useCovariateRiskScoresDCSI = FALSE,
-                                             useCovariateRiskScoresCHADS2 = FALSE,
+                                             useCovariateConditionOccurrence = TRUE,
+                                             useCovariateConditionOccurrence365d = TRUE,
+                                             useCovariateConditionOccurrence30d = TRUE,
+                                             useCovariateConditionOccurrenceInpt180d = TRUE,
+                                             useCovariateConditionEra = TRUE,
+                                             useCovariateConditionEraEver = TRUE,
+                                             useCovariateConditionEraOverlap = TRUE,
+                                             useCovariateConditionGroup = TRUE,
+                                             useCovariateDrugExposure = TRUE,
+                                             useCovariateDrugExposure365d = TRUE,
+                                             useCovariateDrugExposure30d = TRUE,
+                                             useCovariateDrugEra = TRUE,
+                                             useCovariateDrugEra365d = TRUE,
+                                             useCovariateDrugEra30d = TRUE,
+                                             useCovariateDrugEraEver = TRUE,
+                                             useCovariateDrugEraOverlap = TRUE,
+                                             useCovariateDrugGroup = TRUE,
+                                             useCovariateProcedureOccurrence = TRUE,
+                                             useCovariateProcedureOccurrence365d = TRUE,
+                                             useCovariateProcedureOccurrence30d = TRUE,
+                                             useCovariateProcedureGroup = TRUE,
+                                             useCovariateObservation = TRUE,
+                                             useCovariateObservation365d = TRUE,
+                                             useCovariateObservation30d = TRUE,
+                                             useCovariateObservationCount365d = TRUE,
+                                             useCovariateMeasurement365d = TRUE,
+                                             useCovariateMeasurement30d = TRUE,
+                                             useCovariateMeasurementCount365d = TRUE,
+                                             useCovariateMeasurementBelow = TRUE,
+                                             useCovariateMeasurementAbove = TRUE,
+                                             useCovariateConceptCounts = TRUE,
+                                             useCovariateRiskScores = TRUE,
+                                             useCovariateRiskScoresCharlson = TRUE,
+                                             useCovariateRiskScoresDCSI = TRUE,
+                                             useCovariateRiskScoresCHADS2 = TRUE,
                                              useCovariateInteractionYear = FALSE,
                                              useCovariateInteractionMonth = FALSE,
                                              excludedCovariateConceptIds = nsaids,
@@ -148,6 +148,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmVersion = cdmVersion,
                                           excludeDrugsFromCovariates = FALSE,
                                           firstExposureOnly = TRUE,
+                                          removeDuplicateSubjects = TRUE,
                                           washoutPeriod = 180,
                                           covariateSettings = covariateSettings)
 
@@ -160,83 +161,77 @@ saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMetho
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
 
-
-summary(cohortMethodData)
+# summary(cohortMethodData)
 getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
                                   firstExposureOnly = FALSE,
                                   washoutPeriod = 0,
-                                  removeDuplicateSubjects = TRUE,
+                                  removeDuplicateSubjects = FALSE,
                                   removeSubjectsWithPriorOutcome = TRUE,
-                                  priorOutcomeLookback = 365,
+                                  requireTimeAtRisk = TRUE,
                                   riskWindowStart = 0,
                                   addExposureDaysToStart = FALSE,
-                                  riskWindowEnd = 0,
-                                  addExposureDaysToEnd = TRUE,
-                                  modelType = "cox")
-
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE)
 getAttritionTable(studyPop)
 
-insertDbPopulation(population = studyPop,
-                   cohortIds = c(100,101),
-                   connectionDetails = connectionDetails,
-                   cohortDatabaseSchema = resultsDatabaseSchema,
-                   cohortTable = "mschuemi_test",
-                   createTable = TRUE,
-                   dropTableIfExists = TRUE,
-                   cdmVersion = 5)
+saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
 
-# Check number of subjects per cohort:
-connection <- DatabaseConnector::connect(connectionDetails)
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.mschuemi_test GROUP BY cohort_definition_id"
-sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-DatabaseConnector::querySql(connection, sql)
-dbDisconnect(connection)
 
 ps <- createPs(cohortMethodData = cohortMethodData,
                population = studyPop,
-               prior = createPrior("laplace", exclude = c(0), variance = 0.01, useCrossValidation = FALSE),
+               prior = createPrior("laplace", exclude = c(0), variance = 0.00941, useCrossValidation = FALSE),
                control = createControl(cvType = "auto",
                                        startingVariance = 0.01,
                                        noiseLevel = "quiet",
-                                       tolerance  = 1e-07,
-                                       cvRepetitions = 10,
+                                       tolerance  = 2e-07,
+                                       cvRepetitions = 1,
                                        threads = 16))
 
 computePsAuc(ps)
 plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
-
-
 # ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
+
+
+# insertDbPopulation(population = studyPop,
+#                    cohortIds = c(101,100),
+#                    connectionDetails = connectionDetails,
+#                    cohortDatabaseSchema = resultsDatabaseSchema,
+#                    cohortTable = "mschuemi_test",
+#                    createTable = TRUE,
+#                    dropTableIfExists = TRUE,
+#                    cdmVersion = 5)
+
+# Check number of subjects per cohort:
+# connection <- DatabaseConnector::connect(connectionDetails)
+# sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.mschuemi_test GROUP BY cohort_definition_id"
+# sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
+# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+# DatabaseConnector::querySql(connection, sql)
+# dbDisconnect(connection)
 
 # trimmed <- trimByPs(ps)
 # trimmed <- trimByPsToEquipoise(ps)
 # plotPs(trimmed, ps)
 
-strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-getAttritionTable(strata)
+matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+# getAttritionTable(matchedPop)
+# plotPs(matchedPop, ps)
 
-# strata <- matchOnPsAndCovariates(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1, cohortMethodData = cohortMethodData, covariateIds = 8507)
-# strata <- stratifyByPs(ps)
-# strata <- stratifyByPsAndCovariates(ps, cohortMethodData = cohortMethodData, covariateIds = 8507)
-# head(strata)
-
-plotPs(strata, ps)
-
-balance <- computeCovariateBalance(strata, cohortMethodData)
+balance <- computeCovariateBalance(matchedPop, cohortMethodData)
 
 saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 # balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
 
-plotCovariateBalanceScatterPlot(balance)
-plotCovariateBalanceOfTopVariables(balance)
+# plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
+# plotCovariateBalanceOfTopVariables(balance)
 
 outcomeModel <- fitOutcomeModel(population = studyPop,
+                                modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE)
 #getAttritionTable(outcomeModel)
@@ -245,19 +240,21 @@ outcomeModel <- fitOutcomeModel(population = studyPop,
 #coef(outcomeModel)
 #confint(outcomeModel)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
-outcomeModel <- fitOutcomeModel(population = strata,
+
+outcomeModel <- fitOutcomeModel(population = matchedPop,
+                                modelType = "cox",
                                 stratified = TRUE,
                                 useCovariates = FALSE)
-
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
 
-
-outcomeModel <- fitOutcomeModel(population = strata,
+outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 cohortMethodData = cohortMethodData,
+                                modelType = "cox",
                                 stratified = TRUE,
                                 useCovariates = TRUE,
+                                prior = createPrior("laplace", useCrossValidation = TRUE),
                                 control = createControl(cvType = "auto",
-                                                        startingVariance = 0.1,
+                                                        startingVariance = 0.01,
                                                         selectorType = "byPid",
                                                         cvRepetitions = 1,
                                                         tolerance = 2e-07,
@@ -265,7 +262,9 @@ outcomeModel <- fitOutcomeModel(population = strata,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 
-
+# outcomeModel <- readRDS(file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
+# drawAttritionDiagram(outcomeModel, fileName = "s:/temp/attrition.png")
+# summary(outcomeModel)
 
 #### Fetch data for multiple analyses vignette ####
 library(CohortMethod)

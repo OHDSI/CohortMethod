@@ -40,7 +40,7 @@ rows that could not be matched are removed
 The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
 \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
 \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-\tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr } This function
+\tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 }
 \examples{

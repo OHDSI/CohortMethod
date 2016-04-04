@@ -47,7 +47,7 @@ SELECT DISTINCT row_id,
 } : {
 	outcome.cohort_definition_id AS outcome_id,
 }	
-	DATEDIFF(DAY, outcome.cohort_start_date, cohort_person.cohort_start_date) AS days_to_event
+	DATEDIFF(DAY, cohort_person.cohort_start_date, outcome.cohort_start_date) AS days_to_event
 FROM #cohort_person cohort_person
 INNER JOIN @outcome_database_schema.@outcome_table outcome
 	ON cohort_person.subject_id = outcome.subject_id

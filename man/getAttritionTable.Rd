@@ -11,7 +11,7 @@ getAttritionTable(object)
 like \code{createStudyPopulation}, or an object of type \code{outcomeModel}.}
 }
 \value{
-A data frame specifiyng the number of people and exposures in the population after specific sets of filtering.
+A data frame specifying the number of people and exposures in the population after specific steps of filtering.
 }
 \description{
 Get the attrition table for a population

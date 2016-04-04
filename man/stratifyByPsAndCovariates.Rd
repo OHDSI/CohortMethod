@@ -31,7 +31,7 @@ persons.
 The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
 \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
-\verb{propensityScore} \tab(real) \tab Propensity score \cr }
+\verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{
 # todo

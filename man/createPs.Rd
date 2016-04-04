@@ -5,9 +5,10 @@
 \title{Create propensity scores}
 \usage{
 createPs(cohortMethodData, population, excludeCovariateIds = c(),
-  stopOnHighCorrelation = TRUE, prior = createPrior("laplace", exclude =
-  c(0), useCrossValidation = TRUE), control = createControl(noiseLevel =
-  "silent", cvType = "auto", startingVariance = 0.1))
+  includeCovariateIds = c(), stopOnHighCorrelation = TRUE,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+  control = createControl(noiseLevel = "silent", cvType = "auto", tolerance =
+  2e-07, cvRepetitions = 10, startingVariance = 0.01))
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
@@ -18,6 +19,8 @@ corresponding to the rowId column in the \code{cohortMethodData} covariates obje
 If population is not specified, the full population in the \code{cohortMethodData} will be used.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
+
+\item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
 \item{stopOnHighCorrelation}{If true, the function will test each covariate for correlation with the
 treatment assignment. If any covariate has an unusually high correlation

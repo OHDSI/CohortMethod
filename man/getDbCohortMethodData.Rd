@@ -11,7 +11,7 @@ getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = "5",
   excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
-  washoutPeriod = 0, covariateSettings)
+  removeDuplicateSubjects = FALSE, washoutPeriod = 0, covariateSettings)
 }
 \arguments{
 \item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
@@ -40,18 +40,15 @@ define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
 is used to select the cohort_concept_id in the cohort-like
 table.}
 
-\item{outcomeIds}{A list of CONCEPT_IDs used to define outcomes.  If
-outcomeTable = CONDITION_OCCURRENCE, the list is a set of
-ancestor CONCEPT_IDs, and all occurrences of all descendant
-concepts will be selected.  If outcomeTable <>
-CONDITION_OCCURRENCE, the list contains records found in
-COHORT_DEFINITION_ID field.}
+\item{outcomeIds}{A list of cohort_definition_ids used to define outcomes.}
 
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort index
 date can appear. Date format is 'yyyymmdd'.}
 
 \item{studyEndDate}{A calendar date specifying the maximum date that a cohort index
-date can appear. Date format is 'yyyymmdd'.}
+date can appear. Date format is 'yyyymmdd'. Important: the study
+end data is also used to truncate risk windows, meaning no outcomes
+beyond the study end date will be considered.}
 
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.
@@ -87,6 +84,10 @@ IDs).}
 this is typically done in the \code{createStudyPopulation} function,
 but can already be done here for efficiency reasons.}
 
+\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator cohort? Note that
+this is typically done in the \code{createStudyPopulation} function,
+but can already be done here for efficiency reasons.}
+
 \item{washoutPeriod}{The mininum required continuous observation time prior to index
 date for a person to be included in the cohort. Note that
 this is typically done in the \code{createStudyPopulation} function,
@@ -96,30 +97,15 @@ but can already be done here for efficiency reasons.}
 \code{createCovariateSettings} function in the
 \code{FeatureExtraction} package.}
 }
-\value{
-Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
-outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for
-efficiency reasons. This object is a list with the following components: \describe{
-\item{outcomes}{A data frame listing the outcomes per person, including the time to event, and
-the outcome id. Outcomes are not yet filtered based on risk window, since this is done at
-a later stage.} \item{cohorts}{A data frame listing the persons in each cohort, listing their
-exposure status as well as the time to the end of the observation period and time to the end of the
-cohort (usually the end of the exposure era).} \item{covariates}{An ffdf object listing the
-baseline covariates per person in the two cohorts. This is done using a sparse representation:
-covariates with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
-\item{metaData}{A list of objects with information on how the cohortMethodData object was
-constructed.} } The generic \code{summary()} function has been implemented for this object.
-}
 \description{
 This function executes a large set of SQL statements against the database in OMOP CDM format to
 extract the data needed to perform the analysis.
 }
 \details{
-Based on the parameters, the treatment and comparator cohorts are constructed. Baseline covariates
-at or before the index date are extracted, as well as outcomes occurring on or after the index
-date. The treatment and comparator cohorts can be identified using the drug_era table, or through
+Based on the arguments, the treatment and comparator cohorts are retrieved, as well as outcomes
+occurring in exposed subjects. The treatment and comparator cohorts can be identified using the drug_era table, or through
 user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
-Similarly, outcomes are identified using the condition_occurrence or condition_era table, or
+Similarly, outcomes are identified using the condition_era table or
 through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
 schema. Covariates are automatically extracted from the appropriate tables within the CDM.
 Important: The target and comparator drug must not be included in the covariates, including any

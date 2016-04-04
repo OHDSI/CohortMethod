@@ -45,13 +45,17 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   propensityModel <- attr(propensityScore, "coefficients")
 
   writeLines("Fitting outcome model(s)")
-  psTrimmed <- trimByPsToEquipoise(propensityScore)
-  strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+
 
   outcomeModels <- vector("list", length(cohortMethodData$metaData$outcomeIds))
   for (i in 1:length(cohortMethodData$metaData$outcomeIds)) {
     outcomeId <- cohortMethodData$metaData$outcomeIds[i]
-    outcomeModel <- fitOutcomeModel(outcomeId,
+	studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                    population = propensityScore,
+									outcomeId = outcomeI )
+    studyPop <- trimByPsToEquipoise(studyPop)
+    studyPop <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+    outcomeModel <- fitOutcomeModel(studyPop,
                                     cohortMethodData,
                                     strata,
                                     useCovariates = TRUE,

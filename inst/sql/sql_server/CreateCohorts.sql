@@ -28,6 +28,7 @@ limitations under the License.
 {DEFAULT @study_end_date = '' }
 {DEFAULT @first_only = FALSE}
 {DEFAULT @washout_period = 0}
+{DEFAULT @remove_duplicate_subjects = FALSE}
 
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_person;
@@ -73,18 +74,22 @@ FROM (
 {@exposure_table == 'drug_era' } ? { 
 	SELECT person_id AS subject_id,
 		CASE
-			WHEN ancestor_concept_id = @target_id
+			WHEN drug_concept_id = @target_id
 				THEN 1
-			WHEN ancestor_concept_id = @comparator_id
+			WHEN drug_concept_id = @comparator_id
 				THEN 0
 			ELSE - 1
 			END AS cohort_definition_id,
 		drug_era_start_date AS cohort_start_date,
 		drug_era_end_date AS cohort_end_date
-	FROM @cdm_database_schema.drug_era
-	INNER JOIN concept_ancestor 
-		ON drug_concept_id = descendant_concept_id
-	WHERE ancestor_concept_id IN (@target_id, @comparator_id)
+	FROM  @exposure_database_schema.@exposure_table exposure_table
+	WHERE drug_concept_id IN (@target_id, @comparator_id)
+{@remove_duplicate_subjects} ? {
+		AND (SELECT COUNT(DISTINCT(drug_concept_id)) 
+			 FROM @exposure_database_schema.@exposure_table temp
+			 WHERE temp.subject_id = exposure_table.subject_id
+			 AND drug_concept_id IN (@target_id, @comparator_id)) = 1
+}	
 } : {
 	SELECT subject_id,
 		CASE
@@ -103,11 +108,23 @@ FROM (
 		END AS cohort_definition_id,
 		cohort_start_date,
 		cohort_end_date
-	FROM @exposure_database_schema.@exposure_table
+	FROM @exposure_database_schema.@exposure_table exposure_table
 {@cdm_version == "4"} ? {	
 	WHERE cohort_concept_id IN (@target_id, @comparator_id)
+{@remove_duplicate_subjects} ? {
+		AND (SELECT COUNT(DISTINCT(cohort_concept_id)) 
+			 FROM @exposure_database_schema.@exposure_table temp
+			 WHERE temp.subject_id = exposure_table.subject_id
+			 AND cohort_concept_id IN (@target_id, @comparator_id)) = 1
+}
 } : {
 	WHERE cohort_definition_id IN (@target_id, @comparator_id)
+{@remove_duplicate_subjects} ? {
+		AND (SELECT COUNT(DISTINCT(cohort_definition_id)) 
+			 FROM @exposure_database_schema.@exposure_table temp
+			 WHERE temp.subject_id = exposure_table.subject_id
+			 AND cohort_definition_id IN (@target_id, @comparator_id)) = 1
+}	
 }
 }
 	) raw_cohorts

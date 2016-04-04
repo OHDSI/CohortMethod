@@ -4,16 +4,19 @@
 \alias{createStudyPopulation}
 \title{Create a study population}
 \usage{
-createStudyPopulation(cohortMethodData, outcomeId, firstExposureOnly = TRUE,
-  washoutPeriod = 180, removeDuplicateSubjects = TRUE,
-  removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
+createStudyPopulation(cohortMethodData, population = NULL, outcomeId,
+  firstExposureOnly = FALSE, washoutPeriod = 0,
+  removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
+  priorOutcomeLookback = 99999, requireTimeAtRisk = FALSE,
   riskWindowStart = 0, addExposureDaysToStart = FALSE, riskWindowEnd = 0,
-  addExposureDaysToEnd = TRUE, modelType = "logistic",
-  dropExtraColumns = TRUE)
+  addExposureDaysToEnd = TRUE)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
+
+\item{population}{If specified, this population will be used as the starting point instead of the
+cohorts in the \code{cohortMethodData} object.}
 
 \item{outcomeId}{The  ID of the outcome. If not specified, no outcome-specific transformations will
 be performed.}
@@ -30,6 +33,8 @@ date for a person to be included in the cohort.}
 
 \item{priorOutcomeLookback}{How many days should we look back when identifying prior outcomes?}
 
+\item{requireTimeAtRisk}{Should subject without time at risk be removed?}
+
 \item{riskWindowStart}{The start of the risk window (in days) relative to the index date (+
 days of exposure if the \code{addExposureDaysToStart} parameter is
 specified).}
@@ -41,9 +46,6 @@ days of exposure if the \code{addExposureDaysToEnd} parameter is
 specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
-
-\item{modelType}{The type of outcome model that will be used. Possible values are
-"logistic", "poisson", or "cox".}
 }
 \value{
 A data frame specifying the study population. This data frame will have the following columns:
@@ -51,8 +53,9 @@ A data frame specifying the study population. This data frame will have the foll
 \item{rowId}{A unique identifier for an exposure}
 \item{subjectId}{The person ID of the subject}
 \item{cohortStartdate}{The index date}
-\item{outcome}{The outcome variable, which value depends on the modelType}
-\item{time}{Optional: for survival models this is the time to event or end of risk windows, for poisson models this is the time to the end of the risk window.}
+\item{outcomeCount}{The number of outcomes observed during the risk window}
+\item{timeAtRisk}{The number of days in the risk window}
+\item{survivalTime}{The number of days until either the outcome or the end of the risk window}
 }
 }
 \description{
