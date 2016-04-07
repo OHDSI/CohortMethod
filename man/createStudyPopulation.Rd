@@ -7,8 +7,8 @@
 createStudyPopulation(cohortMethodData, population = NULL, outcomeId,
   firstExposureOnly = FALSE, washoutPeriod = 0,
   removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
-  priorOutcomeLookback = 99999, requireTimeAtRisk = FALSE,
-  riskWindowStart = 0, addExposureDaysToStart = FALSE, riskWindowEnd = 0,
+  priorOutcomeLookback = 99999, minDaysAtRisk = 1, riskWindowStart = 0,
+  addExposureDaysToStart = FALSE, riskWindowEnd = 0,
   addExposureDaysToEnd = TRUE)
 }
 \arguments{
@@ -33,7 +33,7 @@ date for a person to be included in the cohort.}
 
 \item{priorOutcomeLookback}{How many days should we look back when identifying prior outcomes?}
 
-\item{requireTimeAtRisk}{Should subject without time at risk be removed?}
+\item{minDaysAtRisk}{The minimum required number of days at risk.}
 
 \item{riskWindowStart}{The start of the risk window (in days) relative to the index date (+
 days of exposure if the \code{addExposureDaysToStart} parameter is

@@ -162,7 +162,7 @@ saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMetho
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
 
 # summary(cohortMethodData)
-getAttritionTable(cohortMethodData)
+# getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
@@ -170,19 +170,19 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   washoutPeriod = 0,
                                   removeDuplicateSubjects = FALSE,
                                   removeSubjectsWithPriorOutcome = TRUE,
-                                  requireTimeAtRisk = TRUE,
+                                  minDaysAtRisk = 1,
                                   riskWindowStart = 0,
                                   addExposureDaysToStart = FALSE,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE)
-getAttritionTable(studyPop)
+# getAttritionTable(studyPop)
 
 saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
 
 
 ps <- createPs(cohortMethodData = cohortMethodData,
                population = studyPop,
-               prior = createPrior("laplace", exclude = c(0), variance = 0.00941, useCrossValidation = FALSE),
+               prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                control = createControl(cvType = "auto",
                                        startingVariance = 0.01,
                                        noiseLevel = "quiet",
@@ -190,8 +190,8 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        cvRepetitions = 1,
                                        threads = 16))
 
-computePsAuc(ps)
-plotPs(ps)
+# computePsAuc(ps)
+# plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 # ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
 

@@ -87,7 +87,7 @@ FROM (
 {@remove_duplicate_subjects} ? {
 		AND (SELECT COUNT(DISTINCT(drug_concept_id)) 
 			 FROM @exposure_database_schema.@exposure_table temp
-			 WHERE temp.subject_id = exposure_table.subject_id
+			 WHERE temp.person_id = exposure_table.person_id
 			 AND drug_concept_id IN (@target_id, @comparator_id)) = 1
 }	
 } : {

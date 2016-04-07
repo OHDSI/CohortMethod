@@ -35,7 +35,7 @@
 #'                                     date for a person to be included in the cohort.
 #' @param removeSubjectsWithPriorOutcome  Remove subjects that have the outcome prior to the risk window start?
 #' @param priorOutcomeLookback            How many days should we look back when identifying prior outcomes?
-#' @param requireTimeAtRisk      Should subject without time at risk be removed?
+#' @param minDaysAtRisk          The minimum required number of days at risk.
 #' @param riskWindowStart        The start of the risk window (in days) relative to the index date (+
 #'                               days of exposure if the \code{addExposureDaysToStart} parameter is
 #'                               specified).
@@ -65,7 +65,7 @@ createStudyPopulation <- function(cohortMethodData,
                                   removeDuplicateSubjects = FALSE,
                                   removeSubjectsWithPriorOutcome = TRUE,
                                   priorOutcomeLookback = 99999,
-                                  requireTimeAtRisk = FALSE,
+                                  minDaysAtRisk = 1,
                                   riskWindowStart = 0,
                                   addExposureDaysToStart = FALSE,
                                   riskWindowEnd = 0,
@@ -121,11 +121,11 @@ createStudyPopulation <- function(cohortMethodData,
   }
   population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd > population$daysToObsEnd]
 
-  if (requireTimeAtRisk) {
-    writeLines("Removing subjects with no time at risk (if any)")
-    noAtRiskTimeRowIds <- population$rowId[population$riskEnd < population$riskStart]
+  if (minDaysAtRisk != 0) {
+    writeLines(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
+    noAtRiskTimeRowIds <- population$rowId[population$riskEnd - population$riskStart < minDaysAtRisk]
     population <- population[!(population$rowId %in% noAtRiskTimeRowIds), ]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have time at risk")))
+    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least", minDaysAtRisk, "days at risk")))
   }
   if (missing(outcomeId) || is.null(outcomeId)){
     writeLines("No outcome specified so not creating outcome and time variables")

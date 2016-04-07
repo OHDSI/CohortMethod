@@ -4,10 +4,10 @@
 \alias{simulateCohortMethodData}
 \title{Generate simulated data}
 \usage{
-simulateCohortMethodData(cohortDataSimulationProfile, n = 10000)
+simulateCohortMethodData(profile, n = 10000)
 }
 \arguments{
-\item{cohortDataSimulationProfile}{An object of type \code{cohortDataSimulationProfile} as
+\item{profile}{An object of type \code{cohortMethodDataSimulationProfile} as
 generated using the
 \cr\code{createCohortMethodDataSimulationProfile} function.}
 

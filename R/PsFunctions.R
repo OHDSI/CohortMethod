@@ -569,12 +569,12 @@ matchOnPsAndCovariates <- function(population,
                                    caliper = 0.25,
                                    caliperScale = "standardized",
                                    maxRatio = 1,
-                                   cohortMethodpopulation,
+                                   cohortMethodData,
                                    covariateIds) {
   if (caliperScale != "standardized" && caliperScale != "propensity score")
     stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
 
-  population <- mergeCovariatesWithPs(population, cohortMethodpopulation, covariateIds)
+  population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
                                                                                 covariateIds,
                                                                                 sep = "_")]

@@ -5,7 +5,7 @@
 \title{Match by propensity score as well as other covariates}
 \usage{
 matchOnPsAndCovariates(population, caliper = 0.25,
-  caliperScale = "standardized", maxRatio = 1, cohortMethodpopulation,
+  caliperScale = "standardized", maxRatio = 1, cohortMethodData,
   covariateIds)
 }
 \arguments{
@@ -25,11 +25,11 @@ distribution.}
 person in the treatment arm. A maxRatio of 0 means no maximum: all
 comparators will be assigned to a treated person.}
 
-\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
-subjects should be also matched.}
-
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
+
+\item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
+subjects should be also matched.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any

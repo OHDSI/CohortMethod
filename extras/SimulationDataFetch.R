@@ -27,6 +27,7 @@ user <- NULL
 server <- "RNDUSRDHIT07.jnj.com"
 cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
 port <- NULL
+cdmVersion <- 4
 
 pw <- NULL
 dbms <- "pdw"
@@ -35,6 +36,7 @@ server <- "JRDUSAPSCTL01"
 cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
+cdmVersion <- 4
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 server = server,
@@ -80,54 +82,35 @@ covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                              useCovariateRiskScoresCHADS2 = FALSE,
                                              useCovariateInteractionYear = FALSE,
                                              useCovariateInteractionMonth = FALSE,
-                                             excludedCovariateConceptIds = c(4027133,
-                                                                             4032243,
-                                                                             4146536,
-                                                                             2002282,
-                                                                             2213572,
-                                                                             2005890,
-                                                                             43534760,
-                                                                             21601019),
                                              deleteCovariatesSmallCount = 100)
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
                                           targetId = 755695,
                                           comparatorId = 739138,
-                                          indicationConceptIds = 439926,
-                                          washoutWindow = 183,
-                                          indicationLookbackWindow = 183,
-                                          studyStartDate = "",
-                                          studyEndDate = "",
-                                          exclusionConceptIds = c(4027133,
-                                                                  4032243,
-                                                                  4146536,
-                                                                  2002282,
-                                                                  2213572,
-                                                                  2005890,
-                                                                  43534760,
-                                                                  21601019),
                                           outcomeIds = 194133,
-                                          outcomeConditionTypeConceptIds = c(38000215,
-                                                                             38000216,
-                                                                             38000217,
-                                                                             38000218,
-                                                                             38000183,
-                                                                             38000232),
                                           exposureDatabaseSchema = cdmDatabaseSchema,
                                           exposureTable = "drug_era",
                                           outcomeDatabaseSchema = cdmDatabaseSchema,
-                                          outcomeTable = "condition_occurrence",
+                                          outcomeTable = "condition_era",
+                                          cdmVersion = cdmVersion,
+                                          studyStartDate = "",
+                                          studyEndDate = "",
+                                          excludeDrugsFromCovariates = TRUE,
+                                          firstExposureOnly = TRUE,
+                                          washoutPeriod = 183,
                                           covariateSettings = covariateSettings)
 
 saveCohortMethodData(cohortMethodData, "s:/temp/simulationCohortMethodData")
 
-# cohortMethodData <- loadCohortMethodData('s:/temp/simulationCohortMethodData') ps <-
-# createPs(cohortMethodData, outcomeId = 194133, prior=createPrior('laplace',0.1))
+# cohortMethodData <- loadCohortMethodData('s:/temp/simulationCohortMethodData')
 
 cohortMethodDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
+
 save(cohortMethodDataSimulationProfile,
      file = "cohortMethodDataSimulationProfile.rda",
      compress = "xz")
 
 # load('cohortMethodDataSimulationProfile.rda')
+
+simData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
