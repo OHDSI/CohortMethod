@@ -136,10 +136,14 @@ createStudyPopulation <- function(cohortMethodData,
     outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
 
     # Create outcome count column
-    outcomeCount <- aggregate(outcomeId ~ rowId, data = outcomes, length)
-    colnames(outcomeCount)[colnames(outcomeCount) == "outcomeId"] <- "outcomeCount"
-    population <- merge(population, outcomeCount[, c("rowId", "outcomeCount")], all.x = TRUE)
-    population$outcomeCount[is.na(population$outcomeCount)] <- 0
+    if (nrow(outcomes) == 0) {
+      population$outcomeCount <- 0
+    } else {
+      outcomeCount <- aggregate(outcomeId ~ rowId, data = outcomes, length)
+      colnames(outcomeCount)[colnames(outcomeCount) == "outcomeId"] <- "outcomeCount"
+      population <- merge(population, outcomeCount[, c("rowId", "outcomeCount")], all.x = TRUE)
+      population$outcomeCount[is.na(population$outcomeCount)] <- 0
+    }
 
     # Create time at risk column
     population$timeAtRisk <- population$riskEnd - population$riskStart + 1

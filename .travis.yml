@@ -46,11 +46,11 @@ install:
   - Rscript -e 'if(!"jsonlite" %in% rownames(installed.packages())) { install.packages("jsonlite", dependencies = TRUE) }'
 
   # Install OHDSI dependencies
+  - Rscript -e 'devtools::install_github("OHDSI/OhdsiRTools")'
   - Rscript -e 'devtools::install_github("OHDSI/SqlRender")'
   - Rscript -e 'devtools::install_github("OHDSI/DatabaseConnector")'
   - Rscript -e 'devtools::install_github("OHDSI/Cyclops")'
-  - Rscript -e 'devtools::install_github("OHDSI/PatientLevelPrediction")'
-  - Rscript -e 'devtools::install_github("OHDSI/OhdsiRTools")'
+  - Rscript -e 'devtools::install_github("OHDSI/FeatureExtraction")'
 
   - Rscript -e 'update.packages(ask = FALSE, instlib = "~/Rlib")'
   - Rscript -e 'devtools::install_deps(pkg = ".", dependencies = TRUE)'

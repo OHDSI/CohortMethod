@@ -43,7 +43,7 @@ Dependencies
  * DatabaseConnector
  * SqlRender
  * OhdsiRTools
- * PatientLevelPrediction
+ * FeatureExtraction
 
 Getting Started
 ===============

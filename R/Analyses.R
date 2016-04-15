@@ -35,6 +35,8 @@
 #'                                        the specific indication to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
 #'                                        the \code{\link{getDbCohortMethodData}} function.
+#' @param createStudyPopArgs              An object representing the arguments to be used when calling
+#'                                        the \code{\link{createStudyPopulation}} function.
 #' @param createPs                        Should the \code{\link{createPs}} function be used in this
 #'                                        analysis?
 #' @param createPsArgs                    An object representing the arguments to be used when calling
@@ -77,6 +79,7 @@ createCmAnalysis <- function(analysisId = 1,
                              comparatorType = NULL,
                              indicationType = NULL,
                              getDbCohortMethodDataArgs,
+                             createStudyPopArgs,
                              createPs = FALSE,
                              createPsArgs = NULL,
                              trimByPs = FALSE,
@@ -104,13 +107,11 @@ createCmAnalysis <- function(analysisId = 1,
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
-      (fitOutcomeModelArgs$modelType %in% c("clr",
-                                            "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
-                                                       fitOutcomeModelArgs$stratifiedCox))) {
+      fitOutcomeModelArgs$stratified) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
-  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
-    stop("Cannot compute covariate balance without stratification or matching")
+  if (!(matchOnPs | matchOnPsAndCovariates) && computeCovariateBalance) {
+    stop("Cannot compute covariate balance without matching")
   }
   if (!createPs) {
     createPsArgs <- NULL
@@ -259,16 +260,6 @@ loadCmAnalysisList <- function(file) {
 #'                                      parameter in the \code{\link{createCmAnalysis}} function.
 #' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
 #'                                      outcome table.
-#' @param indicationConceptIds          A vector of concept IDs identifying conditions that are
-#'                                      required to appear prior to or on the index date. If multiple
-#'                                      strategies for picking the indication will be tested in the
-#'                                      analysis, a named list of vectors can be provided instead. In
-#'                                      the analysis, the name of the vector to be used can be
-#'                                      specified using the \code{indicationType} parameter in the
-#'                                      \code{\link{createCmAnalysis}} function.
-#' @param exclusionConceptIds           A list of concept IDs that cannot appear on or before the index
-#'                                      date. This argument is to be used only for exclusion criteria
-#'                                      that are specific to the drug-comparator combination.
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
 #'                                      concepts that are specific to the drug-comparator combination.
@@ -280,8 +271,6 @@ loadCmAnalysisList <- function(file) {
 createDrugComparatorOutcomes <- function(targetId,
                                          comparatorId,
                                          outcomeIds,
-                                         indicationConceptIds = c(),
-                                         exclusionConceptIds = c(),
                                          excludedCovariateConceptIds = c(),
                                          includedCovariateConceptIds = c()) {
   # First: get the default values:

@@ -36,7 +36,7 @@
 #' @export
 createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   writeLines("Computing covariate prevalence")  # (Note: currently assuming binary covariates)
-  sums <- CohortMethod:::quickSum(cohortMethodData$covariates)
+  sums <- quickSum(cohortMethodData$covariates)
   covariatePrevalence <- sums$sum/nrow(cohortMethodData$cohorts)
   attr(covariatePrevalence, "names") <- sums$covariateId
 

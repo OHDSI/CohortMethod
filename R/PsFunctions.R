@@ -659,7 +659,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' \code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify
 #' persons.
 #'
-#' @param data               A data frame with the three columns described below
+#' @param population               A data frame with the three columns described below
 #' @param numberOfStrata     Into how many strata should the propensity score be divided? The
 #'                           boundaries of the strata are automatically defined to contain equal
 #'                           numbers of treated persons.
@@ -675,25 +675,29 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
-#' Returns a date frame with the same columns as the input data plus one extra column: stratumId.
+#' Returns a date frame with the same columns as the input population plus one extra column: stratumId.
 #' @examples
 #' # todo
 #'
 #' @export
-stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortMethodData, covariateIds) {
-  data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
-  stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
-                                                                    covariateIds,
-                                                                    sep = "_")]
-  return(stratifyByPs(data, numberOfStrata, stratificationColumns))
+stratifyByPsAndCovariates <- function(population, numberOfStrata = 5, cohortMethodData, covariateIds) {
+  population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
+  stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
+                                                                                covariateIds,
+                                                                                sep = "_")]
+  return(stratifyByPs(population, numberOfStrata, stratificationColumns))
+}
+
+bySumFf <- function(values, bins) {
+  .bySum(values, bins)
 }
 
 quickSum <- function(data, squared = FALSE) {
   if (squared) {
-    x <- PatientLevelPrediction::bySumFf(data$covariateValue^2, data$covariateId)
+    x <- bySumFf(data$covariateValue^2, data$covariateId)
     colnames(x) <- c("covariateId", "sumSqr")
   } else {
-    x <- PatientLevelPrediction::bySumFf(data$covariateValue, data$covariateId)
+    x <- bySumFf(data$covariateValue, data$covariateId)
     colnames(x) <- c("covariateId", "sum")
   }
   x$covariateId <- as.numeric(x$covariateId)
@@ -736,18 +740,18 @@ computeMeansPerGroup <- function(cohorts, covariates) {
     covariatesSubset$wValueSquared <- covariatesSubset$wValue * covariatesSubset$covariateValue
 
     # Compute sum
-    comparator <- PatientLevelPrediction::bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
+    comparator <- bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
     colnames(comparator)[colnames(comparator) == "bins"] <- "covariateId"
     colnames(comparator)[colnames(comparator) == "sums"] <- "sumComparator"
 
     # Compute weighted mean (no need to divide by sum(w) because it is 1)
-    wMean <- PatientLevelPrediction::bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
+    wMean <- bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
     colnames(wMean)[colnames(wMean) == "bins"] <- "covariateId"
     colnames(wMean)[colnames(wMean) == "sums"] <- "meanComparator"
     comparator <- merge(comparator, wMean)
 
     # Compute weighted standard deviation
-    wValueSquared <- PatientLevelPrediction::bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
+    wValueSquared <- bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
     colnames(wValueSquared)[colnames(wValueSquared) == "bins"] <- "covariateId"
     colnames(wValueSquared)[colnames(wValueSquared) == "sums"] <- "wValueSquared"
     comparator <- merge(comparator, wMean)

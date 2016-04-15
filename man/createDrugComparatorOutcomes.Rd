@@ -5,7 +5,6 @@
 \title{Create drug-comparator-outcomes combinations.}
 \usage{
 createDrugComparatorOutcomes(targetId, comparatorId, outcomeIds,
-  indicationConceptIds = c(), exclusionConceptIds = c(),
   excludedCovariateConceptIds = c(), includedCovariateConceptIds = c())
 }
 \arguments{
@@ -25,18 +24,6 @@ parameter in the \code{\link{createCmAnalysis}} function.}
 
 \item{outcomeIds}{A vector of concept IDs indentifying the outcome(s) in the
 outcome table.}
-
-\item{indicationConceptIds}{A vector of concept IDs identifying conditions that are
-required to appear prior to or on the index date. If multiple
-strategies for picking the indication will be tested in the
-analysis, a named list of vectors can be provided instead. In
-the analysis, the name of the vector to be used can be
-specified using the \code{indicationType} parameter in the
-\code{\link{createCmAnalysis}} function.}
-
-\item{exclusionConceptIds}{A list of concept IDs that cannot appear on or before the index
-date. This argument is to be used only for exclusion criteria
-that are specific to the drug-comparator combination.}
 
 \item{excludedCovariateConceptIds}{A list of concept IDs that cannot be used to construct
 covariates. This argument is to be used only for exclusion

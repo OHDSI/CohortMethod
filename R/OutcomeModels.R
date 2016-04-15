@@ -92,8 +92,8 @@ fitOutcomeModel <- function(population,
       }
       if (stratified) {
         informativeStrata <- unique(population$stratumId[population$y != 0])
-        informativeCohorts <- population[population$stratumId %in% informativeStrata, c("rowId","stratumId")]
-        covariates <- ffbase::merge.ffdf(cohortMethodData$covariates, ff::as.ffdf(informativeCohorts))
+        population <- population[population$stratumId %in% informativeStrata, ]
+        covariates <- ffbase::merge.ffdf(cohortMethodData$covariates, ff::as.ffdf(population[, c("rowId","stratumId")]))
       } else {
         covariates <- limitCovariatesToPopulation(cohortMethodData$covariates, ff::as.ff(population$rowId))
       }
@@ -136,25 +136,20 @@ fitOutcomeModel <- function(population,
                                                  checkRowIds = FALSE,
                                                  normalize = NULL,
                                                  quiet = TRUE)
-    fit <- tryCatch({
-      Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-    }, error = function(e) {
-      e$message
-    })
+    if (prior$priorType != "none" && prior$useCrossValidation && length(unique(population$stratumId)) < control$fold) {
+      fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
+    } else {
+      fit <- tryCatch({
+        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+      }, error = function(e) {
+        e$message
+      })
+    }
     if (is.character(fit)) {
-      coefficients <- c(0)
-      treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
-      priorVariance <- 0
       status <- fit
     } else if (fit$return_flag == "ILLCONDITIONED") {
-      coefficients <- c(0)
-      treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
-      priorVariance <- 0
       status <- "ILL CONDITIONED, CANNOT FIT"
     } else if (fit$return_flag == "MAX_ITERATIONS") {
-      coefficients <- c(0)
-      treatmentEstimate <- data.frame(logRr = 0, logLb95 = -Inf, logUb95 = Inf, seLogRr = Inf)
-      priorVariance <- 0
       status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
     } else {
       status <- "OK"

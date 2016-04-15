@@ -6,8 +6,8 @@
 \usage{
 createCmAnalysis(analysisId = 1, description = "", targetType = NULL,
   comparatorType = NULL, indicationType = NULL, getDbCohortMethodDataArgs,
-  createPs = FALSE, createPsArgs = NULL, trimByPs = FALSE,
-  trimByPsArgs = NULL, trimByPsToEquipoise = FALSE,
+  createStudyPopArgs, createPs = FALSE, createPsArgs = NULL,
+  trimByPs = FALSE, trimByPsArgs = NULL, trimByPsToEquipoise = FALSE,
   trimByPsToEquipoiseArgs = NULL, matchOnPs = FALSE, matchOnPsArgs = NULL,
   matchOnPsAndCovariates = FALSE, matchOnPsAndCovariatesArgs = NULL,
   stratifyByPs = FALSE, stratifyByPsArgs = NULL,
@@ -35,6 +35,9 @@ the specific indication to use in this analysis.}
 
 \item{getDbCohortMethodDataArgs}{An object representing the arguments to be used when calling
 the \code{\link{getDbCohortMethodData}} function.}
+
+\item{createStudyPopArgs}{An object representing the arguments to be used when calling
+the \code{\link{createStudyPopulation}} function.}
 
 \item{createPs}{Should the \code{\link{createPs}} function be used in this
 analysis?}
