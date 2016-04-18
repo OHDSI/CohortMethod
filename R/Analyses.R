@@ -30,9 +30,6 @@
 #' @param comparatorType                  If more than one comparator is provided for each
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific comparator to use in this analysis.
-#' @param indicationType                  If more than one indication is provided for each
-#'                                        drugComparatorOutcome, this field should be used to select
-#'                                        the specific indication to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
 #'                                        the \code{\link{getDbCohortMethodData}} function.
 #' @param createStudyPopArgs              An object representing the arguments to be used when calling
@@ -77,7 +74,6 @@ createCmAnalysis <- function(analysisId = 1,
                              description = "",
                              targetType = NULL,
                              comparatorType = NULL,
-                             indicationType = NULL,
                              getDbCohortMethodDataArgs,
                              createStudyPopArgs,
                              createPs = FALSE,
