@@ -39,6 +39,7 @@ The general approach to running a set of analyses is that you specify all the fu
 An analysis will be executed by calling these functions in sequence:
 
 1. `getDbCohortMethodData()`
+2. `createStudyPopulation()`
 2. `createPs()` (optional)
 3. `trimByPs()` or `trimByPsToEquipoise()` (optional)
 4. `matchOnPs()`, `matchOnPsAndCovariates()`, `stratifyByPs()`, or `stratifyByPsAndCovariates()` (optional)
@@ -49,12 +50,12 @@ When you provide several analyses to the `CohortMethod` package, it will determi
 
 The function arguments you need to define have been divided into four groups:
 
-1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of drug, comparator, and outcome (and indication if required).
+1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of drug, comparator, and outcome.
 2. **Analyses**: arguments that are not directly specific to a hypothesis of interest, such as the washout window, whether to include drugs as covariates, etc.
 3. Arguments that are the output of a previous function in the `CohortMethod` package, such as the `cohortMethodData` argument of the `createPs` function. These cannot be specified by the user.
 4. Arguments that are specific to an environment, such as the connection details for connecting to the server, and the name of the schema holding the CDM data.
 
-There are a three arguments (`exclusionConceptIds`, `excludedCovariateConceptIds`, and `includedCovariateConceptIds` of the `getDbCohortMethodData()` function) that can be argued to be part both of group 1 and 2. For example, our design in general could exclude cancer patients, and we would specify this as part of the analysis using the `exclusionConceptIds` argument. In other situations we might want to exclude people with prior exposure to the target drug or any related drug, and we would also use the `exclusionConceptIds`. These arguments are therefore present in both groups, and when executing the analysis the union of the two lists of concept IDs will be used.
+There are a two arguments (`excludedCovariateConceptIds`, and `includedCovariateConceptIds` of the `getDbCohortMethodData()` function) that can be argued to be part both of group 1 and 2. These arguments are therefore present in both groups, and when executing the analysis the union of the two lists of concept IDs will be used.
 
 # Preparation for the example
 
@@ -100,7 +101,7 @@ WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099
 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
 	AND visit_occurrence.visit_concept_id IN (9201, 9203);
 ```
-Note for CDM V4 'visit_concept_id' should be 'place_of_service_concept_id', and 'cohort_definition_id' should be 'cohort_concept_id'.
+Note for CDM V4 `visit_concept_id` should be `place_of_service_concept_id`, and `cohort_definition_id` should be `cohort_concept_id`.
 
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
@@ -120,7 +121,7 @@ In this code, we first read the SQL from the file into memory. In the next line,
 
 # Specifying hypotheses of interest
 
-The first group of arguments define the drug, comparator, outcome, and optionally the indication in which to nest the study. Here we demonstrate how to create one set, and add that set to a list:
+The first group of arguments define the drug, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
 
 ```{r tidy=FALSE,eval=FALSE}
 # Get all NSAID Concept IDs for exclusion:
@@ -136,7 +137,6 @@ nsaids <- nsaids$CONCEPT_ID
 
 dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
-                                     exclusionConceptIds = nsaids,
                                      excludedCovariateConceptIds = nsaids,
                                      outcomeIds = c(192671, 29735, 140673, 197494, 
                                                     198185, 198199, 200528, 257315, 
@@ -151,7 +151,7 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
 drugComparatorOutcomesList <- list(dcos)
 ```
 
-We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. In this example, we also specify that people with prior exposure to any NSAID should be excluded when investigating these drugs and outcomes. We furthermore specify that NSAIDS cannot be in the list of covariates. We use some SQL against the vocabulary to find the concept IDs of all NSAIDS.
+We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. We furthermore specify that NSAIDS cannot be in the list of covariates. We use some SQL against the vocabulary to find the concept IDs of all NSAIDS.
 
 A convenient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomesList` function, and we can load it again using the `loadDrugComparatorOutcomesList` function.
 
@@ -201,19 +201,24 @@ The second group of arguments are not specific to a hypothesis of interest, and 
                                            excludedCovariateConceptIds = c(),
                                            deleteCovariatesSmallCount = 100)
 
-getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutWindow = 183,
-                                                   indicationLookbackWindow = 183,
+getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
+                                                   firstExposureOnly = TRUE,
+                                                   removeDuplicateSubjects = TRUE,
                                                    studyStartDate = "",
                                                    studyEndDate = "",
                                                    excludeDrugsFromCovariates = FALSE,
                                                    covariateSettings = covarSettings)
 
-fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0, 
-                                                  riskWindowEnd = 30,
-                                                  addExposureDaysToEnd = TRUE,
-                                                  useCovariates = FALSE, 
+createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
+                                                      minDaysAtRisk = 1,
+                                                      riskWindowStart = 0,
+                                                      addExposureDaysToStart = FALSE,
+                                                      riskWindowEnd = 30,
+                                                      addExposureDaysToEnd = TRUE)
+
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(useCovariates = FALSE,
                                                   modelType = "cox",
-                                                  stratifiedCox = FALSE)
+                                                  stratified = FALSE)
 ```
 
 Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:
@@ -222,6 +227,7 @@ Any argument that is not explicitly specified by the user will assume the defaul
 cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "No matching, simple outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 ```
@@ -238,35 +244,36 @@ matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 description = "Matching plus simple outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
+                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
 stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
 
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(useCovariates = FALSE,
+                                                  modelType = "cox",
+                                                  stratified = TRUE)
+
 cmAnalysis3 <- createCmAnalysis(analysisId = 3,
-                                description = "Stratification plus simple outcome model",
+                                description = "Stratification plus stratified outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 stratifyByPs = TRUE,
                                 stratifyByPsArgs = stratifyByPsArgs,
                                 fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
-
-fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(riskWindowStart = 0, 
-                                                  riskWindowEnd = 30,
-                                                  addExposureDaysToEnd = TRUE,
-                                                  useCovariates = FALSE, 
-                                                  modelType = "cox",
-                                                  stratifiedCox = TRUE)
+                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
 cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 description = "Matching plus stratified outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
@@ -275,16 +282,14 @@ cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
-fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(riskWindowStart = 0, 
-                                                  riskWindowEnd = 30,
-                                                  addExposureDaysToEnd = TRUE,
-                                                  useCovariates = TRUE, 
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(useCovariates = TRUE,
                                                   modelType = "cox",
-                                                  stratifiedCox = TRUE)
+                                                  stratified = TRUE)
 
 cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 description = "Matching plus full outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
@@ -302,7 +307,7 @@ cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAna
 
 A convenient way to save `cmAnalysisList` to file is by using the `saveCmAnalysisList` function, and we can load it again using the `loadCmAnalysisList` function.
 
-## Target, comparator and indication selection strategies
+## Target and comparator selection strategies
 
 Often a new-user cohort design is used for comparative effectiveness studies, where the selection of the comparator is part of the hypothesis of interest: 'Does use of drug A lead to an increased risk compared to use of drug B?', where B is the comparator. But sometimes, the design is used for safety assessment: 'Does use of drug A lead to an increased risk?' In this case the comparator is a proxy for the counterfactual of no treatment. For example, we could pick the comparator to be a drug known not to cause the outcome. we can argue that the selection of the comparator then becomes part of the analyses specification, not the hypothesis of interest, and we can have different strategies for selecting a comparator: Do we for instance pick a drug in the same class, or a drug with the same indication?
 
@@ -326,6 +331,7 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "Analysis using drug in same class",
                                 comparatorType = "drugInSameClass",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+								createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
@@ -337,6 +343,7 @@ cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 description = "Analysis using drug with same indication",
                                 comparatorType = "drugWithSameIndication",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
+								createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
@@ -349,30 +356,31 @@ cmAnalysisList2 <- list(cmAnalysis1, cmAnalysis2)
 
 In this example, the first analysis (analysisID = 1) will use concept 1124300 as comparator, whilst the second analysis analysis (analysisID = 2) will use concept 1125315 as comparator.
 
-The same mechanism can be used to specifiy types for the targetConceptId and the indicationConceptIds.
+The same mechanism can be used to specifiy types for the targetId.
 
 # Executing multiple analyses
 
 We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()`function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
 
 ```{r tidy=FALSE,eval=FALSE}
-  result <- runCmAnalyses(connectionDetails = connectionDetails,
-                          cdmDatabaseSchema = cdmDatabaseSchema,
-                          exposureDatabaseSchema = cdmDatabaseSchema,
-                          exposureTable = "drug_era",
-                          outcomeDatabaseSchema = resultsDatabaseSchema,
-                          outcomeTable = "outcomes",
-                          cdmVersion = cdmVersion,
-                          outputFolder = "./CohortMethodOutput",
-                          cmAnalysisList = cmAnalysisList,
-                          drugComparatorOutcomesList = drugComparatorOutcomesList,
-                          getDbCohortMethodDataThreads = 1,
-                          createPsThreads = 1,
-                          psCvThreads = 10,
-                          computeCovarBalThreads = 2,
-                          trimMatchStratifyThreads = 10,
-                          fitOutcomeModelThreads = 4,
-                          outcomeCvThreads = 10)
+result <- runCmAnalyses(connectionDetails = connectionDetails,
+                        cdmDatabaseSchema = cdmDatabaseSchema,
+                        exposureDatabaseSchema = cdmDatabaseSchema,
+                        exposureTable = "drug_era",
+                        outcomeDatabaseSchema = resultsDatabaseSchema,
+                        outcomeTable = "outcomes",
+                        cdmVersion = cdmVersion,
+                        outputFolder = "./CohortMethodOutput",
+                        cmAnalysisList = cmAnalysisList,
+                        drugComparatorOutcomesList = drugComparatorOutcomesList,
+                        getDbCohortMethodDataThreads = 1,
+                        createPsThreads = 1,
+                        psCvThreads = 10,
+                        createStudyPopThreads = 4,
+                        computeCovarBalThreads = 2,
+                        trimMatchStratifyThreads = 10,
+                        fitOutcomeModelThreads = 4,
+                        outcomeCvThreads = 10)
 ```
 
 In the code above, we provide the arguments for connecting to the database, which schemas and tables to use, as well as the analyses and hypotheses of interest. The `outputFolder` specifies where the outcome models and intermediate files will be written. We also instruct `CohortMethod` to use multiple threads for various stages in the analyses, meaning these will be executed in parallel on multiple CPUs in the computer. Multithreading can significantly reduce execution time, but will require more system resources such as memory and temporary disk space. 
@@ -383,7 +391,7 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 
 # Retrieving the results
 
-The result of the `runCmAnalyses()` is a data frame with one row per drug-target(-indication)-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our drug, comparator, outcome of intererst, and last analysis:
+The result of the `runCmAnalyses()` is a data frame with one row per drug-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our drug, comparator, outcome of intererst, and last analysis:
 
 ```{r tidy=FALSE,eval=FALSE}
 psFile <- result$psFile[result$targetId == 1118084 & 
@@ -419,7 +427,7 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 }
 ```
 
-This tells us, per drug-target(-indication)-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
+This tells us, per drug-target-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
 
 ## Empirical calibration
 

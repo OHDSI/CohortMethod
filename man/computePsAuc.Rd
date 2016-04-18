@@ -21,7 +21,7 @@ A data frame holding the AUC and its 95 percent confidence interval
 \details{
 The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
 \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-\tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+\tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{
 treatment <- rep(0:1, each = 100)

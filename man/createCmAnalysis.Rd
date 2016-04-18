@@ -5,7 +5,7 @@
 \title{Create a CohortMethod analysis specification}
 \usage{
 createCmAnalysis(analysisId = 1, description = "", targetType = NULL,
-  comparatorType = NULL, indicationType = NULL, getDbCohortMethodDataArgs,
+  comparatorType = NULL, getDbCohortMethodDataArgs, createStudyPopArgs,
   createPs = FALSE, createPsArgs = NULL, trimByPs = FALSE,
   trimByPsArgs = NULL, trimByPsToEquipoise = FALSE,
   trimByPsToEquipoiseArgs = NULL, matchOnPs = FALSE, matchOnPsArgs = NULL,
@@ -29,12 +29,11 @@ the specific target to use in this analysis.}
 drugComparatorOutcome, this field should be used to select
 the specific comparator to use in this analysis.}
 
-\item{indicationType}{If more than one indication is provided for each
-drugComparatorOutcome, this field should be used to select
-the specific indication to use in this analysis.}
-
 \item{getDbCohortMethodDataArgs}{An object representing the arguments to be used when calling
 the \code{\link{getDbCohortMethodData}} function.}
+
+\item{createStudyPopArgs}{An object representing the arguments to be used when calling
+the \code{\link{createStudyPopulation}} function.}
 
 \item{createPs}{Should the \code{\link{createPs}} function be used in this
 analysis?}

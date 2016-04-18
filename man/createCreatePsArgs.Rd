@@ -4,15 +4,16 @@
 \alias{createCreatePsArgs}
 \title{Create a parameter object for the function createPs}
 \usage{
-createCreatePsArgs(excludePriorOutcome = TRUE, excludeCovariateIds = NULL,
+createCreatePsArgs(excludeCovariateIds = c(), includeCovariateIds = c(),
   stopOnHighCorrelation = TRUE, prior = createPrior("laplace", exclude =
   c(0), useCrossValidation = TRUE), control = createControl(noiseLevel =
-  "silent", cvType = "auto", startingVariance = 0.1))
+  "silent", cvType = "auto", tolerance = 2e-07, cvRepetitions = 10,
+  startingVariance = 0.01))
 }
 \arguments{
-\item{excludePriorOutcome}{Remove people that have the outcome prior to the index date?}
-
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
+
+\item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
 \item{stopOnHighCorrelation}{If true, the function will test each covariate for correlation with
 thetreatment assignment. If any covariate has an unusually high

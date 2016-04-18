@@ -4,11 +4,11 @@
 \alias{matchOnPs}
 \title{Match persons by propensity score}
 \usage{
-matchOnPs(data, caliper = 0.25, caliperScale = "standardized",
+matchOnPs(population, caliper = 0.25, caliperScale = "standardized",
   maxRatio = 1, stratificationColumns = c())
 }
 \arguments{
-\item{data}{A data frame with the three columns described below.}
+\item{population}{A data frame with the three columns described below.}
 
 \item{caliper}{The caliper for matching. A caliper is the distance which is
 acceptable for any match. Observations which are outside of the
@@ -38,9 +38,9 @@ rows that could not be matched are removed
 }
 \details{
 The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
-\tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
+\tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
 \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-\tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr } This function
+\tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 }
 \examples{

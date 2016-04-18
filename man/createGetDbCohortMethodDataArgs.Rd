@@ -4,39 +4,41 @@
 \alias{createGetDbCohortMethodDataArgs}
 \title{Create a parameter object for the function getDbCohortMethodData}
 \usage{
-createGetDbCohortMethodDataArgs(washoutWindow = 183,
-  indicationLookbackWindow = 183, studyStartDate = "", studyEndDate = "",
-  exclusionConceptIds = c(), outcomeConditionTypeConceptIds = c(),
-  excludeDrugsFromCovariates = TRUE, covariateSettings)
+createGetDbCohortMethodDataArgs(studyStartDate = "", studyEndDate = "",
+  excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
+  removeDuplicateSubjects = FALSE, washoutPeriod = 0, covariateSettings)
 }
 \arguments{
-\item{washoutWindow}{The mininum required continuous observation time prior to
-indexdate for a person to be included in the cohort.}
-
-\item{indicationLookbackWindow}{NA}
-
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort
 indexdate can appear. Date format is 'yyyymmdd'.}
 
 \item{studyEndDate}{A calendar date specifying the maximum date that a cohort
-indexdate can appear. Date format is 'yyyymmdd'.}
-
-\item{exclusionConceptIds}{A list of CONCEPT_IDs used to restrict the cohorts, based on
-anydescendant conditions/drugs/procedures occurring at least
-onceanytime prior to the cohort index date.}
-
-\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrictcondition
-occurrences.  Only applicable if outcomeTable
-=CONDITION_OCCURRENCE.}
+indexdate can appear. Date format is 'yyyymmdd'. Important: the
+studyend data is also used to truncate risk windows, meaning no
+outcomesbeyond the study end date will be considered.}
 
 \item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their
-descendantconcepts) be excluded from the covariates? Note
-that this willwork if the drugs are actualy drug concept IDs
-(and not cohortIDs).}
+descendantconcepts) be excluded from the covariates? Note that
+this willwork if the drugs are actualy drug concept IDs (and not
+cohortIDs).}
+
+\item{firstExposureOnly}{Should only the first exposure per subject be included? Note
+thatthis is typically done in the createStudyPopulation
+function,but can already be done here for efficiency reasons.}
+
+\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
+cohort? Note thatthis is typically done in the
+createStudyPopulation function,but can already be done here for
+efficiency reasons.}
+
+\item{washoutPeriod}{The mininum required continuous observation time prior to
+indexdate for a person to be included in the cohort. Note
+thatthis is typically done in the createStudyPopulation
+function,but can already be done here for efficiency reasons.}
 
 \item{covariateSettings}{An object of type covariateSettings as created using
-thecreateCovariateSettings function in
-thePatientLevelPrediction package..}
+thecreateCovariateSettings function in theFeatureExtraction
+package.}
 }
 \description{
 Create a parameter object for the function getDbCohortMethodData

@@ -4,20 +4,14 @@
 \alias{computeCovariateBalance}
 \title{Compute covariate balance before and after matching and trimming}
 \usage{
-computeCovariateBalance(restrictedCohorts, cohortMethodData,
-  excludePriorOutcome = TRUE, outcomeId = NULL)
+computeCovariateBalance(population, cohortMethodData)
 }
 \arguments{
-\item{restrictedCohorts}{A data frame containing the people that are remaining after matching
+\item{population}{A data frame containing the people that are remaining after matching
 and/or trimming.}
 
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
-
-\item{excludePriorOutcome}{Remove people that have the outcome prior to the index date?}
-
-\item{outcomeId}{The concept ID of the outcome. Persons marked for removal for the outcome
-will be removed when computing the balance before matching/trimming.}
 }
 \value{
 Returns a date frame describing the covariate balance before and after matching/trimming.
@@ -28,7 +22,7 @@ matching/trimming are computed. When variable ratio matching was used the balanc
 described in Austin et al (2008).
 }
 \details{
-The restrictedCohorts data frame should have at least the following columns: \tabular{lll}{
+The population data frame should have at least the following columns: \tabular{lll}{
 \verb{rowId} \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 \verb{treatment} \tab(integer) \tab Column indicating whether the person is in the treated (1) or
 comparator (0)\cr \tab \tab group \cr }

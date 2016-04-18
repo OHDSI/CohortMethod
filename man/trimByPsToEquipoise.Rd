@@ -4,10 +4,10 @@
 \alias{trimByPsToEquipoise}
 \title{Keep only persons in clinical equipoise}
 \usage{
-trimByPsToEquipoise(data, bounds = c(0.25, 0.75))
+trimByPsToEquipoise(population, bounds = c(0.25, 0.75))
 }
 \arguments{
-\item{data}{A data frame with at least the three columns described below}
+\item{population}{A data frame with at least the three columns described below}
 
 \item{bounds}{The upper and lower bound on the preference score for keeping persons}
 }
@@ -19,10 +19,10 @@ Returns a date frame with the same three columns as the input.
 equipoise
 }
 \details{
-The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
+The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
-\verb{propensityScore} \tab(real) \tab Propensity score \cr }
+\verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{
 rowId <- 1:2000

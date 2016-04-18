@@ -11,8 +11,8 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = 4,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
-  underSampleComparatorToTreatedRatio = 0, getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1, psCvThreads = 1, trimMatchStratifyThreads = 1,
+  getDbCohortMethodDataThreads = 1, createPsThreads = 1, psCvThreads = 1,
+  createStudyPopThreads = 1, trimMatchStratifyThreads = 1,
   computeCovarBalThreads = 1, fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1)
 }
@@ -73,11 +73,6 @@ removed)? If false, a single propensity model will be
 fitted, and people who had the outcome previously will
 be removed afterwards.}
 
-\item{underSampleComparatorToTreatedRatio}{If the comparator group size exceeds the treated group
-size by this factor, the comparator group will be
-down-sampled before fitting the PS model. This can be
-useful when the comparator group is extremely large.}
-
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
 
@@ -89,6 +84,9 @@ validation when estimating the hyperparameter for the
 propensity model. Note that the total number of CV
 threads at one time could be `createPsThreads *
 psCvThreads`.}
+
+\item{createStudyPopThreads}{The number of parallel threads to use for creating the
+study population.}
 
 \item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming,
 matching and stratifying.}
@@ -104,29 +102,6 @@ validation when estimating the hyperparameter for the
 outcome model. Note that the total number of CV threads
 at one time could be `fitOutcomeModelThreads *
 outcomeCvThreads`.}
-}
-\value{
-A data frame with the following columns:
-\tabular{ll}{
-\verb{analysisId} \tab The unique identifier for a set of analysis choices.\cr
-\verb{targetId} \tab The ID of the target drug.\cr
-\verb{comparatorId} \tab The ID of the comparator group.\cr
-\verb{indicationConceptIds} \tab The ID(s) of indications in which to nest to study. \cr
-\verb{exclusionConceptIds} \tab The ID(s) of concepts used to exclude subjects. \cr
-\verb{excludedCovariateConceptIds} \tab The ID(s) of concepts that cannot be used to construct covariates. \cr
-\verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct covariates. \cr
-\verb{cohortMethodDataFolder} \tab The ID of the outcome.\cr
-\verb{sharedPsFile}                \tab The name of the file containing the propensity scores of the shared \cr
-                                   \tab propensity model. This model is used to create the outcome-specific \cr
-                                   \tab propensity scores by removing people with prior outcomes.\cr
-\verb{psFile}                      \tab The name of file containing the propensity scores for a specific \cr
-                                   \tab outcomes (ie after people with prior outcomes have been removed).\cr
-\verb{subPopFile}                  \tab The name of the file containing the identifiers of the population \cr
-                                   \tab after any trimming, matching or stratifying, including their strata.\cr
-\verb{covariateBalanceFile}        \tab The name of the file containing the covariate balance (ie. the \cr
-                                   \tab output of the \code{computeCovariateBalance} function.\cr
-\verb{outcomeModelFile} \tab The name of the file containing the outcome model.\cr
-}
 }
 \description{
 Run a list of analyses

@@ -4,7 +4,7 @@
 \alias{loadCohortMethodData}
 \title{Load the cohort data from a folder}
 \usage{
-loadCohortMethodData(file, readOnly = FALSE)
+loadCohortMethodData(file, readOnly = TRUE)
 }
 \arguments{
 \item{file}{The name of the folder containing the data.}

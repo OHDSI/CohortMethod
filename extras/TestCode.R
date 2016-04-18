@@ -1,5 +1,25 @@
-
 ### Test code ###
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 library(CohortMethod)
 options(fftempdir = "s:/temp")
 

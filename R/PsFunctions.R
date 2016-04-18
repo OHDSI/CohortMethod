@@ -28,10 +28,11 @@
 #'
 #' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
 #'                              \code{getDbCohortMethodData}.
-#' @param excludePriorOutcome   Remove people that have the outcome prior to the index date?
-#' @param outcomeId             The concept ID of the outcome. Persons marked for removal for the
-#'                              outcome will be removed prior to creating the propensity score model.
+#' @param population            A data frame describing the population. This should at least have a 'rowId' column
+#'                              corresponding to the rowId column in the \code{cohortMethodData} covariates object and a 'treatment' column.
+#'                              If population is not specified, the full population in the \code{cohortMethodData} will be used.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
+#' @param includeCovariateIds   Include only these covariates in the propensity model.
 #' @param stopOnHighCorrelation If true, the function will test each covariate for correlation with the
 #'                              treatment assignment. If any covariate has an unusually high correlation
 #'                              (either positive or negative), this will be reported and the function
@@ -52,143 +53,61 @@
 #'
 #' @export
 createPs <- function(cohortMethodData,
-                     excludePriorOutcome = TRUE,
-                     outcomeId = NULL,
-                     excludeCovariateIds = NULL,
+                     population,
+                     excludeCovariateIds = c(),
+                     includeCovariateIds = c(),
                      stopOnHighCorrelation = TRUE,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent",
                                              cvType = "auto",
-                                             startingVariance = 0.1)) {
+                                             tolerance  = 2e-07,
+                                             cvRepetitions = 10,
+                                             startingVariance = 0.01)) {
+  if (missing(population))
+    population <- cohortMethodData$cohorts
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+
   start <- Sys.time()
-  if (!excludePriorOutcome || is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
-    cohortSubset <- cohortMethodData$cohorts
-    if (is.null(excludeCovariateIds)) {
-      covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
-    } else {
-      excludeCovariateIds <- c(excludeCovariateIds, 1)
-      t <- in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
-      covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
-    }
-  } else {
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- in.ff(cohortMethodData$cohorts$rowId,
-               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- in.ff(cohortMethodData$covariates$rowId,
-               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    if (is.null(excludeCovariateIds)) {
-      excludeCovariateIds <- c(1)
-    } else {
-      excludeCovariateIds <- c(excludeCovariateIds, 1)
-    }
-    t <- t | in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
-    covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
-  }
+  cohortSubset <- ff::as.ffdf(population)
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
+  covariateSubset <- limitCovariatesToPopulation(cohortMethodData$covariates, cohortSubset$rowId)
+
+  if (length(includeCovariateIds) != 0) {
+    idx <- !is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(includeCovariateIds)))
+    covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
+  }
+  excludeCovariateIds <- c(excludeCovariateIds, 1)
+  idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
+  covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
+
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   if (stopOnHighCorrelation) {
     suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
     suspect <- suspect[!is.na(suspect)]
     if (length(suspect) != 0) {
       covariateIds <- as.numeric(names(suspect))
-      t <-in.ff(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds))
-      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(t, t == TRUE),])
+      idx <- !is.na(ffbase::ffmatch(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds)))
+      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
       writeLines("High correlation between covariate(s) and treatment detected:")
       print(ref)
       stop("High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?")
     }
   }
-  ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
   cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
   cfs <- coef(cyclopsFit)
   if (all(cfs[2:length(cfs)] == 0)){
     warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
   }
-  pred <- predict(cyclopsFit)
-
-  colnames(ps)[colnames(ps) == "y"] <- "treatment"
-  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred, "names")))
-  data <- merge(data, ps, by = "rowId")
-  attr(data, "coefficients") <- coef(cyclopsFit)
-  attr(data, "priorVariance") <- cyclopsFit$variance[1]
-  attr(data, "excludePriorOutcome") <- excludePriorOutcome
+  population$propensityScore <- predict(cyclopsFit)
+  attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
+  attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
   delta <- Sys.time() - start
   writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
-  return(data)
+  return(population)
 }
-
-#' @export
-createPsNew <- function(cohortMethodData,
-                        outcomeId = NULL,
-                        excludeCovariateIds = NULL,
-                        stopOnHighCorrelation = TRUE,
-                        prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-                        control = createControl(noiseLevel = "silent",
-                                                cvType = "auto",
-                                                startingVariance = 0.1)) {
-  start <- Sys.time()
-  if (is.null(outcomeId) | is.null(cohortMethodData$exclude)) {
-    cohortSubset <- cohortMethodData$cohorts
-    if (is.null(excludeCovariateIds)) {
-      covariateSubset <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
-    } else {
-      excludeCovariateIds <- c(excludeCovariateIds, 1)
-      t <- in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
-      covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
-    }
-  } else {
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- in.ff(cohortMethodData$cohorts$rowId,
-               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohortSubset <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- in.ff(cohortMethodData$covariates$rowId,
-               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    if (is.null(excludeCovariateIds)) {
-      excludeCovariateIds <- c(1)
-    } else {
-      excludeCovariateIds <- c(excludeCovariateIds, 1)
-    }
-    t <- t | in.ff(cohortMethodData$covariates$covariateId, ff::as.ff(excludeCovariateIds))
-    covariateSubset <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
-  }
-  colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
-  cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
-  if (stopOnHighCorrelation) {
-    suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
-    suspect <- suspect[!is.na(suspect)]
-    if (length(suspect) != 0) {
-      covariateIds <- as.numeric(names(suspect))
-      t <-in.ff(cohortMethodData$covariateRef$covariateId, ff::as.ff(covariateIds))
-      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(t, t == TRUE),])
-      writeLines("High correlation between covariate(s) and treatment detected:")
-      print(ref)
-      stop("High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?")
-    }
-  }
-  ps <- ff::as.ram(cohortSubset[, c("y", "rowId")])
-  fitCyclopsModel(cyclopsData, prior = createPrior("normal", variance = prior$variance, exclude = c(0)), control = control)
-  cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
-  cfs <- coef(cyclopsFit)
-  if (all(cfs[2:length(cfs)] == 0)){
-    warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
-  }
-  pred <- predict(cyclopsFit)
-
-  colnames(ps)[colnames(ps) == "y"] <- "treatment"
-  data <- data.frame(propensityScore = pred, rowId = as.numeric(attr(pred, "names")))
-  data <- merge(data, ps, by = "rowId")
-  attr(data, "coefficients") <- coef(cyclopsFit)
-  attr(data, "priorVariance") <- cyclopsFit$variance[1]
-  delta <- Sys.time() - start
-  writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
-  return(data)
-}
-
-
-
 
 #' Get the propensity model
 #'
@@ -207,7 +126,7 @@ createPsNew <- function(cohortMethodData,
 #'
 #' @export
 getPsModel <- function(propensityScore, cohortMethodData) {
-  cfs <- attr(propensityScore, "coefficients")
+  cfs <- attr(propensityScore, "metaData")$psModelCoef
   cfs <- cfs[cfs != 0]
   attr(cfs, "names")[1] <- 0  #Rename intercept to 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
@@ -247,7 +166,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @details
 #' The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
 #' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
 #' A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
@@ -350,7 +269,7 @@ plotPs <- function(data,
 #' @details
 #' The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
 #' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
 #' A data frame holding the AUC and its 95 percent confidence interval
@@ -386,16 +305,16 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #' @description
 #' \code{trimByPs} uses the provided propensity scores to trim subjects with extreme scores.
 #'
-#' @param data           A data frame with the three columns described below
+#' @param population     A data frame with the three columns described below
 #' @param trimFraction   This fraction will be removed from each treatment group. In the treatment
 #'                       group, persons with the highest propensity scores will be removed, in the
 #'                       comparator group person with the lowest scores will be removed.
 #'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
+#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 #' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
 #' Returns a date frame with the same three columns as the input.
@@ -407,17 +326,20 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #' result <- trimByPs(data, 0.05)
 #'
 #' @export
-trimByPs <- function(data, trimFraction = 0.05) {
-  if (!("rowId" %in% colnames(data)))
-    stop("Missing column rowId in data")
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
-  cutoffTreated <- quantile(data$propensityScore[data$treatment == 1], 1 - trimFraction)
-  cutoffComparator <- quantile(data$propensityScore[data$treatment == 0], trimFraction)
-  result <- data[(data$propensityScore <= cutoffTreated & data$treatment == 1) | (data$propensityScore >=
-                                                                                    cutoffComparator & data$treatment == 0), ]
+trimByPs <- function(population, trimFraction = 0.05) {
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+  if (!("propensityScore" %in% colnames(population)))
+    stop("Missing column propensityScore in population")
+  cutoffTreated <- quantile(population$propensityScore[population$treatment == 1], 1 - trimFraction)
+  cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], trimFraction)
+  result <- population[(population$propensityScore <= cutoffTreated & population$treatment == 1) | (population$propensityScore >=
+                                                                                                      cutoffComparator & population$treatment == 0), ]
+  if (!is.null(attr(result, "metaData"))) {
+    attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))
+  }
   return(result)
 }
 
@@ -427,14 +349,14 @@ trimByPs <- function(data, trimFraction = 0.05) {
 #' \code{trimByPsToEquipoise} uses the preference score to trim subjects that are not in clinical
 #' equipoise
 #'
-#' @param data     A data frame with at least the three columns described below
+#' @param population     A data frame with at least the three columns described below
 #' @param bounds   The upper and lower bound on the preference score for keeping persons
 #'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
+#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 #' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
 #' Returns a date frame with the same three columns as the input.
@@ -451,22 +373,26 @@ trimByPs <- function(data, trimFraction = 0.05) {
 #' Comparative Effective Research, 3, 11-20
 #'
 #' @export
-trimByPsToEquipoise <- function(data, bounds = c(0.25, 0.75)) {
-  if (!("rowId" %in% colnames(data)))
-    stop("Missing column rowId in data")
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
+trimByPsToEquipoise <- function(population, bounds = c(0.25, 0.75)) {
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+  if (!("propensityScore" %in% colnames(population)))
+    stop("Missing column propensityScore in population")
 
-  data <- computePreferenceScore(data)
-  return(data[data$preferenceScore >= bounds[1] & data$preferenceScore <= bounds[2], ])
+  temp <- computePreferenceScore(population)
+  population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
+  if (!is.null(attr(population, "metaData"))) {
+    attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
+  }
+  return(population)
 }
 
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
   for (covariateId in covariateIds) {
     t <- cohortMethodData$covariates$covariateId == covariateId
-    if (any.ff(t)) {
+    if (ffbase::any.ff(t)) {
       values <- ff::as.ram(cohortMethodData$covariates[ffbase::ffwhich(t, t == TRUE), c(1, 3)])
       colnames(values)[colnames(values) == "covariateValue"] <- paste("covariateId", covariateId, sep = "_")
       data <- merge(data, values, all.x = TRUE)
@@ -484,7 +410,7 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
 #' @description
 #' \code{matchOnPs} uses the provided propensity scores to match treated to comparator persons.
 #'
-#' @param data                    A data frame with the three columns described below.
+#' @param population              A data frame with the three columns described below.
 #' @param caliper                 The caliper for matching. A caliper is the distance which is
 #'                                acceptable for any match. Observations which are outside of the
 #'                                caliper are dropped. A caliper of 0 means no caliper is used.
@@ -503,9 +429,9 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
 #'
 #' @details
 #' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
-#' \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
+#' \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
 #' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr } This function
+#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 #' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 #'
 #' @return
@@ -528,38 +454,41 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
 #' score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #'
 #' @export
-matchOnPs <- function(data,
+matchOnPs <- function(population,
                       caliper = 0.25,
                       caliperScale = "standardized",
                       maxRatio = 1,
                       stratificationColumns = c()) {
-  if (!("rowId" %in% colnames(data)))
-    stop("Missing column rowId in data")
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+  if (!("propensityScore" %in% colnames(population)))
+    stop("Missing column propensityScore in population")
   if (caliperScale != "standardized" && caliperScale != "propensity score")
     stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
 
-
-  data <- data[order(data$propensityScore), ]
+  population <- population[order(population$propensityScore), ]
   if (caliper <= 0) {
     caliper <- 9999
   } else if (caliperScale == "standardized")
-    caliper <- caliper * sd(data$propensityScore)
+    caliper <- caliper * sd(population$propensityScore)
   if (maxRatio == 0) {
     maxRatio <- 999
   }
   if (length(stratificationColumns) == 0) {
     result <- .Call("CohortMethod_matchOnPs",
                     PACKAGE = "CohortMethod",
-                    data$propensityScore,
-                    data$treatment,
+                    population$propensityScore,
+                    population$treatment,
                     maxRatio,
                     caliper)
-    result$rowId <- data$rowId
-    return(result[result$stratumId != -1, ])
+    population$stratumId <- result$stratumId
+    population <- population[population$stratumId != -1, ]
+    if (!is.null(attr(population, "metaData"))) {
+      attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Matched on propensity score")))
+    }
+    return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
       subResult <- .Call("CohortMethod_matchOnPs",
@@ -568,13 +497,11 @@ matchOnPs <- function(data,
                          subset$treatment,
                          maxRatio,
                          caliper)
-      subResult$rowId <- subset$rowId
-      subResult[, stratificationColumns] <- subset[, stratificationColumns]
-      subResult <- subResult[subResult$stratumId != -1, ]
-      return(subResult)
+      subset$stratumId <- subResult$stratumId
+      subset <- subset[subset$stratumId != -1, ]
+      return(subset)
     }
-
-    results <- plyr::dlply(.data = data,
+    results <- plyr::dlply(.data = population,
                            .variables = stratificationColumns,
                            .drop = TRUE,
                            .fun = f,
@@ -589,6 +516,9 @@ matchOnPs <- function(data,
       }
     }
     result <- do.call(rbind, results)
+    if (!is.null(attr(result, "metaData"))) {
+      attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed to equipoise")))
+    }
     return(result)
   }
 }
@@ -599,7 +529,7 @@ matchOnPs <- function(data,
 #' \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
 #' treated to comparator persons.
 #'
-#' @param data               A data frame with the three columns described below.
+#' @param population         A data frame with the three columns described below.
 #' @param caliper            The caliper for matching. A caliper is the distance which is acceptable
 #'                           for any match. Observations which are outside of the caliper are dropped.
 #'                           A caliper of 0 means no caliper is used.
@@ -618,9 +548,9 @@ matchOnPs <- function(data,
 #'
 #' @details
 #' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
-#' \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
+#' \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
 #' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(real) \tab Propensity score \cr } This function
+#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 #' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 #'
 #' @return
@@ -635,7 +565,7 @@ matchOnPs <- function(data,
 #' score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #'
 #' @export
-matchOnPsAndCovariates <- function(data,
+matchOnPsAndCovariates <- function(population,
                                    caliper = 0.25,
                                    caliperScale = "standardized",
                                    maxRatio = 1,
@@ -644,11 +574,11 @@ matchOnPsAndCovariates <- function(data,
   if (caliperScale != "standardized" && caliperScale != "propensity score")
     stop(paste("Unknown caliperScale '", caliperScale, "', please choose either 'standardized' or 'propensity score'"), sep = "")
 
-  data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
-  stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
-                                                                    covariateIds,
-                                                                    sep = "_")]
-  return(matchOnPs(data, caliper, caliperScale, maxRatio, stratificationColumns))
+  population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
+  stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
+                                                                                covariateIds,
+                                                                                sep = "_")]
+  return(matchOnPs(population, caliper, caliperScale, maxRatio, stratificationColumns))
 }
 
 #' Stratify persons by propensity score
@@ -657,7 +587,7 @@ matchOnPsAndCovariates <- function(data,
 #' \code{stratifyByPs} uses the provided propensity scores to stratify persons. Additional
 #' stratification variables for stratifications can also be used.
 #'
-#' @param data                    A data frame with the three columns described below
+#' @param population              A data frame with the three columns described below
 #' @param numberOfStrata          How many strata? The boundaries of the strata are automatically
 #'                                defined to contain equal numbers of treated persons.
 #' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which
@@ -665,10 +595,10 @@ matchOnPsAndCovariates <- function(data,
 #'                                propensity score.
 #'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
+#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 #' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
 #' Returns a date frame with the same columns as the input data plus one extra column: stratumId.
@@ -680,22 +610,22 @@ matchOnPsAndCovariates <- function(data,
 #' result <- stratifyByPs(data, 5)
 #'
 #' @export
-stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) {
-  if (!("rowId" %in% colnames(data)))
-    stop("Missing column rowId in data")
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
+stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c()) {
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+  if (!("propensityScore" %in% colnames(population)))
+    stop("Missing column propensityScore in population")
 
-  psStrata <- quantile(data$propensityScore[data$treatment == 1],
+  psStrata <- quantile(population$propensityScore[population$treatment == 1],
                        (1:(numberOfStrata - 1))/numberOfStrata)
-  attr(data, "strata") <- psStrata
+  attr(population, "strata") <- psStrata
   if (length(stratificationColumns) == 0) {
-    data$stratumId <- as.integer(as.character(cut(data$propensityScore,
-                                                  breaks = c(0, psStrata, 1),
-                                                  labels = (1:numberOfStrata) - 1)))
-    return(data)
+    population$stratumId <- as.integer(as.character(cut(population$propensityScore,
+                                                        breaks = c(0, psStrata, 1),
+                                                        labels = (1:numberOfStrata) - 1)))
+    return(population)
   } else {
     f <- function(subset, psStrata, numberOfStrata) {
       subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
@@ -704,7 +634,7 @@ stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) 
       return(subset)
     }
 
-    results <- plyr::dlply(.data = data,
+    results <- plyr::dlply(.data = population,
                            .variables = stratificationColumns,
                            .drop = TRUE,
                            .fun = f,
@@ -729,7 +659,7 @@ stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) 
 #' \code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify
 #' persons.
 #'
-#' @param data               A data frame with the three columns described below
+#' @param population               A data frame with the three columns described below
 #' @param numberOfStrata     Into how many strata should the propensity score be divided? The
 #'                           boundaries of the strata are automatically defined to contain equal
 #'                           numbers of treated persons.
@@ -742,28 +672,32 @@ stratifyByPs <- function(data, numberOfStrata = 5, stratificationColumns = c()) 
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
 #' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(real) \tab Propensity score \cr }
+#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
-#' Returns a date frame with the same columns as the input data plus one extra column: stratumId.
+#' Returns a date frame with the same columns as the input population plus one extra column: stratumId.
 #' @examples
 #' # todo
 #'
 #' @export
-stratifyByPsAndCovariates <- function(data, numberOfStrata = 5, cohortMethodData, covariateIds) {
-  data <- mergeCovariatesWithPs(data, cohortMethodData, covariateIds)
-  stratificationColumns <- colnames(data)[colnames(data) %in% paste("covariateId",
-                                                                    covariateIds,
-                                                                    sep = "_")]
-  return(stratifyByPs(data, numberOfStrata, stratificationColumns))
+stratifyByPsAndCovariates <- function(population, numberOfStrata = 5, cohortMethodData, covariateIds) {
+  population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
+  stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
+                                                                                covariateIds,
+                                                                                sep = "_")]
+  return(stratifyByPs(population, numberOfStrata, stratificationColumns))
+}
+
+bySumFf <- function(values, bins) {
+  .bySum(values, bins)
 }
 
 quickSum <- function(data, squared = FALSE) {
   if (squared) {
-    x <- PatientLevelPrediction::bySumFf(data$covariateValue^2, data$covariateId)
+    x <- bySumFf(data$covariateValue^2, data$covariateId)
     colnames(x) <- c("covariateId", "sumSqr")
   } else {
-    x <- PatientLevelPrediction::bySumFf(data$covariateValue, data$covariateId)
+    x <- bySumFf(data$covariateValue, data$covariateId)
     colnames(x) <- c("covariateId", "sum")
   }
   x$covariateId <- as.numeric(x$covariateId)
@@ -776,7 +710,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
   nComparator <- nOverall - nTreated
 
   t <- cohorts$treatment == 1
-  t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
+  t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
   covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
   treated <- quickSum(covariatesSubset)
   treatedSqr <- quickSum(covariatesSubset, squared = TRUE)
@@ -798,7 +732,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
     w <- w [,c("rowId","weight")]
     w$weight <- w$weight / sum(w$weight) # Normalize so sum(w) == 1
     t <- cohorts$treatment == 0
-    t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
     covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
     covariatesSubset <- ffbase::merge.ffdf(covariatesSubset, ff::as.ffdf(w))
     # weightedSd2 <- sqrt((sum(w*x^2) - weightedMu^2)* sum(w) / (sum(w)^2 - sum(w^2)))
@@ -806,18 +740,18 @@ computeMeansPerGroup <- function(cohorts, covariates) {
     covariatesSubset$wValueSquared <- covariatesSubset$wValue * covariatesSubset$covariateValue
 
     # Compute sum
-    comparator <- PatientLevelPrediction::bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
+    comparator <- bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
     colnames(comparator)[colnames(comparator) == "bins"] <- "covariateId"
     colnames(comparator)[colnames(comparator) == "sums"] <- "sumComparator"
 
     # Compute weighted mean (no need to divide by sum(w) because it is 1)
-    wMean <- PatientLevelPrediction::bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
+    wMean <- bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
     colnames(wMean)[colnames(wMean) == "bins"] <- "covariateId"
     colnames(wMean)[colnames(wMean) == "sums"] <- "meanComparator"
     comparator <- merge(comparator, wMean)
 
     # Compute weighted standard deviation
-    wValueSquared <- PatientLevelPrediction::bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
+    wValueSquared <- bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
     colnames(wValueSquared)[colnames(wValueSquared) == "bins"] <- "covariateId"
     colnames(wValueSquared)[colnames(wValueSquared) == "sums"] <- "wValueSquared"
     comparator <- merge(comparator, wMean)
@@ -829,7 +763,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
   } else {
     # Used one-on-one ratio matching, no need to weigh
     t <- cohorts$treatment == 0
-    t <- in.ff(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)])
+    t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
     covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
     comparator <- quickSum(covariatesSubset)
     comparatorSqr <- quickSum(covariatesSubset, squared = TRUE)
@@ -854,16 +788,12 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' matching/trimming are computed. When variable ratio matching was used the balance score will be corrected according the method
 #' described in Austin et al (2008).
 #'
-#' @param restrictedCohorts   A data frame containing the people that are remaining after matching
+#' @param population          A data frame containing the people that are remaining after matching
 #'                            and/or trimming.
 #' @param cohortMethodData    An object of type \code{cohortMethodData} as generated using
 #'                            \code{getDbCohortMethodData}.
-#' @param excludePriorOutcome Remove people that have the outcome prior to the index date?
-#' @param outcomeId           The concept ID of the outcome. Persons marked for removal for the outcome
-#'                            will be removed when computing the balance before matching/trimming.
-#'
 #' @details
-#' The restrictedCohorts data frame should have at least the following columns: \tabular{lll}{
+#' The population data frame should have at least the following columns: \tabular{lll}{
 #' \verb{rowId} \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr
 #' \verb{treatment} \tab(integer) \tab Column indicating whether the person is in the treated (1) or
 #' comparator (0)\cr \tab \tab group \cr }
@@ -876,26 +806,11 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 #'
 #' @export
-computeCovariateBalance <- function(restrictedCohorts,
-                                    cohortMethodData,
-                                    excludePriorOutcome = TRUE,
-                                    outcomeId = NULL) {
+computeCovariateBalance <- function(population, cohortMethodData) {
   start <- Sys.time()
-  if (!excludePriorOutcome || is.null(outcomeId) || is.null(cohortMethodData$exclude) || !ffbase::any.ff(cohortMethodData$exclude$outcomeId ==
-                                                                                 outcomeId)) {
-    cohorts <- cohortMethodData$cohorts
-    covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
-  } else {
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- in.ff(cohortMethodData$cohorts$rowId,
-               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    cohorts <- cohortMethodData$cohort[ffbase::ffwhich(t, t == FALSE), ]
-    t <- cohortMethodData$exclude$outcomeId == outcomeId
-    t <- in.ff(cohortMethodData$covariates$rowId,
-               cohortMethodData$exclude$rowId[ffbase::ffwhich(t, t == TRUE)])
-    t <- t | cohortMethodData$covariates$covariateId == 1
-    covariates <- cohortMethodData$covariates[ffbase::ffwhich(t, t == FALSE), ]
-  }
+  cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
+  covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
+
   # Try to undo normalization of covariate values:
   normFactors <- attr(cohortMethodData$covariates,"normFactors")
   if (!is.null(normFactors)){
@@ -905,7 +820,7 @@ computeCovariateBalance <- function(restrictedCohorts,
   }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
-  afterMatching <- computeMeansPerGroup(ff::as.ffdf(restrictedCohorts), covariates)
+  afterMatching <- computeMeansPerGroup(ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")]), covariates)
 
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
