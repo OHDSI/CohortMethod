@@ -257,7 +257,7 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
 }
 ```
 
-There are many parameters, but they are all documented in the `CohortMethod` manual. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
+There are many parameters, but they are all documented in the `CohortMethod` manual. The `createCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
 
 **Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetId` and `comparatorId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument to TRUE and automatically the drugs
 and their descendants will be excluded from the covariates. However, if the `targetId` and `comparatorId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument.

@@ -230,8 +230,13 @@ getDbCohortMethodData <- function(connectionDetails,
 
   delta <- Sys.time() - start
   writeLines(paste("Loading cohorts took", signif(delta, 3), attr(delta, "units")))
-
-  covariateSettings$useCovariateCohortIdIs1 <- TRUE
+  if (is(covariateSettings, "covariateSettings"))
+    covariateSettings <- list(covariateSettings)
+  for (i in 1:length(covariateSettings)) {
+    if (!is.null(covariateSettings[[i]]$useCovariateCohortIdIs1)) {
+      covariateSettings[[i]]$useCovariateCohortIdIs1 <- TRUE
+    }
+  }
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = oracleTempSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,

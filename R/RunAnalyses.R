@@ -324,10 +324,20 @@ runCmAnalyses <- function(connectionDetails,
       analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
                                               list(analysisId = refRow$analysisId))[[1]]
       getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
-      excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds, ","))),
-                                              getDbCohortMethodDataArgs$covariateSettings$excludedCovariateConceptIds))
-      includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds, ","))),
-                                              getDbCohortMethodDataArgs$covariateSettings$includedCovariateConceptIds))
+      covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
+      if (is(covariateSettings, "covariateSettings"))
+        covariateSettings <- list(covariateSettings)
+      for (i in 1:length(covariateSettings)) {
+        if (!is.null(covariateSettings[[i]]$excludedCovariateConceptIds)) {
+          covariateSettings[[i]]$excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds, ","))),
+                                                                         covariateSettings[[i]]$excludedCovariateConceptIds))
+        }
+        if (!is.null(covariateSettings[[i]]$includedCovariateConceptIds)) {
+          covariateSettings[[i]]$includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds, ","))),
+                                                                         covariateSettings[[i]]$includedCovariateConceptIds))
+        }
+      }
+      getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
       outcomeIds <- unique(outcomeReference$outcomeId[outcomeReference$cohortMethodDataFolder ==
                                                         cohortMethodDataFolder])
       args <- list(connectionDetails = connectionDetails,
@@ -340,8 +350,6 @@ runCmAnalyses <- function(connectionDetails,
                    outcomeIds = outcomeIds,
                    targetId = refRow$targetId,
                    comparatorId = refRow$comparatorId)
-      getDbCohortMethodDataArgs$covariateSettings$excludedCovariateConceptIds <- excludedCovariateConceptIds
-      getDbCohortMethodDataArgs$covariateSettings$includedCovariateConceptIds <- includedCovariateConceptIds
       args <- append(args, getDbCohortMethodDataArgs)
       objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args,
                                                              cohortMethodDataFolder = cohortMethodDataFolder)
