@@ -167,59 +167,7 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
-  write(toJsonWithAttr(cmAnalysisList), file)
-}
-
-convertAttrToMember <- function(object){
-  if (is.list(object)){
-    if (length(object) > 0) {
-      for (i in 1:length(object)) {
-        if (!is.null(object[[i]])){
-          object[[i]] <- convertAttrToMember(object[[i]])
-        }
-      }
-    }
-    a <- names(attributes(object))
-    a <- a[a != "names"]
-    if (length(a) > 0) {
-      object[paste("attr",a, sep = "_")] <- attributes(object)[a]
-    }
-  }
-  return(object)
-}
-
-toJsonWithAttr <- function(object){
-  object <- convertAttrToMember(object)
-  return (jsonlite::toJSON(object, pretty = TRUE, force = TRUE, null = "null", auto_unbox = TRUE))
-}
-
-convertMemberToAttr <-  function(object){
-  if (is.list(object)){
-    if (length(object) > 0) {
-      for (i in 1:length(object)) {
-        if (!is.null(object[[i]])){
-          object[[i]] <- convertMemberToAttr(object[[i]])
-        }
-      }
-      attrNames <- names(object)[grep("^attr_", names(object))]
-      cleanNames <- gsub("^attr_", "", attrNames)
-      if (any(cleanNames == "class")){
-        class(object) <- object$attr_class
-        object$attr_class <- NULL
-        attrNames <- attrNames[attrNames != "attr_class"]
-        cleanNames <- cleanNames[cleanNames != "class"]
-      }
-      attributes(object)[cleanNames] <- object[attrNames]
-      object[attrNames] <- NULL
-    }
-  }
-  return(object)
-}
-
-fromJsonWithAttr <- function(file) {
-  object <- jsonlite::fromJSON(file, simplifyVector = TRUE, simplifyDataFrame = FALSE)
-  object <- convertMemberToAttr(object)
-  return(object)
+  OhdsiRTools::saveSettingsToJson(cmAnalysisList, file)
 }
 
 #' Load a list of cmAnalysis from file
@@ -234,7 +182,7 @@ fromJsonWithAttr <- function(file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
-  return(fromJsonWithAttr(file))
+  return(OhdsiRTools::loadSettingsFromJson(file))
 }
 
 #' Create drug-comparator-outcomes combinations.
@@ -301,7 +249,7 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
   for (i in 1:length(drugComparatorOutcomesList)) {
     stopifnot(class(drugComparatorOutcomesList[[i]]) == "drugComparatorOutcomes")
   }
-  write(toJsonWithAttr(drugComparatorOutcomesList), file)
+  OhdsiRTools::saveSettingsToJson(drugComparatorOutcomesList, file)
 }
 
 #' Load a list of drugComparatorOutcomes from file
@@ -316,5 +264,5 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
 #'
 #' @export
 loadDrugComparatorOutcomesList <- function(file) {
-  return(fromJsonWithAttr(file))
+  return(OhdsiRTools::loadSettingsFromJson(file))
 }

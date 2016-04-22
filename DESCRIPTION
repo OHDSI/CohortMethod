@@ -43,7 +43,7 @@ Suggests:
     knitr,
     rmarkdown,
     EmpiricalCalibration,
-    OhdsiRTools
+    OhdsiRTools (>= 1.1.1)
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 5.0.1
