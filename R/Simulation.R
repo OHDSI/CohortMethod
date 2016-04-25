@@ -53,7 +53,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     outcomeId <- cohortMethodData$metaData$outcomeIds[i]
     outcomeModel <- fitOutcomeModel(outcomeId,
                                     cohortMethodData,
-                                    strata,
+                                    subPopulation = strata,
                                     useCovariates = TRUE,
                                     modelType = "pr",
                                     prior = Cyclops::createPrior("laplace", 0.1))
@@ -267,7 +267,8 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   # generate outcome model for outcome
   outcomeModel <- fitOutcomeModel(outcomeId,
                                   cohortMethodData,
-                                  psTrimmed,
+                                  excludePriorOutcome = TRUE,
+                                  subPopulation = psTrimmed,
                                   useCovariates = TRUE,
                                   modelType = "cox",
                                   prior = Cyclops::createPrior("laplace", 0.1),
@@ -283,7 +284,8 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   cohortMethodData1 = invertOutcome(cohortMethodData, outcomeId)
   outcomeModel1 <- fitOutcomeModel(outcomeId,
                                    cohortMethodData1,
-                                   psTrimmed,
+                                   excludePriorOutcome = TRUE,
+                                   subPopulation = psTrimmed,
                                    useCovariates = TRUE,
                                    modelType = "cox",
                                    prior = Cyclops::createPrior("laplace", 0.1),
@@ -307,7 +309,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   times$y = ff::ff(vmode = "double", initdata = 0, length = n)
   t = ffbase::ffwhich(times, times$sTime<times$cTime)
   times$y[t] = ff::ff(vmode = "double", initdata = 1, length = length(t))
-  times$timeToEvent = times$cTime
+  times$timeToEvent = ff::clone.ff(times$cTime)
   times$timeToEvent[t] = times$sTime[t]
   times$rowId <- NULL
   times$sTime <- NULL
@@ -332,7 +334,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   # generate covariates
   covariates = NULL
   ids1 = ids
-  while(dim(ids1)[1]!=0) {
+  while(!is.null(dim(ids1)) && dim(ids1)[1]>0) {
     ids1 = ff::as.ffdf(ids1)
     covariates = if(is.null(covariates)) ffbase::merge.ffdf(cohortMethodData$covariates, ids1) else ffbase::ffdfrbind.fill(covariates, ffbase::merge.ffdf(cohortMethodData$covariates, ids1))
     t = ffbase::ffmatch(unique(ids1$rowId), ids1$rowId)
