@@ -4,35 +4,27 @@
 \alias{createFitOutcomeModelArgs}
 \title{Create a parameter object for the function fitOutcomeModel}
 \usage{
-createFitOutcomeModelArgs(excludePriorOutcome = TRUE, stratifiedCox = TRUE,
-  riskWindowStart = 0, riskWindowEnd = 9999, addExposureDaysToEnd = FALSE,
-  useCovariates = TRUE, fitModel = TRUE, modelType = "cox",
-  prior = createPrior("laplace", useCrossValidation = TRUE),
-  control = createControl(cvType = "auto", startingVariance = 0.1,
-  selectorType = "byPid", noiseLevel = "quiet"))
+createFitOutcomeModelArgs(modelType = "logistic", stratified = TRUE,
+  useCovariates = TRUE, excludeCovariateIds = c(),
+  includeCovariateIds = c(), prior = createPrior("laplace",
+  useCrossValidation = TRUE), control = createControl(cvType = "auto",
+  startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, selectorType =
+  "byPid", noiseLevel = "quiet"))
 }
 \arguments{
-\item{excludePriorOutcome}{Remove people that have the outcome prior to the risk window start
-date?}
+\item{modelType}{The type of outcome model that will be used. Possible values
+are"logistic", "poisson", or "cox".}
 
-\item{stratifiedCox}{Specifically for Cox regressions: specify whether to use the
-stratadefined in subPopulation in the analysis. For Poissonregression
-and logistic regression, this is implied in 'clr' and'cpr'.}
+\item{stratified}{Should the regression be conditioned on the strata defined in the
+populationobject (e.g. by matching or stratifying on propensity
+scores)?}
 
-\item{riskWindowStart}{The start of the risk window (in days) relative to the index data.}
-
-\item{riskWindowEnd}{The end of the risk window (in days) relative to the index data (+days
-of exposure if the addExposureDaysToEnd parameter isspecified).}
-
-\item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
-
-\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData in
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData object in
 theoutcome model.}
 
-\item{fitModel}{If false, the model will not be fit, and only summary statistics
-areavailable.}
+\item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
 
-\item{modelType}{The type of model to be fitted. See details for options.}
+\item{includeCovariateIds}{Include only these covariates in the outcome model.}
 
 \item{prior}{The prior used to fit the model. SeecreatePrior for details.}
 

@@ -30,9 +30,9 @@ test_that("Data loading functions", {
                                               oracleTempSchema = NULL,
                                               targetId = 1118084,
                                               comparatorId = 1124300,
-                                              indicationConceptIds = c(),
-                                              washoutWindow = 183,
-                                              indicationLookbackWindow = 183,
+                                              removeDuplicateSubjects = TRUE,
+                                              washoutPeriod = 183,
+                                              firstExposureOnly = TRUE,
                                               studyStartDate = "20000101",
                                               studyEndDate = "20031230",
                                               outcomeIds = 192671,
@@ -41,24 +41,20 @@ test_that("Data loading functions", {
                                               excludeDrugsFromCovariates = TRUE,
                                               covariateSettings = covariateSettings,
                                               cdmVersion = "4")
-    cohorts <- ff::as.ram(cohortMethodData$cohort)
+    cohorts <- cohortMethodData$cohort
 
     # Test if none of the observation period end dates exceeds the study end date (should truncate at study end date):
-    opEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$timeToObsPeriodEnd - 1 > as.Date("2003-12-30"))
+    opEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$daysToObsEnd - 1 > as.Date("2003-12-30"))
     expect_equal(opEndDatesPastStudyEnd, 0)
 
     # Test if none of the cohort end dates exceeds the study end date (should truncate at study end date):
-    cohortEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$timeToCohortEnd - 1 > as.Date("2003-12-30"))
+    cohortEndDatesPastStudyEnd <- sum(as.Date(cohorts$cohortStartDate) + cohorts$daysToCohortEnd - 1 > as.Date("2003-12-30"))
     expect_equal(cohortEndDatesPastStudyEnd, 0)
 
-    # People with 0 days of observation time should have been removed:
-    expect_equal(sum(cohorts$timeToObsPeriodEnd == 0), 0)
+    # Test if everyone has washout period of observation:
+    expect_gte(min(cohorts$daysFromObsStart), 183)
 
-    # People with 0 days of exposure should have been removed:
-    expect_equal(sum(cohorts$timeToCohortEnd == 0), 0)
-
-    # People with 0 days until outcome should have been removed:
-    outcomes <- ff::as.ram(cohortMethodData$outcomes)
-    expect_equal(sum(outcomes$timeToEvent == 0), 0)
+    # Test if no duplicates:
+    expect_equal(max(aggregate(rowId ~ subjectId, data = cohorts, length)$rowId), 1)
   }
 })

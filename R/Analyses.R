@@ -30,11 +30,10 @@
 #' @param comparatorType                  If more than one comparator is provided for each
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific comparator to use in this analysis.
-#' @param indicationType                  If more than one indication is provided for each
-#'                                        drugComparatorOutcome, this field should be used to select
-#'                                        the specific indication to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
 #'                                        the \code{\link{getDbCohortMethodData}} function.
+#' @param createStudyPopArgs              An object representing the arguments to be used when calling
+#'                                        the \code{\link{createStudyPopulation}} function.
 #' @param createPs                        Should the \code{\link{createPs}} function be used in this
 #'                                        analysis?
 #' @param createPsArgs                    An object representing the arguments to be used when calling
@@ -75,8 +74,8 @@ createCmAnalysis <- function(analysisId = 1,
                              description = "",
                              targetType = NULL,
                              comparatorType = NULL,
-                             indicationType = NULL,
                              getDbCohortMethodDataArgs,
+                             createStudyPopArgs,
                              createPs = FALSE,
                              createPsArgs = NULL,
                              trimByPs = FALSE,
@@ -104,13 +103,11 @@ createCmAnalysis <- function(analysisId = 1,
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
-      (fitOutcomeModelArgs$modelType %in% c("clr",
-                                            "cpr") || (fitOutcomeModelArgs$modelType == "cox" &&
-                                                       fitOutcomeModelArgs$stratifiedCox))) {
+      fitOutcomeModelArgs$stratified) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
-  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
-    stop("Cannot compute covariate balance without stratification or matching")
+  if (!(matchOnPs | matchOnPsAndCovariates) && computeCovariateBalance) {
+    stop("Cannot compute covariate balance without matching")
   }
   if (!createPs) {
     createPsArgs <- NULL
@@ -170,59 +167,7 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
-  write(toJsonWithAttr(cmAnalysisList), file)
-}
-
-convertAttrToMember <- function(object){
-  if (is.list(object)){
-    if (length(object) > 0) {
-      for (i in 1:length(object)) {
-        if (!is.null(object[[i]])){
-          object[[i]] <- convertAttrToMember(object[[i]])
-        }
-      }
-    }
-    a <- names(attributes(object))
-    a <- a[a != "names"]
-    if (length(a) > 0) {
-      object[paste("attr",a, sep = "_")] <- attributes(object)[a]
-    }
-  }
-  return(object)
-}
-
-toJsonWithAttr <- function(object){
-  object <- convertAttrToMember(object)
-  return (jsonlite::toJSON(object, pretty = TRUE, force = TRUE, null = "null", auto_unbox = TRUE))
-}
-
-convertMemberToAttr <-  function(object){
-  if (is.list(object)){
-    if (length(object) > 0) {
-      for (i in 1:length(object)) {
-        if (!is.null(object[[i]])){
-          object[[i]] <- convertMemberToAttr(object[[i]])
-        }
-      }
-      attrNames <- names(object)[grep("^attr_", names(object))]
-      cleanNames <- gsub("^attr_", "", attrNames)
-      if (any(cleanNames == "class")){
-        class(object) <- object$attr_class
-        object$attr_class <- NULL
-        attrNames <- attrNames[attrNames != "attr_class"]
-        cleanNames <- cleanNames[cleanNames != "class"]
-      }
-      attributes(object)[cleanNames] <- object[attrNames]
-      object[attrNames] <- NULL
-    }
-  }
-  return(object)
-}
-
-fromJsonWithAttr <- function(file) {
-  object <- jsonlite::fromJSON(file, simplifyVector = TRUE, simplifyDataFrame = FALSE)
-  object <- convertMemberToAttr(object)
-  return(object)
+  OhdsiRTools::saveSettingsToJson(cmAnalysisList, file)
 }
 
 #' Load a list of cmAnalysis from file
@@ -237,7 +182,7 @@ fromJsonWithAttr <- function(file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
-  return(fromJsonWithAttr(file))
+  return(OhdsiRTools::loadSettingsFromJson(file))
 }
 
 #' Create drug-comparator-outcomes combinations.
@@ -259,16 +204,6 @@ loadCmAnalysisList <- function(file) {
 #'                                      parameter in the \code{\link{createCmAnalysis}} function.
 #' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
 #'                                      outcome table.
-#' @param indicationConceptIds          A vector of concept IDs identifying conditions that are
-#'                                      required to appear prior to or on the index date. If multiple
-#'                                      strategies for picking the indication will be tested in the
-#'                                      analysis, a named list of vectors can be provided instead. In
-#'                                      the analysis, the name of the vector to be used can be
-#'                                      specified using the \code{indicationType} parameter in the
-#'                                      \code{\link{createCmAnalysis}} function.
-#' @param exclusionConceptIds           A list of concept IDs that cannot appear on or before the index
-#'                                      date. This argument is to be used only for exclusion criteria
-#'                                      that are specific to the drug-comparator combination.
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
 #'                                      concepts that are specific to the drug-comparator combination.
@@ -280,8 +215,6 @@ loadCmAnalysisList <- function(file) {
 createDrugComparatorOutcomes <- function(targetId,
                                          comparatorId,
                                          outcomeIds,
-                                         indicationConceptIds = c(),
-                                         exclusionConceptIds = c(),
                                          excludedCovariateConceptIds = c(),
                                          includedCovariateConceptIds = c()) {
   # First: get the default values:
@@ -316,7 +249,7 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
   for (i in 1:length(drugComparatorOutcomesList)) {
     stopifnot(class(drugComparatorOutcomesList[[i]]) == "drugComparatorOutcomes")
   }
-  write(toJsonWithAttr(drugComparatorOutcomesList), file)
+  OhdsiRTools::saveSettingsToJson(drugComparatorOutcomesList, file)
 }
 
 #' Load a list of drugComparatorOutcomes from file
@@ -331,5 +264,5 @@ saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
 #'
 #' @export
 loadDrugComparatorOutcomesList <- function(file) {
-  return(fromJsonWithAttr(file))
+  return(OhdsiRTools::loadSettingsFromJson(file))
 }

@@ -1,5 +1,5 @@
 /************************************************************************
-@file GetCohorts.sql
+@file CountOverallExposedPopulation.sql
 
 Copyright 2016 Observational Health Data Sciences and Informatics
 
@@ -18,53 +18,64 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @target_id = ''}  /*target_id: @target_id*/
-{DEFAULT @comparator_id = ''} /*comparator_id: @comparator_id*/
-{DEFAULT @study_start_date = ''} /*study_start_date: @study_start_date*/
-{DEFAULT @study_end_date = ''} /*study_end_date: @study_end_date*/
-{DEFAULT @exposure_database_schema = 'CDM4_SIM'} /*exposure_database_schema: @exposure_database_schema*/
-{DEFAULT @exposure_table = 'drug_era'}  /*exposure_table: @exposure_table*/ /*the table that contains the exposure information (drug_era or COHORT)*/
-{DEFAULT @cdm_version = '4'}
-{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
+{DEFAULT @cdm_database_schema = 'CDM_SIM' }
+{DEFAULT @exposure_database_schema = 'CDM_SIM' }
+{DEFAULT @exposure_table = 'drug_era' }
+{DEFAULT @cdm_version = '5'}
+{DEFAULT @target_id = '' }
+{DEFAULT @comparator_id = '' }
+{DEFAULT @study_start_date = '' }
+{DEFAULT @study_end_date = '' }
 
-SELECT COUNT(DISTINCT raw_cohorts.person_id) AS exposed_count,
-raw_cohorts.treatment
+SELECT COUNT(DISTINCT subject_id) AS exposed_count,
+	COUNT(*) AS exposure_count,
+	cohort_definition_id AS treatment
 FROM (
-{@exposure_table == 'drug_era'} ? {
-  SELECT CASE
-  WHEN ca1.ancestor_concept_id = @target_id
-  THEN 1
-  WHEN ca1.ancestor_concept_id = @comparator_id
-  THEN 0
-  ELSE - 1
-  END AS treatment,
-  de1.person_id,
-  de1.drug_era_start_date AS cohort_start_date,
-  de1.drug_era_end_date AS cohort_end_date
-  FROM drug_era de1
-  INNER JOIN concept_ancestor ca1
-  ON de1.drug_concept_id = ca1.descendant_concept_id
-  WHERE ca1.ancestor_concept_id in (@target_id,@comparator_id)
+{@exposure_table == 'drug_era' } ? { 
+	SELECT person_id AS subject_id,
+		CASE
+			WHEN ancestor_concept_id = @target_id
+				THEN 1
+			WHEN ancestor_concept_id = @comparator_id
+				THEN 0
+			ELSE - 1
+			END AS cohort_definition_id,
+		drug_era_start_date AS cohort_start_date,
+		drug_era_end_date AS cohort_end_date
+	FROM @cdm_database_schema.drug_era
+	INNER JOIN @cdm_database_schema.concept_ancestor 
+		ON drug_concept_id = descendant_concept_id
+	WHERE ancestor_concept_id IN (@target_id, @comparator_id)
 } : {
-  SELECT CASE
-  WHEN c1.@cohort_definition_id = @target_id
-  THEN 1
-  WHEN c1.@cohort_definition_id = @comparator_id
-  THEN 0
-  ELSE - 1
-  END AS treatment,
-  c1.subject_id as person_id,
-  c1.cohort_start_date AS cohort_start_date,
-  c1.cohort_end_date AS cohort_end_date
-  FROM @exposure_database_schema.@exposure_table c1
-  WHERE c1.@cohort_definition_id in (@target_id,@comparator_id)
+	SELECT subject_id,
+		CASE
+{@cdm_version == "4"} ? {			
+			WHEN cohort_concept_id = @target_id
+				THEN 1
+			WHEN cohort_concept_id = @comparator_id
+				THEN 0
+} : {			
+			WHEN cohort_definition_id = @target_id
+				THEN 1
+			WHEN cohort_definition_id = @comparator_id
+				THEN 0
 }
-) raw_cohorts
-INNER JOIN observation_period op1
-ON raw_cohorts.person_id = op1.person_id
-WHERE raw_cohorts.cohort_start_date < op1.observation_period_end_date
-AND  raw_cohorts.cohort_end_date >= op1.observation_period_start_date
-{@study_start_date != ''} ? {AND raw_cohorts.cohort_end_date >= CAST('@study_start_date' AS DATE)}
-{@study_end_date != ''} ? {AND raw_cohorts.cohort_start_date <= CAST('@study_end_date' AS DATE)}
-GROUP BY
-raw_cohorts.treatment
+			ELSE - 1
+		END AS cohort_definition_id,
+		cohort_start_date,
+		cohort_end_date
+	FROM @exposure_database_schema.@exposure_table
+{@cdm_version == "4"} ? {	
+	WHERE cohort_concept_id IN (@target_id, @comparator_id)
+} : {
+	WHERE cohort_definition_id IN (@target_id, @comparator_id)
+}
+}
+	) raw_cohorts
+INNER JOIN @cdm_database_schema.observation_period
+	ON subject_id = person_id
+WHERE cohort_start_date <= observation_period_end_date
+	AND cohort_start_date >= observation_period_start_date
+{@study_start_date != '' } ? {AND cohort_start_date >= CAST('@study_start_date' AS DATE) } 
+{@study_end_date != '' } ? {AND cohort_start_date < CAST('@study_end_date' AS DATE) }
+GROUP BY cohort_definition_id
