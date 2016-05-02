@@ -1,11 +1,12 @@
 {DEFAULT @cdm_version = '5'}
+{DEFAULT @target_id = '' }
 
 SELECT row_id,
 	subject_id,
 {@cdm_version == "4"} ? {	
-	cohort_concept_id AS treatment,
+	CASE WHEN cohort_concept_id = @target_id THEN 1 ELSE 0 END AS treatment,
 } : {
-	cohort_definition_id AS treatment,
+	CASE WHEN cohort_definition_id = @target_id THEN 1 ELSE 0 END AS treatment,
 }
 	cohort_start_date,
 	days_from_obs_start,

@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# library(CohortMethod)
 library("testthat")
 
 # This is a broad, shallow sweep of all functionality. It checks whether the code produces an output
@@ -50,7 +50,7 @@ test_that("Propensity score functions", {
   ps <- createPs(cohortMethodData,
                  studyPop,
                  prior = createPrior("laplace", 0.1, exclude = 0))
-  expect_less_than(0.7, computePsAuc(ps)[1])
+  expect_lt(0.7, computePsAuc(ps)[1])
 
   propensityModel <- getPsModel(ps, cohortMethodData)
   expect_is(propensityModel, "data.frame")

@@ -163,7 +163,6 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   treatment$covariateValue <- as.integer(treatment$rand < treatment$value)
   treatment <- treatment[, c("rowId", "covariateValue")]
   treatment$covariateId <- 1
-  covariates <- rbind(covariates, treatment[treatment$covariateValue == 1, ])
 
   writeLines("Generating cohorts")
   cohorts <- data.frame(rowId = treatment$rowId,

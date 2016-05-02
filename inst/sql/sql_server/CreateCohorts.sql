@@ -73,13 +73,7 @@ FROM (
 }
 {@exposure_table == 'drug_era' } ? { 
 	SELECT person_id AS subject_id,
-		CASE
-			WHEN drug_concept_id = @target_id
-				THEN 1
-			WHEN drug_concept_id = @comparator_id
-				THEN 0
-			ELSE - 1
-			END AS cohort_definition_id,
+		drug_concept_id AS cohort_definition_id,
 		drug_era_start_date AS cohort_start_date,
 		drug_era_end_date AS cohort_end_date
 	FROM  @exposure_database_schema.@exposure_table exposure_table
@@ -92,20 +86,11 @@ FROM (
 }	
 } : {
 	SELECT subject_id,
-		CASE
 {@cdm_version == "4"} ? {			
-			WHEN cohort_concept_id = @target_id
-				THEN 1
-			WHEN cohort_concept_id = @comparator_id
-				THEN 0
+		cohort_concept_id AS cohort_definition_id,
 } : {			
-			WHEN cohort_definition_id = @target_id
-				THEN 1
-			WHEN cohort_definition_id = @comparator_id
-				THEN 0
+		cohort_definition_id,
 }
-			ELSE - 1
-		END AS cohort_definition_id,
 		cohort_start_date,
 		cohort_end_date
 	FROM @exposure_database_schema.@exposure_table exposure_table

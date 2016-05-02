@@ -182,7 +182,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  packageName = "CohortMethod",
                                                  dbms = connectionDetails$dbms,
                                                  oracleTempSchema = oracleTempSchema,
-                                                 cdm_version = cdmVersion)
+                                                 cdm_version = cdmVersion,
+                                                 target_id = targetId)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
   metaData <- list(targetId = targetId,
@@ -230,13 +231,6 @@ getDbCohortMethodData <- function(connectionDetails,
 
   delta <- Sys.time() - start
   writeLines(paste("Loading cohorts took", signif(delta, 3), attr(delta, "units")))
-  if (is(covariateSettings, "covariateSettings"))
-    covariateSettings <- list(covariateSettings)
-  for (i in 1:length(covariateSettings)) {
-    if (!is.null(covariateSettings[[i]]$useCovariateCohortIdIs1)) {
-      covariateSettings[[i]]$useCovariateCohortIdIs1 <- TRUE
-    }
-  }
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = oracleTempSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,

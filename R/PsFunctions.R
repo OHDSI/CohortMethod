@@ -79,10 +79,10 @@ createPs <- function(cohortMethodData,
     idx <- !is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(includeCovariateIds)))
     covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
   }
-  excludeCovariateIds <- c(excludeCovariateIds, 1)
-  idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
-  covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
-
+  if (length(excludeCovariateIds) != 0) {
+    idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
+    covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
+  }
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   if (stopOnHighCorrelation) {
     suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
@@ -137,11 +137,16 @@ getPsModel <- function(propensityScore, cohortMethodData) {
 }
 
 computePreferenceScore <- function(data, unfilteredData = NULL) {
-  if (is.null(unfilteredData))
-    proportion <- sum(data$treatment)/nrow(data) else proportion <- sum(unfilteredData$treatment)/nrow(unfilteredData)
-    x <- exp(log(data$propensityScore/(1 - data$propensityScore)) - log(proportion/(1 - proportion)))
-    data$preferenceScore <- x/(x + 1)
-    return(data)
+  if (is.null(unfilteredData)) {
+    proportion <- sum(data$treatment)/nrow(data)
+  } else {
+    proportion <- sum(unfilteredData$treatment)/nrow(unfilteredData)
+  }
+  propensityScore <- data$propensityScore
+  propensityScore[propensityScore > 0.9999999] <- 0.9999999
+  x <- exp(log(propensityScore/(1 - propensityScore)) - log(proportion/(1 - proportion)))
+  data$preferenceScore <- x/(x + 1)
+  return(data)
 }
 
 #' Plot the propensity score distribution
@@ -618,19 +623,20 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
 
-  psStrata <- quantile(population$propensityScore[population$treatment == 1],
-                       (1:(numberOfStrata - 1))/numberOfStrata)
+  psStrata <- unique(quantile(population$propensityScore[population$treatment == 1],
+                              (1:(numberOfStrata - 1))/numberOfStrata))
   attr(population, "strata") <- psStrata
   if (length(stratificationColumns) == 0) {
+
     population$stratumId <- as.integer(as.character(cut(population$propensityScore,
                                                         breaks = c(0, psStrata, 1),
-                                                        labels = (1:numberOfStrata) - 1)))
+                                                        labels = 1:(length(psStrata)+1))))
     return(population)
   } else {
     f <- function(subset, psStrata, numberOfStrata) {
       subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
                                                       breaks = c(0, psStrata, 1),
-                                                      labels = (1:numberOfStrata) - 1)))
+                                                      labels = 1:(length(psStrata)+1))))
       return(subset)
     }
 
@@ -772,9 +778,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
     comparator$meanComparator <- comparator$sum/nComparator
     colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   }
-
-
-  result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")])
+  result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")], all = TRUE)
   result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
   result <- result[,c("covariateId","meanTreated","meanComparator","sumTreated","sumComparator","sd")]
   return(result)
@@ -809,7 +813,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 computeCovariateBalance <- function(population, cohortMethodData) {
   start <- Sys.time()
   cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
-  covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
+  covariates <- cohortMethodData$covariates
 
   # Try to undo normalization of covariate values:
   normFactors <- attr(cohortMethodData$covariates,"normFactors")
