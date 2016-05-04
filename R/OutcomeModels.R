@@ -72,6 +72,7 @@ fitOutcomeModel <- function(population,
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
+  treatmentVarId <- NA
   status <- "NO MODEL FITTED"
   if (nrow(population) == 0) {
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
