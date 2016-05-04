@@ -326,20 +326,16 @@ runCmAnalyses <- function(connectionDetails,
       getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
       covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
       if (is(covariateSettings, "covariateSettings"))
-        covariateSettings <- list(covariateSettings)
+          covariateSettings <- list(covariateSettings)
       for (i in 1:length(covariateSettings)) {
-        if (!is.null(covariateSettings[[i]]$excludedCovariateConceptIds)) {
           covariateSettings[[i]]$excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds, ","))),
                                                                          covariateSettings[[i]]$excludedCovariateConceptIds))
-        }
-        if (!is.null(covariateSettings[[i]]$includedCovariateConceptIds)) {
           covariateSettings[[i]]$includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds, ","))),
                                                                          covariateSettings[[i]]$includedCovariateConceptIds))
-        }
       }
       getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
       outcomeIds <- unique(outcomeReference$outcomeId[outcomeReference$cohortMethodDataFolder ==
-                                                        cohortMethodDataFolder])
+                                                          cohortMethodDataFolder])
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
                    exposureDatabaseSchema = exposureDatabaseSchema,
