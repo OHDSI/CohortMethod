@@ -320,7 +320,8 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
                by.x = "id",
                by.y = "covariateId",
                all.x = TRUE)
-  cfs <- ff::as.ram(cfs[, c("coefficient", "id", "covariateName")])
+  cfs <- ff::as.ram(cfs)
+  cfs <- cfs[, c("coefficient", "id", "covariateName")]
   cfs$covariateName <- as.character(cfs$covariateName)
   cfs <- cfs[order(-abs(cfs$coefficient)), ]
   cfs$covariateName[cfs$id == outcomeModel$outcomeModelTreatmentVarId] <- "Treatment"
