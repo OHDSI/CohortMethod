@@ -34,7 +34,8 @@ Imports:
     Rcpp (>= 0.11.2),
     RJDBC,
     SqlRender (>= 1.1.1),
-    survival
+    survival,
+    stringi
 Suggests:
     testthat,
     pROC,
