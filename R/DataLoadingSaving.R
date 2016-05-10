@@ -230,7 +230,7 @@ getDbCohortMethodData <- function(connectionDetails,
   attr(cohorts, "metaData") <- metaData
 
   delta <- Sys.time() - start
-  writeLines(paste("Loading cohorts took", signif(delta, 3), attr(delta, "units")))
+  writeLines(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = oracleTempSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
@@ -255,7 +255,7 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- data.frame(outcomeIds =outcomeIds)
   attr(outcomes, "metaData") <- metaData
   delta <- Sys.time() - start
-  writeLines(paste("Loading outcomes took", signif(delta, 3), attr(delta, "units")))
+  writeLines(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
 
   # Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
