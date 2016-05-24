@@ -338,6 +338,7 @@ runCmAnalyses <- function(connectionDetails,
                                                           cohortMethodDataFolder])
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
+                   oracleTempSchema = oracleTempSchema,
                    exposureDatabaseSchema = exposureDatabaseSchema,
                    exposureTable = exposureTable,
                    outcomeDatabaseSchema = outcomeDatabaseSchema,
