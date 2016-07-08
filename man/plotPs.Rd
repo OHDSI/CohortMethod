@@ -5,7 +5,8 @@
 \title{Plot the propensity score distribution}
 \usage{
 plotPs(data, unfilteredData = NULL, scale = "preference",
-  type = "density", binWidth = 0.05, fileName = NULL)
+  type = "density", binWidth = 0.05, treatmentLabel = "Treated",
+  comparatorLabel = "Comparator", fileName = NULL)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
@@ -22,6 +23,10 @@ defined by Walker et al (2013).}
 'histogram'}}
 
 \item{binWidth}{For histograms, the width of the bins}
+
+\item{treatmentLabel}{A label to us for the treated cohort.}
+
+\item{comparatorLabel}{A label to us for the comparator cohort.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
 the function \code{ggsave} in the ggplot2 package for supported file

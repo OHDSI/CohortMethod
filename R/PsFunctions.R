@@ -168,6 +168,8 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param type             Type of plot. Two possible values: \code{type = 'density'} or \code{type =
 #'                         'histogram'}
 #' @param binWidth         For histograms, the width of the bins
+#' @param treatmentLabel        A label to us for the treated cohort.
+#' @param comparatorLabel       A label to us for the comparator cohort.
 #' @param fileName         Name of the file where the plot should be saved, for example 'plot.png'. See
 #'                         the function \code{ggsave} in the ggplot2 package for supported file
 #'                         formats.
@@ -199,6 +201,8 @@ plotPs <- function(data,
                    scale = "preference",
                    type = "density",
                    binWidth = 0.05,
+                   treatmentLabel = "Treated",
+                   comparatorLabel = "Comparator",
                    fileName = NULL) {
   if (!("treatment" %in% colnames(data)))
     stop("Missing column treatment in data")
@@ -223,9 +227,9 @@ plotPs <- function(data,
     data$SCORE <- data$propensityScore
     label <- "Propensity score"
   }
-  data$GROUP <- "Treated"
-  data$GROUP[data$treatment == 0] <- "Comparator"
-  data$GROUP <- factor(data$GROUP, levels = c("Treated", "Comparator"))
+  data$GROUP <- treatmentLabel
+  data$GROUP[data$treatment == 0] <- comparatorLabel
+  data$GROUP <- factor(data$GROUP, levels = c(treatmentLabel, comparatorLabel))
   if (type == "density") {
     plot <- ggplot2::ggplot(data,
                             ggplot2::aes(x = SCORE, color = GROUP, group = GROUP, fill = GROUP)) +
@@ -235,7 +239,8 @@ plotPs <- function(data,
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                              rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous("Density")
+      ggplot2::scale_y_continuous("Density") +
+      ggplot2::theme(legend.title = ggplot2::element_blank())
     if (!is.null(attr(data, "strata"))) {
       strata <- data.frame(propensityScore = attr(data, "strata"))
       if (scale == "preference") {
@@ -259,7 +264,8 @@ plotPs <- function(data,
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                              rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous("Number of subjects")
+      ggplot2::scale_y_continuous("Number of subjects") +
+      ggplot2::theme(legend.title = ggplot2::element_blank())
   }
 
   if (!is.null(fileName))
