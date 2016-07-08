@@ -84,6 +84,10 @@ createPs <- function(cohortMethodData,
     covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
   }
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
+  ff::close.ffdf(cohortSubset)
+  ff::close.ffdf(covariateSubset)
+  rm(cohortSubset)
+  rm(covariateSubset)
   if (stopOnHighCorrelation) {
     suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
     suspect <- suspect[!is.na(suspect)]
@@ -824,7 +828,13 @@ computeCovariateBalance <- function(population, cohortMethodData) {
   }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
-  afterMatching <- computeMeansPerGroup(ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")]), covariates)
+  cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  afterMatching <- computeMeansPerGroup(cohortsAfterMatching, covariates)
+
+  ff::close.ffdf(cohorts)
+  ff::close.ffdf(cohortsAfterMatching)
+  rm(cohorts)
+  rm(cohortsAfterMatching)
 
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"

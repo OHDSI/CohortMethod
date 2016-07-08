@@ -78,8 +78,8 @@ fitOutcomeModel <- function(population,
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
   } else if (sum(population$outcomeCount) == 0) {
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
-  } else if (sum(population$outcomeCount[population$treatment == 0]) == 0 || sum(population$outcomeCount[population$treatment == 1]) == 0) {
-    fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
+#   } else if (sum(population$outcomeCount[population$treatment == 0]) == 0 || sum(population$outcomeCount[population$treatment == 1]) == 0) {
+#     fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
   } else {
     colnames(population)[colnames(population) == "outcomeCount"] <- "y"
     if (!stratified) {
@@ -136,7 +136,8 @@ fitOutcomeModel <- function(population,
     } else {
       addIntercept <- TRUE
     }
-    cyclopsData <- Cyclops::convertToCyclopsData(outcomes = ff::as.ffdf(population),
+    outcomes <- ff::as.ffdf(population)
+    cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,
                                                  addIntercept = addIntercept,
                                                  modelType = modelTypeToCyclopsModelType(modelType, stratified),
@@ -144,6 +145,10 @@ fitOutcomeModel <- function(population,
                                                  checkRowIds = FALSE,
                                                  normalize = NULL,
                                                  quiet = TRUE)
+    ff::close.ffdf(outcomes)
+    ff::close.ffdf(covariates)
+    rm(outcomes)
+    rm(covariates)
     if (prior$priorType != "none" && prior$useCrossValidation && control$selectorType == "byPid" && length(unique(population$stratumId)) < control$fold) {
       fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
     } else {
