@@ -845,7 +845,7 @@ computeCovariateBalance <- function(population, cohortMethodData) {
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
   colnames(beforeMatching)[colnames(beforeMatching) == "sumTreated"] <- "beforeMatchingSumTreated"
-  colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingsumComparator"
+  colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingSumComparator"
   colnames(beforeMatching)[colnames(beforeMatching) == "sd"] <- "beforeMatchingSd"
   colnames(afterMatching)[colnames(afterMatching) == "meanTreated"] <- "afterMatchingMeanTreated"
   colnames(afterMatching)[colnames(afterMatching) == "meanComparator"] <- "afterMatchingMeanComparator"
