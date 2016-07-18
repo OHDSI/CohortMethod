@@ -223,4 +223,5 @@ checkCmInstallation <- function(connectionDetails) {
   writeLines("- Ok")
 
   writeLines("\nCohortMethod is correctly installed")
+  writeLines(paste0("\nResponse code: ", round(pi*123456)))
 }
