@@ -75,7 +75,7 @@ notifications:
 after_success:
   - Rscript -e 'library(covr);codecov()'
   # Rebuild docker container
-  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/broadsea-webtools/trigger/17db3624-19c4-4876-b4e1-c44c5d69cb0e/
+  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/broadsea-methodslibrary/trigger/f0b51cec-4027-4781-9383-4b38b42dd4f5/
   # Deploy to drat repo
   - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 
