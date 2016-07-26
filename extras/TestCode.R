@@ -12,6 +12,8 @@ connectionDetails <- createConnectionDetails(dbms="pdw",
                                              server="JRDUSAPSCTL01",
                                              port="17001")
 
+checkCmInstallation(connectionDetails)
+
 covariateSettings <- createCovariateSettings()
 
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,

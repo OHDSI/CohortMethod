@@ -53,15 +53,29 @@ Getting Started
 3. In R, use the following commands to download and install CohortMethod:
 
   ```r
-  install.packages("devtools")
-  library(devtools)
-  install_github("ohdsi/OhdsiRTools") 
-  install_github("ohdsi/SqlRender")
-  install_github("ohdsi/DatabaseConnector")
-  install_github("ohdsi/Cyclops")
-  install_github("ohdsi/FeatureExtraction") 
-  install_github("ohdsi/CohortMethod")
+  install.packages("drat")
+  drat::addRepo(c("OHDSI","cloudyr"))
+  install.packages("OHDSI/CohortMethod")
   ```
+  
+4. Optionally, run this to check if CohortMethod was correctly installed:
+
+  ```r
+  connectionDetails <- createConnectionDetails(dbms="postgresql",
+                                               server="my_server.org",
+                                               user = "joe",
+                                               password = "super_secret")
+
+  checkCmInstallation(connectionDetails)
+  ```
+  
+  Where dbms, server, user, and password need to be changed to the settings for your database environment. Type
+  
+  ```r
+  ?createConnectionDetails
+  ``` 
+  
+  for more details on how to configure your database connection.
 
 Getting Involved
 =============

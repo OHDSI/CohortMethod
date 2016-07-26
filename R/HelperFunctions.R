@@ -188,3 +188,40 @@ constructEras <- function(connectionDetails,
   RJDBC::dbDisconnect(conn)
   return()
 }
+
+#' Check is CohortMethod and its dependencies are correctly installed
+#'
+#' @details
+#' This function checks whether CohortMethod and its dependencies are correctly installed. This will check the
+#' database connectivity, large scale regresion engine (Cyclops), and large data object handling (ff).
+#'
+#' @param connectionDetails            An R object of type\cr\code{connectionDetails} created using the
+#'                                     function \code{createConnectionDetails} in the
+#'                                     \code{DatabaseConnector} package.
+#'
+#' @export
+checkCmInstallation <- function(connectionDetails) {
+  writeLines("Checking database connectivity")
+  conn <- connect(connectionDetails)
+  dbDisconnect(conn)
+  writeLines("- Ok")
+
+  writeLines("\nChecking large scale regression engine")
+  counts <- c(18, 17, 15, 20, 10, 20, 25, 13, 12)
+  outcome <- gl(3, 1, 9)
+  treatment <- gl(3, 3)
+  cyclopsData <- Cyclops::createCyclopsData(counts ~ outcome + treatment, modelType = "pr")
+  cyclopsFit <- fitCyclopsModel(cyclopsData)
+  if (length(coef(cyclopsFit)) != 5)
+    stop("Error fitting regression model")
+  writeLines("- Ok")
+
+  writeLines("\nChecking support for large data objects")
+  x <- ff::as.ffdf(data.frame(a = 1:100, b = "test"))
+  if (nrow(x) != 100)
+    stop("Error creating large data object")
+  writeLines("- Ok")
+
+  writeLines("\nCohortMethod is correctly installed")
+  writeLines(paste0("\nResponse code: ", round(pi*123456)))
+}
