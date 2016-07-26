@@ -154,8 +154,13 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(connection, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
-    covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
-                                                       conceptIds)
+    if (is(covariateSettings, "covariateSettings")) {
+      covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds, conceptIds)
+    } else if (is.list(covariateSettings)) {
+      for (i in 1 : length(covariateSettings)) {
+        covariateSettings[[i]]$excludedCovariateConceptIds <- c(covariateSettings[[i]]$excludedCovariateConceptIds, conceptIds)
+      }
+    }
   }
 
   writeLines("\nConstructing treatment and comparator cohorts")
