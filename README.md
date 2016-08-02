@@ -55,7 +55,7 @@ Getting Started
   ```r
   install.packages("drat")
   drat::addRepo(c("OHDSI","cloudyr"))
-  install.packages("OHDSI/CohortMethod")
+  install.packages("CohortMethod")
   ```
   
 4. Optionally, run this to check if CohortMethod was correctly installed:
