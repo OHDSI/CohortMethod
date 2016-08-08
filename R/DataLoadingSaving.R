@@ -114,7 +114,7 @@
 #' baseline covariates per person in the two cohorts. This is done using a sparse representation:
 #' covariates with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
 #' \item{metaData}{A list of objects with information on how the cohortMethodData object was
-#' constructed.} } The generic \code()} and \code{summary()} functions have been implemented for this object.
+#' constructed.} } The generic \code{print()} and \code{summary()} functions have been implemented for this object.
 #'
 #' @export
 getDbCohortMethodData <- function(connectionDetails,

@@ -108,7 +108,7 @@
 #' \verb{sharedPsFile}                \tab The name of the file containing the propensity scores of the shared \cr
 #'                                    \tab propensity model. This model is used to create the outcome-specific \cr
 #'                                    \tab propensity scores by removing people with prior outcomes.\cr
-#' \verb{studyPopFile                 \tab The name of the file containing the study population (prior\cr
+#' \verb{studyPopFile}                 \tab The name of the file containing the study population (prior\cr
 #'                                    \tab and trimming, matching, or stratification on the PS.\cr
 #' \verb{psFile}                      \tab The name of file containing the propensity scores for a specific \cr
 #'                                    \tab outcomes (ie after people with prior outcomes have been removed).\cr
