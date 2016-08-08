@@ -3,7 +3,7 @@ library("CohortMethod")
 
 # options('fftempdir' = 's:/fftemp')
 
-# These tests use a local database to test some of the logical of the data loading functionality. Ideally this would
+# These tests use a local database to test some of the logic of the data loading functionality. Ideally this would
 # use a publicly available database.
 
 connectionDetails <- createConnectionDetails(dbms = "sql server",

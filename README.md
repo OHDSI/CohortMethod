@@ -97,7 +97,7 @@ CohortMethod is being developed in R Studio.
 [![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
 [![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
 
-Beta
+CohortMethod is actively being used in several studies and is ready for use.
 
 
 # Acknowledgements

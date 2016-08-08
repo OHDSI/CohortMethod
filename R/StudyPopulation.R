@@ -111,16 +111,15 @@ createStudyPopulation <- function(cohortMethodData,
     }
   }
   # Create risk windows:
-  population$riskStart <- riskWindowStart
+  population$riskStart <- rep(riskWindowStart, nrow(population))
   if (addExposureDaysToStart) {
     population$riskStart <- population$riskStart + population$daysToCohortEnd
   }
-  population$riskEnd <- riskWindowEnd
+  population$riskEnd <- rep( riskWindowEnd, nrow(population))
   if (addExposureDaysToEnd) {
     population$riskEnd <- population$riskEnd + population$daysToCohortEnd
   }
   population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd > population$daysToObsEnd]
-
   if (minDaysAtRisk != 0) {
     writeLines(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     noAtRiskTimeRowIds <- population$rowId[population$riskEnd - population$riskStart < minDaysAtRisk]
@@ -137,7 +136,7 @@ createStudyPopulation <- function(cohortMethodData,
 
     # Create outcome count column
     if (nrow(outcomes) == 0) {
-      population$outcomeCount <- 0
+      population$outcomeCount <- rep(0, nrow(population))
     } else {
       outcomeCount <- aggregate(outcomeId ~ rowId, data = outcomes, length)
       colnames(outcomeCount)[colnames(outcomeCount) == "outcomeId"] <- "outcomeCount"
