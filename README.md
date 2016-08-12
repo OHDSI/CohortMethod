@@ -54,7 +54,7 @@ Getting Started
 
   ```r
   install.packages("drat")
-  drat::addRepo(c("OHDSI","cloudyr"))
+  drat::addRepo("OHDSI")
   install.packages("CohortMethod")
   ```
   
