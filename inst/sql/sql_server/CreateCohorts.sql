@@ -82,15 +82,17 @@ FROM (
 		(SELECT person_id,
 						COUNT(DISTINCT(drug_concept_id)) drug_count
 			 FROM @exposure_database_schema.@exposure_table
-			 WHERE drug_concept_id IN (@target_id, @comparator_id))
+			 WHERE drug_concept_id IN (@target_id, @comparator_id)
 			 GROUP BY person_id) temp
 		ON
 			exposure_table.person_id = temp.person_id
 		WHERE
 			temp.drug_count = 1
+			AND
 	} : {
-		WHERE drug_concept_id IN (@target_id, @comparator_id)
+		WHERE
 	}
+	exposure_table.drug_concept_id IN (@target_id, @comparator_id)
 } : {
 	SELECT exposure_table.subject_id,
 {@cdm_version == "4"} ? {
@@ -112,9 +114,11 @@ FROM (
 				exposure_table.subject_id = temp.subject_id
 			WHERE
 				temp.cohort_count = 1
+				AND
 		} : {
-			WHERE cohort_concept_id IN (@target_id, @comparator_id)
+			WHERE
 		}
+		  cohort_concept_id IN (@target_id, @comparator_id)
 	} : {
 		{@remove_duplicate_subjects} ? {
 			INNER JOIN
@@ -126,9 +130,11 @@ FROM (
 				exposure_table.subject_id = temp.subject_id
 			WHERE
 				temp.cohort_count = 1
+				AND
 		} : {
-			WHERE cohort_definition_id IN (@target_id, @comparator_id)
+			WHERE
 		}
+		cohort_definition_id IN (@target_id, @comparator_id)
 	}
 }
 	) raw_cohorts
