@@ -278,10 +278,10 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
 
 ### Saving the data to file
 
-Creating the `cohortMethodData` file can take considerable computing time, and it is probably a good idea to save it for future sessions. Because `cohortMethodData` uses `ff`, we cannot use R's regular save function. Instead, we'll have to use the `savecohortMethodData()` function:
+Creating the `cohortMethodData` file can take considerable computing time, and it is probably a good idea to save it for future sessions. Because `cohortMethodData` uses `ff`, we cannot use R's regular save function. Instead, we'll have to use the `saveCohortMethodData()` function:
 
 ```{r tidy=TRUE,eval=FALSE}
-savecohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed")
+saveCohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed")
 ```
 
 We can use the `loadCohortMethodData()` function to load the data in a future session.

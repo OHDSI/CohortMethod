@@ -114,7 +114,7 @@
 #' baseline covariates per person in the two cohorts. This is done using a sparse representation:
 #' covariates with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
 #' \item{metaData}{A list of objects with information on how the cohortMethodData object was
-#' constructed.} } The generic \code()} and \code{summary()} functions have been implemented for this object.
+#' constructed.} } The generic \code{print()} and \code{summary()} functions have been implemented for this object.
 #'
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
@@ -154,8 +154,13 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(connection, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
-    covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
-                                                       conceptIds)
+    if (is(covariateSettings, "covariateSettings")) {
+      covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds, conceptIds)
+    } else if (is.list(covariateSettings)) {
+      for (i in 1 : length(covariateSettings)) {
+        covariateSettings[[i]]$excludedCovariateConceptIds <- c(covariateSettings[[i]]$excludedCovariateConceptIds, conceptIds)
+      }
+    }
   }
 
   writeLines("\nConstructing treatment and comparator cohorts")
@@ -182,7 +187,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  packageName = "CohortMethod",
                                                  dbms = connectionDetails$dbms,
                                                  oracleTempSchema = oracleTempSchema,
-                                                 cdm_version = cdmVersion)
+                                                 cdm_version = cdmVersion,
+                                                 target_id = targetId)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
   metaData <- list(targetId = targetId,
@@ -229,14 +235,7 @@ getDbCohortMethodData <- function(connectionDetails,
   attr(cohorts, "metaData") <- metaData
 
   delta <- Sys.time() - start
-  writeLines(paste("Loading cohorts took", signif(delta, 3), attr(delta, "units")))
-  if (is(covariateSettings, "covariateSettings"))
-    covariateSettings <- list(covariateSettings)
-  for (i in 1:length(covariateSettings)) {
-    if (!is.null(covariateSettings[[i]]$useCovariateCohortIdIs1)) {
-      covariateSettings[[i]]$useCovariateCohortIdIs1 <- TRUE
-    }
-  }
+  writeLines(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = oracleTempSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
@@ -261,7 +260,7 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- data.frame(outcomeIds =outcomeIds)
   attr(outcomes, "metaData") <- metaData
   delta <- Sys.time() - start
-  writeLines(paste("Loading outcomes took", signif(delta, 3), attr(delta, "units")))
+  writeLines(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
 
   # Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",

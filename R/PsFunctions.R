@@ -79,11 +79,15 @@ createPs <- function(cohortMethodData,
     idx <- !is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(includeCovariateIds)))
     covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
   }
-  excludeCovariateIds <- c(excludeCovariateIds, 1)
-  idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
-  covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
-
+  if (length(excludeCovariateIds) != 0) {
+    idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
+    covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
+  }
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
+  ff::close.ffdf(cohortSubset)
+  ff::close.ffdf(covariateSubset)
+  rm(cohortSubset)
+  rm(covariateSubset)
   if (stopOnHighCorrelation) {
     suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
     suspect <- suspect[!is.na(suspect)]
@@ -137,11 +141,16 @@ getPsModel <- function(propensityScore, cohortMethodData) {
 }
 
 computePreferenceScore <- function(data, unfilteredData = NULL) {
-  if (is.null(unfilteredData))
-    proportion <- sum(data$treatment)/nrow(data) else proportion <- sum(unfilteredData$treatment)/nrow(unfilteredData)
-    x <- exp(log(data$propensityScore/(1 - data$propensityScore)) - log(proportion/(1 - proportion)))
-    data$preferenceScore <- x/(x + 1)
-    return(data)
+  if (is.null(unfilteredData)) {
+    proportion <- sum(data$treatment)/nrow(data)
+  } else {
+    proportion <- sum(unfilteredData$treatment)/nrow(unfilteredData)
+  }
+  propensityScore <- data$propensityScore
+  propensityScore[propensityScore > 0.9999999] <- 0.9999999
+  x <- exp(log(propensityScore/(1 - propensityScore)) - log(proportion/(1 - proportion)))
+  data$preferenceScore <- x/(x + 1)
+  return(data)
 }
 
 #' Plot the propensity score distribution
@@ -159,6 +168,8 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param type             Type of plot. Two possible values: \code{type = 'density'} or \code{type =
 #'                         'histogram'}
 #' @param binWidth         For histograms, the width of the bins
+#' @param treatmentLabel        A label to us for the treated cohort.
+#' @param comparatorLabel       A label to us for the comparator cohort.
 #' @param fileName         Name of the file where the plot should be saved, for example 'plot.png'. See
 #'                         the function \code{ggsave} in the ggplot2 package for supported file
 #'                         formats.
@@ -190,6 +201,8 @@ plotPs <- function(data,
                    scale = "preference",
                    type = "density",
                    binWidth = 0.05,
+                   treatmentLabel = "Treated",
+                   comparatorLabel = "Comparator",
                    fileName = NULL) {
   if (!("treatment" %in% colnames(data)))
     stop("Missing column treatment in data")
@@ -214,9 +227,9 @@ plotPs <- function(data,
     data$SCORE <- data$propensityScore
     label <- "Propensity score"
   }
-  data$GROUP <- "Treated"
-  data$GROUP[data$treatment == 0] <- "Comparator"
-  data$GROUP <- factor(data$GROUP, levels = c("Treated", "Comparator"))
+  data$GROUP <- treatmentLabel
+  data$GROUP[data$treatment == 0] <- comparatorLabel
+  data$GROUP <- factor(data$GROUP, levels = c(treatmentLabel, comparatorLabel))
   if (type == "density") {
     plot <- ggplot2::ggplot(data,
                             ggplot2::aes(x = SCORE, color = GROUP, group = GROUP, fill = GROUP)) +
@@ -226,7 +239,8 @@ plotPs <- function(data,
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                              rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous("Density")
+      ggplot2::scale_y_continuous("Density") +
+      ggplot2::theme(legend.title = ggplot2::element_blank())
     if (!is.null(attr(data, "strata"))) {
       strata <- data.frame(propensityScore = attr(data, "strata"))
       if (scale == "preference") {
@@ -250,7 +264,8 @@ plotPs <- function(data,
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                              rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous("Number of subjects")
+      ggplot2::scale_y_continuous("Number of subjects") +
+      ggplot2::theme(legend.title = ggplot2::element_blank())
   }
 
   if (!is.null(fileName))
@@ -618,19 +633,20 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
 
-  psStrata <- quantile(population$propensityScore[population$treatment == 1],
-                       (1:(numberOfStrata - 1))/numberOfStrata)
+  psStrata <- unique(quantile(population$propensityScore[population$treatment == 1],
+                              (1:(numberOfStrata - 1))/numberOfStrata))
   attr(population, "strata") <- psStrata
   if (length(stratificationColumns) == 0) {
+
     population$stratumId <- as.integer(as.character(cut(population$propensityScore,
                                                         breaks = c(0, psStrata, 1),
-                                                        labels = (1:numberOfStrata) - 1)))
+                                                        labels = 1:(length(psStrata)+1))))
     return(population)
   } else {
     f <- function(subset, psStrata, numberOfStrata) {
       subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
                                                       breaks = c(0, psStrata, 1),
-                                                      labels = (1:numberOfStrata) - 1)))
+                                                      labels = 1:(length(psStrata)+1))))
       return(subset)
     }
 
@@ -772,8 +788,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
     comparator$meanComparator <- comparator$sum/nComparator
     colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   }
-
-  result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")])
+  result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")], all = TRUE)
   result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
   result <- result[,c("covariateId","meanTreated","meanComparator","sumTreated","sumComparator","sd")]
   return(result)
@@ -808,7 +823,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 computeCovariateBalance <- function(population, cohortMethodData) {
   start <- Sys.time()
   cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
-  covariates <- ffbase::subset.ffdf(cohortMethodData$covariates, covariateId != 1)
+  covariates <- cohortMethodData$covariates
 
   # Try to undo normalization of covariate values:
   normFactors <- attr(cohortMethodData$covariates,"normFactors")
@@ -819,12 +834,18 @@ computeCovariateBalance <- function(population, cohortMethodData) {
   }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
-  afterMatching <- computeMeansPerGroup(ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")]), covariates)
+  cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  afterMatching <- computeMeansPerGroup(cohortsAfterMatching, covariates)
+
+  ff::close.ffdf(cohorts)
+  ff::close.ffdf(cohortsAfterMatching)
+  rm(cohorts)
+  rm(cohortsAfterMatching)
 
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
   colnames(beforeMatching)[colnames(beforeMatching) == "sumTreated"] <- "beforeMatchingSumTreated"
-  colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingsumComparator"
+  colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingSumComparator"
   colnames(beforeMatching)[colnames(beforeMatching) == "sd"] <- "beforeMatchingSd"
   colnames(afterMatching)[colnames(afterMatching) == "meanTreated"] <- "afterMatchingMeanTreated"
   colnames(afterMatching)[colnames(afterMatching) == "meanComparator"] <- "afterMatchingMeanComparator"

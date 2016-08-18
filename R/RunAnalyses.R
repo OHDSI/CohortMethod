@@ -108,7 +108,7 @@
 #' \verb{sharedPsFile}                \tab The name of the file containing the propensity scores of the shared \cr
 #'                                    \tab propensity model. This model is used to create the outcome-specific \cr
 #'                                    \tab propensity scores by removing people with prior outcomes.\cr
-#' \verb{studyPopFile                 \tab The name of the file containing the study population (prior\cr
+#' \verb{studyPopFile}                 \tab The name of the file containing the study population (prior\cr
 #'                                    \tab and trimming, matching, or stratification on the PS.\cr
 #' \verb{psFile}                      \tab The name of file containing the propensity scores for a specific \cr
 #'                                    \tab outcomes (ie after people with prior outcomes have been removed).\cr
@@ -326,22 +326,19 @@ runCmAnalyses <- function(connectionDetails,
       getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
       covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
       if (is(covariateSettings, "covariateSettings"))
-        covariateSettings <- list(covariateSettings)
+          covariateSettings <- list(covariateSettings)
       for (i in 1:length(covariateSettings)) {
-        if (!is.null(covariateSettings[[i]]$excludedCovariateConceptIds)) {
           covariateSettings[[i]]$excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$excludedCovariateConceptIds, ","))),
                                                                          covariateSettings[[i]]$excludedCovariateConceptIds))
-        }
-        if (!is.null(covariateSettings[[i]]$includedCovariateConceptIds)) {
           covariateSettings[[i]]$includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(refRow$includedCovariateConceptIds, ","))),
                                                                          covariateSettings[[i]]$includedCovariateConceptIds))
-        }
       }
       getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
       outcomeIds <- unique(outcomeReference$outcomeId[outcomeReference$cohortMethodDataFolder ==
-                                                        cohortMethodDataFolder])
+                                                          cohortMethodDataFolder])
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
+                   oracleTempSchema = oracleTempSchema,
                    exposureDatabaseSchema = exposureDatabaseSchema,
                    exposureTable = exposureTable,
                    outcomeDatabaseSchema = outcomeDatabaseSchema,
@@ -471,8 +468,11 @@ runCmAnalyses <- function(connectionDetails,
         refRow <- outcomeReference[outcomeReference$psFile == psFile, ][1, ]
         studyPop <- readRDS(refRow$studyPopFile)
         ps <- readRDS(refRow$sharedPsFile)
+        newMetaData <- attr(studyPop, "metaData")
+        newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
+        newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
         ps <- merge(studyPop, ps[, c("rowId", "propensityScore")])
-        attr(ps, "metaData") <- attr(studyPop, "metaData")
+        attr(ps, "metaData") <- newMetaData
         saveRDS(ps, psFile)
         setTxtProgressBar(pb, i/length(psFiles))
       }
@@ -579,14 +579,14 @@ runCmAnalyses <- function(connectionDetails,
     args <- list(cohortMethodData = cohortMethodData,
                  population = studyPop)
     args <- append(args, params$args)
-    outcomeModel <- do.call("fitOutcomeModel", args)
-#     fitOutcomeModel(population = args$population,
-#                     cohortMethodData = args$cohortMethodData,
-#                     modelType = args$modelType,
-#                     stratified = args$stratified,
-#                     useCovariates = args$useCovariates,
-#                     prior = args$prior,
-#                     control = args$control)
+    #outcomeModel <- do.call("fitOutcomeModel", args)
+            outcomeModel <- fitOutcomeModel(population = args$population,
+                            cohortMethodData = args$cohortMethodData,
+                            modelType = args$modelType,
+                            stratified = args$stratified,
+                            useCovariates = args$useCovariates,
+                            prior = args$prior,
+                            control = args$control)
     saveRDS(outcomeModel, params$outcomeModelFile)
   }
   if (length(modelsToFit) != 0) {
@@ -740,44 +740,46 @@ summarizeAnalyses <- function(outcomeReference) {
   result$logRr <- 0
   result$seLogRr <- 0
   for (i in 1:nrow(outcomeReference)) {
-    outcomeModel <- readRDS(outcomeReference$outcomeModelFile[i])
-    if (outcomeReference$strataFile[i] == "") {
-      studyPop <- readRDS(outcomeReference$studyPopFile[i])
-    } else {
-      studyPop <- readRDS(outcomeReference$strataFile[i])
+    if (outcomeReference$outcomeModelFile[i] != ""){
+      outcomeModel <- readRDS(outcomeReference$outcomeModelFile[i])
+      if (outcomeReference$strataFile[i] == "") {
+        studyPop <- readRDS(outcomeReference$studyPopFile[i])
+      } else {
+        studyPop <- readRDS(outcomeReference$strataFile[i])
+      }
+      result$rr[i] <- if (is.null(coef(outcomeModel)))
+        NA else exp(coef(outcomeModel))
+      result$ci95lb[i] <- if (is.null(coef(outcomeModel)))
+        NA else exp(confint(outcomeModel)[1])
+      result$ci95ub[i] <- if (is.null(coef(outcomeModel)))
+        NA else exp(confint(outcomeModel)[2])
+      if (is.null(coef(outcomeModel))) {
+        result$p[i] <- NA
+      } else {
+        z <- coef(outcomeModel)/ outcomeModel$outcomeModelTreatmentEstimate$seLogRr
+        result$p[i] <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+      }
+      result$treated[i] <- sum(studyPop$treatment == 1)
+      result$comparator[i] <- sum(studyPop$treatment == 0)
+      if (outcomeModel$outcomeModelType == "cox") {
+        result$treatedDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 1])
+        result$comparatorDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 0])
+      } else if (outcomeModel$outcomeModelType == "poisson") {
+        result$treatedDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 1])
+        result$comparatorDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 0])
+      }
+      if (outcomeModel$outcomeModelType == "cox" || outcomeModel$outcomeModelType == "logistic") {
+        result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1] != 0)
+        result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0] != 0)
+      } else {
+        result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1])
+        result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0])
+      }
+      result$logRr[i] <- if (is.null(coef(outcomeModel)))
+        NA else coef(outcomeModel)
+      result$seLogRr[i] <- if (is.null(coef(outcomeModel)))
+        NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr
     }
-    result$rr[i] <- if (is.null(coef(outcomeModel)))
-      NA else exp(coef(outcomeModel))
-    result$ci95lb[i] <- if (is.null(coef(outcomeModel)))
-      NA else exp(confint(outcomeModel)[1])
-    result$ci95ub[i] <- if (is.null(coef(outcomeModel)))
-      NA else exp(confint(outcomeModel)[2])
-    if (is.null(coef(outcomeModel))) {
-      result$p[i] <- NA
-    } else {
-      z <- coef(outcomeModel)/ outcomeModel$outcomeModelTreatmentEstimate$seLogRr
-      result$p[i] <- 2 * pmin(pnorm(z), 1 - pnorm(z))
-    }
-    result$treated[i] <- sum(studyPop$treatment == 1)
-    result$comparator[i] <- sum(studyPop$treatment == 0)
-    if (outcomeModel$outcomeModelType == "cox") {
-      result$treatedDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 1])
-      result$comparatorDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 0])
-    } else if (outcomeModel$outcomeModelType == "poisson") {
-      result$treatedDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 1])
-      result$comparatorDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 0])
-    }
-    if (outcomeModel$outcomeModelType == "cox" || outcomeModel$outcomeModelType == "logistic") {
-      result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1] != 0)
-      result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0] != 0)
-    } else {
-      result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1])
-      result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0])
-    }
-    result$logRr[i] <- if (is.null(coef(outcomeModel)))
-      NA else coef(outcomeModel)
-    result$seLogRr[i] <- if (is.null(coef(outcomeModel)))
-      NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr
   }
   return(result)
 }

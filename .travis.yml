@@ -43,13 +43,12 @@ install:
   - Rscript -e 'if(!"survAUC" %in% rownames(installed.packages())) { install.packages("survAUC", dependencies = TRUE) }'
   - Rscript -e 'if(!"RJDBC" %in% rownames(installed.packages())) { install.packages("RJDBC", dependencies = TRUE) }'
   - Rscript -e 'if(!"survival" %in% rownames(installed.packages())) { install.packages("survival", dependencies = TRUE) }'
-  - Rscript -e 'if(!"jsonlite" %in% rownames(installed.packages())) { install.packages("jsonlite", dependencies = TRUE) }'
+  - Rscript -e 'if(!"Cyclops" %in% rownames(installed.packages())) { install.packages("Cyclops", dependencies = TRUE) }'
 
   # Install OHDSI dependencies
   - Rscript -e 'devtools::install_github("OHDSI/OhdsiRTools")'
   - Rscript -e 'devtools::install_github("OHDSI/SqlRender")'
   - Rscript -e 'devtools::install_github("OHDSI/DatabaseConnector")'
-  - Rscript -e 'devtools::install_github("OHDSI/Cyclops")'
   - Rscript -e 'devtools::install_github("OHDSI/FeatureExtraction")'
 
   - Rscript -e 'update.packages(ask = FALSE, instlib = "~/Rlib")'
@@ -77,7 +76,7 @@ notifications:
 after_success:
   - Rscript -e 'library(covr);codecov()'
   # Rebuild docker container
-  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/development/trigger/e51f720d-c4e7-45df-b042-5d8a362bd7e0/
+  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/broadsea-methodslibrary/trigger/f0b51cec-4027-4781-9383-4b38b42dd4f5/
   # Deploy to drat repo
   - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 

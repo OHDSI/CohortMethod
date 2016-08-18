@@ -163,7 +163,6 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   treatment$covariateValue <- as.integer(treatment$rand < treatment$value)
   treatment <- treatment[, c("rowId", "covariateValue")]
   treatment$covariateId <- 1
-  covariates <- rbind(covariates, treatment[treatment$covariateValue == 1, ])
 
   writeLines("Generating cohorts")
   cohorts <- data.frame(rowId = treatment$rowId,
@@ -216,7 +215,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     nOutcomes[nOutcomes > cohorts$daysFromObsStart] <- cohorts$daysFromObsStart[nOutcomes > cohorts$daysFromObsStart]
     outcomeRows <- sum(nOutcomes)
     outcomes <- data.frame(rowId = rep(0, outcomeRows),
-                           outcomeId = outcomeId,
+                           outcomeId = rep(outcomeId, outcomeRows),
                            daysToEvent = rep(0, outcomeRows))
     cursor <- 1
     for (j in 1:length(nOutcomes)) {

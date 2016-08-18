@@ -73,32 +73,39 @@ fitOutcomeModel <- function(population,
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
+  treatmentVarId <- NA
   status <- "NO MODEL FITTED"
   if (nrow(population) == 0) {
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
   } else if (sum(population$outcomeCount) == 0) {
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
-  } else if (sum(population$outcomeCount[population$treatment == 0]) == 0 || sum(population$outcomeCount[population$treatment == 1]) == 0) {
-    fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
+#   } else if (sum(population$outcomeCount[population$treatment == 0]) == 0 || sum(population$outcomeCount[population$treatment == 1]) == 0) {
+#     fit <- "TREATMENT IS PERFECTLY PREDICTIVE OF OUTCOME, CANNOT FIT"
   } else {
     colnames(population)[colnames(population) == "outcomeCount"] <- "y"
     if (!stratified) {
       population$stratumId <- NULL
     }
     if (useCovariates) {
+      treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
       if (stratified || modelType == "cox") {
-        prior$exclude <- 1  # Exclude treatment variable from regularization
+        prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
       } else {
-        prior$exclude <- c(0, 1)  # Exclude treatment variable and intercept from regularization
+        prior$exclude <- c(0, treatmentVarId)  # Exclude treatment variable and intercept from regularization
       }
+      treatmentCovariate <- ff::ffdf(rowId = ff::as.ff(population$rowId),
+                                     covariateId = ff::ff(treatmentVarId, length = nrow(population), vmode = "double"),
+                                     covariateValue = ff::as.ff(population$treatment, vmode = "double"))
+      covariates <- ffbase::ffdfappend(treatmentCovariate, cohortMethodData$covariates)
       if (stratified) {
         informativeStrata <- unique(population$stratumId[population$y != 0])
         population <- population[population$stratumId %in% informativeStrata, ]
-        covariates <- ffbase::merge.ffdf(cohortMethodData$covariates, ff::as.ffdf(population[, c("rowId","stratumId")]))
+        covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(population[, c("rowId","stratumId")]))
       } else {
-        covariates <- limitCovariatesToPopulation(cohortMethodData$covariates, ff::as.ff(population$rowId))
+        covariates <- limitCovariatesToPopulation(covariates, ff::as.ff(population$rowId))
       }
       if (length(includeCovariateIds) != 0) {
+        includeCovariateIds <- c(includeCovariateIds, treatmentVarId)
         idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
         covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
       }
@@ -108,8 +115,9 @@ fitOutcomeModel <- function(population,
       }
     } else {
       prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior
+      treatmentVarId <- 1
       covariates <- ff::ffdf(rowId = ff::as.ff(population$rowId),
-                             covariateId = ff::ff(1, length = nrow(population)),
+                             covariateId = ff::ff(treatmentVarId, length = nrow(population)),
                              covariateValue = ff::as.ff(population$treatment),
                              row.names = row.names(population))
       if (stratified) {
@@ -129,7 +137,8 @@ fitOutcomeModel <- function(population,
     } else {
       addIntercept <- TRUE
     }
-    cyclopsData <- Cyclops::convertToCyclopsData(outcomes = ff::as.ffdf(population),
+    outcomes <- ff::as.ffdf(population)
+    cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,
                                                  addIntercept = addIntercept,
                                                  modelType = modelTypeToCyclopsModelType(modelType, stratified),
@@ -137,7 +146,11 @@ fitOutcomeModel <- function(population,
                                                  checkRowIds = FALSE,
                                                  normalize = NULL,
                                                  quiet = TRUE)
-    if (prior$priorType != "none" && prior$useCrossValidation && length(unique(population$stratumId)) < control$fold) {
+    ff::close.ffdf(outcomes)
+    ff::close.ffdf(covariates)
+    rm(outcomes)
+    rm(covariates)
+    if (prior$priorType != "none" && prior$useCrossValidation && control$selectorType == "byPid" && length(unique(population$stratumId)) < control$fold) {
       fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
     } else {
       fit <- tryCatch({
@@ -155,9 +168,9 @@ fitOutcomeModel <- function(population,
     } else {
       status <- "OK"
       coefficients <- coef(fit)
-      logRr <- coef(fit)[names(coef(fit)) == "1"]
+      logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
       ci <- tryCatch({
-        confint(fit, parm = 1, includePenalty = TRUE)
+        confint(fit, parm = treatmentVarId, includePenalty = TRUE)
       }, error = function(e) {
         missing(e)  # suppresses R CMD check note
         c(0, -Inf, Inf)
@@ -173,6 +186,7 @@ fitOutcomeModel <- function(population,
     }
   }
   outcomeModel <- attr(population, "metaData")
+  outcomeModel$outcomeModelTreatmentVarId <- treatmentVarId
   outcomeModel$outcomeModelCoefficients <- coefficients
   outcomeModel$outcomeModelPriorVariance <- priorVariance
   outcomeModel$outcomeModelType <- modelType
@@ -306,7 +320,6 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
 
   cfs <- cfs[cfs != 0]
   attr(cfs, "names")[attr(cfs, "names") == "(Intercept)"] <- 0
-  attr(cfs, "names")[attr(cfs, "names") == "treatment"] <- 1
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
 
   cfs <- merge(ff::as.ffdf(cfs),
@@ -314,10 +327,11 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
                by.x = "id",
                by.y = "covariateId",
                all.x = TRUE)
-  cfs <- ff::as.ram(cfs[, c("coefficient", "id", "covariateName")])
+  cfs <- ff::as.ram(cfs)
+  cfs <- cfs[, c("coefficient", "id", "covariateName")]
   cfs$covariateName <- as.character(cfs$covariateName)
   cfs <- cfs[order(-abs(cfs$coefficient)), ]
-  cfs$covariateName[cfs$id == 1] <- "Treatment"
+  cfs$covariateName[cfs$id == outcomeModel$outcomeModelTreatmentVarId] <- "Treatment"
   cfs$covariateName[cfs$id == 0] <- "Intercept"
   return(cfs)
 }

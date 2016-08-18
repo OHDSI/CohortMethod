@@ -49,19 +49,33 @@ Getting Started
 ===============
 1. On Windows, make sure [RTools](http://cran.r-project.org/bin/windows/Rtools/) is installed.
 2. The DatabaseConnector and SqlRender packages require Java. Java can be downloaded from
-<a href="http://www.java.com" target="_blank">http://www.java.com</a>.
+<a href="http://www.java.com" target="_blank">http://www.java.com</a>. Once Java is installed, ensure that Java is being pathed correctly. Under environment variables in the control panel, ensure that the jvm.dll file is added correctly to the path.
 3. In R, use the following commands to download and install CohortMethod:
 
   ```r
-  install.packages("devtools")
-  library(devtools)
-  install_github("ohdsi/OhdsiRTools") 
-  install_github("ohdsi/SqlRender")
-  install_github("ohdsi/DatabaseConnector")
-  install_github("ohdsi/Cyclops")
-  install_github("ohdsi/FeatureExtraction") 
-  install_github("ohdsi/CohortMethod")
+  install.packages("drat")
+  drat::addRepo("OHDSI")
+  install.packages("CohortMethod")
   ```
+  
+4. Optionally, run this to check if CohortMethod was correctly installed:
+
+  ```r
+  connectionDetails <- createConnectionDetails(dbms="postgresql",
+                                               server="my_server.org",
+                                               user = "joe",
+                                               password = "super_secret")
+
+  checkCmInstallation(connectionDetails)
+  ```
+  
+  Where dbms, server, user, and password need to be changed to the settings for your database environment. Type
+  
+  ```r
+  ?createConnectionDetails
+  ``` 
+  
+  for more details on how to configure your database connection.
 
 Getting Involved
 =============
@@ -83,7 +97,7 @@ CohortMethod is being developed in R Studio.
 [![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
 [![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
 
-Beta
+CohortMethod is actively being used in several studies and is ready for use.
 
 
 # Acknowledgements

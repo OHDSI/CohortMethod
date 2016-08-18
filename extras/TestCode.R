@@ -1,27 +1,52 @@
 ### Test code ###
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 library(CohortMethod)
 options(fftempdir = "s:/temp")
+
+cdmDatabaseSchema <- "CDM_TRUVEN_MDCD_v5.dbo"
+resultsDatabaseSchema <- "Scratch.dbo"
+cdmVersion <- "5"
+
+connectionDetails <- createConnectionDetails(dbms="pdw",
+                                             server="JRDUSAPSCTL01",
+                                             port="17001")
+
+checkCmInstallation(connectionDetails)
+
+covariateSettings <- createCovariateSettings()
+
+cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                          cdmDatabaseSchema = cdmDatabaseSchema,
+                                          exposureTable = "drug_era",
+                                          outcomeTable = "condition_era",
+                                          targetId = 755695,
+                                          comparatorId = 739138,
+                                          outcomeIds = 194133,
+                                          cdmVersion = cdmVersion,
+                                          washoutPeriod = 183,
+                                          firstExposureOnly = TRUE,
+                                          removeDuplicateSubjects = TRUE,
+                                          excludeDrugsFromCovariates = TRUE,
+                                          covariateSettings = covariateSettings)
+
+saveCohortMethodData(cohortMethodData, "s:/temp/cmData")
+cohortMethodData <- loadCohortMethodData("s:/temp/cmData")
+studyPop <- createStudyPopulation(cohortMethodData, removeSubjectsWithPriorOutcome = TRUE, outcomeId = 194133)
+
+ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", variance = 0.01))
+
+plotPs(ps)
+
+strata <- matchOnPs(ps)
+
+plotPs(strata, ps)
+
+
+
+fitOutcomeModel(population = strata, cohortMethodData = cohortMethodData, modelType = "cox", stratified = TRUE, prior = createPrior("laplace", 0.01))
+
+
 
 drugComparatorOutcomes1 <- createDrugComparatorOutcomes(targetId = 755695,
                                                         comparatorId = 739138,

@@ -92,10 +92,10 @@ test_that("Stratification", {
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- stratifyByPs(data, 10)
 
-  paste(result$rowId[result$stratumId == 9], collapse = ",")
-  expect_equal(result$rowId[result$stratumId == 0],
+  paste(result$rowId[result$stratumId == 1], collapse = ",")
+  expect_equal(result$rowId[result$stratumId == 1],
                c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110))
-  expect_equal(result$rowId[result$stratumId == 9], c(91,
+  expect_equal(result$rowId[result$stratumId == 10], c(91,
                                                       92,
                                                       93,
                                                       94,

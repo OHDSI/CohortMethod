@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# library(CohortMethod)
 library("testthat")
 
 # This is a broad, shallow sweep of all functionality. It checks whether the code produces an output
@@ -27,9 +27,25 @@ sampleSize <- 1000
 cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
 
 test_that("cohortMethodData functions", {
+  expect_output(print(cohortMethodData), "CohortMethodData object.*")
   s <- summary(cohortMethodData)
   expect_is(s, "summary.cohortMethodData")
   expect_equal(s$treatedPersons + s$comparatorPersons, sampleSize)
+  expect_output(print(s), "CohortMethodData object summary.*")
+
+  saveCohortMethodData(cohortMethodData, "temp")
+  cmd2 <- loadCohortMethodData("temp")
+  expect_identical(cohortMethodData$cohorts, cmd2$cohorts)
+  expect_identical(cohortMethodData$outcomes, cmd2$outcomes)
+  expect_equal(cohortMethodData$covariates, cmd2$covariates)
+  expect_equal(cohortMethodData$covariateRef, cmd2$covariateRef)
+  expect_identical(cohortMethodData$metaData, cmd2$metaData)
+  ff::close.ffdf(cmd2$covariates)
+  ff::close.ffdf(cmd2$covariateRef)
+  unlink("temp", recursive = TRUE, force = TRUE)
+
+  cn <- grepCovariateNames("^Age group.*", cohortMethodData)
+  expect_gt(nrow(cn), 1)
 })
 
 test_that("Create study population functions", {
@@ -50,7 +66,7 @@ test_that("Propensity score functions", {
   ps <- createPs(cohortMethodData,
                  studyPop,
                  prior = createPrior("laplace", 0.1, exclude = 0))
-  expect_less_than(0.7, computePsAuc(ps)[1])
+  expect_lt(0.7, computePsAuc(ps)[1])
 
   propensityModel <- getPsModel(ps, cohortMethodData)
   expect_is(propensityModel, "data.frame")
@@ -197,8 +213,12 @@ test_that("Functions on outcome model", {
                                   useCovariates = TRUE,
                                   prior = createPrior("laplace", 0.1))
 
+  expect_output(print(outcomeModel), "Model type: cox.*")
+
   s <- summary(outcomeModel)
   expect_is(s, "summary.outcomeModel")
+
+  expect_output(print(s), "Model type: cox.*")
 
   p <- plotKaplanMeier(strata)
   expect_is(p, "ggplot")
