@@ -57,7 +57,8 @@ fitOutcomeModel <- function(population,
                                                     tolerance  = 2e-07,
                                                     cvRepetitions = 10,
                                                     selectorType = "byPid",
-                                                    noiseLevel = "quiet")) {
+                                                    noiseLevel = "quiet"),
+                            returnFit = FALSE) {
   if (stratified && is.null(population$stratumId))
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
   if (is.null(population$outcomeCount))
@@ -192,6 +193,7 @@ fitOutcomeModel <- function(population,
                              comparatorDays = sum(population$time[population$treatment == 0]))
     outcomeModel$timeAtRisk <- timeAtRisk
   }
+  if (returnFit) outcomeModel$fit = fit
   class(outcomeModel) <- "outcomeModel"
   delta <- Sys.time() - start
   writeLines(paste("Fitting outcome model took", signif(delta, 3), attr(delta, "units")))
