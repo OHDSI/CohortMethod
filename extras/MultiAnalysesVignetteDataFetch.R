@@ -20,7 +20,6 @@
 library(CohortMethod)
 library(SqlRender)
 options('fftempdir' = 's:/fftemp')
-setwd("s:/temp")
 
 
 pw <- NULL
@@ -47,7 +46,7 @@ pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v5.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -125,6 +124,12 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
 drugComparatorOutcomesList <- list(dcos)
 
 covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                         useCovariateDemographicsAge = TRUE,
+                                         useCovariateDemographicsGender = TRUE,
+                                         useCovariateDemographicsRace = TRUE,
+                                         useCovariateDemographicsEthnicity = TRUE,
+                                         useCovariateDemographicsYear = TRUE,
+                                         useCovariateDemographicsMonth = TRUE,
                                          useCovariateConditionOccurrence = TRUE,
                                          useCovariateConditionOccurrence365d = TRUE,
                                          useCovariateConditionOccurrence30d = TRUE,
@@ -287,7 +292,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         createStudyPopThreads = 1,
                         computeCovarBalThreads = 3,
                         trimMatchStratifyThreads = 5,
-                        fitOutcomeModelThreads = 2,
+                        fitOutcomeModelThreads = 3,
                         outcomeCvThreads = 10)
 
 analysisSum <- summarizeAnalyses(result)

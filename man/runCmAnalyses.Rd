@@ -103,6 +103,30 @@ outcome model. Note that the total number of CV threads
 at one time could be `fitOutcomeModelThreads *
 outcomeCvThreads`.}
 }
+\value{
+A data frame with the following columns:
+\tabular{ll}{
+\verb{analysisId} \tab The unique identifier for a set of analysis choices.\cr
+\verb{targetId} \tab The ID of the target drug.\cr
+\verb{comparatorId} \tab The ID of the comparator group.\cr
+\verb{excludedCovariateConceptIds} \tab The ID(s) of concepts that cannot be used to construct covariates. \cr
+\verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct covariates. \cr
+\verb{outcomeId} \tab The ID of the outcome \cr
+\verb{cohortMethodDataFolder} \tab The ID of the outcome.\cr
+\verb{sharedPsFile}                \tab The name of the file containing the propensity scores of the shared \cr
+                                   \tab propensity model. This model is used to create the outcome-specific \cr
+                                   \tab propensity scores by removing people with prior outcomes.\cr
+\verb{studyPopFile}                 \tab The name of the file containing the study population (prior\cr
+                                   \tab and trimming, matching, or stratification on the PS.\cr
+\verb{psFile}                      \tab The name of file containing the propensity scores for a specific \cr
+                                   \tab outcomes (ie after people with prior outcomes have been removed).\cr
+\verb{strataFile}                  \tab The name of the file containing the identifiers of the population \cr
+                                   \tab after any trimming, matching or stratifying, including their strata.\cr
+\verb{covariateBalanceFile}        \tab The name of the file containing the covariate balance (ie. the \cr
+                                   \tab output of the \code{computeCovariateBalance} function.\cr
+\verb{outcomeModelFile} \tab The name of the file containing the outcome model.\cr
+}
+}
 \description{
 Run a list of analyses
 }

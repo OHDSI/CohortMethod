@@ -31,17 +31,12 @@ This vignette describes how you can use the `CohortMethod` package to perform a 
 
 Before installing the `CohortMethod` package make sure you have Java available.  Java can be downloaded from [www.java.com](http://www.java.com). For Windows users, RTools is also necessary.  RTools can be downloaded from [CRAN](http://cran.r-project.org/bin/windows/Rtools/).
 
-The `CohortMethod` package is currently maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the `devtools` package:
+The `CohortMethod` package is currently maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the `drat` package:
 
 ```{r tidy=TRUE,eval=FALSE}
-install.packages("devtools")
-library(devtools)
-install_github("ohdsi/OhdsiRTools") 
-install_github("ohdsi/SqlRender") 
-install_github("ohdsi/DatabaseConnector") 
-install_github("ohdsi/Cyclops") 
-install_github("ohdsi/PatientLevelPrediction") 
-install_github("ohdsi/CohortMethod") 
+install.packages("drat")
+drat::addRepo("OHDSI")
+install.packages("CohortMethod")
 ```
 
 Once installed, you can type `library(CohortMethod)` to load the package.
@@ -169,7 +164,10 @@ data.frame(cohort_concept_id = c(1,2,3),count=c(129173,420205,422274))
 
 ## Extracting the data from the server
 
-Now we can tell `CohortMethod` to define the cohorts based on our events, and extract all necessary data for our analysis:
+Now we can tell `CohortMethod` to define the cohorts based on our events, construct covariates, and extract all necessary data for our analysis.
+
+
+**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetId` and `comparatorId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument of the `getDbCohortMethodData` function to TRUE and automatically the drugs and their descendants will be excluded from the covariates. However, if the `targetId` and `comparatorId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument. In this example code we exclude all NSAIDs from the covariates.
 
 ```{r tidy=FALSE,eval=FALSE}
 # Get all NSAID Concept IDs for exclusion:
@@ -185,6 +183,12 @@ nsaids <- nsaids$CONCEPT_ID
 
 # Define which types of covariates must be constructed:
 covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                         useCovariateDemographicsAge = TRUE,
+                                         useCovariateDemographicsGender = TRUE,
+                                         useCovariateDemographicsRace = TRUE,
+                                         useCovariateDemographicsEthnicity = TRUE,
+                                         useCovariateDemographicsYear = TRUE,
+                                         useCovariateDemographicsMonth = TRUE,
                                          useCovariateConditionOccurrence = TRUE,
                                          useCovariateConditionOccurrence365d = TRUE,
                                          useCovariateConditionOccurrence30d = TRUE,
@@ -258,10 +262,6 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
 ```
 
 There are many parameters, but they are all documented in the `CohortMethod` manual. The `createCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
-
-**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetId` and `comparatorId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument to TRUE and automatically the drugs
-and their descendants will be excluded from the covariates. However, if the `targetId` and `comparatorId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument.
-
 
 All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
 
@@ -391,7 +391,7 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
   }
 ```
 
-One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there.
+One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example variations of the drugs of interest that we forgot to exclude.
 
 ## Using the propensity score
 
