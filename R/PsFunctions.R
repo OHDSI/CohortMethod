@@ -33,10 +33,11 @@
 #'                              If population is not specified, the full population in the \code{cohortMethodData} will be used.
 #' @param excludeCovariateIds   Exclude these covariates from the propensity model.
 #' @param includeCovariateIds   Include only these covariates in the propensity model.
-#' @param stopOnHighCorrelation If true, the function will test each covariate for correlation with the
+#' @param errorOnHighCorrelation If true, the function will test each covariate for correlation with the
 #'                              treatment assignment. If any covariate has an unusually high correlation
-#'                              (either positive or negative), this will be reported and the function
-#'                              will stop.
+#'                              (either positive or negative), this will throw and error.
+#' @param stopOnError           If an error occurrs, should the function stop? Else, the two cohorts
+#'                              will be assumed to be perfectly separable.
 #' @param prior                 The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
 #'                              for details.
 #' @param control               The control object used to control the cross-validation used to
@@ -56,7 +57,8 @@ createPs <- function(cohortMethodData,
                      population,
                      excludeCovariateIds = c(),
                      includeCovariateIds = c(),
-                     stopOnHighCorrelation = TRUE,
+                     errorOnHighCorrelation = TRUE,
+                     stopOnError = TRUE,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent",
                                              cvType = "auto",
@@ -88,7 +90,9 @@ createPs <- function(cohortMethodData,
   ff::close.ffdf(covariateSubset)
   rm(cohortSubset)
   rm(covariateSubset)
-  if (stopOnHighCorrelation) {
+  error <- NULL
+  ref <- NULL
+  if (errorOnHighCorrelation) {
     suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
     suspect <- suspect[!is.na(suspect)]
     if (length(suspect) != 0) {
@@ -97,17 +101,49 @@ createPs <- function(cohortMethodData,
       ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
       writeLines("High correlation between covariate(s) and treatment detected:")
       print(ref)
-      stop("High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?")
+      message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
+      if (stopOnError) {
+        stop(message)
+      } else {
+        error <- message
+      }
     }
   }
-  cyclopsFit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
-  cfs <- coef(cyclopsFit)
-  if (all(cfs[2:length(cfs)] == 0)){
-    warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+  if (is.null(error)){
+    cyclopsFit <- tryCatch({
+      Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+    }, error = function(e) {
+      e$message
+    })
+    if (is.character(cyclopsFit)) {
+      if (stopOnError) {
+        stop(cyclopsFit)
+      } else {
+        error <- cyclopsFit
+      }
+    } else if (cyclopsFit$return_flag != "SUCCESS") {
+      if (stopOnError) {
+        stop(cyclopsFit$return_flag)
+      } else {
+        error <- cyclopsFit$return_flag
+      }
+    }
   }
-  population$propensityScore <- predict(cyclopsFit)
-  attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
-  attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
+  if (is.null(error)) {
+    cfs <- coef(cyclopsFit)
+    if (all(cfs[2:length(cfs)] == 0)){
+      warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+    }
+    population$propensityScore <- predict(cyclopsFit)
+    attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
+    attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
+  } else {
+    population$propensityScore <- population$treatment
+    attr(population, "metaData")$psError <- error
+    if (!is.null(ref)) {
+      attr(population, "metaData")$psHighCorrelation <- ref
+    }
+  }
   delta <- Sys.time() - start
   writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
   return(population)

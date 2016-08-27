@@ -12,11 +12,11 @@ createCreateStudyPopulationArgs(firstExposureOnly = FALSE,
 }
 \arguments{
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-that this is typically done in the createStudyPopulation
+thatthis is typically done in the createStudyPopulation
 function,}
 
 \item{washoutPeriod}{The mininum required continuous observation time prior to
-index date for a person to be included in the cohort.}
+indexdate for a person to be included in the cohort.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
 cohort?}
