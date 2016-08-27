@@ -247,7 +247,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           firstExposureOnly = TRUE,
                                           removeDuplicateSubjects = TRUE,
                                           washoutPeriod = 180,
-                                          covariateSettings = covariateSettings)
+                                          covariateSettings = covarSettings)
 cohortMethodData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
