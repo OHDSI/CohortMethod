@@ -109,9 +109,9 @@ removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
 #' @return Returns input covariates, with extra columns treatment and outcome that are 1/0
 addTreatmentAndOutcome <- function(data, cohortData) {
   if (is.null(data)) {return(list(NULL))}
-  treatment = cohortData$cohorts$treatment[ffbase::ffmatch(data$rowId, cohortData$cohorts$rowId)]
+  treatment = ff::as.ff(cohortData$cohorts$treatment)[ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$cohorts$rowId))]
   outcome = ff::ff(vmode = "double", initdata = 0, length = dim(data)[[1]])
-  x = ffbase::ffmatch(data$rowId, cohortData$outcomes$rowId)
+  x = ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$outcomes$rowId))
   y = ffbase::ffwhich(x, !is.na(x))
   outcome[y] = ff::as.ff(rep(1,length(y)))
   data$treatment = treatment
@@ -134,7 +134,7 @@ addTreatmentAndOutcome <- function(data, cohortData) {
 calculateRanks <- function(data, cohortData, fudge) {
   if (is.null(data)) {return(list(NULL))}
   totalPopulation = length(cohortData$cohorts$rowId)
-  t = cohortData$cohorts$treatment
+  t = ff::as.ff(cohortData$cohorts$treatment)
   totalExposedPopulation = length(ffbase::ffwhich(t,t==1))
   totalComparatorPopulation = length(ffbase::ffwhich(t,t==0))
   totalOutcomePopulation = length(unique(cohortData$outcomes$rowId))
@@ -242,13 +242,19 @@ getNewCovariateRef <- function(covariates, cohortData) {
 #' Returns entries of covariateRef that correspond to predefined codes to include
 getPredefinedCovariateRef <- function(cohortData, conceptIds, icd9, icd9AnalysisIds) {
   if (is.null(conceptIds) & is.null(icd9)) {return(NULL)}
-  x = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
   y = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(icd9AnalysisIds))
-  t = ffbase::ffwhich(cohortData$covariateRef, !is.na(x) & is.na(y))
-  if (is.null(t)) result1 = NULL else result1 = cohortData$covariateRef[t,]
-  x = ffbase::ffmatch(cohortData$covariateRef$covariateId %/% 1000, ff::as.ff(icd9))
-  t = ffbase::ffwhich(cohortData$covariateRef, !is.na(x) & !is.na(y))
-  if (is.null(t)) result2 = NULL else result2 = cohortData$covariateRef[t,]
+  result1 = NULL
+  if (!is.null(conceptIds)) {
+    x = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
+    t = ffbase::ffwhich(cohortData$covariateRef, !is.na(x) & is.na(y))
+    if (!is.null(t)) result1 = cohortData$covariateRef[t,]
+  }
+  result2 = NULL
+  if (!is.null(icd9)) {
+    x = ffbase::ffmatch(cohortData$covariateRef$covariateId %/% 1000, ff::as.ff(icd9))
+    t = ffbase::ffwhich(cohortData$covariateRef, !is.na(x) & !is.na(y))
+    if (!is.null(t)) result2 = cohortData$covariateRef[t,]
+  }
   result = combineFunction(list(result1, result2), ffbase::ffdfrbind.fill)
   if (!is.null(result)) result$covariateName = ffbase::droplevels.ff(result$covariateName)
   return(result)
@@ -288,16 +294,20 @@ removePredefinedCovariates <- function(cohortData, conceptIds, icd9, icd9Analysi
   if (!is.null(conceptIds)) {
     y = ffbase::ffmatch(cohortData$covariateRef$conceptId, ff::as.ff(conceptIds))
     t = ffbase::ffwhich(cohortData$covariateRef, !is.na(y) & is.na(x))
-    t = ffbase::ffmatch(covariates$covariateId, cohortData$covariateRef$covariateId[t])
-    t = ffbase::ffwhich(t, is.na(t))
-    covariates = covariates[t,]
+    if (!is.null(t)) {
+      t = ffbase::ffmatch(covariates$covariateId, cohortData$covariateRef$covariateId[t])
+      t = ffbase::ffwhich(t, is.na(t))
+      covariates = covariates[t,]
+    }
   }
   if (!is.null(icd9)) {
     y = ffbase::ffmatch(cohortData$covariateRef$covariateId %/% 1000, ff::as.ff(icd9))
     t = ffbase::ffwhich(cohortData$covariateRef, !is.na(y) & !is.na(x))
-    t = ffbase::ffmatch(covariates$covariateId, cohortData$covariateRef$covariateId[t])
-    t = ffbase::ffwhich(t, is.na(t))
-    covariates = covariates[t,]
+    if (!is.null(t)) {
+      t = ffbase::ffmatch(covariates$covariateId, cohortData$covariateRef$covariateId[t])
+      t = ffbase::ffwhich(t, is.na(t))
+      covariates = covariates[t,]
+    }
   }
   return(covariates)
 }
@@ -353,4 +363,13 @@ getDemographicsCovariates <- function(cohortData, covariateRef) {
   if (is.null(covariateRef)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariates$covariateId, covariateRef$covariateId)
   return(cohortData$covariates[ffbase::ffwhich(t,!is.na(t)),])
+}
+
+removeOtherCovariates <- function(newCovariates, covariateRef, dimAnalysisId) {
+  analysisIds = combineFunction(dimAnalysisId, function(x,y) c(x,y))
+  analysisIds = c(analysisIds, analysisIds+1, analysisIds+2)
+  t = ffbase::ffmatch(covariateRef$analysisId, ff::as.ff(analysisIds))
+  covariateIds = covariateRef$covariateId[ffbase::ffwhich(t, !is.na(t))]
+  t = ffbase::ffmatch(newCovariates$covariateId, covariateIds)
+  return(newCovariates[ffbase::ffwhich(t, !is.na(t)),])
 }

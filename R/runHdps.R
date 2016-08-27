@@ -1,18 +1,18 @@
 #' Runs hdps implementation
 #'
 #' @description
-#' This function runs the hdps implementation on \code{cohortData}.
+#' This function runs the hdps implementation on \code{cohortMethodData}.
 #'
 #' @details
 #' Currently implemented for ICD9 diagnosis codes, CPT4 procedure codes, and drug concept ID codes. The mapping from CDM concept Id to
-#' source codes is obtained, and used to relabel the covariates and covariateRef components of cohortData. Granularity for ICD9 codes
+#' source codes is obtained, and used to relabel the covariates and covariateRef components of cohortMethodData. Granularity for ICD9 codes
 #' is implemented by "truncating" the source codes to 3 digits. Codes with fewer than \code{lowPopCutoff} number of patients are dropped.
 #' For each covariate, three covariates are constructed: "once", "sporadic", "frequent" for any occurrences, occurrences greater than
 #' the median, and occurrences greater than 3rd quartile, respectively. For each covariate, the "bias" as specified in hdps model is
 #' calculated, and the highest \code{biasCutoff} codes across all data dimensions are selected for inclusion. Demographic information of
-#' age, sex, race, and year are also included. \code{cohortData$covariates} and \code{cohortData$covariateRef} are altered accordingly.
+#' age, sex, race, and year are also included. \code{cohortMethodData$covariates} and \code{cohortMethodData$covariateRef} are altered accordingly.
 #'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortMethodData}
+#' @param cohortMethodData \code{cohortMethodData} object constructed by \code{getDbCohortMethodData}
 #' @param useInpatientDiagnosis boolean to use inpatient icd9 condition codes
 #' @param useAmbulatoryDiagnosis boolean to use ambulatory icd9 condition codes
 #' @param useDrugIngredient boolean to use drug ingredient codes
@@ -30,9 +30,9 @@
 #' @param useExpRank Use exposure rank instead of bias rank
 #'
 #' @return
-#' Returns the input \code{cohortData} with new entries for \code{covariates} and \code{covariateRef}
+#' Returns the input \code{cohortMethodData} with new entries for \code{covariates} and \code{covariateRef}
 #' @export
-runHdps <- function(cohortData,
+runHdps <- function(cohortMethodData,
                     useInpatientDiagnosis = TRUE,
                     useAmbulatoryDiagnosis = TRUE,
                     useDrugIngredient = TRUE,
@@ -64,38 +64,39 @@ runHdps <- function(cohortData,
   if (useAmbulatoryProcedure == TRUE) {
     dimensions = c(dimensions, "ambulatoryProcedure")
   }
-  demographicsCovariateRef = getDemographicsCovariateRef(cohortData, demographicsAnalysisIds)
-  demographicsCovariates = getDemographicsCovariates(cohortData, demographicsCovariateRef)
-  predefinedCovariateRef = getPredefinedCovariateRef(cohortData, predefinedIncludeConceptIds, predefinedIncludeICD9Dx, icd9AnalysisIds)
-  predefinedCovariates = getPredefinedCovariates(cohortData, predefinedCovariateRef)
+  demographicsCovariateRef = getDemographicsCovariateRef(cohortMethodData, demographicsAnalysisIds)
+  demographicsCovariates = getDemographicsCovariates(cohortMethodData, demographicsCovariateRef)
+  predefinedCovariateRef = getPredefinedCovariateRef(cohortMethodData, predefinedIncludeConceptIds, predefinedIncludeICD9Dx, icd9AnalysisIds)
+  predefinedCovariates = getPredefinedCovariates(cohortMethodData, predefinedCovariateRef)
 
   dimensionTable = getDimensionTable(dimensions)
 
   if (is.null(dimensionTable)) {
     newCovariates = combineFunction(list(demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
     newCovariateRef = combineFunction(list(demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
-    cohortData$covariates = newCovariates
-    cohortData$covariateRef = newCovariateRef
-    return(cohortData)
+    cohortMethodData$covariates = newCovariates
+    cohortMethodData$covariateRef = newCovariateRef
+    return(cohortMethodData)
   } else {
-    newCovariates = removePredefinedCovariates(cohortData, c(predefinedIncludeConceptIds, predefinedExcludeConceptIds),
+    newCovariates = removePredefinedCovariates(cohortMethodData, c(predefinedIncludeConceptIds, predefinedExcludeConceptIds),
                                                c(predefinedIncludeICD9Dx, predefinedExcludeICD9Dx), icd9AnalysisIds)
     dimAnalysisId = sapply(dimensionTable, getDimensionAnalysisId)
+    newData = removeOtherCovariates(newCovariates, cohortMethodData$covariateRef, dimAnalysisId)
     newData = sapply(dimAnalysisId, separateCovariates, newCovariates)
-    totalPopulation = length(cohortData$cohorts$rowId)
+    totalPopulation = length(cohortMethodData$cohorts$rowId)
     newData = sapply(newData, removeRareCovariates, dimensionCutoff, totalPopulation)
-    newData = sapply(newData, addTreatmentAndOutcome, cohortData)
-    rankings = sapply(newData, calculateRanks, cohortData, fudge)
+    newData = sapply(newData, addTreatmentAndOutcome, cohortMethodData)
+    rankings = sapply(newData, calculateRanks, cohortMethodData, fudge)
     newData = removeLowRank(newData, rankings, rankCutoff, useExpRank)
     newCovariates = combineFunction(newData, ffbase::ffdfrbind.fill)
     newCovariates$treatment <- NULL
     newCovariates$outcome <- NULL
-    newCovariateRef = getNewCovariateRef(newCovariates, cohortData)
+    newCovariateRef = getNewCovariateRef(newCovariates, cohortMethodData)
     newCovariates = combineFunction(list(newCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
     newCovariateRef = combineFunction(list(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
 
-    cohortData$covariates = newCovariates
-    cohortData$covariateRef = newCovariateRef
-    return(cohortData)
+    cohortMethodData$covariates = newCovariates
+    cohortMethodData$covariateRef = newCovariateRef
+    return(cohortMethodData)
   }
 }

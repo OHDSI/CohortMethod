@@ -281,7 +281,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
     delta <- Sys.time() - start
     writeLines(paste("simulating treatments took", signif(delta, 3), attr(delta, "units")))
   } else {
-    propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1), excludeCovariateIds = excludeCovariateIds)
+    propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1), excludeCovariateIds = c(1,excludeCovariateIds))
   }
 
   #psTrimmed <- trimByPsToEquipoise(propensityScore)
@@ -295,9 +295,10 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
                                     minDaysAtRisk = 1,
                                     removeSubjectsWithPriorOutcome = FALSE,
                                     outcomeId = outcomeId)
-  studyPop <- trimByPsToEquipoise(studyPop)
-  #studyPop <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  outcomeModel <- fitOutcomeModel(population = studyPop,
+  strata <- trimByPsToEquipoise(studyPop)
+  #strata <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  #strata <- stratifyByPs(studyPop)
+  outcomeModel <- fitOutcomeModel(population = strata,
                                   cohortMethodData = cohortMethodData,
                                   modelType = "cox",
                                   stratified = FALSE,
@@ -314,8 +315,8 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
 
   # generate outcome model for censor
   #cohortMethodData1 = invertOutcome(cohortMethodData, outcomeId)
-  studyPop1 = invertOutcome1(studyPop)
-  outcomeModel1 <- fitOutcomeModel(population = studyPop1,
+  strata1 = invertOutcome1(strata)
+  outcomeModel1 <- fitOutcomeModel(population = strata1,
                                    cohortMethodData = cohortMethodData,
                                    modelType = "cox",
                                    stratified = FALSE,
