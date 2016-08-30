@@ -144,6 +144,7 @@ createPs <- function(cohortMethodData,
             attr(population, "metaData")$psHighCorrelation <- ref
         }
     }
+    population <- computePreferenceScore(population)
     delta <- Sys.time() - start
     writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
     return(population)
