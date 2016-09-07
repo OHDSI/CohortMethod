@@ -212,8 +212,9 @@ removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
 removeLowRankHelper <- function(data, toKeep) {
   if (is.null(data)) {return(list(NULL))}
   t = ffbase::ffmatch(data$covariateId, toKeep)
-  rows = ffbase::ffwhich(t, !is.na(t))
-  data = data[rows,]
+  t = ffbase::ffwhich(t, !is.na(t))
+  if (is.null(t)) {return(list(NULL))}
+  data = data[t,]
   return(list(data))
 }
 

@@ -243,16 +243,19 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   return(result)
 }
 
+# psMathod: 0 (nothing), 1 (trimByPsToEquipoise), 2 (stratify), 3 (match)
 #' @export
 simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
                                          simulateTreatment = FALSE,
                                          replaceBeta = FALSE,
                                          newBeta=0,
-                                         excludeCovariateIds = NULL) {
+                                         excludeCovariateIds = NULL,
+                                         psMethod = 0) {
 
+  outcomeId <- cohortMethodData$outcomes$outcomeId[1]
   if (simulateTreatment) {
     start <- Sys.time()
-    covariates = cohortMethodData$covariates[ffbase::ffwhich(cohortMethodData$covariates, cohortMethodData$covariates$covariateId!=1),]
+    covariates = cohortMethodData$covariates
     covariateIds = unique(covariates$covariateId[])
     covariateIds = covariateIds[which(!(covariateIds %in% excludeCovariateIds))]
     propensityModel = rnorm(length(covariateIds)+1)
@@ -261,7 +264,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
                      beta = ff::as.ff(propensityModel[2:length(propensityModel)]))
     temp = ffbase::merge.ffdf(covariates, betas)
     temp$value = temp$covariateValue * temp$beta
-    temp = ff::as.ffdf(PatientLevelPrediction::bySumFf(temp$value, temp$rowId))
+    temp = ff::as.ffdf(bySumFf(temp$value, temp$rowId))
     names(temp) = c("rowId", "value")
     temp$value = temp$value + ff::ff(vmode = "double", initdata = propensityModel[1], length = nrow(temp))
     temp$propensityScore = 0.9999 / (1 + exp(-1 * temp$value))
@@ -273,78 +276,78 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
     propensityScore$value <- NULL
     cohortMethodData$cohorts$treatment = propensityScore$treatment
     t = ffbase::ffwhich(temp, temp$value == 1)
-    covariates = ffbase::ffdfrbind.fill(ff::ffdf(rowId = temp$rowId[t],
-                                                 covariateId = ff::ff(vmode = "double", initdata = 1, length = length(t)),
-                                                 covariateValue = ff::ff(vmode = "double", initdata = 1, length = length(t))),
-                                        covariates)
-    cohortMethodData$covariates = covariates
     delta <- Sys.time() - start
     writeLines(paste("simulating treatments took", signif(delta, 3), attr(delta, "units")))
-  } else {
-    propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1), excludeCovariateIds = c(1,excludeCovariateIds))
+  }
+  studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                    outcomeId = outcomeId,
+                                    firstExposureOnly = FALSE,
+                                    washoutPeriod = 0,
+                                    removeDuplicateSubjects = FALSE,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1,
+                                    riskWindowStart = 0,
+                                    addExposureDaysToStart = FALSE,
+                                    riskWindowEnd = 30,
+                                    addExposureDaysToEnd = TRUE)
+  if (psMethod != 0) {
+    propensityScore <- createPs(cohortMethodData, population=studyPop,
+                                excludeCovariateIds = c(1,excludeCovariateIds),
+                                prior = Cyclops::createPrior("laplace", useCrossValidation = FALSE))
   }
 
-  #psTrimmed <- trimByPsToEquipoise(propensityScore)
-  #strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  outcomeId <- cohortMethodData$outcomes$outcomeId[1]
-
   # generate outcome model for outcome
-
-  studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                    population = propensityScore,
-                                    minDaysAtRisk = 1,
-                                    removeSubjectsWithPriorOutcome = FALSE,
-                                    outcomeId = outcomeId)
-  strata <- trimByPsToEquipoise(studyPop)
-  #strata <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-  #strata <- stratifyByPs(studyPop)
+  if (psMethod == 0) {strata = studyPop}
+  if (psMethod == 1) {strata = trimByPsToEquipoise(propensityScore)}
+  if (psMethod == 2) {strata = stratifyByPs(propensityScore)}
+  if (psMethod == 3) {strata = matchOnPs(propensityScore)}
+  if (psMethod == 0 | psMethod == 1) {stratified = FALSE}
+  if (psMethod == 2 | psMethod == 3) {stratified = TRUE}
   outcomeModel <- fitOutcomeModel(population = strata,
                                   cohortMethodData = cohortMethodData,
                                   modelType = "cox",
-                                  stratified = FALSE,
+                                  stratified = stratified,
                                   useCovariates = TRUE,
                                   excludeCovariateIds = excludeCovariateIds,
-                                  prior = Cyclops::createPrior("laplace", 0.1, exclude = 0),
-                                  #prior = Cyclops::createPrior("none"),
+                                  #prior = Cyclops::createPrior("laplace", useCrossValidation = FALSE),
                                   returnFit = TRUE)
+  effectSize = coef(outcomeModel)
   if (replaceBeta) {
     Cyclops::setExposureBeta(outcomeModel$fit$interface, newBeta)
-    outcomeModel$coefficients[1] = newBeta
+    outcomeModel$outcomeModelCoefficients[length(outcomeModel$outcomeModelCoefficients)] = newBeta
+    effectSize = newBeta
   }
-  effectSize = outcomeModel$outcomeModelCoefficients[1]
 
   # generate outcome model for censor
-  #cohortMethodData1 = invertOutcome(cohortMethodData, outcomeId)
-  strata1 = invertOutcome1(strata)
+  strata1 = invertOutcome(strata)
   outcomeModel1 <- fitOutcomeModel(population = strata1,
                                    cohortMethodData = cohortMethodData,
                                    modelType = "cox",
                                    stratified = FALSE,
-                                   useCovariates = TRUE,
+                                   useCovariates = stratified,
                                    excludeCovariateIds = excludeCovariateIds,
-                                   prior = Cyclops::createPrior("laplace", 0.1),
-                                   #prior = Cyclops::createPrior("none"),
+                                   #prior = Cyclops::createPrior("laplace", useCrossValidation = FALSE),
                                    control = createControl(maxIterations = 10000),
                                    returnFit = TRUE)
 
-  studyPop = ff::as.ffdf(studyPop)
-  rownames(studyPop) = NULL
-  studyPop1 = ff::as.ffdf(studyPop1)
-  rownames(studyPop1) = NULL
+  strata = ff::as.ffdf(strata)
+  rownames(strata) = NULL
+  strata1 = ff::as.ffdf(strata1)
+  rownames(strata1) = NULL
 
   ids = ff::ffdf(newId = ff::ff(vmode = "double", initdata = 1:n),
-                 rowId = ff::as.ff(sample(studyPop$rowId, n, replace = TRUE)))
+                 rowId = ff::as.ff(sample(strata$rowId, n, replace = TRUE)))
 
   # generate event times
   start <- Sys.time()
-  sTimes = simulateTimes(outcomeModel, studyPop, ids)
+  sTimes = simulateTimes(outcomeModel, strata, ids)
   names(sTimes)[match("time", names(sTimes))] = "sTime"
   delta <- Sys.time() - start
   writeLines(paste("simulating sTimes took", signif(delta, 3), attr(delta, "units")))
 
   # generate censor times
   start <- Sys.time()
-  cTimes = simulateTimes(outcomeModel1, studyPop1, ids)
+  cTimes = simulateTimes(outcomeModel1, strata1, ids)
   names(cTimes)[match("time", names(cTimes))] = "cTime"
   delta <- Sys.time() - start
   writeLines(paste("simulating cTimes took", signif(delta, 3), attr(delta, "units")))
@@ -425,27 +428,18 @@ simulateTimes <- function(outcomeModel, studyPop, ids) {
   y = ff::as.ff(Cyclops::getY(fit$interface))
 
   baseline = calculateBaselineSurvivalFunction(accDenom, times, y)
+  t = which(cohortMethodData$cohorts$treatment==1)
+  treatmentCov = ff::ffdf(rowId = ff::as.ff(cohortMethodData$cohorts$rowId[t]),
+                          covariateId = ff::as.ff(rep(outcomeModel$outcomeModelTreatmentVarId, length(t))),
+                          covariateValue = ff::as.ff(rep(1, length(t))))
   x = calculateXB(rowId = studyPop$rowId,
-                  covariates = cohortMethodData$covariates,
+                  covariates = ffbase::ffdfrbind.fill(treatmentCov, cohortMethodData$covariates),
                   coef = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$outcomeModelCoefficients))),
                                   beta = ff::as.ff(outcomeModel$outcomeModelCoefficients)))
   return(generateEventTimes(x, ids, times, baseline))
 }
 
-invertOutcome <- function(cohortMethodData, outcomeId) {
-  ids = unique(cohortMethodData$outcomes$rowId)
-
-  newOutcomes = cohortMethodData$cohorts[which(is.na(match(cohortMethodData$cohorts$rowId, ids))),]
-  newOutcomes$outcomeId = outcomeId
-  newOutcomes = data.frame(rowId = newOutcomes$rowId,
-                           outcomeId = newOutcomes$outcomeId,
-                           timeToEvent = newOutcomes$daysToObsEnd)
-  result = cohortMethodData
-  result$outcomes = newOutcomes
-  return(result)
-}
-
-invertOutcome1 <- function(studyPop) {
+invertOutcome <- function(studyPop) {
   t1 = which(studyPop$outcomeCount == 0)
   t2 = which(studyPop$outcomeCount > 0)
   result = studyPop
@@ -460,7 +454,7 @@ calculateXB <- function(rowId, covariates, coef) {
   covariates = covariates[ffbase::ffwhich(covariates, in.ff(covariates$covariateId, coef$covariateId)),]
   covariates = ffbase::merge.ffdf(covariates, coef)
   covariates$value = covariates$covariateValue * covariates$beta
-  temp = ff::as.ffdf(PatientLevelPrediction::bySumFf(covariates$value, covariates$rowId))
+  temp = ff::as.ffdf(bySumFf(covariates$value, covariates$rowId))
   result = ff::ffdf(rowId = rowId, xb = ff::ff(vmode = "double", initdata = 0, length = length(rowId)))
   t = ffbase::ffmatch(temp$bins, result$rowId)
   result$xb[t] = temp$sums

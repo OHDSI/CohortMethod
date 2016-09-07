@@ -48,6 +48,7 @@ runHdps <- function(cohortMethodData,
                     rankCutoff = 500,
                     useExpRank = FALSE,
                     fudge = 0) {
+  start <- Sys.time()
   dimensions = c()
   if (useInpatientDiagnosis == TRUE) {
     dimensions = c(dimensions, "inpatientDiagnosis")
@@ -76,7 +77,6 @@ runHdps <- function(cohortMethodData,
     newCovariateRef = combineFunction(list(demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
     cohortMethodData$covariates = newCovariates
     cohortMethodData$covariateRef = newCovariateRef
-    return(cohortMethodData)
   } else {
     newCovariates = removePredefinedCovariates(cohortMethodData, c(predefinedIncludeConceptIds, predefinedExcludeConceptIds),
                                                c(predefinedIncludeICD9Dx, predefinedExcludeICD9Dx), icd9AnalysisIds)
@@ -97,6 +97,8 @@ runHdps <- function(cohortMethodData,
 
     cohortMethodData$covariates = newCovariates
     cohortMethodData$covariateRef = newCovariateRef
-    return(cohortMethodData)
   }
+  delta <- Sys.time() - start
+  writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
+  return(cohortMethodData)
 }
