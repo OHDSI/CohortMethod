@@ -767,78 +767,84 @@ quickSum <- function(data, squared = FALSE) {
     return(x)
 }
 
-computeMeansPerGroup <- function(cohorts, covariates) {
-    nOverall <- nrow(cohorts)
-    nTreated <- ffbase::sum.ff(cohorts$treatment == 1)
-    nComparator <- nOverall - nTreated
 
-    t <- cohorts$treatment == 1
+computeMeanAndSd <- function(cohorts, covariates, treatment) {
+  if (!is.null(cohorts$stratumId)) {
+    # Rownames needs to be null or else next command will crash
+    rownames(cohorts) <- NULL
+    t <- cohorts[cohorts$treatment == treatment, ]
+    t <- aggregate(rowId ~ stratumId, t, length)
+  }
+  if (!is.null(cohorts$stratumId) && max(t$rowId) > 1) {
+    # Variable strata sizes detected: weigh by size of strata set
+    w <- t
+    w$weight <- 1/w$rowId
+    w$rowId <- NULL
+    w <- merge(w, cohorts[cohorts$treatment == treatment, ])
+    w <- w [,c("rowId","weight")]
+    w$weight <- w$weight / sum(w$weight) # Normalize so sum(w) == 1
+    t <- cohorts$treatment == treatment
     t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
     covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
-    treated <- quickSum(covariatesSubset)
-    treatedSqr <- quickSum(covariatesSubset, squared = TRUE)
-    treated <- merge(treated, treatedSqr)
-    treated$sdTreated <- sqrt((treated$sumSqr - (treated$sum^2/nTreated))/nTreated)
-    treated$meanTreated <- treated$sum/nTreated
-    colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
+    covariatesSubset <- ffbase::merge.ffdf(covariatesSubset, ff::as.ffdf(w))
+    covariatesSubset$wValue <- covariatesSubset$weight * covariatesSubset$covariateValue
+    covariatesSubset$wValueSquared <- covariatesSubset$wValue * covariatesSubset$covariateValue
 
-    if (!is.null(cohorts$stratumId)) {
-        t <- ffbase::subset.ffdf(cohorts, treatment == 0)
-        t <- aggregate(rowId ~ stratumId, t, length)
-    }
-    if (!is.null(cohorts$stratumId) && max(t$rowId) > 1) {
-        # Variable ratio matching detected: weigh by size of matched set
-        w <- t
-        w$weight <- 1/w$rowId
-        w$rowId <- NULL
-        w <- merge(w, ffbase::subset.ffdf(cohorts, treatment == 0))
-        w <- w [,c("rowId","weight")]
-        w$weight <- w$weight / sum(w$weight) # Normalize so sum(w) == 1
-        t <- cohorts$treatment == 0
-        t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
-        covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
-        covariatesSubset <- ffbase::merge.ffdf(covariatesSubset, ff::as.ffdf(w))
-        # weightedSd2 <- sqrt((sum(w*x^2) - weightedMu^2)* sum(w) / (sum(w)^2 - sum(w^2)))
-        covariatesSubset$wValue <- covariatesSubset$weight * covariatesSubset$covariateValue
-        covariatesSubset$wValueSquared <- covariatesSubset$wValue * covariatesSubset$covariateValue
+    # Compute sum
+    result <- bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
+    colnames(result)[colnames(result) == "bins"] <- "covariateId"
+    colnames(result)[colnames(result) == "sums"] <- "sum"
 
-        # Compute sum
-        comparator <- bySumFf(covariatesSubset$covariateValue, covariatesSubset$covariateId)
-        colnames(comparator)[colnames(comparator) == "bins"] <- "covariateId"
-        colnames(comparator)[colnames(comparator) == "sums"] <- "sumComparator"
+    # Compute weighted mean (no need to divide by sum(w) because it is 1)
+    wMean <- bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
+    colnames(wMean)[colnames(wMean) == "bins"] <- "covariateId"
+    colnames(wMean)[colnames(wMean) == "sums"] <- "mean"
+    result <- merge(result, wMean)
 
-        # Compute weighted mean (no need to divide by sum(w) because it is 1)
-        wMean <- bySumFf(covariatesSubset$wValue, covariatesSubset$covariateId)
-        colnames(wMean)[colnames(wMean) == "bins"] <- "covariateId"
-        colnames(wMean)[colnames(wMean) == "sums"] <- "meanComparator"
-        comparator <- merge(comparator, wMean)
+    # Compute weighted standard deviation
+    wValueSquared <- bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
+    colnames(wValueSquared)[colnames(wValueSquared) == "bins"] <- "covariateId"
+    colnames(wValueSquared)[colnames(wValueSquared) == "sums"] <- "wValueSquared"
+    result <- merge(result, wMean)
+    sumW <- 1
+    sumWSquared <- sum(w$weight^2)
+    result <- merge(result, wValueSquared)
+    result$variance <- (result$wValueSquared - result$mean^2) * sumW / (sumW^2 - sumWSquared)
+    result$sd <- sqrt(result$variance)
+  } else {
+    # Used uniform strata size, no need to weigh
+    t <- cohorts$treatment == treatment
+    personCount <- sum(t)
+    t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
+    covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+    result <- quickSum(covariatesSubset)
+    resultSqr <- quickSum(covariatesSubset, squared = TRUE)
+    result <- merge(result, resultSqr)
+    result$sd <- sqrt((result$sumSqr - (result$sum^2/personCount))/personCount)
+    result$mean <- result$sum/personCount
+  }
+  return(result)
+}
 
-        # Compute weighted standard deviation
-        wValueSquared <- bySumFf(covariatesSubset$wValueSquared, covariatesSubset$covariateId)
-        colnames(wValueSquared)[colnames(wValueSquared) == "bins"] <- "covariateId"
-        colnames(wValueSquared)[colnames(wValueSquared) == "sums"] <- "wValueSquared"
-        comparator <- merge(comparator, wMean)
-        sumW <- 1
-        sumWSquared <- sum(w$weight^2)
-        comparator <- merge(comparator, wValueSquared)
-        comparator$variance <- (comparator$wValueSquared - comparator$meanComparator^2) * sumW / (sumW^2 - sumWSquared)
-        comparator$sdComparator <- sqrt(comparator$variance)
-    } else {
-        # Used one-on-one ratio matching, no need to weigh
-        t <- cohorts$treatment == 0
-        t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
-        covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
-        comparator <- quickSum(covariatesSubset)
-        comparatorSqr <- quickSum(covariatesSubset, squared = TRUE)
-        comparator <- merge(comparator, comparatorSqr)
-        comparator$sdComparator <- sqrt((comparator$sumSqr - (comparator$sum^2/nComparator))/nComparator)
-        comparator$meanComparator <- comparator$sum/nComparator
-        colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
-    }
-    result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")], all = TRUE)
-    result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
-    result <- result[,c("covariateId","meanTreated","meanComparator","sumTreated","sumComparator","sd")]
-    return(result)
+computeMeansPerGroup <- function(cohorts, covariates) {
+  nOverall <- nrow(cohorts)
+  nTreated <- ffbase::sum.ff(cohorts$treatment == 1)
+  nComparator <- nOverall - nTreated
+
+  treated <- computeMeanAndSd(cohorts, covariates, treatment = 1)
+  colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
+  colnames(treated)[colnames(treated) == "mean"] <- "meanTreated"
+  colnames(treated)[colnames(treated) == "sd"] <- "sdTreated"
+
+  comparator <- computeMeanAndSd(cohorts, covariates, treatment = 0)
+  colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
+  colnames(comparator)[colnames(comparator) == "mean"] <- "meanComparator"
+  colnames(comparator)[colnames(comparator) == "sd"] <- "sdComparator"
+
+  result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")], all = TRUE)
+  result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
+  result <- result[,c("covariateId","meanTreated","meanComparator","sumTreated","sumComparator","sd")]
+  return(result)
 }
 
 
