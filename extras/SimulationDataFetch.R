@@ -19,7 +19,6 @@
 # This code should be used to create the simulation profile used in some of the unit tests
 library(CohortMethod)
 options('fftempdir' = 's:/fftemp')
-setwd('C:/Users/mschuemi/git/CohortMethod/data')
 
 pw <- NULL
 dbms <- "sql server"
@@ -33,10 +32,10 @@ pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
-cdmVersion <- 4
+cdmVersion <- 5
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 server = server,
@@ -45,7 +44,13 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 port = port)
 
 covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateConditionOccurrence = TRUE,
+                                             useCovariateDemographicsAge = TRUE,
+                                             useCovariateDemographicsGender = TRUE,
+                                             useCovariateDemographicsRace = TRUE,
+                                             useCovariateDemographicsEthnicity = TRUE,
+                                             useCovariateDemographicsYear = TRUE,
+                                             useCovariateDemographicsMonth = TRUE,
+                                             useCovariateConditionOccurrence = FALSE,
                                              useCovariateConditionOccurrence365d = TRUE,
                                              useCovariateConditionOccurrence30d = TRUE,
                                              useCovariateConditionOccurrenceInpt180d = TRUE,
@@ -99,7 +104,11 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           excludeDrugsFromCovariates = TRUE,
                                           firstExposureOnly = TRUE,
                                           washoutPeriod = 183,
+                                          removeDuplicateSubjects = TRUE,
                                           covariateSettings = covariateSettings)
+
+summary(cohortMethodData)
+getAttritionTable(cohortMethodData)
 
 saveCohortMethodData(cohortMethodData, "s:/temp/simulationCohortMethodData")
 

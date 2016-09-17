@@ -20,7 +20,6 @@
 library(SqlRender)
 library(DatabaseConnector)
 library(CohortMethod)
-setwd('s:/temp')
 options('fftempdir' = 's:/fftemp')
 
 dbms <- "sql server"
@@ -45,7 +44,7 @@ dbms <- "pdw"
 user <- NULL
 pw <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v5.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -92,6 +91,12 @@ nsaids <- nsaids$CONCEPT_ID
 dbDisconnect(connection)
 
 covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                             useCovariateDemographicsAge = TRUE,
+                                             useCovariateDemographicsGender = TRUE,
+                                             useCovariateDemographicsRace = TRUE,
+                                             useCovariateDemographicsEthnicity = TRUE,
+                                             useCovariateDemographicsYear = TRUE,
+                                             useCovariateDemographicsMonth = TRUE,
                                              useCovariateConditionOccurrence = TRUE,
                                              useCovariateConditionOccurrence365d = TRUE,
                                              useCovariateConditionOccurrence30d = TRUE,
@@ -179,6 +184,7 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
 
 saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
 
+# studyPop <- readRDS("s:/temp/cohortMethodVignette/studyPop.rds")
 
 ps <- createPs(cohortMethodData = cohortMethodData,
                population = studyPop,

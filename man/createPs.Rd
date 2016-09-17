@@ -5,10 +5,11 @@
 \title{Create propensity scores}
 \usage{
 createPs(cohortMethodData, population, excludeCovariateIds = c(),
-  includeCovariateIds = c(), stopOnHighCorrelation = TRUE,
-  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-  control = createControl(noiseLevel = "silent", cvType = "auto", tolerance =
-  2e-07, cvRepetitions = 10, startingVariance = 0.01))
+  includeCovariateIds = c(), errorOnHighCorrelation = TRUE,
+  stopOnError = TRUE, prior = createPrior("laplace", exclude = c(0),
+  useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
+  cvType = "auto", tolerance = 2e-07, cvRepetitions = 10, startingVariance =
+  0.01))
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
@@ -22,10 +23,12 @@ If population is not specified, the full population in the \code{cohortMethodDat
 
 \item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
-\item{stopOnHighCorrelation}{If true, the function will test each covariate for correlation with the
+\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with the
 treatment assignment. If any covariate has an unusually high correlation
-(either positive or negative), this will be reported and the function
-will stop.}
+(either positive or negative), this will throw and error.}
+
+\item{stopOnError}{If an error occurrs, should the function stop? Else, the two cohorts
+will be assumed to be perfectly separable.}
 
 \item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
 for details.}

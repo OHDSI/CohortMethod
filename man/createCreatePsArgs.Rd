@@ -5,20 +5,22 @@
 \title{Create a parameter object for the function createPs}
 \usage{
 createCreatePsArgs(excludeCovariateIds = c(), includeCovariateIds = c(),
-  stopOnHighCorrelation = TRUE, prior = createPrior("laplace", exclude =
-  c(0), useCrossValidation = TRUE), control = createControl(noiseLevel =
-  "silent", cvType = "auto", tolerance = 2e-07, cvRepetitions = 10,
-  startingVariance = 0.01))
+  errorOnHighCorrelation = TRUE, stopOnError = TRUE,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+  control = createControl(noiseLevel = "silent", cvType = "auto", tolerance =
+  2e-07, cvRepetitions = 10, startingVariance = 0.01))
 }
 \arguments{
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
 \item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
-\item{stopOnHighCorrelation}{If true, the function will test each covariate for correlation with
+\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with
 thetreatment assignment. If any covariate has an unusually high
-correlation(either positive or negative), this will be reported and
-the functionwill stop.}
+correlation(either positive or negative), this will throw and error.}
+
+\item{stopOnError}{If an error occurrs, should the function stop? Else, the two
+cohortswill be assumed to be perfectly separable.}
 
 \item{prior}{The prior used to fit the model. See createPriorfor details.}
 
