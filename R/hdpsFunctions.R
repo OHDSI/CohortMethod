@@ -1,8 +1,8 @@
-#' Return data frame containing analysisId for dimensions
-#'
-#' @param dimensions names of data dimensions
-#'
-#' @return list of data frames containing the data dimension names and analysisId
+# Return data frame containing analysisId for dimensions
+#
+# @param dimensions names of data dimensions
+#
+# @return list of data frames containing the data dimension names and analysisId
 getDimensionTable <- function(dimensions) {
   if (is.null(dimensions)) {return(NULL)}
   dimensionTable = data.frame(dimName = c(), analysisId = c(), names = c(), row.names = NULL, stringsAsFactors = FALSE)
@@ -31,25 +31,25 @@ getDimensionTable <- function(dimensions) {
 }
 
 
-#' Retrieves analysisId
-#' @description Retrieves \code{analysisId} from data dimension information
-#' @param dimensionInfo Information for a data dimension, as acquired from \code{getDimensionTable}
-#' @return
-#' Returns the numeric value for \code{analysisId}
+# Retrieves analysisId
+# @description Retrieves \code{analysisId} from data dimension information
+# @param dimensionInfo Information for a data dimension, as acquired from \code{getDimensionTable}
+# @return
+# Returns the numeric value for \code{analysisId}
 getDimensionAnalysisId <- function(dimensionInfo) {
   return(list(dimensionInfo$analysisId))
 }
 
-#' Extracts covariates for data dimension
-#'
-#' @description Extracts covariates for data dimension into 3 categories - input analysisId, analysisId+1, analysisId+2
-#' for at least once, more than median, and more than 75 quantile codes
-#'
-#' @param analysisId Analysis ID for data dimension
-#' @param covariates Covariate information from cohortMethodData
-#'
-#' @return
-#' List of ffdf containing covariates that correspond to analysisId, analysisId+1 (>median), analysisId+2 (>q75)
+# Extracts covariates for data dimension
+#
+# @description Extracts covariates for data dimension into 3 categories - input analysisId, analysisId+1, analysisId+2
+# for at least once, more than median, and more than 75 quantile codes
+#
+# @param analysisId Analysis ID for data dimension
+# @param covariates Covariate information from cohortMethodData
+#
+# @return
+# List of ffdf containing covariates that correspond to analysisId, analysisId+1 (>median), analysisId+2 (>q75)
 separateCovariates <- function(analysisId, covariates) {
   result = sapply(c(analysisId, analysisId+1, analysisId+2), separateCovariatesHelper, covariates)
   return(list(result))
@@ -61,17 +61,17 @@ separateCovariatesHelper <- function(analysisId, covariates) {
   return(list(covariates[ffbase::ffwhich(t,t==TRUE),]))
 }
 
-#' Keeps only a certain number of covariates per data dimensions, ranked by prevalence
-#'
-#' @description Keeps the top number of covariates, by prevalence, from covariates for data dimension. Codes will only be
-#' kept for (>median) and (>q75) if they are kept in the base category.
-#'
-#' @param data List of 3 ffdf of covariates for data dimension and expanded codes
-#' @param dimensionCutoff Number of covariates to keep
-#' @param totalPopulation Total population in cohort study
-#'
-#' @return
-#' Returns list of 3 ffdf with only the kept covariates
+# Keeps only a certain number of covariates per data dimensions, ranked by prevalence
+#
+# @description Keeps the top number of covariates, by prevalence, from covariates for data dimension. Codes will only be
+# kept for (>median) and (>q75) if they are kept in the base category.
+#
+# @param data List of 3 ffdf of covariates for data dimension and expanded codes
+# @param dimensionCutoff Number of covariates to keep
+# @param totalPopulation Total population in cohort study
+#
+# @return
+# Returns list of 3 ffdf with only the kept covariates
 removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
   data1 = data[[1]]
   if (!is.null(data1)) {
@@ -99,14 +99,14 @@ removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
   return(list(data1, data2, data3))
 }
 
-#' Add treatment and outcome data
-#'
-#' @description Appends columns to covariates that includes treatment and outcome for that patient
-#'
-#' @param data Covariates for data dimension
-#' @param cohortData cohortMethodData object
-#'
-#' @return Returns input covariates, with extra columns treatment and outcome that are 1/0
+# Add treatment and outcome data
+#
+# @description Appends columns to covariates that includes treatment and outcome for that patient
+#
+# @param data Covariates for data dimension
+# @param cohortData cohortMethodData object
+#
+# @return Returns input covariates, with extra columns treatment and outcome that are 1/0
 addTreatmentAndOutcome <- function(data, cohortData) {
   if (is.null(data)) {return(list(NULL))}
   treatment = ff::as.ff(cohortData$cohorts$treatment)[ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$cohorts$rowId))]
@@ -119,18 +119,18 @@ addTreatmentAndOutcome <- function(data, cohortData) {
   return(list(data))
 }
 
-#' Calculates bias and exposure ranks
-#'
-#' @param data Covariate information for data dimension with treatment and outcome
-#' @param cohortData CohortMethodData object
-#' @param fudge Fudge factor to use to avoid divide by 0. If fudge = 0, relative risks and bias with 0 or Inf values are thrown out
-#'
-#' @return Returns ffdf with columns \describe{
-#' \item{covariateId}{covariate ID}
-#' \item{biasRank}{bias score for covariate = abs(log(bias))}
-#' \item{expRank}{exposure score for covariate = abs(log(prevalence_treated/prevalence_control))}
-#' \item{PC0}{prevalence of covariate among control, for breaking ties}
-#' \item{PC1}{prevalence of covariate among treated, for breaking ties}}
+# Calculates bias and exposure ranks
+#
+# @param data Covariate information for data dimension with treatment and outcome
+# @param cohortData CohortMethodData object
+# @param fudge Fudge factor to use to avoid divide by 0. If fudge = 0, relative risks and bias with 0 or Inf values are thrown out
+#
+# @return Returns ffdf with columns \describe{
+# \item{covariateId}{covariate ID}
+# \item{biasRank}{bias score for covariate = abs(log(bias))}
+# \item{expRank}{exposure score for covariate = abs(log(prevalence_treated/prevalence_control))}
+# \item{PC0}{prevalence of covariate among control, for breaking ties}
+# \item{PC1}{prevalence of covariate among treated, for breaking ties}}
 calculateRanks <- function(data, cohortData, fudge) {
   if (is.null(data)) {return(list(NULL))}
   totalPopulation = length(cohortData$cohorts$rowId)
@@ -178,17 +178,17 @@ calculateRanks <- function(data, cohortData, fudge) {
   return(list(result))
 }
 
-#' Keeps top covariates by bias or exposure rank
-#'
-#' @description Keeps top number of covariates by bias or exposure rank for inclusion in propensity score
-#'
-#' @param data List of covariates, corresponding to data dimensions
-#' @param rankings List of rankings generated by \code{calculateRanks}
-#' @param rankCutoff Number of covariates to keep
-#' @param useExpRank Boolean to use exposure instead of bias
-#'
-#' @return
-#' Removes input covariates with only top covariates kept
+# Keeps top covariates by bias or exposure rank
+#
+# @description Keeps top number of covariates by bias or exposure rank for inclusion in propensity score
+#
+# @param data List of covariates, corresponding to data dimensions
+# @param rankings List of rankings generated by \code{calculateRanks}
+# @param rankCutoff Number of covariates to keep
+# @param useExpRank Boolean to use exposure instead of bias
+#
+# @return
+# Removes input covariates with only top covariates kept
 removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
 
   rankings = combineFunction(rankings, ffbase::ffdfrbind.fill)
@@ -218,29 +218,29 @@ removeLowRankHelper <- function(data, toKeep) {
   return(list(data))
 }
 
-#' Get covariateRef entries for covariates
-#'
-#' @param covariates Ffdf of covariates
-#' @param cohortData CohortMethodData object
-#'
-#' @return Returns ffdf of covariateRef entries corresponding to covariates
+# Get covariateRef entries for covariates
+#
+# @param covariates Ffdf of covariates
+# @param cohortData CohortMethodData object
+#
+# @return Returns ffdf of covariateRef entries corresponding to covariates
 getNewCovariateRef <- function(covariates, cohortData) {
   covariateId = unique(covariates$covariateId)
   t = ffbase::ffmatch(cohortData$covariateRef$covariateId, covariateId)
   return(cohortData$covariateRef[ffbase::ffwhich(t, !is.na(t)),])
 }
 
-#' Get covariateRef for predefined codes
-#'
-#' @description Get covariateRef entries for predefined codes to include
-#'
-#' @param cohortData CohortMethodData object
-#' @param conceptIds List of conceptIds to include
-#' @param icd9 List of icd9 condition codes to include, with E replaced by 10 and V replaced by 11
-#' @param icd9AnalysisIds List of analysisIds that include icd9 condition codes
-#'
-#' @return
-#' Returns entries of covariateRef that correspond to predefined codes to include
+# Get covariateRef for predefined codes
+#
+# @description Get covariateRef entries for predefined codes to include
+#
+# @param cohortData CohortMethodData object
+# @param conceptIds List of conceptIds to include
+# @param icd9 List of icd9 condition codes to include, with E replaced by 10 and V replaced by 11
+# @param icd9AnalysisIds List of analysisIds that include icd9 condition codes
+#
+# @return
+# Returns entries of covariateRef that correspond to predefined codes to include
 getPredefinedCovariateRef <- function(cohortData, conceptIds, icd9, icd9AnalysisIds) {
   if (is.null(conceptIds) & is.null(icd9)) {return(NULL)}
   y = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(icd9AnalysisIds))
@@ -261,15 +261,15 @@ getPredefinedCovariateRef <- function(cohortData, conceptIds, icd9, icd9Analysis
   return(result)
 }
 
-#' Get predefined covariates
-#'
-#' @description Get predefined covariates entries for predefined codes to include
-#'
-#' @param cohortData CohortMethodData object
-#' @param predefinedCovariateRef ffdf returned by \code{getPredefinedCovariateRef}
-#'
-#' @return
-#' Returns entries of covariates that correspond to predefined codes to include
+# Get predefined covariates
+#
+# @description Get predefined covariates entries for predefined codes to include
+#
+# @param cohortData CohortMethodData object
+# @param predefinedCovariateRef ffdf returned by \code{getPredefinedCovariateRef}
+#
+# @return
+# Returns entries of covariates that correspond to predefined codes to include
 getPredefinedCovariates <- function(cohortData, predefinedCovariateRef) {
 
   if (is.null(predefinedCovariateRef)) {return(NULL)}
@@ -277,18 +277,18 @@ getPredefinedCovariates <- function(cohortData, predefinedCovariateRef) {
   return(cohortData$covariates[ffbase::ffwhich(t, !is.na(t)),])
 }
 
-#' Remove predefined covariates
-#'
-#' @description Removes from covariates table of CohortMethodData the predefined codes to include and exclude. The included covariates have already been
-#' extracted
-#'
-#' @param cohortData CohortMethodData object
-#' @param conceptIds Predefined concept IDs to include and exclude
-#' @param icd9 Predefined icd9 condition codes to include and exclude, with E replaced by 10 and V replaced by 11
-#' @param icd9AnalysisIds List of analysisIds that include icd9 condition codes
-#'
-#' @return
-#' Returns covariates table of cohortData with predefined codes removed
+# Remove predefined covariates
+#
+# @description Removes from covariates table of CohortMethodData the predefined codes to include and exclude. The included covariates have already been
+# extracted
+#
+# @param cohortData CohortMethodData object
+# @param conceptIds Predefined concept IDs to include and exclude
+# @param icd9 Predefined icd9 condition codes to include and exclude, with E replaced by 10 and V replaced by 11
+# @param icd9AnalysisIds List of analysisIds that include icd9 condition codes
+#
+# @return
+# Returns covariates table of cohortData with predefined codes removed
 removePredefinedCovariates <- function(cohortData, conceptIds, icd9, icd9AnalysisIds) {
   covariates = cohortData$covariates
   x = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(icd9AnalysisIds))
@@ -313,17 +313,17 @@ removePredefinedCovariates <- function(cohortData, conceptIds, icd9, icd9Analysi
   return(covariates)
 }
 
-#' Sequentially applies FUN to elements of data
-#'
-#' @description
-#' This function applies and combines a function over successive elements of a list. For example, if \code{data} is a list of
-#' \code{data.frame} and \code{FUN = rbind} it will return a \code{data.frame} of all the elements combined.
-#'
-#' @param data List of elements
-#' @param FUN Function to apply, takes two arguments
-#'
-#' @return
-#' Returns aggregated output of applying FUN to data
+# Sequentially applies FUN to elements of data
+#
+# @description
+# This function applies and combines a function over successive elements of a list. For example, if \code{data} is a list of
+# \code{data.frame} and \code{FUN = rbind} it will return a \code{data.frame} of all the elements combined.
+#
+# @param data List of elements
+# @param FUN Function to apply, takes two arguments
+#
+# @return
+# Returns aggregated output of applying FUN to data
 combineFunction <- function(data, FUN) {
   t = sapply(data, function(x){return(!is.null(x))})
   data = data[which(t==TRUE)]
@@ -337,13 +337,13 @@ combineFunction <- function(data, FUN) {
   return(result)
 }
 
-#' Retrieves demographics elements of covariate Ref
-#'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param analysisIds Vector of analysis identifiers associated with demographic covariates.
-#'
-#' @return
-#' Returns ffdf of elements of \code{cohortData$covariateRef} that relate to demographic information.
+# Retrieves demographics elements of covariate Ref
+#
+# @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
+# @param analysisIds Vector of analysis identifiers associated with demographic covariates.
+#
+# @return
+# Returns ffdf of elements of \code{cohortData$covariateRef} that relate to demographic information.
 getDemographicsCovariateRef <- function(cohortData, analysisIds) {
   if (is.null(analysisIds)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(analysisIds))
@@ -353,13 +353,13 @@ getDemographicsCovariateRef <- function(cohortData, analysisIds) {
 }
 
 
-#' Retrieves demographics elements of covariates
-#'
-#' @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
-#' @param covariateRef Covariate reference information associated with demographic covariates.
-#'
-#' @return
-#' Returns ffdf of elements of \code{cohortData$covariates} that relate to demographic information.
+# Retrieves demographics elements of covariates
+#
+# @param cohortData \code{cohortData} object constructed by \code{getDbCohortData}
+# @param covariateRef Covariate reference information associated with demographic covariates.
+#
+# @return
+# Returns ffdf of elements of \code{cohortData$covariates} that relate to demographic information.
 getDemographicsCovariates <- function(cohortData, covariateRef) {
   if (is.null(covariateRef)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariates$covariateId, covariateRef$covariateId)
