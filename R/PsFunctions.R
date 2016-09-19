@@ -1021,3 +1021,97 @@ plotCovariateBalanceOfTopVariables <- function(balance,
     return(plot)
 }
 
+
+# Compute some other balance metrics
+#' @export
+computeCovariateBalance2 <- function(population, cohortMethodData) {
+  start <- Sys.time()
+  cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
+  covariates <- cohortMethodData$covariates
+
+  # Try to undo normalization of covariate values:
+  normFactors <- attr(cohortMethodData$covariates,"normFactors")
+  if (!is.null(normFactors)){
+    covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(normFactors))
+    covariates$covariateValue <- covariates$covariateValue * covariates$maxs
+    covariates$maxs <- NULL
+  }
+
+  beforeStdDiff = calculateStdDiff(cohorts, covariates)
+  cohortsAfterPS <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  afterStdDiff <- calculateStdDiffAfterPS(cohortsAfterPS, covariates)
+
+  ff::close.ffdf(cohorts)
+  ff::close.ffdf(cohortsAfterPS)
+  rm(cohorts)
+  rm(cohortsAfterPS)
+  delta <- Sys.time() - start
+  writeLines(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  return(list(beforeStdDiff = beforeStdDiff,
+              afterStdDiff = afterStdDiff))
+}
+
+calculateStdDiffAfterPS <- function(cohorts, covariates) {
+  if (!is.null(cohorts$stratumId)) {
+    # Rownames needs to be null or else next command will crash
+    rownames(cohorts) <- NULL
+    t <- cohorts[cohorts$treatment == 1, ]
+    t <- aggregate(rowId ~ stratumId, t, length)
+  }
+
+  if (is.null(cohorts$stratumId)) {
+    return(calculateStdDiff(cohorts, covariates))
+  } else {
+    strata = unique(cohorts$stratumId)[]
+    f <- function(stratumId, cohorts) {return (list(cohorts[cohorts$stratumId == stratumId,]))}
+    cohortList = sapply(strata, f, cohorts)
+    f <- function(cohorts, covariates) {return (list(calculateStdDiff(cohorts, covariates)))}
+    stdDiffList = sapply(cohortList, f, covariates)
+    result = combineFunction(stdDiffList, rbind)
+  }
+}
+
+calculateStdDiff <- function(cohorts, covariates) {
+  treated = calculateSampleVarianceByCovariate(cohorts, covariates, 1)
+  colnames(treated)[colnames(treated) == "mean"] <- "treatedMean"
+  colnames(treated)[colnames(treated) == "var"] <- "treatedVar"
+
+  control = calculateSampleVarianceByCovariate(cohorts, covariates, 0)
+  colnames(control)[colnames(control) == "mean"] <- "controlMean"
+  colnames(control)[colnames(control) == "var"] <- "controlVar"
+
+  result = merge(treated, control)
+  result$StdDiff = (result$treatedMean - result$controlMean)/sqrt((result$treatedVar + result$controlVar)/2)
+  return(result)
+}
+
+calculateTStat <- function(cohorts, covariates) {
+  nOverall <- nrow(cohorts)
+  nTreated <- ffbase::sum.ff(cohorts$treatment == 1)
+  nComparator <- nOverall - nTreated
+
+  treated = calculateSampleVarianceByCovariate(cohorts, covariates, 1)
+  colnames(treated)[colnames(treated) == "mean"] <- "treatedMean"
+  colnames(treated)[colnames(treated) == "var"] <- "treatedVar"
+
+  control = calculateSampleVarianceByCovariate(cohorts, covariates, 0)
+  colnames(control)[colnames(control) == "mean"] <- "controlMean"
+  colnames(control)[colnames(control) == "var"] <- "controlVar"
+
+  result = merge(treated, control)
+  result$TStat = (result$treatedMean - result$controlMean)/sqrt(result$treatedVar/nTreated + result$controlVar/nComparator)
+  return(result)
+}
+
+calculateSampleVarianceByCovariate <- function(cohorts, covariates, treatment) {
+  t <- cohorts$treatment == treatment
+  N <- sum(t)
+  t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
+  covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+  result <- quickSum(covariatesSubset)
+  resultSqr <- quickSum(covariatesSubset, squared = TRUE)
+  result <- merge(result, resultSqr)
+  result$var <- (result$sumSqr - (result$sum^2/N))/(N-1)
+  result$mean <- result$sum/N
+  return(result[,c("covariateId", "mean", "var")])
+}
