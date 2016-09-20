@@ -324,6 +324,7 @@ removePredefinedCovariates <- function(cohortData, conceptIds, icd9, icd9Analysi
 #
 # @return
 # Returns aggregated output of applying FUN to data
+#' @export
 combineFunction <- function(data, FUN) {
   t = sapply(data, function(x){return(!is.null(x))})
   data = data[which(t==TRUE)]

@@ -245,10 +245,12 @@ simulateCohortMethodData <- function(profile, n = 10000) {
 
 # psMathod: 0 (nothing), 1 (trimByPsToEquipoise), 2 (stratify), 3 (match)
 #' @export
-simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
+simulateCohortMethodDataTest <- function(cohortMethodData,
+                                         resample = FALSE,
+                                         sampleSize = 10000,
                                          simulateTreatment = FALSE,
                                          replaceBeta = FALSE,
-                                         newBeta=0,
+                                         newBeta = 0,
                                          excludeCovariateIds = NULL,
                                          psMethod = 0) {
 
@@ -290,6 +292,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
                                     addExposureDaysToStart = FALSE,
                                     riskWindowEnd = 30,
                                     addExposureDaysToEnd = TRUE)
+
   if (psMethod != 0) {
     propensityScore <- createPs(cohortMethodData, population=studyPop,
                                 excludeCovariateIds = c(1,excludeCovariateIds),
@@ -303,14 +306,16 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   if (psMethod == 3) {strata = matchOnPs(propensityScore)}
   if (psMethod == 0 | psMethod == 1) {stratified = FALSE}
   if (psMethod == 2 | psMethod == 3) {stratified = TRUE}
+
   outcomeModel <- fitOutcomeModel(population = strata,
                                   cohortMethodData = cohortMethodData,
                                   modelType = "cox",
                                   stratified = stratified,
                                   useCovariates = TRUE,
                                   excludeCovariateIds = excludeCovariateIds,
-                                  #prior = Cyclops::createPrior("laplace", useCrossValidation = FALSE),
+                                  prior = createPrior(priorType = "laplace", useCrossValidation = FALSE),
                                   returnFit = TRUE)
+
   effectSize = coef(outcomeModel)
   if (replaceBeta) {
     Cyclops::setExposureBeta(outcomeModel$fit$interface, newBeta)
@@ -326,8 +331,8 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
                                    stratified = FALSE,
                                    useCovariates = stratified,
                                    excludeCovariateIds = excludeCovariateIds,
-                                   #prior = Cyclops::createPrior("laplace", useCrossValidation = FALSE),
-                                   control = createControl(maxIterations = 10000),
+                                   prior = createPrior(priorType = "laplace", useCrossValidation = FALSE),
+                                   #control = createControl(maxIterations = 10000),
                                    returnFit = TRUE)
 
   strata = ff::as.ffdf(strata)
@@ -335,52 +340,13 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   strata1 = ff::as.ffdf(strata1)
   rownames(strata1) = NULL
 
-  ids = ff::ffdf(newId = ff::ff(vmode = "double", initdata = 1:n),
-                 rowId = ff::as.ff(sample(strata$rowId, n, replace = TRUE)))
-
-  # generate event times
-  start <- Sys.time()
-  sTimes = simulateTimes(outcomeModel, strata, ids)
-  names(sTimes)[match("time", names(sTimes))] = "sTime"
-  delta <- Sys.time() - start
-  writeLines(paste("simulating sTimes took", signif(delta, 3), attr(delta, "units")))
-
-  # generate censor times
-  start <- Sys.time()
-  cTimes = simulateTimes(outcomeModel1, strata1, ids)
-  names(cTimes)[match("time", names(cTimes))] = "cTime"
-  delta <- Sys.time() - start
-  writeLines(paste("simulating cTimes took", signif(delta, 3), attr(delta, "units")))
-
-  # combine event and censor times
-  times = ffbase::merge.ffdf(sTimes, cTimes)
-  times$y = ff::ff(vmode = "double", initdata = 0, length = n)
-  t = ffbase::ffwhich(times, times$sTime<=times$cTime)
-  times$y[t] = ff::ff(vmode = "double", initdata = 1, length = length(t))
-  times$timeToEvent = ff::clone.ff(times$cTime)
-  times$timeToEvent[t] = times$sTime[t]
-  times$rowId <- NULL
-  times$sTime <- NULL
-
-  # generate cohorts
-  cohorts = merge(as.data.frame(ids), cohortMethodData$cohorts)
-  cohorts$rowId <- NULL
-  cohorts = merge(cohorts, as.data.frame(times))
-  cohorts$y <- NULL
-  cohorts$timeToObsPeriodEnd = cohorts$cTime
-  cohorts$timeToCohortEnd = cohorts$timeToEvent
-  cohorts$cTime <- NULL
-  cohorts$timeToEvent <- NULL
-  names(cohorts)[match("newId", names(cohorts))] = "rowId"
-
-  # generate outcomes
-  outcomes = times[ffbase::ffwhich(times, times$y==1),]
-  outcomes$y = ff::ff(vmode = "double", initdata = outcomeId, length = length(outcomes$y))
-  names(outcomes)[match("y", names(outcomes))] = "outcomeId"
-  outcomes$cTime <- NULL
-  names(outcomes)[match("newId", names(outcomes))] = "rowId"
-  names(outcomes)[match("timeToEvent", names(outcomes))] = "daysToEvent"
-  outcomes = as.data.frame(outcomes)
+  if (resample == TRUE) {
+    ids = ff::ffdf(newId = ff::ff(vmode = "double", initdata = 1:sampleSize),
+                   rowId = ff::as.ff(sample(strata$rowId, sampleSize, replace = TRUE)))
+  } else {
+    ids = ff::ffdf(newId = ff::as.ff(strata$rowId),
+                   rowId = ff::as.ff(strata$rowId))
+  }
 
   # generate covariates
   start <- Sys.time()
@@ -407,16 +373,116 @@ simulateCohortMethodDataTest <- function(cohortMethodData, n = 10000,
   covariateRef$rowId <- NULL
   covariateRef$covariateValue <- NULL
 
-  result = list(outcomes = outcomes,
-                cohorts = cohorts,
+  # generate event times
+  start <- Sys.time()
+  sData = simulateTimes(outcomeModel, strata, ids)
+  #names(sTimes)[match("time", names(sTimes))] = "sTime"
+  delta <- Sys.time() - start
+  writeLines(paste("simulating sTimes took", signif(delta, 3), attr(delta, "units")))
+
+  # generate censor times
+  start <- Sys.time()
+  cData = simulateTimes(outcomeModel1, strata1, ids)
+  #names(cTimes)[match("time", names(cTimes))] = "cTime"
+  delta <- Sys.time() - start
+  writeLines(paste("simulating cTimes took", signif(delta, 3), attr(delta, "units")))
+
+  # combine event and censor times
+#   times = ffbase::merge.ffdf(sTimes, cTimes)
+#   times$y = ff::ff(vmode = "double", initdata = 0, length = n)
+#   t = ffbase::ffwhich(times, times$sTime<=times$cTime)
+#   times$y[t] = ff::ff(vmode = "double", initdata = 1, length = length(t))
+#   times$timeToEvent = ff::clone.ff(times$cTime)
+#   times$timeToEvent[t] = times$sTime[t]
+#   times$rowId <- NULL
+#   times$sTime <- NULL
+
+  # generate cohorts
+  cohorts = merge(as.data.frame(ids), cohortMethodData$cohorts)
+  cohorts$rowId <- NULL
+  names(cohorts)[match("newId", names(cohorts))] = "rowId"
+
+#   cohorts = merge(cohorts, as.data.frame(times))
+#   cohorts$y <- NULL
+#   cohorts$timeToObsPeriodEnd = cohorts$cTime
+#   cohorts$timeToCohortEnd = cohorts$timeToEvent
+#   cohorts$cTime <- NULL
+#   cohorts$timeToEvent <- NULL
+
+  # generate outcomes
+#   outcomes = times[ffbase::ffwhich(times, times$y==1),]
+#   outcomes$y = ff::ff(vmode = "double", initdata = outcomeId, length = length(outcomes$y))
+#   names(outcomes)[match("y", names(outcomes))] = "outcomeId"
+#   outcomes$cTime <- NULL
+#   names(outcomes)[match("newId", names(outcomes))] = "rowId"
+#   names(outcomes)[match("timeToEvent", names(outcomes))] = "daysToEvent"
+#   outcomes = as.data.frame(outcomes)
+
+  result = list(cohorts = cohorts,
                 covariates = covariates,
-                exclude = NULL,
                 covariateRef = covariateRef,
+                outcomes = cohortMethodData$outcomes,
                 metaData = cohortMethodData$metaData)
 
-  return (list(cohortMethodData = result,
-               #propensityModel = propensityModel,
-               effectSize = effectSize))
+  return (list(partialCMD = result,
+               trueEffectSize = effectSize,
+               sData = sData,
+               cData = cData))
+}
+
+#' @export
+simulateCMD <- function(partialCMD, sData, cData) {
+  # generate event times
+  start <- Sys.time()
+  sTimes = generateEventTimes(sData$XB, sData$times, sData$baseline)
+  names(sTimes)[match("time", names(sTimes))] = "sTime"
+  delta <- Sys.time() - start
+  writeLines(paste("simulating sTimes took", signif(delta, 3), attr(delta, "units")))
+
+  # generate censor times
+  start <- Sys.time()
+  cTimes = generateEventTimes(cData$XB, cData$times, cData$baseline)
+  names(cTimes)[match("time", names(cTimes))] = "cTime"
+  delta <- Sys.time() - start
+  writeLines(paste("simulating cTimes took", signif(delta, 3), attr(delta, "units")))
+
+  # combine event and censor times
+  times = ffbase::merge.ffdf(sTimes, cTimes)
+#   times$y = ff::ff(vmode = "double", initdata = 1, length = nrow(times))
+  t = ffbase::ffwhich(times, times$sTime<=times$cTime & times$sTime <= sData$times[1])
+  #t = ffbase::ffwhich(times, times$sTime<times$cTime)
+  outcomes = times[t,]
+  outcomes$cTime <- NULL
+  names(outcomes)[match("sTime", names(outcomes))] = "daysToEvent"
+  outcomes = as.data.frame(outcomes)
+  outcomes$outcomeId = 3
+#   times$y[t] = ff::ff(vmode = "double", initdata = 1, length = length(t))
+#   times$daysToEvent = ff::clone.ff(times$cTime)
+#   times$daysToEvent[t] = times$sTime[t]
+#   times$sTime <- NULL
+
+  # generate cohorts
+#   cohorts = merge(partialCMD$cohorts, as.data.frame(times))
+#   cohorts$y <- NULL
+#   cohorts$daysToObsEnd = cohorts$cTime
+#   cohorts$daysToCohortEnd = cohorts$sTime
+#   cohorts$cTime <- NULL
+#   cohorts$timeToEvent <- NULL
+
+  # generate outcomes
+#   outcomes = times[ffbase::ffwhich(times, times$y==1),]
+#   outcomes$y = ff::ff(vmode = "double", initdata = 3, length = length(outcomes$y))
+#   names(outcomes)[match("y", names(outcomes))] = "outcomeId"
+#   outcomes$cTime <- NULL
+#   names(outcomes)[match("newId", names(outcomes))] = "rowId"
+#   names(outcomes)[match("timeToEvent", names(outcomes))] = "daysToEvent"
+#   outcomes = as.data.frame(outcomes)
+
+  return (list(covariates = partialCMD$covariates,
+               covariateRef = partialCMD$covariateRef,
+               cohorts = partialCMD$cohorts,
+               outcomes = outcomes,
+               metaData = partialCMD$metaData))
 }
 
 simulateTimes <- function(outcomeModel, studyPop, ids) {
@@ -436,7 +502,10 @@ simulateTimes <- function(outcomeModel, studyPop, ids) {
                   covariates = ffbase::ffdfrbind.fill(treatmentCov, cohortMethodData$covariates),
                   coef = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$outcomeModelCoefficients))),
                                   beta = ff::as.ff(outcomeModel$outcomeModelCoefficients)))
-  return(generateEventTimes(x, ids, times, baseline))
+  return(list(XB = x,
+              times = times,
+              baseline = baseline))
+  #return(generateEventTimes(x, ids, times, baseline))
 }
 
 invertOutcome <- function(studyPop) {
@@ -490,10 +559,13 @@ calculateBaselineSurvivalFunction <- function(accDenom, times, y) {
   return(1/exp(L))
 }
 
-generateEventTimes <- function(x, ids, times, baseline) {
-  n = length(ids$newId)
+#generateEventTimes <- function(x, ids, times, baseline) {
+generateEventTimes <- function(x, times, baseline) {
+  #n = length(ids$newId)
+  n = nrow(x)
 
-  S = ffbase::merge.ffdf(ids, x)
+  #S = ffbase::merge.ffdf(ids, x)
+  S = x
   S$R = ff::as.ff(runif(n))
   S$value = S$R^(1/S$exb)
 
@@ -511,7 +583,8 @@ generateEventTimes <- function(x, ids, times, baseline) {
   t = ffbase::ffwhich(S, S$timeIndex>0)
   S$times[t] = unique(times)[ff::fforder(unique(times),decreasing = TRUE)][S$timeIndex[t]]
 
-  return(ff::ffdf(newId = S$newId, rowId = S$rowId, time = S$times))
+  #return(ff::ffdf(newId = S$newId, rowId = S$rowId, time = S$times))
+  return(ff::ffdf(rowId = S$rowId, time = S$times))
 }
 
 in.ff <- function(a, b) {
