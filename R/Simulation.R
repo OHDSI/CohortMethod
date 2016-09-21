@@ -328,11 +328,11 @@ simulateCohortMethodDataTest <- function(cohortMethodData,
   outcomeModel1 <- fitOutcomeModel(population = strata1,
                                    cohortMethodData = cohortMethodData,
                                    modelType = "cox",
-                                   stratified = FALSE,
-                                   useCovariates = stratified,
+                                   stratified = stratified,
+                                   useCovariates = TRUE,
                                    excludeCovariateIds = excludeCovariateIds,
                                    prior = createPrior(priorType = "laplace", useCrossValidation = FALSE),
-                                   #control = createControl(maxIterations = 10000),
+                                   control = createControl(maxIterations = 10000),
                                    returnFit = TRUE)
 
   strata = ff::as.ffdf(strata)
@@ -349,7 +349,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData,
   }
 
   # generate covariates
-  start <- Sys.time()
+  #start <- Sys.time()
   covariates = NULL
   ids1 = ids
   while(!is.null(dim(ids1)) && dim(ids1)[1]>0) {
@@ -365,8 +365,8 @@ simulateCohortMethodDataTest <- function(cohortMethodData,
   }
   covariates$rowId <- covariates$newId
   covariates$newId <- NULL
-  delta <- Sys.time() - start
-  writeLines(paste("generating covariates took", signif(delta, 3), attr(delta, "units")))
+#   delta <- Sys.time() - start
+#   writeLines(paste("generating covariates took", signif(delta, 3), attr(delta, "units")))
 
   # generate covariate ref
   covariateRef = ffbase::merge.ffdf(cohortMethodData$covariateRef, covariates)
@@ -374,18 +374,16 @@ simulateCohortMethodDataTest <- function(cohortMethodData,
   covariateRef$covariateValue <- NULL
 
   # generate event times
-  start <- Sys.time()
+  # start <- Sys.time()
   sData = simulateTimes(outcomeModel, strata, ids)
-  #names(sTimes)[match("time", names(sTimes))] = "sTime"
-  delta <- Sys.time() - start
-  writeLines(paste("simulating sTimes took", signif(delta, 3), attr(delta, "units")))
+#   delta <- Sys.time() - start
+#   writeLines(paste("simulating sTimes took", signif(delta, 3), attr(delta, "units")))
 
   # generate censor times
-  start <- Sys.time()
+  # start <- Sys.time()
   cData = simulateTimes(outcomeModel1, strata1, ids)
-  #names(cTimes)[match("time", names(cTimes))] = "cTime"
-  delta <- Sys.time() - start
-  writeLines(paste("simulating cTimes took", signif(delta, 3), attr(delta, "units")))
+  # delta <- Sys.time() - start
+  # writeLines(paste("simulating cTimes took", signif(delta, 3), attr(delta, "units")))
 
   # combine event and censor times
 #   times = ffbase::merge.ffdf(sTimes, cTimes)
@@ -431,7 +429,7 @@ simulateCohortMethodDataTest <- function(cohortMethodData,
 }
 
 #' @export
-simulateCMD <- function(partialCMD, sData, cData) {
+simulateCMD <- function(partialCMD, sData, cData, ignoreCensoring = FALSE) {
   # generate event times
   start <- Sys.time()
   sTimes = generateEventTimes(sData$XB, sData$times, sData$baseline)
@@ -448,8 +446,8 @@ simulateCMD <- function(partialCMD, sData, cData) {
 
   # combine event and censor times
   times = ffbase::merge.ffdf(sTimes, cTimes)
-#   times$y = ff::ff(vmode = "double", initdata = 1, length = nrow(times))
-  t = ffbase::ffwhich(times, times$sTime<=times$cTime & times$sTime <= sData$times[1])
+  if (ignoreCensoring) {t = ffbase::ffwhich(times, times$sTime<=sData$times[1])}
+  else {t = ffbase::ffwhich(times, times$sTime<=times$cTime & times$sTime <= sData$times[1])}
   #t = ffbase::ffwhich(times, times$sTime<times$cTime)
   outcomes = times[t,]
   outcomes$cTime <- NULL
@@ -570,13 +568,17 @@ generateEventTimes <- function(x, times, baseline) {
   S$value = S$R^(1/S$exb)
 
   S = S[ff::fforder(S$value),]
-  S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
   k = 1;
   K = length(baseline)
+  S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
 
-  for (i in 1:n) {
-    while((k<=K) && (S$value[i] >= baseline[k])) {k=k+1}
-    S$timeIndex[i] = k-1
+  for (i in 1:K) {
+    t = ffbase::ffwhich(S, S$value >= baseline[i])
+    if (is.null(t)) {
+      break
+    } else{
+      S$timeIndex[t] = ff::ff(vmode = "integer", initdata = i, length = length(t))
+    }
   }
 
   S$times = ff::ff(vmode = "double", initdata = times[1]+1, length = n)

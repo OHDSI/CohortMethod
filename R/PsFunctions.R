@@ -681,7 +681,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
             population$stratumId <- 1
         } else {
             population$stratumId <- as.integer(as.character(cut(population$propensityScore,
-                                                                breaks = c(0, psStrata, 1),
+                                                                breaks = c(-0.01, psStrata, 1),
                                                                 labels = 1:(length(psStrata)+1))))
         }
         return(population)
@@ -691,7 +691,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
                 subset$stratumId <- 1
             } else {
                 subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
-                                                                breaks = c(0, psStrata, 1),
+                                                                breaks = c(-0.01, psStrata, 1),
                                                                 labels = 1:(length(psStrata)+1))))
             }
             return(subset)

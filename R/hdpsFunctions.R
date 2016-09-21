@@ -140,15 +140,20 @@ calculateRanks <- function(data, cohortData, fudge) {
   totalOutcomePopulation = length(unique(cohortData$outcomes$rowId))
 
   uniqueCovariateId = unique(data$covariateId)
-  foo = ff::ffdf(x1 = uniqueCovariateId, x2 = uniqueCovariateId)
+#   foo = ff::ffdf(x1 = uniqueCovariateId, x2 = uniqueCovariateId)
+#
+#   xt = data$covariateId * 10 + data$treatment
+#   xo = data$covariateId * 10 + data$outcome
+#
+#   PC1 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+#   PC0 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+#   RRa = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+#   RRb = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
 
-  xt = data$covariateId * 10 + data$treatment
-  xo = data$covariateId * 10 + data$outcome
-
-  PC1 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-  PC0 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-  RRa = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-  RRb = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
+  PC1 = bySumFf(data$treatment, data$covariateId)$sums
+  PC0 = bySumFf(1-data$treatment, data$covariateId)$sums
+  RRa = bySumFf(data$outcome, data$covariateId)$sums
+  RRb = bySumFf(1-data$outcome, data$covariateId)$sums
 
   RRc = totalOutcomePopulation - RRa
   RRd = totalPopulation - RRa - RRb - RRc
