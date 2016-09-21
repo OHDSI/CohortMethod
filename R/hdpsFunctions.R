@@ -140,15 +140,6 @@ calculateRanks <- function(data, cohortData, fudge) {
   totalOutcomePopulation = length(unique(cohortData$outcomes$rowId))
 
   uniqueCovariateId = unique(data$covariateId)
-#   foo = ff::ffdf(x1 = uniqueCovariateId, x2 = uniqueCovariateId)
-#
-#   xt = data$covariateId * 10 + data$treatment
-#   xo = data$covariateId * 10 + data$outcome
-#
-#   PC1 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-#   PC0 = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xt, xt==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-#   RRa = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10+1)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
-#   RRb = ff::ffapply(X=foo, AFUN=function(a){return(length(ffbase::ffwhich(xo, xo==a["x1"]*10)))}, MARGIN=1, RETURN=TRUE, CFUN="list")[[1]]
 
   PC1 = bySumFf(data$treatment, data$covariateId)$sums
   PC0 = bySumFf(1-data$treatment, data$covariateId)$sums
@@ -217,9 +208,8 @@ removeLowRank <- function(data, rankings, rankCutoff, useExpRank) {
 removeLowRankHelper <- function(data, toKeep) {
   if (is.null(data)) {return(list(NULL))}
   t = ffbase::ffmatch(data$covariateId, toKeep)
-  t = ffbase::ffwhich(t, !is.na(t))
-  if (is.null(t)) {return(list(NULL))}
-  data = data[t,]
+  if (all(is.na(t))) {return(list(NULL))}
+  data = data[in.ff(data$covariateId, toKeep),]
   return(list(data))
 }
 

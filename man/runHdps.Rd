@@ -10,8 +10,7 @@ runHdps(cohortMethodData, useInpatientDiagnosis = TRUE,
   demographicsAnalysisIds = c(2, 3, 5, 6), predefinedIncludeICD9Dx = c(),
   predefinedIncludeConceptIds = c(), predefinedExcludeICD9Dx = c(),
   predefinedExcludeConceptIds = c(), icd9AnalysisIds = c(104, 105, 106, 107,
-  108, 109), dimensionCutoff = 200, rankCutoff = 500, useExpRank = FALSE,
-  fudge = 0)
+  108, 109), dimensionCutoff = 200, rankCutoff = 500, fudge = 0)
 }
 \arguments{
 \item{cohortMethodData}{\code{cohortMethodData} object constructed by \code{getDbCohortMethodData}}
@@ -42,9 +41,9 @@ runHdps(cohortMethodData, useInpatientDiagnosis = TRUE,
 
 \item{rankCutoff}{Number of covariates to include in propensity score model (minus the demographics covariates)}
 
-\item{useExpRank}{Use exposure rank instead of bias rank}
-
 \item{fudge}{Constant to avoid 0/Inf in calculating RR. Setting equal to 0 will cause those covariates to be discarded}
+
+\item{useExpRank}{Use exposure rank instead of bias rank}
 }
 \value{
 Returns the input \code{cohortMethodData} with new entries for \code{covariates} and \code{covariateRef}

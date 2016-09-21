@@ -46,7 +46,6 @@ runHdps <- function(cohortMethodData,
                     icd9AnalysisIds = c(104, 105, 106, 107, 108, 109),
                     dimensionCutoff = 200,
                     rankCutoff = 500,
-                    #useExpRank = FALSE,
                     fudge = 0) {
   start <- Sys.time()
   dimensions = c()
@@ -117,6 +116,6 @@ runHdps <- function(cohortMethodData,
   }
   delta <- Sys.time() - start
   writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
-  return(list(expHdpsCMD = cohortMethodData,
-              biasHdpsCMD = cohortMethodData))
+  return(list(expHdpsCMD = expHdpsCMD,
+              biasHdpsCMD = biasHdpsCMD))
 }
