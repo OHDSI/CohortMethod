@@ -388,7 +388,9 @@ createCMDSimulationProfile <- function(cohortMethodData,
   return (list(partialCMD = result,
                trueEffectSize = effectSize,
                sData = sData,
-               cData = cData))
+               sOutcomeModel = outcomeModel,
+               cData = cData,
+               cOutcomeModel = outcomeModel1))
 }
 
 #' @export
@@ -521,5 +523,144 @@ in.ff <- function(a, b) {
   if (length(b) == 0)
     return(ff::as.ff(rep(FALSE, length(a))))
   else return(ffbase::ffmatch(x = a, table = b,nomatch = 0L) > 0L)
+}
+
+#' @export
+simulateConfounding <- function(cohortMethodData,
+                                keepDemographics = FALSE,
+                                predefinedIncludeConceptIds = c(),
+                                demographicsAnalysisIds = c(2,3,5,6),
+                                icd9AnalysisIds = c(104, 105, 106, 107, 108, 109)) {
+
+  if (keepDemographics == FALSE) demographicsAnalysisIds = NULL
+  demographicsCovariateRef = getDemographicsCovariateRef(cohortMethodData, demographicsAnalysisIds)
+  demographicsCovariates = getDemographicsCovariates(cohortMethodData, demographicsCovariateRef)
+  predefinedCovariateRef = getPredefinedCovariateRef(cohortMethodData, predefinedIncludeConceptIds, NULL, icd9AnalysisIds)
+  predefinedCovariates = getPredefinedCovariates(cohortMethodData, predefinedCovariateRef)
+
+  covariateRef = cohortMethodData$covariateRef
+  t = c(demographicsCovariateRef$covariateId[], predefinedCovariateRef$covariateId[])
+  if (!is.null(t)) {
+    t = ffbase::ffmatch(cohortMethodData$covariateRef$covariateId, t)
+    covariateRef = covariateRef[ffbase::ffwhich(t, is.na(t)),]
+  }
+  n = nrow(covariateRef)
+  toKeep = ff::as.ff(sample(covariateRef$covariateId[], round(n*2/3)))
+  t = ffbase::ffmatch(cohortMethodData$covariates$covariateId, toKeep)
+  covariates = cohortMethodData$covariates[ffbase::ffwhich(t, !is.na(t)),]
+  covariates = combineFunction(list(demographicsCovariates, predefinedCovariates, covariates), ffbase::ffdfrbind.fill)
+  covariateRef = getNewCovariateRef(covariates, cohortMethodData)
+
+  return (list(covariates = covariates,
+               covariateRef = covariateRef,
+               cohorts = cohortMethodData$cohorts,
+               outcomes = cohortMethodData,
+               metaData = cohortMethodData$metaData))
+}
+
+#' @export
+removeDemographics <- function(cohortMethodData, demographicsAnalysisIds = c(2,3,5,6)) {
+  start <- Sys.time()
+  t = !in.ff(cohortMethodData$covariateRef$analysisId, ff::as.ff(demographicsAnalysisIds))
+  covariateIds = cohortMethodData$covariateRef$covariateId[t]
+  cohortMethodData$covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$covariateId, covariateIds),]
+  cohortMethodData$covariateRef = cohortMethodData$covariateRef[t,]
+  delta <- Sys.time() - start
+  writeLines(paste("removing demographics", signif(delta, 3), attr(delta, "units")))
+  return(cohortMethodData)
+}
+
+#' @export
+runSimulationStudy <- function(cohortMethodData, simulateConfounding = FALSE, n = 10) {
+  estimatesLasso = NULL
+  estimatesExpHdps = NULL
+  estimatesBiasHdps = NULL
+  aucLasso = NULL
+  aucExpHdps = NULL
+  aucBiasHdps = NULL
+
+  simulationProfile = createCMDSimulationProfile(cohortMethodData)
+
+  studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                    outcomeId = 3,
+                                    firstExposureOnly = FALSE,
+                                    washoutPeriod = 0,
+                                    removeDuplicateSubjects = FALSE,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1,
+                                    riskWindowStart = 0,
+                                    addExposureDaysToStart = FALSE,
+                                    riskWindowEnd = 30,
+                                    addExposureDaysToEnd = TRUE)
+  if (simulateConfounding) {
+    psLasso = createPs(removeDemographics(cohortMethodData), studyPop)
+  } else {
+    psLasso = createPs(cohortMethodData, studyPop)
+  }
+  aucLasso = computePsAuc(psLasso)
+  strataLasso = matchOnPs(psLasso)
+
+  for (i in 1:n) {
+    cmd = simulateCMD(simulationProfile$partialCMD, simulationProfile$sData, simulationProfile$cData)
+    hdpsCMDs = runHdps(cmd)
+
+    studyPop <- createStudyPopulation(cohortMethodData = cmd,
+                                      outcomeId = 3,
+                                      firstExposureOnly = FALSE,
+                                      washoutPeriod = 0,
+                                      removeDuplicateSubjects = FALSE,
+                                      removeSubjectsWithPriorOutcome = TRUE,
+                                      minDaysAtRisk = 1,
+                                      riskWindowStart = 0,
+                                      addExposureDaysToStart = FALSE,
+                                      riskWindowEnd = 30,
+                                      addExposureDaysToEnd = TRUE)
+
+    if (simulateConfounding) {
+      psExp = createPs(cohortMethodData = removeDemographics(hdpsCMDs$expHdpsCMD), population = studyPop,
+                       prior = createPrior(priorType = "none"), control = createControl(maxIterations = 10000))
+      psBias = createPs(cohortMethodData = removeDemographics(hdpsCMDs$biasHdpsCMD), population = studyPop,
+                        prior = createPrior(priorType = "none"), control = createControl(maxIterations = 10000))
+    } else {
+      psExp = createPs(cohortMethodData = hdpsCMDs$expHdpsCMD, population = studyPop,
+                       prior = createPrior(priorType = "none"), control = createControl(maxIterations = 10000))
+      psBias = createPs(cohortMethodData = hdpsCMDs$biasHdpsCMD, population = studyPop,
+                        prior = createPrior(priorType = "none"), control = createControl(maxIterations = 10000))
+    }
+
+    popLasso = merge(studyPop, strataLasso[,c("rowId", "propensityScore", "preferenceScore", "stratumId")])
+    popExp = matchOnPs(psExp)
+    popBias = matchOnPs(psBias)
+
+    outcomeModelLasso <- fitOutcomeModel(population = popLasso,
+                                         cohortMethodData = cmd,
+                                         modelType = "cox",
+                                         stratified = TRUE,
+                                         useCovariates = FALSE)
+    outcomeModelExp <- fitOutcomeModel(population = popExp,
+                                       cohortMethodData = cmd,
+                                       modelType = "cox",
+                                       stratified = TRUE,
+                                       useCovariates = FALSE)
+    outcomeModelBias <- fitOutcomeModel(population = popBias,
+                                        cohortMethodData = cmd,
+                                        modelType = "cox",
+                                        stratified = TRUE,
+                                        useCovariates = FALSE)
+    estimatesLasso = rbind(outcomeModelLasso$outcomeModelTreatmentEstimate, estimatesLasso)
+    estimatesExpHdps = rbind(outcomeModelExp$outcomeModelTreatmentEstimate, estimatesExpHdps)
+    estimatesBiasHdps = rbind(outcomeModelBias$outcomeModelTreatmentEstimate, estimatesBiasHdps)
+
+    aucExpHdps = c(computePsAuc(psExp), aucExpHdps)
+    aucBiasHdps = c(computePsAuc(psBias), aucBiasHdps)
+  }
+  return(list(trueOutcomeModel = simulationProfile$sOutcomeModel$outcomeModelCoefficients,
+              trueEffectSize = coef(simulationProfile$sOutcomeModel),
+              estimatesLasso = estimatesLasso,
+              estimatesExpHdps = estimatesExpHdps,
+              estimatesBiasHdps = estimatesBiasHdps,
+              aucLasso = aucLasso,
+              aucExpHdps = aucExpHdps,
+              aucBiasHdps = aucBiasHdps))
 }
 

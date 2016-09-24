@@ -119,3 +119,63 @@ runHdps <- function(cohortMethodData,
   return(list(expHdpsCMD = expHdpsCMD,
               biasHdpsCMD = biasHdpsCMD))
 }
+#
+# runHdps1 <- function(cohortMethodData,
+#                     demographicsAnalysisIds = c(2,3,5,6),
+#                     predefinedIncludeConceptIds = c(),
+#                     predefinedExcludeConceptIds = c(),
+#                     icd9AnalysisIds = c(104, 105, 106, 107, 108, 109),
+#                     rankCutoff = 500,
+#                     fudge = 0) {
+#
+#   demographicsCovariateRef = getDemographicsCovariateRef(cohortMethodData, demographicsAnalysisIds)
+#   demographicsCovariates = getDemographicsCovariates(cohortMethodData, demographicsCovariateRef)
+#   predefinedCovariateRef = getPredefinedCovariateRef(cohortMethodData, predefinedIncludeConceptIds, NULL, icd9AnalysisIds)
+#   predefinedCovariates = getPredefinedCovariates(cohortMethodData, predefinedCovariateRef)
+#
+#   newCovariates = removePredefinedCovariates(cohortMethodData,
+#                                              c(predefinedIncludeConceptIds,
+#                                                predefinedExcludeConceptIds,
+#                                                demographicsCovariateRef$covariateId[]),
+#                                              NULL, icd9AnalysisIds)
+#   newCovariates = addTreatmentAndOutcome(newCovariates, cohortMethodData)
+#   rankings = calculateRanks(newCovariates, cohortMethodData, fudge)
+#
+#   newExpCovariates = removeLowRank1(newCovariates, rankings, rankCutoff, useExpRank = TRUE)
+#   newExpCovariates$treatment <- NULL
+#   newExpCovariates$outcome <- NULL
+#   newExpCovariateRef = getNewCovariateRef(newExpCovariates, cohortMethodData)
+#   newExpCovariates = combineFunction(list(newExpCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
+#   newExpCovariateRef = combineFunction(list(newExpCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
+#
+#   newBiasCovariates = removeLowRank1(newCovariates, rankings, rankCutoff, useExpRank = FALSE)
+#   newBiasCovariates$treatment <- NULL
+#   newBiasCovariates$outcome <- NULL
+#   newBiasCovariateRef = getNewCovariateRef(newBiasCovariates, cohortMethodData)
+#   newBiasCovariates = combineFunction(list(newBiasCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
+#   newBiasCovariateRef = combineFunction(list(newBiasCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
+#
+#   expHdpsCMD = list(cohorts = cohortMethodData$cohorts,
+#                     outcomes = cohortMethodData$outcomes,
+#                     metaData = cohortMethodData$metaData,
+#                     covariates = newExpCovariates,
+#                     covariateRef = newExpCovariateRef)
+#   biasHdpsCMD = list(cohorts = cohortMethodData$cohorts,
+#                      outcomes = cohortMethodData$outcomes,
+#                      metaData = cohortMethodData$metaData,
+#                      covariates = newBiasCovariates,
+#                      covariateRef = newBiasCovariateRef)
+# }
+
+
+
+
+
+
+
+
+
+
+
+
+
