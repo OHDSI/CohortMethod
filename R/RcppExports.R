@@ -17,3 +17,7 @@
     .Call('CohortMethod_bySum', PACKAGE = 'CohortMethod', ffValues, ffBins)
 }
 
+.findOutcomePrevalence <- function(sBaseline, sExp, cBaseline, cExp) {
+    .Call('CohortMethod_findOutcomePrevalence', PACKAGE = 'CohortMethod', sBaseline, sExp, cBaseline, cExp)
+}
+

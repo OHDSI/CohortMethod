@@ -105,4 +105,28 @@ DataFrame bySum(List ffValues, List ffBins) {
   return DataFrame::create();
 }
 
+// [[Rcpp::export(".findOutcomePrevalence")]]
+double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> sExp, std::vector<double> cBaseline, std::vector<double> cExp) {
+  int M = sBaseline.size();
+  int N = sExp.size();
+  double result = 0;
+
+  std::vector<double> sCopy;
+  std::vector<double> cCopy;
+  double s;
+  double t;
+
+  for (int i=0; i<N; i++) {
+    s = sExp[i];
+    t = cExp[i];
+    result -= pow(sBaseline[0], s)*pow(cBaseline[0], t);
+    for (int j=1; j<M; j++) {
+      result += pow(sBaseline[j],s)*(pow(cBaseline[j-1], t) - pow(cBaseline[j],t));
+    }
+    result += pow(cBaseline[M-1], t);
+  }
+
+  return result/N;
+}
+
 #endif // __RcppWrapper_cpp__
