@@ -527,14 +527,14 @@ in.ff <- function(a, b) {
 }
 
 #' @export
-removeConfounded <- function(cohortMethodData,
-                             toKeep) {
-  if (is.null(toKeep)) {
+removeCovariates <- function(cohortMethodData,
+                             covariateIds) {
+  if (is.null(covariateIds)) {
     covariates = cohortMethodData$covariates
     covariateRef = cohortMethodData$covariateRef
   } else {
-    covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$covariateId, toKeep),]
-    covariateRef = cohortMethodData$covariateRef[in.ff(cohortMethodData$covariateRef$covariateId, toKeep),]
+    covariates = cohortMethodData$covariates[!in.ff(cohortMethodData$covariates$covariateId, covariateIds),]
+    covariateRef = cohortMethodData$covariateRef[!in.ff(cohortMethodData$covariateRef$covariateId, covariateIds),]
   }
 
   return (list(covariates = covariates,
@@ -545,20 +545,8 @@ removeConfounded <- function(cohortMethodData,
 }
 
 #' @export
-removeDemographics <- function(cohortMethodData, demographicsAnalysisIds = c(2,3,5,6)) {
-  start <- Sys.time()
-  t = !in.ff(cohortMethodData$covariateRef$analysisId, ff::as.ff(demographicsAnalysisIds))
-  covariateIds = cohortMethodData$covariateRef$covariateId[t]
-  cohortMethodData$covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$covariateId, covariateIds),]
-  cohortMethodData$covariateRef = cohortMethodData$covariateRef[t,]
-  delta <- Sys.time() - start
-  writeLines(paste("removing demographics", signif(delta, 3), attr(delta, "units")))
-  return(cohortMethodData)
-}
-
-#' @export
 runSimulationStudy <- function(cohortMethodData, confoundingScheme = 0, confoundingProportion = 0.3, n = 10,
-                               trueBeta = NULL, outcomePrevalence = NULL, crossValidate = TRUE) {
+                               trueBeta = NULL, outcomePrevalence = NULL, crossValidate = TRUE, hdpsFeatures = FALSE) {
   estimatesLasso = NULL
   estimatesExpHdps = NULL
   estimatesBiasHdps = NULL
@@ -598,18 +586,22 @@ runSimulationStudy <- function(cohortMethodData, confoundingScheme = 0, confound
     toKeep = NULL
   }
   if (confoundingScheme == 1) {
-    toKeep = cohortMethodData$covariateRef$covariateId[!in.ff(cohortMethodData$covariateRef$analysisId, ff::as.ff(c(2,3,5,6)))]
+    toKeep = cohortMethodData$covariateRef$covariateId[in.ff(cohortMethodData$covariateRef$analysisId, ff::as.ff(c(2,3,5,6)))]
   }
   if (confoundingScheme == 2) {
-    toKeep = ff::as.ff(sample(cohortMethodDatacovariateRef$covariateId[], round(n*(1-confoundingProportion))))
+    toKeep = ff::as.ff(sample(cohortMethodDatacovariateRef$covariateId[], round(n*(confoundingProportion))))
   }
 
-  psLasso = createPs(removeConfounded(cohortMethodData, toKeep), studyPop, prior = Cyclops::createPrior("laplace", exclude = c(), useCrossValidation = crossValidate))
+  psLasso = createPs(removeCovariates(cohortMethodData, toKeep), studyPop, prior = Cyclops::createPrior("laplace", exclude = c(), useCrossValidation = crossValidate))
   aucLasso = computePsAuc(psLasso)
   strataLasso = matchOnPs(psLasso)
 
-  hdpsExp = runHdps(simulateCMD(simulationProfile$partialCMD, simulationProfile$sData, simulationProfile$cData), useExpRank = TRUE)
-  psExp = createPs = createPs(cohortMethodData = removeConfounded(hdpsExp, toKeep), population = studyPop,
+  if (hdpsFeatures == TRUE) {
+    hdpsExp = runHdps(simulateCMD(simulationProfile$partialCMD, simulationProfile$sData, simulationProfile$cData), useExpRank = TRUE)
+  } else {
+    hdpsExp = runHdps1(simulateCMD(simulationProfile$partialCMD, simulationProfile$sData, simulationProfile$cData), useExpRank = TRUE)
+  }
+  psExp = createPs = createPs(cohortMethodData = removeCovariates(hdpsExp, toKeep), population = studyPop,
                               prior = createPrior(priorType = "none"), control = createControl(maxIterations = 10000))
   aucExp = computePsAuc(psExp)
   strataExp = matchOnPs(psExp)
@@ -623,7 +615,11 @@ runSimulationStudy <- function(cohortMethodData, confoundingScheme = 0, confound
 
   for (i in 1:n) {
     cmd = simulateCMD(simulationProfile$partialCMD, simulationProfile$sData, simulationProfile$cData)
-    hdpsBias = runHdps(cmd, useExpRank = FALSE)
+    if (hdpsFeatures == TRUE) {
+      hdpsBias = runHdps(cmd, useExpRank = FALSE)
+    } else {
+      hdpsBias = runHdps1(cmd, useExpRank = FALSE)
+    }
 
     studyPop <- createStudyPopulation(cohortMethodData = cmd,
                                       outcomeId = 3,
@@ -637,7 +633,7 @@ runSimulationStudy <- function(cohortMethodData, confoundingScheme = 0, confound
                                       riskWindowEnd = 30,
                                       addExposureDaysToEnd = TRUE)
 
-    psBias = createPs(cohortMethodData = removeConfounded(hdpsBias, toKeep), population = studyPop,
+    psBias = createPs(cohortMethodData = removeCovariates(hdpsBias, toKeep), population = studyPop,
                       prior = createPrior(priorType = "none"), control = createControl(maxIterations = 10000))
 
     popLasso = merge(studyPop, strataLasso[,c("rowId", "propensityScore", "preferenceScore", "stratumId")])

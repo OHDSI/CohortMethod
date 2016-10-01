@@ -212,24 +212,24 @@ removeLowRankHelper <- function(data, toKeep) {
   data = data[in.ff(data$covariateId, toKeep),]
   return(list(data))
 }
-#
-# removeLowRank1 <- function(data, rankings, rankCutoff, useExpRank) {
-#   rankings = combineFunction(rankings, ffbase::ffdfrbind.fill)
-#   if (is.null(rankings)) {return(NULL)}
-#   if (useExpRank) {
-#     rankings = rankings[ff::fforder(rankings$expRank*-1, rankings$biasRank*-1, rankings$PC1*-1, rankings$PC0*-1, rankings$covariateId, decreasing = FALSE),]
-#     t = ffbase::ffwhich(rankings, is.na(rankings$expRank))
-#   }
-#   else {
-#     rankings = rankings[ff::fforder(rankings$biasRank*-1, rankings$expRank*-1, rankings$covariateId, decreasing = FALSE),]
-#     t = ffbase::ffwhich(rankings, is.na(rankings$biasRank))
-#   }
-#   finalCutoff = if(is.null(t)) dim(rankings)[1] else t[1]
-#   finalCutoff = min(finalCutoff, rankCutoff)
-#   if (finalCutoff==0) {return(NULL)}
-#   toKeep = rankings$covariateId[ff::as.ff(1:finalCutoff)]
-#   return(removeLowRankHelper(data, toKeep))
-# }
+
+removeLowRank1 <- function(data, rankings, rankCutoff, useExpRank) {
+  rankings = combineFunction(rankings, ffbase::ffdfrbind.fill)
+  if (is.null(rankings)) {return(NULL)}
+  if (useExpRank) {
+    rankings = rankings[ff::fforder(rankings$expRank*-1, rankings$biasRank*-1, rankings$PC1*-1, rankings$PC0*-1, rankings$covariateId, decreasing = FALSE),]
+    t = ffbase::ffwhich(rankings, is.na(rankings$expRank))
+  }
+  else {
+    rankings = rankings[ff::fforder(rankings$biasRank*-1, rankings$expRank*-1, rankings$covariateId, decreasing = FALSE),]
+    t = ffbase::ffwhich(rankings, is.na(rankings$biasRank))
+  }
+  finalCutoff = if(is.null(t)) dim(rankings)[1] else t[1]
+  finalCutoff = min(finalCutoff, rankCutoff)
+  if (finalCutoff==0) {return(NULL)}
+  toKeep = rankings$covariateId[ff::as.ff(1:finalCutoff)]
+  return(removeLowRankHelper(data, toKeep)[[1]])
+}
 
 # Get covariateRef entries for covariates
 #
