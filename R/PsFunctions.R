@@ -1038,7 +1038,11 @@ computeCovariateBalance2 <- function(population, cohortMethodData) {
   }
 
   beforeStdDiff = calculateStdDiff(cohorts, covariates)
-  cohortsAfterPS <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  if (is.null(population$stratumId)) {
+    cohortsAfterPS <- ff::as.ffdf(population[, c("rowId", "treatment")])
+  } else {
+    cohortsAfterPS <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  }
   afterStdDiff <- calculateStdDiffAfterPS(cohortsAfterPS, covariates)
 
   ff::close.ffdf(cohorts)
