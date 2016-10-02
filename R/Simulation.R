@@ -521,7 +521,7 @@ generateEventTimes <- function(x, times, baseline) {
 
   S$times = ff::ff(vmode = "double", initdata = times[1]+1, length = n)
   t = ffbase::ffwhich(S, S$timeIndex>0)
-  S$times[t] = unique(times)[ff::fforder(unique(times),decreasing = TRUE)][S$timeIndex[t]]
+  if(!is.null(t)) S$times[t] = unique(times)[ff::fforder(unique(times),decreasing = TRUE)][S$timeIndex[t]]
 
   return(ff::ffdf(rowId = S$rowId, time = S$times))
 }
@@ -575,6 +575,7 @@ runSimulationStudy <- function(cohortMethodData, confoundingScheme = 0, confound
   # set new outcome prevalence
   originalOutcomePrevalence = findOutcomePrevalence(simulationProfile$sData, simulationProfile$cData)
   if (!is.null(outcomePrevalence)) {
+    if (ignoreCensoring) simulationProfile$cData$baseline = ff::as.ff(rep(1, length(simulationProfile$cData$baseline)))
     fun <- function(d) {return(findOutcomePrevalence(simulationProfile$sData, simulationProfile$cData, d) - outcomePrevalence)}
     delta <- uniroot(fun, lower = 0, upper = 10000)$root
     simulationProfile$sData$baseline = simulationProfile$sData$baseline^delta
