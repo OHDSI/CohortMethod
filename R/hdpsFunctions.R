@@ -87,13 +87,15 @@ removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
   data2 = data[[2]]
   if (!is.null(data2)) {
     y = ffbase::ffmatch(data[[2]]$covariateId %/% 1000, x)
-    data2 = data[[2]][ffbase::ffwhich(y,!is.na(y)),]
+    if (ffbase::all.ff(is.na(y))) data2 = NULL
+    else data2 = data[[2]][ffbase::ffwhich(y,!is.na(y)),]
   }
 
   data3 = data[[3]]
   if (!is.null(data3)) {
     y = ffbase::ffmatch(data[[3]]$covariateId %/% 1000, x)
-    data3 = data[[3]][ffbase::ffwhich(y,!is.na(y)),]
+    if (ffbase::all.ff(is.na(y))) data3 = NULL
+    else data3 = data[[3]][ffbase::ffwhich(y,!is.na(y)),]
   }
 
   return(list(data1, data2, data3))
@@ -113,7 +115,7 @@ addTreatmentAndOutcome <- function(data, cohortData) {
   outcome = ff::ff(vmode = "double", initdata = 0, length = dim(data)[[1]])
   x = ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$outcomes$rowId))
   y = ffbase::ffwhich(x, !is.na(x))
-  outcome[y] = ff::as.ff(rep(1,length(y)))
+  if (!is.null(y)) outcome[y] = ff::as.ff(rep(1,length(y)))
   data$treatment = treatment
   data$outcome = outcome
   return(list(data))
