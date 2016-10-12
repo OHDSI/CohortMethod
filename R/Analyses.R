@@ -106,8 +106,8 @@ createCmAnalysis <- function(analysisId = 1,
       fitOutcomeModelArgs$stratified) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
-  if (!(matchOnPs | matchOnPsAndCovariates) && computeCovariateBalance) {
-    stop("Cannot compute covariate balance without matching")
+  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
+    stop("Cannot compute covariate balance without matching or stratification")
   }
   if (!createPs) {
     createPsArgs <- NULL
