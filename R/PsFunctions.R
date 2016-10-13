@@ -841,6 +841,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
   colnames(comparator)[colnames(comparator) == "sd"] <- "sdComparator"
 
   result <- merge(treated[,c("covariateId","meanTreated","sumTreated","sdTreated")], comparator[,c("covariateId","meanComparator","sumComparator","sdComparator")], all = TRUE)
+  result[is.na(result)]=0
   result$sd = sqrt((result$sdTreated ^ 2 + result$sdComparator ^ 2) / 2)
   result <- result[,c("covariateId","meanTreated","meanComparator","sumTreated","sumComparator","sd")]
   return(result)
