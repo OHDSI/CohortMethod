@@ -886,7 +886,11 @@ computeCovariateBalance <- function(population, cohortMethodData) {
     }
 
     beforeMatching <- computeMeansPerGroup(cohorts, covariates)
-    cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+    if (is.null(population$stratumId)) {
+      cohortsAfterMatching <- ff::as.ffdf(population[,c("rowId", "treatment")])
+    } else {
+      cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+    }
     afterMatching <- computeMeansPerGroup(cohortsAfterMatching, covariates)
 
     ff::close.ffdf(cohorts)

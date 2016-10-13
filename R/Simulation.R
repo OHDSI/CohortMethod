@@ -336,19 +336,23 @@ createCMDSimulationProfile <- function(cohortMethodData,
   cohorts = cohortMethodData$cohorts[cohortMethodData$cohorts$rowId %in% population$rowId,]
   outcomes = cohortMethodData$outcomes[cohortMethodData$outcomes$rowId %in% population$rowId,]
 
-  result = list(cohorts = cohorts,
-                covariates = covariates,
-                covariateRef = covariateRef,
-                outcomes = cohortMethodData$outcomes,
-                metaData = cohortMethodData$metaData)
+  partialCMD = list(cohorts = cohorts,
+                    covariates = covariates,
+                    covariateRef = covariateRef,
+                    outcomes = cohortMethodData$outcomes,
+                    metaData = cohortMethodData$metaData)
+  class(partialCMD) <- "cohortMethodData"
 
-  return (list(partialCMD = result,
-               sData = sData,
-               cData = cData,
-               observedEffectSize = coef(outcomeModel),
-               observedCensoringEffectSize = coef(outcomeModel1),
-               sOutcomeModelCoefficients = outcomeModel$outcomeModelCoefficients,
-               cOutcomeModelCoefficients = outcomeModel1$outcomeModelCoefficients))
+  result = list(partialCMD = partialCMD,
+                sData = sData,
+                cData = cData,
+                observedEffectSize = coef(outcomeModel),
+                observedCensoringEffectSize = coef(outcomeModel1),
+                sOutcomeModelCoefficients = outcomeModel$outcomeModelCoefficients,
+                cOutcomeModelCoefficients = outcomeModel1$outcomeModelCoefficients)
+  class(result) <- "simulationProfile"
+
+  return (result)
 }
 
 #' @export
@@ -495,4 +499,80 @@ removeCovariates <- function(cohortMethodData,
 #' @export
 findOutcomePrevalence <- function(sData, cData, delta=1) {
   return(.findOutcomePrevalence(sData$baseline[], sData$XB$exb[]*delta, cData$baseline[], cData$XB$exb[]))
+}
+
+#' @export
+saveSimulationProfile <- function(simulationProfile, file) {
+  if (missing(simulationProfile))
+    stop("Must specify simulationProfile")
+  if (missing(file))
+    stop("Must specify file")
+  if (class(simulationProfile) != "simulationProfile")
+    stop("Data not of class simulationProfile")
+  if (class(simulationProfile$partialCMD) != "cohortMethodData")
+    stop("partialCMD not of class cohortMethodData")
+
+  saveCohortMethodData(simulationProfile$partialCMD, file = paste(file,"/partialCMD",sep=""))
+  sDataFile = paste(file,"/sData",sep="")
+  XB = simulationProfile$sData$XB
+  ffbase::save.ffdf(XB, dir = sDataFile, clone = TRUE)
+  saveRDS(simulationProfile$sData$times[], file = file.path(sDataFile, "times.rds"))
+  saveRDS(simulationProfile$sData$baseline[], file = file.path(sDataFile, "baseline.rds"))
+
+  cDataFile = paste(file,"/cData",sep="")
+  XB = simulationProfile$cData$XB
+  ffbase::save.ffdf(XB, dir = cDataFile, clone = TRUE)
+  saveRDS(simulationProfile$cData$times[], file = file.path(cDataFile, "times.rds"))
+  saveRDS(simulationProfile$cData$baseline[], file = file.path(cDataFile, "baseline.rds"))
+
+  saveRDS(simulationProfile$observedEffectSize, file = file.path(file, "observedEffectSize.rds"))
+  saveRDS(simulationProfile$observedCensoringEffectSize, file = file.path(file, "observedCensoringEffectSize.rds"))
+  saveRDS(simulationProfile$sOutcomeModelCoefficients, file = file.path(file, "sOutcomeModelCoefficients.rds"))
+  saveRDS(simulationProfile$cOutcomeModelCoefficients, file = file.path(file, "cOutcomeModelCoefficients.rds"))
+}
+
+#' @export
+loadSimulationProfile <- function(file, readOnly = TRUE) {
+  if (!file.exists(file))
+    stop(paste("Cannot find folder", file))
+  if (!file.info(file)$isdir)
+    stop(paste("Not a folder", file))
+
+  partialCMD <- loadCohortMethodData(paste(file,"/partialCMD",sep=""))
+
+  e <- new.env()
+  sDataFile = paste(file,"/sData",sep="")
+  ffbase::load.ffdf(sDataFile, e)
+  sData <- list(XB = get("XB", envir = e),
+                times = ff::as.ff(readRDS(file.path(sDataFile, "times.rds"))),
+                baseline = ff::as.ff(readRDS(file.path(sDataFile, "baseline.rds"))))
+
+  e <- new.env()
+  cDataFile = paste(file,"/cData",sep="")
+  ffbase::load.ffdf(cDataFile, e)
+  cData <- list(XB = get("XB", envir = e),
+                times = ff::as.ff(readRDS(file.path(cDataFile, "times.rds"))),
+                baseline = ff::as.ff(readRDS(file.path(cDataFile, "baseline.rds"))))
+
+  observedEffectSize = readRDS(file.path(file, "observedEffectSize.rds"))
+  observedCensoringEffectSize = readRDS(file.path(file, "observedCensoringEffectSize.rds"))
+  sOutcomeModelCoefficients = readRDS(file.path(file, "sOutcomeModelCoefficients.rds"))
+  cOutcomeModelCoefficients = readRDS(file.path(file, "cOutcomeModelCoefficients.rds"))
+
+  # Open all ffdfs to prevent annoying messages later:
+  open(sData$XB, readonly = readOnly)
+  open(cData$XB, readonly = readOnly)
+  open(partialCMD$covariates, readonly = readOnly)
+  open(partialCMD$covariateRef, readonly = readOnly)
+  class(partialCMD) <- "cohortMethodData"
+  result = list(partialCMD = partialCMD,
+                sData = sData,
+                cData = cData,
+                observedEffectSize = observedEffectSize,
+                observedCensoringEffectSize = observedCensoringEffectSize,
+                sOutcomeModelCoefficients = sOutcomeModelCoefficients,
+                cOutcomeModelCoefficients = cOutcomeModelCoefficients)
+  class(result) <- "simulationProfile"
+  rm(e)
+  return(result)
 }
