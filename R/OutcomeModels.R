@@ -56,7 +56,6 @@ fitOutcomeModel <- function(population,
                                                     startingVariance = 0.01,
                                                     tolerance  = 2e-07,
                                                     cvRepetitions = 10,
-                                                    selectorType = "byPid",
                                                     noiseLevel = "quiet")) {
   if (stratified && is.null(population$stratumId))
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")

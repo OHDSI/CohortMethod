@@ -8,8 +8,8 @@ createFitOutcomeModelArgs(modelType = "logistic", stratified = TRUE,
   useCovariates = TRUE, excludeCovariateIds = c(),
   includeCovariateIds = c(), prior = createPrior("laplace",
   useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, selectorType =
-  "byPid", noiseLevel = "quiet"))
+  startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, noiseLevel =
+  "quiet"))
 }
 \arguments{
 \item{modelType}{The type of outcome model that will be used. Possible values

@@ -364,7 +364,6 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                                               startingVariance = 0.01,
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
-                                                              selectorType = "byPid",
                                                               noiseLevel = "quiet")) {
   # First: get default values:
   analysis <- list()
