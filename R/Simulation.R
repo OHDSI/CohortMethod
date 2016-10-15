@@ -366,16 +366,33 @@ simulateCMD <- function(partialCMD, sData, cData) {
   names(cTimes)[match("time", names(cTimes))] = "cTime"
 
   # combine event and censor times
+  outcomes = NULL
   times = ffbase::merge.ffdf(sTimes, cTimes)
   t = ffbase::ffwhich(times, times$sTime<=times$cTime & times$sTime <= sData$times[1])
-  if (!is.null(t)) outcomes = times[t,]
-  outcomes$cTime <- NULL
-  names(outcomes)[match("sTime", names(outcomes))] = "daysToEvent"
-  outcomes = as.data.frame(outcomes)
-  outcomes$outcomeId = 3
+#   if (!is.null(t)) outcomes = times[t,]
+#   outcomes$cTime <- NULL
+#   names(outcomes)[match("sTime", names(outcomes))] = "daysToEvent"
+#   outcomes = as.data.frame(outcomes)
+#   outcomes$outcomeId = 3
+
+  if(!is.null(t)) {
+    cohorts = partialCMD$cohorts
+    cohorts = merge(cohorts, times[])
+    cohorts$newOutcomeCount = 0
+    cohorts$newDaysToEvent = NA
+    cohorts$newSurvivalTime = cohorts$cTime + 1
+    t = which(cohorts$sTime <= cohorts$cTime & cohorts$sTime <= sData$times[1])
+    cohorts$newDaysToEvent[t] = cohorts$sTime[t]
+    cohorts$newSurvivalTime[t] = cohorts$sTime[t] + 1
+    cohorts$newOutcomeCount[t] = 1
+    outcomes = data.frame(rowId = cohorts$rowId[t], daysToEvent = cohorts$newDaysToEvent[t], outcomeId = 3)
+    cohorts$sTime = NULL
+    cohorts$cTime = NULL
+  }
+
   return (list(covariates = partialCMD$covariates,
                covariateRef = partialCMD$covariateRef,
-               cohorts = partialCMD$cohorts,
+               cohorts = cohorts,
                outcomes = outcomes,
                metaData = partialCMD$metaData))
 }
@@ -407,6 +424,7 @@ calculateXB <- function(rowId, covariates, coef) {
   result = ff::ffdf(rowId = rowId, xb = ff::ff(vmode = "double", initdata = 0, length = length(rowId)))
   t = ffbase::ffmatch(temp$bins, result$rowId)
   result$xb[t] = temp$sums
+  result$exb = exp(result$xb)
   return(result)
 }
 
@@ -441,7 +459,7 @@ calculateBaselineSurvivalFunction <- function(outcomeModel) {
     #L[i] = sum(l[(n+1-i):n])
     L[i] = sum(l[i:n])
   }
-  return(list(times = times,
+  return(list(times = times - 1,
               baseline = 1/exp(L)))
 }
 
