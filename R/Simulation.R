@@ -248,16 +248,17 @@ simulateCohortMethodData <- function(profile, n = 10000) {
 createCMDSimulationProfile <- function(cohortMethodData,
                                        studyPop,
                                        simulateTreatment = FALSE,
+                                       simulateTreatmentBinary = NULL,
                                        excludeCovariateIds = NULL,
                                        psMethod = 0,
                                        crossValidate = TRUE) {
 
-  if (simulateTreatment) {
+  if (simulateTreatment & is.null(simulateTreatmentBinary)) {
     start <- Sys.time()
     covariates = cohortMethodData$covariates
     covariateIds = unique(covariates$covariateId[])
     covariateIds = covariateIds[which(!(covariateIds %in% excludeCovariateIds))]
-    propensityModel = rnorm(length(covariateIds)+1)
+    propensityModel = rnorm(length(covariateIds)+1)/10
     names(propensityModel) = c("(Intercept)", covariateIds)
     betas = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(propensityModel[2:length(propensityModel)]))),
                      beta = ff::as.ff(propensityModel[2:length(propensityModel)]))
@@ -273,10 +274,18 @@ createCMDSimulationProfile <- function(cohortMethodData,
     propensityScore = merge(cohortMethodData$cohorts, temp)
     propensityScore$treatment = propensityScore$value
     propensityScore$value <- NULL
+    cohortMethodData$cohorts$newPropensityScore = propensityScore$propensityScore
     cohortMethodData$cohorts$treatment = propensityScore$treatment
-    t = ffbase::ffwhich(temp, temp$value == 1)
+    studyPop$treatment = cohortMethodData$cohorts$treatment[match(studyPop$rowId, cohortMethodData$cohorts$rowId)]
+#     t = ffbase::ffwhich(temp, temp$value == 1)
     delta <- Sys.time() - start
     writeLines(paste("simulating treatments took", signif(delta, 3), attr(delta, "units")))
+  }
+
+  if (simulateTreatment & !is.null(simulateTreatmentBinary)) {
+    cohortMethodData$cohorts$treatment = rbinom(nrow(cohortMethodData$cohorts), 1, simulateTreatmentBinary)
+    studyPop$treatment = cohortMethodData$cohorts$treatment[match(studyPop$rowId, cohortMethodData$cohorts$rowId)]
+    cohortMethodData$cohorts$newPropensityScore = simulateTreatmentBinary
   }
 
   if (psMethod != 0) {
@@ -400,6 +409,7 @@ simulateCMD <- function(partialCMD, sData, cData) {
 #' @export
 insertEffectSize <- function(data, effectSize, cohort) {
   data = merge(data, cohort[c("rowId", "treatment")])
+  data$treatment = data$treatment*1.0
   data$xb = data$xb + data$treatment*effectSize
   data$exb = exp(data$xb)
   return(data)
