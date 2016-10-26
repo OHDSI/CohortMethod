@@ -4,10 +4,10 @@
 \alias{summarizeAnalyses}
 \title{Create a summary report of the analyses}
 \usage{
-summarizeAnalyses(outcomeReference)
+summarizeAnalyses(referenceTable)
 }
 \arguments{
-\item{outcomeReference}{A data.frame as created by the \code{\link{runCmAnalyses}} function.}
+\item{referenceTable}{A data.frame as created by the \code{\link{runCmAnalyses}} function.}
 }
 \value{
 A data frame with the following columns:
