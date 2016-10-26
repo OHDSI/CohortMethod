@@ -56,7 +56,6 @@ fitOutcomeModel <- function(population,
                                                     startingVariance = 0.01,
                                                     tolerance  = 2e-07,
                                                     cvRepetitions = 10,
-                                                    selectorType = "byPid",
                                                     noiseLevel = "quiet"),
                             returnFit = FALSE) {
   if (stratified && is.null(population$stratumId))
