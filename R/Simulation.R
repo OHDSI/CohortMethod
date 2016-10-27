@@ -250,7 +250,8 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                        simulateTreatment = FALSE,
                                        excludeCovariateIds = NULL,
                                        psMethod = 0,
-                                       crossValidate = TRUE) {
+                                       crossValidate = TRUE,
+                                       threads = 10) {
 
   if (simulateTreatment) {
     start <- Sys.time()
@@ -282,7 +283,13 @@ createCMDSimulationProfile <- function(cohortMethodData,
   if (psMethod != 0) {
     propensityScore <- createPs(cohortMethodData, population=studyPop,
                                 excludeCovariateIds = c(1,excludeCovariateIds),
-                                prior = Cyclops::createPrior("laplace", useCrossValidation = crossValidate))
+                                prior = createPrior("laplace", useCrossValidation = crossValidate),
+                                control = createControl(noiseLevel = "silent",
+                                                        cvType = "auto",
+                                                        tolerance = 2e-07,
+                                                        cvRepetitions = 10,
+                                                        startingVariance = 0.01,
+                                                        threads = threads))
   }
 
   # create populations for fitting outcome models
@@ -302,6 +309,13 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                   useCovariates = TRUE,
                                   excludeCovariateIds = excludeCovariateIds,
                                   prior = createPrior(priorType = "laplace", useCrossValidation = crossValidate),
+                                  control = createControl(cvType = "auto",
+                                                                    startingVariance = 0.01,
+                                                                    tolerance = 2e-07,
+                                                                    cvRepetitions = 10,
+                                                                    selectorType = "auto",
+                                                                    noiseLevel = "quiet",
+                                                                    threads = threads),
                                   returnFit = TRUE)
 
 
@@ -313,7 +327,9 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                    useCovariates = TRUE,
                                    excludeCovariateIds = excludeCovariateIds,
                                    prior = createPrior(priorType = "laplace", useCrossValidation = crossValidate),
-                                   control = createControl(maxIterations = 10000),
+                                   control = createControl(maxIterations = 10000,
+                                                           selectorType = "auto",
+                                                           threads = threads),
                                    returnFit = TRUE)
 
   # create sData and cData
