@@ -251,7 +251,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                        simulateTreatmentBinary = NULL,
                                        excludeCovariateIds = NULL,
                                        psMethod = 0,
-                                       crossValidate = TRUE) {
+                                       useCrossValidation = TRUE) {
 
   if (simulateTreatment & is.null(simulateTreatmentBinary)) {
     start <- Sys.time()
@@ -310,7 +310,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                   stratified = stratified,
                                   useCovariates = TRUE,
                                   excludeCovariateIds = excludeCovariateIds,
-                                  prior = createPrior(priorType = "laplace", useCrossValidation = crossValidate),
+                                  prior = createPrior(priorType = "laplace", useCrossValidation = useCrossValidation),
                                   returnFit = TRUE)
 
 
@@ -321,7 +321,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                    stratified = stratified,
                                    useCovariates = TRUE,
                                    excludeCovariateIds = excludeCovariateIds,
-                                   prior = createPrior(priorType = "laplace", useCrossValidation = crossValidate),
+                                   prior = createPrior(priorType = "laplace", useCrossValidation = useCrossValidation),
                                    control = createControl(maxIterations = 10000),
                                    returnFit = TRUE)
 
@@ -358,7 +358,8 @@ createCMDSimulationProfile <- function(cohortMethodData,
                 observedEffectSize = coef(outcomeModel),
                 observedCensoringEffectSize = coef(outcomeModel1),
                 sOutcomeModelCoefficients = outcomeModel$outcomeModelCoefficients,
-                cOutcomeModelCoefficients = outcomeModel1$outcomeModelCoefficients)
+                cOutcomeModelCoefficients = outcomeModel1$outcomeModelCoefficients,
+                studyPop = studyPop)
   class(result) <- "simulationProfile"
 
   return (result)
@@ -557,6 +558,7 @@ saveSimulationProfile <- function(simulationProfile, file) {
   saveRDS(simulationProfile$observedCensoringEffectSize, file = file.path(file, "observedCensoringEffectSize.rds"))
   saveRDS(simulationProfile$sOutcomeModelCoefficients, file = file.path(file, "sOutcomeModelCoefficients.rds"))
   saveRDS(simulationProfile$cOutcomeModelCoefficients, file = file.path(file, "cOutcomeModelCoefficients.rds"))
+  saveRDS(simulationProfile$studyPop, file = file.path(file, "studyPop.rds"))
 }
 
 #' @export
@@ -586,6 +588,7 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
   observedCensoringEffectSize = readRDS(file.path(file, "observedCensoringEffectSize.rds"))
   sOutcomeModelCoefficients = readRDS(file.path(file, "sOutcomeModelCoefficients.rds"))
   cOutcomeModelCoefficients = readRDS(file.path(file, "cOutcomeModelCoefficients.rds"))
+  studyPop = readRDS(file.path(file, "studyPop.rds"))
 
   # Open all ffdfs to prevent annoying messages later:
   open(sData$XB, readonly = readOnly)
@@ -599,7 +602,8 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
                 observedEffectSize = observedEffectSize,
                 observedCensoringEffectSize = observedCensoringEffectSize,
                 sOutcomeModelCoefficients = sOutcomeModelCoefficients,
-                cOutcomeModelCoefficients = cOutcomeModelCoefficients)
+                cOutcomeModelCoefficients = cOutcomeModelCoefficients,
+                studyPop = studyPop)
   class(result) <- "simulationProfile"
   rm(e)
   return(result)
