@@ -17,6 +17,9 @@ columns: subjectId, treatment, outcomeCount, timeAtRisk.}
 \item{power}{1 - beta, where beta is the type II error.}
 
 \item{twoSided}{Consider a two-sided test?}
+
+\item{modelType}{The type of outcome model that will be used. Possible values are
+"logistic", "poisson", or "cox". Currently only "cox" is supported.}
 }
 \value{
 A data frame with the MDRR and some counts.

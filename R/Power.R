@@ -29,6 +29,8 @@
 #' @param alpha        Type I error.
 #' @param power        1 - beta, where beta is the type II error.
 #' @param twoSided     Consider a two-sided test?
+#' @param modelType    The type of outcome model that will be used. Possible values are
+#'                     "logistic", "poisson", or "cox". Currently only "cox" is supported.
 #'
 #' @references
 #' Schoenfeld DA (1983) Sample-size formula for the proportional-hazards regression model, Biometrics,
