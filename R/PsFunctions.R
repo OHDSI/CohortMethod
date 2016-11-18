@@ -928,25 +928,35 @@ computeCovariateBalance <- function(population, cohortMethodData) {
 #' format.
 #'
 #' @param balance    A data frame created by the \code{computeCovariateBalance} funcion.
+#' @param absolute   Should the absolute value of the difference be used?
+#' @param threshold  Show a threshold value for after matching standardized difference.
 #' @param fileName   Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                   function \code{ggsave} in the ggplot2 package for supported file formats.
 #'
 #' @export
-plotCovariateBalanceScatterPlot <- function(balance, fileName = NULL) {
+plotCovariateBalanceScatterPlot <- function(balance, absolute = TRUE, threshold = 0, fileName = NULL) {
+  if (absolute) {
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
-    limits <- c(0, max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE))
-    plot <- ggplot2::ggplot(balance,
-                            ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
-        ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
-        ggplot2::geom_abline(slope = 1, intercept = 0) +
-        ggplot2::geom_hline(yintercept = 0) +
-        ggplot2::ggtitle("Standardized difference of mean") +
-        ggplot2::scale_x_continuous("Before matching", limits = limits) +
-        ggplot2::scale_y_continuous("After matching", limits = limits)
-    if (!is.null(fileName))
-        ggplot2::ggsave(fileName, plot, width = 4, height = 4, dpi = 400)
-    return(plot)
+  }
+  limits <- c(min(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE),
+              max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE))
+  plot <- ggplot2::ggplot(balance,
+                          ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
+    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
+    ggplot2::geom_abline(slope = 1, intercept = 0, linetype="dashed") +
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::geom_vline(xintercept = 0) +
+    ggplot2::ggtitle("Standardized difference of mean") +
+    ggplot2::scale_x_continuous("Before matching", limits = limits) +
+    ggplot2::scale_y_continuous("After matching", limits = limits)
+  if (threshold != 0) {
+    plot <- plot + ggplot2::geom_hline(yintercept = c(threshold, -threshold), alpha = 0.5, linetype = "dotted")
+  }
+  if (!is.null(fileName)) {
+    ggplot2::ggsave(fileName, plot, width = 4, height = 4, dpi = 400)
+  }
+  return(plot)
 }
 
 .truncRight <- function(x, n) {
