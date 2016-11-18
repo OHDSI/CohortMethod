@@ -9,8 +9,9 @@ plotFollowUpDistribution(population, targetLabel = "Target",
   dataCutoff = 0.95, title = "Follow-up distribution", fileName = NULL)
 }
 \arguments{
-\item{population}{A data frame describing the study population as created using the \code{\link{createStudyPopulation}} function.
-This should at least have these columns: treatment, timeAtRisk.}
+\item{population}{A data frame describing the study population as created using the
+\code{\link{createStudyPopulation}} function. This should at least have
+these columns: treatment, timeAtRisk.}
 
 \item{targetLabel}{A label to us for the target cohort.}
 
@@ -20,13 +21,13 @@ This should at least have these columns: treatment, timeAtRisk.}
 
 \item{logYScale}{Should the Y axis be on the log scale?}
 
-\item{dataCutoff}{Fraction of the data (number censored) after which the graph will not
-be shown.}
+\item{dataCutoff}{Fraction of the data (number censored) after which the graph will not be
+shown.}
 
 \item{title}{The main title of the plot.}
 
-\item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
-the function \code{ggsave} in the ggplot2 package for supported file
+\item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
+See the function \code{ggsave} in the ggplot2 package for supported file
 formats.}
 }
 \value{
@@ -37,7 +38,7 @@ format.
 Plot the distribution of follow-up time
 }
 \details{
-Plot the distribution of follow-up time, stratified by treatment group.Follow-up time is defined as time-at-risk, so not censored at the
-outcome.
+Plot the distribution of follow-up time, stratified by treatment group.Follow-up time is defined as
+time-at-risk, so not censored at the outcome.
 }
 

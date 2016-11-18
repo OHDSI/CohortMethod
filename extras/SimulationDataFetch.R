@@ -18,7 +18,7 @@
 
 # This code should be used to create the simulation profile used in some of the unit tests
 library(CohortMethod)
-options('fftempdir' = 's:/fftemp')
+options(fftempdir = "s:/fftemp")
 
 pw <- NULL
 dbms <- "sql server"

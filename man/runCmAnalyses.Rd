@@ -17,61 +17,57 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeCvThreads = 1)
 }
 \arguments{
-\item{connectionDetails}{An R object of type \code{connectionDetails} created
-using the function \code{createConnectionDetails} in
-the \code{DatabaseConnector} package.}
+\item{connectionDetails}{An R object of type \code{connectionDetails} created using the
+function \code{createConnectionDetails} in the
+\code{DatabaseConnector} package.}
 
-\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP
-CDM instance. Requires read permissions to this
-database. On SQL Server, this should specifiy both the
-database and the schema, so for example
-'cdm_instance.dbo'.}
+\item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
+instance. Requires read permissions to this database. On SQL
+Server, this should specifiy both the database and the schema,
+so for example 'cdm_instance.dbo'.}
 
-\item{oracleTempSchema}{For Oracle only: the name of the database schema where
-you want all temporary tables to be managed. Requires
+\item{oracleTempSchema}{For Oracle only: the name of the database schema where you
+want all temporary tables to be managed. Requires
 create/insert permissions to this database.}
 
-\item{exposureDatabaseSchema}{The name of the database schema that is the location
-where the exposure data used to define the exposure
-cohorts is available. If exposureTable = DRUG_ERA,
-exposureDatabaseSchema is not used by assumed to be
-cdmSchema.  Requires read permissions to this database.}
+\item{exposureDatabaseSchema}{The name of the database schema that is the location where the
+exposure data used to define the exposure cohorts is
+available. If exposureTable = DRUG_ERA, exposureDatabaseSchema
+is not used by assumed to be cdmSchema.  Requires read
+permissions to this database.}
 
 \item{exposureTable}{The tablename that contains the exposure cohorts.  If
-exposureTable <> DRUG_ERA, then expectation is
-exposureTable has format of COHORT table:
-COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
-COHORT_END_DATE.}
+exposureTable <> DRUG_ERA, then expectation is exposureTable
+has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{outcomeDatabaseSchema}{The name of the database schema that is the location
-where the data used to define the outcome cohorts is
-available. If exposureTable = CONDITION_ERA,
-exposureDatabaseSchema is not used by assumed to be
-cdmSchema.  Requires read permissions to this database.}
+\item{outcomeDatabaseSchema}{The name of the database schema that is the location where the
+data used to define the outcome cohorts is available. If
+exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+used by assumed to be cdmSchema.  Requires read permissions to
+this database.}
 
 \item{outcomeTable}{The tablename that contains the outcome cohorts.  If
-outcomeTable <> CONDITION_OCCURRENCE, then expectation
-is outcomeTable has format of COHORT table:
-COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
-COHORT_END_DATE.}
+outcomeTable <> CONDITION_OCCURRENCE, then expectation is
+outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
+SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
+"5".}
 
-\item{outputFolder}{Name of the folder where all the outputs will written
-to.}
+\item{outputFolder}{Name of the folder where all the outputs will written to.}
 
-\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created
-using the \code{\link{createCmAnalysis}} function.}
+\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
+the \code{\link{createCmAnalysis}} function.}
 
-\item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes}
-as created using the
-\code{\link{createDrugComparatorOutcomes}} function.}
+\item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes} as
+created using the \code{\link{createDrugComparatorOutcomes}}
+function.}
 
-\item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome
-(i.e. after people who already had the outcome are
-removed)? If false, a single propensity model will be
-fitted, and people who had the outcome previously will
-be removed afterwards.}
+\item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
+after people who already had the outcome are removed)? If
+false, a single propensity model will be fitted, and people
+who had the outcome previously will be removed afterwards.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
@@ -81,51 +77,44 @@ propensity models.}
 
 \item{psCvThreads}{The number of parallel threads to use for the cross-
 validation when estimating the hyperparameter for the
-propensity model. Note that the total number of CV
-threads at one time could be `createPsThreads *
-psCvThreads`.}
+propensity model. Note that the total number of CV threads at
+one time could be `createPsThreads * psCvThreads`.}
 
-\item{createStudyPopThreads}{The number of parallel threads to use for creating the
-study population.}
+\item{createStudyPopThreads}{The number of parallel threads to use for creating the study
+population.}
 
-\item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming,
-matching and stratifying.}
+\item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming, matching
+and stratifying.}
 
 \item{computeCovarBalThreads}{The number of parallel threads to use for computing the
 covariate balance.}
 
-\item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the
-outcome models.}
+\item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the outcome
+models.}
 
 \item{outcomeCvThreads}{The number of parallel threads to use for the cross-
-validation when estimating the hyperparameter for the
-outcome model. Note that the total number of CV threads
-at one time could be `fitOutcomeModelThreads *
-outcomeCvThreads`.}
+validation when estimating the hyperparameter for the outcome
+model. Note that the total number of CV threads at one time
+could be `fitOutcomeModelThreads * outcomeCvThreads`.}
 }
 \value{
-A data frame with the following columns:
-\tabular{ll}{
-\verb{analysisId} \tab The unique identifier for a set of analysis choices.\cr
-\verb{targetId} \tab The ID of the target drug.\cr
-\verb{comparatorId} \tab The ID of the comparator group.\cr
-\verb{excludedCovariateConceptIds} \tab The ID(s) of concepts that cannot be used to construct covariates. \cr
-\verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct covariates. \cr
-\verb{outcomeId} \tab The ID of the outcome \cr
-\verb{cohortMethodDataFolder} \tab The ID of the outcome.\cr
-\verb{sharedPsFile}                \tab The name of the file containing the propensity scores of the shared \cr
-                                   \tab propensity model. This model is used to create the outcome-specific \cr
-                                   \tab propensity scores by removing people with prior outcomes.\cr
-\verb{studyPopFile}                 \tab The name of the file containing the study population (prior\cr
-                                   \tab and trimming, matching, or stratification on the PS.\cr
-\verb{psFile}                      \tab The name of file containing the propensity scores for a specific \cr
-                                   \tab outcomes (ie after people with prior outcomes have been removed).\cr
-\verb{strataFile}                  \tab The name of the file containing the identifiers of the population \cr
-                                   \tab after any trimming, matching or stratifying, including their strata.\cr
-\verb{covariateBalanceFile}        \tab The name of the file containing the covariate balance (ie. the \cr
-                                   \tab output of the \code{computeCovariateBalance} function.\cr
-\verb{outcomeModelFile} \tab The name of the file containing the outcome model.\cr
-}
+A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
+for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target drug.\cr
+\verb{comparatorId} \tab The ID of the comparator group.\cr \verb{excludedCovariateConceptIds} \tab
+The ID(s) of concepts that cannot be used to construct covariates. \cr
+\verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct
+covariates. \cr \verb{outcomeId} \tab The ID of the outcome \cr \verb{cohortMethodDataFolder} \tab
+The ID of the outcome.\cr \verb{sharedPsFile} \tab The name of the file containing the propensity
+scores of the shared \cr \tab propensity model. This model is used to create the outcome-specific
+\cr \tab propensity scores by removing people with prior outcomes.\cr \verb{studyPopFile} \tab The
+name of the file containing the study population (prior\cr \tab and trimming, matching, or
+stratification on the PS.\cr \verb{psFile} \tab The name of file containing the propensity scores
+for a specific \cr \tab outcomes (ie after people with prior outcomes have been removed).\cr
+\verb{strataFile} \tab The name of the file containing the identifiers of the population \cr \tab
+after any trimming, matching or stratifying, including their strata.\cr \verb{covariateBalanceFile}
+\tab The name of the file containing the covariate balance (ie. the \cr \tab output of the
+\code{computeCovariateBalance} function.\cr \verb{outcomeModelFile} \tab The name of the file
+containing the outcome model.\cr }
 }
 \description{
 Run a list of analyses

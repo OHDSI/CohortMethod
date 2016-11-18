@@ -20,7 +20,7 @@
 library(SqlRender)
 library(DatabaseConnector)
 library(CohortMethod)
-options('fftempdir' = 's:/fftemp')
+options(fftempdir = "s:/fftemp")
 
 dbms <- "sql server"
 user <- NULL
@@ -157,17 +157,16 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           washoutPeriod = 180,
                                           covariateSettings = covariateSettings)
 
-# Error executing SQL: Error in .jcall(res@jr, "V", "close"): java.sql.SQLException: [Amazon](500150) Error setting/closing connection: Not Connected.
-# After removing on.exit clearResults:
-# Error executing SQL: Error in .jcall(rp, "I", "fetch", as.integer(n), block): java.sql.SQLException: [Amazon][JDBC](10060) Connection has been closed.
-# table has 148734670 rows
+# Error executing SQL: Error in .jcall(res@jr, 'V', 'close'): java.sql.SQLException: [Amazon](500150)
+# Error setting/closing connection: Not Connected.  After removing on.exit clearResults: Error
+# executing SQL: Error in .jcall(rp, 'I', 'fetch', as.integer(n), block): java.sql.SQLException:
+# [Amazon][JDBC](10060) Connection has been closed.  table has 148734670 rows
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
 
-# summary(cohortMethodData)
-# getAttritionTable(cohortMethodData)
+# summary(cohortMethodData) getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
@@ -184,7 +183,7 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
 
 saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
 
-# studyPop <- readRDS("s:/temp/cohortMethodVignette/studyPop.rds")
+# studyPop <- readRDS('s:/temp/cohortMethodVignette/studyPop.rds')
 
 ps <- createPs(cohortMethodData = cohortMethodData,
                population = studyPop,
@@ -192,46 +191,35 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                control = createControl(cvType = "auto",
                                        startingVariance = 0.01,
                                        noiseLevel = "quiet",
-                                       tolerance  = 2e-07,
+                                       tolerance = 2e-07,
                                        cvRepetitions = 1,
                                        threads = 16))
 
-# computePsAuc(ps)
-# plotPs(ps)
+# computePsAuc(ps) plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
-# ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
+# ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
 
 
-# insertDbPopulation(population = studyPop,
-#                    cohortIds = c(101,100),
-#                    connectionDetails = connectionDetails,
-#                    cohortDatabaseSchema = resultsDatabaseSchema,
-#                    cohortTable = "mschuemi_test",
-#                    createTable = TRUE,
-#                    dropTableIfExists = TRUE,
-#                    cdmVersion = 5)
+# insertDbPopulation(population = studyPop, cohortIds = c(101,100), connectionDetails =
+# connectionDetails, cohortDatabaseSchema = resultsDatabaseSchema, cohortTable = 'mschuemi_test',
+# createTable = TRUE, dropTableIfExists = TRUE, cdmVersion = 5)
 
-# Check number of subjects per cohort:
-# connection <- DatabaseConnector::connect(connectionDetails)
-# sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.mschuemi_test GROUP BY cohort_definition_id"
-# sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
-# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-# DatabaseConnector::querySql(connection, sql)
-# dbDisconnect(connection)
+# Check number of subjects per cohort: connection <- DatabaseConnector::connect(connectionDetails)
+# sql <- 'SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.mschuemi_test
+# GROUP BY cohort_definition_id' sql <- SqlRender::renderSql(sql, resultsDatabaseSchema =
+# resultsDatabaseSchema)$sql sql <- SqlRender::translateSql(sql, targetDialect =
+# connectionDetails$dbms)$sql DatabaseConnector::querySql(connection, sql) dbDisconnect(connection)
 
-# trimmed <- trimByPs(ps)
-# trimmed <- trimByPsToEquipoise(ps)
-# plotPs(trimmed, ps)
+# trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
 
 matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
-# getAttritionTable(matchedPop)
-# plotPs(matchedPop, ps)
+# getAttritionTable(matchedPop) plotPs(matchedPop, ps)
 
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
 
 saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
-# balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
+# balance <- readRDS('s:/temp/cohortMethodVignette/balance.rds')
 
 plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
 # plotCovariateBalanceOfTopVariables(balance)
@@ -240,11 +228,8 @@ outcomeModel <- fitOutcomeModel(population = studyPop,
                                 modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE)
-#getAttritionTable(outcomeModel)
-#outcomeModel
-#summary(outcomeModel)
-#coef(outcomeModel)
-#confint(outcomeModel)
+# getAttritionTable(outcomeModel) outcomeModel summary(outcomeModel) coef(outcomeModel)
+# confint(outcomeModel)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
 
 outcomeModel <- fitOutcomeModel(population = matchedPop,
@@ -268,6 +253,5 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 
-# outcomeModel <- readRDS(file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
-# drawAttritionDiagram(outcomeModel, fileName = "s:/temp/attrition.png")
-# summary(outcomeModel)
+# outcomeModel <- readRDS(file = 's:/temp/cohortMethodVignette/OutcomeModel3.rds')
+# drawAttritionDiagram(outcomeModel, fileName = 's:/temp/attrition.png') summary(outcomeModel)

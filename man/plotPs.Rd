@@ -11,9 +11,9 @@ plotPs(data, unfilteredData = NULL, scale = "preference",
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
 
-\item{unfilteredData}{To be used when computing preference scores on data from which subjects have
-already been removed, e.g. through trimming and/or matching. This data frame
-should have the same structure as \code{data}.}
+\item{unfilteredData}{To be used when computing preference scores on data from which subjects
+have already been removed, e.g. through trimming and/or matching. This data
+frame should have the same structure as \code{data}.}
 
 \item{scale}{The scale of the graph. Two scales are supported: \code{ scale =
 'propensity'} or \code{scale = 'preference'}. The preference score scale is
@@ -28,8 +28,8 @@ defined by Walker et al (2013).}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
 
-\item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
-the function \code{ggsave} in the ggplot2 package for supported file
+\item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
+See the function \code{ggsave} in the ggplot2 package for supported file
 formats.}
 }
 \value{

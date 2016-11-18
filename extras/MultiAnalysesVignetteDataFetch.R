@@ -19,7 +19,7 @@
 #### Fetch data for multiple analyses vignette ####
 library(CohortMethod)
 library(SqlRender)
-options('fftempdir' = 's:/fftemp')
+options(fftempdir = "s:/fftemp")
 
 
 pw <- NULL
@@ -86,41 +86,41 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
                                      excludedCovariateConceptIds = nsaids,
                                      outcomeIds = c(192671,
-                                                    24609,
-                                                    29735,
-                                                    73754,
-                                                    80004,
-                                                    134718,
-                                                    139099,
-                                                    141932,
-                                                    192367,
-                                                    193739,
-                                                    194997,
-                                                    197236,
-                                                    199074,
-                                                    255573,
-                                                    257007,
-                                                    313459,
-                                                    314658,
-                                                    316084,
-                                                    319843,
-                                                    321596,
-                                                    374366,
-                                                    375292,
-                                                    380094,
-                                                    433753,
-                                                    433811,
-                                                    436665,
-                                                    436676,
-                                                    436940,
-                                                    437784,
-                                                    438134,
-                                                    440358,
-                                                    440374,
-                                                    443617,
-                                                    443800,
-                                                    4084966,
-                                                    4288310))
+                                                                                                                                      24609,
+                                                                                                                                      29735,
+                                                                                                                                      73754,
+                                                                                                                                      80004,
+                                                                                                                                      134718,
+                                                                                                                                      139099,
+                                                                                                                                      141932,
+                                                                                                                                      192367,
+                                                                                                                                      193739,
+                                                                                                                                      194997,
+                                                                                                                                      197236,
+                                                                                                                                      199074,
+                                                                                                                                      255573,
+                                                                                                                                      257007,
+                                                                                                                                      313459,
+                                                                                                                                      314658,
+                                                                                                                                      316084,
+                                                                                                                                      319843,
+                                                                                                                                      321596,
+                                                                                                                                      374366,
+                                                                                                                                      375292,
+                                                                                                                                      380094,
+                                                                                                                                      433753,
+                                                                                                                                      433811,
+                                                                                                                                      436665,
+                                                                                                                                      436676,
+                                                                                                                                      436940,
+                                                                                                                                      437784,
+                                                                                                                                      438134,
+                                                                                                                                      440358,
+                                                                                                                                      440374,
+                                                                                                                                      443617,
+                                                                                                                                      443800,
+                                                                                                                                      4084966,
+                                                                                                                                      4288310))
 drugComparatorOutcomesList <- list(dcos)
 
 covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
@@ -198,7 +198,7 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
 createPsArgs <- createCreatePsArgs(control = createControl(cvType = "auto",
                                                            startingVariance = 0.01,
                                                            noiseLevel = "quiet",
-                                                           tolerance  = 5e-07,
+                                                           tolerance = 5e-07,
                                                            cvRepetitions = 1))
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
@@ -274,7 +274,8 @@ saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
 
 # cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.txt')
 
-# drugComparatorOutcomesList <- loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
+# drugComparatorOutcomesList <-
+# loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
@@ -305,17 +306,21 @@ connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
 RJDBC::dbDisconnect(connection)
 
-#result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
+# result <- readRDS('s:/temp/cohortMethodVignette2/outcomeModelReference.rds')
 
-#cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
-#summary(cohortMethodData)
+# cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
+# summary(cohortMethodData)
 analysisSummary <- summarizeAnalyses(result)
 saveRDS(analysisSummary, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 
 library(EmpiricalCalibration)
-for (i in 1:5){
+for (i in 1:5) {
   negControls <- analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId != 192671, ]
-  hoi <-  analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId == 192671, ]
-  fileName <- paste("s:/temp/cohortMethodVignette2/CaliPlot_",i,".png",sep="")
-  plotCalibrationEffect(negControls$logRr, negControls$seLogRr, hoi$logRr, hoi$seLogRr, fileName = fileName)
+  hoi <- analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId == 192671, ]
+  fileName <- paste("s:/temp/cohortMethodVignette2/CaliPlot_", i, ".png", sep = "")
+  plotCalibrationEffect(negControls$logRr,
+                        negControls$seLogRr,
+                        hoi$logRr,
+                        hoi$seLogRr,
+                        fileName = fileName)
 }

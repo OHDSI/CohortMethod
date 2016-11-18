@@ -192,12 +192,12 @@ constructEras <- function(connectionDetails,
 #' Check is CohortMethod and its dependencies are correctly installed
 #'
 #' @details
-#' This function checks whether CohortMethod and its dependencies are correctly installed. This will check the
-#' database connectivity, large scale regresion engine (Cyclops), and large data object handling (ff).
+#' This function checks whether CohortMethod and its dependencies are correctly installed. This will
+#' check the database connectivity, large scale regresion engine (Cyclops), and large data object
+#' handling (ff).
 #'
-#' @param connectionDetails            An R object of type\cr\code{connectionDetails} created using the
-#'                                     function \code{createConnectionDetails} in the
-#'                                     \code{DatabaseConnector} package.
+#' @param connectionDetails   An R object of type\cr\code{connectionDetails} created using the function
+#'                            \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #'
 #' @export
 checkCmInstallation <- function(connectionDetails) {
@@ -223,5 +223,5 @@ checkCmInstallation <- function(connectionDetails) {
   writeLines("- Ok")
 
   writeLines("\nCohortMethod is correctly installed")
-  writeLines(paste0("\nResponse code: ", round(pi*123456)))
+  writeLines(paste0("\nResponse code: ", round(pi * 123456)))
 }

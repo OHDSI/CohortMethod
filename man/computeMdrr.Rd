@@ -8,8 +8,9 @@ computeMdrr(population, alpha = 0.05, power = 0.8, twoSided = TRUE,
   modelType = "cox")
 }
 \arguments{
-\item{population}{A data frame describing the study population as created using the \code{\link{createStudyPopulation}} function.
-This should at least have these columns: subjectId, treatment, outcomeCount, timeAtRisk.}
+\item{population}{A data frame describing the study population as created using the
+\code{\link{createStudyPopulation}} function. This should at least have these
+columns: subjectId, treatment, outcomeCount, timeAtRisk.}
 
 \item{alpha}{Type I error.}
 
@@ -24,12 +25,12 @@ A data frame with the MDRR and some counts.
 Compute the minimum detectable relative risk
 }
 \details{
-Compute the minimum detectable relative risk (MDRR) for a given study population, using the actual observed sample size and number
-of outcomes. Currently, only computations for Cox models are implemented. For Cox model, the computations by Schoenfeld (1983)
-is used.
+Compute the minimum detectable relative risk (MDRR) for a given study population, using the actual
+observed sample size and number of outcomes. Currently, only computations for Cox models are
+implemented. For Cox model, the computations by Schoenfeld (1983) is used.
 }
 \references{
-Schoenfeld DA (1983) Sample-size formula for the proportional-hazards regression model,
-Biometrics, 39(3), 499-503
+Schoenfeld DA (1983) Sample-size formula for the proportional-hazards regression model, Biometrics,
+39(3), 499-503
 }
 

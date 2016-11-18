@@ -7,15 +7,15 @@
 checkCmInstallation(connectionDetails)
 }
 \arguments{
-\item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
-function \code{createConnectionDetails} in the
-\code{DatabaseConnector} package.}
+\item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the function
+\code{createConnectionDetails} in the \code{DatabaseConnector} package.}
 }
 \description{
 Check is CohortMethod and its dependencies are correctly installed
 }
 \details{
-This function checks whether CohortMethod and its dependencies are correctly installed. This will check the
-database connectivity, large scale regresion engine (Cyclops), and large data object handling (ff).
+This function checks whether CohortMethod and its dependencies are correctly installed. This will
+check the database connectivity, large scale regresion engine (Cyclops), and large data object
+handling (ff).
 }
 

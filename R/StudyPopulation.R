@@ -19,42 +19,43 @@
 #' Create a study population
 #'
 #' @details
-#' Create a study population by enforcing certain inclusion and exclusion criteria, defining
-#' a risk window, and determining which outcomes fall inside the risk window.
+#' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
+#' window, and determining which outcomes fall inside the risk window.
 #'
-#' @param cohortMethodData      An object of type \code{cohortMethodData} as generated using
-#'                              \code{getDbCohortMethodData}.
-#' @param population            If specified, this population will be used as the starting point instead of the
-#'                              cohorts in the \code{cohortMethodData} object.
-#' @param outcomeId             The  ID of the outcome. If not specified, no outcome-specific transformations will
-#'                              be performed.
-#' @param firstExposureOnly            Should only the first exposure per subject be included? Note that
-#'                                     this is typically done in the \code{createStudyPopulation} function,
-#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator cohort?
-#' @param washoutPeriod                The mininum required continuous observation time prior to index
-#'                                     date for a person to be included in the cohort.
-#' @param removeSubjectsWithPriorOutcome  Remove subjects that have the outcome prior to the risk window start?
-#' @param priorOutcomeLookback            How many days should we look back when identifying prior outcomes?
-#' @param minDaysAtRisk          The minimum required number of days at risk.
-#' @param riskWindowStart        The start of the risk window (in days) relative to the index date (+
-#'                               days of exposure if the \code{addExposureDaysToStart} parameter is
-#'                               specified).
-#' @param addExposureDaysToStart   Add the length of exposure the start of the risk window?
-#' @param riskWindowEnd          The end of the risk window (in days) relative to the index data (+
-#'                               days of exposure if the \code{addExposureDaysToEnd} parameter is
-#'                               specified).
-#' @param addExposureDaysToEnd   Add the length of exposure the risk window?
+#' @param cohortMethodData                 An object of type \code{cohortMethodData} as generated using
+#'                                         \code{getDbCohortMethodData}.
+#' @param population                       If specified, this population will be used as the starting
+#'                                         point instead of the cohorts in the \code{cohortMethodData}
+#'                                         object.
+#' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
+#'                                         transformations will be performed.
+#' @param firstExposureOnly                Should only the first exposure per subject be included? Note
+#'                                         that this is typically done in the
+#'                                         \code{createStudyPopulation} function,
+#' @param removeDuplicateSubjects          Remove subjects that are in both the treated and comparator
+#'                                         cohort?
+#' @param washoutPeriod                    The mininum required continuous observation time prior to
+#'                                         index date for a person to be included in the cohort.
+#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
+#'                                         window start?
+#' @param priorOutcomeLookback             How many days should we look back when identifying prior
+#'                                         outcomes?
+#' @param minDaysAtRisk                    The minimum required number of days at risk.
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the index
+#'                                         date (+ days of exposure if the
+#'                                         \code{addExposureDaysToStart} parameter is specified).
+#' @param addExposureDaysToStart           Add the length of exposure the start of the risk window?
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the index
+#'                                         data (+ days of exposure if the \code{addExposureDaysToEnd}
+#'                                         parameter is specified).
+#' @param addExposureDaysToEnd             Add the length of exposure the risk window?
 #'
 #' @return
 #' A data frame specifying the study population. This data frame will have the following columns:
-#' \describe{
-#' \item{rowId}{A unique identifier for an exposure}
-#' \item{subjectId}{The person ID of the subject}
-#' \item{cohortStartdate}{The index date}
-#' \item{outcomeCount}{The number of outcomes observed during the risk window}
-#' \item{timeAtRisk}{The number of days in the risk window}
-#' \item{survivalTime}{The number of days until either the outcome or the end of the risk window}
-#' }
+#' \describe{ \item{rowId}{A unique identifier for an exposure} \item{subjectId}{The person ID of the
+#' subject} \item{cohortStartdate}{The index date} \item{outcomeCount}{The number of outcomes observed
+#' during the risk window} \item{timeAtRisk}{The number of days in the risk window}
+#' \item{survivalTime}{The number of days until either the outcome or the end of the risk window} }
 #'
 #' @export
 createStudyPopulation <- function(cohortMethodData,
@@ -87,27 +88,33 @@ createStudyPopulation <- function(cohortMethodData,
     comparatorSubjectIds <- population$subjectId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
     population <- population[!(population$subjectId %in% duplicateSubjectIds), ]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Removed subjects in both cohorts")))
+    metaData$attrition <- rbind(metaData$attrition,
+                                getCounts(population, paste("Removed subjects in both cohorts")))
   }
   if (washoutPeriod) {
     writeLines(paste("Requiring", washoutPeriod, "days of observation prior index date"))
-    population <- population[population$daysFromObsStart >= washoutPeriod,]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("At least", washoutPeriod, "days of observation prior")))
+    population <- population[population$daysFromObsStart >= washoutPeriod, ]
+    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("At least",
+                                                                                washoutPeriod,
+                                                                                "days of observation prior")))
   }
   if (removeSubjectsWithPriorOutcome) {
-    if (missing(outcomeId) || is.null(outcomeId)){
+    if (missing(outcomeId) || is.null(outcomeId)) {
       writeLines("No outcome specified so skipping removing people with prior outcomes")
     } else {
       writeLines("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
       if (addExposureDaysToStart) {
-        outcomes <- merge(outcomes, population[, c("rowId","daysToCohortEnd")])
-        priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart]
+        outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
+        priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
+          outcomes$daysToCohortEnd + riskWindowStart]
       } else {
-        priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent < riskWindowStart]
+        priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
+          riskWindowStart]
       }
       population <- population[!(population$rowId %in% priorOutcomeRowIds), ]
-      metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("No prior outcome")))
+      metaData$attrition <- rbind(metaData$attrition,
+                                  getCounts(population, paste("No prior outcome")))
     }
   }
   # Create risk windows:
@@ -115,18 +122,21 @@ createStudyPopulation <- function(cohortMethodData,
   if (addExposureDaysToStart) {
     population$riskStart <- population$riskStart + population$daysToCohortEnd
   }
-  population$riskEnd <- rep( riskWindowEnd, nrow(population))
+  population$riskEnd <- rep(riskWindowEnd, nrow(population))
   if (addExposureDaysToEnd) {
     population$riskEnd <- population$riskEnd + population$daysToCohortEnd
   }
-  population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd > population$daysToObsEnd]
+  population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd >
+    population$daysToObsEnd]
   if (minDaysAtRisk != 0) {
     writeLines(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     noAtRiskTimeRowIds <- population$rowId[population$riskEnd - population$riskStart < minDaysAtRisk]
     population <- population[!(population$rowId %in% noAtRiskTimeRowIds), ]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least", minDaysAtRisk, "days at risk")))
+    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least",
+                                                                                minDaysAtRisk,
+                                                                                "days at risk")))
   }
-  if (missing(outcomeId) || is.null(outcomeId)){
+  if (missing(outcomeId) || is.null(outcomeId)) {
     writeLines("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
@@ -152,7 +162,8 @@ createStudyPopulation <- function(cohortMethodData,
     firstOutcomes <- firstOutcomes[!duplicated(firstOutcomes$rowId), ]
     population <- merge(population, firstOutcomes[, c("rowId", "daysToEvent")], all.x = TRUE)
     population$survivalTime <- population$timeAtRisk
-    population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount != 0] - population$riskStart[population$outcomeCount != 0] + 1
+    population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
+      0] - population$riskStart[population$outcomeCount != 0] + 1
   }
   population$riskStart <- NULL
   population$riskEnd <- NULL
@@ -168,19 +179,21 @@ limitCovariatesToPopulation <- function(covariates, rowIds) {
 
 #' Get the attrition table for a population
 #'
-#' @param object   Either an object of type \code{cohortMethodData}, a population object generated by functions
-#'                     like \code{createStudyPopulation}, or an object of type \code{outcomeModel}.
+#' @param object   Either an object of type \code{cohortMethodData}, a population object generated by
+#'                 functions like \code{createStudyPopulation}, or an object of type
+#'                 \code{outcomeModel}.
 #'
 #' @return
-#' A data frame specifying the number of people and exposures in the population after specific steps of filtering.
+#' A data frame specifying the number of people and exposures in the population after specific steps
+#' of filtering.
 #'
 #'
 #' @export
 getAttritionTable <- function(object) {
   if (is(object, "cohortMethodData")) {
-    object = object$cohorts
+    object <- object$cohorts
   }
-  if (is(object, "outcomeModel")){
+  if (is(object, "outcomeModel")) {
     return(object$attrition)
   } else {
     return(attr(object, "metaData")$attrition)

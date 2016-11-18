@@ -21,7 +21,8 @@ numbers of treated persons.}
 subjects should also be stratified.}
 }
 \value{
-Returns a date frame with the same columns as the input population plus one extra column: stratumId.
+Returns a date frame with the same columns as the input population plus one extra column:
+stratumId.
 }
 \description{
 \code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify

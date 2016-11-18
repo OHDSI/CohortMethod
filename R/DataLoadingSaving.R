@@ -23,18 +23,17 @@
 #'
 #' @details
 #' Based on the arguments, the treatment and comparator cohorts are retrieved, as well as outcomes
-#' occurring in exposed subjects. The treatment and comparator cohorts can be identified using the drug_era table, or through
+#' occurring in exposed subjects. The treatment and comparator cohorts can be identified using the
+#' drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or
+#' in a separate schema. Similarly, outcomes are identified using the condition_era table or through
 #' user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
-#' Similarly, outcomes are identified using the condition_era table or
-#' through user-defined cohorts in a cohort table either inside the CDM instance or in a separate
-#' schema. Covariates are automatically extracted from the appropriate tables within the CDM.
-#' Important: The target and comparator drug must not be included in the covariates, including any
-#' descendant concepts. If the \code{targetId} and \code{comparatorId} arguments represent real
-#' concept IDs, you can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically
-#' the drugs and their descendants will be excluded from the covariates. However, if the
-#' \code{targetId} and \code{comparatorId} arguments do not represent concept IDs, you will need to
-#' manually add the drugs and descendants to the \code{excludedCovariateConceptIds} of the
-#' \code{covariateSettings} argument.
+#' Covariates are automatically extracted from the appropriate tables within the CDM. Important: The
+#' target and comparator drug must not be included in the covariates, including any descendant
+#' concepts. If the \code{targetId} and \code{comparatorId} arguments represent real concept IDs, you
+#' can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically the drugs and
+#' their descendants will be excluded from the covariates. However, if the \code{targetId} and
+#' \code{comparatorId} arguments do not represent concept IDs, you will need to manually add the drugs
+#' and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
 #'
 #' @param connectionDetails            An R object of type\cr\code{connectionDetails} created using the
 #'                                     function \code{createConnectionDetails} in the
@@ -62,8 +61,8 @@
 #'                                     date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate                 A calendar date specifying the maximum date that a cohort index
 #'                                     date can appear. Date format is 'yyyymmdd'. Important: the study
-#'                                     end data is also used to truncate risk windows, meaning no outcomes
-#'                                     beyond the study end date will be considered.
+#'                                     end data is also used to truncate risk windows, meaning no
+#'                                     outcomes beyond the study end date will be considered.
 #' @param exposureDatabaseSchema       The name of the database schema that is the location where the
 #'                                     exposure data used to define the exposure cohorts is available.
 #'                                     If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used
@@ -73,30 +72,30 @@
 #'                                     exposureTable <> DRUG_ERA, then expectation is exposureTable has
 #'                                     format of COHORT table: cohort_concept_id, SUBJECT_ID,
 #'                                     COHORT_START_DATE, COHORT_END_DATE.
-#' @param outcomeDatabaseSchema            The name of the database schema that is the location where
-#'                                         the data used to define the outcome cohorts is available. If
-#'                                         exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
-#'                                         used by assumed to be cdmSchema.  Requires read permissions
-#'                                         to this database.
-#' @param outcomeTable                     The tablename that contains the outcome cohorts.  If
-#'                                         outcomeTable <> CONDITION_OCCURRENCE, then expectation is
-#'                                         outcomeTable has format of COHORT table:
-#'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
-#'                                         COHORT_END_DATE.
+#' @param outcomeDatabaseSchema        The name of the database schema that is the location where the
+#'                                     data used to define the outcome cohorts is available. If
+#'                                     exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+#'                                     used by assumed to be cdmSchema.  Requires read permissions to
+#'                                     this database.
+#' @param outcomeTable                 The tablename that contains the outcome cohorts.  If
+#'                                     outcomeTable <> CONDITION_OCCURRENCE, then expectation is
+#'                                     outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
+#'                                     SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
 #' @param excludeDrugsFromCovariates   Should the target and comparator drugs (and their descendant
 #'                                     concepts) be excluded from the covariates? Note that this will
 #'                                     work if the drugs are actualy drug concept IDs (and not cohort
 #'                                     IDs).
-#' @param firstExposureOnly            Should only the first exposure per subject be included? Note that
-#'                                     this is typically done in the \code{createStudyPopulation} function,
-#'                                     but can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator cohort? Note that
-#'                                     this is typically done in the \code{createStudyPopulation} function,
-#'                                     but can already be done here for efficiency reasons.
+#' @param firstExposureOnly            Should only the first exposure per subject be included? Note
+#'                                     that this is typically done in the \code{createStudyPopulation}
+#'                                     function, but can already be done here for efficiency reasons.
+#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator
+#'                                     cohort? Note that this is typically done in the
+#'                                     \code{createStudyPopulation} function, but can already be done
+#'                                     here for efficiency reasons.
 #' @param washoutPeriod                The mininum required continuous observation time prior to index
-#'                                     date for a person to be included in the cohort. Note that
-#'                                     this is typically done in the \code{createStudyPopulation} function,
+#'                                     date for a person to be included in the cohort. Note that this
+#'                                     is typically done in the \code{createStudyPopulation} function,
 #'                                     but can already be done here for efficiency reasons.
 #' @param covariateSettings            An object of type \code{covariateSettings} as created using the
 #'                                     \code{createCovariateSettings} function in the
@@ -106,15 +105,16 @@
 #' Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
 #' outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for
 #' efficiency reasons. This object is a list with the following components: \describe{
-#' \item{outcomes}{A data frame listing the outcomes per person, including the time to event, and
-#' the outcome id. Outcomes are not yet filtered based on risk window, since this is done at
-#' a later stage.} \item{cohorts}{A data frame listing the persons in each cohort, listing their
-#' exposure status as well as the time to the end of the observation period and time to the end of the
-#' cohort (usually the end of the exposure era).} \item{covariates}{An ffdf object listing the
-#' baseline covariates per person in the two cohorts. This is done using a sparse representation:
-#' covariates with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the covariates that have been extracted.}
-#' \item{metaData}{A list of objects with information on how the cohortMethodData object was
-#' constructed.} } The generic \code{print()} and \code{summary()} functions have been implemented for this object.
+#' \item{outcomes}{A data frame listing the outcomes per person, including the time to event, and the
+#' outcome id. Outcomes are not yet filtered based on risk window, since this is done at a later
+#' stage.} \item{cohorts}{A data frame listing the persons in each cohort, listing their exposure
+#' status as well as the time to the end of the observation period and time to the end of the cohort
+#' (usually the end of the exposure era).} \item{covariates}{An ffdf object listing the baseline
+#' covariates per person in the two cohorts. This is done using a sparse representation: covariates
+#' with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the
+#' covariates that have been extracted.} \item{metaData}{A list of objects with information on how the
+#' cohortMethodData object was constructed.} } The generic \code{print()} and \code{summary()}
+#' functions have been implemented for this object.
 #'
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
@@ -155,10 +155,12 @@ getDbCohortMethodData <- function(connectionDetails,
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
     if (is(covariateSettings, "covariateSettings")) {
-      covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds, conceptIds)
+      covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
+                                                         conceptIds)
     } else if (is.list(covariateSettings)) {
-      for (i in 1 : length(covariateSettings)) {
-        covariateSettings[[i]]$excludedCovariateConceptIds <- c(covariateSettings[[i]]$excludedCovariateConceptIds, conceptIds)
+      for (i in 1:length(covariateSettings)) {
+        covariateSettings[[i]]$excludedCovariateConceptIds <- c(covariateSettings[[i]]$excludedCovariateConceptIds,
+                                                                conceptIds)
       }
     }
   }
@@ -211,17 +213,16 @@ getDbCohortMethodData <- function(connectionDetails,
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql)
     colnames(rawCount) <- SqlRender::snakeCaseToCamelCase(colnames(rawCount))
     counts <- data.frame(description = "Original cohorts",
-                         treatedPersons = rawCount$exposedCount[rawCount$treatment == 1],
-                         comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-                         treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
-                         comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
+                         treatedPersons = rawCount$exposedCount[rawCount$treatment ==
+      1], comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0], treatedExposures = rawCount$exposureCount[rawCount$treatment ==
+      1], comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
     metaData$attrition <- counts
     label <- c()
     if (firstExposureOnly) {
-      label <- c(label,"first exp. only")
+      label <- c(label, "first exp. only")
     }
     if (removeDuplicateSubjects) {
-      label <- c(label,"removed subs in both cohorts")
+      label <- c(label, "removed subs in both cohorts")
     }
     if (washoutPeriod) {
       label <- c(label, paste(washoutPeriod, "days of obs. prior"))
@@ -257,7 +258,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                   cdm_version = cdmVersion)
   outcomes <- DatabaseConnector::querySql(connection, outcomeSql)
   colnames(outcomes) <- SqlRender::snakeCaseToCamelCase(colnames(outcomes))
-  metaData <- data.frame(outcomeIds =outcomeIds)
+  metaData <- data.frame(outcomeIds = outcomeIds)
   attr(outcomes, "metaData") <- metaData
   delta <- Sys.time() - start
   writeLines(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
@@ -267,7 +268,10 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema)
-  DatabaseConnector::executeSql(connection, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
+  DatabaseConnector::executeSql(connection,
+                                renderedSql,
+                                progressBar = FALSE,
+                                reportOverallTime = FALSE)
   RJDBC::dbDisconnect(connection)
 
   metaData <- covariateData$metaData
@@ -365,7 +369,8 @@ print.cohortMethodData <- function(x, ...) {
   writeLines("")
   writeLines(paste("Treatment concept ID:", attr(x$cohorts, "metaData")$targetId))
   writeLines(paste("Comparator concept ID:", attr(x$cohorts, "metaData")$comparatorId))
-  writeLines(paste("Outcome concept ID(s):", paste(attr(x$outcomes, "metaData")$outcomeIds, collapse = ",")))
+  writeLines(paste("Outcome concept ID(s):",
+                   paste(attr(x$outcomes, "metaData")$outcomeIds, collapse = ",")))
 }
 
 #' @export
@@ -376,10 +381,13 @@ summary.cohortMethodData <- function(object, ...) {
                               eventCount = 0,
                               personCount = 0)
   for (i in 1:nrow(outcomeCounts)) {
-    outcomeCounts$eventCount[i] <- sum(object$outcomes$outcomeId == attr(object$outcomes, "metaData")$outcomeIds[i])
-    outcomeCounts$personCount[i] <- length(unique(object$outcomes$rowId[object$outcomes$outcomeId == attr(object$outcomes, "metaData")$outcomeIds[i]]))
+    outcomeCounts$eventCount[i] <- sum(object$outcomes$outcomeId == attr(object$outcomes,
+                                                                         "metaData")$outcomeIds[i])
+    outcomeCounts$personCount[i] <- length(unique(object$outcomes$rowId[object$outcomes$outcomeId ==
+      attr(object$outcomes, "metaData")$outcomeIds[i]]))
   }
-  result <- list(metaData = append(append(object$metaData, attr(object$cohorts, "metaData")), attr(object$outcomes, "metaData")),
+  result <- list(metaData = append(append(object$metaData, attr(object$cohorts, "metaData")),
+                                   attr(object$outcomes, "metaData")),
                  treatedPersons = treatedPersons,
                  comparatorPersons = comparatorPersons,
                  outcomeCounts = outcomeCounts,
@@ -450,28 +458,31 @@ grepCovariateNames <- function(pattern, object) {
 #' Insert a population into a database
 #'
 #' @details
-#' Inserts a population table into a database. The table in the database will have the same structure as the
-#' 'cohort' table in the Common Data Model.
+#' Inserts a population table into a database. The table in the database will have the same structure
+#' as the 'cohort' table in the Common Data Model.
 #'
-#' @param population                   Either an object of type \code{cohortMethodData} or a population object generated by functions
-#'                                     like \code{createStudyPopulation}.
-#' @param cohortIds                    The IDs to be used for the treated and comparator cohort, respectively.
-#' @param connectionDetails            An R object of type\cr\code{connectionDetails} created using the
-#'                                     function \code{createConnectionDetails} in the
-#'                                     \code{DatabaseConnector} package.
-#' @param cohortDatabaseSchema         The name of the database schema where the data will be written.
-#'                                     Requires write permissions to this database. On SQL
-#'                                     Server, this should specifiy both the database and the schema,
-#'                                     so for example 'cdm_instance.dbo'.
-#' @param cohortTable                  The name of the table in the database schema  where the data will be written.
-#' @param createTable                  Should a new table be created? If not, the data will be inserted into an existing
-#'                                     table.
-#' @param dropTableIfExists            If \code{createTable = TRUE} and the table already exists it will be overwritten.
-#' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
+#' @param population             Either an object of type \code{cohortMethodData} or a population
+#'                               object generated by functions like \code{createStudyPopulation}.
+#' @param cohortIds              The IDs to be used for the treated and comparator cohort,
+#'                               respectively.
+#' @param connectionDetails      An R object of type\cr\code{connectionDetails} created using the
+#'                               function \code{createConnectionDetails} in the
+#'                               \code{DatabaseConnector} package.
+#' @param cohortDatabaseSchema   The name of the database schema where the data will be written.
+#'                               Requires write permissions to this database. On SQL Server, this
+#'                               should specifiy both the database and the schema, so for example
+#'                               'cdm_instance.dbo'.
+#' @param cohortTable            The name of the table in the database schema where the data will be
+#'                               written.
+#' @param createTable            Should a new table be created? If not, the data will be inserted into
+#'                               an existing table.
+#' @param dropTableIfExists      If \code{createTable = TRUE} and the table already exists it will be
+#'                               overwritten.
+#' @param cdmVersion             Define the OMOP CDM version used: currently support "4" and "5".
 #'
 #' @export
 insertDbPopulation <- function(population,
-                               cohortIds = c(1,0),
+                               cohortIds = c(1, 0),
                                connectionDetails,
                                cohortDatabaseSchema,
                                cohortTable = "cohort",
@@ -479,11 +490,11 @@ insertDbPopulation <- function(population,
                                dropTableIfExists = TRUE,
                                cdmVersion = "5") {
   if (is(population, "cohortMethodData")) {
-    population = population$cohorts
+    population <- population$cohorts
   }
-  newCohortIds <- plyr::mapvalues(population$treatment, c(1,0), cohortIds)
+  newCohortIds <- plyr::mapvalues(population$treatment, c(1, 0), cohortIds)
   population <- population[, c("subjectId", "cohortStartDate")]
-  if (cdmVersion == "4"){
+  if (cdmVersion == "4") {
     population$cohortConceptId <- newCohortIds
   } else {
     population$cohortDefinitionId <- newCohortIds
@@ -491,7 +502,10 @@ insertDbPopulation <- function(population,
   population$cohortEndDate <- NA
   colnames(population) <- SqlRender::camelCaseToSnakeCase(colnames(population))
   connection <- DatabaseConnector::connect(connectionDetails)
-  writeLines(paste("Writing", nrow(population), "rows to", paste(cohortDatabaseSchema, cohortTable, sep = ".")))
+  writeLines(paste("Writing",
+                   nrow(population),
+                   "rows to",
+                   paste(cohortDatabaseSchema, cohortTable, sep = ".")))
   start <- Sys.time()
   if (!createTable) {
     if (cdmVersion == "4") {
@@ -503,7 +517,10 @@ insertDbPopulation <- function(population,
                                 table = paste(cohortDatabaseSchema, cohortTable, sep = "."),
                                 cohort_ids = cohortIds)$sql
     sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-    DatabaseConnector::executeSql(connection = connection, sql = sql, progressBar = FALSE, reportOverallTime = FALSE)
+    DatabaseConnector::executeSql(connection = connection,
+                                  sql = sql,
+                                  progressBar = FALSE,
+                                  reportOverallTime = FALSE)
   }
   DatabaseConnector::insertTable(connection = connection,
                                  tableName = paste(cohortDatabaseSchema, cohortTable, sep = "."),

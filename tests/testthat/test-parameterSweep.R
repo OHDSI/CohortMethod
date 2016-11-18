@@ -49,9 +49,13 @@ test_that("cohortMethodData functions", {
 })
 
 test_that("Create study population functions", {
-  studyPop <- createStudyPopulation(cohortMethodData, outcomeId = 194133, removeSubjectsWithPriorOutcome = TRUE, minDaysAtRisk = 1)
+  studyPop <- createStudyPopulation(cohortMethodData,
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1)
   expect_true(all(studyPop$timeAtRisk > 0))
-  peopleWithPriorOutcomes <- cohortMethodData$outcomes$rowId[cohortMethodData$outcomes$daysToEvent < 0]
+  peopleWithPriorOutcomes <- cohortMethodData$outcomes$rowId[cohortMethodData$outcomes$daysToEvent <
+    0]
   expect_false(any(peopleWithPriorOutcomes %in% studyPop$rowId))
 
   aTable <- getAttritionTable(studyPop)
@@ -59,13 +63,14 @@ test_that("Create study population functions", {
 })
 
 test_that("Propensity score functions", {
-  studyPop <- createStudyPopulation(cohortMethodData, outcomeId = 194133, removeSubjectsWithPriorOutcome = TRUE, minDaysAtRisk = 1)
+  studyPop <- createStudyPopulation(cohortMethodData,
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1)
   # Cross-validation:
   ps <- createPs(cohortMethodData, studyPop)
 
-  ps <- createPs(cohortMethodData,
-                 studyPop,
-                 prior = createPrior("laplace", 0.1, exclude = 0))
+  ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
   expect_lt(0.7, computePsAuc(ps)[1])
 
   propensityModel <- getPsModel(ps, cohortMethodData)
@@ -130,10 +135,11 @@ test_that("Propensity score functions", {
 })
 
 test_that("Balance functions", {
-  studyPop <- createStudyPopulation(cohortMethodData, outcomeId = 194133, removeSubjectsWithPriorOutcome = TRUE, minDaysAtRisk = 1)
-  ps <- createPs(cohortMethodData,
-                 studyPop,
-                 prior = createPrior("laplace", 0.1, exclude = 0))
+  studyPop <- createStudyPopulation(cohortMethodData,
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1)
+  ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
@@ -154,9 +160,7 @@ test_that("Outcome functions", {
                                     minDaysAtRisk = 1,
                                     riskWindowStart = 0,
                                     riskWindowEnd = 365)
-  ps <- createPs(cohortMethodData,
-                 studyPop,
-                 prior = createPrior("laplace", 0.1, exclude = 0))
+  ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
 
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
@@ -201,9 +205,7 @@ test_that("Functions on outcome model", {
                                     minDaysAtRisk = 1,
                                     riskWindowStart = 0,
                                     riskWindowEnd = 365)
-  ps <- createPs(cohortMethodData,
-                 studyPop,
-                 prior = createPrior("laplace", 0.1, exclude = 0))
+  ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
 
   strata <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
   outcomeModel <- fitOutcomeModel(population = strata,

@@ -9,11 +9,9 @@ cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, 
 test_that("createStudyPop: washout period", {
   cohortMethodData$cohorts$rowId[1] <- 1
   cohortMethodData$cohorts$daysFromObsStart[1] <- 170
-  sp <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                              washoutPeriod = 160)
+  sp <- createStudyPopulation(cohortMethodData = cohortMethodData, washoutPeriod = 160)
   expect_equal(nrow(sp), 1)
-  sp <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                              washoutPeriod = 180)
+  sp <- createStudyPopulation(cohortMethodData = cohortMethodData, washoutPeriod = 180)
   expect_equal(nrow(sp), 0)
 })
 
@@ -25,11 +23,9 @@ test_that("createStudyPop: firstExposureOnly", {
   tempCmd$cohorts$rowId[2] <- 1
   tempCmd$cohorts$daysFromObsStart[2] <- 210
 
-  sp <- createStudyPopulation(cohortMethodData = tempCmd,
-                              firstExposureOnly = FALSE)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, firstExposureOnly = FALSE)
   expect_equal(nrow(sp), 2)
-  sp <- createStudyPopulation(cohortMethodData = tempCmd,
-                              firstExposureOnly = TRUE)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, firstExposureOnly = TRUE)
   expect_equal(nrow(sp), 1)
 })
 
@@ -41,11 +37,9 @@ test_that("createStudyPop: removeDuplicateSubjects", {
   tempCmd$cohorts$rowId[2] <- 1
   tempCmd$cohorts$treatment[2] <- 1
 
-  sp <- createStudyPopulation(cohortMethodData = tempCmd,
-                              removeDuplicateSubjects = FALSE)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = FALSE)
   expect_equal(nrow(sp), 2)
-  sp <- createStudyPopulation(cohortMethodData = tempCmd,
-                              removeDuplicateSubjects = TRUE)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = TRUE)
   expect_equal(nrow(sp), 0)
 })
 
@@ -130,9 +124,7 @@ test_that("createStudyPop: outcomes", {
   tempCmd$cohorts$daysToCohortEnd[1] <- 10
   tempCmd$cohorts$daysToObsEnd[1] <- 20
 
-  sp <- createStudyPopulation(cohortMethodData = tempCmd,
-                              outcomeId = 123,
-                              riskWindowEnd = 999)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, outcomeId = 123, riskWindowEnd = 999)
   expect_equal(sp$outcomeCount, 1)
   expect_equal(sp$survivalTime, 16)
   expect_equal(sp$daysToEvent, 15)

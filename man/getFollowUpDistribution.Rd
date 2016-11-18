@@ -7,8 +7,9 @@
 getFollowUpDistribution(population, quantiles = c(0, 0.25, 0.5, 0.75, 1))
 }
 \arguments{
-\item{population}{A data frame describing the study population as created using the \code{\link{createStudyPopulation}} function.
-This should at least have these columns: treatment, timeAtRisk.}
+\item{population}{A data frame describing the study population as created using the
+\code{\link{createStudyPopulation}} function. This should at least have these
+columns: treatment, timeAtRisk.}
 
 \item{quantiles}{The quantiles of the population to compute minimum follow-up time for.}
 }
@@ -19,7 +20,7 @@ A data frame with per treatment group at each quantile the amount of follow-up t
 Get the distribution of follow-up time
 }
 \details{
-Get the distribution of follow-up time as quantiles. Follow-up time is defined as time-at-risk, so not censored at the
-outcome.
+Get the distribution of follow-up time as quantiles. Follow-up time is defined as time-at-risk, so
+not censored at the outcome.
 }
 
