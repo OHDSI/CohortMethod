@@ -509,6 +509,72 @@ This function will store the population in a table with the same structure as th
 
 The outcome model is a model describing which variables are associated with the outcome. 
 
+## Considering follow-up and power
+
+Before we start fitting an outcome model, we might be interested to know whether we have sufficient power to detect a 
+particular effect size. It makes sense to perform these power calculations once the study population has been fully defined,
+so taking into account loss to the various inclusion and exclusion criteria (such as no prior outcomes), and loss due to matching and/or trimming. Since the sample size is fixed in retrospective studies (the data has already been collected), and the true effect size is unknown, the CohortMethod package provides a function to compute the minimum detectable relative risk (MDRR) instead:
+
+```{r tidy=FALSE,eval=FALSE}
+computeMdrr(population = studyPop,
+            modelType = "cox",
+            alpha = 0.05, 
+            power = 0.8, 
+            twoSided = TRUE)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
+computeMdrr(population = studyPop,
+            modelType = "cox",
+            alpha = 0.05, 
+            power = 0.8, 
+            twoSided = TRUE)
+}
+```
+
+In this example we used the `studyPop` object, so the population before any matching or trimming. If we want to know the MDRR after matching, we use the `matchedPop` object we created earlier instead:
+
+```{r tidy=FALSE,eval=FALSE}
+computeMdrr(population = matchedPop,
+            modelType = "cox",
+            alpha = 0.05, 
+            power = 0.8, 
+            twoSided = TRUE)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
+computeMdrr(population = matchedPop,
+            modelType = "cox",
+            alpha = 0.05, 
+            power = 0.8, 
+            twoSided = TRUE)
+}
+```
+
+Even thought the MDRR in the matched population is higher, meaning we have less power, we should of course not be fooled: matching most likely eliminates confounding, and is therefore preferred to not matching.
+
+To gain a better understanding of the amount of follow-up available we can also inspect the distribution of follow-up time. We defined follow-up time as time at risk, so not censored by the occurrence of the outcome. The `getFollowUpDistribution` can provide a simple overview:
+
+```{r tidy=FALSE,eval=FALSE}
+getFollowUpDistribution(population = matchedPop)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
+getFollowUpDistribution(population = matchedPop)
+}
+```
+
+The output is telling us number of days of follow-up each quantile of the study population has. We can also plot the distribution:
+
+```{r tidy=FALSE,eval=FALSE}
+plotFollowUpDistribution(population = matchedPop)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
+if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
+plotFollowUpDistribution(population = matchedPop)
+}
+```
+
 ## Fitting the outcome model
 
 In theory we could fit an outcome model without using the propensity scores. In this example we are fitting an outcome model using a Cox regression:

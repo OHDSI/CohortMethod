@@ -4,10 +4,15 @@
 \alias{plotCovariateBalanceScatterPlot}
 \title{Create a scatterplot of the covariate balance}
 \usage{
-plotCovariateBalanceScatterPlot(balance, fileName = NULL)
+plotCovariateBalanceScatterPlot(balance, absolute = TRUE, threshold = 0,
+  fileName = NULL)
 }
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
+
+\item{absolute}{Should the absolute value of the difference be used?}
+
+\item{threshold}{Show a threshold value for after matching standardized difference.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See the
 function \code{ggsave} in the ggplot2 package for supported file formats.}

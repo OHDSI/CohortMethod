@@ -233,7 +233,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 # balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
 
-# plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
+plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
 # plotCovariateBalanceOfTopVariables(balance)
 
 outcomeModel <- fitOutcomeModel(population = studyPop,
