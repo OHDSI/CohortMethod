@@ -53,7 +53,9 @@ rCode <- OhdsiRTools::createArgFunction("getDbCohortMethodData",
                                                         "outcomeIds"),
                                         rCode = rCode)
 rCode <- OhdsiRTools::createArgFunction("createStudyPopulation",
-                                        excludeArgs = c("cohortMethodData", "population", "outcomeId"),
+                                        excludeArgs = c("cohortMethodData",
+                                                        "population",
+                                                        "outcomeId"),
                                         rCode = rCode)
 rCode <- OhdsiRTools::createArgFunction("createPs",
                                         excludeArgs = c("cohortMethodData", "population"),
@@ -62,18 +64,18 @@ rCode <- OhdsiRTools::createArgFunction("trimByPs", excludeArgs = c("population"
 rCode <- OhdsiRTools::createArgFunction("trimByPsToEquipoise",
                                         excludeArgs = c("population"),
                                         rCode = rCode)
-rCode <- OhdsiRTools::createArgFunction("matchOnPs",
-                                        excludeArgs = c("population"), rCode = rCode)
+rCode <- OhdsiRTools::createArgFunction("matchOnPs", excludeArgs = c("population"), rCode = rCode)
 rCode <- OhdsiRTools::createArgFunction("matchOnPsAndCovariates",
                                         excludeArgs = c("population", "cohortMethodData"),
                                         rCode = rCode)
-rCode <- OhdsiRTools::createArgFunction("stratifyByPs", excludeArgs = c("population"), rCode = rCode)
+rCode <- OhdsiRTools::createArgFunction("stratifyByPs",
+                                        excludeArgs = c("population"),
+                                        rCode = rCode)
 rCode <- OhdsiRTools::createArgFunction("stratifyByPsAndCovariates",
                                         excludeArgs = c("population", "cohortMethodData"),
                                         rCode = rCode)
 rCode <- OhdsiRTools::createArgFunction("fitOutcomeModel",
-                                        excludeArgs = c("population",
-                                                        "cohortMethodData"),
+                                        excludeArgs = c("population", "cohortMethodData"),
                                         rCode = rCode)
 writeLines(rCode, "r/CreateArgFunctions.R")
 OhdsiRTools::formatRFile("r/CreateArgFunctions.R")

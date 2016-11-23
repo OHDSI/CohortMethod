@@ -15,23 +15,26 @@ createPs(cohortMethodData, population, excludeCovariateIds = c(),
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
 
-\item{population}{A data frame describing the population. This should at least have a 'rowId' column
-corresponding to the rowId column in the \code{cohortMethodData} covariates object and a 'treatment' column.
-If population is not specified, the full population in the \code{cohortMethodData} will be used.}
+\item{population}{A data frame describing the population. This should at least have a
+'rowId' column corresponding to the rowId column in the
+\code{cohortMethodData} covariates object and a 'treatment' column.
+If population is not specified, the full population in the
+\code{cohortMethodData} will be used.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
 \item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
-\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with the
-treatment assignment. If any covariate has an unusually high correlation
-(either positive or negative), this will throw and error.}
+\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with
+the treatment assignment. If any covariate has an unusually high
+correlation (either positive or negative), this will throw and
+error.}
 
 \item{stopOnError}{If an error occurrs, should the function stop? Else, the two cohorts
 will be assumed to be perfectly separable.}
 
-\item{prior}{The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
-for details.}
+\item{prior}{The prior used to fit the model. See
+\code{\link[Cyclops]{createPrior}} for details.}
 
 \item{control}{The control object used to control the cross-validation used to
 determine the hyperparameters of the prior (if applicable). See

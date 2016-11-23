@@ -8,9 +8,7 @@ cdmDatabaseSchema <- "CDM_TRUVEN_MDCD_v5.dbo"
 resultsDatabaseSchema <- "Scratch.dbo"
 cdmVersion <- "5"
 
-connectionDetails <- createConnectionDetails(dbms="pdw",
-                                             server="JRDUSAPSCTL01",
-                                             port="17001")
+connectionDetails <- createConnectionDetails(dbms = "pdw", server = "JRDUSAPSCTL01", port = "17001")
 
 checkCmInstallation(connectionDetails)
 
@@ -32,7 +30,9 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cmData")
 cohortMethodData <- loadCohortMethodData("s:/temp/cmData")
-studyPop <- createStudyPopulation(cohortMethodData, removeSubjectsWithPriorOutcome = TRUE, outcomeId = 194133)
+studyPop <- createStudyPopulation(cohortMethodData,
+                                  removeSubjectsWithPriorOutcome = TRUE,
+                                  outcomeId = 194133)
 
 ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", variance = 0.01))
 
@@ -44,7 +44,11 @@ plotPs(strata, ps)
 
 
 
-fitOutcomeModel(population = strata, cohortMethodData = cohortMethodData, modelType = "cox", stratified = TRUE, prior = createPrior("laplace", 0.01))
+fitOutcomeModel(population = strata,
+                cohortMethodData = cohortMethodData,
+                modelType = "cox",
+                stratified = TRUE,
+                prior = createPrior("laplace", 0.01))
 
 
 

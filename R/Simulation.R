@@ -41,7 +41,8 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   attr(covariatePrevalence, "names") <- sums$covariateId
 
   writeLines("Computing propensity model")
-  propensityScore <- createPs(cohortMethodData, prior = Cyclops::createPrior("laplace", 0.1, exclude = 0))
+  propensityScore <- createPs(cohortMethodData,
+                              prior = Cyclops::createPrior("laplace", 0.1, exclude = 0))
   propensityModel <- attr(propensityScore, "metaData")$psModelCoef
 
   writeLines("Fitting outcome model(s)")
@@ -54,7 +55,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
                                       minDaysAtRisk = 1,
                                       removeSubjectsWithPriorOutcome = FALSE,
                                       outcomeId = outcomeId)
-    #studyPop <- trimByPsToEquipoise(studyPop)
+    # studyPop <- trimByPsToEquipoise(studyPop)
     studyPop <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
     outcomeModel <- fitOutcomeModel(population = studyPop,
                                     cohortMethodData = cohortMethodData,
@@ -68,9 +69,9 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   writeLines("Computing rates of prior outcomes")
   totalTime <- sum(cohortMethodData$cohorts$daysFromObsStart)
   preIndexOutcomeRates <- aggregate(rowId ~ outcomeId,
-                                    data = cohortMethodData$outcomes[cohortMethodData$outcomes$daysToEvent < 0, ],
-                                    length)
-  preIndexOutcomeRates$rate <- preIndexOutcomeRates$rowId / totalTime
+                                    data = cohortMethodData$outcomes[cohortMethodData$outcomes$daysToEvent <
+    0, ], length)
+  preIndexOutcomeRates$rate <- preIndexOutcomeRates$rowId/totalTime
   preIndexOutcomeRates$rowId <- NULL
 
   writeLines("Fitting models for time to observation period start, end and time to cohort end")
@@ -81,7 +82,8 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   time[cohortEnd > obsEnd] <- obsEnd[cohortEnd > obsEnd]
   data <- data.frame(time = time, event = event)
   data <- data[data$time > 0, ]
-  fitCohortEnd <- survival::survreg(survival::Surv(time, event) ~ 1, data = data, dist = "exponential")
+  fitCohortEnd <- survival::survreg(survival::Surv(time,
+                                                   event) ~ 1, data = data, dist = "exponential")
   fitObsEnd <- survival::survreg(survival::Surv(obsEnd[obsEnd > 0]) ~ 1, dist = "exponential")
   data <- cohortMethodData$cohort
   minObsTime <- min(data$daysFromObsStart)
@@ -109,10 +111,9 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 #' @description
 #' \code{simulateCohortMethodData} creates a cohortMethodData object with simulated data.
 #'
-#' @param profile   An object of type \code{cohortMethodDataSimulationProfile} as
-#'                                      generated using the
-#'                                      \cr\code{createCohortMethodDataSimulationProfile} function.
-#' @param n                             The size of the population to be generated.
+#' @param profile   An object of type \code{cohortMethodDataSimulationProfile} as generated using the
+#'                  \cr\code{createCohortMethodDataSimulationProfile} function.
+#' @param n         The size of the population to be generated.
 #'
 #' @details
 #' This function generates simulated data that is in many ways similar to the original data on which
@@ -143,8 +144,8 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   covariateId <- do.call("c", covariateId)
   covariateValue <- rep(1, length(covariateId))
   covariates <- data.frame(rowId = rowId,
-                                       covariateId = covariateId,
-                                       covariateValue = covariateValue)
+                           covariateId = covariateId,
+                           covariateValue = covariateValue)
 
   writeLines("Generating treatment variable")
   betas <- profile$propensityModel
@@ -169,7 +170,8 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                         treatment = treatment$covariateValue,
                         subjectId = treatment$rowId,
                         cohortStartDate = "2000-01-01",
-                        daysFromObsStart = profile$minObsTime + round(rexp(n, profile$obsStartRate)) - 1,
+                        daysFromObsStart = profile$minObsTime + round(rexp(n,
+                                                                           profile$obsStartRate)) - 1,
                         daysToCohortEnd = round(rexp(n, profile$obsEndRate)),
                         daysToObsEnd = round(rexp(n, profile$cohortEndRate)))
   attr(cohorts, "metaData") <- profile$cohortsMetaData
@@ -192,15 +194,15 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     temp$nOutcomes[temp$nOutcomes > temp$daysToObsEnd] <- temp$daysToObsEnd[temp$nOutcomes > temp$daysToObsEnd]
     outcomeRows <- sum(temp$nOutcomes)
     outcomes <- data.frame(rowId = rep(0, outcomeRows),
-                           outcomeId = rep(profile$outcomesMetaData$outcomeIds[i],
-                                           outcomeRows),
+                           outcomeId = rep(profile$outcomesMetaData$outcomeIds[i], outcomeRows),
                            daysToEvent = rep(0, outcomeRows))
     cursor <- 1
     for (i in 1:nrow(temp)) {
       nOutcomes <- temp$nOutcomes[i]
       if (nOutcomes != 0) {
         outcomes$rowId[cursor:(cursor + nOutcomes - 1)] <- temp$rowId[i]
-        outcomes$daysToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(size = nOutcomes, temp$daysToObsEnd[i])
+        outcomes$daysToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(size = nOutcomes,
+                                                                            temp$daysToObsEnd[i])
         cursor <- cursor + nOutcomes
       }
     }
@@ -221,7 +223,8 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     for (j in 1:length(nOutcomes)) {
       if (nOutcomes[j] != 0) {
         outcomes$rowId[cursor:(cursor + nOutcomes[j] - 1)] <- cohorts$rowId[j]
-        outcomes$daysToEvent[cursor:(cursor + nOutcomes[j] - 1)] <- -sample.int(size = nOutcomes[j], cohorts$daysFromObsStart[j])
+        outcomes$daysToEvent[cursor:(cursor + nOutcomes[j] - 1)] <- -sample.int(size = nOutcomes[j],
+                                                                                cohorts$daysFromObsStart[j])
         cursor <- cursor + nOutcomes[j]
       }
     }

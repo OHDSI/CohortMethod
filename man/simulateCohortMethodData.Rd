@@ -7,8 +7,7 @@
 simulateCohortMethodData(profile, n = 10000)
 }
 \arguments{
-\item{profile}{An object of type \code{cohortMethodDataSimulationProfile} as
-generated using the
+\item{profile}{An object of type \code{cohortMethodDataSimulationProfile} as generated using the
 \cr\code{createCohortMethodDataSimulationProfile} function.}
 
 \item{n}{The size of the population to be generated.}
