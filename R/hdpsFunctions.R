@@ -109,11 +109,11 @@ removeRareCovariates <- function(data, dimensionCutoff, totalPopulation) {
 # @param cohortData cohortMethodData object
 #
 # @return Returns input covariates, with extra columns treatment and outcome that are 1/0
-addTreatmentAndOutcome <- function(data, cohortData) {
+addTreatmentAndOutcome <- function(data, cohortData, outcomeId) {
   if (is.null(data)) {return(list(NULL))}
   treatment = ff::as.ff(cohortData$cohorts$treatment)[ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$cohorts$rowId))]
   outcome = ff::ff(vmode = "double", initdata = 0, length = dim(data)[[1]])
-  x = ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$outcomes$rowId))
+  x = ffbase::ffmatch(data$rowId, ff::as.ff(cohortData$outcomes$rowId[cohortData$outcomes$outcomeId==outcomeId]))
   y = ffbase::ffwhich(x, !is.na(x))
   if (!is.null(y)) outcome[y] = ff::as.ff(rep(1,length(y)))
   data$treatment = treatment

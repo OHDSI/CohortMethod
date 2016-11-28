@@ -249,6 +249,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
 # psMathod: 0 (nothing), 1 (trimByPsToEquipoise), 2 (stratify), 3 (match)
 #' @export
 createCMDSimulationProfile <- function(cohortMethodData,
+                                       outcomeId = 3,
                                        studyPop,
                                        simulateTreatment = FALSE,
                                        simulateTreatmentBinary = NULL,
@@ -367,25 +368,25 @@ createCMDSimulationProfile <- function(cohortMethodData,
   partialCMD = list(cohorts = cohorts,
                     covariates = covariates,
                     covariateRef = covariateRef,
-                    outcomes = cohortMethodData$outcomes,
+                    outcomes = outcomes,
                     metaData = cohortMethodData$metaData)
   class(partialCMD) <- "cohortMethodData"
 
-  result = list(partialCMD = partialCMD,
-                sData = sData,
+  result = list(sData = sData,
                 cData = cData,
                 observedEffectSize = coef(outcomeModel),
                 observedCensoringEffectSize = coef(outcomeModel1),
                 sOutcomeModelCoefficients = outcomeModel$outcomeModelCoefficients,
                 cOutcomeModelCoefficients = outcomeModel1$outcomeModelCoefficients,
-                studyPop = studyPop)
+                studyPop = studyPop,
+                outcomeId = outcomeId)
   class(result) <- "simulationProfile"
 
   return (result)
 }
 
 #' @export
-simulateCMD <- function(partialCMD, sData, cData) {
+simulateCMD <- function(partialCMD, sData, cData, outcomeId) {
   # generate event times
   sTimes = generateEventTimes(sData$XB, sData$times, sData$baseline)
   names(sTimes)[match("time", names(sTimes))] = "sTime"
@@ -414,13 +415,16 @@ simulateCMD <- function(partialCMD, sData, cData) {
     cohorts$newDaysToEvent[t] = cohorts$sTime[t]
     cohorts$newSurvivalTime[t] = cohorts$sTime[t] + 1
     cohorts$newOutcomeCount[t] = 1
-    outcomes = data.frame(rowId = cohorts$rowId[t], daysToEvent = cohorts$newDaysToEvent[t], outcomeId = 3)
+    outcomes = data.frame(rowId = cohorts$rowId[t], daysToEvent = cohorts$newDaysToEvent[t], outcomeId = outcomeId)
     cohorts$sTime = NULL
     cohorts$cTime = NULL
   }
 
-  return (list(covariates = partialCMD$covariates,
-               covariateRef = partialCMD$covariateRef,
+  covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$rowId, ff::as.ff(cohorts$rowId)),]
+  covariateRef = cohortMethodData$covariateRef[in.ff(cohortMethodData$covariateRef$covariateId, unique(covariates$covariateId)),]
+
+  return (list(covariates = covariates,
+               covariateRef = covariateRef,
                cohorts = cohorts,
                outcomes = outcomes,
                metaData = partialCMD$metaData))
@@ -540,7 +544,7 @@ removeCovariates <- function(cohortMethodData,
   return (list(covariates = covariates,
                covariateRef = covariateRef,
                cohorts = cohortMethodData$cohorts,
-               outcomes = cohortMethodData,
+               outcomes = cohortMethodData$outcomes,
                metaData = cohortMethodData$metaData))
 }
 
@@ -557,10 +561,7 @@ saveSimulationProfile <- function(simulationProfile, file) {
     stop("Must specify file")
   if (class(simulationProfile) != "simulationProfile")
     stop("Data not of class simulationProfile")
-  if (class(simulationProfile$partialCMD) != "cohortMethodData")
-    stop("partialCMD not of class cohortMethodData")
 
-  saveCohortMethodData(simulationProfile$partialCMD, file = paste(file,"/partialCMD",sep=""))
   sDataFile = paste(file,"/sData",sep="")
   XB = simulationProfile$sData$XB
   ffbase::save.ffdf(XB, dir = sDataFile, clone = TRUE)
@@ -578,6 +579,7 @@ saveSimulationProfile <- function(simulationProfile, file) {
   saveRDS(simulationProfile$sOutcomeModelCoefficients, file = file.path(file, "sOutcomeModelCoefficients.rds"))
   saveRDS(simulationProfile$cOutcomeModelCoefficients, file = file.path(file, "cOutcomeModelCoefficients.rds"))
   saveRDS(simulationProfile$studyPop, file = file.path(file, "studyPop.rds"))
+  saveRDS(simulationProfile$outcomeId, file = file.path(file, "outcomeId.rds"))
 }
 
 #' @export
@@ -586,8 +588,6 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder", file))
-
-  partialCMD <- loadCohortMethodData(paste(file,"/partialCMD",sep=""))
 
   e <- new.env()
   sDataFile = paste(file,"/sData",sep="")
@@ -608,21 +608,19 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
   sOutcomeModelCoefficients = readRDS(file.path(file, "sOutcomeModelCoefficients.rds"))
   cOutcomeModelCoefficients = readRDS(file.path(file, "cOutcomeModelCoefficients.rds"))
   studyPop = readRDS(file.path(file, "studyPop.rds"))
+  outcomeId = readRDS(file.path(file, "outcomeId.rds"))
 
   # Open all ffdfs to prevent annoying messages later:
   open(sData$XB, readonly = readOnly)
   open(cData$XB, readonly = readOnly)
-  open(partialCMD$covariates, readonly = readOnly)
-  open(partialCMD$covariateRef, readonly = readOnly)
-  class(partialCMD) <- "cohortMethodData"
-  result = list(partialCMD = partialCMD,
-                sData = sData,
+  result = list(sData = sData,
                 cData = cData,
                 observedEffectSize = observedEffectSize,
                 observedCensoringEffectSize = observedCensoringEffectSize,
                 sOutcomeModelCoefficients = sOutcomeModelCoefficients,
                 cOutcomeModelCoefficients = cOutcomeModelCoefficients,
-                studyPop = studyPop)
+                studyPop = studyPop,
+                outcomeId = outcomeId)
   class(result) <- "simulationProfile"
   rm(e)
   return(result)

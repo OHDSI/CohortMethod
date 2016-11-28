@@ -33,6 +33,7 @@
 #' Returns the input \code{cohortMethodData} with new entries for \code{covariates} and \code{covariateRef}
 #' @export
 runHdps <- function(cohortMethodData,
+                    outcomeId = 3,
                     useInpatientDiagnosis = TRUE,
                     useAmbulatoryDiagnosis = TRUE,
                     useDrugIngredient = TRUE,
@@ -85,7 +86,7 @@ runHdps <- function(cohortMethodData,
     newData = sapply(dimAnalysisId, separateCovariates, newCovariates)
     totalPopulation = length(cohortMethodData$cohorts$rowId)
     newData = sapply(newData, removeRareCovariates, dimensionCutoff, totalPopulation)
-    newData = sapply(newData, addTreatmentAndOutcome, cohortMethodData)
+    newData = sapply(newData, addTreatmentAndOutcome, cohortMethodData, outcomeId)
     rankings = sapply(newData, calculateRanks, cohortMethodData, fudge)
 
     newData = removeLowRank(newData, rankings, rankCutoff, useExpRank = useExpRank)
@@ -109,13 +110,14 @@ runHdps <- function(cohortMethodData,
 
 #' @export
 runHdps1 <- function(cohortMethodData,
-                    demographicsAnalysisIds = c(2,3,5,6),
-                    predefinedIncludeConceptIds = c(),
-                    predefinedExcludeConceptIds = c(),
-                    icd9AnalysisIds = c(104, 105, 106, 107, 108, 109),
-                    rankCutoff = 500,
-                    fudge = 0,
-                    useExpRank) {
+                     outcomeId = 3,
+                     demographicsAnalysisIds = c(2,3,5,6),
+                     predefinedIncludeConceptIds = c(),
+                     predefinedExcludeConceptIds = c(),
+                     icd9AnalysisIds = c(104, 105, 106, 107, 108, 109),
+                     rankCutoff = 500,
+                     fudge = 0,
+                     useExpRank) {
 
   start <- Sys.time()
   demographicsCovariateRef = getDemographicsCovariateRef(cohortMethodData, demographicsAnalysisIds)
@@ -127,7 +129,7 @@ runHdps1 <- function(cohortMethodData,
                                    ff::as.ff(c(predefinedIncludeConceptIds,
                                                predefinedExcludeConceptIds,
                                                demographicsCovariateRef$covariateId[])))$covariates
-  newCovariates = addTreatmentAndOutcome(newCovariates, cohortMethodData)[[1]]
+  newCovariates = addTreatmentAndOutcome(newCovariates, cohortMethodData, outcomeId)[[1]]
   rankings = calculateRanks(newCovariates, cohortMethodData, fudge)
 
   newCovariates = removeLowRank1(newCovariates, rankings, rankCutoff, useExpRank = useExpRank)

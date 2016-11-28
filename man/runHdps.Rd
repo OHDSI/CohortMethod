@@ -4,7 +4,7 @@
 \alias{runHdps}
 \title{Runs hdps implementation}
 \usage{
-runHdps(cohortMethodData, useInpatientDiagnosis = TRUE,
+runHdps(cohortMethodData, outcomeId = 3, useInpatientDiagnosis = TRUE,
   useAmbulatoryDiagnosis = TRUE, useDrugIngredient = TRUE,
   useInpatientProcedure = TRUE, useAmbulatoryProcedure = TRUE,
   demographicsAnalysisIds = c(2, 3, 5, 6), predefinedIncludeICD9Dx = c(),
