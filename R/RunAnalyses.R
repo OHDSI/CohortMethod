@@ -577,18 +577,22 @@ createReferenceTable <- function(cmAnalysisList,
                                           function(strataArgs) return(strataArgs$trimByPs |
     strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
     strataArgs$stratifyByPsAndCovariates))]
-  strataArgsId <- sapply(cmAnalysisList, function(cmAnalysis, strataArgsList) {
-    i <- which.list(strataArgsList, cmAnalysis[args][!is.na(names(cmAnalysis[args]))])
-    if (is.null(i))
-      i <- 0
-    return(i)
-  }, strataArgsList)
-  # strataArgsId[strataArgsId %in% noStrataIds] <- NA
-  analysisIdToStrataArgsId <- data.frame(analysisId = analysisIds, strataArgsId = strataArgsId)
-  referenceTable <- merge(referenceTable, analysisIdToStrataArgsId)
-  # uniqueStrata <- unique(referenceTable[!is.na(referenceTable$strataArgsId), c('strataArgsId',
-  # 'psId')]) uniqueStrata$strataId <- 1:nrow(uniqueStrata) referenceTable <- merge(referenceTable,
-  # uniqueStrata, all.x = TRUE)
+  if (length(strataArgsList) == 0) {
+    referenceTable$strataArgsId <- 0
+  } else {
+    strataArgsId <- sapply(cmAnalysisList, function(cmAnalysis, strataArgsList) {
+      i <- which.list(strataArgsList, cmAnalysis[args][!is.na(names(cmAnalysis[args]))])
+      if (is.null(i))
+        i <- 0
+      return(i)
+    }, strataArgsList)
+    # strataArgsId[strataArgsId %in% noStrataIds] <- NA
+    analysisIdToStrataArgsId <- data.frame(analysisId = analysisIds, strataArgsId = strataArgsId)
+    referenceTable <- merge(referenceTable, analysisIdToStrataArgsId)
+    # uniqueStrata <- unique(referenceTable[!is.na(referenceTable$strataArgsId), c('strataArgsId',
+    # 'psId')]) uniqueStrata$strataId <- 1:nrow(uniqueStrata) referenceTable <- merge(referenceTable,
+    # uniqueStrata, all.x = TRUE)
+  }
   idx <- referenceTable$strataArgsId != 0
   referenceTable$strataFile[idx] <- .createStratifiedPopFileName(folder = outputFolder,
                                                                  loadId = referenceTable$loadArgsId[idx],
