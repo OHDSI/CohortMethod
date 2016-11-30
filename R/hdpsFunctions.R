@@ -58,7 +58,7 @@ separateCovariates <- function(analysisId, covariates) {
 separateCovariatesHelper <- function(analysisId, covariates) {
   t = covariates$covariateId %% 1000 == analysisId
   if (all(!t)) {return(list(NULL))}
-  return(list(covariates[ffbase::ffwhich(t,t==TRUE),]))
+  return(list(covariates[t,]))
 }
 
 # Keeps only a certain number of covariates per data dimensions, ranked by prevalence
@@ -117,6 +117,23 @@ addTreatmentAndOutcome <- function(data, cohortData, outcomeId) {
   y = ffbase::ffwhich(x, !is.na(x))
   if (!is.null(y)) outcome[y] = ff::as.ff(rep(1,length(y)))
   data$treatment = treatment
+  data$outcome = outcome
+  return(list(data))
+}
+
+addTreatment <- function(data, cohorts) {
+  if (is.null(data)) {return(list(NULL))}
+  treatment = ff::as.ff(cohorts$treatment)[ffbase::ffmatch(data$rowId, ff::as.ff(cohorts$rowId))]
+  data$treatment = treatment
+  return(list(data))
+}
+
+addOutcome <- function(data, outcomes, outcomeId) {
+  if (is.null(data)) {return(list(NULL))}
+  outcome = ff::ff(vmode = "double", initdata = 0, length = dim(data)[[1]])
+  x = ffbase::ffmatch(data$rowId, ff::as.ff(outcomes$rowId[outcomes$outcomeId==outcomeId]))
+  y = ffbase::ffwhich(x, !is.na(x))
+  if (!is.null(y)) outcome[y] = ff::as.ff(rep(1,length(y)))
   data$outcome = outcome
   return(list(data))
 }
@@ -240,9 +257,7 @@ removeLowRank1 <- function(data, rankings, rankCutoff, useExpRank) {
 #
 # @return Returns ffdf of covariateRef entries corresponding to covariates
 getNewCovariateRef <- function(covariates, cohortData) {
-  covariateId = unique(covariates$covariateId)
-  t = ffbase::ffmatch(cohortData$covariateRef$covariateId, covariateId)
-  return(cohortData$covariateRef[ffbase::ffwhich(t, !is.na(t)),])
+  return(cohortData$covariateRef[in.ff(cohortData$covariateRef$covariateId, covariates$covariateId)])
 }
 
 # Get covariateRef for predefined codes

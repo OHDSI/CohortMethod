@@ -129,4 +129,22 @@ double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> 
   return result/N;
 }
 
+// [[Rcpp::export(".generateEventTimesHelper")]]
+std::vector<int> generateEventTimesHelper(std::vector<double> value, std::vector<double> baseline) {
+  int N = value.size();
+  int M = baseline.size();
+  std::vector<int> result (N,0);
+  int j = 0;
+
+  for (int i=0; i<M; i++) {
+    while(j<N && value[j]<baseline[i]) {
+      result[j] = i;
+      j++;
+    }
+    continue;
+  }
+
+  return result;
+}
+
 #endif // __RcppWrapper_cpp__

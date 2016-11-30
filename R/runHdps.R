@@ -73,12 +73,12 @@ runHdps <- function(cohortMethodData,
 
   dimensionTable = getDimensionTable(dimensions)
 
-  if (is.null(dimensionTable)) {
-    newCovariates = combineFunction(list(demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
-    newCovariateRef = combineFunction(list(demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
-    cohortMethodData$covariates = newCovariates
-    cohortMethodData$covariateRef = newCovariateRef
-  } else {
+  preCovariates = combineFunction(list(demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
+  preCovariateRef = combineFunction(list(demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
+  newCovariates <- NULL
+  newCovariateRef <- NULL
+
+  if (!is.null(dimensionTable)) {
     newCovariates = removePredefinedCovariates(cohortMethodData, c(predefinedIncludeConceptIds, predefinedExcludeConceptIds),
                                                c(predefinedIncludeICD9Dx, predefinedExcludeICD9Dx), icd9AnalysisIds)
     dimAnalysisId = sapply(dimensionTable, getDimensionAnalysisId)
@@ -86,26 +86,61 @@ runHdps <- function(cohortMethodData,
     newData = sapply(dimAnalysisId, separateCovariates, newCovariates)
     totalPopulation = length(cohortMethodData$cohorts$rowId)
     newData = sapply(newData, removeRareCovariates, dimensionCutoff, totalPopulation)
-    newData = sapply(newData, addTreatmentAndOutcome, cohortMethodData, outcomeId)
+    #newData = sapply(newData, addTreatmentAndOutcome, cohortMethodData, outcomeId)
+    newData = sapply(newData, addTreatment, cohortMethodData$cohorts)
+    newData = sapply(newData, addOutcome, cohortMethodData$outcomes, outcomeId)
+
     rankings = sapply(newData, calculateRanks, cohortMethodData, fudge)
 
-    newData = removeLowRank(newData, rankings, rankCutoff, useExpRank = useExpRank)
-    newCovariates = combineFunction(newData, ffbase::ffdfrbind.fill)
+    newCovariates = removeLowRank(newData, rankings, rankCutoff, useExpRank = useExpRank)
+    newCovariates = combineFunction(newCovariates, ffbase::ffdfrbind.fill)
     newCovariates$treatment <- NULL
     newCovariates$outcome <- NULL
     newCovariateRef = getNewCovariateRef(newCovariates, cohortMethodData)
-    newCovariates = combineFunction(list(newCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
-    newCovariateRef = combineFunction(list(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
-
-    result = list(cohorts = cohortMethodData$cohorts,
-                  outcomes = cohortMethodData$outcomes,
-                  metaData = cohortMethodData$metaData,
-                  covariates = newCovariates,
-                  covariateRef = newCovariateRef)
   }
+    covariates = combineFunction(list(preCovariates, newCovariates), ffbase::ffdfrbind.fill)
+    covariateRef = combineFunction(list(newCovariateRef, preCovariateRef), ffbase::ffdfrbind.fill)
+
+    result = list(cmd = list(cohorts = cohortMethodData$cohorts,
+                             outcomes = cohortMethodData$outcomes,
+                             metaData = cohortMethodData$metaData,
+                             covariates = covariates,
+                             covariateRef = covariateRef),
+                  parts = list(preCovariates = preCovariates,
+                              preCovariateRef = preCovariateRef,
+                              outcomeId = outcomeId,
+                              fudge = fudge,
+                              rankCutoff = rankCutoff,
+                              newData = newData))
   delta <- Sys.time() - start
   writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
+
   return(result)
+}
+
+#' @export
+runHdpsNewOutcomes <- function(hdps, cohortMethodData, useExpRank) {
+  start <- Sys.time()
+  newData = sapply(hdps$parts$newData, addOutcome, cohortMethodData$outcomes, hdps$parts$outcomeId)
+  rankings = sapply(newData, calculateRanks, cohortMethodData, hdps$parts$fudge)
+
+  newCovariates = removeLowRank(newData, rankings, hdps$parts$rankCutoff, useExpRank = useExpRank)
+  newCovariates = combineFunction(newCovariates, ffbase::ffdfrbind.fill)
+  newCovariates$treatment <- NULL
+  newCovariates$outcome <- NULL
+  newCovariateRef = getNewCovariateRef(newCovariates, cohortMethodData)
+
+  covariates = combineFunction(list(hdps$parts$preCovariates, newCovariates), ffbase::ffdfrbind.fill)
+  covariateRef = combineFunction(list(newCovariateRef, hdps$parts$preCovariateRef), ffbase::ffdfrbind.fill)
+
+  delta <- Sys.time() - start
+  writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
+
+  return(list(cohorts = cohortMethodData$cohorts,
+              outcomes = cohortMethodData$outcomes,
+              metaData = cohortMethodData$metaData,
+              covariates = covariates,
+              covariateRef = covariateRef))
 }
 
 #' @export
@@ -125,28 +160,67 @@ runHdps1 <- function(cohortMethodData,
   predefinedCovariateRef = getPredefinedCovariateRef(cohortMethodData, predefinedIncludeConceptIds, NULL, icd9AnalysisIds)
   predefinedCovariates = getPredefinedCovariates(cohortMethodData, predefinedCovariateRef)
 
-  newCovariates = removeCovariates(cohortMethodData,
+  preCovariates = combineFunction(list(demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
+  preCovariateRef = combineFunction(list(demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
+  newCovariates = NULL
+  newCovariateRef = NULL
+
+  newData = removeCovariates(cohortMethodData,
                                    ff::as.ff(c(predefinedIncludeConceptIds,
                                                predefinedExcludeConceptIds,
                                                demographicsCovariateRef$covariateId[])))$covariates
-  newCovariates = addTreatmentAndOutcome(newCovariates, cohortMethodData, outcomeId)[[1]]
-  rankings = calculateRanks(newCovariates, cohortMethodData, fudge)
+  #newCovariates = addTreatmentAndOutcome(newCovariates, cohortMethodData, outcomeId)[[1]]
+  newData = addTreatment(newData, cohortMethodData$cohorts)[[1]]
+  newData = addOutcome(newData, cohortMethodData$outcomes, outcomeId)[[1]]
+  rankings = calculateRanks(newData, cohortMethodData, fudge)
 
-  newCovariates = removeLowRank1(newCovariates, rankings, rankCutoff, useExpRank = useExpRank)
+  newCovariates = removeLowRank1(newData, rankings, rankCutoff, useExpRank = useExpRank)
   newCovariates$treatment <- NULL
   newCovariates$outcome <- NULL
   newCovariateRef = getNewCovariateRef(newCovariates, cohortMethodData)
-  newCovariates = combineFunction(list(newCovariates, demographicsCovariates, predefinedCovariates), ffbase::ffdfrbind.fill)
-  newCovariateRef = combineFunction(list(newCovariateRef, demographicsCovariateRef, predefinedCovariateRef), ffbase::ffdfrbind.fill)
 
-  result = list(cohorts = cohortMethodData$cohorts,
-                    outcomes = cohortMethodData$outcomes,
-                    metaData = cohortMethodData$metaData,
-                    covariates = newCovariates,
-                    covariateRef = newCovariateRef)
+  covariates = combineFunction(list(preCovariates, newCovariates), ffbase::ffdfrbind.fill)
+  covariateRef = combineFunction(list(newCovariateRef, preCovariateRef), ffbase::ffdfrbind.fill)
+
+  result = list(cmd = list(cohorts = cohortMethodData$cohorts,
+                           outcomes = cohortMethodData$outcomes,
+                           metaData = cohortMethodData$metaData,
+                           covariates = covariates,
+                           covariateRef = covariateRef),
+                parts = list(preCovariates = preCovariates,
+                            preCovariateRef = preCovariateRef,
+                            outcomeId = outcomeId,
+                            fudge = fudge,
+                            rankCutoff = rankCutoff))
   delta <- Sys.time() - start
   writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
+
   return(result)
+}
+
+#' @export
+runHdps1NewOutcomes <- function(hdps, cohortMethodData, useExpRank) {
+  start <- Sys.time()
+
+  newData = addOutcome(hdps$parts$newData, cohortMethodData$outcomes, hdps$parts$outcomeId)[[1]]
+  rankings = calculateRanks(newData, cohortMethodData, hdps$parts$fudge)
+
+  newCovariates = removeLowRank1(newData, rankings, hdps$parts$rankCutoff, useExpRank = useExpRank)
+  newCovariates$treatment <- NULL
+  newCovariates$outcome <- NULL
+  newCovariateRef = getNewCovariateRef(newCovariates, cohortMethodData)
+
+  covariates = combineFunction(list(hdps$parts$preCovariates, newCovariates), ffbase::ffdfrbind.fill)
+  covariateRef = combineFunction(list(newCovariateRef, hdps$parts$preCovariateRef), ffbase::ffdfrbind.fill)
+
+  delta <- Sys.time() - start
+  writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
+
+  return(list(cohorts = cohortMethodData$cohorts,
+              outcomes = cohortMethodData$outcomes,
+              metaData = cohortMethodData$metaData,
+              covariates = covariates,
+              covariateRef = covariateRef))
 }
 
 

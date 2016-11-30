@@ -365,13 +365,6 @@ createCMDSimulationProfile <- function(cohortMethodData,
   cohorts = cohortMethodData$cohorts[cohortMethodData$cohorts$rowId %in% population$rowId,]
   outcomes = cohortMethodData$outcomes[cohortMethodData$outcomes$rowId %in% population$rowId,]
 
-  partialCMD = list(cohorts = cohorts,
-                    covariates = covariates,
-                    covariateRef = covariateRef,
-                    outcomes = outcomes,
-                    metaData = cohortMethodData$metaData)
-  class(partialCMD) <- "cohortMethodData"
-
   result = list(sData = sData,
                 cData = cData,
                 observedEffectSize = coef(outcomeModel),
@@ -386,7 +379,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
 }
 
 #' @export
-simulateCMD <- function(partialCMD, sData, cData, outcomeId) {
+simulateCMD <- function(cohortMethodData, sData, cData, outcomeId) {
   # generate event times
   sTimes = generateEventTimes(sData$XB, sData$times, sData$baseline)
   names(sTimes)[match("time", names(sTimes))] = "sTime"
@@ -398,20 +391,20 @@ simulateCMD <- function(partialCMD, sData, cData, outcomeId) {
   # combine event and censor times
   outcomes = NULL
   times = ffbase::merge.ffdf(sTimes, cTimes)
-  t = ffbase::ffwhich(times, times$sTime<=times$cTime & times$sTime <= sData$times[1])
+#   t = ffbase::ffwhich(times, times$sTime<=times$cTime & times$sTime <= sData$times[1])
 #   if (!is.null(t)) outcomes = times[t,]
 #   outcomes$cTime <- NULL
 #   names(outcomes)[match("sTime", names(outcomes))] = "daysToEvent"
 #   outcomes = as.data.frame(outcomes)
 #   outcomes$outcomeId = 3
 
+  cohorts = cohortMethodData$cohorts
+  cohorts = merge(cohorts, times[])
+  cohorts$newOutcomeCount = 0
+  cohorts$newDaysToEvent = NA
+  cohorts$newSurvivalTime = cohorts$cTime + 1
+  t = which(cohorts$sTime <= cohorts$cTime & cohorts$sTime <= sData$times[1])
   if(!is.null(t)) {
-    cohorts = partialCMD$cohorts
-    cohorts = merge(cohorts, times[])
-    cohorts$newOutcomeCount = 0
-    cohorts$newDaysToEvent = NA
-    cohorts$newSurvivalTime = cohorts$cTime + 1
-    t = which(cohorts$sTime <= cohorts$cTime & cohorts$sTime <= sData$times[1])
     cohorts$newDaysToEvent[t] = cohorts$sTime[t]
     cohorts$newSurvivalTime[t] = cohorts$sTime[t] + 1
     cohorts$newOutcomeCount[t] = 1
@@ -427,7 +420,7 @@ simulateCMD <- function(partialCMD, sData, cData, outcomeId) {
                covariateRef = covariateRef,
                cohorts = cohorts,
                outcomes = outcomes,
-               metaData = partialCMD$metaData))
+               metaData = cohortMethodData$metaData))
 }
 
 #' @export
@@ -506,16 +499,19 @@ generateEventTimes <- function(x, times, baseline) {
   S = S[ff::fforder(S$value),]
   k = 1;
   K = length(baseline)
-  S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
 
-  for (i in 1:K) {
-    t = ffbase::ffwhich(S, S$value >= baseline[i])
-    if (is.null(t)) {
-      break
-    } else{
-      S$timeIndex[t] = ff::ff(vmode = "integer", initdata = i, length = length(t))
-    }
-  }
+  S$timeIndex = ff::as.ff(.generateEventTimesHelper(S$value[], baseline[]))
+
+#   S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
+#
+#   for (i in 1:K) {
+#     t = ffbase::ffwhich(S, S$value >= baseline[i])
+#     if (is.null(t)) {
+#       break
+#     } else{
+#       S$timeIndex[t] = ff::ff(vmode = "integer", initdata = i, length = length(t))
+#     }
+#   }
 
   S$times = ff::ff(vmode = "double", initdata = times[1]+1, length = n)
   t = ffbase::ffwhich(S, S$timeIndex>0)

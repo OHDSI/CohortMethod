@@ -21,3 +21,7 @@
     .Call('CohortMethod_findOutcomePrevalence', PACKAGE = 'CohortMethod', sBaseline, sExp, cBaseline, cExp)
 }
 
+.generateEventTimesHelper <- function(value, baseline) {
+    .Call('CohortMethod_generateEventTimesHelper', PACKAGE = 'CohortMethod', value, baseline)
+}
+
