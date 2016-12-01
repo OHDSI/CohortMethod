@@ -107,11 +107,11 @@ runHdps <- function(cohortMethodData,
                              covariates = covariates,
                              covariateRef = covariateRef),
                   parts = list(preCovariates = preCovariates,
-                              preCovariateRef = preCovariateRef,
-                              outcomeId = outcomeId,
-                              fudge = fudge,
-                              rankCutoff = rankCutoff,
-                              newData = newData))
+                               preCovariateRef = preCovariateRef,
+                               outcomeId = outcomeId,
+                               fudge = fudge,
+                               rankCutoff = rankCutoff,
+                               newData = newData))
   delta <- Sys.time() - start
   writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
 
@@ -191,7 +191,8 @@ runHdps1 <- function(cohortMethodData,
                             preCovariateRef = preCovariateRef,
                             outcomeId = outcomeId,
                             fudge = fudge,
-                            rankCutoff = rankCutoff))
+                            rankCutoff = rankCutoff,
+                            newData = newData))
   delta <- Sys.time() - start
   writeLines(paste("selecting hdps covariates took", signif(delta, 3), attr(delta, "units")))
 
