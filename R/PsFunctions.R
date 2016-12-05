@@ -76,6 +76,9 @@ createPs <- function(cohortMethodData,
     stop("Missing column treatment in population")
 
   start <- Sys.time()
+  if (!Cyclops::isSorted(population, "rowId")) {
+    population <- population[order(population$rowId), ]
+  }
   cohortSubset <- ff::as.ffdf(population)
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
   covariateSubset <- limitCovariatesToPopulation(cohortMethodData$covariates, cohortSubset$rowId)
