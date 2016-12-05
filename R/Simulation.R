@@ -327,7 +327,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                                                     tolerance = 2e-07,
                                                                     cvRepetitions = 10,
                                                                     selectorType = "auto",
-                                                                    noiseLevel = "quiet",
+                                                                    noiseLevel = "silent",
                                                                     threads = threads),
                                   returnFit = TRUE)
 
