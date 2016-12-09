@@ -78,18 +78,36 @@ fitOutcomeModel <- function(population,
   priorVariance <- NULL
   treatmentVarId <- NA
   status <- "NO MODEL FITTED"
+
+  colnames(population)[colnames(population) == "outcomeCount"] <- "y"
+  if (!stratified) {
+    population$stratumId <- NULL
+  }
+  if (modelType == "cox") {
+    population$y[population$y != 0] <- 1
+    population$time <- population$survivalTime
+  } else if (modelType == "logistic") {
+    population$y[population$y != 0] <- 1
+  } else if (modelType == "poisson") {
+    population$time <- population$timeAtRisk
+  }
+  populationCounts <- getCounts(population, "Population count")
+  outcomeCounts <- data.frame(treatedPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
+                              comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
+                              treatedExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
+                              comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
+                              treatedOutcomes = sum(population$y[population$treatment == 1]), comparatorOutcomes = sum(population$y[population$treatment == 0]))
+  outcomeCounts <- outcomeCounts
+  if (modelType == "poisson" || modelType == "cox") {
+    timeAtRisk <- data.frame(treatedDays = sum(population$time[population$treatment == 1]),
+                             comparatorDays = sum(population$time[population$treatment == 0]))
+  }
+
   if (nrow(population) == 0) {
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
-  } else if (sum(population$outcomeCount) == 0) {
+  } else if (sum(population$y) == 0) {
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
-    # } else if (sum(population$outcomeCount[population$treatment == 0]) == 0 ||
-    # sum(population$outcomeCount[population$treatment == 1]) == 0) { fit <- 'TREATMENT IS PERFECTLY
-    # PREDICTIVE OF OUTCOME, CANNOT FIT'
   } else {
-    colnames(population)[colnames(population) == "outcomeCount"] <- "y"
-    if (!stratified) {
-      population$stratumId <- NULL
-    }
     if (useCovariates) {
       treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
       if (stratified || modelType == "cox") {
@@ -132,14 +150,6 @@ fitOutcomeModel <- function(population,
       if (stratified) {
         covariates$stratumId <- ff::as.ff(population$stratumId)
       }
-    }
-    if (modelType == "cox") {
-      population$y[population$y != 0] <- 1
-      population$time <- population$survivalTime
-    } else if (modelType == "logistic") {
-      population$y[population$y != 0] <- 1
-    } else if (modelType == "poisson") {
-      population$time <- population$timeAtRisk
     }
     if (stratified || modelType == "cox") {
       addIntercept <- FALSE
@@ -205,17 +215,9 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelStatus <- status
-  outcomeModel$populationCounts <- getCounts(population, "Population count")
-  outcomeCounts <- data.frame(treatedPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
-                              comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
-                              treatedExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
-                              comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
-                              treatedOutcomes = sum(population$y[population$treatment == 1]), comparatorOutcomes = sum(population$y[population$treatment == 0]))
+  outcomeModel$populationCounts <- populationCounts
   outcomeModel$outcomeCounts <- outcomeCounts
   if (modelType == "poisson" || modelType == "cox") {
-    timeAtRisk <- data.frame(treatedDays = sum(population$time[population$treatment == 1]),
-                             comparatorDays = sum(population$time[population$treatment ==
-                                                                    0]))
     outcomeModel$timeAtRisk <- timeAtRisk
   }
   class(outcomeModel) <- "outcomeModel"

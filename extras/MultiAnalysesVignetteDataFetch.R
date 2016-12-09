@@ -37,7 +37,7 @@ pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_ccae_v5.dbo"
+cdmDatabaseSchema <- "CDM_Truven_CCAE_V483.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -86,41 +86,41 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
                                      excludedCovariateConceptIds = nsaids,
                                      outcomeIds = c(192671,
-                                                                                                                                      24609,
-                                                                                                                                      29735,
-                                                                                                                                      73754,
-                                                                                                                                      80004,
-                                                                                                                                      134718,
-                                                                                                                                      139099,
-                                                                                                                                      141932,
-                                                                                                                                      192367,
-                                                                                                                                      193739,
-                                                                                                                                      194997,
-                                                                                                                                      197236,
-                                                                                                                                      199074,
-                                                                                                                                      255573,
-                                                                                                                                      257007,
-                                                                                                                                      313459,
-                                                                                                                                      314658,
-                                                                                                                                      316084,
-                                                                                                                                      319843,
-                                                                                                                                      321596,
-                                                                                                                                      374366,
-                                                                                                                                      375292,
-                                                                                                                                      380094,
-                                                                                                                                      433753,
-                                                                                                                                      433811,
-                                                                                                                                      436665,
-                                                                                                                                      436676,
-                                                                                                                                      436940,
-                                                                                                                                      437784,
-                                                                                                                                      438134,
-                                                                                                                                      440358,
-                                                                                                                                      440374,
-                                                                                                                                      443617,
-                                                                                                                                      443800,
-                                                                                                                                      4084966,
-                                                                                                                                      4288310))
+                                                    24609,
+                                                    29735,
+                                                    73754,
+                                                    80004,
+                                                    134718,
+                                                    139099,
+                                                    141932,
+                                                    192367,
+                                                    193739,
+                                                    194997,
+                                                    197236,
+                                                    199074,
+                                                    255573,
+                                                    257007,
+                                                    313459,
+                                                    314658,
+                                                    316084,
+                                                    319843,
+                                                    321596,
+                                                    374366,
+                                                    375292,
+                                                    380094,
+                                                    433753,
+                                                    433811,
+                                                    436665,
+                                                    436676,
+                                                    436940,
+                                                    437784,
+                                                    438134,
+                                                    440358,
+                                                    440374,
+                                                    443617,
+                                                    443800,
+                                                    4084966,
+                                                    4288310))
 drugComparatorOutcomesList <- list(dcos)
 
 covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
@@ -198,8 +198,8 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
 createPsArgs <- createCreatePsArgs(control = createControl(cvType = "auto",
                                                            startingVariance = 0.01,
                                                            noiseLevel = "quiet",
-                                                           tolerance = 5e-07,
-                                                           cvRepetitions = 1))
+                                                           tolerance = 2e-07,
+                                                           cvRepetitions = 10))
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
@@ -274,8 +274,7 @@ saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
 
 # cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.txt')
 
-# drugComparatorOutcomesList <-
-# loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
+# drugComparatorOutcomesList <- loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
@@ -294,9 +293,12 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         computeCovarBalThreads = 3,
                         trimMatchStratifyThreads = 5,
                         fitOutcomeModelThreads = 3,
-                        outcomeCvThreads = 10)
+                        outcomeCvThreads = 10,
+                        outcomeIdsOfInterest = c(192671))
+# result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
 
 analysisSum <- summarizeAnalyses(result)
+
 saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 # cleanup:
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"

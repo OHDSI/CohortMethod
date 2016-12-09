@@ -88,6 +88,9 @@
 #'                                       validation when estimating the hyperparameter for the outcome
 #'                                       model. Note that the total number of CV threads at one time
 #'                                       could be `fitOutcomeModelThreads * outcomeCvThreads`.
+#' @param outcomeIdsOfInterest           If provided, creation of non-essential files will be skipped
+#'                                       for all other outcome IDs. This could be helpful to speed up
+#'                                       analyses with many controls.
 #'
 #' @return
 #' A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
@@ -128,7 +131,11 @@ runCmAnalyses <- function(connectionDetails,
                           trimMatchStratifyThreads = 1,
                           computeCovarBalThreads = 1,
                           fitOutcomeModelThreads = 1,
-                          outcomeCvThreads = 1) {
+                          outcomeCvThreads = 1,
+                          outcomeIdsOfInterest) {
+  if (!missing(outcomeIdsOfInterest) && refitPsForEveryOutcome){
+    stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
+  }
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {
     stopifnot(class(drugComparatorOutcomes) == "drugComparatorOutcomes")
   }
@@ -153,7 +160,9 @@ runCmAnalyses <- function(connectionDetails,
   referenceTable <- createReferenceTable(cmAnalysisList,
                                          drugComparatorOutcomesList,
                                          outputFolder,
-                                         refitPsForEveryOutcome)
+                                         refitPsForEveryOutcome,
+                                         outcomeIdsOfInterest)
+
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
   writeLines("*** Creating cohortMethodData objects ***")
@@ -394,24 +403,31 @@ runCmAnalyses <- function(connectionDetails,
     OhdsiRTools::stopCluster(cluster)
   }
 
-  writeLines("*** Fitting outcome models ***")
+  if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
+    writeLines("*** Fitting outcome models ***")
+  } else {
+    writeLines("*** Fitting outcome models for outcomes of interest ***")
+  }
   modelsToFit <- list()
-  for (outcomeModelFile in unique(referenceTable$outcomeModelFile)) {
-    if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
-      refRow <- referenceTable[referenceTable$outcomeModelFile == outcomeModelFile, ][1, ]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
-                                              list(analysisId = refRow$analysisId))[[1]]
-      args <- analysisRow$fitOutcomeModelArgs
-      args$control$threads <- outcomeCvThreads
-      if (refRow$strataFile != "") {
-        studyPopFile <- refRow$strataFile
-      } else {
-        studyPopFile <- refRow$studyPopFile
+  for (i in 1:nrow(referenceTable)) {
+    if (referenceTable$outcomeOfInterest[i]) {
+      outcomeModelFile <- referenceTable$outcomeModelFile[i]
+      if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
+        refRow <- referenceTable[referenceTable$outcomeModelFile == outcomeModelFile, ][1, ]
+        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                                list(analysisId = refRow$analysisId))[[1]]
+        args <- analysisRow$fitOutcomeModelArgs
+        args$control$threads <- outcomeCvThreads
+        if (refRow$strataFile != "") {
+          studyPopFile <- refRow$strataFile
+        } else {
+          studyPopFile <- refRow$studyPopFile
+        }
+        modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                                                       args = args,
+                                                       studyPopFile = studyPopFile,
+                                                       outcomeModelFile = outcomeModelFile)
       }
-      modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
-                                                     args = args,
-                                                     studyPopFile = studyPopFile,
-                                                     outcomeModelFile = outcomeModelFile)
     }
   }
   doFitOutcomeModel <- function(params) {
@@ -435,13 +451,99 @@ runCmAnalyses <- function(connectionDetails,
     dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, doFitOutcomeModel)
     OhdsiRTools::stopCluster(cluster)
   }
+
+  if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
+    writeLines("*** Fitting outcome models for other outcomes ***")
+    modelsToFit <- list()
+    for (i in 1:nrow(referenceTable)) {
+      if (!referenceTable$outcomeOfInterest[i]) {
+        outcomeModelFile <- referenceTable$outcomeModelFile[i]
+        if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
+          refRow <- referenceTable[referenceTable$outcomeModelFile == outcomeModelFile, ][1, ]
+          analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                                  list(analysisId = refRow$analysisId))[[1]]
+          analysisRow$fitOutcomeModelArgs$control$threads <- outcomeCvThreads
+          analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
+          modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                                                         sharedPsFile = refRow$sharedPsFile,
+                                                         args = analysisRow,
+                                                         outcomeModelFile = outcomeModelFile)
+        }
+      }
+    }
+    doFitOutcomeModelPlus <- function(params) {
+      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+
+      # Create study pop
+      args <- params$args$createStudyPopArgs
+      args$cohortMethodData <- cohortMethodData
+      studyPop <- do.call("createStudyPopulation", args)
+
+      if (params$args$createPs) {
+        # Add PS
+        ps <- readRDS(params$sharedPsFile)
+        newMetaData <- attr(studyPop, "metaData")
+        newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
+        newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
+        ps <- merge(studyPop, ps[, c("rowId", "propensityScore")])
+        attr(ps, "metaData") <- newMetaData
+      } else {
+        ps <- studyPop
+      }
+      # Trim, match. stratify
+      if (params$args$trimByPs) {
+        args <- list(population = ps)
+        args <- append(args, params$args$trimByPsArgs)
+        ps <- do.call("trimByPs", args)
+      } else if (params$args$trimByPsToEquipoise) {
+        args <- list(population = ps)
+        args <- append(args, params$args$trimByPsToEquipoisesArgs)
+        ps <- do.call("trimByPsToEquipoise", args)
+      }
+      if (params$args$matchOnPs) {
+        args <- list(population = ps)
+        args <- append(args, params$args$matchOnPsArgs)
+        ps <- do.call("matchOnPs", args)
+      } else if (params$args$matchOnPsAndCovariates) {
+        args <- list(population = ps)
+        args <- append(args, params$args$matchOnPsAndCovariatesArgs)
+        ps <- do.call("matchOnPsAndCovariates", args)
+      } else if (params$args$stratifyByPs) {
+        args <- list(population = ps)
+        args <- append(args, params$args$stratifyByPsArgs)
+        ps <- do.call("stratifyByPs", args)
+      } else if (params$args$stratifyByPsAndCovariates) {
+        args <- list(population = ps)
+        args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
+        ps <- do.call("stratifyByPsAndCovariates", args)
+      }
+      args <- list(cohortMethodData = cohortMethodData, population = ps)
+      args <- append(args, params$args$fitOutcomeModelArgs)
+      # outcomeModel <- do.call('fitOutcomeModel', args)
+      outcomeModel <- fitOutcomeModel(population = args$population,
+                                      cohortMethodData = args$cohortMethodData,
+                                      modelType = args$modelType,
+                                      stratified = args$stratified,
+                                      useCovariates = args$useCovariates,
+                                      prior = args$prior,
+                                      control = args$control)
+      saveRDS(outcomeModel, params$outcomeModelFile)
+    }
+    if (length(modelsToFit) != 0) {
+      cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
+      OhdsiRTools::clusterRequire(cluster, "CohortMethod")
+      dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
+      OhdsiRTools::stopCluster(cluster)
+    }
+  }
   invisible(referenceTable)
 }
 
 createReferenceTable <- function(cmAnalysisList,
                                  drugComparatorOutcomesList,
                                  outputFolder,
-                                 refitPsForEveryOutcome) {
+                                 refitPsForEveryOutcome,
+                                 outcomeIdsOfInterest) {
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
   instantiateDco <- function(dco, cmAnalysis, folder) {
@@ -575,8 +677,8 @@ createReferenceTable <- function(cmAnalysisList,
   # !strataArgs$stratifyByPs & !strataArgs$stratifyByPsAndCovariates)))
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
-    strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
-    strataArgs$stratifyByPsAndCovariates))]
+                                                                        strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
+                                                                        strataArgs$stratifyByPsAndCovariates))]
   if (length(strataArgsList) == 0) {
     referenceTable$strataArgsId <- 0
   } else {
@@ -619,6 +721,17 @@ createReferenceTable <- function(cmAnalysisList,
                                                                               outcomeId = referenceTable$outcomeId[idx])
   referenceTable$covariateBalanceFile[!idx] <- ""
 
+  # Add interest flag
+  if (missing(outcomeIdsOfInterest)) {
+    referenceTable$outcomeOfInterest <- TRUE
+  } else {
+    referenceTable$outcomeOfInterest <- FALSE
+    referenceTable$outcomeOfInterest[referenceTable$outcomeId %in% outcomeIdsOfInterest] <- TRUE
+    referenceTable$studyPopFile[!referenceTable$outcomeOfInterest] <- ""
+    referenceTable$psFile[!referenceTable$outcomeOfInterest] <- ""
+    referenceTable$strataFile[!referenceTable$outcomeOfInterest] <- ""
+    referenceTable$covariateBalanceFile[!referenceTable$outcomeOfInterest] <- ""
+  }
   # Some cleanup:
   referenceTable <- referenceTable[, c("analysisId",
                                        "targetId",
@@ -626,6 +739,7 @@ createReferenceTable <- function(cmAnalysisList,
                                        "outcomeId",
                                        "includedCovariateConceptIds",
                                        "excludedCovariateConceptIds",
+                                       "outcomeOfInterest",
                                        "cohortMethodDataFolder",
                                        "studyPopFile",
                                        "sharedPsFile",
@@ -638,7 +752,6 @@ createReferenceTable <- function(cmAnalysisList,
                                          referenceTable$comparatorId,
                                          referenceTable$outcomeId), ]
   row.names(referenceTable) <- NULL
-
   return(referenceTable)
 }
 
@@ -818,11 +931,6 @@ summarizeAnalyses <- function(referenceTable) {
   for (i in 1:nrow(referenceTable)) {
     if (referenceTable$outcomeModelFile[i] != "") {
       outcomeModel <- readRDS(referenceTable$outcomeModelFile[i])
-      if (referenceTable$strataFile[i] == "") {
-        studyPop <- readRDS(referenceTable$studyPopFile[i])
-      } else {
-        studyPop <- readRDS(referenceTable$strataFile[i])
-      }
       result$rr[i] <- if (is.null(coef(outcomeModel)))
         NA else exp(coef(outcomeModel))
       result$ci95lb[i] <- if (is.null(coef(outcomeModel)))
@@ -835,22 +943,37 @@ summarizeAnalyses <- function(referenceTable) {
         z <- coef(outcomeModel)/outcomeModel$outcomeModelTreatmentEstimate$seLogRr
         result$p[i] <- 2 * pmin(pnorm(z), 1 - pnorm(z))
       }
-      result$treated[i] <- sum(studyPop$treatment == 1)
-      result$comparator[i] <- sum(studyPop$treatment == 0)
-      if (outcomeModel$outcomeModelType == "cox") {
-        result$treatedDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 1])
-        result$comparatorDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 0])
-      } else if (outcomeModel$outcomeModelType == "poisson") {
-        result$treatedDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 1])
-        result$comparatorDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 0])
+      result$treated[i] <- outcomeModel$populationCounts$treatedPersons
+      result$comparator[i] <- outcomeModel$populationCounts$comparatorPersons
+      if (outcomeModel$outcomeModelType %in% c("cox", "poisson")) {
+        result$treatedDays[i] <- outcomeModel$timeAtRisk$treatedDays
+        result$comparatorDays[i] <- outcomeModel$timeAtRisk$comparatorDays
       }
-      if (outcomeModel$outcomeModelType == "cox" || outcomeModel$outcomeModelType == "logistic") {
-        result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1] != 0)
-        result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0] != 0)
-      } else {
-        result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1])
-        result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0])
-      }
+      result$eventsTreated[i] <- outcomeModel$outcomeCounts$treatedOutcomes
+      result$eventsComparator[i] <- outcomeModel$outcomeCounts$comparatorOutcomes
+
+      # if (referenceTable$strataFile[i] == "") {
+      #   studyPop <- readRDS(referenceTable$studyPopFile[i])
+      # } else {
+      #   studyPop <- readRDS(referenceTable$strataFile[i])
+      # }
+      # result$treated[i] <- sum(studyPop$treatment == 1)
+      # result$comparator[i] <- sum(studyPop$treatment == 0)
+      # if (outcomeModel$outcomeModelType == "cox") {
+      #   result$treatedDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 1])
+      #   result$comparatorDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 0])
+      # } else if (outcomeModel$outcomeModelType == "poisson") {
+      #   result$treatedDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 1])
+      #   result$comparatorDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 0])
+      # }
+      # if (outcomeModel$outcomeModelType == "cox" || outcomeModel$outcomeModelType == "logistic") {
+      #   result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1] != 0)
+      #   result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0] != 0)
+      # } else {
+      #   result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1])
+      #   result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0])
+      # }
+
       result$logRr[i] <- if (is.null(coef(outcomeModel)))
         NA else coef(outcomeModel)
       result$seLogRr[i] <- if (is.null(coef(outcomeModel)))

@@ -14,7 +14,7 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   getDbCohortMethodDataThreads = 1, createPsThreads = 1, psCvThreads = 1,
   createStudyPopThreads = 1, trimMatchStratifyThreads = 1,
   computeCovarBalThreads = 1, fitOutcomeModelThreads = 1,
-  outcomeCvThreads = 1)
+  outcomeCvThreads = 1, outcomeIdsOfInterest)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the
@@ -96,6 +96,10 @@ models.}
 validation when estimating the hyperparameter for the outcome
 model. Note that the total number of CV threads at one time
 could be `fitOutcomeModelThreads * outcomeCvThreads`.}
+
+\item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
+for all other outcome IDs. This could be helpful to speed up
+analyses with many controls.}
 }
 \value{
 A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
