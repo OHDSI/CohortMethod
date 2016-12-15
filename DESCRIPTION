@@ -29,7 +29,7 @@ Imports:
     bit,
     ggplot2,
     ff,
-    ffbase (>= 0.12.1),
+    ffbase (>= 0.12.3),
     plyr,
     Rcpp (>= 0.11.2),
     RJDBC,
