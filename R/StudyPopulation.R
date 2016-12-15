@@ -150,8 +150,10 @@ createStudyPopulation <- function(cohortMethodData,
     } else {
       outcomeCount <- aggregate(outcomeId ~ rowId, data = outcomes, length)
       colnames(outcomeCount)[colnames(outcomeCount) == "outcomeId"] <- "outcomeCount"
-      population <- merge(population, outcomeCount[, c("rowId", "outcomeCount")], all.x = TRUE)
-      population$outcomeCount[is.na(population$outcomeCount)] <- 0
+      # population <- merge(population, outcomeCount[, c("rowId", "outcomeCount")], all.x = TRUE)
+      # population$outcomeCount[is.na(population$outcomeCount)] <- 0
+      population$outcomeCount <- 0
+      population$outcomeCount[match(outcomeCount$rowId, population$rowId)] <- outcomeCount$outcomeCount
     }
 
     # Create time at risk column
@@ -160,7 +162,9 @@ createStudyPopulation <- function(cohortMethodData,
     # Create survival time column
     firstOutcomes <- outcomes[order(outcomes$rowId, outcomes$daysToEvent), ]
     firstOutcomes <- firstOutcomes[!duplicated(firstOutcomes$rowId), ]
-    population <- merge(population, firstOutcomes[, c("rowId", "daysToEvent")], all.x = TRUE)
+    # population <- merge(population, firstOutcomes[, c("rowId", "daysToEvent")], all.x = TRUE)
+    population$daysToEvent <- NA
+    population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
     population$survivalTime <- population$timeAtRisk
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
       0] - population$riskStart[population$outcomeCount != 0] + 1
