@@ -472,7 +472,19 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
     doFitOutcomeModelPlus <- function(params) {
-      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+      if (exists("cache", envir = globalenv())) {
+        cache <- get("cache", envir = globalenv())
+      } else {
+        cache <- list()
+      }
+      if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
+        cohortMethodData <- cache$cohortMethodData
+        writeLines("Using cached cohortMetaData")
+      } else {
+        cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+        cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
+        cache$cohortMethodData <- cohortMethodData
+      }
 
       # Create study pop
       args <- params$args$createStudyPopArgs
@@ -481,7 +493,14 @@ runCmAnalyses <- function(connectionDetails,
 
       if (params$args$createPs) {
         # Add PS
-        ps <- readRDS(params$sharedPsFile)
+        if (!is.null(cache$sharedPsFile) && cache$sharedPsFile == params$sharedPsFile) {
+          ps <- cache$ps
+          writeLines("Using cached shared propensity scores")
+        } else {
+          ps <- readRDS(params$sharedPsFile)
+          cache$sharedPsFile <- params$sharedPsFile
+          cache$ps <- ps
+        }
         newMetaData <- attr(studyPop, "metaData")
         newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
         newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
@@ -528,6 +547,7 @@ runCmAnalyses <- function(connectionDetails,
                                       prior = args$prior,
                                       control = args$control)
       saveRDS(outcomeModel, params$outcomeModelFile)
+      assign("cache", cache, envir = globalenv())
     }
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
