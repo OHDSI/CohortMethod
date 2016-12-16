@@ -163,7 +163,7 @@ createStudyPopulation <- function(cohortMethodData,
     firstOutcomes <- outcomes[order(outcomes$rowId, outcomes$daysToEvent), ]
     firstOutcomes <- firstOutcomes[!duplicated(firstOutcomes$rowId), ]
     # population <- merge(population, firstOutcomes[, c("rowId", "daysToEvent")], all.x = TRUE)
-    population$daysToEvent <- NA
+    population$daysToEvent <- rep(NA, nrow(population))
     population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
     population$survivalTime <- population$timeAtRisk
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
