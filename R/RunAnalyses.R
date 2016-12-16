@@ -205,6 +205,7 @@ runCmAnalyses <- function(connectionDetails,
   createCmDataObject <- function(params) {
     cohortMethodData <- do.call("getDbCohortMethodData", params$args)
     saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
+    return(NULL)
   }
   if (length(objectsToCreate) != 0) {
     cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
@@ -233,6 +234,7 @@ runCmAnalyses <- function(connectionDetails,
     args$cohortMethodData <- cohortMethodData
     studyPop <- do.call("createStudyPopulation", args)
     saveRDS(studyPop, params$studyPopFile)
+    return(NULL)
   }
   if (length(objectsToCreate) != 0) {
     cluster <- OhdsiRTools::makeCluster(createStudyPopThreads)
@@ -266,6 +268,7 @@ runCmAnalyses <- function(connectionDetails,
       args$population <- studyPop
       ps <- do.call("createPs", args)
       saveRDS(ps, params$psFile)
+      return(NULL)
     }
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(createPsThreads)
@@ -300,6 +303,7 @@ runCmAnalyses <- function(connectionDetails,
       args$population <- studyPop
       ps <- do.call("createPs", args)
       saveRDS(ps, params$sharedPsFile)
+      return(NULL)
     }
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(createPsThreads)
@@ -372,6 +376,7 @@ runCmAnalyses <- function(connectionDetails,
       ps <- do.call("stratifyByPsAndCovariates", args)
     }
     saveRDS(ps, params$strataFile)
+    return(NULL)
   }
   if (length(tasks) != 0) {
     cluster <- OhdsiRTools::makeCluster(trimMatchStratifyThreads)
@@ -395,6 +400,7 @@ runCmAnalyses <- function(connectionDetails,
     strata <- readRDS(params$strataFile)
     balance <- computeCovariateBalance(strata, cohortMethodData)
     saveRDS(balance, params$covariateBalanceFile)
+    return(NULL)
   }
   if (length(tasks) != 0) {
     cluster <- OhdsiRTools::makeCluster(computeCovarBalThreads)
@@ -444,6 +450,7 @@ runCmAnalyses <- function(connectionDetails,
                                     prior = args$prior,
                                     control = args$control)
     saveRDS(outcomeModel, params$outcomeModelFile)
+    return(NULL)
   }
   if (length(modelsToFit) != 0) {
     cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
@@ -548,6 +555,7 @@ runCmAnalyses <- function(connectionDetails,
                                       control = args$control)
       saveRDS(outcomeModel, params$outcomeModelFile)
       assign("cache", cache, envir = globalenv())
+      return(NULL)
     }
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
