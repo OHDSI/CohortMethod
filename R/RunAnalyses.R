@@ -325,7 +325,10 @@ runCmAnalyses <- function(connectionDetails,
         newMetaData <- attr(studyPop, "metaData")
         newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
         newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-        ps <- merge(studyPop, ps[, c("rowId", "propensityScore")])
+        #ps <- merge(studyPop, ps[, c("rowId", "propensityScore")])
+        idx <- match(ps$rowId, studyPop$rowId)
+        studyPop$propensityScore[idx[!is.na(idx)]] <- ps$propensityScore[!is.na(idx)]
+        ps <- studyPop
         attr(ps, "metaData") <- newMetaData
         saveRDS(ps, psFile)
         setTxtProgressBar(pb, i/length(psFiles))
@@ -461,28 +464,30 @@ runCmAnalyses <- function(connectionDetails,
 
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
     writeLines("*** Fitting outcome models for other outcomes ***")
-    modelsToFit <- list()
-    for (i in 1:nrow(referenceTable)) {
-      if (!referenceTable$outcomeOfInterest[i]) {
-        outcomeModelFile <- referenceTable$outcomeModelFile[i]
-        if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
-          refRow <- referenceTable[referenceTable$outcomeModelFile == outcomeModelFile, ][1, ]
-          analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
-                                                  list(analysisId = refRow$analysisId))[[1]]
-          analysisRow$fitOutcomeModelArgs$control$threads <- outcomeCvThreads
-          analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
-          modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
-                                                         sharedPsFile = refRow$sharedPsFile,
-                                                         args = analysisRow,
-                                                         outcomeModelFile = outcomeModelFile)
-        }
-      }
+    subset <- referenceTable[!referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "" & !file.exists(referenceTable$outcomeModelFile) , ]
+    createArgs <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                              list(analysisId = refRow$analysisId))[[1]]
+      analysisRow$fitOutcomeModelArgs$control$threads <- outcomeCvThreads
+      analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
+      params <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                     sharedPsFile = refRow$sharedPsFile,
+                     args = analysisRow,
+                     outcomeModelFile = refRow$outcomeModelFile)
+      return(params)
     }
+    if (nrow(subset) != 0) {
+      modelsToFit <- lapply(1:nrow(subset), createArgs)
+    }
+
     doFitOutcomeModelPlus <- function(params) {
       if (exists("cache", envir = globalenv())) {
         cache <- get("cache", envir = globalenv())
+        cacheChange <- FALSE
       } else {
         cache <- list()
+        cacheChange <- TRUE
       }
       if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
         cohortMethodData <- cache$cohortMethodData
@@ -491,12 +496,26 @@ runCmAnalyses <- function(connectionDetails,
         cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
         cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
         cache$cohortMethodData <- cohortMethodData
+        cacheChange <- TRUE
       }
 
       # Create study pop
       args <- params$args$createStudyPopArgs
-      args$cohortMethodData <- cohortMethodData
-      studyPop <- do.call("createStudyPopulation", args)
+      # args$cohortMethodData <- cohortMethodData
+      # studyPop <- do.call("createStudyPopulation", args)
+      studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                        population = NULL,
+                                        outcomeId = args$outcomeId,
+                                        firstExposureOnly = args$firstExposureOnly,
+                                        washoutPeriod = args$washoutPeriod,
+                                        removeDuplicateSubjects = args$removeDuplicateSubjects,
+                                        removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
+                                        priorOutcomeLookback = args$priorOutcomeLookback,
+                                        minDaysAtRisk = args$minDaysAtRisk,
+                                        riskWindowStart = args$riskWindowStart,
+                                        addExposureDaysToStart = args$addExposureDaysToStart,
+                                        riskWindowEnd = args$riskWindowEnd,
+                                        addExposureDaysToEnd = args$addExposureDaysToEnd)
 
       if (params$args$createPs) {
         # Add PS
@@ -507,11 +526,14 @@ runCmAnalyses <- function(connectionDetails,
           ps <- readRDS(params$sharedPsFile)
           cache$sharedPsFile <- params$sharedPsFile
           cache$ps <- ps
+          cacheChange <- TRUE
         }
         newMetaData <- attr(studyPop, "metaData")
         newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
         newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-        ps <- merge(studyPop, ps[, c("rowId", "propensityScore")])
+        idx <- match(ps$rowId, studyPop$rowId)
+        studyPop$propensityScore[idx[!is.na(idx)]] <- ps$propensityScore[!is.na(idx)]
+        ps <- studyPop
         attr(ps, "metaData") <- newMetaData
       } else {
         ps <- studyPop
@@ -543,8 +565,9 @@ runCmAnalyses <- function(connectionDetails,
         args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
         ps <- do.call("stratifyByPsAndCovariates", args)
       }
-      args <- list(cohortMethodData = cohortMethodData, population = ps)
-      args <- append(args, params$args$fitOutcomeModelArgs)
+      args <- params$args$fitOutcomeModelArgs
+      args$population <- ps
+      args$cohortMethodData <- cohortMethodData
       # outcomeModel <- do.call('fitOutcomeModel', args)
       outcomeModel <- fitOutcomeModel(population = args$population,
                                       cohortMethodData = args$cohortMethodData,
@@ -554,7 +577,9 @@ runCmAnalyses <- function(connectionDetails,
                                       prior = args$prior,
                                       control = args$control)
       saveRDS(outcomeModel, params$outcomeModelFile)
-      assign("cache", cache, envir = globalenv())
+      if (cacheChange) {
+        assign("cache", cache, envir = globalenv())
+      }
       return(NULL)
     }
     if (length(modelsToFit) != 0) {
