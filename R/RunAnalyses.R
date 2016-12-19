@@ -528,13 +528,13 @@ runCmAnalyses <- function(connectionDetails,
           cache$ps <- ps
           cacheChange <- TRUE
         }
-        newMetaData <- attr(studyPop, "metaData")
-        newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
-        newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-        idx <- match(ps$rowId, studyPop$rowId)
-        studyPop$propensityScore[idx[!is.na(idx)]] <- ps$propensityScore[!is.na(idx)]
+        # newMetaData <- attr(studyPop, "metaData")
+        # newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
+        # newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
+        idx <- match(studyPop$rowId, ps$rowId)
+        studyPop$propensityScore <- ps$propensityScore[idx]
         ps <- studyPop
-        attr(ps, "metaData") <- newMetaData
+        # attr(ps, "metaData") <- newMetaData
       } else {
         ps <- studyPop
       }

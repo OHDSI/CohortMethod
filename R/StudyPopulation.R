@@ -130,8 +130,7 @@ createStudyPopulation <- function(cohortMethodData,
     population$daysToObsEnd]
   if (minDaysAtRisk != 0) {
     writeLines(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
-    noAtRiskTimeRowIds <- population$rowId[population$riskEnd - population$riskStart < minDaysAtRisk]
-    population <- population[!(population$rowId %in% noAtRiskTimeRowIds), ]
+    population <- population[population$riskEnd - population$riskStart >= minDaysAtRisk, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least",
                                                                                 minDaysAtRisk,
                                                                                 "days at risk")))
@@ -141,6 +140,10 @@ createStudyPopulation <- function(cohortMethodData,
   } else {
     # Select outcomes during time at risk
     outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+    # idx <- match(outcomes$rowId, population$rowId)
+    # outcomes <- outcomes[!is.na(idx), ]
+    # outcomes$riskStart <- population$riskStart[idx[!is.na(idx)]]
+    # outcomes$riskEnd <- population$riskEnd[idx[!is.na(idx)]]
     outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
     outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
 
@@ -150,8 +153,6 @@ createStudyPopulation <- function(cohortMethodData,
     } else {
       outcomeCount <- aggregate(outcomeId ~ rowId, data = outcomes, length)
       colnames(outcomeCount)[colnames(outcomeCount) == "outcomeId"] <- "outcomeCount"
-      # population <- merge(population, outcomeCount[, c("rowId", "outcomeCount")], all.x = TRUE)
-      # population$outcomeCount[is.na(population$outcomeCount)] <- 0
       population$outcomeCount <- 0
       population$outcomeCount[match(outcomeCount$rowId, population$rowId)] <- outcomeCount$outcomeCount
     }
