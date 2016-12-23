@@ -202,11 +202,7 @@ runCmAnalyses <- function(connectionDetails,
                                                              cohortMethodDataFolder = cohortMethodDataFolder)
     }
   }
-  createCmDataObject <- function(params) {
-    cohortMethodData <- do.call("getDbCohortMethodData", params$args)
-    saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
-    return(NULL)
-  }
+
   if (length(objectsToCreate) != 0) {
     cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -228,14 +224,7 @@ runCmAnalyses <- function(connectionDetails,
                                                              studyPopFile = studyPopFile)
     }
   }
-  createStudyPopObject <- function(params) {
-    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    args <- params$args
-    args$cohortMethodData <- cohortMethodData
-    studyPop <- do.call("createStudyPopulation", args)
-    saveRDS(studyPop, params$studyPopFile)
-    return(NULL)
-  }
+
   if (length(objectsToCreate) != 0) {
     cluster <- OhdsiRTools::makeCluster(createStudyPopThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -260,16 +249,7 @@ runCmAnalyses <- function(connectionDetails,
                                                        psFile = psFile)
       }
     }
-    fitPsModel <- function(params) {
-      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-      studyPop <- readRDS(params$studyPopFile)
-      args <- params$args
-      args$cohortMethodData <- cohortMethodData
-      args$population <- studyPop
-      ps <- do.call("createPs", args)
-      saveRDS(ps, params$psFile)
-      return(NULL)
-    }
+
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(createPsThreads)
       OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -293,18 +273,7 @@ runCmAnalyses <- function(connectionDetails,
                                                        sharedPsFile = sharedPsFile)
       }
     }
-    fitSharedPsModel <- function(params) {
-      cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-      args <- params$createStudyPopArgs
-      args$cohortMethodData <- cohortMethodData
-      studyPop <- do.call("createStudyPopulation", args)
-      args <- params$createPsArg
-      args$cohortMethodData <- cohortMethodData
-      args$population <- studyPop
-      ps <- do.call("createPs", args)
-      saveRDS(ps, params$sharedPsFile)
-      return(NULL)
-    }
+
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(createPsThreads)
       OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -350,37 +319,6 @@ runCmAnalyses <- function(connectionDetails,
                                          strataFile = strataFile)
     }
   }
-  trimMatchStratify <- function(params) {
-    ps <- readRDS(params$psFile)
-    if (params$args$trimByPs) {
-      args <- list(population = ps)
-      args <- append(args, params$args$trimByPsArgs)
-      ps <- do.call("trimByPs", args)
-    } else if (params$args$trimByPsToEquipoise) {
-      args <- list(population = ps)
-      args <- append(args, params$args$trimByPsToEquipoisesArgs)
-      ps <- do.call("trimByPsToEquipoise", args)
-    }
-    if (params$args$matchOnPs) {
-      args <- list(population = ps)
-      args <- append(args, params$args$matchOnPsArgs)
-      ps <- do.call("matchOnPs", args)
-    } else if (params$args$matchOnPsAndCovariates) {
-      args <- list(population = ps)
-      args <- append(args, params$args$matchOnPsAndCovariatesArgs)
-      ps <- do.call("matchOnPsAndCovariates", args)
-    } else if (params$args$stratifyByPs) {
-      args <- list(population = ps)
-      args <- append(args, params$args$stratifyByPsArgs)
-      ps <- do.call("stratifyByPs", args)
-    } else if (params$args$stratifyByPsAndCovariates) {
-      args <- list(population = ps)
-      args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
-      ps <- do.call("stratifyByPsAndCovariates", args)
-    }
-    saveRDS(ps, params$strataFile)
-    return(NULL)
-  }
   if (length(tasks) != 0) {
     cluster <- OhdsiRTools::makeCluster(trimMatchStratifyThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -398,13 +336,7 @@ runCmAnalyses <- function(connectionDetails,
                                          covariateBalanceFile = refRow$covariateBalanceFile)
     }
   }
-  computeCovarBal <- function(params) {
-    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    strata <- readRDS(params$strataFile)
-    balance <- computeCovariateBalance(strata, cohortMethodData)
-    saveRDS(balance, params$covariateBalanceFile)
-    return(NULL)
-  }
+
   if (length(tasks) != 0) {
     cluster <- OhdsiRTools::makeCluster(computeCovarBalThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -439,22 +371,6 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  doFitOutcomeModel <- function(params) {
-    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    studyPop <- readRDS(params$studyPopFile)
-    args <- list(cohortMethodData = cohortMethodData, population = studyPop)
-    args <- append(args, params$args)
-    # outcomeModel <- do.call('fitOutcomeModel', args)
-    outcomeModel <- fitOutcomeModel(population = args$population,
-                                    cohortMethodData = args$cohortMethodData,
-                                    modelType = args$modelType,
-                                    stratified = args$stratified,
-                                    useCovariates = args$useCovariates,
-                                    prior = args$prior,
-                                    control = args$control)
-    saveRDS(outcomeModel, params$outcomeModelFile)
-    return(NULL)
-  }
   if (length(modelsToFit) != 0) {
     cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -481,107 +397,6 @@ runCmAnalyses <- function(connectionDetails,
       modelsToFit <- lapply(1:nrow(subset), createArgs)
     }
 
-    doFitOutcomeModelPlus <- function(params) {
-      if (exists("cache", envir = globalenv())) {
-        cache <- get("cache", envir = globalenv())
-        cacheChange <- FALSE
-      } else {
-        cache <- list()
-        cacheChange <- TRUE
-      }
-      if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
-        cohortMethodData <- cache$cohortMethodData
-        writeLines("Using cached cohortMetaData")
-      } else {
-        cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-        cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
-        cache$cohortMethodData <- cohortMethodData
-        cacheChange <- TRUE
-      }
-
-      # Create study pop
-      args <- params$args$createStudyPopArgs
-      # args$cohortMethodData <- cohortMethodData
-      # studyPop <- do.call("createStudyPopulation", args)
-      studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                        population = NULL,
-                                        outcomeId = args$outcomeId,
-                                        firstExposureOnly = args$firstExposureOnly,
-                                        washoutPeriod = args$washoutPeriod,
-                                        removeDuplicateSubjects = args$removeDuplicateSubjects,
-                                        removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
-                                        priorOutcomeLookback = args$priorOutcomeLookback,
-                                        minDaysAtRisk = args$minDaysAtRisk,
-                                        riskWindowStart = args$riskWindowStart,
-                                        addExposureDaysToStart = args$addExposureDaysToStart,
-                                        riskWindowEnd = args$riskWindowEnd,
-                                        addExposureDaysToEnd = args$addExposureDaysToEnd)
-
-      if (params$args$createPs) {
-        # Add PS
-        if (!is.null(cache$sharedPsFile) && cache$sharedPsFile == params$sharedPsFile) {
-          ps <- cache$ps
-          writeLines("Using cached shared propensity scores")
-        } else {
-          ps <- readRDS(params$sharedPsFile)
-          cache$sharedPsFile <- params$sharedPsFile
-          cache$ps <- ps
-          cacheChange <- TRUE
-        }
-        # newMetaData <- attr(studyPop, "metaData")
-        # newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
-        # newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-        idx <- match(studyPop$rowId, ps$rowId)
-        studyPop$propensityScore <- ps$propensityScore[idx]
-        ps <- studyPop
-        # attr(ps, "metaData") <- newMetaData
-      } else {
-        ps <- studyPop
-      }
-      # Trim, match. stratify
-      if (params$args$trimByPs) {
-        args <- list(population = ps)
-        args <- append(args, params$args$trimByPsArgs)
-        ps <- do.call("trimByPs", args)
-      } else if (params$args$trimByPsToEquipoise) {
-        args <- list(population = ps)
-        args <- append(args, params$args$trimByPsToEquipoisesArgs)
-        ps <- do.call("trimByPsToEquipoise", args)
-      }
-      if (params$args$matchOnPs) {
-        args <- list(population = ps)
-        args <- append(args, params$args$matchOnPsArgs)
-        ps <- do.call("matchOnPs", args)
-      } else if (params$args$matchOnPsAndCovariates) {
-        args <- list(population = ps)
-        args <- append(args, params$args$matchOnPsAndCovariatesArgs)
-        ps <- do.call("matchOnPsAndCovariates", args)
-      } else if (params$args$stratifyByPs) {
-        args <- list(population = ps)
-        args <- append(args, params$args$stratifyByPsArgs)
-        ps <- do.call("stratifyByPs", args)
-      } else if (params$args$stratifyByPsAndCovariates) {
-        args <- list(population = ps)
-        args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
-        ps <- do.call("stratifyByPsAndCovariates", args)
-      }
-      args <- params$args$fitOutcomeModelArgs
-      args$population <- ps
-      args$cohortMethodData <- cohortMethodData
-      # outcomeModel <- do.call('fitOutcomeModel', args)
-      outcomeModel <- fitOutcomeModel(population = args$population,
-                                      cohortMethodData = args$cohortMethodData,
-                                      modelType = args$modelType,
-                                      stratified = args$stratified,
-                                      useCovariates = args$useCovariates,
-                                      prior = args$prior,
-                                      control = args$control)
-      saveRDS(outcomeModel, params$outcomeModelFile)
-      if (cacheChange) {
-        assign("cache", cache, envir = globalenv())
-      }
-      return(NULL)
-    }
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
       OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -591,6 +406,205 @@ runCmAnalyses <- function(connectionDetails,
   }
   invisible(referenceTable)
 }
+
+createCmDataObject <- function(params) {
+  cohortMethodData <- do.call("getDbCohortMethodData", params$args)
+  saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
+  return(NULL)
+}
+
+createStudyPopObject <- function(params) {
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  args <- params$args
+  args$cohortMethodData <- cohortMethodData
+  studyPop <- do.call("createStudyPopulation", args)
+  saveRDS(studyPop, params$studyPopFile)
+  return(NULL)
+}
+
+fitPsModel <- function(params) {
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  studyPop <- readRDS(params$studyPopFile)
+  args <- params$args
+  args$cohortMethodData <- cohortMethodData
+  args$population <- studyPop
+  ps <- do.call("createPs", args)
+  saveRDS(ps, params$psFile)
+  return(NULL)
+}
+
+fitSharedPsModel <- function(params) {
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  args <- params$createStudyPopArgs
+  args$cohortMethodData <- cohortMethodData
+  studyPop <- do.call("createStudyPopulation", args)
+  args <- params$createPsArg
+  args$cohortMethodData <- cohortMethodData
+  args$population <- studyPop
+  ps <- do.call("createPs", args)
+  saveRDS(ps, params$sharedPsFile)
+  return(NULL)
+}
+
+trimMatchStratify <- function(params) {
+  ps <- readRDS(params$psFile)
+  if (params$args$trimByPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByPsArgs)
+    ps <- do.call("trimByPs", args)
+  } else if (params$args$trimByPsToEquipoise) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByPsToEquipoisesArgs)
+    ps <- do.call("trimByPsToEquipoise", args)
+  }
+  if (params$args$matchOnPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$matchOnPsArgs)
+    ps <- do.call("matchOnPs", args)
+  } else if (params$args$matchOnPsAndCovariates) {
+    args <- list(population = ps)
+    args <- append(args, params$args$matchOnPsAndCovariatesArgs)
+    ps <- do.call("matchOnPsAndCovariates", args)
+  } else if (params$args$stratifyByPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$stratifyByPsArgs)
+    ps <- do.call("stratifyByPs", args)
+  } else if (params$args$stratifyByPsAndCovariates) {
+    args <- list(population = ps)
+    args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
+    ps <- do.call("stratifyByPsAndCovariates", args)
+  }
+  saveRDS(ps, params$strataFile)
+  return(NULL)
+}
+
+computeCovarBal <- function(params) {
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  strata <- readRDS(params$strataFile)
+  balance <- computeCovariateBalance(strata, cohortMethodData)
+  saveRDS(balance, params$covariateBalanceFile)
+  return(NULL)
+}
+
+doFitOutcomeModel <- function(params) {
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  studyPop <- readRDS(params$studyPopFile)
+  args <- list(cohortMethodData = cohortMethodData, population = studyPop)
+  args <- append(args, params$args)
+  # outcomeModel <- do.call('fitOutcomeModel', args)
+  outcomeModel <- fitOutcomeModel(population = args$population,
+                                  cohortMethodData = args$cohortMethodData,
+                                  modelType = args$modelType,
+                                  stratified = args$stratified,
+                                  useCovariates = args$useCovariates,
+                                  prior = args$prior,
+                                  control = args$control)
+  saveRDS(outcomeModel, params$outcomeModelFile)
+  return(NULL)
+}
+
+doFitOutcomeModelPlus <- function(params) {
+  if (exists("cache", envir = globalenv())) {
+    cache <- get("cache", envir = globalenv())
+    cacheChange <- FALSE
+  } else {
+    cache <- list()
+    cacheChange <- TRUE
+  }
+  if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
+    cohortMethodData <- cache$cohortMethodData
+    writeLines("Using cached cohortMetaData")
+  } else {
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+    cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
+    cache$cohortMethodData <- cohortMethodData
+    cacheChange <- TRUE
+  }
+
+  # Create study pop
+  args <- params$args$createStudyPopArgs
+  # args$cohortMethodData <- cohortMethodData
+  # studyPop <- do.call("createStudyPopulation", args)
+  studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                    population = NULL,
+                                    outcomeId = args$outcomeId,
+                                    firstExposureOnly = args$firstExposureOnly,
+                                    washoutPeriod = args$washoutPeriod,
+                                    removeDuplicateSubjects = args$removeDuplicateSubjects,
+                                    removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
+                                    priorOutcomeLookback = args$priorOutcomeLookback,
+                                    minDaysAtRisk = args$minDaysAtRisk,
+                                    riskWindowStart = args$riskWindowStart,
+                                    addExposureDaysToStart = args$addExposureDaysToStart,
+                                    riskWindowEnd = args$riskWindowEnd,
+                                    addExposureDaysToEnd = args$addExposureDaysToEnd)
+
+  if (params$args$createPs) {
+    # Add PS
+    if (!is.null(cache$sharedPsFile) && cache$sharedPsFile == params$sharedPsFile) {
+      ps <- cache$ps
+      writeLines("Using cached shared propensity scores")
+    } else {
+      ps <- readRDS(params$sharedPsFile)
+      cache$sharedPsFile <- params$sharedPsFile
+      cache$ps <- ps
+      cacheChange <- TRUE
+    }
+    # newMetaData <- attr(studyPop, "metaData")
+    # newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
+    # newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
+    idx <- match(studyPop$rowId, ps$rowId)
+    studyPop$propensityScore <- ps$propensityScore[idx]
+    ps <- studyPop
+    # attr(ps, "metaData") <- newMetaData
+  } else {
+    ps <- studyPop
+  }
+  # Trim, match. stratify
+  if (params$args$trimByPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByPsArgs)
+    ps <- do.call("trimByPs", args)
+  } else if (params$args$trimByPsToEquipoise) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByPsToEquipoisesArgs)
+    ps <- do.call("trimByPsToEquipoise", args)
+  }
+  if (params$args$matchOnPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$matchOnPsArgs)
+    ps <- do.call("matchOnPs", args)
+  } else if (params$args$matchOnPsAndCovariates) {
+    args <- list(population = ps)
+    args <- append(args, params$args$matchOnPsAndCovariatesArgs)
+    ps <- do.call("matchOnPsAndCovariates", args)
+  } else if (params$args$stratifyByPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$stratifyByPsArgs)
+    ps <- do.call("stratifyByPs", args)
+  } else if (params$args$stratifyByPsAndCovariates) {
+    args <- list(population = ps)
+    args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
+    ps <- do.call("stratifyByPsAndCovariates", args)
+  }
+  args <- params$args$fitOutcomeModelArgs
+  args$population <- ps
+  args$cohortMethodData <- cohortMethodData
+  # outcomeModel <- do.call('fitOutcomeModel', args)
+  outcomeModel <- fitOutcomeModel(population = args$population,
+                                  cohortMethodData = args$cohortMethodData,
+                                  modelType = args$modelType,
+                                  stratified = args$stratified,
+                                  useCovariates = args$useCovariates,
+                                  prior = args$prior,
+                                  control = args$control)
+  saveRDS(outcomeModel, params$outcomeModelFile)
+  if (cacheChange) {
+    assign("cache", cache, envir = globalenv())
+  }
+  return(NULL)
+}
+
 
 createReferenceTable <- function(cmAnalysisList,
                                  drugComparatorOutcomesList,
