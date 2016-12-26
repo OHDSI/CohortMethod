@@ -44,7 +44,7 @@ dbms <- "pdw"
 user <- NULL
 pw <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
+cdmDatabaseSchema <- "CDM_Truven_mdcd_V464.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -192,7 +192,7 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        startingVariance = 0.01,
                                        noiseLevel = "quiet",
                                        tolerance = 2e-07,
-                                       cvRepetitions = 1,
+                                       cvRepetitions = 10,
                                        threads = 16))
 
 # computePsAuc(ps) plotPs(ps)

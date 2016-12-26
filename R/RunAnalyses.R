@@ -294,9 +294,8 @@ runCmAnalyses <- function(connectionDetails,
         newMetaData <- attr(studyPop, "metaData")
         newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
         newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-        #ps <- merge(studyPop, ps[, c("rowId", "propensityScore")])
-        idx <- match(ps$rowId, studyPop$rowId)
-        studyPop$propensityScore[idx[!is.na(idx)]] <- ps$propensityScore[!is.na(idx)]
+        idx <- match(studyPop$rowId, ps$rowId)
+        studyPop$propensityScore <- ps$propensityScore[idx]
         ps <- studyPop
         attr(ps, "metaData") <- newMetaData
         saveRDS(ps, psFile)
@@ -550,13 +549,9 @@ doFitOutcomeModelPlus <- function(params) {
       cache$ps <- ps
       cacheChange <- TRUE
     }
-    # newMetaData <- attr(studyPop, "metaData")
-    # newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
-    # newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
     idx <- match(studyPop$rowId, ps$rowId)
     studyPop$propensityScore <- ps$propensityScore[idx]
     ps <- studyPop
-    # attr(ps, "metaData") <- newMetaData
   } else {
     ps <- studyPop
   }

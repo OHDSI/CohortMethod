@@ -35,15 +35,15 @@ Imports:
     RJDBC,
     SqlRender (>= 1.1.1),
     survival,
-    stringi
+    stringi,
+    OhdsiRTools (>= 1.1.2)
 Suggests:
     testthat,
     pROC,
     gnm,
     knitr,
     rmarkdown,
-    EmpiricalCalibration,
-    OhdsiRTools (>= 1.1.1)
+    EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 5.0.1

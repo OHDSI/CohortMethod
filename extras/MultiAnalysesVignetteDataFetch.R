@@ -37,7 +37,7 @@ pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "CDM_Truven_CCAE_V483.dbo"
+cdmDatabaseSchema <- "CDM_Truven_mdcd_V464.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -289,7 +289,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 16,
-                        createStudyPopThreads = 1,
+                        createStudyPopThreads = 3,
                         computeCovarBalThreads = 3,
                         trimMatchStratifyThreads = 5,
                         fitOutcomeModelThreads = 3,
