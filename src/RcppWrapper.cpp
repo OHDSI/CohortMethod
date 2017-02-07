@@ -119,11 +119,10 @@ double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> 
   for (int i=0; i<N; i++) {
     s = sExp[i];
     t = cExp[i];
-    result -= pow(sBaseline[0], s)*pow(cBaseline[0], t);
+    result += (1-pow(sBaseline[0],s))*pow(cBaseline[0],t);
     for (int j=1; j<M; j++) {
-      result += pow(sBaseline[j],s)*(pow(cBaseline[j-1], t) - pow(cBaseline[j],t));
+      result += (pow(sBaseline[j-1],s)-pow(sBaseline[j],s))*pow(cBaseline[j],t);
     }
-    result += pow(cBaseline[M-1], t);
   }
 
   return result/N;
@@ -133,12 +132,12 @@ double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> 
 std::vector<int> generateEventTimesHelper(std::vector<double> value, std::vector<double> baseline) {
   int N = value.size();
   int M = baseline.size();
-  std::vector<int> result (N,0);
+  std::vector<int> result (N,M+1);
   int j = 0;
 
   for (int i=0; i<M; i++) {
-    while(j<N && value[j]<baseline[i]) {
-      result[j] = i;
+    while(j<N && value[j]>baseline[i]) {
+      result[j] = i+1;
       j++;
     }
     continue;

@@ -403,7 +403,8 @@ simulateCMD <- function(cohortMethodData, sData, cData, outcomeId) {
   cohorts$newOutcomeCount = 0
   cohorts$newDaysToEvent = NA
   cohorts$newSurvivalTime = cohorts$cTime + 1
-  t = which(cohorts$sTime <= cohorts$cTime & cohorts$sTime <= sData$times[1])
+  #t = which(cohorts$sTime <= cohorts$cTime & cohorts$sTime <= sData$times[1])
+  t = which(cohorts$sTime < cohorts$cTime)
   if(!is.null(t)) {
     cohorts$newDaysToEvent[t] = cohorts$sTime[t]
     cohorts$newSurvivalTime[t] = cohorts$sTime[t] + 1
@@ -484,9 +485,9 @@ calculateBaselineSurvivalFunction <- function(outcomeModel) {
   L = ff::ff(vmode = "double", initdata = 0, length = n)
   for (i in 1:n) {
     #L[i] = sum(l[(n+1-i):n])
-    L[i] = sum(l[i:n])
+    L[n+1-i] = sum(l[i:n])
   }
-  return(list(times = times - 1,
+  return(list(times = unique(times[ff::fforder(times)]) - 1,
               baseline = 1/exp(L)))
 }
 
@@ -496,7 +497,7 @@ generateEventTimes <- function(x, times, baseline) {
   S$R = ff::as.ff(runif(n))
   S$value = S$R^(1/S$exb)
 
-  S = S[ff::fforder(S$value),]
+  S = S[ff::fforder(S$value,decreasing=TRUE),]
   k = 1;
   K = length(baseline)
 
@@ -513,9 +514,9 @@ generateEventTimes <- function(x, times, baseline) {
 #     }
 #   }
 
-  S$times = ff::ff(vmode = "double", initdata = times[1]+1, length = n)
-  t = ffbase::ffwhich(S, S$timeIndex>0)
-  if(!is.null(t)) S$times[t] = unique(times)[ff::fforder(unique(times),decreasing = TRUE)][S$timeIndex[t]]
+  S$times = ff::ff(vmode = "double", initdata = max(times)+1, length = n)
+  t = ffbase::ffwhich(S, S$timeIndex<=K)
+  if(!is.null(t)) S$times[t] = unique(times)[ff::fforder(unique(times))][S$timeIndex[t]]
 
   return(ff::ffdf(rowId = S$rowId, time = S$times))
 }
