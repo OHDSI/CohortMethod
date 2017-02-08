@@ -81,3 +81,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// generateEventTimesHelper1
+std::vector<double> generateEventTimesHelper1(std::vector<double> value, std::vector<double> baseline, std::vector<double> times);
+RcppExport SEXP CohortMethod_generateEventTimesHelper1(SEXP valueSEXP, SEXP baselineSEXP, SEXP timesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<double> >::type value(valueSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type baseline(baselineSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type times(timesSEXP);
+    rcpp_result_gen = Rcpp::wrap(generateEventTimesHelper1(value, baseline, times));
+    return rcpp_result_gen;
+END_RCPP
+}

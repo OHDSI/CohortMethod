@@ -25,3 +25,7 @@
     .Call('CohortMethod_generateEventTimesHelper', PACKAGE = 'CohortMethod', value, baseline)
 }
 
+.generateEventTimesHelper1 <- function(value, baseline, times) {
+    .Call('CohortMethod_generateEventTimesHelper1', PACKAGE = 'CohortMethod', value, baseline, times)
+}
+

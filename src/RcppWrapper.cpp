@@ -146,4 +146,26 @@ std::vector<int> generateEventTimesHelper(std::vector<double> value, std::vector
   return result;
 }
 
+// [[Rcpp::export(".generateEventTimesHelper1")]]
+std::vector<double> generateEventTimesHelper1(std::vector<double> value, std::vector<double> baseline, std::vector<double> times) {
+  int N = value.size();
+  int M = baseline.size();
+  std::vector<double> result (N,times[M-1]);
+  int j = 0;
+  double d;
+  double x;
+
+  for (int i=1; i<M; i++) {
+    d = (times[i]-times[i-1])/(baseline[i]-baseline[i-1]);
+    x = times[i-1]-baseline[i-1]*d;
+    while(j<N && value[j]>baseline[i]) {
+      result[j] = x+value[j]*d;
+      j++;
+    }
+    continue;
+  }
+
+  return result;
+}
+
 #endif // __RcppWrapper_cpp__

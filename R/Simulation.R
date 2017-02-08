@@ -379,13 +379,13 @@ createCMDSimulationProfile <- function(cohortMethodData,
 }
 
 #' @export
-simulateCMD <- function(cohortMethodData, sData, cData, outcomeId) {
+simulateCMD <- function(cohortMethodData, sData, cData, outcomeId, discrete=TRUE) {
   # generate event times
-  sTimes = generateEventTimes(sData$XB, sData$times, sData$baseline)
+  sTimes = generateEventTimes(sData$XB, sData$times, sData$baseline, discrete=discrete)
   names(sTimes)[match("time", names(sTimes))] = "sTime"
 
   # generate censor times
-  cTimes = generateEventTimes(cData$XB, cData$times, cData$baseline)
+  cTimes = generateEventTimes(cData$XB, cData$times, cData$baseline, discrete=discrete)
   names(cTimes)[match("time", names(cTimes))] = "cTime"
 
   # combine event and censor times
@@ -487,11 +487,11 @@ calculateBaselineSurvivalFunction <- function(outcomeModel) {
     #L[i] = sum(l[(n+1-i):n])
     L[n+1-i] = sum(l[i:n])
   }
-  return(list(times = unique(times[ff::fforder(times)]) - 1,
+  return(list(times = unique(times[ff::fforder(times)]),
               baseline = 1/exp(L)))
 }
 
-generateEventTimes <- function(x, times, baseline) {
+generateEventTimes <- function(x, times, baseline, discrete) {
   n = nrow(x)
   S = x
   S$R = ff::as.ff(runif(n))
@@ -501,22 +501,21 @@ generateEventTimes <- function(x, times, baseline) {
   k = 1;
   K = length(baseline)
 
-  S$timeIndex = ff::as.ff(.generateEventTimesHelper(S$value[], baseline[]))
-
-#   S$timeIndex = ff::ff(vmode = "integer", initdata = 0, length = n)
-#
-#   for (i in 1:K) {
-#     t = ffbase::ffwhich(S, S$value >= baseline[i])
-#     if (is.null(t)) {
-#       break
-#     } else{
-#       S$timeIndex[t] = ff::ff(vmode = "integer", initdata = i, length = length(t))
-#     }
-#   }
-
-  S$times = ff::ff(vmode = "double", initdata = max(times)+1, length = n)
-  t = ffbase::ffwhich(S, S$timeIndex<=K)
-  if(!is.null(t)) S$times[t] = unique(times)[ff::fforder(unique(times))][S$timeIndex[t]]
+  if (discrete) {
+    S$timeIndex = ff::as.ff(.generateEventTimesHelper(S$value[], baseline[]))
+    S$times = ff::ff(vmode = "double", initdata = max(times)+1, length = n)
+    t = ffbase::ffwhich(S, S$timeIndex<=K)
+    if(!is.null(t)) S$times[t] = unique(times)[ff::fforder(unique(times))][S$timeIndex[t]]
+  } else {
+    baseline = c(1,baseline[],0)
+    t = match(unique(baseline),baseline)
+    baseline = baseline[t]
+    times = unique(times)[]
+    times = times[order(times, decreasing = FALSE)]
+    times = c(0,times,times[length(times)]+1)
+    times = times[t]
+    S$times = ff::as.ff(.generateEventTimesHelper1(S$value[], baseline, times))
+  }
 
   return(ff::ffdf(rowId = S$rowId, time = S$times))
 }
