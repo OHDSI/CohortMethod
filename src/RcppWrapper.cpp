@@ -106,7 +106,7 @@ DataFrame bySum(List ffValues, List ffBins) {
 }
 
 // [[Rcpp::export(".findOutcomePrevalence")]]
-double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> sExp, std::vector<double> cBaseline, std::vector<double> cExp) {
+double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> sExp, std::vector<double> cBaseline) {
   int M = sBaseline.size();
   int N = sExp.size();
   double result = 0;
@@ -114,14 +114,12 @@ double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> 
   std::vector<double> sCopy;
   std::vector<double> cCopy;
   double s;
-  double t;
 
   for (int i=0; i<N; i++) {
     s = sExp[i];
-    t = cExp[i];
-    result += (1-pow(sBaseline[0],s))*pow(cBaseline[0],t);
+    result += (1-pow(sBaseline[0],s))*cBaseline[0];
     for (int j=1; j<M; j++) {
-      result += (pow(sBaseline[j-1],s)-pow(sBaseline[j],s))*pow(cBaseline[j],t);
+      result += (pow(sBaseline[j-1],s)-pow(sBaseline[j],s))*cBaseline[j];
     }
   }
 

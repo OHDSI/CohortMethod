@@ -56,16 +56,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // findOutcomePrevalence
-double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> sExp, std::vector<double> cBaseline, std::vector<double> cExp);
-RcppExport SEXP CohortMethod_findOutcomePrevalence(SEXP sBaselineSEXP, SEXP sExpSEXP, SEXP cBaselineSEXP, SEXP cExpSEXP) {
+double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> sExp, std::vector<double> cBaseline);
+RcppExport SEXP CohortMethod_findOutcomePrevalence(SEXP sBaselineSEXP, SEXP sExpSEXP, SEXP cBaselineSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::vector<double> >::type sBaseline(sBaselineSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type sExp(sExpSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type cBaseline(cBaselineSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type cExp(cExpSEXP);
-    rcpp_result_gen = Rcpp::wrap(findOutcomePrevalence(sBaseline, sExp, cBaseline, cExp));
+    rcpp_result_gen = Rcpp::wrap(findOutcomePrevalence(sBaseline, sExp, cBaseline));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -370,7 +370,8 @@ simulateCMD <- function(cohortMethodData, sData, cData, outcomeId, discrete=TRUE
   names(sTimes)[match("time", names(sTimes))] = "sTime"
 
   # generate censor times
-  cTimes = generateEventTimes(cData$XB, cData$times, cData$baseline, discrete=discrete)
+  fakeXB = ff::ffdf(rowId=sData$XB$rowId, exb = ff::as.ff(rep(1,nrow(sData$XB))))
+  cTimes = generateEventTimes(fakeXB, cData$times, cData$baseline, discrete=discrete)
   names(cTimes)[match("time", names(cTimes))] = "cTime"
 
   # combine event and censor times
@@ -556,7 +557,7 @@ removeCovariates <- function(cohortMethodData,
 
 #' @export
 findOutcomePrevalence <- function(sData, cData, delta=1) {
-  return(.findOutcomePrevalence(sData$baseline[], sData$XB$exb[]*delta, cData$baseline[], cData$XB$exb[]))
+  return(.findOutcomePrevalence(sData$baseline[], sData$XB$exb[]*delta, cData$baseline[]))
 }
 
 #' @export
@@ -575,6 +576,7 @@ saveSimulationProfile <- function(simulationProfile, file) {
   saveRDS(simulationProfile$sData$baseline[], file = file.path(sDataFile, "baseline.rds"))
 
   cDataFile = paste(file,"/cData",sep="")
+  dir.create(cDataFile)
   saveRDS(simulationProfile$cData$times[], file = file.path(cDataFile, "times.rds"))
   saveRDS(simulationProfile$cData$baseline[], file = file.path(cDataFile, "baseline.rds"))
 
@@ -608,11 +610,10 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
   outcomeModelCoefficients = readRDS(file.path(file, "outcomeModelCoefficients.rds"))
   studyPop = readRDS(file.path(file, "studyPop.rds"))
   outcomeId = readRDS(file.path(file, "outcomeId.rds"))
-  priorVariance = readRDS(file.path(file, "priorVariance"))
+  priorVariance = readRDS(file.path(file, "priorVariance.rds"))
 
   # Open all ffdfs to prevent annoying messages later:
   open(sData$XB, readonly = readOnly)
-  open(cData$XB, readonly = readOnly)
   result = list(sData = sData,
                 cData = cData,
                 observedEffectSize = observedEffectSize,
