@@ -256,6 +256,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                        excludeCovariateIds = NULL,
                                        psMethod = 0,
                                        useCrossValidation = TRUE,
+                                       priorVariance = NULL,
                                        threads = 10) {
 
   if (simulateTreatment & is.null(simulateTreatmentBinary)) {
@@ -314,6 +315,9 @@ createCMDSimulationProfile <- function(cohortMethodData,
   if (psMethod == 2 | psMethod == 3) {stratified = TRUE}
   population1 = invertOutcome(population)
 
+  if (useCrossValidation) prior = createPrior(priorType = "laplace", useCrossValidation = TRUE)
+  else prior = createPrior(priorType = "laplace", variance = priorVariance, useCrossValidation = FALSE)
+
   # generate outcome model for outcome
   outcomeModel <- fitOutcomeModel(population = population,
                                   cohortMethodData = cohortMethodData,
@@ -321,7 +325,7 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                   stratified = stratified,
                                   useCovariates = TRUE,
                                   excludeCovariateIds = excludeCovariateIds,
-                                  prior = createPrior(priorType = "laplace", useCrossValidation = useCrossValidation),
+                                  prior = prior,
                                   control = createControl(cvType = "auto",
                                                                     startingVariance = 0.01,
                                                                     tolerance = 2e-07,
@@ -331,33 +335,15 @@ createCMDSimulationProfile <- function(cohortMethodData,
                                                                     threads = threads),
                                   returnFit = TRUE)
 
-
-  # generate outcome model for censor
-  outcomeModel1 <- fitOutcomeModel(population = population1,
-                                   cohortMethodData = cohortMethodData,
-                                   modelType = "cox",
-                                   stratified = stratified,
-                                   useCovariates = TRUE,
-                                   excludeCovariateIds = excludeCovariateIds,
-                                   prior = createPrior(priorType = "laplace", useCrossValidation = useCrossValidation),
-                                   control = createControl(maxIterations = 10000,
-                                                           selectorType = "auto",
-                                                           threads = threads),
-                                   returnFit = TRUE)
-
   # create sData and cData
   ids = ff::as.ff(population$rowId)
 
-  sData = calculateBaselineSurvivalFunction(outcomeModel)
+  sData = calculateBreslowBaseline(outcomeModel)
   sData$XB =   calculateXB(rowId = ids,
                            covariates = cohortMethodData$covariates,
                            coef = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$outcomeModelCoefficients))),
                                            beta = ff::as.ff(outcomeModel$outcomeModelCoefficients)))
-  cData = calculateBaselineSurvivalFunction(outcomeModel1)
-  cData$XB =   calculateXB(rowId = ids,
-                           covariates = cohortMethodData$covariates,
-                           coef = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel1$outcomeModelCoefficients))),
-                                           beta = ff::as.ff(outcomeModel1$outcomeModelCoefficients)))
+  cData = calculateNelsonAalenBaseline(population1)
 
   # delete people not in the study population
   covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$rowId, ids),]
@@ -368,9 +354,8 @@ createCMDSimulationProfile <- function(cohortMethodData,
   result = list(sData = sData,
                 cData = cData,
                 observedEffectSize = coef(outcomeModel),
-                observedCensoringEffectSize = coef(outcomeModel1),
-                sOutcomeModelCoefficients = outcomeModel$outcomeModelCoefficients,
-                cOutcomeModelCoefficients = outcomeModel1$outcomeModelCoefficients,
+                outcomeModelCoefficients = outcomeModel$outcomeModelCoefficients,
+                priorVariance = outcomeModel$outcomeModelPriorVariance,
                 studyPop = studyPop,
                 outcomeId = outcomeId)
   class(result) <- "simulationProfile"
@@ -456,7 +441,7 @@ calculateXB <- function(rowId, covariates, coef) {
   return(result)
 }
 
-calculateBaselineSurvivalFunction <- function(outcomeModel) {
+calculateBreslowBaseline <- function(outcomeModel) {
   fit = outcomeModel$fit
 
   accDenom = ff::as.ff(Cyclops::getAccDenom(fit$interface))
@@ -489,6 +474,31 @@ calculateBaselineSurvivalFunction <- function(outcomeModel) {
   }
   return(list(times = unique(times[ff::fforder(times)]),
               baseline = 1/exp(L)))
+}
+
+calculateNelsonAalenBaseline <- function(population) {
+  population = population[order(population$outcomeCount,decreasing = TRUE),]
+  population = population[order(population$survivalTime),]
+  n = nrow(population)
+  a = match(unique(population$survivalTime),population$survivalTime)
+  b = unique(population$survivalTime)
+  c = (1-population$outcomeCount)*population$survivalTime
+  d = unique(c[c!=0])
+  e = match(d,c)
+  p = length(a)
+  a = c(a,n+1)
+  events = a[2:(p+1)]-a[1:p]
+  bads = rep(0,p)
+  bads[match(d,b)] = a[match(d,b)+1]-e
+  events = events - bads
+  alive = ((n+1)-a)[1:p]
+  hazards = events/alive
+  cumHazards = rep(0,p)
+  for(i in 1:p) {
+    cumHazards[i]=sum(hazards[1:i])
+  }
+  return(list(times = ff::as.ff(unique(population$survivalTime)),
+              baseline = ff::as.ff(exp(-cumHazards))))
 }
 
 generateEventTimes <- function(x, times, baseline, discrete) {
@@ -565,17 +575,14 @@ saveSimulationProfile <- function(simulationProfile, file) {
   saveRDS(simulationProfile$sData$baseline[], file = file.path(sDataFile, "baseline.rds"))
 
   cDataFile = paste(file,"/cData",sep="")
-  XB = simulationProfile$cData$XB
-  ffbase::save.ffdf(XB, dir = cDataFile, clone = TRUE)
   saveRDS(simulationProfile$cData$times[], file = file.path(cDataFile, "times.rds"))
   saveRDS(simulationProfile$cData$baseline[], file = file.path(cDataFile, "baseline.rds"))
 
   saveRDS(simulationProfile$observedEffectSize, file = file.path(file, "observedEffectSize.rds"))
-  saveRDS(simulationProfile$observedCensoringEffectSize, file = file.path(file, "observedCensoringEffectSize.rds"))
-  saveRDS(simulationProfile$sOutcomeModelCoefficients, file = file.path(file, "sOutcomeModelCoefficients.rds"))
-  saveRDS(simulationProfile$cOutcomeModelCoefficients, file = file.path(file, "cOutcomeModelCoefficients.rds"))
+  saveRDS(simulationProfile$outcomeModelCoefficients, file = file.path(file, "outcomeModelCoefficients.rds"))
   saveRDS(simulationProfile$studyPop, file = file.path(file, "studyPop.rds"))
   saveRDS(simulationProfile$outcomeId, file = file.path(file, "outcomeId.rds"))
+  saveRDS(simulationProfile$priorVariance, file = file.path(file, "priorVariance.rds"))
 }
 
 #' @export
@@ -594,17 +601,14 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
 
   e <- new.env()
   cDataFile = paste(file,"/cData",sep="")
-  ffbase::load.ffdf(cDataFile, e)
-  cData <- list(XB = get("XB", envir = e),
-                times = ff::as.ff(readRDS(file.path(cDataFile, "times.rds"))),
+  cData <- list(times = ff::as.ff(readRDS(file.path(cDataFile, "times.rds"))),
                 baseline = ff::as.ff(readRDS(file.path(cDataFile, "baseline.rds"))))
 
   observedEffectSize = readRDS(file.path(file, "observedEffectSize.rds"))
-  observedCensoringEffectSize = readRDS(file.path(file, "observedCensoringEffectSize.rds"))
-  sOutcomeModelCoefficients = readRDS(file.path(file, "sOutcomeModelCoefficients.rds"))
-  cOutcomeModelCoefficients = readRDS(file.path(file, "cOutcomeModelCoefficients.rds"))
+  outcomeModelCoefficients = readRDS(file.path(file, "outcomeModelCoefficients.rds"))
   studyPop = readRDS(file.path(file, "studyPop.rds"))
   outcomeId = readRDS(file.path(file, "outcomeId.rds"))
+  priorVariance = readRDS(file.path(file, "priorVariance"))
 
   # Open all ffdfs to prevent annoying messages later:
   open(sData$XB, readonly = readOnly)
@@ -612,11 +616,10 @@ loadSimulationProfile <- function(file, readOnly = TRUE) {
   result = list(sData = sData,
                 cData = cData,
                 observedEffectSize = observedEffectSize,
-                observedCensoringEffectSize = observedCensoringEffectSize,
-                sOutcomeModelCoefficients = sOutcomeModelCoefficients,
-                cOutcomeModelCoefficients = cOutcomeModelCoefficients,
+                outcomeModelCoefficients = outcomeModelCoefficients,
                 studyPop = studyPop,
-                outcomeId = outcomeId)
+                outcomeId = outcomeId,
+                priorVariance = priorVariance)
   class(result) <- "simulationProfile"
   rm(e)
   return(result)
