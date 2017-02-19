@@ -556,6 +556,22 @@ removeCovariates <- function(cohortMethodData,
 }
 
 #' @export
+removeSubjects <- function(cohortMethodData,
+                           rowIdsToKeep) {
+  if (is.null(rowIdsToKeep)) return(cohortMethodData)
+  cohorts = cohortMethodData$cohorts[!is.na(match(cohortMethodData$cohorts$rowId, rowIdsToKeep)),]
+  outcomes = cohortMethodData$outcomes[!is.na(match(cohortMethodData$outcomes$rowId, rowIdsToKeep)),]
+  covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$rowId, ff::as.ff(rowIdsToKeep)),]
+  covariateRef = cohortMethodData$covariateRef[in.ff(cohortMethodData$covariateRef$covariateId, unique(covariates$covariateId)),]
+
+  return (list(covariates = covariates,
+               covariateRef = covariateRef,
+               cohorts = cohortMethodData$cohorts,
+               outcomes = cohortMethodData$outcomes,
+               metaData = cohortMethodData$metaData))
+}
+
+#' @export
 findOutcomePrevalence <- function(sData, cData, delta=1) {
   return(.findOutcomePrevalence(sData$baseline[], sData$XB$exb[]*delta, cData$baseline[]))
 }
