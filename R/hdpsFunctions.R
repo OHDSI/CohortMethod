@@ -377,6 +377,7 @@ combineFunction <- function(data, FUN) {
 getDemographicsCovariateRef <- function(cohortData, analysisIds) {
   if (is.null(analysisIds)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariateRef$analysisId, ff::as.ff(analysisIds))
+  if (all(is.na(t))) {return(NULL)}
   result = cohortData$covariateRef[ffbase::ffwhich(t,!is.na(t)),]
   result$covariateName = ffbase::droplevels.ff(result$covariateName)
   return(result)
@@ -393,6 +394,7 @@ getDemographicsCovariateRef <- function(cohortData, analysisIds) {
 getDemographicsCovariates <- function(cohortData, covariateRef) {
   if (is.null(covariateRef)) {return(NULL)}
   t = ffbase::ffmatch(cohortData$covariates$covariateId, covariateRef$covariateId)
+  if (all(is.na(t))) {return(NULL)}
   return(cohortData$covariates[ffbase::ffwhich(t,!is.na(t)),])
 }
 
