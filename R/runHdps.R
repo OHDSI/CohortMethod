@@ -165,10 +165,12 @@ runHdps1 <- function(cohortMethodData,
   newCovariates = NULL
   newCovariateRef = NULL
 
-  newData = removeCovariates(cohortMethodData,
-                                   ff::as.ff(c(predefinedIncludeConceptIds,
-                                               predefinedExcludeConceptIds,
-                                               demographicsCovariateRef$covariateId[])))$covariates
+  covariatesToRemove = c(predefinedIncludeConceptIds,
+                         predefinedExcludeConceptIds,
+                         demographicsCovariateRef$covariateId[])
+
+  if (is.null(covariatesToRemove)) {newData = cohortMethodData$covariates}
+  else {newData = removeCovariates(cohortMethodData, ff::as.ff(covariatesToRemove))$covariates}
   #newCovariates = addTreatmentAndOutcome(newCovariates, cohortMethodData, outcomeId)[[1]]
   newData = addTreatment(newData, cohortMethodData$cohorts)[[1]]
   newData = addOutcome(newData, cohortMethodData$outcomes, outcomeId)[[1]]
