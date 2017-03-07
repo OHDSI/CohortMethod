@@ -223,7 +223,7 @@ test_that("Functions on outcome model", {
   expect_output(print(s), "Model type: cox.*")
 
   p <- plotKaplanMeier(strata)
-  expect_is(p, "ggplot")
+  expect_is(p, "grob")
 
   p <- drawAttritionDiagram(outcomeModel)
   expect_is(p, "ggplot")
