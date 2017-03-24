@@ -15,4 +15,3 @@ A list of objects of type \code{drugComparatorOutcome}.
 \description{
 Load a list of objects of type \code{drugComparatorOutcomes} from file. The file is in JSON format.
 }
-

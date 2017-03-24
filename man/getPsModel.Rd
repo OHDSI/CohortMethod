@@ -22,4 +22,3 @@ Shows the coefficients and names of the covariates with non-zero coefficients.
 # todo
 
 }
-

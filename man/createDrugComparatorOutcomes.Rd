@@ -39,4 +39,3 @@ Create drug-comparator-outcomes combinations.
 \details{
 Create a set of hypotheses of interest, to be used with the \code{\link{runCmAnalyses}} function.
 }
-

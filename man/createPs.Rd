@@ -52,4 +52,3 @@ cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, 
 ps <- createPs(cohortMethodData)
 
 }
-

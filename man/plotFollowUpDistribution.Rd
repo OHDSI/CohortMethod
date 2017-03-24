@@ -41,4 +41,3 @@ Plot the distribution of follow-up time
 Plot the distribution of follow-up time, stratified by treatment group.Follow-up time is defined as
 time-at-risk, so not censored at the outcome.
 }
-

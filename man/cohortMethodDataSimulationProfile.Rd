@@ -11,4 +11,3 @@ data(cohortMethodDataSimulationProfile)
 A simulation profile
 }
 \keyword{datasets}
-

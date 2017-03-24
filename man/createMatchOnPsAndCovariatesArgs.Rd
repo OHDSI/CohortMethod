@@ -30,4 +30,3 @@ Create a parameter object for the function matchOnPsAndCovariates
 \details{
 Create an object defining the parameter values.
 }
-

@@ -46,4 +46,3 @@ An object of class \code{outcomeModel}. Generic function \code{summary}, \code{c
 \description{
 \code{fitOutcomeModel} creates an outcome model, and computes the relative risk
 }
-

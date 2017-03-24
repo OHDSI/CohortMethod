@@ -48,4 +48,4 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

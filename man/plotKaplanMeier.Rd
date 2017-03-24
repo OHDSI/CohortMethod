@@ -46,4 +46,3 @@ format.
 Pocock SJ, Clayton TC, Altman DG. (2002) Survival plots of time-to-event outcomes in clinical trials:
 good practice and pitfalls, Lancet, 359:1686-89.
 }
-

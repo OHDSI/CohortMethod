@@ -28,4 +28,3 @@ format.
 \code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from
 the study population, and for what reasons.
 }
-

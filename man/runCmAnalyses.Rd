@@ -133,4 +133,3 @@ specify several analyses that only differ in the way the outcome model is fitted
 function will extract the data and fit the propensity model only once, and re-use this in all the
 analysis.
 }
-

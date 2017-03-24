@@ -27,4 +27,3 @@ relative risk.\cr }
 \description{
 Create a summary report of the analyses
 }
-

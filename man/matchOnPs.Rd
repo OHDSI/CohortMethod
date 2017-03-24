@@ -59,4 +59,3 @@ result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "ag
 Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
 score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 }
-
