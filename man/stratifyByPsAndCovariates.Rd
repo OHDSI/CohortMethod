@@ -38,4 +38,3 @@ Column indicating whether the person is in the treated (1) or comparator\cr \tab
 # todo
 
 }
-

@@ -18,4 +18,3 @@ of filtering.
 \description{
 Get the attrition table for a population
 }
-

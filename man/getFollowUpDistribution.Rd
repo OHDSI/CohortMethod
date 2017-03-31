@@ -23,4 +23,3 @@ Get the distribution of follow-up time
 Get the distribution of follow-up time as quantiles. Follow-up time is defined as time-at-risk, so
 not censored at the outcome.
 }
-

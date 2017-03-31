@@ -92,4 +92,3 @@ Create a CohortMethod analysis specification
 \details{
 Create a set of analysis choices, to be used with the \code{\link{runCmAnalyses}} function.
 }
-

@@ -47,4 +47,3 @@ Create a parameter object for the function createStudyPopulation
 \details{
 Create an object defining the parameter values.
 }
-

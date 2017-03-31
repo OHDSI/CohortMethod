@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 2.2.0
-Date: 2017-03-07
+Version: 2.2.1
+Date: 2017-03-24
 Author: Martijn J. Schuemie [aut, cre],
     Marc A. Suchard [aut],
     Patrick B. Ryan [aut]
@@ -27,6 +27,7 @@ Depends:
     FeatureExtraction  (>= 1.0.0)
 Imports:
     bit,
+    methods,
     ggplot2,
     gridExtra,
     grid,
@@ -48,4 +49,4 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

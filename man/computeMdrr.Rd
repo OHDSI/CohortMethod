@@ -36,4 +36,3 @@ implemented. For Cox model, the computations by Schoenfeld (1983) is used.
 Schoenfeld DA (1983) Sample-size formula for the proportional-hazards regression model, Biometrics,
 39(3), 499-503
 }
-

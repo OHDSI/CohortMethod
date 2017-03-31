@@ -14,4 +14,3 @@ saveDrugComparatorOutcomesList(drugComparatorOutcomesList, file)
 \description{
 Write a list of objects of type \code{drugComparatorOutcomes} to file. The file is in JSON format.
 }
-

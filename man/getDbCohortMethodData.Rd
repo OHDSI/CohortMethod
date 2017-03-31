@@ -130,4 +130,3 @@ their descendants will be excluded from the covariates. However, if the \code{ta
 \code{comparatorId} arguments do not represent concept IDs, you will need to manually add the drugs
 and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
 }
-

@@ -15,4 +15,3 @@ A list of objects of type \code{cmAnalysis}.
 \description{
 Load a list of objects of type \code{cmAnalysis} from file. The file is in JSON format.
 }
-

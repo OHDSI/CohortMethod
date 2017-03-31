@@ -38,4 +38,3 @@ Create a parameter object for the function fitOutcomeModel
 \details{
 Create an object defining the parameter values.
 }
-
