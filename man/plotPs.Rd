@@ -57,4 +57,3 @@ Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stan
 Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
 Comparative Effective Research, 3, 11-20
 }
-

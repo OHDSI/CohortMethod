@@ -680,7 +680,7 @@ We can create the Kaplan-Meier plot:
 ```{r tidy=TRUE,eval=FALSE}
 plotKaplanMeier(matchedPop, includeZero = FALSE)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE, message=FALSE, results='hide'}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
   plotKaplanMeier(matchedPop, includeZero = FALSE)
 }

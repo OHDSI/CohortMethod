@@ -31,4 +31,3 @@ data <- data[data$propensityScore > 0 & data$propensityScore < 1, ]
 computePsAuc(data)
 
 }
-

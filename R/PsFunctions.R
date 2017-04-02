@@ -1,6 +1,6 @@
 # @file PsFunctions.R
 #
-# Copyright 2016 Observational Health Data Sciences and Informatics
+# Copyright 2017 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -180,7 +180,9 @@ getPsModel <- function(propensityScore, cohortMethodData) {
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
   cfs <- merge(ff::as.ffdf(cfs), cohortMethodData$covariateRef, by.x = "id", by.y = "covariateId")
   cfs <- ff::as.ram(cfs[, c("coefficient", "id", "covariateName")])
-  cfs <- cfs[order(-abs(cfs$coefficient)), ]
+  if (length(cfs$coefficient) > 0) {
+    cfs <- cfs[order(-abs(cfs$coefficient)), ]
+  }
   return(cfs)
 }
 

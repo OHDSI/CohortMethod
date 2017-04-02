@@ -25,4 +25,3 @@ format.
 Create a scatterplot of the covariate balance, showing all variables with balance before and after
 matching on the x and y axis respectively. Requires running \code{computeCovariateBalance} first.
 }
-

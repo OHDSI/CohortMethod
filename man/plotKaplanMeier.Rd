@@ -5,8 +5,8 @@
 \title{Plot the Kaplan-Meier curve}
 \usage{
 plotKaplanMeier(population, censorMarks = FALSE, confidenceIntervals = TRUE,
-  includeZero = TRUE, dataCutoff = 0.99, treatmentLabel = "Treated",
-  comparatorLabel = "Comparator", title = "Kaplan-Meier Plot",
+  includeZero = FALSE, dataTable = TRUE, dataCutoff = 0.9,
+  treatmentLabel = "Treated", comparatorLabel = "Comparator", title,
   fileName = NULL)
 }
 \arguments{
@@ -15,13 +15,15 @@ potentially filtered by other functions.}
 
 \item{censorMarks}{Whether or not to include censor marks in the plot.}
 
-\item{confidenceIntervals}{Plot 95 percent confidence intervals?}
+\item{confidenceIntervals}{Plot 95 percent confidence intervals? Default is TRUE, as recommended by Pocock et al.}
 
 \item{includeZero}{Should the y axis include zero, or only go down to the lowest observed
-survival?}
+survival? The default is FALSE, as recommended by Pocock et al.}
+
+\item{dataTable}{Should the numbers at risk be shown in a table? Default is TRUE, as recommended by Pocock et al.}
 
 \item{dataCutoff}{Fraction of the data (number censored) after which the graph will not
-be shown.}
+be shown. The default is 90 percent as recommended by Pocock et al.}
 
 \item{treatmentLabel}{A label to us for the treated cohort.}
 
@@ -38,10 +40,9 @@ A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file 
 format.
 }
 \description{
-\code{plotKaplanMeier} creates the Kaplain-Meier survival plot
+\code{plotKaplanMeier} creates the Kaplain-Meier survival plot. Based (partially) on recommendations in Pocock et al (2002).
 }
-\examples{
-# todo
-
+\references{
+Pocock SJ, Clayton TC, Altman DG. (2002) Survival plots of time-to-event outcomes in clinical trials:
+good practice and pitfalls, Lancet, 359:1686-89.
 }
-

@@ -37,4 +37,3 @@ data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = prope
 result <- stratifyByPs(data, 5)
 
 }
-

@@ -22,4 +22,3 @@ characteristics.
 The output of this function is an object that can be used by the \code{simulateCohortMethodData}
 function to generate a cohortMethodData object.
 }
-

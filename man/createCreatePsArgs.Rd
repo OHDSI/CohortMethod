@@ -34,4 +34,3 @@ Create a parameter object for the function createPs
 \details{
 Create an object defining the parameter values.
 }
-

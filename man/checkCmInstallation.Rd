@@ -18,4 +18,3 @@ This function checks whether CohortMethod and its dependencies are correctly ins
 check the database connectivity, large scale regresion engine (Cyclops), and large data object
 handling (ff).
 }
-

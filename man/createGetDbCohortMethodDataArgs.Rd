@@ -46,4 +46,3 @@ Create a parameter object for the function getDbCohortMethodData
 \details{
 Create an object defining the parameter values.
 }
-

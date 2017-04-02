@@ -27,4 +27,3 @@ Create a plot showing those variables having the largest imbalance before matchi
 variables having the largest imbalance after matching. Requires running
 \code{computeCovariateBalance} first.
 }
-

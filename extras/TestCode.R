@@ -194,3 +194,14 @@ ref <- runCmAnalyses(connectionDetails = connectionDetails,
                      fitOutcomeModelThreads = 1)
 
 
+
+# Test KM plot ------------------------------------------------------------
+
+library(CohortMethod)
+data(cohortMethodDataSimulationProfile)
+sampleSize <- 100000
+cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
+studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                  addExposureDaysToEnd = TRUE,
+                                  outcomeId = 194133)
+plotKaplanMeier(studyPop, fileName = "s:/temp/plot.png")

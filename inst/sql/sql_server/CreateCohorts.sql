@@ -1,7 +1,7 @@
 /************************************************************************
 @file CreateCohorts.sql
 
-Copyright 2016 Observational Health Data Sciences and Informatics
+Copyright 2017 Observational Health Data Sciences and Informatics
 
 This file is part of CohortMethod
 
@@ -148,5 +148,5 @@ INNER JOIN @cdm_database_schema.observation_period
 WHERE cohort_start_date <= observation_period_end_date
 	AND cohort_start_date >= observation_period_start_date
 {@study_start_date != '' } ? {AND cohort_start_date >= CAST('@study_start_date' AS DATE) }
-{@study_end_date != '' } ? {AND cohort_start_date < CAST('@study_end_date' AS DATE) }
+{@study_end_date != '' } ? {AND cohort_start_date <= CAST('@study_end_date' AS DATE) }
 {@washout_period != 0} ? {AND DATEDIFF(DAY, observation_period_start_date, cohort_start_date) >= @washout_period};

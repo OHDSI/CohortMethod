@@ -20,4 +20,3 @@ Create a parameter object for the function stratifyByPsAndCovariates
 \details{
 Create an object defining the parameter values.
 }
-

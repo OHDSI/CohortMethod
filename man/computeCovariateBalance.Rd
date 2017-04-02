@@ -31,4 +31,3 @@ The population data frame should have at least the following columns: \tabular{l
 Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one
 matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 }
-

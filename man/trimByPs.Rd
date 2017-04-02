@@ -33,4 +33,3 @@ data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = prope
 result <- trimByPs(data, 0.05)
 
 }
-

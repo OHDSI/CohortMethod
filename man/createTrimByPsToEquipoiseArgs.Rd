@@ -15,4 +15,3 @@ Create a parameter object for the function trimByPsToEquipoise
 \details{
 Create an object defining the parameter values.
 }
-
