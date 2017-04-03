@@ -966,12 +966,16 @@ computeCovariateBalance <- function(population, cohortMethodData) {
 #' @param threshold   Show a threshold value for after matching standardized difference.
 #' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                    function \code{ggsave} in the ggplot2 package for supported file formats.
+#' @param beforeLabel Label for the x-axis.
+#' @param afterLabel  Label for the y-axis.
 #'
 #' @export
 plotCovariateBalanceScatterPlot <- function(balance,
                                             absolute = TRUE,
                                             threshold = 0,
-                                            fileName = NULL) {
+                                            fileName = NULL,
+                                            beforeLabel = "Before matching",
+                                            afterLabel = "After matching") {
   if (absolute) {
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
@@ -985,8 +989,8 @@ plotCovariateBalanceScatterPlot <- function(balance,
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::ggtitle("Standardized difference of mean") +
-    ggplot2::scale_x_continuous("Before matching", limits = limits) +
-    ggplot2::scale_y_continuous("After matching", limits = limits)
+    ggplot2::scale_x_continuous(beforeLabel, limits = limits) +
+    ggplot2::scale_y_continuous(afterLabel, limits = limits)
   if (threshold != 0) {
     plot <- plot + ggplot2::geom_hline(yintercept = c(threshold,
                                                       -threshold), alpha = 0.5, linetype = "dotted")
@@ -1022,24 +1026,28 @@ plotCovariateBalanceScatterPlot <- function(balance,
 #'                       a nicer plot.
 #' @param fileName       Name of the file where the plot should be saved, for example 'plot.png'. See
 #'                       the function \code{ggsave} in the ggplot2 package for supported file formats.
+#' @param beforeLabel    Label for identifying data before matching / stratification / trimming.
+#' @param afterLabel     Label for identifying data after matching / stratification / trimming.
 #'
 #' @export
 plotCovariateBalanceOfTopVariables <- function(balance,
                                                n = 20,
                                                maxNameWidth = 100,
-                                               fileName = NULL) {
+                                               fileName = NULL,
+                                               beforeLabel = "before matching",
+                                               afterLabel = "after matching") {
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   topBefore <- topBefore[1:n, ]
-  topBefore$facet <- paste("Top", n, "before matching")
+  topBefore$facet <- paste("Top", n, beforeLabel)
   topAfter <- balance[order(-abs(balance$afterMatchingStdDiff)), ]
   topAfter <- topAfter[1:n, ]
-  topAfter$facet <- paste("Top", n, "after matching")
+  topAfter$facet <- paste("Top", n, afterLabel)
   filtered <- rbind(topBefore, topAfter)
 
   data <- data.frame(covariateId = rep(filtered$covariateId, 2),
                      covariate = rep(filtered$covariateName, 2),
                      difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
-                     group = rep(c("before matching", "after matching"), each = nrow(filtered)),
+                     group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
                      facet = rep(filtered$facet, 2),
                      rowId = rep(nrow(filtered):1, 2))
   filtered$covariateName <- .truncRight(as.character(filtered$covariateName), maxNameWidth)

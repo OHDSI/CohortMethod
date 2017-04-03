@@ -5,7 +5,8 @@
 \title{Create a scatterplot of the covariate balance}
 \usage{
 plotCovariateBalanceScatterPlot(balance, absolute = TRUE, threshold = 0,
-  fileName = NULL)
+  fileName = NULL, beforeLabel = "Before matching",
+  afterLabel = "After matching")
 }
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
@@ -16,6 +17,10 @@ plotCovariateBalanceScatterPlot(balance, absolute = TRUE, threshold = 0,
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See the
 function \code{ggsave} in the ggplot2 package for supported file formats.}
+
+\item{beforeLabel}{Label for the x-axis.}
+
+\item{afterLabel}{Label for the y-axis.}
 }
 \value{
 A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
