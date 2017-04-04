@@ -507,12 +507,16 @@ generateEventTimes <- function(x, times, baseline, discrete) {
   S = x
   S$R = ff::as.ff(runif(n))
   S$value = S$R^(1/S$exb)
+  #S$value = 1/S$exb*log(S$R)
 
   S = S[ff::fforder(S$value,decreasing=TRUE),]
   k = 1;
   K = length(baseline)
 
   if (discrete) {
+    #baseline = log(baseline[])
+    #t = baseline[baseline==-Inf]
+    #if (length(t)>0) baseline[t]=min(S$value)-1
     S$timeIndex = ff::as.ff(.generateEventTimesHelper(S$value[], baseline[]))
     S$times = ff::ff(vmode = "double", initdata = max(times)+1, length = n)
     t = ffbase::ffwhich(S, S$timeIndex<=K)
@@ -525,6 +529,8 @@ generateEventTimes <- function(x, times, baseline, discrete) {
     times = times[order(times, decreasing = FALSE)]
     times = c(0,times,times[length(times)]+1)
     times = times[t]
+    #baseline = log(baseline)
+    #baseline[baseline==-Inf] = min(S$value)-1
     S$times = ff::as.ff(.generateEventTimesHelper1(S$value[], baseline, times))
   }
 

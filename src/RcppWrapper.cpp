@@ -153,7 +153,7 @@ std::vector<double> generateEventTimesHelper1(std::vector<double> value, std::ve
   double d;
   double x;
 
-  for (int i=1; i<M; i++) {
+  for (int i=1; i<M-1; i++) {
     d = (times[i]-times[i-1])/(baseline[i]-baseline[i-1]);
     x = times[i-1]-baseline[i-1]*d;
     while(j<N && value[j]>baseline[i]) {
