@@ -400,11 +400,11 @@ simulateCMD <- function(cohortMethodData, sData, cData, outcomeId, discrete=TRUE
     cohorts$cTime = NULL
   }
 
-  covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$rowId, ff::as.ff(cohorts$rowId)),]
-  covariateRef = cohortMethodData$covariateRef[in.ff(cohortMethodData$covariateRef$covariateId, unique(covariates$covariateId)),]
+  #covariates = cohortMethodData$covariates[in.ff(cohortMethodData$covariates$rowId, ff::as.ff(cohorts$rowId)),]
+  #covariateRef = cohortMethodData$covariateRef[in.ff(cohortMethodData$covariateRef$covariateId, unique(covariates$covariateId)),]
 
-  return (list(covariates = covariates,
-               covariateRef = covariateRef,
+  return (list(covariates = cohortMethodData$covariates,
+               covariateRef = cohortMethodData$covariateRef,
                cohorts = cohorts,
                outcomes = outcomes,
                metaData = cohortMethodData$metaData))
