@@ -33,6 +33,7 @@
 #' Returns the input \code{cohortMethodData} with new entries for \code{covariates} and \code{covariateRef}
 #' @export
 runHdps <- function(cohortMethodData,
+                    studyPop = NULL,
                     outcomeId = 3,
                     useInpatientDiagnosis = TRUE,
                     useAmbulatoryDiagnosis = TRUE,
@@ -66,6 +67,11 @@ runHdps <- function(cohortMethodData,
   if (useAmbulatoryProcedure == TRUE) {
     dimensions = c(dimensions, "ambulatoryProcedure")
   }
+
+  if (!is.null(studyPop)) {
+    cohortMethodData = removeSubjects(cohortMethodData, studyPop$rowId)
+  }
+
   demographicsCovariateRef = getDemographicsCovariateRef(cohortMethodData, demographicsAnalysisIds)
   demographicsCovariates = getDemographicsCovariates(cohortMethodData, demographicsCovariateRef)
   predefinedCovariateRef = getPredefinedCovariateRef(cohortMethodData, predefinedIncludeConceptIds, predefinedIncludeICD9Dx, icd9AnalysisIds)
@@ -145,6 +151,7 @@ runHdpsNewOutcomes <- function(hdps, cohortMethodData, useExpRank) {
 
 #' @export
 runHdps1 <- function(cohortMethodData,
+                     studyPop = NULL,
                      outcomeId = 3,
                      demographicsAnalysisIds = c(2,3,5,6),
                      predefinedIncludeConceptIds = c(),
@@ -155,6 +162,11 @@ runHdps1 <- function(cohortMethodData,
                      useExpRank) {
 
   start <- Sys.time()
+
+  if (!is.null(studyPop)) {
+    cohortMethodData = removeSubjects(cohortMethodData, studyPop$rowId)
+  }
+
   demographicsCovariateRef = getDemographicsCovariateRef(cohortMethodData, demographicsAnalysisIds)
   demographicsCovariates = getDemographicsCovariates(cohortMethodData, demographicsCovariateRef)
   predefinedCovariateRef = getPredefinedCovariateRef(cohortMethodData, predefinedIncludeConceptIds, NULL, icd9AnalysisIds)

@@ -4,14 +4,14 @@
 \alias{runHdps}
 \title{Runs hdps implementation}
 \usage{
-runHdps(cohortMethodData, outcomeId = 3, useInpatientDiagnosis = TRUE,
-  useAmbulatoryDiagnosis = TRUE, useDrugIngredient = TRUE,
-  useInpatientProcedure = TRUE, useAmbulatoryProcedure = TRUE,
-  demographicsAnalysisIds = c(2, 3, 5, 6), predefinedIncludeICD9Dx = c(),
-  predefinedIncludeConceptIds = c(), predefinedExcludeICD9Dx = c(),
-  predefinedExcludeConceptIds = c(), icd9AnalysisIds = c(104, 105, 106, 107,
-  108, 109), dimensionCutoff = 200, rankCutoff = 500, fudge = 0,
-  useExpRank)
+runHdps(cohortMethodData, studyPop = NULL, outcomeId = 3,
+  useInpatientDiagnosis = TRUE, useAmbulatoryDiagnosis = TRUE,
+  useDrugIngredient = TRUE, useInpatientProcedure = TRUE,
+  useAmbulatoryProcedure = TRUE, demographicsAnalysisIds = c(2, 3, 5, 6),
+  predefinedIncludeICD9Dx = c(), predefinedIncludeConceptIds = c(),
+  predefinedExcludeICD9Dx = c(), predefinedExcludeConceptIds = c(),
+  icd9AnalysisIds = c(104, 105, 106, 107, 108, 109), dimensionCutoff = 200,
+  rankCutoff = 500, fudge = 0, useExpRank)
 }
 \arguments{
 \item{cohortMethodData}{\code{cohortMethodData} object constructed by \code{getDbCohortMethodData}}

@@ -1103,6 +1103,29 @@ computeCovariateBalance2 <- function(population, cohortMethodData) {
               afterStdDiff = afterStdDiff))
 }
 
+#' @export
+computeBeforeCovariateBalance <- function(cohorts, covariates) {
+  start <- Sys.time()
+  beforeMatching <- computeMeansPerGroup(cohorts, covariates)
+  delta <- Sys.time() - start
+  writeLines(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  return(beforeMatching)
+}
+
+#' @export
+computeAfterCovariateBalance <- function(population, covariates) {
+  start <- Sys.time()
+  if (is.null(population$stratumId)) {
+    cohortsAfterMatching <- ff::as.ffdf(population[,c("rowId", "treatment")])
+  } else {
+    cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  }
+  afterMatching <- computeMeansPerGroup(cohortsAfterMatching, covariates)
+  delta <- Sys.time() - start
+  writeLines(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  return(afterMatching)
+}
+
 calculateStdDiffAfterPS <- function(cohorts, covariates) {
   if (!is.null(cohorts$stratumId)) {
     # Rownames needs to be null or else next command will crash
@@ -1158,7 +1181,7 @@ calculateTStat <- function(cohorts, covariates) {
 calculateSampleVarianceByCovariate <- function(cohorts, covariates, treatment) {
   t <- cohorts$treatment == treatment
   N <- sum(t)
-  t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
+  t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[t]))
   covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
   result <- quickSum(covariatesSubset)
   resultSqr <- quickSum(covariatesSubset, squared = TRUE)
