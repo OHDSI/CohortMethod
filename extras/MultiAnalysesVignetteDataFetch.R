@@ -37,16 +37,7 @@ pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "CDM_Truven_mdcd_V464.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-port <- 17001
-cdmVersion <- "5"
-
-pw <- NULL
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -81,6 +72,8 @@ nsaids <- DatabaseConnector::querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
 
 RJDBC::dbDisconnect(connection)
+
+# nsaids <- 21603933
 
 dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
@@ -131,33 +124,33 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                          useCovariateDemographicsYear = TRUE,
                                          useCovariateDemographicsMonth = TRUE,
                                          useCovariateConditionOccurrence = TRUE,
-                                         useCovariateConditionOccurrence365d = TRUE,
-                                         useCovariateConditionOccurrence30d = TRUE,
-                                         useCovariateConditionOccurrenceInpt180d = TRUE,
+                                         useCovariateConditionOccurrenceLongTerm = TRUE,
+                                         useCovariateConditionOccurrenceShortTerm = TRUE,
+                                         useCovariateConditionOccurrenceInptMediumTerm = TRUE,
                                          useCovariateConditionEra = TRUE,
                                          useCovariateConditionEraEver = TRUE,
                                          useCovariateConditionEraOverlap = TRUE,
                                          useCovariateConditionGroup = TRUE,
                                          useCovariateDrugExposure = TRUE,
-                                         useCovariateDrugExposure365d = TRUE,
-                                         useCovariateDrugExposure30d = TRUE,
+                                         useCovariateDrugExposureLongTerm = TRUE,
+                                         useCovariateDrugExposureShortTerm = TRUE,
                                          useCovariateDrugEra = TRUE,
-                                         useCovariateDrugEra365d = TRUE,
-                                         useCovariateDrugEra30d = TRUE,
+                                         useCovariateDrugEraLongTerm = TRUE,
+                                         useCovariateDrugEraShortTerm = TRUE,
                                          useCovariateDrugEraEver = TRUE,
                                          useCovariateDrugEraOverlap = TRUE,
                                          useCovariateDrugGroup = TRUE,
                                          useCovariateProcedureOccurrence = TRUE,
-                                         useCovariateProcedureOccurrence365d = TRUE,
-                                         useCovariateProcedureOccurrence30d = TRUE,
+                                         useCovariateProcedureOccurrenceLongTerm = TRUE,
+                                         useCovariateProcedureOccurrenceShortTerm = TRUE,
                                          useCovariateProcedureGroup = TRUE,
                                          useCovariateObservation = TRUE,
-                                         useCovariateObservation365d = TRUE,
-                                         useCovariateObservation30d = TRUE,
-                                         useCovariateObservationCount365d = TRUE,
-                                         useCovariateMeasurement365d = TRUE,
-                                         useCovariateMeasurement30d = TRUE,
-                                         useCovariateMeasurementCount365d = TRUE,
+                                         useCovariateObservationLongTerm = TRUE,
+                                         useCovariateObservationShortTerm = TRUE,
+                                         useCovariateObservationCountLongTerm = TRUE,
+                                         useCovariateMeasurementLongTerm = TRUE,
+                                         useCovariateMeasurementShortTerm = TRUE,
+                                         useCovariateMeasurementCountLongTerm = TRUE,
                                          useCovariateMeasurementBelow = TRUE,
                                          useCovariateMeasurementAbove = TRUE,
                                          useCovariateConceptCounts = TRUE,
@@ -167,8 +160,13 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                          useCovariateRiskScoresCHADS2 = TRUE,
                                          useCovariateInteractionYear = FALSE,
                                          useCovariateInteractionMonth = FALSE,
+                                         longTermDays = 365,
+                                         mediumTermDays = 180,
+                                         shortTermDays = 30,
                                          excludedCovariateConceptIds = c(),
+                                         addDescendantsToExclude = TRUE,
                                          deleteCovariatesSmallCount = 100)
+
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    firstExposureOnly = TRUE,
                                                    removeDuplicateSubjects = TRUE,
