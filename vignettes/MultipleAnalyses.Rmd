@@ -124,20 +124,9 @@ In this code, we first read the SQL from the file into memory. In the next line,
 The first group of arguments define the drug, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
 
 ```{r tidy=FALSE,eval=FALSE}
-# Get all NSAID Concept IDs for exclusion:
-sql <- paste("SELECT concept_id",
-             "FROM @cdmDatabaseSchema.concept_ancestor",
-             "INNER JOIN @cdmDatabaseSchema.concept",
-             "ON descendant_concept_id = concept_id",
-             "WHERE ancestor_concept_id = 21603933")
-sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-nsaids <- querySql(connection, sql)
-nsaids <- nsaids$CONCEPT_ID
-
 dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
-                                     excludedCovariateConceptIds = nsaids,
+                                     excludedCovariateConceptIds = 21603933,
                                      outcomeIds = c(192671, 29735, 140673, 197494, 
                                                     198185, 198199, 200528, 257315, 
                                                     314658, 317376, 321319, 380731, 
@@ -151,7 +140,7 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
 drugComparatorOutcomesList <- list(dcos)
 ```
 
-We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. We furthermore specify that NSAIDS cannot be in the list of covariates. We use some SQL against the vocabulary to find the concept IDs of all NSAIDS.
+We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. We furthermore specify that NSAIDS (concept ID 21603933) cannot be in the list of covariates. Note that descendant concepts are automatically excluded in the list of concepts to exclude (see `createCovariateSettings` for more details).
 
 A convenient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomesList` function, and we can load it again using the `loadDrugComparatorOutcomesList` function.
 
@@ -168,33 +157,33 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                          useCovariateDemographicsYear = TRUE,
                                          useCovariateDemographicsMonth = TRUE,
                                          useCovariateConditionOccurrence = TRUE,
-                                         useCovariateConditionOccurrence365d = TRUE,
-                                         useCovariateConditionOccurrence30d = TRUE,
-                                         useCovariateConditionOccurrenceInpt180d = TRUE,
+                                         useCovariateConditionOccurrenceLongTerm = TRUE,
+                                         useCovariateConditionOccurrenceShortTerm = TRUE,
+                                         useCovariateConditionOccurrenceInptMediumTerm = TRUE,
                                          useCovariateConditionEra = TRUE,
                                          useCovariateConditionEraEver = TRUE,
                                          useCovariateConditionEraOverlap = TRUE,
                                          useCovariateConditionGroup = TRUE,
                                          useCovariateDrugExposure = TRUE,
-                                         useCovariateDrugExposure365d = TRUE,
-                                         useCovariateDrugExposure30d = TRUE,
+                                         useCovariateDrugExposureLongTerm = TRUE,
+                                         useCovariateDrugExposureShortTerm = TRUE,
                                          useCovariateDrugEra = TRUE,
-                                         useCovariateDrugEra365d = TRUE,
-                                         useCovariateDrugEra30d = TRUE,
+                                         useCovariateDrugEraLongTerm = TRUE,
+                                         useCovariateDrugEraShortTerm = TRUE,
                                          useCovariateDrugEraEver = TRUE,
                                          useCovariateDrugEraOverlap = TRUE,
                                          useCovariateDrugGroup = TRUE,
                                          useCovariateProcedureOccurrence = TRUE,
-                                         useCovariateProcedureOccurrence365d = TRUE,
-                                         useCovariateProcedureOccurrence30d = TRUE,
+                                         useCovariateProcedureOccurrenceLongTerm = TRUE,
+                                         useCovariateProcedureOccurrenceShortTerm = TRUE,
                                          useCovariateProcedureGroup = TRUE,
                                          useCovariateObservation = TRUE,
-                                         useCovariateObservation365d = TRUE,
-                                         useCovariateObservation30d = TRUE,
-                                         useCovariateObservationCount365d = TRUE,
-                                         useCovariateMeasurement365d = TRUE,
-                                         useCovariateMeasurement30d = TRUE,
-                                         useCovariateMeasurementCount365d = TRUE,
+                                         useCovariateObservationLongTerm = TRUE,
+                                         useCovariateObservationShortTerm = TRUE,
+                                         useCovariateObservationCountLongTerm = TRUE,
+                                         useCovariateMeasurementLongTerm = TRUE,
+                                         useCovariateMeasurementShortTerm = TRUE,
+                                         useCovariateMeasurementCountLongTerm = TRUE,
                                          useCovariateMeasurementBelow = TRUE,
                                          useCovariateMeasurementAbove = TRUE,
                                          useCovariateConceptCounts = TRUE,
@@ -204,7 +193,10 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                          useCovariateRiskScoresCHADS2 = TRUE,
                                          useCovariateInteractionYear = FALSE,
                                          useCovariateInteractionMonth = FALSE,
-                                         excludedCovariateConceptIds = c(),
+                                         longTermDays = 365,
+                                         mediumTermDays = 180,
+                                         shortTermDays = 30,
+                                         addDescendantsToExclude = TRUE,
                                          deleteCovariatesSmallCount = 100)
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
