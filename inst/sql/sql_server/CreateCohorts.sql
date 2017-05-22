@@ -171,7 +171,7 @@ FROM (
 					GROUP BY cohort_definition_id
 }
 }
-				)
+				) tmp
 				)
 	AND cohort_start_date <= (
 				SELECT MIN(end_date)
@@ -192,7 +192,7 @@ FROM (
 					GROUP BY cohort_definition_id
 }
 }
-				)
+				) tmp
 				)
 	) common_period
 }	

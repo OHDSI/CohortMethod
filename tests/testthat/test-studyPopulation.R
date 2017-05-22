@@ -43,6 +43,21 @@ test_that("createStudyPop: removeDuplicateSubjects", {
   expect_equal(nrow(sp), 0)
 })
 
+test_that("createStudyPop: restrictToCommonPeriod", {
+  tempCmd <- cohortMethodData
+  tempCmd$cohorts <- rbind(tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts)
+  tempCmd$cohorts$cohortStartDate <- as.character(tempCmd$cohorts$cohortStartDate)
+  tempCmd$cohorts$rowId <- c(1,2,3,4,5,6)
+  tempCmd$cohorts$treatment <- c(1,1,1,0,0,0)
+  tempCmd$cohorts$cohortStartDate <- c("2000-01-01", "2000-09-01", "2000-08-01", "2000-04-01", "2000-02-01", "2000-10-01")
+
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, restrictToCommonPeriod = FALSE)
+  expect_equal(nrow(sp), 6)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, restrictToCommonPeriod = TRUE)
+  expect_equal(nrow(sp), 4)
+  expect_equal(sp$rowId, c(2,3,4,5))
+})
+
 test_that("createStudyPop: removeSubjectsWithPriorOutcome", {
   tempCmd <- cohortMethodData
   tempCmd$outcomes <- tempCmd$outcomes[1, ]

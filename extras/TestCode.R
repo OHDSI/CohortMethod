@@ -4,7 +4,7 @@
 library(CohortMethod)
 options(fftempdir = "s:/temp")
 
-cdmDatabaseSchema <- "CDM_TRUVEN_MDCD_v5.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
 resultsDatabaseSchema <- "Scratch.dbo"
 cdmVersion <- "5"
 
@@ -25,6 +25,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           washoutPeriod = 183,
                                           firstExposureOnly = TRUE,
                                           removeDuplicateSubjects = TRUE,
+                                          restrictToCommonPeriod = TRUE,
                                           excludeDrugsFromCovariates = TRUE,
                                           covariateSettings = covariateSettings)
 
@@ -32,6 +33,7 @@ saveCohortMethodData(cohortMethodData, "s:/temp/cmData")
 cohortMethodData <- loadCohortMethodData("s:/temp/cmData")
 studyPop <- createStudyPopulation(cohortMethodData,
                                   removeSubjectsWithPriorOutcome = TRUE,
+                                  restrictToCommonPeriod = TRUE,
                                   outcomeId = 194133)
 
 ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", variance = 0.01))
