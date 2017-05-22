@@ -93,6 +93,7 @@
 #'                                     cohort? Note that this is typically done in the
 #'                                     \code{createStudyPopulation} function, but can already be done
 #'                                     here for efficiency reasons.
+#' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are observed?
 #' @param washoutPeriod                The mininum required continuous observation time prior to index
 #'                                     date for a person to be included in the cohort. Note that this
 #'                                     is typically done in the \code{createStudyPopulation} function,
@@ -133,6 +134,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   excludeDrugsFromCovariates = TRUE,
                                   firstExposureOnly = FALSE,
                                   removeDuplicateSubjects = FALSE,
+                                  restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
                                   covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
@@ -180,7 +182,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    study_end_date = studyEndDate,
                                                    first_only = firstExposureOnly,
                                                    remove_duplicate_subjects = removeDuplicateSubjects,
-                                                   washout_period = washoutPeriod)
+                                                   washout_period = washoutPeriod,
+                                                   restrict_to_common_period = restrictToCommonPeriod)
   DatabaseConnector::executeSql(connection, renderedSql)
 
   writeLines("Fetching cohorts from server")
@@ -223,6 +226,9 @@ getDbCohortMethodData <- function(connectionDetails,
     }
     if (removeDuplicateSubjects) {
       label <- c(label, "removed subs in both cohorts")
+    }
+    if (restrictToCommonPeriod) {
+      label <- c(label, "restrict to common period")
     }
     if (washoutPeriod) {
       label <- c(label, paste(washoutPeriod, "days of obs. prior"))

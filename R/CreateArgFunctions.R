@@ -9,23 +9,25 @@
 #'                                     indexdate can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate                 A calendar date specifying the maximum date that a cohort
 #'                                     indexdate can appear. Date format is 'yyyymmdd'. Important: the
-#'                                     studyend data is also used to truncate risk windows, meaning no
-#'                                     outcomesbeyond the study end date will be considered.
+#'                                     studyend data is also used to truncate risk windows, meaning
+#'                                     nooutcomes beyond the study end date will be considered.
 #' @param excludeDrugsFromCovariates   Should the target and comparator drugs (and their
 #'                                     descendantconcepts) be excluded from the covariates? Note that
 #'                                     this willwork if the drugs are actualy drug concept IDs (and not
 #'                                     cohortIDs).
-#' @param firstExposureOnly            Should only the first exposure per subject be included? Note
-#'                                     thatthis is typically done in the createStudyPopulation
-#'                                     function,but can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator
-#'                                     cohort? Note thatthis is typically done in the
-#'                                     createStudyPopulation function,but can already be done here for
-#'                                     efficiency reasons.
+#' @param firstExposureOnly            Should only the first exposure per subject be included? Notethat
+#'                                     this is typically done in the createStudyPopulationfunction, but
+#'                                     can already be done here for efficiency reasons.
+#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and
+#'                                     comparatorcohort? Note that this is typically done in
+#'                                     thecreateStudyPopulation function, but can already be donehere
+#'                                     for efficiency reasons.
+#' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are
+#'                                     observed?
 #' @param washoutPeriod                The mininum required continuous observation time prior to
-#'                                     indexdate for a person to be included in the cohort. Note
-#'                                     thatthis is typically done in the createStudyPopulation
-#'                                     function,but can already be done here for efficiency reasons.
+#'                                     indexdate for a person to be included in the cohort. Note that
+#'                                     thisis typically done in the createStudyPopulation function,but
+#'                                     can already be done here for efficiency reasons.
 #' @param covariateSettings            An object of type covariateSettings as created using
 #'                                     thecreateCovariateSettings function in theFeatureExtraction
 #'                                     package.
@@ -36,6 +38,7 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             excludeDrugsFromCovariates = TRUE,
                                             firstExposureOnly = FALSE,
                                             removeDuplicateSubjects = FALSE,
+                                            restrictToCommonPeriod = FALSE,
                                             washoutPeriod = 0,
                                             covariateSettings) {
   # First: get default values:
@@ -58,29 +61,32 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param firstExposureOnly                Should only the first exposure per subject be included? Note
-#'                                         thatthis is typically done in the createStudyPopulation
+#' @param firstExposureOnly                Should only the first exposure per subject be included?
+#'                                         Notethat this is typically done in thecreateStudyPopulation
 #'                                         function,
-#' @param washoutPeriod                    The mininum required continuous observation time prior to
-#'                                         indexdate for a person to be included in the cohort.
-#' @param removeDuplicateSubjects          Remove subjects that are in both the treated and comparator
-#'                                         cohort?
-#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
-#'                                         window start?
-#' @param priorOutcomeLookback             How many days should we look back when identifying prior
-#'                                         outcomes?
+#' @param restrictToCommonPeriod           Restrict the analysis to the period when both treatments are
+#'                                         observed?
+#' @param washoutPeriod                    The mininum required continuous observation time prior
+#'                                         toindex date for a person to be included in the cohort.
+#' @param removeDuplicateSubjects          Remove subjects that are in both the treated and
+#'                                         comparatorcohort?
+#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the
+#'                                         riskwindow start?
+#' @param priorOutcomeLookback             How many days should we look back when identifying
+#'                                         prioroutcomes?
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
-#' @param riskWindowStart                  The start of the risk window (in days) relative to the index
-#'                                         date (+days of exposure if the addExposureDaysToStart
-#'                                         parameter isspecified).
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the
+#'                                         indexdate (+ days of exposure if theaddExposureDaysToStart
+#'                                         parameter is specified).
 #' @param addExposureDaysToStart           Add the length of exposure the start of the risk window?
-#' @param riskWindowEnd                    The end of the risk window (in days) relative to the index
-#'                                         data (+days of exposure if the addExposureDaysToEnd
-#'                                         parameter isspecified).
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the
+#'                                         indexdata (+ days of exposure if the
+#'                                         addExposureDaysToEndparameter is specified).
 #' @param addExposureDaysToEnd             Add the length of exposure the risk window?
 #'
 #' @export
 createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
+                                            restrictToCommonPeriod = FALSE,
                                             washoutPeriod = 0,
                                             removeDuplicateSubjects = FALSE,
                                             removeSubjectsWithPriorOutcome = TRUE,
@@ -112,12 +118,13 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #'
 #' @param excludeCovariateIds      Exclude these covariates from the propensity model.
 #' @param includeCovariateIds      Include only these covariates in the propensity model.
-#' @param errorOnHighCorrelation   If true, the function will test each covariate for correlation with
-#'                                 thetreatment assignment. If any covariate has an unusually high
-#'                                 correlation(either positive or negative), this will throw and error.
+#' @param errorOnHighCorrelation   If true, the function will test each covariate for correlation
+#'                                 withthe treatment assignment. If any covariate has an unusually
+#'                                 highcorrelation (either positive or negative), this will throw
+#'                                 anderror.
 #' @param stopOnError              If an error occurrs, should the function stop? Else, the two
 #'                                 cohortswill be assumed to be perfectly separable.
-#' @param prior                    The prior used to fit the model. See createPriorfor details.
+#' @param prior                    The prior used to fit the model. SeecreatePrior for details.
 #' @param control                  The control object used to control the cross-validation used
 #'                                 todetermine the hyperparameters of the prior (if applicable).
 #'                                 SeecreateControl for details.
@@ -341,14 +348,14 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5, covariateIds
 #'
 #' @param modelType             The type of outcome model that will be used. Possible values
 #'                              are"logistic", "poisson", or "cox".
-#' @param stratified            Should the regression be conditioned on the strata defined in the
-#'                              populationobject (e.g. by matching or stratifying on propensity
-#'                              scores)?
-#' @param useCovariates         Whether to use the covariate matrix in the cohortMethodData object in
-#'                              theoutcome model.
+#' @param stratified            Should the regression be conditioned on the strata defined in
+#'                              thepopulation object (e.g. by matching or stratifying on
+#'                              propensityscores)?
+#' @param useCovariates         Whether to use the covariate matrix in the cohortMethodDataobject in
+#'                              the outcome model.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
-#' @param prior                 The prior used to fit the model. SeecreatePrior for details.
+#' @param prior                 The prior used to fit the model. See createPriorfor details.
 #' @param control               The control object used to control the cross-validation used
 #'                              todetermine the hyperparameters of the prior (if applicable).
 #'                              SeecreateControl for details.

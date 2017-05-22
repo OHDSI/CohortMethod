@@ -5,39 +5,43 @@
 \title{Create a parameter object for the function createStudyPopulation}
 \usage{
 createCreateStudyPopulationArgs(firstExposureOnly = FALSE,
-  washoutPeriod = 0, removeDuplicateSubjects = FALSE,
-  removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
-  minDaysAtRisk = 1, riskWindowStart = 0, addExposureDaysToStart = FALSE,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE)
+  restrictToCommonPeriod = FALSE, washoutPeriod = 0,
+  removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
+  priorOutcomeLookback = 99999, minDaysAtRisk = 1, riskWindowStart = 0,
+  addExposureDaysToStart = FALSE, riskWindowEnd = 0,
+  addExposureDaysToEnd = TRUE)
 }
 \arguments{
-\item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-thatthis is typically done in the createStudyPopulation
+\item{firstExposureOnly}{Should only the first exposure per subject be included?
+Notethat this is typically done in thecreateStudyPopulation
 function,}
 
-\item{washoutPeriod}{The mininum required continuous observation time prior to
-indexdate for a person to be included in the cohort.}
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are
+observed?}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
-cohort?}
+\item{washoutPeriod}{The mininum required continuous observation time prior
+toindex date for a person to be included in the cohort.}
 
-\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk
-window start?}
+\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and
+comparatorcohort?}
 
-\item{priorOutcomeLookback}{How many days should we look back when identifying prior
-outcomes?}
+\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the
+riskwindow start?}
+
+\item{priorOutcomeLookback}{How many days should we look back when identifying
+prioroutcomes?}
 
 \item{minDaysAtRisk}{The minimum required number of days at risk.}
 
-\item{riskWindowStart}{The start of the risk window (in days) relative to the index
-date (+days of exposure if the addExposureDaysToStart
-parameter isspecified).}
+\item{riskWindowStart}{The start of the risk window (in days) relative to the
+indexdate (+ days of exposure if theaddExposureDaysToStart
+parameter is specified).}
 
 \item{addExposureDaysToStart}{Add the length of exposure the start of the risk window?}
 
-\item{riskWindowEnd}{The end of the risk window (in days) relative to the index
-data (+days of exposure if the addExposureDaysToEnd
-parameter isspecified).}
+\item{riskWindowEnd}{The end of the risk window (in days) relative to the
+indexdata (+ days of exposure if the
+addExposureDaysToEndparameter is specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 }

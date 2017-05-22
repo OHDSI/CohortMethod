@@ -5,11 +5,11 @@
 \title{Create a study population}
 \usage{
 createStudyPopulation(cohortMethodData, population = NULL, outcomeId,
-  firstExposureOnly = FALSE, washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
-  priorOutcomeLookback = 99999, minDaysAtRisk = 1, riskWindowStart = 0,
-  addExposureDaysToStart = FALSE, riskWindowEnd = 0,
-  addExposureDaysToEnd = TRUE)
+  firstExposureOnly = FALSE, restrictToCommonPeriod = FALSE,
+  washoutPeriod = 0, removeDuplicateSubjects = FALSE,
+  removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
+  minDaysAtRisk = 1, riskWindowStart = 0, addExposureDaysToStart = FALSE,
+  riskWindowEnd = 0, addExposureDaysToEnd = TRUE)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
@@ -25,6 +25,8 @@ transformations will be performed.}
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Note
 that this is typically done in the
 \code{createStudyPopulation} function,}
+
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
 
 \item{washoutPeriod}{The mininum required continuous observation time prior to
 index date for a person to be included in the cohort.}

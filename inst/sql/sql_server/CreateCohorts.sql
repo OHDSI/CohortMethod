@@ -29,6 +29,7 @@ limitations under the License.
 {DEFAULT @first_only = FALSE}
 {DEFAULT @washout_period = 0}
 {DEFAULT @remove_duplicate_subjects = FALSE}
+{DEFAULT @restrict_to_common_period = FALSE}
 
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_person;
@@ -64,6 +65,13 @@ SELECT ROW_NUMBER() OVER (ORDER BY person_id, cohort_start_date) AS row_id,
 	} AS days_to_obs_end
 INTO #cohort_person
 FROM (
+{@restrict_to_common_period} ? {
+	SELECT subject_id,
+		cohort_definition_id,
+		cohort_start_date,
+		cohort_end_date
+	FROM (
+}
 {@first_only} ? {
 	SELECT subject_id,
 		cohort_definition_id,
@@ -92,7 +100,7 @@ FROM (
 	} : {
 		WHERE
 	}
-	exposure_table.drug_concept_id IN (@target_id, @comparator_id)
+			exposure_table.drug_concept_id IN (@target_id, @comparator_id)
 } : {
 	SELECT exposure_table.subject_id,
 {@cdm_version == "4"} ? {
@@ -143,6 +151,52 @@ FROM (
 	cohort_definition_id
 	) first_only
 }
+{@restrict_to_common_period} ? {
+  WHERE cohort_start_date >= (
+				SELECT MAX(start_date)
+				FROM (
+{@exposure_table == 'drug_era' } ? {
+					SELECT MIN(drug_era_start_date) AS start_date
+					FROM @exposure_database_schema.@exposure_table
+					WHERE drug_concept_id IN (@target_id, @comparator_id)
+					GROUP BY drug_concept_id
+} : {
+					SELECT MIN(cohort_start_date) AS start_date
+					FROM @exposure_database_schema.@exposure_table
+{@cdm_version == "4"} ? {
+					WHERE cohort_concept_id IN (@target_id, @comparator_id)
+					GROUP BY cohort_concept_id
+} :{
+					WHERE cohort_definition_id IN (@target_id, @comparator_id)
+					GROUP BY cohort_definition_id
+}
+}
+				)
+				)
+	AND cohort_start_date <= (
+				SELECT MIN(end_date)
+				FROM (
+{@exposure_table == 'drug_era' } ? {
+					SELECT MAX(drug_era_start_date) AS end_date
+					FROM @exposure_database_schema.@exposure_table
+					WHERE drug_concept_id IN (@target_id, @comparator_id)
+					GROUP BY drug_concept_id
+} : {
+					SELECT MAX(cohort_start_date) AS end_date
+					FROM @exposure_database_schema.@exposure_table
+{@cdm_version == "4"} ? {
+					WHERE cohort_concept_id IN (@target_id, @comparator_id)
+					GROUP BY cohort_concept_id
+} :{
+					WHERE cohort_definition_id IN (@target_id, @comparator_id)
+					GROUP BY cohort_definition_id
+}
+}
+				)
+				)
+	) common_period
+}	
+
 INNER JOIN @cdm_database_schema.observation_period
 	ON subject_id = person_id
 WHERE cohort_start_date <= observation_period_end_date

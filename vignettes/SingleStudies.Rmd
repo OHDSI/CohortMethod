@@ -241,6 +241,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           excludeDrugsFromCovariates = FALSE,
                                           firstExposureOnly = TRUE,
                                           removeDuplicateSubjects = TRUE,
+                                          restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
                                           covariateSettings = covarSettings)
 cohortMethodData
@@ -298,6 +299,7 @@ Typically, the exposure cohorts and outcome cohorts will be defined independentl
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
                                   firstExposureOnly = FALSE,
+                                  restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
                                   removeDuplicateSubjects = FALSE,
                                   removeSubjectsWithPriorOutcome = TRUE,
@@ -308,7 +310,7 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   addExposureDaysToEnd = TRUE)
 ```
 
-Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the index date (`riskWindowStart = 0` and `addExposureDaysToStart = FALSE`), and the risk windows ends 30 days after exposure ends (`riskWindowEnd = 30` and `addExposureDaysToEnd = TRUE`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
+Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. During loading we set ``restrictToCommonPeriod` to FALSE, and we do the same here because we do not want to force the comparison to restrict only to time when both drugs are recorded. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the index date (`riskWindowStart = 0` and `addExposureDaysToStart = FALSE`), and the risk windows ends 30 days after exposure ends (`riskWindowEnd = 30` and `addExposureDaysToEnd = TRUE`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
 
 ```{r tidy=TRUE,eval=FALSE}
 getAttritionTable(studyPop)

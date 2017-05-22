@@ -15,18 +15,18 @@ createFitOutcomeModelArgs(modelType = "logistic", stratified = TRUE,
 \item{modelType}{The type of outcome model that will be used. Possible values
 are"logistic", "poisson", or "cox".}
 
-\item{stratified}{Should the regression be conditioned on the strata defined in the
-populationobject (e.g. by matching or stratifying on propensity
-scores)?}
+\item{stratified}{Should the regression be conditioned on the strata defined in
+thepopulation object (e.g. by matching or stratifying on
+propensityscores)?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodData object in
-theoutcome model.}
+\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodDataobject in
+the outcome model.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
 
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
 
-\item{prior}{The prior used to fit the model. SeecreatePrior for details.}
+\item{prior}{The prior used to fit the model. See createPriorfor details.}
 
 \item{control}{The control object used to control the cross-validation used
 todetermine the hyperparameters of the prior (if applicable).

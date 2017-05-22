@@ -158,6 +158,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           excludeDrugsFromCovariates = FALSE,
                                           firstExposureOnly = TRUE,
                                           removeDuplicateSubjects = TRUE,
+                                          restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
                                           covariateSettings = covariateSettings)
 

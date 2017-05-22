@@ -11,7 +11,8 @@ getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = "5",
   excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
-  removeDuplicateSubjects = FALSE, washoutPeriod = 0, covariateSettings)
+  removeDuplicateSubjects = FALSE, restrictToCommonPeriod = FALSE,
+  washoutPeriod = 0, covariateSettings)
 }
 \arguments{
 \item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
@@ -87,6 +88,8 @@ function, but can already be done here for efficiency reasons.}
 cohort? Note that this is typically done in the
 \code{createStudyPopulation} function, but can already be done
 here for efficiency reasons.}
+
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
 
 \item{washoutPeriod}{The mininum required continuous observation time prior to index
 date for a person to be included in the cohort. Note that this

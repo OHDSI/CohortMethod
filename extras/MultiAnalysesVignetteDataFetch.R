@@ -168,6 +168,7 @@ covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                          deleteCovariatesSmallCount = 100)
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
+                                                   restrictToCommonPeriod = FALSE,
                                                    firstExposureOnly = TRUE,
                                                    removeDuplicateSubjects = TRUE,
                                                    studyStartDate = "",

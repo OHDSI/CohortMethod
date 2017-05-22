@@ -6,7 +6,8 @@
 \usage{
 createGetDbCohortMethodDataArgs(studyStartDate = "", studyEndDate = "",
   excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
-  removeDuplicateSubjects = FALSE, washoutPeriod = 0, covariateSettings)
+  removeDuplicateSubjects = FALSE, restrictToCommonPeriod = FALSE,
+  washoutPeriod = 0, covariateSettings)
 }
 \arguments{
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort
@@ -14,27 +15,30 @@ indexdate can appear. Date format is 'yyyymmdd'.}
 
 \item{studyEndDate}{A calendar date specifying the maximum date that a cohort
 indexdate can appear. Date format is 'yyyymmdd'. Important: the
-studyend data is also used to truncate risk windows, meaning no
-outcomesbeyond the study end date will be considered.}
+studyend data is also used to truncate risk windows, meaning
+nooutcomes beyond the study end date will be considered.}
 
 \item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their
 descendantconcepts) be excluded from the covariates? Note that
 this willwork if the drugs are actualy drug concept IDs (and not
 cohortIDs).}
 
-\item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-thatthis is typically done in the createStudyPopulation
-function,but can already be done here for efficiency reasons.}
+\item{firstExposureOnly}{Should only the first exposure per subject be included? Notethat
+this is typically done in the createStudyPopulationfunction, but
+can already be done here for efficiency reasons.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
-cohort? Note thatthis is typically done in the
-createStudyPopulation function,but can already be done here for
-efficiency reasons.}
+\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and
+comparatorcohort? Note that this is typically done in
+thecreateStudyPopulation function, but can already be donehere
+for efficiency reasons.}
+
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are
+observed?}
 
 \item{washoutPeriod}{The mininum required continuous observation time prior to
-indexdate for a person to be included in the cohort. Note
-thatthis is typically done in the createStudyPopulation
-function,but can already be done here for efficiency reasons.}
+indexdate for a person to be included in the cohort. Note that
+thisis typically done in the createStudyPopulation function,but
+can already be done here for efficiency reasons.}
 
 \item{covariateSettings}{An object of type covariateSettings as created using
 thecreateCovariateSettings function in theFeatureExtraction

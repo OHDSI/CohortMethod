@@ -15,14 +15,15 @@ createCreatePsArgs(excludeCovariateIds = c(), includeCovariateIds = c(),
 
 \item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
-\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with
-thetreatment assignment. If any covariate has an unusually high
-correlation(either positive or negative), this will throw and error.}
+\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation
+withthe treatment assignment. If any covariate has an unusually
+highcorrelation (either positive or negative), this will throw
+anderror.}
 
 \item{stopOnError}{If an error occurrs, should the function stop? Else, the two
 cohortswill be assumed to be perfectly separable.}
 
-\item{prior}{The prior used to fit the model. See createPriorfor details.}
+\item{prior}{The prior used to fit the model. SeecreatePrior for details.}
 
 \item{control}{The control object used to control the cross-validation used
 todetermine the hyperparameters of the prior (if applicable).

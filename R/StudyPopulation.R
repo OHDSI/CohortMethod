@@ -34,6 +34,7 @@
 #'                                         \code{createStudyPopulation} function,
 #' @param removeDuplicateSubjects          Remove subjects that are in both the treated and comparator
 #'                                         cohort?
+#' @param restrictToCommonPeriod           Restrict the analysis to the period when both treatments are observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
@@ -62,6 +63,7 @@ createStudyPopulation <- function(cohortMethodData,
                                   population = NULL,
                                   outcomeId,
                                   firstExposureOnly = FALSE,
+                                  restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
                                   removeDuplicateSubjects = FALSE,
                                   removeSubjectsWithPriorOutcome = TRUE,
@@ -81,6 +83,14 @@ createStudyPopulation <- function(cohortMethodData,
     idx <- duplicated(population[, c("subjectId", "treatment")])
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
+  }
+  if (restrictToCommonPeriod) {
+    writeLines("Restrict to common period")
+    cohortStartDate <- as.Date(population$cohortStartDate)
+    periodStart <- max(aggregate(cohortStartDate ~ population$treatment, FUN = min)$cohortStartDate)
+    periodEnd <- min(aggregate(cohortStartDate ~ population$treatment, FUN = max)$cohortStartDate)
+    population <- population[cohortStartDate >= periodStart & cohortStartDate <= periodEnd, ]
+    metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
   if (removeDuplicateSubjects) {
     writeLines("Removing subject that are in both cohorts (if any)")
