@@ -453,7 +453,7 @@ trimMatchStratify <- function(params) {
     ps <- do.call("trimByPs", args)
   } else if (params$args$trimByPsToEquipoise) {
     args <- list(population = ps)
-    args <- append(args, params$args$trimByPsToEquipoisesArgs)
+    args <- append(args, params$args$trimByPsToEquipoiseArgs)
     ps <- do.call("trimByPsToEquipoise", args)
   }
   if (params$args$matchOnPs) {
