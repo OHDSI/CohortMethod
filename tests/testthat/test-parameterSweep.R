@@ -107,7 +107,7 @@ test_that("Propensity score functions", {
   }
 
   for (caliper in c(0, 0.25)) {
-    for (caliperScale in c("propensity score", "standardized")) {
+    for (caliperScale in c("propensity score", "standardized", "standardized logit")) {
       for (maxRatio in c(0, 1, 3)) {
         strata <- matchOnPs(psTrimmed,
                             caliper = caliper,
@@ -119,7 +119,7 @@ test_that("Propensity score functions", {
   }
 
   for (caliper in c(0, 0.25)) {
-    for (caliperScale in c("propensity score", "standardized")) {
+    for (caliperScale in c("propensity score", "standardized", "standardized logit")) {
       for (maxRatio in c(0, 1, 3)) {
         strata <- matchOnPsAndCovariates(psTrimmed,
                                          caliper = caliper,

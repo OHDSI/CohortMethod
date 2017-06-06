@@ -4,7 +4,8 @@
 \alias{stratifyByPs}
 \title{Stratify persons by propensity score}
 \usage{
-stratifyByPs(population, numberOfStrata = 5, stratificationColumns = c())
+stratifyByPs(population, numberOfStrata = 5, stratificationColumns = c(),
+  baseSelection = "all")
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}
@@ -15,6 +16,10 @@ defined to contain equal numbers of treated persons.}
 \item{stratificationColumns}{Names of one or more columns in the \code{data} data.frame on which
 subjects should also be stratified in addition to stratification on
 propensity score.}
+
+\item{baseSelection}{What is the base selection of subjects where the strata bounds are
+to be determined? Strata are defined as equally-sized strata inside
+this selection. Possible values are "all", "target", and "comparator".}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId.

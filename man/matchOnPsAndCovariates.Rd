@@ -4,8 +4,8 @@
 \alias{matchOnPsAndCovariates}
 \title{Match by propensity score as well as other covariates}
 \usage{
-matchOnPsAndCovariates(population, caliper = 0.25,
-  caliperScale = "standardized", maxRatio = 1, cohortMethodData,
+matchOnPsAndCovariates(population, caliper = 0.2,
+  caliperScale = "standardized logit", maxRatio = 1, cohortMethodData,
   covariateIds)
 }
 \arguments{
@@ -15,11 +15,14 @@ matchOnPsAndCovariates(population, caliper = 0.25,
 for any match. Observations which are outside of the caliper are dropped.
 A caliper of 0 means no caliper is used.}
 
-\item{caliperScale}{The scale on which the caliper is defined. Two scales are
-supported:\cr\code{caliperScale = 'propensity score'} or
-\code{caliperScale = 'standardized'}. On the standardized scale, the
-caliper is interpreted in standard deviations of the propensity score
-distribution.}
+\item{caliperScale}{The scale on which the caliper is defined. Three scales are supported:
+\cr\code{caliperScale = 'propensity score'}, \code{caliperScale =
+'standardized'}, or \cr\code{caliperScale = 'standardized logit'}.
+On the standardized scale, the caliper is interpreted in standard
+deviations of the propensity score distribution. 'standardized logit'
+is similar, except that the propensity score is transformed to the logit
+scale because the PS is more likely to be normally distributed on that scale
+(Austin, 2011).}
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each
 person in the treatment arm. A maxRatio of 0 means no maximum: all
@@ -45,6 +48,8 @@ The data frame should have at least the following three columns: \tabular{lll}{ 
 \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
 \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+
+The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
 }
 \examples{
 # todo
@@ -53,4 +58,7 @@ implements the greedy variable-ratio matching algorithm described in Rassen et a
 \references{
 Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
 score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
+
+Austin, PC. (2011) Optimal caliper widths for propensity-score matching when estimating differences in
+means and differences in proportions in observational studies, Pharmaceutical statistics, March, 10(2):150-161.
 }

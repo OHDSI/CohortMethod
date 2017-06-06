@@ -471,6 +471,10 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
   return(data)
 }
 
+logit <- function(p){
+  log(p / (1 - p))
+}
+
 #' Match persons by propensity score
 #'
 #' @description
@@ -480,11 +484,14 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
 #' @param caliper                 The caliper for matching. A caliper is the distance which is
 #'                                acceptable for any match. Observations which are outside of the
 #'                                caliper are dropped. A caliper of 0 means no caliper is used.
-#' @param caliperScale            The scale on which the caliper is defined. Two scales are supported:
-#'                                \cr\code{caliperScale = 'propensity score'} or \code{caliperScale =
-#'                                'standardized'}. On the standardized scale, the caliper is
-#'                                interpreted in standard deviations of the propensity score
-#'                                distribution.
+#' @param caliperScale            The scale on which the caliper is defined. Three scales are supported:
+#'                                \cr\code{caliperScale = 'propensity score'}, \code{caliperScale =
+#'                                'standardized'}, or \cr\code{caliperScale = 'standardized logit'}.
+#'                                On the standardized scale, the caliper is interpreted in standard
+#'                                deviations of the propensity score distribution. 'standardized logit'
+#'                                is similar, except that the propensity score is transformed to the logit
+#'                                scale because the PS is more likely to be normally distributed on that scale
+#'                                (Austin, 2011).
 #' @param maxRatio                The maximum number of persons int the comparator arm to be matched to
 #'                                each person in the treatment arm. A maxRatio of 0 means no maximum:
 #'                                all comparators will be assigned to a treated person.
@@ -499,6 +506,8 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
 #' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
 #' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 #' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+#'
+#' The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
 #'
 #' @return
 #' Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
@@ -519,10 +528,13 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
 #' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
 #' score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #'
+#' Austin, PC. (2011) Optimal caliper widths for propensity-score matching when estimating differences in
+#' means and differences in proportions in observational studies, Pharmaceutical statistics, March, 10(2):150-161.
+#'
 #' @export
 matchOnPs <- function(population,
-                      caliper = 0.25,
-                      caliperScale = "standardized",
+                      caliper = 0.2,
+                      caliperScale = "standardized logit",
                       maxRatio = 1,
                       stratificationColumns = c()) {
   if (!("rowId" %in% colnames(population)))
@@ -531,23 +543,28 @@ matchOnPs <- function(population,
     stop("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
-  if (caliperScale != "standardized" && caliperScale != "propensity score")
+  if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
     stop(paste("Unknown caliperScale '",
                caliperScale,
-               "', please choose either 'standardized' or 'propensity score'"), sep = "")
+               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   population <- population[order(population$propensityScore), ]
+  propensityScore <- population$propensityScore
   if (caliper <= 0) {
     caliper <- 9999
-  } else if (caliperScale == "standardized")
+  } else if (caliperScale == "standardized") {
     caliper <- caliper * sd(population$propensityScore)
+  } else if (caliperScale == "standardized logit"){
+    propensityScore <- logit(propensityScore)
+    caliper <- caliper * sd(propensityScore)
+  }
   if (maxRatio == 0) {
     maxRatio <- 999
   }
   if (length(stratificationColumns) == 0) {
     result <- .Call("CohortMethod_matchOnPs",
                     PACKAGE = "CohortMethod",
-                    population$propensityScore,
+                    propensityScore,
                     population$treatment,
                     maxRatio,
                     caliper)
@@ -603,11 +620,14 @@ matchOnPs <- function(population,
 #' @param caliper            The caliper for matching. A caliper is the distance which is acceptable
 #'                           for any match. Observations which are outside of the caliper are dropped.
 #'                           A caliper of 0 means no caliper is used.
-#' @param caliperScale       The scale on which the caliper is defined. Two scales are
-#'                           supported:\cr\code{caliperScale = 'propensity score'} or
-#'                           \code{caliperScale = 'standardized'}. On the standardized scale, the
-#'                           caliper is interpreted in standard deviations of the propensity score
-#'                           distribution.
+#' @param caliperScale            The scale on which the caliper is defined. Three scales are supported:
+#'                                \cr\code{caliperScale = 'propensity score'}, \code{caliperScale =
+#'                                'standardized'}, or \cr\code{caliperScale = 'standardized logit'}.
+#'                                On the standardized scale, the caliper is interpreted in standard
+#'                                deviations of the propensity score distribution. 'standardized logit'
+#'                                is similar, except that the propensity score is transformed to the logit
+#'                                scale because the PS is more likely to be normally distributed on that scale
+#'                                (Austin, 2011).
 #' @param maxRatio           The maximum number of persons int the comparator arm to be matched to each
 #'                           person in the treatment arm. A maxRatio of 0 means no maximum: all
 #'                           comparators will be assigned to a treated person.
@@ -623,6 +643,8 @@ matchOnPs <- function(population,
 #' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 #' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 #'
+#' The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
+#'
 #' @return
 #' Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
 #' rows that could not be matched are removed
@@ -634,18 +656,20 @@ matchOnPs <- function(population,
 #' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
 #' score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
 #'
+#' Austin, PC. (2011) Optimal caliper widths for propensity-score matching when estimating differences in
+#' means and differences in proportions in observational studies, Pharmaceutical statistics, March, 10(2):150-161.
+#'
 #' @export
 matchOnPsAndCovariates <- function(population,
-                                   caliper = 0.25,
-                                   caliperScale = "standardized",
+                                   caliper = 0.2,
+                                   caliperScale = "standardized logit",
                                    maxRatio = 1,
                                    cohortMethodData,
                                    covariateIds) {
-  if (caliperScale != "standardized" && caliperScale != "propensity score")
+  if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
     stop(paste("Unknown caliperScale '",
                caliperScale,
-               "', please choose either 'standardized' or 'propensity score'",
-               sep = ""))
+               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
@@ -666,6 +690,9 @@ matchOnPsAndCovariates <- function(population,
 #' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which
 #'                                subjects should also be stratified in addition to stratification on
 #'                                propensity score.
+#' @param baseSelection           What is the base selection of subjects where the strata bounds are
+#'                                to be determined? Strata are defined as equally-sized strata inside
+#'                                this selection. Possible values are "all", "target", and "comparator".
 #'
 #' @details
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
@@ -683,7 +710,7 @@ matchOnPsAndCovariates <- function(population,
 #' result <- stratifyByPs(data, 5)
 #'
 #' @export
-stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c()) {
+stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c(), baseSelection = "all") {
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
@@ -691,7 +718,17 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
 
-  psStrata <- unique(quantile(population$propensityScore[population$treatment == 1],
+  baseSelection <- tolower(baseSelection)
+  if (baseSelection == "all") {
+  basePop <- population$propensityScore
+  } else if (baseSelection == "target") {
+    basePop <- population$propensityScore[population$treatment == 1]
+  } else if (baseSelection == "target") {
+    basePop <- population$propensityScore[population$treatment == 0]
+  } else {
+    stop(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
+  }
+  psStrata <- unique(quantile(basePop,
                               (1:(numberOfStrata - 1))/numberOfStrata))
   attr(population, "strata") <- psStrata
   if (length(psStrata) == 1) {
@@ -747,6 +784,9 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' @param numberOfStrata     Into how many strata should the propensity score be divided? The
 #'                           boundaries of the strata are automatically defined to contain equal
 #'                           numbers of treated persons.
+#' @param baseSelection      What is the base selection of subjects where the strata bounds are
+#'                           to be determined? Strata are defined as equally-sized strata inside
+#'                           this selection. Possible values are "all", "target", and "comparator".
 #' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
 #'                           \code{getDbCohortMethodData}.
 #' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
@@ -767,13 +807,17 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' @export
 stratifyByPsAndCovariates <- function(population,
                                       numberOfStrata = 5,
+                                      baseSelection = "all",
                                       cohortMethodData,
                                       covariateIds) {
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
                                                                                 covariateIds,
                                                                                 sep = "_")]
-  return(stratifyByPs(population, numberOfStrata, stratificationColumns))
+  return(stratifyByPs(population = population,
+                      numberOfStrata = numberOfStrata,
+                      stratificationColumns = stratificationColumns,
+                      baseSelection = baseSelection))
 }
 
 bySumFf <- function(values, bins) {

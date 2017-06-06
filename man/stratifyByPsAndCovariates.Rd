@@ -4,8 +4,8 @@
 \alias{stratifyByPsAndCovariates}
 \title{Stratify persons by propensity score and other covariates}
 \usage{
-stratifyByPsAndCovariates(population, numberOfStrata = 5, cohortMethodData,
-  covariateIds)
+stratifyByPsAndCovariates(population, numberOfStrata = 5,
+  baseSelection = "all", cohortMethodData, covariateIds)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}
@@ -13,6 +13,10 @@ stratifyByPsAndCovariates(population, numberOfStrata = 5, cohortMethodData,
 \item{numberOfStrata}{Into how many strata should the propensity score be divided? The
 boundaries of the strata are automatically defined to contain equal
 numbers of treated persons.}
+
+\item{baseSelection}{What is the base selection of subjects where the strata bounds are
+to be determined? Strata are defined as equally-sized strata inside
+this selection. Possible values are "all", "target", and "comparator".}
 
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}

@@ -73,6 +73,33 @@ test_that("Large 1-on-n matching", {
   expect_equal(max(result$stratumId), 499999)
 })
 
+test_that("Standardized caliper", {
+  rowId <- 1:10000
+  treatment <- c(rep(0, 9999), 1)
+  propensityScore <- c(rnorm(9999, 0.5, 0.25), 0.8)
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  result <- matchOnPs(data, caliper = 0.2, caliperScale = "standardized", maxRatio = 10000)
+  maxDistance <- max(abs(result$propensityScore - 0.8))
+  expect_lt(maxDistance, 0.2*sd(propensityScore))
+})
+
+
+test_that("Standardized logit caliper", {
+  invLogit <- function(x) {
+    exp(x)/(exp(x)+1)
+  }
+  rowId <- 1:10000
+  treatment <- c(rep(0, 9999), 1)
+  propensityScore <- invLogit(c(rnorm(9999, 0, 5), 8))
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  result <- matchOnPs(data, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 10000)
+  logit <- function(p){
+    log(p / (1 - p))
+  }
+  maxDistance <- max(abs(logit(result$propensityScore) - 8))
+  expect_lt(maxDistance, 0.2*sd(logit(propensityScore)))
+})
+
 test_that("Trimming", {
   rowId <- 1:200
   treatment <- rep(0:1, each = 100)

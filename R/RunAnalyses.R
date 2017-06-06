@@ -660,8 +660,6 @@ createReferenceTable <- function(cmAnalysisList,
                        loadingArgsList)
   analysisIdToLoadArgsId <- data.frame(analysisId = analysisIds, loadArgsId = loadArgsId)
   referenceTable <- merge(referenceTable, analysisIdToLoadArgsId)
-  # uniqueLoads <- unique(referenceTable[, c('loadArgsId', 'targetId' ,'comparatorId')])
-  # uniqueLoads$loadId <- 1:nrow(uniqueLoads) referenceTable <- merge(referenceTable, uniqueLoads)
   referenceTable$cohortMethodDataFolder <- .createCohortMethodDataFileName(folder = outputFolder,
                                                                            loadId = referenceTable$loadArgsId,
                                                                            targetId = referenceTable$targetId,
@@ -677,9 +675,6 @@ createReferenceTable <- function(cmAnalysisList,
   analysisIdToStudyPopArgsId <- data.frame(analysisId = analysisIds,
                                            studyPopArgsId = studyPopArgsId)
   referenceTable <- merge(referenceTable, analysisIdToStudyPopArgsId)
-  # uniqueStudyPops <- unique(referenceTable[, c('studyPopArgsId', 'cohortMethodDataFolder')])
-  # uniqueStudyPops$studyPopId <- 1:nrow(uniqueStudyPops) referenceTable <- merge(referenceTable,
-  # uniqueStudyPops)
   referenceTable$studyPopFile <- .createStudyPopulationFileName(folder = outputFolder,
                                                                 loadId = referenceTable$loadArgsId,
                                                                 studyPopId = referenceTable$studyPopArgsId,
@@ -698,9 +693,6 @@ createReferenceTable <- function(cmAnalysisList,
                      psArgsList)
   analysisIdToPsArgsId <- data.frame(analysisId = analysisIds, psArgsId = psArgsId)
   referenceTable <- merge(referenceTable, analysisIdToPsArgsId)
-  # uniquePs <- unique(referenceTable[!is.na(referenceTable$psArgsId), c('psArgsId', 'studyPopId')])
-  # uniquePs$psId <- 1:nrow(uniquePs) uniquePs$psId[uniquePs$psArgsId %in% noPsIds] <- NA
-  # referenceTable <- merge(referenceTable, uniquePs)
   idx <- !(referenceTable$psArgsId %in% noPsIds)
   referenceTable$psFile[idx] <- .createPsOutcomeFileName(folder = outputFolder,
                                                          loadId = referenceTable$loadArgsId[idx],
@@ -711,9 +703,40 @@ createReferenceTable <- function(cmAnalysisList,
                                                          outcomeId = referenceTable$outcomeId[idx])
   referenceTable$psFile[!idx] <- ""
   if (!refitPsForEveryOutcome) {
+    # Find equivalent studyPopArgs, so we can reuse PS over those as well:
+    studyPopArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createStudyPopArgs"))
+    studyPopArgsList <- lapply(studyPopArgsList, function(x) return(x[[1]]))
+    equivalent <- function(studyPopArgs1, studyPopArgs2) {
+      if (identical(studyPopArgs1, studyPopArgs2)) {
+        return(TRUE)
+      }
+      if (studyPopArgs1$firstExposureOnly != studyPopArgs2$firstExposureOnly ||
+          studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
+          studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
+          studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
+          studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
+          studyPopArgs1$minDaysAtRisk != 0) {
+        return(FALSE)
+      } else {
+        return(TRUE)
+      }
+    }
+    findFirstEquivalent <- function(studyPopArgsList, studyPopArgs) {
+      for (i in 1:length(studyPopArgsList)) {
+        if (equivalent(studyPopArgsList[[i]], studyPopArgs))
+          return(i)
+      }
+    }
+    studyPopArgsEquivalentId <- sapply(cmAnalysisList,
+                                       function(cmAnalysis, studyPopArgsList) return(findFirstEquivalent(studyPopArgsList,
+                                                                                                         cmAnalysis$createStudyPopArgs)),
+                                       studyPopArgsList)
+    analysisIdToStudyPopArgsEquivalentId <- data.frame(analysisId = analysisIds,
+                                                       studyPopArgsEquivalentId = studyPopArgsEquivalentId)
+    referenceTable <- merge(referenceTable, analysisIdToStudyPopArgsEquivalentId)
     referenceTable$sharedPsFile[idx] <- .createPsFileName(folder = outputFolder,
                                                           loadId = referenceTable$loadArgsId[idx],
-                                                          studyPopId = referenceTable$studyPopArgsId[idx],
+                                                          studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
                                                           psId = referenceTable$psArgsId[idx],
                                                           targetId = referenceTable$targetId[idx],
                                                           comparatorId = referenceTable$comparatorId[idx])
@@ -734,9 +757,6 @@ createReferenceTable <- function(cmAnalysisList,
             "stratifyByPsAndCovariates",
             "stratifyByPsAndCovariatesArgs")
   strataArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, args))
-  # noStrataIds <- which(sapply(strataArgsList, function(strataArgs) return(!strataArgs$trimByPs &
-  # !strataArgs$trimByPsToEquipoise & !strataArgs$matchOnPs & !strataArgs$matchOnPsAndCovariates &
-  # !strataArgs$stratifyByPs & !strataArgs$stratifyByPsAndCovariates)))
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
                                                                         strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
@@ -753,9 +773,6 @@ createReferenceTable <- function(cmAnalysisList,
     # strataArgsId[strataArgsId %in% noStrataIds] <- NA
     analysisIdToStrataArgsId <- data.frame(analysisId = analysisIds, strataArgsId = strataArgsId)
     referenceTable <- merge(referenceTable, analysisIdToStrataArgsId)
-    # uniqueStrata <- unique(referenceTable[!is.na(referenceTable$strataArgsId), c('strataArgsId',
-    # 'psId')]) uniqueStrata$strataId <- 1:nrow(uniqueStrata) referenceTable <- merge(referenceTable,
-    # uniqueStrata, all.x = TRUE)
   }
   idx <- referenceTable$strataArgsId != 0
   referenceTable$strataFile[idx] <- .createStratifiedPopFileName(folder = outputFolder,

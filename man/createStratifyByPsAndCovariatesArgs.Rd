@@ -4,12 +4,17 @@
 \alias{createStratifyByPsAndCovariatesArgs}
 \title{Create a parameter object for the function stratifyByPsAndCovariates}
 \usage{
-createStratifyByPsAndCovariatesArgs(numberOfStrata = 5, covariateIds)
+createStratifyByPsAndCovariatesArgs(numberOfStrata = 5,
+  baseSelection = "all", covariateIds)
 }
 \arguments{
 \item{numberOfStrata}{Into how many strata should the propensity score be divided? Theboundaries
 of the strata are automatically defined to contain equalnumbers of treated
 persons.}
+
+\item{baseSelection}{What is the base selection of subjects where the strata bounds areto be
+determined? Strata are defined as equally-sized strata insidethis selection.
+Possible values are "all", "target", and "comparator".}
 
 \item{covariateIds}{One or more covariate IDs in the cohortMethodData object on whichsubjects
 should also be stratified.}

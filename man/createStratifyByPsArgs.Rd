@@ -4,7 +4,8 @@
 \alias{createStratifyByPsArgs}
 \title{Create a parameter object for the function stratifyByPs}
 \usage{
-createStratifyByPsArgs(numberOfStrata = 5, stratificationColumns = c())
+createStratifyByPsArgs(numberOfStrata = 5, stratificationColumns = c(),
+  baseSelection = "all")
 }
 \arguments{
 \item{numberOfStrata}{How many strata? The boundaries of the strata are
@@ -13,6 +14,10 @@ automaticallydefined to contain equal numbers of treated persons.}
 \item{stratificationColumns}{Names of one or more columns in the data data.frame on whichsubjects
 should also be stratified in addition to stratification onpropensity
 score.}
+
+\item{baseSelection}{What is the base selection of subjects where the strata bounds areto
+be determined? Strata are defined as equally-sized strata insidethis
+selection. Possible values are "all", "target", and "comparator".}
 }
 \description{
 Create a parameter object for the function stratifyByPs

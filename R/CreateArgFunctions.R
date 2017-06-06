@@ -215,10 +215,14 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
 #' @param caliper                 The caliper for matching. A caliper is the distance which
 #'                                isacceptable for any match. Observations which are outside of
 #'                                thecaliper are dropped. A caliper of 0 means no caliper is used.
-#' @param caliperScale            The scale on which the caliper is defined. Two scales are
-#'                                supported:caliperScale = 'propensity score' or caliperScale
-#'                                ='standardized'. On the standardized scale, the caliper isinterpreted
-#'                                in standard deviations of the propensity scoredistribution.
+#' @param caliperScale            The scale on which the caliper is defined. Three scales are
+#'                                supported:caliperScale = 'propensity score', caliperScale
+#'                                ='standardized', or caliperScale = 'standardized logit'.On the
+#'                                standardized scale, the caliper is interpreted in standarddeviations
+#'                                of the propensity score distribution. 'standardized logit'is similar,
+#'                                except that the propensity score is transformed to the logitscale
+#'                                because the PS is more likely to be normally distributed on that
+#'                                scale(Austin, 2011).
 #' @param maxRatio                The maximum number of persons int the comparator arm to be matched
 #'                                toeach person in the treatment arm. A maxRatio of 0 means no
 #'                                maximum:all comparators will be assigned to a treated person.
@@ -228,8 +232,8 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
 #'                                in these columns.
 #'
 #' @export
-createMatchOnPsArgs <- function(caliper = 0.25,
-                                caliperScale = "standardized",
+createMatchOnPsArgs <- function(caliper = 0.2,
+                                caliperScale = "standardized logit",
                                 maxRatio = 1,
                                 stratificationColumns = c()) {
   # First: get default values:
@@ -255,10 +259,13 @@ createMatchOnPsArgs <- function(caliper = 0.25,
 #' @param caliper        The caliper for matching. A caliper is the distance which is acceptablefor any
 #'                       match. Observations which are outside of the caliper are dropped.A caliper of
 #'                       0 means no caliper is used.
-#' @param caliperScale   The scale on which the caliper is defined. Two scales
-#'                       aresupported:caliperScale = 'propensity score' orcaliperScale =
-#'                       'standardized'. On the standardized scale, thecaliper is interpreted in
-#'                       standard deviations of the propensity scoredistribution.
+#' @param caliperScale   The scale on which the caliper is defined. Three scales are
+#'                       supported:caliperScale = 'propensity score', caliperScale ='standardized', or
+#'                       caliperScale = 'standardized logit'.On the standardized scale, the caliper is
+#'                       interpreted in standarddeviations of the propensity score distribution.
+#'                       'standardized logit'is similar, except that the propensity score is
+#'                       transformed to the logitscale because the PS is more likely to be normally
+#'                       distributed on that scale(Austin, 2011).
 #' @param maxRatio       The maximum number of persons int the comparator arm to be matched to
 #'                       eachperson in the treatment arm. A maxRatio of 0 means no maximum:
 #'                       allcomparators will be assigned to a treated person.
@@ -266,8 +273,8 @@ createMatchOnPsArgs <- function(caliper = 0.25,
 #'                       should be also matched.
 #'
 #' @export
-createMatchOnPsAndCovariatesArgs <- function(caliper = 0.25,
-                                             caliperScale = "standardized",
+createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
+                                             caliperScale = "standardized logit",
                                              maxRatio = 1,
                                              covariateIds) {
   # First: get default values:
@@ -295,9 +302,14 @@ createMatchOnPsAndCovariatesArgs <- function(caliper = 0.25,
 #' @param stratificationColumns   Names of one or more columns in the data data.frame on whichsubjects
 #'                                should also be stratified in addition to stratification onpropensity
 #'                                score.
+#' @param baseSelection           What is the base selection of subjects where the strata bounds areto
+#'                                be determined? Strata are defined as equally-sized strata insidethis
+#'                                selection. Possible values are "all", "target", and "comparator".
 #'
 #' @export
-createStratifyByPsArgs <- function(numberOfStrata = 5, stratificationColumns = c()) {
+createStratifyByPsArgs <- function(numberOfStrata = 5,
+                                   stratificationColumns = c(),
+                                   baseSelection = "all") {
   # First: get default values:
   analysis <- list()
   for (name in names(formals(createStratifyByPsArgs))) {
@@ -321,11 +333,16 @@ createStratifyByPsArgs <- function(numberOfStrata = 5, stratificationColumns = c
 #' @param numberOfStrata   Into how many strata should the propensity score be divided? Theboundaries
 #'                         of the strata are automatically defined to contain equalnumbers of treated
 #'                         persons.
+#' @param baseSelection    What is the base selection of subjects where the strata bounds areto be
+#'                         determined? Strata are defined as equally-sized strata insidethis selection.
+#'                         Possible values are "all", "target", and "comparator".
 #' @param covariateIds     One or more covariate IDs in the cohortMethodData object on whichsubjects
 #'                         should also be stratified.
 #'
 #' @export
-createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5, covariateIds) {
+createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
+                                                baseSelection = "all",
+                                                covariateIds) {
   # First: get default values:
   analysis <- list()
   for (name in names(formals(createStratifyByPsAndCovariatesArgs))) {
