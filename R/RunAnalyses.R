@@ -119,7 +119,7 @@ runCmAnalyses <- function(connectionDetails,
                           exposureTable = "drug_era",
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_occurrence",
-                          cdmVersion = 4,
+                          cdmVersion = 5,
                           outputFolder = "./CohortMethodOutput",
                           cmAnalysisList,
                           drugComparatorOutcomesList,
@@ -702,7 +702,9 @@ createReferenceTable <- function(cmAnalysisList,
                                                          comparatorId = referenceTable$comparatorId[idx],
                                                          outcomeId = referenceTable$outcomeId[idx])
   referenceTable$psFile[!idx] <- ""
-  if (!refitPsForEveryOutcome) {
+  if (refitPsForEveryOutcome) {
+    referenceTable$sharedPsFile <- ""
+  } else {
     # Find equivalent studyPopArgs, so we can reuse PS over those as well:
     studyPopArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createStudyPopArgs"))
     studyPopArgsList <- lapply(studyPopArgsList, function(x) return(x[[1]]))
