@@ -207,3 +207,19 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   addExposureDaysToEnd = TRUE,
                                   outcomeId = 194133)
 plotKaplanMeier(studyPop, fileName = "s:/temp/plot.png")
+
+
+
+# Test power function -----------------------------------------------------
+result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
+result <- result[result$studyPopFile != "", ]
+for (i in 1:nrow(result)) {
+  if (result$strataFile[i] == "") {
+  population <- readRDS(result$studyPopFile[i])
+  } else {
+    population <- readRDS(result$strataFile[i])
+  }
+  om <- readRDS(result$outcomeModelFile[i])
+  writeLines(paste(computeMdrr(population)$se, om$outcomeModelTreatmentEstimate$seLogRr))
+}
+

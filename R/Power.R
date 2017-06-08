@@ -19,9 +19,9 @@
 #' Compute the minimum detectable relative risk
 #'
 #' @details
-#' Compute the minimum detectable relative risk (MDRR) for a given study population, using the actual
-#' observed sample size and number of outcomes. Currently, only computations for Cox models are
-#' implemented. For Cox model, the computations by Schoenfeld (1983) is used.
+#' Compute the minimum detectable relative risk (MDRR) and expected standard error (SE) for a given
+#' study population, using the actual observed sample size and number of outcomes. Currently, only
+#' computations for Cox models are implemented. For Cox model, the computations by Schoenfeld (1983) is used.
 #'
 #' @param population   A data frame describing the study population as created using the
 #'                     \code{\link{createStudyPopulation}} function. This should at least have these
@@ -56,12 +56,16 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
   totalEvents <- sum(population$outcomeCount != 0)
   # denom <- sqrt(pA) * sqrt(pB) * sqrt(totalEvents) mdrr <- exp(zBeta / denom + z1MinAlpha / denom)
   mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2/(totalEvents * pA * pB)))
-
+  se <- 1/sqrt(totalEvents * pA * pB)
   result <- data.frame(targetPersons = length(unique(population$subjectId[population$treatment == 1])),
                        comparatorPersons = length(unique(population$subjectId[population$treatment == 0])),
-                       targetExposures = sum(population$treatment ==
-      1), comparatorExposures = sum(population$treatment == 0), targetDays = sum(population$timeAtRisk[population$treatment ==
-      1]), comparatorDays = sum(population$timeAtRisk[population$treatment == 0]), totalOutcomes = totalEvents, mdrr = mdrr)
+                       targetExposures = sum(population$treatment == 1),
+                       comparatorExposures = sum(population$treatment == 0),
+                       targetDays = sum(population$timeAtRisk[population$treatment == 1]),
+                       comparatorDays = sum(population$timeAtRisk[population$treatment == 0]),
+                       totalOutcomes = totalEvents,
+                       mdrr = mdrr,
+                       se = se)
   return(result)
 }
 

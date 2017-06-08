@@ -28,9 +28,9 @@ A data frame with the MDRR and some counts.
 Compute the minimum detectable relative risk
 }
 \details{
-Compute the minimum detectable relative risk (MDRR) for a given study population, using the actual
-observed sample size and number of outcomes. Currently, only computations for Cox models are
-implemented. For Cox model, the computations by Schoenfeld (1983) is used.
+Compute the minimum detectable relative risk (MDRR) and expected standard error (SE) for a given
+study population, using the actual observed sample size and number of outcomes. Currently, only
+computations for Cox models are implemented. For Cox model, the computations by Schoenfeld (1983) is used.
 }
 \references{
 Schoenfeld DA (1983) Sample-size formula for the proportional-hazards regression model, Biometrics,
