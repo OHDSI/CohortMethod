@@ -242,7 +242,6 @@ runCmAnalyses <- function(connectionDetails,
                                                 list(analysisId = refRow$analysisId))[[1]]
         args <- analysisRow$createPsArgs
         args$control$threads <- psCvThreads
-        args$outcomeId <- refRow$outcomeId
         modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
                                                        studyPopFile = refRow$studyPopFile,
                                                        args = args,
