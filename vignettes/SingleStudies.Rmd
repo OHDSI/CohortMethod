@@ -286,8 +286,8 @@ We can use the `loadCohortMethodData()` function to load the data in a future se
 Typically, a new user is defined as first time use of a drug (either target or comparator), and typically a washout period (a minimum number of days prior first use) is used to make sure it is truly first use. When using the `CohortMethod` package, you can enforce the necessary requirements for new use in three ways:
 
 1. When creating the cohorts in the database, for example when using a cohort definition tool.
-2. When loading the cohorts using the `getDbCohortMethodData` function, you can use the `firstExposureOnly`, `removeDuplicateSubjects`, and `washoutPeriod` arguments. (As shown in the example above).
-3. When defining the study population using the `createStudyPopulation` function (see below) using the `firstExposureOnly`, `removeDuplicateSubjects`, and `washoutPeriod` arguments.
+2. When loading the cohorts using the `getDbCohortMethodData` function, you can use the `firstExposureOnly`, `removeDuplicateSubjects`, `restrictToCommonPeriod`, and `washoutPeriod` arguments. (As shown in the example above).
+3. When defining the study population using the `createStudyPopulation` function (see below) using the `firstExposureOnly`, `removeDuplicateSubjects`, `restrictToCommonPeriod`, and `washoutPeriod` arguments.
 
 The advantage of option 1 is that the input cohorts are already fully defined outside of the `CohortMethod` package, and for example external cohort characterization tools can be used on the same cohorts used in this package. The advantage of options 2 and 3 is that it saves you the trouble of limiting to first use yourself, for example allowing you to directly use the `drug_era` table in the CDM. Option 2 is more efficient than 3, since only data for first use will be fetched, while option 3 is less efficient but allows you to compare the original cohorts to the study population.
 
@@ -310,7 +310,7 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   addExposureDaysToEnd = TRUE)
 ```
 
-Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. During loading we set ``restrictToCommonPeriod` to FALSE, and we do the same here because we do not want to force the comparison to restrict only to time when both drugs are recorded. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the index date (`riskWindowStart = 0` and `addExposureDaysToStart = FALSE`), and the risk windows ends 30 days after exposure ends (`riskWindowEnd = 30` and `addExposureDaysToEnd = TRUE`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
+Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. During loading we set `restrictToCommonPeriod` to FALSE, and we do the same here because we do not want to force the comparison to restrict only to time when both drugs are recorded. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the index date (`riskWindowStart = 0` and `addExposureDaysToStart = FALSE`), and the risk windows ends 30 days after exposure ends (`riskWindowEnd = 30` and `addExposureDaysToEnd = TRUE`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
 
 ```{r tidy=TRUE,eval=FALSE}
 getAttritionTable(studyPop)
@@ -421,12 +421,12 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 We can also match subjects based on propensity scores. In this example, we're using one-to-one matching:
 
 ```{r tidy=TRUE,eval=FALSE}
-  matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  matchedPop <- matchOnPs(ps, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 1)
   plotPs(matchedPop, ps)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+  matchedPop <- matchOnPs(ps, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 1)
   plotPs(matchedPop, ps)
 }
 ```
@@ -484,7 +484,7 @@ if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
 }
 ```
 
-The 'before matching'population is the population as extracted by the `getDbCohortMethodData` function, so before any further filtering steps.
+The 'before matching' population is the population as extracted by the `getDbCohortMethodData` function, so before any further filtering steps.
 
 ## Inserting the population cohort in the database ##
 

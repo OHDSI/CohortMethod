@@ -355,11 +355,11 @@ cmAnalysisList2 <- list(cmAnalysis1, cmAnalysis2)
 
 In this example, the first analysis (analysisID = 1) will use concept 1124300 as comparator, whilst the second analysis analysis (analysisID = 2) will use concept 1125315 as comparator.
 
-The same mechanism can be used to specifiy types for the targetId.
+The same mechanism can be used to specify types for the targetId.
 
 # Executing multiple analyses
 
-We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()`function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
+We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()` function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
 
 ```{r tidy=FALSE,eval=FALSE}
 result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -390,7 +390,7 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 
 # Retrieving the results
 
-The result of the `runCmAnalyses()` is a data frame with one row per drug-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our drug, comparator, outcome of intererst, and last analysis:
+The result of the `runCmAnalyses()` is a data frame with one row per drug-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our drug, comparator, outcome of interest, and last analysis:
 
 ```{r tidy=FALSE,eval=FALSE}
 psFile <- result$psFile[result$targetId == 1118084 & 
