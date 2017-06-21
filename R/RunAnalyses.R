@@ -835,8 +835,12 @@ createReferenceTable <- function(cmAnalysisList,
   return(referenceTable)
 }
 
+.f <- function(x) {
+  return(format(x, scientific = FALSE, trim = TRUE))
+}
+
 .createCohortMethodDataFileName <- function(folder, loadId, targetId, comparatorId) {
-  name <- paste("CmData_l", loadId, "_t", targetId, "_c", comparatorId, sep = "")
+  name <- paste("CmData_l", loadId, "_t", .f(targetId), "_c", .f(comparatorId), sep = "")
   return(file.path(folder, name))
 }
 
@@ -851,11 +855,11 @@ createReferenceTable <- function(cmAnalysisList,
                 "_s",
                 studyPopId,
                 "_t",
-                targetId,
+                .f(targetId),
                 "_c",
-                comparatorId,
+                .f(comparatorId),
                 sep = "")
-  name <- paste(name, "_o", outcomeId, sep = "")
+  name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
@@ -868,9 +872,9 @@ createReferenceTable <- function(cmAnalysisList,
                 "_p",
                 psId,
                 "_t",
-                targetId,
+                .f(targetId),
                 "_c",
-                comparatorId,
+                .f(comparatorId),
                 sep = "")
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
@@ -890,11 +894,11 @@ createReferenceTable <- function(cmAnalysisList,
                 "_p",
                 psId,
                 "_t",
-                targetId,
+                .f(targetId),
                 "_c",
-                comparatorId,
+                .f(comparatorId),
                 sep = "")
-  name <- paste(name, "_o", outcomeId, sep = "")
+  name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
@@ -914,12 +918,12 @@ createReferenceTable <- function(cmAnalysisList,
                 "_p",
                 psId,
                 "_t",
-                targetId,
+                .f(targetId),
                 "_c",
-                comparatorId,
+                .f(comparatorId),
                 sep = "")
   name <- paste(name, "_s", strataId, sep = "")
-  name <- paste(name, "_o", outcomeId, sep = "")
+  name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
@@ -939,19 +943,19 @@ createReferenceTable <- function(cmAnalysisList,
                 "_p",
                 psId,
                 "_t",
-                targetId,
+                .f(targetId),
                 "_c",
-                comparatorId,
+                .f(comparatorId),
                 sep = "")
   name <- paste(name, "_s", strataId, sep = "")
-  name <- paste(name, "_o", outcomeId, sep = "")
+  name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
 
 .createOutcomeModelFileName <- function(folder, targetId, comparatorId, outcomeId) {
-  name <- paste("om_t", targetId, "_c", comparatorId, sep = "")
-  name <- paste(name, "_o", outcomeId, sep = "")
+  name <- paste("om_t", .f(targetId), "_c", .f(comparatorId), sep = "")
+  name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
