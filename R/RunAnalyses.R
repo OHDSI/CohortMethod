@@ -485,7 +485,23 @@ computeCovarBal <- function(params) {
 }
 
 doFitOutcomeModel <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  if (exists("cache", envir = globalenv())) {
+    cache <- get("cache", envir = globalenv())
+    cacheChange <- FALSE
+  } else {
+    cache <- list()
+    cacheChange <- TRUE
+  }
+  if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
+    cohortMethodData <- cache$cohortMethodData
+    writeLines("Using cached cohortMetaData")
+  } else {
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+    cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
+    cache$cohortMethodData <- cohortMethodData
+    cacheChange <- TRUE
+  }
+
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
@@ -498,6 +514,9 @@ doFitOutcomeModel <- function(params) {
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
+  if (cacheChange) {
+    assign("cache", cache, envir = globalenv())
+  }
   return(NULL)
 }
 
