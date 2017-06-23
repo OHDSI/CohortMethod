@@ -405,6 +405,28 @@ runCmAnalyses <- function(connectionDetails,
   invisible(referenceTable)
 }
 
+getCohortMethodData <- function(cohortMethodDataFolder) {
+  if (mget("cohortMethodDataFolder", envir = globalenv(), ifnotfound = "") == cohortMethodDataFolder) {
+    cohortMethodData <- get("cohortMethodData", envir = globalenv())
+  } else {
+    cohortMethodData <- loadCohortMethodData(cohortMethodDataFolder, readOnly = TRUE)
+    assign("cohortMethodData", cohortMethodData, envir = globalenv())
+    assign("cohortMethodDataFolder", cohortMethodDataFolder, envir = globalenv())
+  }
+  return(cohortMethodData)
+}
+
+getPs <- function(psFile) {
+  if (mget("psFile", envir = globalenv(), ifnotfound = "") == psFile) {
+    ps <- get("ps", envir = globalenv())
+  } else {
+    ps <- readRDS(psFile)
+    assign("ps", ps, envir = globalenv())
+    assign("psFile", psFile, envir = globalenv())
+  }
+  return(ps)
+}
+
 createCmDataObject <- function(params) {
   cohortMethodData <- do.call("getDbCohortMethodData", params$args)
   saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
@@ -412,7 +434,7 @@ createCmDataObject <- function(params) {
 }
 
 createStudyPopObject <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
@@ -421,7 +443,7 @@ createStudyPopObject <- function(params) {
 }
 
 fitPsModel <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   studyPop <- readRDS(params$studyPopFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
@@ -432,7 +454,7 @@ fitPsModel <- function(params) {
 }
 
 fitSharedPsModel <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   args <- params$createStudyPopArgs
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
@@ -445,7 +467,7 @@ fitSharedPsModel <- function(params) {
 }
 
 trimMatchStratify <- function(params) {
-  ps <- readRDS(params$psFile)
+  ps <- getPs(params$psFile)
   if (params$args$trimByPs) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByPsArgs)
@@ -477,7 +499,7 @@ trimMatchStratify <- function(params) {
 }
 
 computeCovarBal <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   strata <- readRDS(params$strataFile)
   balance <- computeCovariateBalance(strata, cohortMethodData)
   saveRDS(balance, params$covariateBalanceFile)
@@ -485,23 +507,7 @@ computeCovarBal <- function(params) {
 }
 
 doFitOutcomeModel <- function(params) {
-  if (exists("cache", envir = globalenv())) {
-    cache <- get("cache", envir = globalenv())
-    cacheChange <- FALSE
-  } else {
-    cache <- list()
-    cacheChange <- TRUE
-  }
-  if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
-    cohortMethodData <- cache$cohortMethodData
-    writeLines("Using cached cohortMetaData")
-  } else {
-    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
-    cache$cohortMethodData <- cohortMethodData
-    cacheChange <- TRUE
-  }
-
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
@@ -514,29 +520,11 @@ doFitOutcomeModel <- function(params) {
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
-  if (cacheChange) {
-    assign("cache", cache, envir = globalenv())
-  }
   return(NULL)
 }
 
 doFitOutcomeModelPlus <- function(params) {
-  if (exists("cache", envir = globalenv())) {
-    cache <- get("cache", envir = globalenv())
-    cacheChange <- FALSE
-  } else {
-    cache <- list()
-    cacheChange <- TRUE
-  }
-  if (!is.null(cache$cohortMethodDataFolder) && cache$cohortMethodDataFolder == params$cohortMethodDataFolder) {
-    cohortMethodData <- cache$cohortMethodData
-    writeLines("Using cached cohortMetaData")
-  } else {
-    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
-    cache$cohortMethodDataFolder <- params$cohortMethodDataFolder
-    cache$cohortMethodData <- cohortMethodData
-    cacheChange <- TRUE
-  }
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
 
   # Create study pop
   args <- params$args$createStudyPopArgs
@@ -558,15 +546,7 @@ doFitOutcomeModelPlus <- function(params) {
 
   if (params$args$createPs) {
     # Add PS
-    if (!is.null(cache$sharedPsFile) && cache$sharedPsFile == params$sharedPsFile) {
-      ps <- cache$ps
-      writeLines("Using cached shared propensity scores")
-    } else {
-      ps <- readRDS(params$sharedPsFile)
-      cache$sharedPsFile <- params$sharedPsFile
-      cache$ps <- ps
-      cacheChange <- TRUE
-    }
+    ps <- getPs(params$sharedPsFile)
     idx <- match(studyPop$rowId, ps$rowId)
     studyPop$propensityScore <- ps$propensityScore[idx]
     ps <- studyPop
@@ -612,9 +592,6 @@ doFitOutcomeModelPlus <- function(params) {
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
-  if (cacheChange) {
-    assign("cache", cache, envir = globalenv())
-  }
   return(NULL)
 }
 
