@@ -88,7 +88,7 @@ sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 nsaids <- DatabaseConnector::querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
 
-dbDisconnect(connection)
+DatabaseConnector::disconnect(connection)
 
 covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
                                              useCovariateDemographicsAge = TRUE,

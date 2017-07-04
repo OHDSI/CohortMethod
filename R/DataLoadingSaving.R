@@ -278,7 +278,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                 renderedSql,
                                 progressBar = FALSE,
                                 reportOverallTime = FALSE)
-  RJDBC::dbDisconnect(connection)
+  DatabaseConnector::disconnect(connection)
 
   metaData <- covariateData$metaData
   metaData$call <- match.call()
@@ -535,7 +535,7 @@ insertDbPopulation <- function(population,
                                  createTable = createTable,
                                  tempTable = FALSE,
                                  oracleTempSchema = NULL)
-  RJDBC::dbDisconnect(connection)
+  DatabaseConnector::disconnect(connection)
   delta <- Sys.time() - start
   writeLines(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
   invisible(TRUE)
