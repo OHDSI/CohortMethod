@@ -195,6 +195,9 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  cdm_version = cdmVersion,
                                                  target_id = targetId)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
+  if(attr(connection, "dbms") == "impala") {
+    cohorts$COHORT_START_DATE <- as.Date(cohorts$COHORT_START_DATE, "%Y-%m-%d")
+  }
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
   metaData <- list(targetId = targetId,
                    comparatorId = comparatorId,
