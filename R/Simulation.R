@@ -339,10 +339,14 @@ createCMDSimulationProfile <- function(cohortMethodData,
   ids = ff::as.ff(population$rowId)
 
   sData = calculateBreslowBaseline(outcomeModel)
+  coef = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$outcomeModelCoefficients))),
+                  beta = ff::as.ff(outcomeModel$outcomeModelCoefficients))
+  if (as.numeric(names(outcomeModel$outcomeModelCoefficients[length(outcomeModel$outcomeModelCoefficients)]))==max(cohortMethodData$covariates$covariateId+1)) {
+    coef = coef[ff::as.ff(1:(nrow(coef)-1)),]
+  }
   sData$XB =   calculateXB(rowId = ids,
                            covariates = cohortMethodData$covariates,
-                           coef = ff::ffdf(covariateId = ff::as.ff(as.numeric(names(outcomeModel$outcomeModelCoefficients))),
-                                           beta = ff::as.ff(outcomeModel$outcomeModelCoefficients)))
+                           coef = coef)
   cData = calculateNelsonAalenBaseline(population1)
 
   # delete people not in the study population
@@ -429,7 +433,9 @@ invertOutcome <- function(studyPop) {
 }
 
 calculateXB <- function(rowId, covariates, coef) {
-  coef = coef[ffbase::ffwhich(coef,coef$beta!=0),]
+  t = ffbase::ffwhich(coef,coef$beta!=0)
+  if (is.null(t)) return(ff::ffdf(rowId = rowId, xb = ff::as.ff(rep(0,length(rowId))), exb = ff::as.ff(rep(1,length(rowId)))))
+  coef = coef[t,]
   covariates = covariates[ffbase::ffwhich(covariates, in.ff(covariates$rowId, rowId)),]
   covariates = covariates[ffbase::ffwhich(covariates, in.ff(covariates$covariateId, coef$covariateId)),]
   covariates = ffbase::merge.ffdf(covariates, coef)
