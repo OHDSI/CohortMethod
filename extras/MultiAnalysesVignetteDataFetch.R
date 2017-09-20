@@ -23,21 +23,10 @@ options(fftempdir = "s:/fftemp")
 
 
 pw <- NULL
-dbms <- "sql server"
-user <- NULL
-server <- "RNDUSRDHIT09.jnj.com"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-# cdmDatabaseSchema <- 'cdm_truven_ccae_6k.dbo'
-resultsDatabaseSchema <- "scratch.dbo"
-resultsDatabaseSchema <- "cdm_truven_ccae_6k.dbo"
-port <- NULL
-cdmVersion <- "4"
-
-pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -71,7 +60,7 @@ sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 nsaids <- DatabaseConnector::querySql(connection, sql)
 nsaids <- nsaids$CONCEPT_ID
 
-RJDBC::dbDisconnect(connection)
+DatabaseConnector::disconnect(connection)
 
 # nsaids <- 21603933
 
@@ -275,7 +264,17 @@ saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
 
 # drugComparatorOutcomesList <- loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
 
-result <- runCmAnalyses(connectionDetails = connectionDetails,
+
+mailSettings <- list(from = Sys.getenv("mailAddress"),
+                     to = c(Sys.getenv("mailAddress")),
+                     smtp = list(host.name = "smtp.gmail.com", port = 465,
+                                 user.name = Sys.getenv("mailAddress"),
+                                 passwd = Sys.getenv("mailPassword"), ssl = TRUE),
+                     authenticate = TRUE,
+                     send = TRUE)
+
+result <- OhdsiRTools::runAndNotify({
+runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
                         exposureDatabaseSchema = cdmDatabaseSchema,
                         exposureTable = "drug_era",
@@ -294,6 +293,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         fitOutcomeModelThreads = 3,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
+}, mailSettings = mailSettings, label = "CohortMethod")
 # result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
 
 analysisSum <- summarizeAnalyses(result)
@@ -305,7 +305,7 @@ sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
-RJDBC::dbDisconnect(connection)
+DatabaseConnector::disconnect(connection)
 
 # result <- readRDS('s:/temp/cohortMethodVignette2/outcomeModelReference.rds')
 
