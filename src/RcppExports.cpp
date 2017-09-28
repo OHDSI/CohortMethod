@@ -5,9 +5,9 @@
 
 using namespace Rcpp;
 
-// matchOnPs
-DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
-RcppExport SEXP CohortMethod_matchOnPs(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
+// match
+DataFrame match(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
+RcppExport SEXP _CohortMethod_match(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,13 +15,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type maxRatio(maxRatioSEXP);
     Rcpp::traits::input_parameter< double >::type caliper(caliperSEXP);
-    rcpp_result_gen = Rcpp::wrap(matchOnPs(propensityScores, treatment, maxRatio, caliper));
+    rcpp_result_gen = Rcpp::wrap(match(propensityScores, treatment, maxRatio, caliper));
     return rcpp_result_gen;
 END_RCPP
 }
 // aucWithCi
 std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<int> treatment);
-RcppExport SEXP CohortMethod_aucWithCi(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
+RcppExport SEXP _CohortMethod_aucWithCi(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -33,7 +33,7 @@ END_RCPP
 }
 // auc
 double auc(std::vector<double> propensityScores, std::vector<int> treatment);
-RcppExport SEXP CohortMethod_auc(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
+RcppExport SEXP _CohortMethod_auc(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -43,15 +43,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// bySum
-DataFrame bySum(List ffValues, List ffBins);
-RcppExport SEXP CohortMethod_bySum(SEXP ffValuesSEXP, SEXP ffBinsSEXP) {
+// bySumFf
+DataFrame bySumFf(List ffValues, List ffBins);
+RcppExport SEXP _CohortMethod_bySumFf(SEXP ffValuesSEXP, SEXP ffBinsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type ffValues(ffValuesSEXP);
     Rcpp::traits::input_parameter< List >::type ffBins(ffBinsSEXP);
-    rcpp_result_gen = Rcpp::wrap(bySum(ffValues, ffBins));
+    rcpp_result_gen = Rcpp::wrap(bySumFf(ffValues, ffBins));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_CohortMethod_match", (DL_FUNC) &_CohortMethod_match, 4},
+    {"_CohortMethod_aucWithCi", (DL_FUNC) &_CohortMethod_aucWithCi, 2},
+    {"_CohortMethod_auc", (DL_FUNC) &_CohortMethod_auc, 2},
+    {"_CohortMethod_bySumFf", (DL_FUNC) &_CohortMethod_bySumFf, 2},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_CohortMethod(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

@@ -35,6 +35,11 @@
 #'                                 \code{cohortMethodData} will be used.
 #' @param excludeCovariateIds      Exclude these covariates from the propensity model.
 #' @param includeCovariateIds      Include only these covariates in the propensity model.
+#' @param maxCohortSizeForFitting  If the target or comparator cohort are larger than this number, they
+#'                                 will be downsampled before fitting the propensity model. The model
+#'                                 will be used to compute propensity scores for all subjects. The
+#'                                 purpose of the sampling is to gain speed. Setting this number to 0
+#'                                 means no downsampling will be applied.
 #' @param errorOnHighCorrelation   If true, the function will test each covariate for correlation with
 #'                                 the treatment assignment. If any covariate has an unusually high
 #'                                 correlation (either positive or negative), this will throw and
@@ -60,6 +65,7 @@ createPs <- function(cohortMethodData,
                      population,
                      excludeCovariateIds = c(),
                      includeCovariateIds = c(),
+                     maxCohortSizeForFitting = 150000,
                      errorOnHighCorrelation = TRUE,
                      stopOnError = TRUE,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
@@ -76,6 +82,25 @@ createPs <- function(cohortMethodData,
     stop("Missing column treatment in population")
 
   start <- Sys.time()
+  sampled <- FALSE
+  if (maxCohortSizeForFitting != 0) {
+    targetRowIds <- population$rowId[population$treatment == 1]
+    if (length(targetRowIds) > maxCohortSizeForFitting) {
+      writeLines(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+      targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+      sampled <- TRUE
+    }
+    comparatorRowIds <- population$rowId[population$treatment == 0]
+    if (length(comparatorRowIds) > maxCohortSizeForFitting) {
+      writeLines(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+      comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+      sampled <- TRUE
+    }
+    if (sampled) {
+      fullPopulation <- population
+      population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
+    }
+  }
   if (!Cyclops::isSorted(population, "rowId")) {
     population <- population[order(population$rowId), ]
   }
@@ -141,7 +166,26 @@ createPs <- function(cohortMethodData,
     if (all(cfs[2:length(cfs)] == 0)) {
       warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
     }
-    population$propensityScore <- predict(cyclopsFit)
+    if (sampled) {
+      # Adjust intercept to non-sampled population:
+      y.bar <- mean(population$treatment)
+      y.odds <- y.bar/(1 - y.bar)
+      y.bar.new <- mean(fullPopulation$treatment)
+      y.odds.new <- y.bar.new/(1 - y.bar.new)
+      delta <- log(y.odds) - log(y.odds.new)
+      cfs[1] <- cfs[1] - delta  # Equation (7) in King and Zeng (2001)
+      cyclopsFit$estimation$estimate[1] <- cfs[1]
+      population <- fullPopulation
+      cohortSubset <- ff::as.ffdf(population)
+      covariateSubset <- limitCovariatesToPopulation(cohortMethodData$covariates, cohortSubset$rowId)
+      population$propensityScore <- predict(cyclopsFit, newOutcomes = cohortSubset, newCovariates = covariateSubset)
+      ff::close.ffdf(cohortSubset)
+      ff::close.ffdf(covariateSubset)
+      rm(cohortSubset)
+      rm(covariateSubset)
+    } else {
+      population$propensityScore <- predict(cyclopsFit)
+    }
     attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
     attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
   } else {
@@ -353,13 +397,10 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
     stop("Missing column propensityScore in data")
 
   if (confidenceIntervals) {
-    auc <- .Call("CohortMethod_aucWithCi",
-                 PACKAGE = "CohortMethod",
-                 data$propensityScore,
-                 data$treatment)
+    auc <- aucWithCi(data$propensityScore, data$treatment)
     return(data.frame(auc = auc[1], auc_lb95ci = auc[2], auc_lb95ci = auc[3]))
   } else {
-    auc <- .Call("CohortMethod_auc", PACKAGE = "CohortMethod", data$propensityScore, data$treatment)
+    auc <- auc(data$propensityScore, data$treatment)
     return(auc)
   }
 }
@@ -562,9 +603,7 @@ matchOnPs <- function(population,
     maxRatio <- 999
   }
   if (length(stratificationColumns) == 0) {
-    result <- .Call("CohortMethod_matchOnPs",
-                    PACKAGE = "CohortMethod",
-                    propensityScore,
+    result <- match(propensityScore,
                     population$treatment,
                     maxRatio,
                     caliper)
@@ -577,9 +616,7 @@ matchOnPs <- function(population,
     return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
-      subResult <- .Call("CohortMethod_matchOnPs",
-                         PACKAGE = "CohortMethod",
-                         subset$propensityScore,
+      subResult <- match(subset$propensityScore,
                          subset$treatment,
                          maxRatio,
                          caliper)
@@ -818,10 +855,6 @@ stratifyByPsAndCovariates <- function(population,
                       numberOfStrata = numberOfStrata,
                       stratificationColumns = stratificationColumns,
                       baseSelection = baseSelection))
-}
-
-bySumFf <- function(values, bins) {
-  .bySum(values, bins)
 }
 
 quickSum <- function(data, squared = FALSE) {
