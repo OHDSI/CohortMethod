@@ -5,9 +5,9 @@
 
 using namespace Rcpp;
 
-// match
-DataFrame match(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
-RcppExport SEXP _CohortMethod_match(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
+// matchPsInternal
+DataFrame matchPsInternal(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
+RcppExport SEXP _CohortMethod_matchPsInternal(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -15,7 +15,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type maxRatio(maxRatioSEXP);
     Rcpp::traits::input_parameter< double >::type caliper(caliperSEXP);
-    rcpp_result_gen = Rcpp::wrap(match(propensityScores, treatment, maxRatio, caliper));
+    rcpp_result_gen = Rcpp::wrap(matchPsInternal(propensityScores, treatment, maxRatio, caliper));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -57,7 +57,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CohortMethod_match", (DL_FUNC) &_CohortMethod_match, 4},
+    {"_CohortMethod_matchPsInternal", (DL_FUNC) &_CohortMethod_matchPsInternal, 4},
     {"_CohortMethod_aucWithCi", (DL_FUNC) &_CohortMethod_aucWithCi, 2},
     {"_CohortMethod_auc", (DL_FUNC) &_CohortMethod_auc, 2},
     {"_CohortMethod_bySumFf", (DL_FUNC) &_CohortMethod_bySumFf, 2},

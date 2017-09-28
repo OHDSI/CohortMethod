@@ -35,7 +35,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-DataFrame match(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper) {
+DataFrame matchPsInternal(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper) {
 
 	using namespace ohdsi::cohortMethod;
 

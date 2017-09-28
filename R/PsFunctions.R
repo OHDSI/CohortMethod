@@ -603,7 +603,7 @@ matchOnPs <- function(population,
     maxRatio <- 999
   }
   if (length(stratificationColumns) == 0) {
-    result <- match(propensityScore,
+    result <- matchPsInternal(propensityScore,
                     population$treatment,
                     maxRatio,
                     caliper)
@@ -616,7 +616,7 @@ matchOnPs <- function(population,
     return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
-      subResult <- match(subset$propensityScore,
+      subResult <- matchPsInternal(subset$propensityScore,
                          subset$treatment,
                          maxRatio,
                          caliper)
