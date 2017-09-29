@@ -116,6 +116,10 @@ createPs <- function(cohortMethodData,
     idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
     covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
   }
+  covariateData <- list(covariates = covariateSubset)
+  covariateData <- FeatureExtraction::tidyCovariateData(covariateData, normalize = TRUE, removeRedundancy = FALSE)
+  covariateSubset <- covariateData$covariates
+  rm(covariateData)
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   ff::close.ffdf(cohortSubset)
   ff::close.ffdf(covariateSubset)

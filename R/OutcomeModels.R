@@ -157,6 +157,10 @@ fitOutcomeModel <- function(population,
       addIntercept <- TRUE
     }
     outcomes <- ff::as.ffdf(population)
+    covariateData <- list(covariates = covariates)
+    covariateData <- FeatureExtraction::tidyCovariateData(covariateData, normalize = TRUE, removeRedundancy = FALSE)
+    covariates <- covariateData$covariates
+    rm(covariateData)
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,
                                                  addIntercept = addIntercept,

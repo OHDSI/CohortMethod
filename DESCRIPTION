@@ -24,7 +24,7 @@ Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 1.11.4),
     Cyclops (>= 1.2.0),
-    FeatureExtraction  (>= 1.0.0)
+    FeatureExtraction  (>= 2.0.0)
 Imports:
     bit,
     methods,
