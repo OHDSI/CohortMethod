@@ -109,6 +109,23 @@ fitOutcomeModel <- function(population,
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
   } else {
     if (useCovariates) {
+      covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, ff::as.ff(population$rowId))
+      if (length(includeCovariateIds) != 0) {
+        includeCovariateIds <- c(includeCovariateIds, treatmentVarId)
+        idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
+        covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+      }
+      if (length(excludeCovariateIds) != 0) {
+        idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
+        covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+      }
+      covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
+                                                            covariateRef = cohortMethodData$covariateRef,
+                                                            populationSize = nrow(population),
+                                                            normalize = TRUE,
+                                                            removeRedundancy = TRUE)
+      covariates <- covariateData$covariates
+      attr(population, "metaData")$deletedCovariateIdsforOutcomeModel <- covariateData$metaData$deletedCovariateIds
       treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
       if (stratified || modelType == "cox") {
         prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
@@ -122,23 +139,12 @@ fitOutcomeModel <- function(population,
                                                           vmode = "double"),
                                      covariateValue = ff::as.ff(population$treatment,
                                                                 vmode = "double"))
-      covariates <- ffbase::ffdfappend(treatmentCovariate, cohortMethodData$covariates)
+      covariates <- ffbase::ffdfappend(treatmentCovariate, covariates)
       if (stratified) {
         informativeStrata <- unique(population$stratumId[population$y != 0])
         population <- population[population$stratumId %in% informativeStrata, ]
         covariates <- ffbase::merge.ffdf(covariates,
                                          ff::as.ffdf(population[, c("rowId", "stratumId")]))
-      } else {
-        covariates <- limitCovariatesToPopulation(covariates, ff::as.ff(population$rowId))
-      }
-      if (length(includeCovariateIds) != 0) {
-        includeCovariateIds <- c(includeCovariateIds, treatmentVarId)
-        idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
-        covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
-      }
-      if (length(excludeCovariateIds) != 0) {
-        idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
-        covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
       }
     } else {
       prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior
@@ -157,9 +163,6 @@ fitOutcomeModel <- function(population,
       addIntercept <- TRUE
     }
     outcomes <- ff::as.ffdf(population)
-    covariateData <- list(covariates = covariates)
-    covariateData <- FeatureExtraction::tidyCovariateData(covariateData, normalize = TRUE, removeRedundancy = FALSE)
-    covariates <- covariateData$covariates
     rm(covariateData)
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,

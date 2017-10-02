@@ -287,6 +287,7 @@ getDbCohortMethodData <- function(connectionDetails,
                  outcomes = outcomes,
                  covariates = covariateData$covariates,
                  covariateRef = covariateData$covariateRef,
+                 analysisRef = covariateData$analysisRef,
                  metaData = metaData)
 
   class(result) <- "cohortMethodData"
@@ -320,7 +321,8 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 
   covariates <- cohortMethodData$covariates
   covariateRef <- cohortMethodData$covariateRef
-  ffbase::save.ffdf(covariates, covariateRef, dir = file, clone = TRUE)
+  analysisRef <- cohortMethodData$analysisRef
+  ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
   saveRDS(cohortMethodData$cohorts, file = file.path(file, "cohorts.rds"))
   saveRDS(cohortMethodData$outcomes, file = file.path(file, "outcomes.rds"))
   saveRDS(cohortMethodData$metaData, file = file.path(file, "metaData.rds"))
@@ -358,12 +360,14 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
   ffbase::load.ffdf(absolutePath, e)
   result <- list(covariates = get("covariates", envir = e),
                  covariateRef = get("covariateRef", envir = e),
+                 analysisRef = get("analysisRef", envir = e),
                  cohorts = readRDS(file.path(file, "cohorts.rds")),
                  outcomes = readRDS(file.path(file, "outcomes.rds")),
                  metaData = readRDS(file.path(file, "metaData.rds")))
   # Open all ffdfs to prevent annoying messages later:
   open(result$covariates, readonly = readOnly)
   open(result$covariateRef, readonly = readOnly)
+  open(result$analysisRef, readonly = readOnly)
   class(result) <- "cohortMethodData"
   rm(e)
   return(result)

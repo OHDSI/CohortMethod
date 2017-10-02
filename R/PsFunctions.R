@@ -65,7 +65,7 @@ createPs <- function(cohortMethodData,
                      population,
                      excludeCovariateIds = c(),
                      includeCovariateIds = c(),
-                     maxCohortSizeForFitting = 150000,
+                     maxCohortSizeForFitting = 250000,
                      errorOnHighCorrelation = TRUE,
                      stopOnError = TRUE,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
@@ -84,6 +84,7 @@ createPs <- function(cohortMethodData,
   start <- Sys.time()
   sampled <- FALSE
   if (maxCohortSizeForFitting != 0) {
+    set.seed(0)
     targetRowIds <- population$rowId[population$treatment == 1]
     if (length(targetRowIds) > maxCohortSizeForFitting) {
       writeLines(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
@@ -106,7 +107,7 @@ createPs <- function(cohortMethodData,
   }
   cohortSubset <- ff::as.ffdf(population)
   colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
-  covariateSubset <- limitCovariatesToPopulation(cohortMethodData$covariates, cohortSubset$rowId)
+  covariateSubset <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, cohortSubset$rowId)
 
   if (length(includeCovariateIds) != 0) {
     idx <- !is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(includeCovariateIds)))
@@ -116,9 +117,13 @@ createPs <- function(cohortMethodData,
     idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
     covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
   }
-  covariateData <- list(covariates = covariateSubset)
-  covariateData <- FeatureExtraction::tidyCovariateData(covariateData, normalize = TRUE, removeRedundancy = FALSE)
+  covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariateSubset,
+                                                        covariateRef = cohortMethodData$covariateRef,
+                                                        populationSize = nrow(cohortSubset),
+                                                        normalize = TRUE,
+                                                        removeRedundancy = TRUE)
   covariateSubset <- covariateData$covariates
+  attr(population, "metaData")$deletedCovariateIdsforPs <- covariateData$metaData$deletedCovariateIds
   rm(covariateData)
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   ff::close.ffdf(cohortSubset)
@@ -181,7 +186,7 @@ createPs <- function(cohortMethodData,
       cyclopsFit$estimation$estimate[1] <- cfs[1]
       population <- fullPopulation
       cohortSubset <- ff::as.ffdf(population)
-      covariateSubset <- limitCovariatesToPopulation(cohortMethodData$covariates, cohortSubset$rowId)
+      covariateSubset <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, cohortSubset$rowId)
       population$propensityScore <- predict(cyclopsFit, newOutcomes = cohortSubset, newCovariates = covariateSubset)
       ff::close.ffdf(cohortSubset)
       ff::close.ffdf(covariateSubset)
@@ -994,12 +999,12 @@ computeCovariateBalance <- function(population, cohortMethodData) {
   covariates <- cohortMethodData$covariates
 
   # Try to undo normalization of covariate values:
-  normFactors <- attr(cohortMethodData$covariates, "normFactors")
-  if (!is.null(normFactors)) {
-    covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(normFactors))
-    covariates$covariateValue <- covariates$covariateValue * covariates$maxs
-    covariates$maxs <- NULL
-  }
+  # normFactors <- attr(cohortMethodData$covariates, "normFactors")
+  # if (!is.null(normFactors)) {
+  #   covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(normFactors))
+  #   covariates$covariateValue <- covariates$covariateValue * covariates$maxs
+  #   covariates$maxs <- NULL
+  # }
 
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
   cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])

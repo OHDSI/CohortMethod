@@ -98,6 +98,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
                  cohortsMetaData = attr(cohortMethodData$cohorts, "metaData"),
                  outcomesMetaData = attr(cohortMethodData$outcomes, "metaData"),
                  covariateRef = ff::as.ram(cohortMethodData$covariateRef),
+                 analysisRef = ff::as.ram(cohortMethodData$analysisRef),
                  cohortEndRate = 1/exp(coef(fitCohortEnd)),
                  obsStartRate = 1/exp(coef(fitObsStart)),
                  minObsTime = minObsTime,
@@ -240,6 +241,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                  cohorts = cohorts,
                  covariates = ff::as.ffdf(covariates),
                  covariateRef = ff::as.ffdf(profile$covariateRef),
+                 analysisRef = ff::as.ffdf(profile$analysisRef),
                  metaData = profile$metaData)
 
   class(result) <- "cohortMethodData"

@@ -5,7 +5,7 @@
 \title{Create propensity scores}
 \usage{
 createPs(cohortMethodData, population, excludeCovariateIds = c(),
-  includeCovariateIds = c(), maxCohortSizeForFitting = 150000,
+  includeCovariateIds = c(), maxCohortSizeForFitting = 250000,
   errorOnHighCorrelation = TRUE, stopOnError = TRUE,
   prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
   control = createControl(noiseLevel = "silent", cvType = "auto", tolerance =

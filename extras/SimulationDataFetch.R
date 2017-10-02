@@ -21,18 +21,10 @@ library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
 pw <- NULL
-dbms <- "sql server"
-user <- NULL
-server <- "RNDUSRDHIT07.jnj.com"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-port <- NULL
-cdmVersion <- 4
-
-pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
+cdmDatabaseSchema <- "CDM_Truven_MDCD_V610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- 5
@@ -43,51 +35,11 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 password = pw,
                                                                 port = port)
 
-covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateDemographicsAge = TRUE,
-                                             useCovariateDemographicsGender = TRUE,
-                                             useCovariateDemographicsRace = TRUE,
-                                             useCovariateDemographicsEthnicity = TRUE,
-                                             useCovariateDemographicsYear = TRUE,
-                                             useCovariateDemographicsMonth = TRUE,
-                                             useCovariateConditionOccurrence = FALSE,
-                                             useCovariateConditionOccurrence365d = TRUE,
-                                             useCovariateConditionOccurrence30d = TRUE,
-                                             useCovariateConditionOccurrenceInpt180d = TRUE,
-                                             useCovariateConditionEra = FALSE,
-                                             useCovariateConditionEraEver = FALSE,
-                                             useCovariateConditionEraOverlap = FALSE,
-                                             useCovariateConditionGroup = FALSE,
-                                             useCovariateDrugExposure = FALSE,
-                                             useCovariateDrugExposure365d = FALSE,
-                                             useCovariateDrugExposure30d = FALSE,
-                                             useCovariateDrugEra = FALSE,
-                                             useCovariateDrugEra365d = FALSE,
-                                             useCovariateDrugEra30d = FALSE,
-                                             useCovariateDrugEraEver = FALSE,
-                                             useCovariateDrugEraOverlap = FALSE,
-                                             useCovariateDrugGroup = FALSE,
-                                             useCovariateProcedureOccurrence = FALSE,
-                                             useCovariateProcedureOccurrence365d = FALSE,
-                                             useCovariateProcedureOccurrence30d = FALSE,
-                                             useCovariateProcedureGroup = FALSE,
-                                             useCovariateObservation = FALSE,
-                                             useCovariateObservation365d = FALSE,
-                                             useCovariateObservation30d = FALSE,
-                                             useCovariateObservationCount365d = FALSE,
-                                             useCovariateMeasurement365d = FALSE,
-                                             useCovariateMeasurement30d = FALSE,
-                                             useCovariateMeasurementCount365d = FALSE,
-                                             useCovariateMeasurementBelow = FALSE,
-                                             useCovariateMeasurementAbove = FALSE,
-                                             useCovariateConceptCounts = FALSE,
-                                             useCovariateRiskScores = FALSE,
-                                             useCovariateRiskScoresCharlson = FALSE,
-                                             useCovariateRiskScoresDCSI = FALSE,
-                                             useCovariateRiskScoresCHADS2 = FALSE,
-                                             useCovariateInteractionYear = FALSE,
-                                             useCovariateInteractionMonth = FALSE,
-                                             deleteCovariatesSmallCount = 100)
+covariateSettings <- createCovariateSettings(useDemographicsAgeGroup = TRUE,
+                                             useDemographicsGender = TRUE,
+                                             useDemographicsIndexYear = TRUE,
+                                             useDemographicsIndexMonth = TRUE,
+                                             useConditionEraLongTerm = TRUE)
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
@@ -117,7 +69,7 @@ saveCohortMethodData(cohortMethodData, "s:/temp/simulationCohortMethodData")
 cohortMethodDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
 
 save(cohortMethodDataSimulationProfile,
-     file = "cohortMethodDataSimulationProfile.rda",
+     file = "data/cohortMethodDataSimulationProfile.rda",
      compress = "xz")
 
 # load('cohortMethodDataSimulationProfile.rda')
