@@ -90,56 +90,9 @@ nsaids <- nsaids$CONCEPT_ID
 
 DatabaseConnector::disconnect(connection)
 
-covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateDemographicsAge = TRUE,
-                                             useCovariateDemographicsGender = TRUE,
-                                             useCovariateDemographicsRace = TRUE,
-                                             useCovariateDemographicsEthnicity = TRUE,
-                                             useCovariateDemographicsYear = TRUE,
-                                             useCovariateDemographicsMonth = TRUE,
-                                             useCovariateConditionOccurrence = TRUE,
-                                             useCovariateConditionOccurrenceLongTerm = TRUE,
-                                             useCovariateConditionOccurrenceShortTerm = TRUE,
-                                             useCovariateConditionOccurrenceInptMediumTerm = TRUE,
-                                             useCovariateConditionEra = TRUE,
-                                             useCovariateConditionEraEver = TRUE,
-                                             useCovariateConditionEraOverlap = TRUE,
-                                             useCovariateConditionGroup = TRUE,
-                                             useCovariateDrugExposure = TRUE,
-                                             useCovariateDrugExposureLongTerm = TRUE,
-                                             useCovariateDrugExposureShortTerm = TRUE,
-                                             useCovariateDrugEra = TRUE,
-                                             useCovariateDrugEraLongTerm = TRUE,
-                                             useCovariateDrugEraShortTerm = TRUE,
-                                             useCovariateDrugEraEver = TRUE,
-                                             useCovariateDrugEraOverlap = TRUE,
-                                             useCovariateDrugGroup = TRUE,
-                                             useCovariateProcedureOccurrence = TRUE,
-                                             useCovariateProcedureOccurrenceLongTerm = TRUE,
-                                             useCovariateProcedureOccurrenceShortTerm = TRUE,
-                                             useCovariateProcedureGroup = TRUE,
-                                             useCovariateObservation = TRUE,
-                                             useCovariateObservationLongTerm = TRUE,
-                                             useCovariateObservationShortTerm = TRUE,
-                                             useCovariateObservationCountLongTerm = TRUE,
-                                             useCovariateMeasurementLongTerm = TRUE,
-                                             useCovariateMeasurementShortTerm = TRUE,
-                                             useCovariateMeasurementCountLongTerm = TRUE,
-                                             useCovariateMeasurementBelow = TRUE,
-                                             useCovariateMeasurementAbove = TRUE,
-                                             useCovariateConceptCounts = TRUE,
-                                             useCovariateRiskScores = TRUE,
-                                             useCovariateRiskScoresCharlson = TRUE,
-                                             useCovariateRiskScoresDCSI = TRUE,
-                                             useCovariateRiskScoresCHADS2 = TRUE,
-                                             useCovariateInteractionYear = FALSE,
-                                             useCovariateInteractionMonth = FALSE,
-                                             longTermDays = 365,
-                                             mediumTermDays = 180,
-                                             shortTermDays = 30,
-                                             excludedCovariateConceptIds = nsaids,
-                                             addDescendantsToExclude = TRUE,
-                                             deleteCovariatesSmallCount = 100)
+covariateSettings <- createDefaultCovariateSettings()
+covariateSettings$excludedCovariateConceptIds <- nsaids
+covariateSettings$addDescendantsToExclude <- TRUE
 
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
@@ -167,9 +120,9 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
 # executing SQL: Error in .jcall(rp, 'I', 'fetch', as.integer(n), block): java.sql.SQLException:
 # [Amazon][JDBC](10060) Connection has been closed.  table has 148734670 rows
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData2")
 
-# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
+# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData2')
 
 # summary(cohortMethodData) getAttritionTable(cohortMethodData)
 
@@ -197,13 +150,15 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        startingVariance = 0.01,
                                        noiseLevel = "quiet",
                                        tolerance = 2e-07,
-                                       cvRepetitions = 10,
-                                       threads = 16))
+                                       cvRepetitions = 1,
+                                       threads = 10))
 
 # computePsAuc(ps) plotPs(ps)
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
-# ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
-
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps2.rds")
+# ps2 <- readRDS('s:/temp/cohortMethodVignette/ps2.rds')
+model <- getPsModel(ps2, cohortMethodData)
+model[grepl("Charlson.*", model$covariateName), ]
+model[model$id %% 1000 == 902, ]
 
 # insertDbPopulation(population = studyPop, cohortIds = c(101,100), connectionDetails =
 # connectionDetails, cohortDatabaseSchema = resultsDatabaseSchema, cohortTable = 'mschuemi_test',
@@ -217,7 +172,7 @@ saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 
 # trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
 
-matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+matchedPop <- matchOnPs(ps2, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 # getAttritionTable(matchedPop) plotPs(matchedPop, ps)
 
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
@@ -227,7 +182,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 # balance <- readRDS('s:/temp/cohortMethodVignette/balance.rds')
 
 plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
-# plotCovariateBalanceOfTopVariables(balance)
+# plotCovariateBalanceOfTopVariables(balance, fileName = "s:/temp/top.png")
 
 outcomeModel <- fitOutcomeModel(population = studyPop,
                                 modelType = "cox",

@@ -123,7 +123,11 @@ createPs <- function(cohortMethodData,
                                                         normalize = TRUE,
                                                         removeRedundancy = TRUE)
   covariateSubset <- covariateData$covariates
-  attr(population, "metaData")$deletedCovariateIdsforPs <- covariateData$metaData$deletedCovariateIds
+  if (sampled) {
+    attr(fullPopulation, "metaData")$deletedCovariateIdsforPs <- covariateData$metaData$deletedCovariateIds
+  } else {
+    attr(population, "metaData")$deletedCovariateIdsforPs <- covariateData$metaData$deletedCovariateIds
+  }
   rm(covariateData)
   cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
   ff::close.ffdf(cohortSubset)

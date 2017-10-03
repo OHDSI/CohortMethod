@@ -126,6 +126,7 @@ fitOutcomeModel <- function(population,
                                                             removeRedundancy = TRUE)
       covariates <- covariateData$covariates
       attr(population, "metaData")$deletedCovariateIdsforOutcomeModel <- covariateData$metaData$deletedCovariateIds
+      rm(covariateData)
       treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
       if (stratified || modelType == "cox") {
         prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
@@ -163,7 +164,6 @@ fitOutcomeModel <- function(population,
       addIntercept <- TRUE
     }
     outcomes <- ff::as.ffdf(population)
-    rm(covariateData)
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,
                                                  addIntercept = addIntercept,
