@@ -15,6 +15,7 @@ r_github_packages:
 before_script:
   - export PKG_NAME=$(Rscript -e 'cat(paste0(devtools::as.package(".")$package))')
   - export PKG_TARBALL=$(Rscript -e 'pkg <- devtools::as.package("."); cat(paste0(pkg$package,"_",pkg$version,".tar.gz"))')
+  - export GIT_COMMIT=$(git rev-parse HEAD)
 
  # Build and check package
 script:
