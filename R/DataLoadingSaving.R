@@ -360,14 +360,15 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
   ffbase::load.ffdf(absolutePath, e)
   result <- list(covariates = get("covariates", envir = e),
                  covariateRef = get("covariateRef", envir = e),
-                 analysisRef = get("analysisRef", envir = e),
                  cohorts = readRDS(file.path(file, "cohorts.rds")),
                  outcomes = readRDS(file.path(file, "outcomes.rds")),
                  metaData = readRDS(file.path(file, "metaData.rds")))
-  # Open all ffdfs to prevent annoying messages later:
+  if (exists("analysisRef", envir = e)) {
+    result$analysisRef <- get("analysisRef", envir = e)
+    open(result$analysisRef, readonly = readOnly)
+  }
   open(result$covariates, readonly = readOnly)
   open(result$covariateRef, readonly = readOnly)
-  open(result$analysisRef, readonly = readOnly)
   class(result) <- "cohortMethodData"
   rm(e)
   return(result)
