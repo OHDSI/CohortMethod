@@ -391,7 +391,9 @@ runCmAnalyses <- function(connectionDetails,
                      outcomeModelFile = refRow$outcomeModelFile)
       return(params)
     }
-    if (nrow(subset) != 0) {
+    if (nrow(subset) == 0) {
+      modelsToFit <- list()
+    } else {
       modelsToFit <- lapply(1:nrow(subset), createArgs)
     }
 
