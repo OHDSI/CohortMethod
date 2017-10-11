@@ -116,22 +116,28 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param excludeCovariateIds      Exclude these covariates from the propensity model.
-#' @param includeCovariateIds      Include only these covariates in the propensity model.
-#' @param errorOnHighCorrelation   If true, the function will test each covariate for correlation
-#'                                 withthe treatment assignment. If any covariate has an unusually
-#'                                 highcorrelation (either positive or negative), this will throw
-#'                                 anderror.
-#' @param stopOnError              If an error occurrs, should the function stop? Else, the two
-#'                                 cohortswill be assumed to be perfectly separable.
-#' @param prior                    The prior used to fit the model. SeecreatePrior for details.
-#' @param control                  The control object used to control the cross-validation used
-#'                                 todetermine the hyperparameters of the prior (if applicable).
-#'                                 SeecreateControl for details.
+#' @param excludeCovariateIds       Exclude these covariates from the propensity model.
+#' @param includeCovariateIds       Include only these covariates in the propensity model.
+#' @param maxCohortSizeForFitting   If the target or comparator cohort are larger than this number,
+#'                                  theywill be downsampled before fitting the propensity model. The
+#'                                  modelwill be used to compute propensity scores for all subjects.
+#'                                  Thepurpose of the sampling is to gain speed. Setting this number to
+#'                                  0means no downsampling will be applied.
+#' @param errorOnHighCorrelation    If true, the function will test each covariate for correlation
+#'                                  withthe treatment assignment. If any covariate has an unusually
+#'                                  highcorrelation (either positive or negative), this will throw
+#'                                  anderror.
+#' @param stopOnError               If an error occurrs, should the function stop? Else, the two
+#'                                  cohortswill be assumed to be perfectly separable.
+#' @param prior                     The prior used to fit the model. SeecreatePrior for details.
+#' @param control                   The control object used to control the cross-validation used
+#'                                  todetermine the hyperparameters of the prior (if applicable).
+#'                                  SeecreateControl for details.
 #'
 #' @export
 createCreatePsArgs <- function(excludeCovariateIds = c(),
                                includeCovariateIds = c(),
+                               maxCohortSizeForFitting = 250000,
                                errorOnHighCorrelation = TRUE,
                                stopOnError = TRUE,
                                prior = createPrior("laplace",
