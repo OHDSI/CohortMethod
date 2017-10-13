@@ -7,7 +7,7 @@
 createGetDbCohortMethodDataArgs(studyStartDate = "", studyEndDate = "",
   excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE, restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0, covariateSettings)
+  washoutPeriod = 0, maxCohortSize = 0, covariateSettings)
 }
 \arguments{
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort
@@ -39,6 +39,10 @@ observed?}
 indexdate for a person to be included in the cohort. Note that
 thisis typically done in the createStudyPopulation function,but
 can already be done here for efficiency reasons.}
+
+\item{maxCohortSize}{If either the target or the comparator cohort is larger thanthis
+number it will be sampled to this size. maxCohortSize =
+0indicates no maximum size.}
 
 \item{covariateSettings}{An object of type covariateSettings as created using
 thecreateCovariateSettings function in theFeatureExtraction

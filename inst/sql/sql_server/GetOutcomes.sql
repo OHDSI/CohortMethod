@@ -23,12 +23,17 @@ limitations under the License.
 {DEFAULT @outcome_table = 'condition_era' }
 {DEFAULT @outcome_ids = ''} 
 {DEFAULT @cdm_version = '5'}
+{DEFAULT @sampled = FALSE}
 
 {@outcome_table == 'condition_era' } ? {
 SELECT DISTINCT row_id,
 	ancestor_concept_id AS outcome_id,
 	DATEDIFF(DAY, cohort_start_date, condition_era_start_date) AS days_to_event
+{@sampled} ? {
+FROM #cohort_sample cohort_person
+} : {
 FROM #cohort_person cohort_person
+}
 INNER JOIN @cdm_database_schema.condition_era
 	ON subject_id = person_id
 INNER JOIN (
@@ -48,7 +53,11 @@ SELECT DISTINCT row_id,
 	outcome.cohort_definition_id AS outcome_id,
 }	
 	DATEDIFF(DAY, cohort_person.cohort_start_date, outcome.cohort_start_date) AS days_to_event
+{@sampled} ? {
+FROM #cohort_sample cohort_person
+} : {
 FROM #cohort_person cohort_person
+}
 INNER JOIN @outcome_database_schema.@outcome_table outcome
 	ON cohort_person.subject_id = outcome.subject_id
 WHERE DATEDIFF(DAY, outcome.cohort_start_date, cohort_person.cohort_start_date) <= days_from_obs_start

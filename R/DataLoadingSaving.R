@@ -98,6 +98,9 @@
 #'                                     date for a person to be included in the cohort. Note that this
 #'                                     is typically done in the \code{createStudyPopulation} function,
 #'                                     but can already be done here for efficiency reasons.
+#' @param maxCohortSize                If either the target or the comparator cohort is larger than
+#'                                     this number it will be sampled to this size. \code{maxCohortSize = 0}
+#'                                     indicates no maximum size.
 #' @param covariateSettings            An object of type \code{covariateSettings} as created using the
 #'                                     \code{createCovariateSettings} function in the
 #'                                     \code{FeatureExtraction} package.
@@ -136,6 +139,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   removeDuplicateSubjects = FALSE,
                                   restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
+                                  maxCohortSize = 0,
                                   covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
     stop("Study start date must have format YYYYMMDD")
@@ -186,6 +190,39 @@ getDbCohortMethodData <- function(connectionDetails,
                                                    restrict_to_common_period = restrictToCommonPeriod)
   DatabaseConnector::executeSql(connection, renderedSql)
 
+  sampled <- FALSE
+  if (maxCohortSize != 0) {
+    renderedSql <- SqlRender::loadRenderTranslateSql("CountCohorts.sql",
+                                                     packageName = "CohortMethod",
+                                                     dbms = connectionDetails$dbms,
+                                                     oracleTempSchema = oracleTempSchema,
+                                                     cdm_version = cdmVersion,
+                                                     target_id = targetId)
+    preSampleCounts <- DatabaseConnector::querySql(connection, renderedSql)
+    colnames(preSampleCounts) <- SqlRender::snakeCaseToCamelCase(colnames(preSampleCounts))
+    preSampleCounts <- data.frame(treatedPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
+                                  comparatorPersons = preSampleCounts$personCount[preSampleCounts$treatment == 0],
+                                  treatedExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
+                                  comparatorExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 0])
+    if (preSampleCounts$treatedExposures > maxCohortSize) {
+      writeLines(paste0("Downsampling target cohort from ", preSampleCounts$treatedExposures, " to ", maxCohortSize))
+      sampled <- TRUE
+    }
+    if (preSampleCounts$comparatorExposures > maxCohortSize) {
+      writeLines(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
+      sampled <- TRUE
+    }
+    if (sampled) {
+      renderedSql <- SqlRender::loadRenderTranslateSql("SampleCohorts.sql",
+                                                       packageName = "CohortMethod",
+                                                       dbms = connectionDetails$dbms,
+                                                       oracleTempSchema = oracleTempSchema,
+                                                       cdm_version = cdmVersion,
+                                                       max_cohort_size = maxCohortSize)
+      DatabaseConnector::executeSql(connection, renderedSql)
+    }
+  }
+
   writeLines("Fetching cohorts from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
@@ -193,7 +230,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  dbms = connectionDetails$dbms,
                                                  oracleTempSchema = oracleTempSchema,
                                                  cdm_version = cdmVersion,
-                                                 target_id = targetId)
+                                                 target_id = targetId,
+                                                 sampled = sampled)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
   metaData <- list(targetId = targetId,
@@ -216,9 +254,10 @@ getDbCohortMethodData <- function(connectionDetails,
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql)
     colnames(rawCount) <- SqlRender::snakeCaseToCamelCase(colnames(rawCount))
     counts <- data.frame(description = "Original cohorts",
-                         treatedPersons = rawCount$exposedCount[rawCount$treatment ==
-      1], comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0], treatedExposures = rawCount$exposureCount[rawCount$treatment ==
-      1], comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
+                         treatedPersons = rawCount$exposedCount[rawCount$treatment ==  1],
+                         comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
+                         treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
+                         comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
     metaData$attrition <- counts
     label <- c()
     if (firstExposureOnly) {
@@ -235,19 +274,36 @@ getDbCohortMethodData <- function(connectionDetails,
     }
     label <- paste(label, collapse = " & ")
     substring(label, 1) <- toupper(substring(label, 1, 1))
-    metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, label))
+    if (sampled) {
+      preSampleCounts$description <- label
+      metaData$attrition <- rbind(metaData$attrition, preSampleCounts)
+      metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
+    } else {
+      metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, label))
+    }
   } else {
-    metaData$attrition <- getCounts(cohorts, "Original cohorts")
+    if (sampled) {
+      preSampleCounts$description <- "Original cohorts"
+      metaData$attrition <- preSampleCounts
+      metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
+    } else {
+      metaData$attrition <- getCounts(cohorts, "Original cohorts")
+    }
   }
   attr(cohorts, "metaData") <- metaData
 
   delta <- Sys.time() - start
   writeLines(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
+  if (sampled) {
+    cohortTable <- "#cohort_sample"
+  } else {
+    cohortTable <- "#cohort_person"
+  }
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = oracleTempSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
                                                          cdmVersion = cdmVersion,
-                                                         cohortTable = "#cohort_person",
+                                                         cohortTable = cohortTable,
                                                          cohortTableIsTemp = TRUE,
                                                          rowIdField = "row_id",
                                                          covariateSettings = covariateSettings)
@@ -261,7 +317,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                   outcome_database_schema = outcomeDatabaseSchema,
                                                   outcome_table = outcomeTable,
                                                   outcome_ids = outcomeIds,
-                                                  cdm_version = cdmVersion)
+                                                  cdm_version = cdmVersion,
+                                                  sampled = sampled)
   outcomes <- DatabaseConnector::querySql(connection, outcomeSql)
   colnames(outcomes) <- SqlRender::snakeCaseToCamelCase(colnames(outcomes))
   metaData <- data.frame(outcomeIds = outcomeIds)
@@ -273,7 +330,8 @@ getDbCohortMethodData <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema)
+                                                   oracleTempSchema = oracleTempSchema,
+                                                   sampled = sampled)
   DatabaseConnector::executeSql(connection,
                                 renderedSql,
                                 progressBar = FALSE,

@@ -28,6 +28,9 @@
 #'                                     indexdate for a person to be included in the cohort. Note that
 #'                                     thisis typically done in the createStudyPopulation function,but
 #'                                     can already be done here for efficiency reasons.
+#' @param maxCohortSize                If either the target or the comparator cohort is larger thanthis
+#'                                     number it will be sampled to this size. maxCohortSize =
+#'                                     0indicates no maximum size.
 #' @param covariateSettings            An object of type covariateSettings as created using
 #'                                     thecreateCovariateSettings function in theFeatureExtraction
 #'                                     package.
@@ -40,6 +43,7 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             removeDuplicateSubjects = FALSE,
                                             restrictToCommonPeriod = FALSE,
                                             washoutPeriod = 0,
+                                            maxCohortSize = 0,
                                             covariateSettings) {
   # First: get default values:
   analysis <- list()

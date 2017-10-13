@@ -12,7 +12,7 @@ connectionDetails <- createConnectionDetails(dbms = "pdw", server = "JRDUSAPSCTL
 
 checkCmInstallation(connectionDetails)
 
-covariateSettings <- createCovariateSettings()
+covariateSettings <- createCovariateSettings(useDemographicsGender = TRUE)
 
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
@@ -27,6 +27,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           removeDuplicateSubjects = TRUE,
                                           restrictToCommonPeriod = TRUE,
                                           excludeDrugsFromCovariates = TRUE,
+                                          maxCohortSize = 1000000,
                                           covariateSettings = covariateSettings)
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cmData")
