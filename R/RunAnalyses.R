@@ -133,7 +133,7 @@ runCmAnalyses <- function(connectionDetails,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
                           outcomeIdsOfInterest) {
-  if (!missing(outcomeIdsOfInterest) && refitPsForEveryOutcome){
+  if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome){
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {
@@ -800,7 +800,7 @@ createReferenceTable <- function(cmAnalysisList,
   referenceTable$covariateBalanceFile[!idx] <- ""
 
   # Add interest flag
-  if (missing(outcomeIdsOfInterest)) {
+  if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
     referenceTable$outcomeOfInterest <- TRUE
   } else {
     referenceTable$outcomeOfInterest <- FALSE
