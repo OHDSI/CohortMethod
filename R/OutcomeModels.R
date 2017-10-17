@@ -33,6 +33,7 @@
 #'                              scores)?
 #' @param useCovariates         Whether to use the covariate matrix in the \code{cohortMethodData}
 #'                              object in the outcome model.
+#' @param inversePsWeighting    Use inverse probability of treatment weigting?
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
 #' @param prior                 The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
@@ -51,6 +52,7 @@ fitOutcomeModel <- function(population,
                             modelType = "logistic",
                             stratified = TRUE,
                             useCovariates = TRUE,
+                            inversePsWeighting = FALSE,
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
                             prior = createPrior("laplace", useCrossValidation = TRUE),
@@ -65,6 +67,8 @@ fitOutcomeModel <- function(population,
     stop("No outcome variable found in population object. Use createStudyPopulation to create variable.")
   if (missing(cohortMethodData) && useCovariates)
     stop("Requested all covariates for model, but no cohortMethodData object specified")
+  if (inversePsWeighting && is.null(population$propensityScore))
+    stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
     stop(paste("Unknown modelType '",
                modelType,
@@ -163,6 +167,11 @@ fitOutcomeModel <- function(population,
     } else {
       addIntercept <- TRUE
     }
+    if (inversePsWeighting) {
+      weights <- population$treatment / population$propensityScore + (1-population$treatment) / (1-population$propensityScore)
+    } else {
+      weights <- NULL
+    }
     outcomes <- ff::as.ffdf(population)
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,
@@ -182,7 +191,7 @@ fitOutcomeModel <- function(population,
       fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
     } else {
       fit <- tryCatch({
-        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control, weights = weights)
       }, error = function(e) {
         e$message
       })
