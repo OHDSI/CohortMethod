@@ -12,7 +12,7 @@ output:
 vignette: >
   %\VignetteIndexEntry{Single studies using CohortMethod}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}    
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
@@ -50,9 +50,9 @@ The first step in running the `CohortMethod` is extracting all necessary data fr
 We need to tell R how to connect to the server where the data are. `CohortMethod` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
 ```{r tidy=FALSE,eval=FALSE}
-connectionDetails <- createConnectionDetails(dbms = "postgresql", 
-                                             server = "localhost/ohdsi", 
-                                             user = "joe", 
+connectionDetails <- createConnectionDetails(dbms = "postgresql",
+                                             server = "localhost/ohdsi",
+                                             user = "joe",
                                              password = "supersecret")
 
 cdmDatabaseSchema <- "my_cdm_data"
@@ -64,7 +64,7 @@ The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. One could use an external cohort definition tools, but in this example we do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. For CDM v5+, this means it should have the fields `cohort_definition_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`. For CDM v4, the `cohort_definition_id` field must be called `cohort_concept_id`. 
+We need to define the exposures and outcomes for our study. One could use an external cohort definition tools, but in this example we do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. For CDM v5+, this means it should have the fields `cohort_definition_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`. For CDM v4, the `cohort_definition_id` field must be called `cohort_concept_id`.
 
 For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
@@ -137,7 +137,7 @@ This is parameterized SQL which can be used by the `SqlRender` package. We use p
 library(SqlRender)
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
 sql <- renderSql(sql,
-                 cdmDatabaseSchema = cdmDatabaseSchema, 
+                 cdmDatabaseSchema = cdmDatabaseSchema,
                  resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
@@ -249,7 +249,7 @@ cohortMethodData
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
   cohortMethodData <- loadCohortMethodData("s:/temp/cohortMethodVignette/cohortMethodData")
-} 
+}
 ```
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
@@ -259,7 +259,7 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
 
 There are many parameters, but they are all documented in the `CohortMethod` manual. The `createCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
 
-All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
+All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large.
 
 We can use the generic `summary()` function to view some more information of the data we extracted:
 
@@ -341,9 +341,9 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 }
 ```
 
-The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. 
+The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression.
 
-To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behavior, including using multiple CPUs to speed-up the cross-validation. 
+To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behavior, including using multiple CPUs to speed-up the cross-validation.
 
 ## Propensity score diagnostics
 
@@ -373,7 +373,7 @@ It is also possible to inspect the propensity model itself by showing the covari
 
 ```{r tidy=TRUE,eval=FALSE}
 propensityModel <- getPsModel(ps, cohortMethodData)
-head(propensityModel)  
+head(propensityModel)
 ```
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
@@ -384,7 +384,7 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
     x
   }
   propensityModel$covariateName <- truncRight(as.character(propensityModel$covariateName),40)
-  head(propensityModel)  
+  head(propensityModel)
   }
 ```
 
@@ -392,15 +392,15 @@ One advantage of using the regularization when fitting the propensity model is t
 
 ## Using the propensity score
 
-We can use the propensity scores to trim, stratify, match, our weigh our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
+We can use the propensity scores to trim, stratify, match, or weigh our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
 ```{r tidy=TRUE,eval=FALSE}
-trimmedPop <- trimByPsToEquipoise(ps)  
+trimmedPop <- trimByPsToEquipoise(ps)
 plotPs(trimmedPop, ps, scale = "preference")
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  trimmedPop <- trimByPsToEquipoise(ps)  
+  trimmedPop <- trimByPsToEquipoise(ps)
   plotPs(trimmedPop, ps, scale = "preference")
 }
 ```
@@ -408,12 +408,12 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 Instead (or additionally), we could stratify the population based on the propensity score:
 
 ```{r tidy=TRUE,eval=FALSE}
-stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)  
+stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
 plotPs(stratifiedPop, ps, scale = "preference")
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)  
+  stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
   plotPs(stratifiedPop, ps, scale = "preference")
 }
 ```
@@ -504,27 +504,27 @@ This function will store the population in a table with the same structure as th
 
 # Outcome models
 
-The outcome model is a model describing which variables are associated with the outcome. 
+The outcome model is a model describing which variables are associated with the outcome.
 
 ## Considering follow-up and power
 
-Before we start fitting an outcome model, we might be interested to know whether we have sufficient power to detect a 
+Before we start fitting an outcome model, we might be interested to know whether we have sufficient power to detect a
 particular effect size. It makes sense to perform these power calculations once the study population has been fully defined,
 so taking into account loss to the various inclusion and exclusion criteria (such as no prior outcomes), and loss due to matching and/or trimming. Since the sample size is fixed in retrospective studies (the data has already been collected), and the true effect size is unknown, the CohortMethod package provides a function to compute the minimum detectable relative risk (MDRR) instead:
 
 ```{r tidy=FALSE,eval=FALSE}
 computeMdrr(population = studyPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
 computeMdrr(population = studyPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 }
 ```
@@ -534,16 +534,16 @@ In this example we used the `studyPop` object, so the population before any matc
 ```{r tidy=FALSE,eval=FALSE}
 computeMdrr(population = matchedPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
 computeMdrr(population = matchedPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 }
 ```
@@ -683,7 +683,7 @@ head(fullOutcomeModel)
 if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")){
   fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
-  head(fullOutcomeModel)  
+  head(fullOutcomeModel)
 }
 ```
 
