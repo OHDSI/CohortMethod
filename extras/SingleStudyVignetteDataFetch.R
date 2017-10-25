@@ -115,11 +115,6 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           washoutPeriod = 180,
                                           covariateSettings = covariateSettings)
 
-# Error executing SQL: Error in .jcall(res@jr, 'V', 'close'): java.sql.SQLException: [Amazon](500150)
-# Error setting/closing connection: Not Connected.  After removing on.exit clearResults: Error
-# executing SQL: Error in .jcall(rp, 'I', 'fetch', as.integer(n), block): java.sql.SQLException:
-# [Amazon][JDBC](10060) Connection has been closed.  table has 148734670 rows
-
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData2")
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData2')
@@ -155,8 +150,8 @@ ps <- createPs(cohortMethodData = cohortMethodData,
 
 # computePsAuc(ps) plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps2.rds")
-# ps2 <- readRDS('s:/temp/cohortMethodVignette/ps2.rds')
-model <- getPsModel(ps2, cohortMethodData)
+# ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
 model[model$id %% 1000 == 902, ]
 
@@ -172,7 +167,7 @@ model[model$id %% 1000 == 902, ]
 
 # trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
 
-matchedPop <- matchOnPs(ps2, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 # getAttritionTable(matchedPop) plotPs(matchedPop, ps)
 
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
@@ -197,6 +192,18 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 stratified = TRUE,
                                 useCovariates = FALSE)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
+weights <- ps$treatment / ps$propensityScore + (1-ps$treatment) / (1-ps$propensityScore)
+max(weights)
+min(weights)
+
+outcomeModel <- fitOutcomeModel(population = ps,
+                                modelType = "cox",
+                                stratified = FALSE,
+                                useCovariates = FALSE,
+                                inversePsWeighting = TRUE)
+outcomeModel
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
+
 
 outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 cohortMethodData = cohortMethodData,
@@ -212,6 +219,9 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                                         threads = 16,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
+
+
+
 
 # outcomeModel <- readRDS(file = 's:/temp/cohortMethodVignette/OutcomeModel3.rds')
 # drawAttritionDiagram(outcomeModel, fileName = 's:/temp/attrition.png') summary(outcomeModel)

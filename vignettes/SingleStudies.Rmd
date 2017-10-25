@@ -392,7 +392,7 @@ One advantage of using the regularization when fitting the propensity model is t
 
 ## Using the propensity score
 
-We can use the propensity scores to trim, stratify, or match our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
+We can use the propensity scores to trim, stratify, match, our weigh our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
 ```{r tidy=TRUE,eval=FALSE}
 trimmedPop <- trimByPsToEquipoise(ps)  
@@ -607,6 +607,23 @@ if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2.rds")) {
 ```
 
 Note that we define the sub-population to be only those in the `matchedPop` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+
+We could also use inverse probability of treatment weighting (IPTW):
+
+```{r tidy=FALSE,eval=FALSE}
+outcomeModel <- fitOutcomeModel(population = ps,
+                                modelType = "cox",
+                                stratified = FALSE,
+                                useCovariates = FALSE,
+                                inversePsWeighting = TRUE)
+outcomeModel
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2w.rds")) {
+  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
+  outcomeModel
+}
+```
 
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the `Cyclops` package. (Note that the treatment variable is automatically excluded from regularization.)
 

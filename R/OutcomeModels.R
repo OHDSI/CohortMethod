@@ -135,8 +135,7 @@ fitOutcomeModel <- function(population,
       if (stratified || modelType == "cox") {
         prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
       } else {
-        prior$exclude <- c(0,
-                           treatmentVarId)  # Exclude treatment variable and intercept from regularization
+        prior$exclude <- c(0, treatmentVarId)  # Exclude treatment variable and intercept from regularization
       }
       treatmentCovariate <- ff::ffdf(rowId = ff::as.ff(population$rowId),
                                      covariateId = ff::ff(treatmentVarId,
@@ -168,9 +167,9 @@ fitOutcomeModel <- function(population,
       addIntercept <- TRUE
     }
     if (inversePsWeighting) {
-      weights <- population$treatment / population$propensityScore + (1-population$treatment) / (1-population$propensityScore)
+      population$weight <- population$treatment / population$propensityScore + (1-population$treatment) / (1-population$propensityScore)
     } else {
-      weights <- NULL
+      population$weight <- NULL
     }
     outcomes <- ff::as.ffdf(population)
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
@@ -191,7 +190,7 @@ fitOutcomeModel <- function(population,
       fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
     } else {
       fit <- tryCatch({
-        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control, weights = weights)
+        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
       }, error = function(e) {
         e$message
       })
@@ -229,6 +228,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelType <- modelType
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
+  outcomeModel$inversePsWeighting <- inversePsWeighting
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- populationCounts
@@ -309,6 +309,7 @@ print.outcomeModel <- function(x, ...) {
   writeLines(paste("Model type:", x$outcomeModelType))
   writeLines(paste("Stratified:", x$outcomeModelStratified))
   writeLines(paste("Use covariates:", x$outcomeModelUseCovariates))
+  writeLines(paste("Use inverse probability of treatment weighting:", x$inversePsWeighting))
   writeLines(paste("Status:", x$outcomeModelStatus))
   if (!is.na(x$outcomeModelPriorVariance)) {
     writeLines(paste("Prior variance:", x$outcomeModelPriorVariance))
