@@ -82,6 +82,24 @@ createPs <- function(cohortMethodData,
     stop("Missing column treatment in population")
 
   start <- Sys.time()
+  covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, population$rowId)
+  if (length(includeCovariateIds) != 0) {
+    idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
+    covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+  }
+  if (length(excludeCovariateIds) != 0) {
+    idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
+    covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+  }
+  covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
+                                                        covariateRef = cohortMethodData$covariateRef,
+                                                        populationSize = nrow(population),
+                                                        minFraction = 0.001,
+                                                        normalize = TRUE,
+                                                        removeRedundancy = TRUE)
+  covariates <- covariateData$covariates
+  attr(population, "metaData")$deletedInfrequentCovariateIds <- covariateData$metaData$deletedInfrequentCovariateIds
+  attr(population, "metaData")$deletedRedundantCovariateIds <- covariateData$metaData$deletedRedundantCovariateIds
   sampled <- FALSE
   if (maxCohortSizeForFitting != 0) {
     set.seed(0)
@@ -99,41 +117,22 @@ createPs <- function(cohortMethodData,
     }
     if (sampled) {
       fullPopulation <- population
+      fullCovariates <- covariates
       population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
+      covariates <- FeatureExtraction::filterByRowId(covariates, population$rowId)
     }
   }
   if (!Cyclops::isSorted(population, "rowId")) {
     population <- population[order(population$rowId), ]
   }
-  cohortSubset <- ff::as.ffdf(population)
-  colnames(cohortSubset)[colnames(cohortSubset) == "treatment"] <- "y"
-  covariateSubset <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, cohortSubset$rowId)
-
-  if (length(includeCovariateIds) != 0) {
-    idx <- !is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(includeCovariateIds)))
-    covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
-  }
-  if (length(excludeCovariateIds) != 0) {
-    idx <- is.na(ffbase::ffmatch(covariateSubset$covariateId, ff::as.ff(excludeCovariateIds)))
-    covariateSubset <- covariateSubset[ffbase::ffwhich(idx, idx == TRUE), ]
-  }
-  covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariateSubset,
-                                                        covariateRef = cohortMethodData$covariateRef,
-                                                        populationSize = nrow(cohortSubset),
-                                                        normalize = TRUE,
-                                                        removeRedundancy = TRUE)
-  covariateSubset <- covariateData$covariates
-  if (sampled) {
-    attr(fullPopulation, "metaData")$deletedCovariateIdsforPs <- covariateData$metaData$deletedCovariateIds
-  } else {
-    attr(population, "metaData")$deletedCovariateIdsforPs <- covariateData$metaData$deletedCovariateIds
-  }
+  outcomes <- ff::as.ffdf(population)
+  colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
+  cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr", quiet = TRUE)
+  ff::close.ffdf(outcomes)
+  ff::close.ffdf(covariates)
+  rm(outcomes)
+  rm(covariates)
   rm(covariateData)
-  cyclopsData <- convertToCyclopsData(cohortSubset, covariateSubset, modelType = "lr", quiet = TRUE)
-  ff::close.ffdf(cohortSubset)
-  ff::close.ffdf(covariateSubset)
-  rm(cohortSubset)
-  rm(covariateSubset)
   error <- NULL
   ref <- NULL
   if (errorOnHighCorrelation) {
@@ -188,14 +187,13 @@ createPs <- function(cohortMethodData,
       delta <- log(y.odds) - log(y.odds.new)
       cfs[1] <- cfs[1] - delta  # Equation (7) in King and Zeng (2001)
       cyclopsFit$estimation$estimate[1] <- cfs[1]
+      fullOutcomes <- ff::as.ffdf(fullPopulation)
       population <- fullPopulation
-      cohortSubset <- ff::as.ffdf(population)
-      covariateSubset <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, cohortSubset$rowId)
-      population$propensityScore <- predict(cyclopsFit, newOutcomes = cohortSubset, newCovariates = covariateSubset)
-      ff::close.ffdf(cohortSubset)
-      ff::close.ffdf(covariateSubset)
-      rm(cohortSubset)
-      rm(covariateSubset)
+      population$propensityScore <- predict(cyclopsFit, newOutcomes = fullOutcomes, newCovariates = fullCovariates)
+      ff::close.ffdf(fullOutcomes)
+      ff::close.ffdf(fullCovariates)
+      rm(fullOutcomes)
+      rm(fullCovariates)
     } else {
       population$propensityScore <- predict(cyclopsFit)
     }

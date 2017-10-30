@@ -12,7 +12,8 @@ connectionDetails <- createConnectionDetails(dbms = "pdw", server = "JRDUSAPSCTL
 
 checkCmInstallation(connectionDetails)
 
-covariateSettings <- createCovariateSettings(useDemographicsGender = TRUE)
+covariateSettings <- createCovariateSettings(useDemographicsGender = TRUE,
+                                             useDemographicsAgeGroup = TRUE)
 
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
@@ -27,18 +28,21 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           removeDuplicateSubjects = TRUE,
                                           restrictToCommonPeriod = TRUE,
                                           excludeDrugsFromCovariates = TRUE,
-                                          maxCohortSize = 1000000,
+                                          maxCohortSize = 100000,
                                           covariateSettings = covariateSettings)
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cmData")
-cohortMethodData <- loadCohortMethodData("s:/temp/cmData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cmData2")
+cohortMethodData <- loadCohortMethodData("s:/temp/cmData2")
 studyPop <- createStudyPopulation(cohortMethodData,
                                   removeSubjectsWithPriorOutcome = TRUE,
                                   restrictToCommonPeriod = TRUE,
                                   outcomeId = 194133)
 
-ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", variance = 0.01))
-
+ps <- createPs(cohortMethodData,
+               studyPop,
+               maxCohortSizeForFitting = 10000,
+               prior = createPrior("laplace", variance = 0.01))
+attr(ps, "metaData")
 plotPs(ps)
 
 strata <- matchOnPs(ps)

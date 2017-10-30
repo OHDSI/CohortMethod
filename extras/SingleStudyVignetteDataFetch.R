@@ -22,20 +22,11 @@ library(DatabaseConnector)
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
-dbms <- "sql server"
-user <- NULL
-pw <- NULL
-server <- "RNDUSRDHIT07.jnj.com"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-port <- NULL
-extraSettings <- NULL
-
 dbms <- "postgresql"
 user <- "postgres"
 pw <- Sys.getenv("pwPostgres")
 server <- "localhost/ohdsi"
-cdmDatabaseSchema <- "vocabulary5"
+cdmDatabaseSchema <- "cdm_synpuf"
 resultsDatabaseSchema <- "scratch"
 port <- NULL
 extraSettings <- NULL
@@ -44,7 +35,7 @@ dbms <- "pdw"
 user <- NULL
 pw <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -81,18 +72,19 @@ sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 DatabaseConnector::querySql(connection, sql)
 
-# Get all NSAIDs:
-sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-nsaids <- DatabaseConnector::querySql(connection, sql)
-nsaids <- nsaids$CONCEPT_ID
+# # Get all NSAIDs:
+# sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+# sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
+# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+# nsaids <- DatabaseConnector::querySql(connection, sql)
+# nsaids <- nsaids$CONCEPT_ID
 
 DatabaseConnector::disconnect(connection)
 
-covariateSettings <- createDefaultCovariateSettings()
-covariateSettings$excludedCovariateConceptIds <- nsaids
-covariateSettings$addDescendantsToExclude <- TRUE
+nsaids <- 21603933
+
+covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                              addDescendantsToExclude = TRUE)
 
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
@@ -113,11 +105,11 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           removeDuplicateSubjects = TRUE,
                                           restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
-                                          covariateSettings = covariateSettings)
+                                          covariateSettings = covSettings)
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData2")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
 
-# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData2')
+# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
 
 # summary(cohortMethodData) getAttritionTable(cohortMethodData)
 
@@ -149,7 +141,7 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        threads = 10))
 
 # computePsAuc(ps) plotPs(ps)
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps2.rds")
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 # ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]

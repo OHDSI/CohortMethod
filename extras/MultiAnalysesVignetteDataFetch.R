@@ -54,19 +54,18 @@ sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 DatabaseConnector::querySql(connection, sql)
 
 # Get all NSAIDs:
-sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-nsaids <- DatabaseConnector::querySql(connection, sql)
-nsaids <- nsaids$CONCEPT_ID
+# sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+# sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
+# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+# nsaids <- DatabaseConnector::querySql(connection, sql)
+# nsaids <- nsaids$CONCEPT_ID
 
 DatabaseConnector::disconnect(connection)
 
-# nsaids <- 21603933
+nsaids <- 21603933
 
 dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
-                                     excludedCovariateConceptIds = nsaids,
                                      outcomeIds = c(192671,
                                                     24609,
                                                     29735,
@@ -105,56 +104,8 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                                     4288310))
 drugComparatorOutcomesList <- list(dcos)
 
-covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                         useCovariateDemographicsAge = TRUE,
-                                         useCovariateDemographicsGender = TRUE,
-                                         useCovariateDemographicsRace = TRUE,
-                                         useCovariateDemographicsEthnicity = TRUE,
-                                         useCovariateDemographicsYear = TRUE,
-                                         useCovariateDemographicsMonth = TRUE,
-                                         useCovariateConditionOccurrence = TRUE,
-                                         useCovariateConditionOccurrenceLongTerm = TRUE,
-                                         useCovariateConditionOccurrenceShortTerm = TRUE,
-                                         useCovariateConditionOccurrenceInptMediumTerm = TRUE,
-                                         useCovariateConditionEra = TRUE,
-                                         useCovariateConditionEraEver = TRUE,
-                                         useCovariateConditionEraOverlap = TRUE,
-                                         useCovariateConditionGroup = TRUE,
-                                         useCovariateDrugExposure = TRUE,
-                                         useCovariateDrugExposureLongTerm = TRUE,
-                                         useCovariateDrugExposureShortTerm = TRUE,
-                                         useCovariateDrugEra = TRUE,
-                                         useCovariateDrugEraLongTerm = TRUE,
-                                         useCovariateDrugEraShortTerm = TRUE,
-                                         useCovariateDrugEraEver = TRUE,
-                                         useCovariateDrugEraOverlap = TRUE,
-                                         useCovariateDrugGroup = TRUE,
-                                         useCovariateProcedureOccurrence = TRUE,
-                                         useCovariateProcedureOccurrenceLongTerm = TRUE,
-                                         useCovariateProcedureOccurrenceShortTerm = TRUE,
-                                         useCovariateProcedureGroup = TRUE,
-                                         useCovariateObservation = TRUE,
-                                         useCovariateObservationLongTerm = TRUE,
-                                         useCovariateObservationShortTerm = TRUE,
-                                         useCovariateObservationCountLongTerm = TRUE,
-                                         useCovariateMeasurementLongTerm = TRUE,
-                                         useCovariateMeasurementShortTerm = TRUE,
-                                         useCovariateMeasurementCountLongTerm = TRUE,
-                                         useCovariateMeasurementBelow = TRUE,
-                                         useCovariateMeasurementAbove = TRUE,
-                                         useCovariateConceptCounts = TRUE,
-                                         useCovariateRiskScores = TRUE,
-                                         useCovariateRiskScoresCharlson = TRUE,
-                                         useCovariateRiskScoresDCSI = TRUE,
-                                         useCovariateRiskScoresCHADS2 = TRUE,
-                                         useCovariateInteractionYear = FALSE,
-                                         useCovariateInteractionMonth = FALSE,
-                                         longTermDays = 365,
-                                         mediumTermDays = 180,
-                                         shortTermDays = 30,
-                                         excludedCovariateConceptIds = c(),
-                                         addDescendantsToExclude = TRUE,
-                                         deleteCovariatesSmallCount = 100)
+covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    restrictToCommonPeriod = FALSE,
@@ -265,22 +216,13 @@ saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
 # drugComparatorOutcomesList <- loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
 
 
-mailSettings <- list(from = Sys.getenv("mailAddress"),
-                     to = c(Sys.getenv("mailAddress")),
-                     smtp = list(host.name = "smtp.gmail.com", port = 465,
-                                 user.name = Sys.getenv("mailAddress"),
-                                 passwd = Sys.getenv("mailPassword"), ssl = TRUE),
-                     authenticate = TRUE,
-                     send = TRUE)
-
-result <- OhdsiRTools::runAndNotify({
-runCmAnalyses(connectionDetails = connectionDetails,
+result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
                         exposureDatabaseSchema = cdmDatabaseSchema,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
-                        outputFolder = "s:/temp/cohortMethodVignette2",
+                        outputFolder = "s:/temp/cohortMethodVignette",
                         cdmVersion = cdmVersion,
                         cmAnalysisList = cmAnalysisList,
                         drugComparatorOutcomesList = drugComparatorOutcomesList,
@@ -293,8 +235,7 @@ runCmAnalyses(connectionDetails = connectionDetails,
                         fitOutcomeModelThreads = 3,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
-}, mailSettings = mailSettings, label = "CohortMethod")
-# result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
+# result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
 
 analysisSum <- summarizeAnalyses(result)
 

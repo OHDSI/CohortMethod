@@ -69,10 +69,9 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
-cdmVersion <- "5"
 ```
 
-The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables,as well as the CDM version. We'll use these later to tell R where the data in CDM format live, where we want to write intermediate and result tables, and what version CDM is used. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome. 
 
@@ -101,8 +100,6 @@ WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099
 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
 	AND visit_occurrence.visit_concept_id IN (9201, 9203);
 ```
-Note for CDM V4 `visit_concept_id` should be `place_of_service_concept_id`, and `cohort_definition_id` should be `cohort_concept_id`.
-
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
 ```{r tidy=FALSE,eval=FALSE}
@@ -126,7 +123,6 @@ The first group of arguments define the drug, comparator, and outcome. Here we d
 ```{r tidy=FALSE,eval=FALSE}
 dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
-                                     excludedCovariateConceptIds = 21603933,
                                      outcomeIds = c(192671, 29735, 140673, 197494, 
                                                     198185, 198199, 200528, 257315, 
                                                     314658, 317376, 321319, 380731, 
@@ -140,7 +136,7 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
 drugComparatorOutcomesList <- list(dcos)
 ```
 
-We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. We furthermore specify that NSAIDS (concept ID 21603933) cannot be in the list of covariates. Note that descendant concepts are automatically excluded in the list of concepts to exclude (see `createCovariateSettings` for more details).
+We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. 
 
 A convenient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomesList` function, and we can load it again using the `loadDrugComparatorOutcomesList` function.
 
@@ -149,55 +145,10 @@ A convenient way to save `drugComparatorOutcomeList` to file is by using the `sa
 The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion function is available that has (almost) the same arguments. For example, for the `trimByPs()` function there is the `createTrimByPsArgs()` function. These companion functions can be used to create the arguments to be used during execution:
 
 ```{r tidy=FALSE,eval=TRUE}
-covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                         useCovariateDemographicsAge = TRUE,
-                                         useCovariateDemographicsGender = TRUE,
-                                         useCovariateDemographicsRace = TRUE,
-                                         useCovariateDemographicsEthnicity = TRUE,
-                                         useCovariateDemographicsYear = TRUE,
-                                         useCovariateDemographicsMonth = TRUE,
-                                         useCovariateConditionOccurrence = TRUE,
-                                         useCovariateConditionOccurrenceLongTerm = TRUE,
-                                         useCovariateConditionOccurrenceShortTerm = TRUE,
-                                         useCovariateConditionOccurrenceInptMediumTerm = TRUE,
-                                         useCovariateConditionEra = TRUE,
-                                         useCovariateConditionEraEver = TRUE,
-                                         useCovariateConditionEraOverlap = TRUE,
-                                         useCovariateConditionGroup = TRUE,
-                                         useCovariateDrugExposure = TRUE,
-                                         useCovariateDrugExposureLongTerm = TRUE,
-                                         useCovariateDrugExposureShortTerm = TRUE,
-                                         useCovariateDrugEra = TRUE,
-                                         useCovariateDrugEraLongTerm = TRUE,
-                                         useCovariateDrugEraShortTerm = TRUE,
-                                         useCovariateDrugEraEver = TRUE,
-                                         useCovariateDrugEraOverlap = TRUE,
-                                         useCovariateDrugGroup = TRUE,
-                                         useCovariateProcedureOccurrence = TRUE,
-                                         useCovariateProcedureOccurrenceLongTerm = TRUE,
-                                         useCovariateProcedureOccurrenceShortTerm = TRUE,
-                                         useCovariateProcedureGroup = TRUE,
-                                         useCovariateObservation = TRUE,
-                                         useCovariateObservationLongTerm = TRUE,
-                                         useCovariateObservationShortTerm = TRUE,
-                                         useCovariateObservationCountLongTerm = TRUE,
-                                         useCovariateMeasurementLongTerm = TRUE,
-                                         useCovariateMeasurementShortTerm = TRUE,
-                                         useCovariateMeasurementCountLongTerm = TRUE,
-                                         useCovariateMeasurementBelow = TRUE,
-                                         useCovariateMeasurementAbove = TRUE,
-                                         useCovariateConceptCounts = TRUE,
-                                         useCovariateRiskScores = TRUE,
-                                         useCovariateRiskScoresCharlson = TRUE,
-                                         useCovariateRiskScoresDCSI = TRUE,
-                                         useCovariateRiskScoresCHADS2 = TRUE,
-                                         useCovariateInteractionYear = FALSE,
-                                         useCovariateInteractionMonth = FALSE,
-                                         longTermDays = 365,
-                                         mediumTermDays = 180,
-                                         shortTermDays = 30,
-                                         addDescendantsToExclude = TRUE,
-                                         deleteCovariatesSmallCount = 100)
+nsaids <- 21603933
+
+covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    restrictToCommonPeriod = FALSE,
