@@ -2,30 +2,30 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 .matchOnPs <- function(propensityScores, treatment, maxRatio, caliper) {
-    .Call('CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', propensityScores, treatment, maxRatio, caliper)
+    .Call('_CohortMethod_matchOnPs', PACKAGE = 'CohortMethod', propensityScores, treatment, maxRatio, caliper)
 }
 
 .aucWithCi <- function(propensityScores, treatment) {
-    .Call('CohortMethod_aucWithCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
+    .Call('_CohortMethod_aucWithCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
 .auc <- function(propensityScores, treatment) {
-    .Call('CohortMethod_auc', PACKAGE = 'CohortMethod', propensityScores, treatment)
+    .Call('_CohortMethod_auc', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
 .bySum <- function(ffValues, ffBins) {
-    .Call('CohortMethod_bySum', PACKAGE = 'CohortMethod', ffValues, ffBins)
+    .Call('_CohortMethod_bySum', PACKAGE = 'CohortMethod', ffValues, ffBins)
 }
 
 .findOutcomePrevalence <- function(sBaseline, sExp, cBaseline) {
-    .Call('CohortMethod_findOutcomePrevalence', PACKAGE = 'CohortMethod', sBaseline, sExp, cBaseline)
+    .Call('_CohortMethod_findOutcomePrevalence', PACKAGE = 'CohortMethod', sBaseline, sExp, cBaseline)
 }
 
 .generateEventTimesHelper <- function(value, baseline) {
-    .Call('CohortMethod_generateEventTimesHelper', PACKAGE = 'CohortMethod', value, baseline)
+    .Call('_CohortMethod_generateEventTimesHelper', PACKAGE = 'CohortMethod', value, baseline)
 }
 
 .generateEventTimesHelper1 <- function(value, baseline, times) {
-    .Call('CohortMethod_generateEventTimesHelper1', PACKAGE = 'CohortMethod', value, baseline, times)
+    .Call('_CohortMethod_generateEventTimesHelper1', PACKAGE = 'CohortMethod', value, baseline, times)
 }
 

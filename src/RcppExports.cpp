@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // matchOnPs
 DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
-RcppExport SEXP CohortMethod_matchOnPs(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
+RcppExport SEXP _CohortMethod_matchOnPs(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,7 +21,7 @@ END_RCPP
 }
 // aucWithCi
 std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<int> treatment);
-RcppExport SEXP CohortMethod_aucWithCi(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
+RcppExport SEXP _CohortMethod_aucWithCi(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -33,7 +33,7 @@ END_RCPP
 }
 // auc
 double auc(std::vector<double> propensityScores, std::vector<int> treatment);
-RcppExport SEXP CohortMethod_auc(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
+RcppExport SEXP _CohortMethod_auc(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -45,7 +45,7 @@ END_RCPP
 }
 // bySum
 DataFrame bySum(List ffValues, List ffBins);
-RcppExport SEXP CohortMethod_bySum(SEXP ffValuesSEXP, SEXP ffBinsSEXP) {
+RcppExport SEXP _CohortMethod_bySum(SEXP ffValuesSEXP, SEXP ffBinsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -57,7 +57,7 @@ END_RCPP
 }
 // findOutcomePrevalence
 double findOutcomePrevalence(std::vector<double> sBaseline, std::vector<double> sExp, std::vector<double> cBaseline);
-RcppExport SEXP CohortMethod_findOutcomePrevalence(SEXP sBaselineSEXP, SEXP sExpSEXP, SEXP cBaselineSEXP) {
+RcppExport SEXP _CohortMethod_findOutcomePrevalence(SEXP sBaselineSEXP, SEXP sExpSEXP, SEXP cBaselineSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -70,7 +70,7 @@ END_RCPP
 }
 // generateEventTimesHelper
 std::vector<int> generateEventTimesHelper(std::vector<double> value, std::vector<double> baseline);
-RcppExport SEXP CohortMethod_generateEventTimesHelper(SEXP valueSEXP, SEXP baselineSEXP) {
+RcppExport SEXP _CohortMethod_generateEventTimesHelper(SEXP valueSEXP, SEXP baselineSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -82,7 +82,7 @@ END_RCPP
 }
 // generateEventTimesHelper1
 std::vector<double> generateEventTimesHelper1(std::vector<double> value, std::vector<double> baseline, std::vector<double> times);
-RcppExport SEXP CohortMethod_generateEventTimesHelper1(SEXP valueSEXP, SEXP baselineSEXP, SEXP timesSEXP) {
+RcppExport SEXP _CohortMethod_generateEventTimesHelper1(SEXP valueSEXP, SEXP baselineSEXP, SEXP timesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -92,4 +92,20 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(generateEventTimesHelper1(value, baseline, times));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_CohortMethod_matchOnPs", (DL_FUNC) &_CohortMethod_matchOnPs, 4},
+    {"_CohortMethod_aucWithCi", (DL_FUNC) &_CohortMethod_aucWithCi, 2},
+    {"_CohortMethod_auc", (DL_FUNC) &_CohortMethod_auc, 2},
+    {"_CohortMethod_bySum", (DL_FUNC) &_CohortMethod_bySum, 2},
+    {"_CohortMethod_findOutcomePrevalence", (DL_FUNC) &_CohortMethod_findOutcomePrevalence, 3},
+    {"_CohortMethod_generateEventTimesHelper", (DL_FUNC) &_CohortMethod_generateEventTimesHelper, 2},
+    {"_CohortMethod_generateEventTimesHelper1", (DL_FUNC) &_CohortMethod_generateEventTimesHelper1, 3},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_CohortMethod(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

@@ -348,13 +348,13 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
     stop("Missing column propensityScore in data")
 
   if (confidenceIntervals) {
-    auc <- .Call("CohortMethod_aucWithCi",
+    auc <- .Call("_CohortMethod_aucWithCi",
                  PACKAGE = "CohortMethod",
                  data$propensityScore,
                  data$treatment)
     return(data.frame(auc = auc[1], auc_lb95ci = auc[2], auc_lb95ci = auc[3]))
   } else {
-    auc <- .Call("CohortMethod_auc", PACKAGE = "CohortMethod", data$propensityScore, data$treatment)
+    auc <- .Call("_CohortMethod_auc", PACKAGE = "CohortMethod", data$propensityScore, data$treatment)
     return(auc)
   }
 }
@@ -540,7 +540,7 @@ matchOnPs <- function(population,
     maxRatio <- 999
   }
   if (length(stratificationColumns) == 0) {
-    result <- .Call("CohortMethod_matchOnPs",
+    result <- .Call("_CohortMethod_matchOnPs",
                     PACKAGE = "CohortMethod",
                     population$propensityScore,
                     population$treatment,
@@ -555,7 +555,7 @@ matchOnPs <- function(population,
     return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
-      subResult <- .Call("CohortMethod_matchOnPs",
+      subResult <- .Call("_CohortMethod_matchOnPs",
                          PACKAGE = "CohortMethod",
                          subset$propensityScore,
                          subset$treatment,
