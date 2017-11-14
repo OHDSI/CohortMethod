@@ -34,8 +34,8 @@
 
 using namespace Rcpp;
 
-// [[Rcpp::export(".matchOnPs")]]
-DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper) {
+// [[Rcpp::export]]
+DataFrame matchPsInternal(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper) {
 
 	using namespace ohdsi::cohortMethod;
 
@@ -50,7 +50,7 @@ DataFrame matchOnPs(std::vector<double> propensityScores, std::vector<int> treat
 	return DataFrame::create();
 }
 
-// [[Rcpp::export(".aucWithCi")]]
+// [[Rcpp::export]]
 std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<int> treatment) {
 
   using namespace ohdsi::cohortMethod;
@@ -67,7 +67,7 @@ std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<
 	return auc;
 }
 
-// [[Rcpp::export(".auc")]]
+// [[Rcpp::export]]
 double auc(std::vector<double> propensityScores, std::vector<int> treatment) {
 
   using namespace ohdsi::cohortMethod;
@@ -83,8 +83,8 @@ double auc(std::vector<double> propensityScores, std::vector<int> treatment) {
 	return 0.0;
 }
 
-// [[Rcpp::export(".bySum")]]
-DataFrame bySum(List ffValues, List ffBins) {
+// [[Rcpp::export]]
+DataFrame bySumFf(List ffValues, List ffBins) {
 
   using namespace ohdsi::cohortMethod;
 

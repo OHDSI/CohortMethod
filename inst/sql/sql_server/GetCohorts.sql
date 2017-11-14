@@ -1,5 +1,6 @@
 {DEFAULT @cdm_version = '5'}
-{DEFAULT @target_id = '' }
+{DEFAULT @target_id = ''}
+{DEFAULT @sampled = FALSE}
 
 SELECT row_id,
 	subject_id,
@@ -12,5 +13,9 @@ SELECT row_id,
 	days_from_obs_start,
 	days_to_cohort_end,
 	days_to_obs_end
-FROM #cohort_person cohort
+{@sampled} ? {
+FROM #cohort_sample
+} : {
+FROM #cohort_person
+}
 ORDER BY subject_id

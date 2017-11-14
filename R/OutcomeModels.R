@@ -33,6 +33,7 @@
 #'                              scores)?
 #' @param useCovariates         Whether to use the covariate matrix in the \code{cohortMethodData}
 #'                              object in the outcome model.
+#' @param inversePsWeighting    Use inverse probability of treatment weigting?
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
 #' @param prior                 The prior used to fit the model. See \code{\link[Cyclops]{createPrior}}
@@ -51,6 +52,7 @@ fitOutcomeModel <- function(population,
                             modelType = "logistic",
                             stratified = TRUE,
                             useCovariates = TRUE,
+                            inversePsWeighting = FALSE,
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
                             prior = createPrior("laplace", useCrossValidation = TRUE),
@@ -65,6 +67,8 @@ fitOutcomeModel <- function(population,
     stop("No outcome variable found in population object. Use createStudyPopulation to create variable.")
   if (missing(cohortMethodData) && useCovariates)
     stop("Requested all covariates for model, but no cohortMethodData object specified")
+  if (inversePsWeighting && is.null(population$propensityScore))
+    stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
     stop(paste("Unknown modelType '",
                modelType,
@@ -109,28 +113,7 @@ fitOutcomeModel <- function(population,
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
   } else {
     if (useCovariates) {
-      treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
-      if (stratified || modelType == "cox") {
-        prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
-      } else {
-        prior$exclude <- c(0,
-                           treatmentVarId)  # Exclude treatment variable and intercept from regularization
-      }
-      treatmentCovariate <- ff::ffdf(rowId = ff::as.ff(population$rowId),
-                                     covariateId = ff::ff(treatmentVarId,
-                                                          length = nrow(population),
-                                                          vmode = "double"),
-                                     covariateValue = ff::as.ff(population$treatment,
-                                                                vmode = "double"))
-      covariates <- ffbase::ffdfappend(treatmentCovariate, cohortMethodData$covariates)
-      if (stratified) {
-        informativeStrata <- unique(population$stratumId[population$y != 0])
-        population <- population[population$stratumId %in% informativeStrata, ]
-        covariates <- ffbase::merge.ffdf(covariates,
-                                         ff::as.ffdf(population[, c("rowId", "stratumId")]))
-      } else {
-        covariates <- limitCovariatesToPopulation(covariates, ff::as.ff(population$rowId))
-      }
+      covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, ff::as.ff(population$rowId))
       if (length(includeCovariateIds) != 0) {
         includeCovariateIds <- c(includeCovariateIds, treatmentVarId)
         idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
@@ -139,6 +122,33 @@ fitOutcomeModel <- function(population,
       if (length(excludeCovariateIds) != 0) {
         idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
         covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+      }
+      covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
+                                                            covariateRef = cohortMethodData$covariateRef,
+                                                            populationSize = nrow(population),
+                                                            normalize = TRUE,
+                                                            removeRedundancy = TRUE)
+      covariates <- covariateData$covariates
+      attr(population, "metaData")$deletedCovariateIdsforOutcomeModel <- covariateData$metaData$deletedCovariateIds
+      rm(covariateData)
+      treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
+      if (stratified || modelType == "cox") {
+        prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
+      } else {
+        prior$exclude <- c(0, treatmentVarId)  # Exclude treatment variable and intercept from regularization
+      }
+      treatmentCovariate <- ff::ffdf(rowId = ff::as.ff(population$rowId),
+                                     covariateId = ff::ff(treatmentVarId,
+                                                          length = nrow(population),
+                                                          vmode = "double"),
+                                     covariateValue = ff::as.ff(population$treatment,
+                                                                vmode = "double"))
+      covariates <- ffbase::ffdfappend(treatmentCovariate, covariates)
+      if (stratified) {
+        informativeStrata <- unique(population$stratumId[population$y != 0])
+        population <- population[population$stratumId %in% informativeStrata, ]
+        covariates <- ffbase::merge.ffdf(covariates,
+                                         ff::as.ffdf(population[, c("rowId", "stratumId")]))
       }
     } else {
       prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior
@@ -155,6 +165,11 @@ fitOutcomeModel <- function(population,
       addIntercept <- FALSE
     } else {
       addIntercept <- TRUE
+    }
+    if (inversePsWeighting) {
+      population$weight <- population$treatment / population$propensityScore + (1-population$treatment) / (1-population$propensityScore)
+    } else {
+      population$weight <- NULL
     }
     outcomes <- ff::as.ffdf(population)
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
@@ -213,6 +228,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelType <- modelType
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
+  outcomeModel$inversePsWeighting <- inversePsWeighting
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- populationCounts
@@ -293,6 +309,7 @@ print.outcomeModel <- function(x, ...) {
   writeLines(paste("Model type:", x$outcomeModelType))
   writeLines(paste("Stratified:", x$outcomeModelStratified))
   writeLines(paste("Use covariates:", x$outcomeModelUseCovariates))
+  writeLines(paste("Use inverse probability of treatment weighting:", x$inversePsWeighting))
   writeLines(paste("Status:", x$outcomeModelStatus))
   if (!is.na(x$outcomeModelPriorVariance)) {
     writeLines(paste("Prior variance:", x$outcomeModelPriorVariance))

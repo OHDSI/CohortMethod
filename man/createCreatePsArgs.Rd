@@ -5,15 +5,22 @@
 \title{Create a parameter object for the function createPs}
 \usage{
 createCreatePsArgs(excludeCovariateIds = c(), includeCovariateIds = c(),
-  errorOnHighCorrelation = TRUE, stopOnError = TRUE,
-  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-  control = createControl(noiseLevel = "silent", cvType = "auto", tolerance =
-  2e-07, cvRepetitions = 10, startingVariance = 0.01))
+  maxCohortSizeForFitting = 250000, errorOnHighCorrelation = TRUE,
+  stopOnError = TRUE, prior = createPrior("laplace", exclude = c(0),
+  useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
+  cvType = "auto", tolerance = 2e-07, cvRepetitions = 10, startingVariance =
+  0.01))
 }
 \arguments{
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
 \item{includeCovariateIds}{Include only these covariates in the propensity model.}
+
+\item{maxCohortSizeForFitting}{If the target or comparator cohort are larger than this number,
+theywill be downsampled before fitting the propensity model. The
+modelwill be used to compute propensity scores for all subjects.
+Thepurpose of the sampling is to gain speed. Setting this number to
+0means no downsampling will be applied.}
 
 \item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation
 withthe treatment assignment. If any covariate has an unusually

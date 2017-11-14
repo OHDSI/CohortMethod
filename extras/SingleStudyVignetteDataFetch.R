@@ -22,20 +22,11 @@ library(DatabaseConnector)
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
-dbms <- "sql server"
-user <- NULL
-pw <- NULL
-server <- "RNDUSRDHIT07.jnj.com"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-port <- NULL
-extraSettings <- NULL
-
 dbms <- "postgresql"
 user <- "postgres"
 pw <- Sys.getenv("pwPostgres")
 server <- "localhost/ohdsi"
-cdmDatabaseSchema <- "vocabulary5"
+cdmDatabaseSchema <- "cdm_synpuf"
 resultsDatabaseSchema <- "scratch"
 port <- NULL
 extraSettings <- NULL
@@ -44,7 +35,7 @@ dbms <- "pdw"
 user <- NULL
 pw <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -81,65 +72,19 @@ sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 DatabaseConnector::querySql(connection, sql)
 
-# Get all NSAIDs:
-sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-nsaids <- DatabaseConnector::querySql(connection, sql)
-nsaids <- nsaids$CONCEPT_ID
+# # Get all NSAIDs:
+# sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
+# sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
+# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+# nsaids <- DatabaseConnector::querySql(connection, sql)
+# nsaids <- nsaids$CONCEPT_ID
 
 DatabaseConnector::disconnect(connection)
 
-covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateDemographicsAge = TRUE,
-                                             useCovariateDemographicsGender = TRUE,
-                                             useCovariateDemographicsRace = TRUE,
-                                             useCovariateDemographicsEthnicity = TRUE,
-                                             useCovariateDemographicsYear = TRUE,
-                                             useCovariateDemographicsMonth = TRUE,
-                                             useCovariateConditionOccurrence = TRUE,
-                                             useCovariateConditionOccurrenceLongTerm = TRUE,
-                                             useCovariateConditionOccurrenceShortTerm = TRUE,
-                                             useCovariateConditionOccurrenceInptMediumTerm = TRUE,
-                                             useCovariateConditionEra = TRUE,
-                                             useCovariateConditionEraEver = TRUE,
-                                             useCovariateConditionEraOverlap = TRUE,
-                                             useCovariateConditionGroup = TRUE,
-                                             useCovariateDrugExposure = TRUE,
-                                             useCovariateDrugExposureLongTerm = TRUE,
-                                             useCovariateDrugExposureShortTerm = TRUE,
-                                             useCovariateDrugEra = TRUE,
-                                             useCovariateDrugEraLongTerm = TRUE,
-                                             useCovariateDrugEraShortTerm = TRUE,
-                                             useCovariateDrugEraEver = TRUE,
-                                             useCovariateDrugEraOverlap = TRUE,
-                                             useCovariateDrugGroup = TRUE,
-                                             useCovariateProcedureOccurrence = TRUE,
-                                             useCovariateProcedureOccurrenceLongTerm = TRUE,
-                                             useCovariateProcedureOccurrenceShortTerm = TRUE,
-                                             useCovariateProcedureGroup = TRUE,
-                                             useCovariateObservation = TRUE,
-                                             useCovariateObservationLongTerm = TRUE,
-                                             useCovariateObservationShortTerm = TRUE,
-                                             useCovariateObservationCountLongTerm = TRUE,
-                                             useCovariateMeasurementLongTerm = TRUE,
-                                             useCovariateMeasurementShortTerm = TRUE,
-                                             useCovariateMeasurementCountLongTerm = TRUE,
-                                             useCovariateMeasurementBelow = TRUE,
-                                             useCovariateMeasurementAbove = TRUE,
-                                             useCovariateConceptCounts = TRUE,
-                                             useCovariateRiskScores = TRUE,
-                                             useCovariateRiskScoresCharlson = TRUE,
-                                             useCovariateRiskScoresDCSI = TRUE,
-                                             useCovariateRiskScoresCHADS2 = TRUE,
-                                             useCovariateInteractionYear = FALSE,
-                                             useCovariateInteractionMonth = FALSE,
-                                             longTermDays = 365,
-                                             mediumTermDays = 180,
-                                             shortTermDays = 30,
-                                             excludedCovariateConceptIds = nsaids,
-                                             addDescendantsToExclude = TRUE,
-                                             deleteCovariatesSmallCount = 100)
+nsaids <- 21603933
+
+covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                              addDescendantsToExclude = TRUE)
 
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
@@ -160,12 +105,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           removeDuplicateSubjects = TRUE,
                                           restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
-                                          covariateSettings = covariateSettings)
-
-# Error executing SQL: Error in .jcall(res@jr, 'V', 'close'): java.sql.SQLException: [Amazon](500150)
-# Error setting/closing connection: Not Connected.  After removing on.exit clearResults: Error
-# executing SQL: Error in .jcall(rp, 'I', 'fetch', as.integer(n), block): java.sql.SQLException:
-# [Amazon][JDBC](10060) Connection has been closed.  table has 148734670 rows
+                                          covariateSettings = covSettings)
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
 
@@ -197,13 +137,15 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        startingVariance = 0.01,
                                        noiseLevel = "quiet",
                                        tolerance = 2e-07,
-                                       cvRepetitions = 10,
-                                       threads = 16))
+                                       cvRepetitions = 1,
+                                       threads = 10))
 
 # computePsAuc(ps) plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 # ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
-
+model <- getPsModel(ps, cohortMethodData)
+model[grepl("Charlson.*", model$covariateName), ]
+model[model$id %% 1000 == 902, ]
 
 # insertDbPopulation(population = studyPop, cohortIds = c(101,100), connectionDetails =
 # connectionDetails, cohortDatabaseSchema = resultsDatabaseSchema, cohortTable = 'mschuemi_test',
@@ -227,7 +169,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 # balance <- readRDS('s:/temp/cohortMethodVignette/balance.rds')
 
 plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
-# plotCovariateBalanceOfTopVariables(balance)
+# plotCovariateBalanceOfTopVariables(balance, fileName = "s:/temp/top.png")
 
 outcomeModel <- fitOutcomeModel(population = studyPop,
                                 modelType = "cox",
@@ -242,6 +184,18 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 stratified = TRUE,
                                 useCovariates = FALSE)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
+weights <- ps$treatment / ps$propensityScore + (1-ps$treatment) / (1-ps$propensityScore)
+max(weights)
+min(weights)
+
+outcomeModel <- fitOutcomeModel(population = ps,
+                                modelType = "cox",
+                                stratified = FALSE,
+                                useCovariates = FALSE,
+                                inversePsWeighting = TRUE)
+outcomeModel
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
+
 
 outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 cohortMethodData = cohortMethodData,
@@ -257,6 +211,9 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                                         threads = 16,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
+
+
+
 
 # outcomeModel <- readRDS(file = 's:/temp/cohortMethodVignette/OutcomeModel3.rds')
 # drawAttritionDiagram(outcomeModel, fileName = 's:/temp/attrition.png') summary(outcomeModel)

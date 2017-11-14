@@ -39,12 +39,14 @@ test_that("cohortMethodData functions", {
   expect_identical(cohortMethodData$outcomes, cmd2$outcomes)
   expect_equal(cohortMethodData$covariates, cmd2$covariates)
   expect_equal(cohortMethodData$covariateRef, cmd2$covariateRef)
+  expect_equal(cohortMethodData$analysisRef, cmd2$analysisRef)
   expect_identical(cohortMethodData$metaData, cmd2$metaData)
   ff::close.ffdf(cmd2$covariates)
   ff::close.ffdf(cmd2$covariateRef)
+  ff::close.ffdf(cmd2$analysisRef)
   unlink("temp", recursive = TRUE, force = TRUE)
 
-  cn <- grepCovariateNames("^Age group.*", cohortMethodData)
+  cn <- grepCovariateNames("^age group.*", cohortMethodData)
   expect_gt(nrow(cn), 1)
 })
 
@@ -71,7 +73,7 @@ test_that("Propensity score functions", {
   ps <- createPs(cohortMethodData, studyPop)
 
   ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
-  expect_lt(0.7, computePsAuc(ps)[1])
+  expect_lt(0.65, computePsAuc(ps)[1])
 
   propensityModel <- getPsModel(ps, cohortMethodData)
   expect_is(propensityModel, "data.frame")

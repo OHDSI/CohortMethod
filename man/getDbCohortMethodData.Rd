@@ -12,7 +12,7 @@ getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = "5",
   excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE, restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0, covariateSettings)
+  washoutPeriod = 0, maxCohortSize = 0, covariateSettings)
 }
 \arguments{
 \item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
@@ -95,6 +95,10 @@ here for efficiency reasons.}
 date for a person to be included in the cohort. Note that this
 is typically done in the \code{createStudyPopulation} function,
 but can already be done here for efficiency reasons.}
+
+\item{maxCohortSize}{If either the target or the comparator cohort is larger than
+this number it will be sampled to this size. \code{maxCohortSize = 0}
+indicates no maximum size.}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
 \code{createCovariateSettings} function in the

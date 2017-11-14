@@ -12,7 +12,7 @@ output:
 vignette: >
   %\VignetteIndexEntry{Single studies using CohortMethod}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}    
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
@@ -50,21 +50,20 @@ The first step in running the `CohortMethod` is extracting all necessary data fr
 We need to tell R how to connect to the server where the data are. `CohortMethod` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
 ```{r tidy=FALSE,eval=FALSE}
-connectionDetails <- createConnectionDetails(dbms = "postgresql", 
-                                             server = "localhost/ohdsi", 
-                                             user = "joe", 
+connectionDetails <- createConnectionDetails(dbms = "postgresql",
+                                             server = "localhost/ohdsi",
+                                             user = "joe",
                                              password = "supersecret")
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
-cdmVersion <- "5"
 ```
 
-The last three lines define the `cdmDatabaseSchema` and `resultSchema` variables,as well as the CDM version. We'll use these later to tell R where the data in CDM format live, where we want to write intermediate and result tables, and what version CDM is used. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. One could use an external cohort definition tools, but in this example we do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. For CDM v5+, this means it should have the fields `cohort_definition_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`. For CDM v4, the `cohort_definition_id` field must be called `cohort_concept_id`. 
+We need to define the exposures and outcomes for our study. One could use an external cohort definition tools, but in this example we do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. This means it should have the fields `cohort_definition_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`.
 
 For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
 
@@ -129,7 +128,6 @@ WHERE condition_concept_id IN (
 		)
 	AND visit_occurrence.visit_concept_id IN (9201, 9203);
 ```
-Note on CDM V4 `visit_concept_id` should be `place_of_service_concept_id`, and `cohort_definition_id` should be `cohort_concept_id`.
 
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
@@ -137,7 +135,7 @@ This is parameterized SQL which can be used by the `SqlRender` package. We use p
 library(SqlRender)
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
 sql <- renderSql(sql,
-                 cdmDatabaseSchema = cdmDatabaseSchema, 
+                 cdmDatabaseSchema = cdmDatabaseSchema,
                  resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 
@@ -159,70 +157,21 @@ sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 querySql(connection, sql)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,3),count=c(149403,541152,552708))
+data.frame(cohort_concept_id = c(1,2,3),count=c(184979,798752,635619))
 ```
 
 ## Extracting the data from the server
 
 Now we can tell `CohortMethod` to define the cohorts based on our events, construct covariates, and extract all necessary data for our analysis.
 
-
-**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetId` and `comparatorId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument of the `getDbCohortMethodData` function to TRUE and automatically the drugs and their descendants will be excluded from the covariates. However, if the `targetId` and `comparatorId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the`covariateSettings` argument. In this example code we exclude all NSAIDs from the covariates by pointing to the concept ID of the NSAID class and specifying `addDescendantsToExclude = TRUE`.
+**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. If the `targetId` and `comparatorId` arguments represent real concept IDs, you can set the `excludeDrugsFromCovariates` argument of the `getDbCohortMethodData` function to TRUE and automatically the drugs and their descendants will be excluded from the covariates. However, if the `targetId` and `comparatorId` arguments do not represent concept IDs, such as in the example above, you will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the covariate settings. In this example code we exclude all NSAIDs from the covariates by pointing to the concept ID of the NSAID class and specifying `addDescendantsToExclude = TRUE`.
 
 ```{r tidy=FALSE,eval=FALSE}
 nsaids <- 21603933
 
 # Define which types of covariates must be constructed:
-covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateDemographicsAge = TRUE,
-                                             useCovariateDemographicsGender = TRUE,
-                                             useCovariateDemographicsRace = TRUE,
-                                             useCovariateDemographicsEthnicity = TRUE,
-                                             useCovariateDemographicsYear = TRUE,
-                                             useCovariateDemographicsMonth = TRUE,
-                                             useCovariateConditionOccurrence = TRUE,
-                                             useCovariateConditionOccurrenceLongTerm = TRUE,
-                                             useCovariateConditionOccurrenceShortTerm = TRUE,
-                                             useCovariateConditionOccurrenceInptMediumTerm = TRUE,
-                                             useCovariateConditionEra = TRUE,
-                                             useCovariateConditionEraEver = TRUE,
-                                             useCovariateConditionEraOverlap = TRUE,
-                                             useCovariateConditionGroup = TRUE,
-                                             useCovariateDrugExposure = TRUE,
-                                             useCovariateDrugExposureLongTerm = TRUE,
-                                             useCovariateDrugExposureShortTerm = TRUE,
-                                             useCovariateDrugEra = TRUE,
-                                             useCovariateDrugEraLongTerm = TRUE,
-                                             useCovariateDrugEraShortTerm = TRUE,
-                                             useCovariateDrugEraEver = TRUE,
-                                             useCovariateDrugEraOverlap = TRUE,
-                                             useCovariateDrugGroup = TRUE,
-                                             useCovariateProcedureOccurrence = TRUE,
-                                             useCovariateProcedureOccurrenceLongTerm = TRUE,
-                                             useCovariateProcedureOccurrenceShortTerm = TRUE,
-                                             useCovariateProcedureGroup = TRUE,
-                                             useCovariateObservation = TRUE,
-                                             useCovariateObservationLongTerm = TRUE,
-                                             useCovariateObservationShortTerm = TRUE,
-                                             useCovariateObservationCountLongTerm = TRUE,
-                                             useCovariateMeasurementLongTerm = TRUE,
-                                             useCovariateMeasurementShortTerm = TRUE,
-                                             useCovariateMeasurementCountLongTerm = TRUE,
-                                             useCovariateMeasurementBelow = TRUE,
-                                             useCovariateMeasurementAbove = TRUE,
-                                             useCovariateConceptCounts = TRUE,
-                                             useCovariateRiskScores = TRUE,
-                                             useCovariateRiskScoresCharlson = TRUE,
-                                             useCovariateRiskScoresDCSI = TRUE,
-                                             useCovariateRiskScoresCHADS2 = TRUE,
-                                             useCovariateInteractionYear = FALSE,
-                                             useCovariateInteractionMonth = FALSE,
-                                             longTermDays = 365,
-                                             mediumTermDays = 180,
-                                             shortTermDays = 30,
-                                             excludedCovariateConceptIds = nsaids,
-                                             addDescendantsToExclude = TRUE,
-                                             deleteCovariatesSmallCount = 100)
+covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                              addDescendantsToExclude = TRUE)
 
 #Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
@@ -243,13 +192,13 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           removeDuplicateSubjects = TRUE,
                                           restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
-                                          covariateSettings = covarSettings)
+                                          covariateSettings = covSettings)
 cohortMethodData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
   cohortMethodData <- loadCohortMethodData("s:/temp/cohortMethodVignette/cohortMethodData")
-} 
+}
 ```
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
@@ -257,9 +206,9 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
 }
 ```
 
-There are many parameters, but they are all documented in the `CohortMethod` manual. The `createCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that many different covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date.
+There are many parameters, but they are all documented in the `CohortMethod` manual. The `createDefaultCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that the default set of covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date. To customize the set of covariates, please refer to the `FeatureExtraction` package vignette by typing `vignette("UsingFeatureExtraction", package="FeatureExtraction")`.
 
-All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large. 
+All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the package `ff` to store information in a way that ensures R does not run out of memory, even when the data are large.
 
 We can use the generic `summary()` function to view some more information of the data we extracted:
 
@@ -341,9 +290,9 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 }
 ```
 
-The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression. 
+The `createPs()` function uses the `Cyclops` package to fit a large-scale regularized logistic regression.
 
-To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behavior, including using multiple CPUs to speed-up the cross-validation. 
+To fit the propensity model, `Cyclops` needs to know the hyperparameter value which specifies the variance of the prior. By default `Cyclops` will use cross-validation to estimate the optimal hyperparameter. However, be aware that this can take a really long time. You can use the `prior` and `control` parameters of the `createPs()` to specify `Cyclops` behavior, including using multiple CPUs to speed-up the cross-validation.
 
 ## Propensity score diagnostics
 
@@ -373,7 +322,7 @@ It is also possible to inspect the propensity model itself by showing the covari
 
 ```{r tidy=TRUE,eval=FALSE}
 propensityModel <- getPsModel(ps, cohortMethodData)
-head(propensityModel)  
+head(propensityModel)
 ```
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
@@ -384,7 +333,7 @@ if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
     x
   }
   propensityModel$covariateName <- truncRight(as.character(propensityModel$covariateName),40)
-  head(propensityModel)  
+  head(propensityModel)
   }
 ```
 
@@ -392,15 +341,15 @@ One advantage of using the regularization when fitting the propensity model is t
 
 ## Using the propensity score
 
-We can use the propensity scores to trim, stratify, or match our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
+We can use the propensity scores to trim, stratify, match, or weigh our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
 
 ```{r tidy=TRUE,eval=FALSE}
-trimmedPop <- trimByPsToEquipoise(ps)  
+trimmedPop <- trimByPsToEquipoise(ps)
 plotPs(trimmedPop, ps, scale = "preference")
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  trimmedPop <- trimByPsToEquipoise(ps)  
+  trimmedPop <- trimByPsToEquipoise(ps)
   plotPs(trimmedPop, ps, scale = "preference")
 }
 ```
@@ -408,12 +357,12 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 Instead (or additionally), we could stratify the population based on the propensity score:
 
 ```{r tidy=TRUE,eval=FALSE}
-stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)  
+stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
 plotPs(stratifiedPop, ps, scale = "preference")
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)  
+  stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
   plotPs(stratifiedPop, ps, scale = "preference")
 }
 ```
@@ -504,27 +453,27 @@ This function will store the population in a table with the same structure as th
 
 # Outcome models
 
-The outcome model is a model describing which variables are associated with the outcome. 
+The outcome model is a model describing which variables are associated with the outcome.
 
 ## Considering follow-up and power
 
-Before we start fitting an outcome model, we might be interested to know whether we have sufficient power to detect a 
+Before we start fitting an outcome model, we might be interested to know whether we have sufficient power to detect a
 particular effect size. It makes sense to perform these power calculations once the study population has been fully defined,
 so taking into account loss to the various inclusion and exclusion criteria (such as no prior outcomes), and loss due to matching and/or trimming. Since the sample size is fixed in retrospective studies (the data has already been collected), and the true effect size is unknown, the CohortMethod package provides a function to compute the minimum detectable relative risk (MDRR) instead:
 
 ```{r tidy=FALSE,eval=FALSE}
 computeMdrr(population = studyPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
 computeMdrr(population = studyPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 }
 ```
@@ -534,16 +483,16 @@ In this example we used the `studyPop` object, so the population before any matc
 ```{r tidy=FALSE,eval=FALSE}
 computeMdrr(population = matchedPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
 computeMdrr(population = matchedPop,
             modelType = "cox",
-            alpha = 0.05, 
-            power = 0.8, 
+            alpha = 0.05,
+            power = 0.8,
             twoSided = TRUE)
 }
 ```
@@ -666,7 +615,7 @@ head(fullOutcomeModel)
 if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")){
   fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
-  head(fullOutcomeModel)  
+  head(fullOutcomeModel)
 }
 ```
 
