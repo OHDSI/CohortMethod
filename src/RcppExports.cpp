@@ -31,15 +31,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// auc
-double auc(std::vector<double> propensityScores, std::vector<int> treatment);
-RcppExport SEXP _CohortMethod_auc(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
+// aucWithoutCi
+double aucWithoutCi(std::vector<double> propensityScores, std::vector<int> treatment);
+RcppExport SEXP _CohortMethod_aucWithoutCi(SEXP propensityScoresSEXP, SEXP treatmentSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::vector<double> >::type propensityScores(propensityScoresSEXP);
     Rcpp::traits::input_parameter< std::vector<int> >::type treatment(treatmentSEXP);
-    rcpp_result_gen = Rcpp::wrap(auc(propensityScores, treatment));
+    rcpp_result_gen = Rcpp::wrap(aucWithoutCi(propensityScores, treatment));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -59,7 +59,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_CohortMethod_matchPsInternal", (DL_FUNC) &_CohortMethod_matchPsInternal, 4},
     {"_CohortMethod_aucWithCi", (DL_FUNC) &_CohortMethod_aucWithCi, 2},
-    {"_CohortMethod_auc", (DL_FUNC) &_CohortMethod_auc, 2},
+    {"_CohortMethod_aucWithoutCi", (DL_FUNC) &_CohortMethod_aucWithoutCi, 2},
     {"_CohortMethod_bySumFf", (DL_FUNC) &_CohortMethod_bySumFf, 2},
     {NULL, NULL, 0}
 };

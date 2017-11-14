@@ -411,7 +411,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
     auc <- aucWithCi(data$propensityScore, data$treatment)
     return(data.frame(auc = auc[1], auc_lb95ci = auc[2], auc_lb95ci = auc[3]))
   } else {
-    auc <- auc(data$propensityScore, data$treatment)
+    auc <- aucWithoutCi(data$propensityScore, data$treatment)
     return(auc)
   }
 }

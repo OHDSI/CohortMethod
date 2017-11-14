@@ -68,7 +68,7 @@ std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<
 }
 
 // [[Rcpp::export]]
-double auc(std::vector<double> propensityScores, std::vector<int> treatment) {
+double aucWithoutCi(std::vector<double> propensityScores, std::vector<int> treatment) {
 
   using namespace ohdsi::cohortMethod;
 

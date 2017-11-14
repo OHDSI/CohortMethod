@@ -9,8 +9,8 @@ aucWithCi <- function(propensityScores, treatment) {
     .Call('_CohortMethod_aucWithCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
-auc <- function(propensityScores, treatment) {
-    .Call('_CohortMethod_auc', PACKAGE = 'CohortMethod', propensityScores, treatment)
+aucWithoutCi <- function(propensityScores, treatment) {
+    .Call('_CohortMethod_aucWithoutCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
 bySumFf <- function(ffValues, ffBins) {
