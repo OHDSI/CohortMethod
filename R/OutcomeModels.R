@@ -311,15 +311,17 @@ print.outcomeModel <- function(x, ...) {
   writeLines(paste("Use covariates:", x$outcomeModelUseCovariates))
   writeLines(paste("Use inverse probability of treatment weighting:", x$inversePsWeighting))
   writeLines(paste("Status:", x$outcomeModelStatus))
-  if (!is.na(x$outcomeModelPriorVariance)) {
+  if (!is.null(x$outcomeModelPriorVariance) && !is.na(x$outcomeModelPriorVariance)) {
     writeLines(paste("Prior variance:", x$outcomeModelPriorVariance))
   }
   writeLines("")
   d <- x$outcomeModelTreatmentEstimate
-  output <- data.frame(exp(d$logRr), exp(d$logLb95), exp(d$logUb95), d$logRr, d$seLogRr)
-  colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr", "seLogRr")
-  rownames(output) <- "treatment"
-  printCoefmat(output)
+  if (!is.null(d)) {
+    output <- data.frame(exp(d$logRr), exp(d$logLb95), exp(d$logUb95), d$logRr, d$seLogRr)
+    colnames(output) <- c("Estimate", "lower .95", "upper .95", "logRr", "seLogRr")
+    rownames(output) <- "treatment"
+    printCoefmat(output)
+  }
 }
 
 #' Get the outcome model
