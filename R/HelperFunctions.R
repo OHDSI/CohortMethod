@@ -202,8 +202,8 @@ constructEras <- function(connectionDetails,
 #' @export
 checkCmInstallation <- function(connectionDetails) {
   writeLines("Checking database connectivity")
-  conn <- connect(connectionDetails)
-  dbDisconnect(conn)
+  conn <- DatabaseConnector::connect(connectionDetails)
+  DatabaseConnector::disconnect(conn)
   writeLines("- Ok")
 
   writeLines("\nChecking large scale regression engine")
