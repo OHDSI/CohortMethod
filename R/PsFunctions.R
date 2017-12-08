@@ -200,6 +200,11 @@ createPs <- function(cohortMethodData,
     attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
     attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
   } else {
+    if (sampled) {
+      population <- fullPopulation
+      ff::close.ffdf(fullCovariates)
+      rm(fullCovariates)
+    }
     population$propensityScore <- population$treatment
     attr(population, "metaData")$psError <- error
     if (!is.null(ref)) {
