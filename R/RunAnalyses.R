@@ -359,6 +359,8 @@ runCmAnalyses <- function(connectionDetails,
         args$control$threads <- outcomeCvThreads
         if (refRow$strataFile != "") {
           studyPopFile <- refRow$strataFile
+        } else if (refRow$psFile != "") {
+          studyPopFile <- refRow$psFile
         } else {
           studyPopFile <- refRow$studyPopFile
         }
@@ -459,6 +461,7 @@ fitSharedPsModel <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   args <- params$createStudyPopArgs
   args$cohortMethodData <- cohortMethodData
+  writeLines("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
   studyPop <- do.call("createStudyPopulation", args)
   args <- params$createPsArg
   args$cohortMethodData <- cohortMethodData
@@ -519,6 +522,7 @@ doFitOutcomeModel <- function(params) {
                                   modelType = args$modelType,
                                   stratified = args$stratified,
                                   useCovariates = args$useCovariates,
+                                  inversePsWeighting = args$inversePsWeighting,
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
@@ -591,6 +595,7 @@ doFitOutcomeModelPlus <- function(params) {
                                   modelType = args$modelType,
                                   stratified = args$stratified,
                                   useCovariates = args$useCovariates,
+                                  inversePsWeighting = args$inversePsWeighting,
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)

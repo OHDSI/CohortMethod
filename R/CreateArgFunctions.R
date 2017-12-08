@@ -380,6 +380,7 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #'                              propensityscores)?
 #' @param useCovariates         Whether to use the covariate matrix in the cohortMethodDataobject in
 #'                              the outcome model.
+#' @param inversePsWeighting    Use inverse probability of treatment weigting?
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
 #' @param prior                 The prior used to fit the model. See createPriorfor details.
@@ -391,6 +392,7 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       stratified = TRUE,
                                       useCovariates = TRUE,
+                                      inversePsWeighting = FALSE,
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),
                                       prior = createPrior("laplace", useCrossValidation = TRUE),

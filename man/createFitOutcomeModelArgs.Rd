@@ -5,11 +5,11 @@
 \title{Create a parameter object for the function fitOutcomeModel}
 \usage{
 createFitOutcomeModelArgs(modelType = "logistic", stratified = TRUE,
-  useCovariates = TRUE, excludeCovariateIds = c(),
-  includeCovariateIds = c(), prior = createPrior("laplace",
-  useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, noiseLevel =
-  "quiet"))
+  useCovariates = TRUE, inversePsWeighting = FALSE,
+  excludeCovariateIds = c(), includeCovariateIds = c(),
+  prior = createPrior("laplace", useCrossValidation = TRUE),
+  control = createControl(cvType = "auto", startingVariance = 0.01, tolerance
+  = 2e-07, cvRepetitions = 10, noiseLevel = "quiet"))
 }
 \arguments{
 \item{modelType}{The type of outcome model that will be used. Possible values
@@ -21,6 +21,8 @@ propensityscores)?}
 
 \item{useCovariates}{Whether to use the covariate matrix in the cohortMethodDataobject in
 the outcome model.}
+
+\item{inversePsWeighting}{Use inverse probability of treatment weigting?}
 
 \item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
 
