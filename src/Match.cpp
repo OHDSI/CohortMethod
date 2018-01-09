@@ -43,7 +43,7 @@ std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initi
                                                                                           const std::vector<int> &treatment, const std::vector<int64_t> &stratumIds) {
   std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap;
   int matchIndex = -1;
-  for (int i = 0; i < treatment.size(); i++) {
+  for (unsigned int i = 0; i < treatment.size(); i++) {
     if (treatment[i] == 1 && matchIndex != -1) {
       heap.push(MatchPair(i, matchIndex, distance(propensityScores[i], propensityScores[matchIndex])));
     } else {
@@ -53,7 +53,7 @@ std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initi
     }
   }
   matchIndex = -1;
-  for (int i = treatment.size()-1; i >= 0 ; i--) {
+  for (int i = treatment.size() - 1; i >= 0 ; i--) {
     if (treatment[i] == 1 && matchIndex != -1) {
       heap.push(MatchPair(i, matchIndex, distance(propensityScores[i], propensityScores[matchIndex])));
     } else {
@@ -67,10 +67,11 @@ std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initi
 
 std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
                                   const double caliper) {
-  int treatedCount = 0;
-  for (int i = 0; i < treatment.size();i++)
+  unsigned int treatedCount = 0;
+  for (unsigned int i = 0; i < treatment.size();i++)
     treatedCount += treatment[i];
-  unsigned int matchedCount = 0;
+  unsigned int comparatorCount = treatment.size() - treatedCount;
+  unsigned int matchedComparatorCount = 0;
   std::vector<int64_t> stratumIds(treatment.size(), -1);
   std::vector<unsigned int> stratumSizes;
   for (unsigned int targetRatio = 1; targetRatio <= maxRatio; targetRatio++) {
@@ -79,11 +80,9 @@ std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, c
       break;
     }
     unsigned int matchedTreatedCount = 0;
-
-    bool ranOutOfPairs = false;
     MatchPair pair = heap.top();
     heap.pop();
-    while (!ranOutOfPairs && pair.distance < caliper && matchedTreatedCount < treatedCount) {
+    while (pair.distance < caliper && matchedTreatedCount < treatedCount && matchedComparatorCount < comparatorCount) {
       int64_t stratumIdTreated = stratumIds[pair.indexTreated];
       int64_t stratumIdComparator = stratumIds[pair.indexComparator];
       if (stratumIdTreated == -1 && stratumIdComparator == -1) { //First time treated person is matched, comparator is unmatched
@@ -92,17 +91,18 @@ std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, c
         stratumIds[pair.indexComparator] = stratumId;
         stratumSizes.push_back(1);
         matchedTreatedCount++;
-        matchedCount += 2;
+        matchedComparatorCount++;
       } else if (stratumIdTreated != -1 && stratumIdComparator == -1) { //Already have a match for treated person, comparator is unmatched
         if (stratumSizes[stratumIdTreated] < targetRatio) { //We need another match for this person
           stratumIds[pair.indexTreated] = stratumIdTreated;
           stratumIds[pair.indexComparator] = stratumIdTreated;
           stratumSizes[stratumIdTreated] = stratumSizes[stratumIdTreated] + 1;
           matchedTreatedCount++;
-          matchedCount++;
+          matchedComparatorCount++;
         }
       } else if ((stratumIdTreated == -1 || stratumSizes[stratumIdTreated] < targetRatio) && stratumIds[pair.indexComparator] != -1) {
-        //We need another match for this treated person, but this comparator is already matched
+        //We need another match for this treated person, but this comparator is already matched. Create a new one and put it on the heap
+
         //Look back:
         int candidateBack = -1;
         unsigned int cursor = pair.indexTreated;
@@ -139,14 +139,12 @@ std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, c
           }
         }
       }
-      if (heap.empty() || matchedCount == treatment.size()) {
-        ranOutOfPairs = true;
-      } else {
+      if (!heap.empty() && matchedComparatorCount < comparatorCount) {
         pair = heap.top();
         heap.pop();
       }
     } //end while
-    if (matchedCount == treatment.size()) { //Everyone is matched: stop
+    if (matchedComparatorCount == comparatorCount) { //Every comparator is matched: stop
       break;
     }
     if (matchedTreatedCount == 0){ //No person was matched this round

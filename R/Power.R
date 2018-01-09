@@ -153,8 +153,8 @@ plotFollowUpDistribution <- function(population,
   if (yScale == "percent") {
     comparator$sumCount <- 100 * comparator$sumCount/comparator$sumCount[1]
   }
-  target$label <- targetLabel
-  comparator$label <- comparatorLabel
+  target$label <- as.character(targetLabel)
+  comparator$label <- as.character(comparatorLabel)
   d <- rbind(target, comparator)
   d$label <- factor(d$label, levels = c(targetLabel, comparatorLabel))
   plot <- ggplot2::ggplot(d,
