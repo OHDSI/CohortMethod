@@ -452,7 +452,7 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 ```
 
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 5: Matching plus full outcome model
+# Analysis 5: Inverse probability of treatment weighting
 negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -462,6 +462,22 @@ plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, nu
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
   negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+}
+```
+
+```{r tidy=FALSE,eval=FALSE}
+# Analysis 6: Matching plus full outcome model
+negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
+hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+  negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
+  hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
   plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 }

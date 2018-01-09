@@ -26,7 +26,6 @@ Depends:
     Cyclops (>= 1.2.0),
     FeatureExtraction  (>= 2.0.0)
 Imports:
-    bit,
     methods,
     ggplot2,
     gridExtra,
@@ -38,7 +37,6 @@ Imports:
     RJDBC,
     SqlRender (>= 1.1.1),
     survival,
-    stringi,
     OhdsiRTools (>= 1.1.2)
 Suggests:
     testthat,

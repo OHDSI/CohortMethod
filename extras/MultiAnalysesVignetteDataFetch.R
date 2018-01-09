@@ -1,6 +1,6 @@
 # @file MultiAnalysesVignetteDataFetch.R
 #
-# Copyright 2017 Observational Health Data Sciences and Informatics
+# Copyright 2018 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -183,7 +183,22 @@ cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
-fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(useCovariates = TRUE,
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(useCovariates = FALSE,
+                                                  modelType = "cox",
+                                                  stratified = FALSE,
+                                                  inversePsWeighting = TRUE)
+
+cmAnalysis5 <- createCmAnalysis(analysisId = 5,
+                                description = "Inverse probability weighting",
+                                getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
+                                createPs = TRUE,
+                                createPsArgs = createPsArgs,
+                                matchOnPs = FALSE,
+                                fitOutcomeModel = TRUE,
+                                fitOutcomeModelArgs = fitOutcomeModelArgs3)
+
+fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
                                                   modelType = "cox",
                                                   stratified = TRUE,
                                                   control = createControl(cvType = "auto",
@@ -193,7 +208,7 @@ fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(useCovariates = TRUE,
                                                                           tolerance = 2e-07,
                                                                           noiseLevel = "quiet"))
 
-cmAnalysis5 <- createCmAnalysis(analysisId = 5,
+cmAnalysis6 <- createCmAnalysis(analysisId = 6,
                                 description = "Matching plus full outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
@@ -203,9 +218,9 @@ cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 matchOnPsArgs = matchOnPsArgs,
                                 computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs3)
+                                fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
-cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5)
+cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
 
 saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodVignette2/cmAnalysisList.txt")
 saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
@@ -232,7 +247,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         createStudyPopThreads = 3,
                         computeCovarBalThreads = 3,
                         trimMatchStratifyThreads = 5,
-                        fitOutcomeModelThreads = 3,
+                        fitOutcomeModelThreads = 1,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
 # result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
@@ -252,8 +267,8 @@ DatabaseConnector::disconnect(connection)
 
 # cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
 # summary(cohortMethodData)
-analysisSummary <- summarizeAnalyses(result)
-saveRDS(analysisSummary, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
+# analysisSummary <- summarizeAnalyses(result)
+# saveRDS(analysisSummary, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 
 library(EmpiricalCalibration)
 for (i in 1:5) {
