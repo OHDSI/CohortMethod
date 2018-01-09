@@ -62,7 +62,8 @@ SELECT ROW_NUMBER() OVER (ORDER BY person_id, cohort_start_date) AS row_id,
 		END
 	} : {
 		DATEDIFF(DAY, cohort_start_date, observation_period_end_date)
-	} AS days_to_obs_end
+	} AS days_to_obs_end,
+	cohort_end_date
 INTO #cohort_person
 FROM (
 {@restrict_to_common_period} ? {
@@ -195,7 +196,7 @@ FROM (
 				) tmp
 				)
 	) common_period
-}	
+}
 
 INNER JOIN @cdm_database_schema.observation_period
 	ON subject_id = person_id
