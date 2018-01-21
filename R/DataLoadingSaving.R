@@ -149,9 +149,9 @@ getDbCohortMethodData <- function(connectionDetails,
                                   maxCohortSize = 0,
                                   covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
-    stop("Study start date must have format YYYYMMDD")
+    OhdsiRTools::logFatal("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
-    stop("Study end date must have format YYYYMMDD")
+    OhdsiRTools::logFatal("Study end date must have format YYYYMMDD")
   if (is.logical(removeDuplicateSubjects)) {
     if (removeDuplicateSubjects)
       removeDuplicateSubjects <- "remove all"
@@ -159,13 +159,14 @@ getDbCohortMethodData <- function(connectionDetails,
       removeDuplicateSubjects <- "keep all"
   }
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
-    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+    OhdsiRTools::logFatal("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+  OhdsiRTools::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
 
   if (excludeDrugsFromCovariates) {
     if (exposureTable != "drug_era")
-      warning("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
+      OhdsiRTools::logWarn("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
     sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_id, @comparator_id)"
     sql <- SqlRender::renderSql(sql,
                                 cdm_database_schema = cdmDatabaseSchema,
@@ -175,6 +176,7 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(connection, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
+    OhdsiRTools::logDebug("Excluding concept Ids from covariates: ", paste(conceptIds, collapse = ", "))
     if (is(covariateSettings, "covariateSettings")) {
       covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
                                                          conceptIds)
@@ -186,7 +188,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  writeLines("\nConstructing treatment and comparator cohorts")
+  OhdsiRTools::logInfo("\nConstructing treatment and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -215,16 +217,17 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      target_id = targetId)
     preSampleCounts <- DatabaseConnector::querySql(connection, renderedSql)
     colnames(preSampleCounts) <- SqlRender::snakeCaseToCamelCase(colnames(preSampleCounts))
+    OhdsiRTools::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
     preSampleCounts <- data.frame(treatedPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
                                   comparatorPersons = preSampleCounts$personCount[preSampleCounts$treatment == 0],
                                   treatedExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
                                   comparatorExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 0])
     if (preSampleCounts$treatedExposures > maxCohortSize) {
-      writeLines(paste0("Downsampling target cohort from ", preSampleCounts$treatedExposures, " to ", maxCohortSize))
+      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$treatedExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (preSampleCounts$comparatorExposures > maxCohortSize) {
-      writeLines(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
+      OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (sampled) {
@@ -238,7 +241,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  writeLines("Fetching cohorts from server")
+  OhdsiRTools::logInfo("Fetching cohorts from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                  packageName = "CohortMethod",
@@ -249,6 +252,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  sampled = sampled)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
+  OhdsiRTools::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
   metaData <- list(targetId = targetId,
                    comparatorId = comparatorId,
                    studyStartDate = studyStartDate,
@@ -311,7 +315,7 @@ getDbCohortMethodData <- function(connectionDetails,
   attr(cohorts, "metaData") <- metaData
 
   delta <- Sys.time() - start
-  writeLines(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
+  OhdsiRTools::logInfo(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
   if (sampled) {
     cohortTable <- "#cohort_sample"
   } else {
@@ -325,7 +329,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                          cohortTableIsTemp = TRUE,
                                                          rowIdField = "row_id",
                                                          covariateSettings = covariateSettings)
-  writeLines("Fetching outcomes from server")
+  OhdsiRTools::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
+  OhdsiRTools::logInfo("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                   packageName = "CohortMethod",
@@ -342,7 +347,8 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- data.frame(outcomeIds = outcomeIds)
   attr(outcomes, "metaData") <- metaData
   delta <- Sys.time() - start
-  writeLines(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
+  OhdsiRTools::logInfo(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
+  OhdsiRTools::logDebug("Fetched outcomes total count is ", nrow(outcomes))
 
   # Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
@@ -383,17 +389,15 @@ getDbCohortMethodData <- function(connectionDetails,
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
 #'
-#' @examples
-#' # todo
-#'
 #' @export
 saveCohortMethodData <- function(cohortMethodData, file) {
   if (missing(cohortMethodData))
-    stop("Must specify cohortMethodData")
+    OhdsiRTools::logFatal("Must specify cohortMethodData")
   if (missing(file))
-    stop("Must specify file")
+    OhdsiRTools::logFatal("Must specify file")
   if (class(cohortMethodData) != "cohortMethodData")
-    stop("Data not of class cohortMethodData")
+    OhdsiRTools::logFatal("Data not of class cohortMethodData")
+  OhdsiRTools::logTrace("Saving CohortMethodData to ", file)
 
   covariates <- cohortMethodData$covariates
   covariateRef <- cohortMethodData$covariateRef
@@ -425,9 +429,10 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' @export
 loadCohortMethodData <- function(file, readOnly = TRUE) {
   if (!file.exists(file))
-    stop(paste("Cannot find folder", file))
+    OhdsiRTools::logFatal(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
-    stop(paste("Not a folder", file))
+    OhdsiRTools::logFatal(paste("Not a folder", file))
+  OhdsiRTools::logTrace("Loading CohortMethodData from ", file)
 
   temp <- setwd(file)
   absolutePath <- setwd(temp)
@@ -471,7 +476,7 @@ summary.cohortMethodData <- function(object, ...) {
     outcomeCounts$eventCount[i] <- sum(object$outcomes$outcomeId == attr(object$outcomes,
                                                                          "metaData")$outcomeIds[i])
     outcomeCounts$personCount[i] <- length(unique(object$outcomes$rowId[object$outcomes$outcomeId ==
-      attr(object$outcomes, "metaData")$outcomeIds[i]]))
+                                                                          attr(object$outcomes, "metaData")$outcomeIds[i]]))
   }
   result <- list(metaData = append(append(object$metaData, attr(object$cohorts, "metaData")),
                                    attr(object$outcomes, "metaData")),
@@ -529,7 +534,7 @@ print.summary.cohortMethodData <- function(x, ...) {
 #' @export
 grepCovariateNames <- function(pattern, object) {
   if (is.null(object$covariateRef)) {
-    stop("object does not contain a covariateRef")
+    OhdsiRTools::logFatal("object does not contain a covariateRef")
   }
   select <- ffbase::ffwhich(object$covariateRef, grepl(pattern, covariateName))
   if (is.null(select)) {
@@ -589,10 +594,10 @@ insertDbPopulation <- function(population,
   population$cohortEndDate <- NA
   colnames(population) <- SqlRender::camelCaseToSnakeCase(colnames(population))
   connection <- DatabaseConnector::connect(connectionDetails)
-  writeLines(paste("Writing",
-                   nrow(population),
-                   "rows to",
-                   paste(cohortDatabaseSchema, cohortTable, sep = ".")))
+  OhdsiRTools::logInfo(paste("Writing",
+                             nrow(population),
+                             "rows to",
+                             paste(cohortDatabaseSchema, cohortTable, sep = ".")))
   start <- Sys.time()
   if (!createTable) {
     if (cdmVersion == "4") {
@@ -618,6 +623,6 @@ insertDbPopulation <- function(population,
                                  oracleTempSchema = NULL)
   DatabaseConnector::disconnect(connection)
   delta <- Sys.time() - start
-  writeLines(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
+  OhdsiRTools::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
   invisible(TRUE)
 }

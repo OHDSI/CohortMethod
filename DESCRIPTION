@@ -37,7 +37,7 @@ Imports:
     RJDBC,
     SqlRender (>= 1.1.1),
     survival,
-    OhdsiRTools (>= 1.1.2)
+    OhdsiRTools (>= 1.5.0)
 Suggests:
     testthat,
     pROC,

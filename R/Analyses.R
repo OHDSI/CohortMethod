@@ -94,20 +94,20 @@ createCmAnalysis <- function(analysisId = 1,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
-    stop("Need to pick one matching or stratification function")
+    OhdsiRTools::logFatal("Need to pick one matching or stratification function")
   }
   if (trimByPs && trimByPsToEquipoise) {
-    stop("Cannot trim to fraction and equipoise at the same time")
+    OhdsiRTools::logFatal("Cannot trim to fraction and equipoise at the same time")
   }
   if (!createPs && (trimByPs | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
-    stop("Must create propensity score model to use it for trimming, matching, or stratification")
+    OhdsiRTools::logFatal("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
       fitOutcomeModelArgs$stratified) {
-    stop("Must create strata by using matching or stratification to fit a stratified outcome model")
+    OhdsiRTools::logFatal("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
-    stop("Cannot compute covariate balance without matching or stratification")
+    OhdsiRTools::logFatal("Cannot compute covariate balance without matching or stratification")
   }
   if (!createPs) {
     createPsArgs <- NULL
@@ -167,6 +167,7 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
+  OhdsiRTools::logTrace("Saving cmAnalysisList to ", file)
   OhdsiRTools::saveSettingsToJson(cmAnalysisList, file)
 }
 
@@ -182,6 +183,7 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
+  OhdsiRTools::logTrace("Loading cmAnalysisList from ", file)
   return(OhdsiRTools::loadSettingsFromJson(file))
 }
 

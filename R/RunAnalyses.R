@@ -134,7 +134,7 @@ runCmAnalyses <- function(connectionDetails,
                           outcomeCvThreads = 1,
                           outcomeIdsOfInterest) {
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome){
-    stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
+    OhdsiRTools::logFatal("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {
     stopifnot(class(drugComparatorOutcomes) == "drugComparatorOutcomes")
@@ -147,12 +147,12 @@ runCmAnalyses <- function(connectionDetails,
                                                                            "comparatorId",
                                                                            "outcomeIds")))
   if (length(uniquedrugComparatorOutcomesList) != length(drugComparatorOutcomesList)) {
-    stop("Duplicate drug-comparator-outcomes combinations are not allowed")
+    OhdsiRTools::logFatal("Duplicate drug-comparator-outcomes combinations are not allowed")
   }
   analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
   uniqueAnalysisIds <- unique(analysisIds)
   if (length(uniqueAnalysisIds) != length(analysisIds)) {
-    stop("Duplicate analysis IDs are not allowed")
+    OhdsiRTools::logFatal("Duplicate analysis IDs are not allowed")
   }
   if (!file.exists(outputFolder))
     dir.create(outputFolder)
@@ -165,7 +165,7 @@ runCmAnalyses <- function(connectionDetails,
 
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
-  writeLines("*** Creating cohortMethodData objects ***")
+  OhdsiRTools::logInfo("*** Creating cohortMethodData objects ***")
   objectsToCreate <- list()
   for (cohortMethodDataFolder in unique(referenceTable$cohortMethodDataFolder)) {
     if (cohortMethodDataFolder != "" && !file.exists(cohortMethodDataFolder)) {
@@ -210,7 +210,7 @@ runCmAnalyses <- function(connectionDetails,
     OhdsiRTools::stopCluster(cluster)
   }
 
-  writeLines("*** Creating study populations ***")
+  OhdsiRTools::logInfo("*** Creating study populations ***")
   objectsToCreate <- list()
   for (studyPopFile in unique(referenceTable$studyPopFile)) {
     if (studyPopFile != "" && !file.exists(studyPopFile)) {
@@ -233,7 +233,7 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (refitPsForEveryOutcome) {
-    writeLines("*** Fitting propensity score models ***")
+    OhdsiRTools::logInfo("*** Fitting propensity score models ***")
     modelsToFit <- list()
     for (psFile in unique(referenceTable$psFile)) {
       if (psFile != "" && !file.exists((psFile))) {
@@ -256,7 +256,7 @@ runCmAnalyses <- function(connectionDetails,
       OhdsiRTools::stopCluster(cluster)
     }
   } else {
-    writeLines("*** Fitting shared propensity score models ***")
+    OhdsiRTools::logInfo("*** Fitting shared propensity score models ***")
     modelsToFit <- list()
     for (sharedPsFile in unique(referenceTable$sharedPsFile)) {
       if (sharedPsFile != "" && !file.exists(sharedPsFile)) {
@@ -279,7 +279,7 @@ runCmAnalyses <- function(connectionDetails,
       dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitSharedPsModel)
       OhdsiRTools::stopCluster(cluster)
     }
-    writeLines("*** Adding propensity scores to study population objects ***")
+    OhdsiRTools::logInfo("*** Adding propensity scores to study population objects ***")
     psFiles <- unique(referenceTable$psFile)
     psFiles <- psFiles[psFiles != ""]
     psFiles <- psFiles[!file.exists(psFiles)]
@@ -304,7 +304,7 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
 
-  writeLines("*** Trimming/Matching/Stratifying ***")
+  OhdsiRTools::logInfo("*** Trimming/Matching/Stratifying ***")
   tasks <- list()
   for (strataFile in unique(referenceTable$strataFile)) {
     if (strataFile != "" && !file.exists((strataFile))) {
@@ -324,7 +324,7 @@ runCmAnalyses <- function(connectionDetails,
     OhdsiRTools::stopCluster(cluster)
   }
 
-  writeLines("*** Computing covariate balance ***")
+  OhdsiRTools::logInfo("*** Computing covariate balance ***")
   tasks <- list()
   for (covariateBalanceFile in unique(referenceTable$covariateBalanceFile)) {
     if (covariateBalanceFile != "" && !file.exists((covariateBalanceFile))) {
@@ -343,9 +343,9 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
-    writeLines("*** Fitting outcome models ***")
+    OhdsiRTools::logInfo("*** Fitting outcome models ***")
   } else {
-    writeLines("*** Fitting outcome models for outcomes of interest ***")
+    OhdsiRTools::logInfo("*** Fitting outcome models for outcomes of interest ***")
   }
   modelsToFit <- list()
   for (i in 1:nrow(referenceTable)) {
@@ -379,7 +379,7 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
-    writeLines("*** Fitting outcome models for other outcomes ***")
+    OhdsiRTools::logInfo("*** Fitting outcome models for other outcomes ***")
     subset <- referenceTable[!referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "" & !file.exists(referenceTable$outcomeModelFile) , ]
     createArgs <- function(i) {
       refRow <- subset[i, ]
@@ -461,7 +461,7 @@ fitSharedPsModel <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   args <- params$createStudyPopArgs
   args$cohortMethodData <- cohortMethodData
-  writeLines("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
+  OhdsiRTools::logInfo("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
   studyPop <- do.call("createStudyPopulation", args)
   args <- params$createPsArg
   args$cohortMethodData <- cohortMethodData
@@ -966,15 +966,15 @@ createReferenceTable <- function(cmAnalysisList,
 .selectByType <- function(type, value, label) {
   if (is.null(type)) {
     if (is.list(value)) {
-      stop(paste("Multiple ",
-                 label,
-                 "s specified, but none selected in analyses (comparatorType).",
-                 sep = ""))
+      OhdsiRTools::logFatal(paste("Multiple ",
+                                  label,
+                                  "s specified, but none selected in analyses (comparatorType).",
+                                  sep = ""))
     }
     return(value)
   } else {
     if (!is.list(value) || is.null(value[type])) {
-      stop(paste(label, "type not found:", type))
+      OhdsiRTools::logFatal(paste(label, "type not found:", type))
     }
     return(value[type])
   }
@@ -1038,29 +1038,6 @@ summarizeAnalyses <- function(referenceTable) {
       }
       result$eventsTreated[i] <- outcomeModel$outcomeCounts$treatedOutcomes
       result$eventsComparator[i] <- outcomeModel$outcomeCounts$comparatorOutcomes
-
-      # if (referenceTable$strataFile[i] == "") {
-      #   studyPop <- readRDS(referenceTable$studyPopFile[i])
-      # } else {
-      #   studyPop <- readRDS(referenceTable$strataFile[i])
-      # }
-      # result$treated[i] <- sum(studyPop$treatment == 1)
-      # result$comparator[i] <- sum(studyPop$treatment == 0)
-      # if (outcomeModel$outcomeModelType == "cox") {
-      #   result$treatedDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 1])
-      #   result$comparatorDays[i] <- sum(studyPop$survivalTime[studyPop$treatment == 0])
-      # } else if (outcomeModel$outcomeModelType == "poisson") {
-      #   result$treatedDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 1])
-      #   result$comparatorDays[i] <- sum(studyPop$timeAtRisk[studyPop$treatment == 0])
-      # }
-      # if (outcomeModel$outcomeModelType == "cox" || outcomeModel$outcomeModelType == "logistic") {
-      #   result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1] != 0)
-      #   result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0] != 0)
-      # } else {
-      #   result$eventsTreated[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 1])
-      #   result$eventsComparator[i] <- sum(studyPop$outcomeCount[studyPop$treatment == 0])
-      # }
-
       result$logRr[i] <- if (is.null(coef(outcomeModel)))
         NA else coef(outcomeModel)
       result$seLogRr[i] <- if (is.null(coef(outcomeModel)))

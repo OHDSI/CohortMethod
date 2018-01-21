@@ -103,7 +103,7 @@ constructEras <- function(connectionDetails,
                           rollUpVocabularyId = "RxNorm",
                           cdmVersion = "5") {
   if (connectionDetails$dbms == "pdw")
-    stop("Currently not supporting Microsoft PDW")
+    OhdsiRTools::logFatal("Currently not supporting Microsoft PDW")
   if (!rollUp)
     rollUpConceptClassId <- ""
   if (sourceTable == "drug_exposure") {
@@ -181,9 +181,9 @@ constructEras <- function(connectionDetails,
                                                    cdm_version = cdmVersion)
   conn <- DatabaseConnector::connect(connectionDetails)
 
-  writeLines("Executing one large query. This could take a while")
+  OhdsiRTools::logInfo("Executing one large query. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE)
-  writeLines("Done")
+  OhdsiRTools::logInfo("Done")
 
   RJDBC::dbDisconnect(conn)
   return()
@@ -201,27 +201,27 @@ constructEras <- function(connectionDetails,
 #'
 #' @export
 checkCmInstallation <- function(connectionDetails) {
-  writeLines("Checking database connectivity")
+  OhdsiRTools::logInfo("Checking database connectivity")
   conn <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::disconnect(conn)
-  writeLines("- Ok")
+  OhdsiRTools::logInfo("- Ok")
 
-  writeLines("\nChecking large scale regression engine")
+  OhdsiRTools::logInfo("\nChecking large scale regression engine")
   counts <- c(18, 17, 15, 20, 10, 20, 25, 13, 12)
   outcome <- gl(3, 1, 9)
   treatment <- gl(3, 3)
   cyclopsData <- Cyclops::createCyclopsData(counts ~ outcome + treatment, modelType = "pr")
   cyclopsFit <- fitCyclopsModel(cyclopsData)
   if (length(coef(cyclopsFit)) != 5)
-    stop("Error fitting regression model")
-  writeLines("- Ok")
+    OhdsiRTools::logFatal("Error fitting regression model")
+  OhdsiRTools::logInfo("- Ok")
 
-  writeLines("\nChecking support for large data objects")
+  OhdsiRTools::logInfo("\nChecking support for large data objects")
   x <- ff::as.ffdf(data.frame(a = 1:100, b = "test"))
   if (nrow(x) != 100)
-    stop("Error creating large data object")
-  writeLines("- Ok")
+    OhdsiRTools::logFatal("Error creating large data object")
+  OhdsiRTools::logInfo("- Ok")
 
-  writeLines("\nCohortMethod is correctly installed")
-  writeLines(paste0("\nResponse code: ", round(pi * 123456)))
+  OhdsiRTools::logInfo("\nCohortMethod is correctly installed")
+  OhdsiRTools::logInfo(paste0("\nResponse code: ", round(pi * 123456)))
 }

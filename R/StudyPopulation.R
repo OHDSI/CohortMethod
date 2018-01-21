@@ -89,21 +89,25 @@ createStudyPopulation <- function(cohortMethodData,
       removeDuplicateSubjects <- "keep all"
   }
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
-    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+    OhdsiRTools::logFatal("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+  if (missing(outcomeId))
+    OhdsiRTools::logTrace("Creating study population without outcome ID")
+  else
+    OhdsiRTools::logTrace("Creating study population for outcome ID ", outcomeId)
 
   if (is.null(population)) {
     population <- cohortMethodData$cohorts
   }
   metaData <- attr(population, "metaData")
   if (firstExposureOnly) {
-    writeLines("Keeping only first exposure per subject")
+    OhdsiRTools::logInfo("Keeping only first exposure per subject")
     population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
     idx <- duplicated(population[, c("subjectId", "treatment")])
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
   }
   if (restrictToCommonPeriod) {
-    writeLines("Restrict to common period")
+    OhdsiRTools::logInfo("Restrict to common period")
     cohortStartDate <- as.Date(population$cohortStartDate)
     periodStart <- max(aggregate(cohortStartDate ~ population$treatment, FUN = min)$cohortStartDate)
     periodEnd <- min(aggregate(cohortStartDate ~ population$treatment, FUN = max)$cohortStartDate)
@@ -111,7 +115,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
   if (removeDuplicateSubjects == "remove all") {
-    writeLines("Removing all subject that are in both cohorts (if any)")
+    OhdsiRTools::logInfo("Removing all subject that are in both cohorts (if any)")
     targetSubjectIds <- population$subjectId[population$treatment == 1]
     comparatorSubjectIds <- population$subjectId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
@@ -119,7 +123,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
   } else if (removeDuplicateSubjects == "keep first") {
-    writeLines("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
+    OhdsiRTools::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
     idx <- duplicated(population[, c("subjectId")])
     population <- population[!idx, ]
@@ -128,7 +132,7 @@ createStudyPopulation <- function(cohortMethodData,
   }
 
   if (washoutPeriod) {
-    writeLines(paste("Requiring", washoutPeriod, "days of observation prior index date"))
+    OhdsiRTools::logInfo(paste("Requiring", washoutPeriod, "days of observation prior index date"))
     population <- population[population$daysFromObsStart >= washoutPeriod, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("At least",
                                                                                 washoutPeriod,
@@ -136,9 +140,9 @@ createStudyPopulation <- function(cohortMethodData,
   }
   if (removeSubjectsWithPriorOutcome) {
     if (missing(outcomeId) || is.null(outcomeId)) {
-      writeLines("No outcome specified so skipping removing people with prior outcomes")
+      OhdsiRTools::logInfo("No outcome specified so skipping removing people with prior outcomes")
     } else {
-      writeLines("Removing subjects with prior outcomes (if any)")
+      OhdsiRTools::logInfo("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
       if (addExposureDaysToStart) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
@@ -165,7 +169,7 @@ createStudyPopulation <- function(cohortMethodData,
   population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd >
                                                                                                 population$daysToObsEnd]
   if (censorAtNewRiskWindow) {
-    writeLines("Censoring time at risk of recurrent subjects at start of new time at risk")
+    OhdsiRTools::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
     population$startDate <- as.Date(population$cohortStartDate) + population$riskStart
     population$endDate <- as.Date(population$cohortStartDate) + population$riskEnd
     population <- population[order(population$subjectId, population$riskStart), ]
@@ -187,21 +191,17 @@ createStudyPopulation <- function(cohortMethodData,
     population$endDate <- NULL
   }
   if (minDaysAtRisk != 0) {
-    writeLines(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
+    OhdsiRTools::logInfo(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     population <- population[population$riskEnd - population$riskStart >= minDaysAtRisk, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least",
                                                                                 minDaysAtRisk,
                                                                                 "days at risk")))
   }
   if (missing(outcomeId) || is.null(outcomeId)) {
-    writeLines("No outcome specified so not creating outcome and time variables")
+    OhdsiRTools::logInfo("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
     outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
-    # idx <- match(outcomes$rowId, population$rowId)
-    # outcomes <- outcomes[!is.na(idx), ]
-    # outcomes$riskStart <- population$riskStart[idx[!is.na(idx)]]
-    # outcomes$riskEnd <- population$riskEnd[idx[!is.na(idx)]]
     outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
     outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
 
@@ -231,6 +231,7 @@ createStudyPopulation <- function(cohortMethodData,
   population$riskStart <- NULL
   population$riskEnd <- NULL
   attr(population, "metaData") <- metaData
+  OhdsiRTools::logDebug("Study population has ", nrow(population), " rows")
   return(population)
 }
 

@@ -42,7 +42,7 @@
 #' @export
 computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
   if (modelType != "cox")
-    stop("Currently only MDRR for Cox is supported")
+    OhdsiRTools::logFatal("Currently only MDRR for Cox is supported")
   if (twoSided) {
     z1MinAlpha <- qnorm(1 - alpha/2)
   } else {
@@ -129,7 +129,7 @@ plotFollowUpDistribution <- function(population,
                                      title = "Follow-up distribution",
                                      fileName = NULL) {
   if (yScale != "percent" && scale != "count")
-    stop("Scale must be either 'percent' or 'count'")
+    OhdsiRTools::logFatal("Scale must be either 'percent' or 'count'")
   if (yScale == "percent") {
     yLabel <- "Percent of subjects (cumulative)"
   } else {
@@ -159,14 +159,14 @@ plotFollowUpDistribution <- function(population,
   d$label <- factor(d$label, levels = c(targetLabel, comparatorLabel))
   plot <- ggplot2::ggplot(d,
                           ggplot2::aes(x = followUp, y = sumCount, group = label, color = label)) +
-          ggplot2::geom_hline(yintercept = 0) +
-          ggplot2::geom_step(size = 1) +
-          ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                                 rgb(0, 0, 0.8, alpha = 0.5))) +
-          ggplot2::scale_x_continuous("Follow-up (days)") +
-          ggplot2::coord_cartesian(xlim = c(0, cutoff)) +
-          ggplot2::ggtitle(title) +
-          ggplot2::theme(legend.title = ggplot2::element_blank())
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::geom_step(size = 1) +
+    ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                           rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_x_continuous("Follow-up (days)") +
+    ggplot2::coord_cartesian(xlim = c(0, cutoff)) +
+    ggplot2::ggtitle(title) +
+    ggplot2::theme(legend.title = ggplot2::element_blank())
   if (logYScale) {
     plot <- plot + ggplot2::scale_y_log10(yLabel)
   } else {

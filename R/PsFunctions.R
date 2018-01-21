@@ -77,9 +77,9 @@ createPs <- function(cohortMethodData,
   if (missing(population))
     population <- cohortMethodData$cohorts
   if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
+    OhdsiRTools::logFatal("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
+    OhdsiRTools::logFatal("Missing column treatment in population")
 
   start <- Sys.time()
   covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, population$rowId)
@@ -105,13 +105,13 @@ createPs <- function(cohortMethodData,
     set.seed(0)
     targetRowIds <- population$rowId[population$treatment == 1]
     if (length(targetRowIds) > maxCohortSizeForFitting) {
-      writeLines(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
       targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
       sampled <- TRUE
     }
     comparatorRowIds <- population$rowId[population$treatment == 0]
     if (length(comparatorRowIds) > maxCohortSizeForFitting) {
-      writeLines(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+      OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
       comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
       sampled <- TRUE
     }
@@ -143,11 +143,13 @@ createPs <- function(cohortMethodData,
       idx <- !is.na(ffbase::ffmatch(cohortMethodData$covariateRef$covariateId,
                                     ff::as.ff(covariateIds)))
       ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
-      writeLines("High correlation between covariate(s) and treatment detected:")
-      print(ref)
+      OhdsiRTools::logInfo("High correlation between covariate(s) and treatment detected:")
+      OhdsiRTools::logInfo(paste(colnames(x), collapse = "\t"))
+      for (i in 1:nrow(ref))
+        OhdsiRTools::logInfo(paste(as.character(ref[i, ]), collapse = "\t"))
       message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
       if (stopOnError) {
-        stop(message)
+        OhdsiRTools::logFatal(message)
       } else {
         error <- message
       }
@@ -161,13 +163,13 @@ createPs <- function(cohortMethodData,
     })
     if (is.character(cyclopsFit)) {
       if (stopOnError) {
-        stop(cyclopsFit)
+        OhdsiRTools::logFatal(cyclopsFit)
       } else {
         error <- cyclopsFit
       }
     } else if (cyclopsFit$return_flag != "SUCCESS") {
       if (stopOnError) {
-        stop(cyclopsFit$return_flag)
+        OhdsiRTools::logFatal(cyclopsFit$return_flag)
       } else {
         error <- cyclopsFit$return_flag
       }
@@ -176,7 +178,7 @@ createPs <- function(cohortMethodData,
   if (is.null(error)) {
     cfs <- coef(cyclopsFit)
     if (all(cfs[2:length(cfs)] == 0)) {
-      warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
+      OhdsiRTools::logWarn("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
     }
     if (sampled) {
       # Adjust intercept to non-sampled population:
@@ -213,7 +215,8 @@ createPs <- function(cohortMethodData,
   }
   population <- computePreferenceScore(population)
   delta <- Sys.time() - start
-  writeLines(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
+  OhdsiRTools::logDebug("Propensity model fitting finished with status ", error)
+  OhdsiRTools::logInfo(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
   return(population)
 }
 
@@ -311,21 +314,21 @@ plotPs <- function(data,
                    comparatorLabel = "Comparator",
                    fileName = NULL) {
   if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
+    OhdsiRTools::logFatal("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
+    OhdsiRTools::logFatal("Missing column propensityScore in data")
   if (!is.null(unfilteredData)) {
     if (!("treatment" %in% colnames(unfilteredData)))
-      stop("Missing column treatment in unfilteredData")
+      OhdsiRTools::logFatal("Missing column treatment in unfilteredData")
     if (!("propensityScore" %in% colnames(unfilteredData)))
-      stop("Missing column propensityScore in unfilteredData")
+      OhdsiRTools::logFatal("Missing column propensityScore in unfilteredData")
   }
   if (type != "density" && type != "histogram")
-    stop(paste("Unknown type '", type, "', please choose either 'density' or 'histogram'"),
-         sep = "")
+    OhdsiRTools::logFatal(paste("Unknown type '", type, "', please choose either 'density' or 'histogram'"),
+                          sep = "")
   if (scale != "propensity" && scale != "preference")
-    stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"),
-         sep = "")
+    OhdsiRTools::logFatal(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"),
+                          sep = "")
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -408,9 +411,9 @@ plotPs <- function(data,
 #' @export
 computePsAuc <- function(data, confidenceIntervals = FALSE) {
   if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
+    OhdsiRTools::logFatal("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
+    OhdsiRTools::logFatal("Missing column propensityScore in data")
 
   if (confidenceIntervals) {
     auc <- aucWithCi(data$propensityScore, data$treatment)
@@ -449,11 +452,12 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #' @export
 trimByPs <- function(population, trimFraction = 0.05) {
   if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
+    OhdsiRTools::logFatal("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
+    OhdsiRTools::logFatal("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
+    OhdsiRTools::logFatal("Missing column propensityScore in population")
+  OhdsiRTools::logTrace("Trimming based on propensity score")
   cutoffTreated <- quantile(population$propensityScore[population$treatment == 1], 1 - trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], trimFraction)
   result <- population[(population$propensityScore <= cutoffTreated & population$treatment == 1) |
@@ -462,6 +466,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
     attr(result,
          "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))
   }
+  OhdsiRTools::logDebug("Population size after trimming is ", nrow(result))
   return(result)
 }
 
@@ -497,18 +502,19 @@ trimByPs <- function(population, trimFraction = 0.05) {
 #' @export
 trimByPsToEquipoise <- function(population, bounds = c(0.25, 0.75)) {
   if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
+    OhdsiRTools::logFatal("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
+    OhdsiRTools::logFatal("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
-
+    OhdsiRTools::logFatal("Missing column propensityScore in population")
+  OhdsiRTools::logTrace("Trimming to equipoise")
   temp <- computePreferenceScore(population)
   population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
   if (!is.null(attr(population, "metaData"))) {
     attr(population,
          "metaData")$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
   }
+  OhdsiRTools::logDebug("Population size after trimming is ", nrow(population))
   return(population)
 }
 
@@ -522,7 +528,7 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
       col <- which(colnames(data) == paste("covariateId", covariateId, sep = "_"))
       data[is.na(data[, col]), col] <- 0
     } else {
-      warning(paste("Not matching on covariate", covariateId, "because value is always 0"))
+      OhdsiRTools::logWarn(paste("Not matching on covariate", covariateId, "because value is always 0"))
     }
   }
   return(data)
@@ -595,15 +601,15 @@ matchOnPs <- function(population,
                       maxRatio = 1,
                       stratificationColumns = c()) {
   if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
+    OhdsiRTools::logFatal("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
+    OhdsiRTools::logFatal("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
+    OhdsiRTools::logFatal("Missing column propensityScore in population")
   if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
-    stop(paste("Unknown caliperScale '",
-               caliperScale,
-               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
+    OhdsiRTools::logFatal(paste("Unknown caliperScale '",
+                                caliperScale,
+                                "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   population <- population[order(population$propensityScore), ]
   propensityScore <- population$propensityScore
@@ -620,22 +626,23 @@ matchOnPs <- function(population,
   }
   if (length(stratificationColumns) == 0) {
     result <- matchPsInternal(propensityScore,
-                    population$treatment,
-                    maxRatio,
-                    caliper)
+                              population$treatment,
+                              maxRatio,
+                              caliper)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
     if (!is.null(attr(population, "metaData"))) {
       attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition,
                                                       getCounts(population, paste("Matched on propensity score")))
     }
+    OhdsiRTools::logDebug("Population size after matching is ", nrow(result))
     return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
       subResult <- matchPsInternal(subset$propensityScore,
-                         subset$treatment,
-                         maxRatio,
-                         caliper)
+                                   subset$treatment,
+                                   maxRatio,
+                                   caliper)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
       return(subset)
@@ -659,6 +666,7 @@ matchOnPs <- function(population,
       attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition,
                                                   getCounts(result, paste("Trimmed to equipoise")))
     }
+    OhdsiRTools::logDebug("Population size after matching is ", nrow(result))
     return(result)
   }
 }
@@ -720,9 +728,9 @@ matchOnPsAndCovariates <- function(population,
                                    cohortMethodData,
                                    covariateIds) {
   if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
-    stop(paste("Unknown caliperScale '",
-               caliperScale,
-               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
+    OhdsiRTools::logFatal(paste("Unknown caliperScale '",
+                                caliperScale,
+                                "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
@@ -765,27 +773,27 @@ matchOnPsAndCovariates <- function(population,
 #' @export
 stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c(), baseSelection = "all") {
   if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
+    OhdsiRTools::logFatal("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
+    OhdsiRTools::logFatal("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
-
+    OhdsiRTools::logFatal("Missing column propensityScore in population")
+  OhdsiRTools::logTrace("Stratifying by propensity score")
   baseSelection <- tolower(baseSelection)
   if (baseSelection == "all") {
-  basePop <- population$propensityScore
+    basePop <- population$propensityScore
   } else if (baseSelection == "target") {
     basePop <- population$propensityScore[population$treatment == 1]
   } else if (baseSelection == "target") {
     basePop <- population$propensityScore[population$treatment == 0]
   } else {
-    stop(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
+    OhdsiRTools::logFatal(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
   }
   psStrata <- unique(quantile(basePop,
                               (1:(numberOfStrata - 1))/numberOfStrata))
   attr(population, "strata") <- psStrata
   if (length(psStrata) == 1) {
-    warning("Only 1 strata detected")
+    OhdsiRTools::logWarn("Only 1 strata detected")
   }
   if (length(stratificationColumns) == 0) {
     if (length(psStrata) == 1) {
@@ -1001,6 +1009,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'
 #' @export
 computeCovariateBalance <- function(population, cohortMethodData) {
+  OhdsiRTools::logTrace("Computing covariate balance")
   start <- Sys.time()
   cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
   covariates <- cohortMethodData$covariates
@@ -1040,7 +1049,7 @@ computeCovariateBalance <- function(population, cohortMethodData) {
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   delta <- Sys.time() - start
-  writeLines(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  OhdsiRTools::logInfo(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
 }
 
