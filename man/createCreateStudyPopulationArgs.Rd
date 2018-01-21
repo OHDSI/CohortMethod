@@ -9,7 +9,7 @@ createCreateStudyPopulationArgs(firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
   priorOutcomeLookback = 99999, minDaysAtRisk = 1, riskWindowStart = 0,
   addExposureDaysToStart = FALSE, riskWindowEnd = 0,
-  addExposureDaysToEnd = TRUE)
+  addExposureDaysToEnd = TRUE, censorAtNewRiskWindow = FALSE)
 }
 \arguments{
 \item{firstExposureOnly}{Should only the first exposure per subject be included?
@@ -23,7 +23,7 @@ observed?}
 toindex date for a person to be included in the cohort.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the treated and
-comparatorcohort?}
+comparatorcohort? See details for allowed values.}
 
 \item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the
 riskwindow start?}
@@ -44,6 +44,9 @@ indexdata (+ days of exposure if the
 addExposureDaysToEndparameter is specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
+
+\item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be
+censoredwhen the new time-at-risk starts to prevent overlap?}
 }
 \description{
 Create a parameter object for the function createStudyPopulation

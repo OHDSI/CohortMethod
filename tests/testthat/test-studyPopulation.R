@@ -29,7 +29,7 @@ test_that("createStudyPop: firstExposureOnly", {
   expect_equal(nrow(sp), 1)
 })
 
-test_that("createStudyPop: removeDuplicateSubjects", {
+test_that("createStudyPop: removeDuplicateSubjects = 'remove all'", {
   tempCmd <- cohortMethodData
   tempCmd$cohorts <- rbind(tempCmd$cohorts, tempCmd$cohorts)
   tempCmd$cohorts$rowId[1] <- 1
@@ -39,8 +39,26 @@ test_that("createStudyPop: removeDuplicateSubjects", {
 
   sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = FALSE)
   expect_equal(nrow(sp), 2)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = "keep all")
+  expect_equal(nrow(sp), 2)
   sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = TRUE)
   expect_equal(nrow(sp), 0)
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = "remove all")
+  expect_equal(nrow(sp), 0)
+})
+
+test_that("createStudyPop: removeDuplicateSubjects = 'keep first'", {
+  tempCmd <- cohortMethodData
+  tempCmd$cohorts <- rbind(tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts)
+  tempCmd$cohorts$rowId <- c(1,2,3)
+  tempCmd$cohorts$treatment <- c(1, 0, 1)
+  tempCmd$cohorts$subjectId <- c(1, 1, 2)
+  tempCmd$cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2001-02-01", "2000-01-01"))
+
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = "keep first")
+  expect_equal(sp$rowId, c(1,3))
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = "keep all")
+  expect_equal(sp$rowId, c(1,2,3))
 })
 
 test_that("createStudyPop: restrictToCommonPeriod", {
@@ -127,6 +145,22 @@ test_that("createStudyPop: risk window definition", {
                               addExposureDaysToEnd = FALSE,
                               riskWindowEnd = 9999)
   expect_equal(sp$timeAtRisk, 21)
+})
+
+
+test_that("createStudyPop: censor at new risk window start", {
+  tempCmd <- cohortMethodData
+  tempCmd$cohorts <- rbind(tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts)
+  tempCmd$cohorts$rowId <- c(1,2,3)
+  tempCmd$cohorts$treatment <- c(1, 0, 1)
+  tempCmd$cohorts$subjectId <- c(1, 1, 2)
+  tempCmd$cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2000-02-01", "2000-01-01"))
+  tempCmd$cohorts$daysToCohortEnd <- c(100, 100, 100)
+
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, outcomeId = 0, censorAtNewRiskWindow = TRUE)
+  expect_equal(sp$timeAtRisk, c(31, 101, 101))
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, outcomeId = 0, censorAtNewRiskWindow = FALSE)
+  expect_equal(sp$timeAtRisk, c(101, 101, 101))
 })
 
 test_that("createStudyPop: outcomes", {

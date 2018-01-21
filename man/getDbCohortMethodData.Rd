@@ -85,7 +85,7 @@ that this is typically done in the \code{createStudyPopulation}
 function, but can already be done here for efficiency reasons.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
-cohort? Note that this is typically done in the
+cohort? See details for allowed values.N ote that this is typically done in the
 \code{createStudyPopulation} function, but can already be done
 here for efficiency reasons.}
 
@@ -136,4 +136,11 @@ can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically
 their descendants will be excluded from the covariates. However, if the \code{targetId} and
 \code{comparatorId} arguments do not represent concept IDs, you will need to manually add the drugs
 and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
+
+The \code{removeduplicateSubjects} argument can have one of the following values:
+\describe{
+  \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
+  \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+  \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
+}
 }

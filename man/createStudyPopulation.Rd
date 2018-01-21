@@ -9,7 +9,8 @@ createStudyPopulation(cohortMethodData, population = NULL, outcomeId,
   washoutPeriod = 0, removeDuplicateSubjects = FALSE,
   removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
   minDaysAtRisk = 1, riskWindowStart = 0, addExposureDaysToStart = FALSE,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE)
+  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
+  censorAtNewRiskWindow = FALSE)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
@@ -32,7 +33,7 @@ that this is typically done in the
 index date for a person to be included in the cohort.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
-cohort?}
+cohort? See details for allowed values.}
 
 \item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk
 window start?}
@@ -53,6 +54,9 @@ data (+ days of exposure if the \code{addExposureDaysToEnd}
 parameter is specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
+
+\item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be censored
+when the new time-at-risk starts to prevent overlap?}
 }
 \value{
 A data frame specifying the study population. This data frame will have the following columns:
@@ -67,4 +71,11 @@ Create a study population
 \details{
 Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
 window, and determining which outcomes fall inside the risk window.
+
+The \code{removeduplicateSubjects} argument can have one of the following values:
+\describe{
+  \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
+  \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+  \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
+}
 }

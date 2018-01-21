@@ -28,9 +28,9 @@ this is typically done in the createStudyPopulationfunction, but
 can already be done here for efficiency reasons.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the treated and
-comparatorcohort? Note that this is typically done in
-thecreateStudyPopulation function, but can already be donehere
-for efficiency reasons.}
+comparatorcohort? See details for allowed values.N ote that this
+is typically done in thecreateStudyPopulation function, but can
+already be donehere for efficiency reasons.}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are
 observed?}

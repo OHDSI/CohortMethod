@@ -22,6 +22,13 @@
 #' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
 #' window, and determining which outcomes fall inside the risk window.
 #'
+#' The \code{removeduplicateSubjects} argument can have one of the following values:
+#' \describe{
+#'   \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
+#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+#'   \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
+#' }
+#'
 #' @param cohortMethodData                 An object of type \code{cohortMethodData} as generated using
 #'                                         \code{getDbCohortMethodData}.
 #' @param population                       If specified, this population will be used as the starting
@@ -33,7 +40,7 @@
 #'                                         that this is typically done in the
 #'                                         \code{createStudyPopulation} function,
 #' @param removeDuplicateSubjects          Remove subjects that are in both the treated and comparator
-#'                                         cohort?
+#'                                         cohort? See details for allowed values.
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both treatments are observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
@@ -50,7 +57,8 @@
 #'                                         data (+ days of exposure if the \code{addExposureDaysToEnd}
 #'                                         parameter is specified).
 #' @param addExposureDaysToEnd             Add the length of exposure the risk window?
-#'
+#' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
+#'                                         when the new time-at-risk starts to prevent overlap?
 #' @return
 #' A data frame specifying the study population. This data frame will have the following columns:
 #' \describe{ \item{rowId}{A unique identifier for an exposure} \item{subjectId}{The person ID of the
@@ -72,14 +80,24 @@ createStudyPopulation <- function(cohortMethodData,
                                   riskWindowStart = 0,
                                   addExposureDaysToStart = FALSE,
                                   riskWindowEnd = 0,
-                                  addExposureDaysToEnd = TRUE) {
+                                  addExposureDaysToEnd = TRUE,
+                                  censorAtNewRiskWindow = FALSE) {
+  if (is.logical(removeDuplicateSubjects)) {
+    if (removeDuplicateSubjects)
+      removeDuplicateSubjects <- "remove all"
+    else
+      removeDuplicateSubjects <- "keep all"
+  }
+  if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
+    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+
   if (is.null(population)) {
     population <- cohortMethodData$cohorts
   }
   metaData <- attr(population, "metaData")
   if (firstExposureOnly) {
     writeLines("Keeping only first exposure per subject")
-    population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
+    population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
     idx <- duplicated(population[, c("subjectId", "treatment")])
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
@@ -92,15 +110,23 @@ createStudyPopulation <- function(cohortMethodData,
     population <- population[cohortStartDate >= periodStart & cohortStartDate <= periodEnd, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
-  if (removeDuplicateSubjects) {
-    writeLines("Removing subject that are in both cohorts (if any)")
+  if (removeDuplicateSubjects == "remove all") {
+    writeLines("Removing all subject that are in both cohorts (if any)")
     targetSubjectIds <- population$subjectId[population$treatment == 1]
     comparatorSubjectIds <- population$subjectId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
     population <- population[!(population$subjectId %in% duplicateSubjectIds), ]
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
+  } else if (removeDuplicateSubjects == "keep first") {
+    writeLines("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
+    population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
+    idx <- duplicated(population[, c("subjectId")])
+    population <- population[!idx, ]
+    metaData$attrition <- rbind(metaData$attrition,
+                                getCounts(population, paste("Restricting duplicate subjects to first cohort")))
   }
+
   if (washoutPeriod) {
     writeLines(paste("Requiring", washoutPeriod, "days of observation prior index date"))
     population <- population[population$daysFromObsStart >= washoutPeriod, ]
@@ -117,10 +143,10 @@ createStudyPopulation <- function(cohortMethodData,
       if (addExposureDaysToStart) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
-          outcomes$daysToCohortEnd + riskWindowStart]
+                                               outcomes$daysToCohortEnd + riskWindowStart]
       } else {
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
-          riskWindowStart]
+                                               riskWindowStart]
       }
       population <- population[!(population$rowId %in% priorOutcomeRowIds), ]
       metaData$attrition <- rbind(metaData$attrition,
@@ -137,7 +163,29 @@ createStudyPopulation <- function(cohortMethodData,
     population$riskEnd <- population$riskEnd + population$daysToCohortEnd
   }
   population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd >
-    population$daysToObsEnd]
+                                                                                                population$daysToObsEnd]
+  if (censorAtNewRiskWindow) {
+    writeLines("Censoring time at risk of recurrent subjects at start of new time at risk")
+    population$startDate <- as.Date(population$cohortStartDate) + population$riskStart
+    population$endDate <- as.Date(population$cohortStartDate) + population$riskEnd
+    population <- population[order(population$subjectId, population$riskStart), ]
+    idx <- 1:(nrow(population)-1)
+    idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
+                   population$subjectId[idx] == population$subjectId[idx + 1])
+    if (length(idx) > 0) {
+      population$endDate[idx] <- population$startDate[idx + 1] - 1
+      population$riskEnd[idx] <- population$endDate[idx] - as.Date(population$cohortStartDate[idx])
+      idx <- population$riskEnd < population$riskStart
+      if (any(idx)) {
+        population <- population[!idx, ]
+        metaData$attrition <- rbind(metaData$attrition,
+                                    getCounts(population, paste("Censoring at start of new time-at-risk")))
+
+      }
+    }
+    population$startDate <- NULL
+    population$endDate <- NULL
+  }
   if (minDaysAtRisk != 0) {
     writeLines(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     population <- population[population$riskEnd - population$riskStart >= minDaysAtRisk, ]
@@ -178,7 +226,7 @@ createStudyPopulation <- function(cohortMethodData,
     population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
     population$survivalTime <- population$timeAtRisk
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
-      0] - population$riskStart[population$outcomeCount != 0] + 1
+                                                                                      0] - population$riskStart[population$outcomeCount != 0] + 1
   }
   population$riskStart <- NULL
   population$riskEnd <- NULL

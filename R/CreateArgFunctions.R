@@ -19,9 +19,9 @@
 #'                                     this is typically done in the createStudyPopulationfunction, but
 #'                                     can already be done here for efficiency reasons.
 #' @param removeDuplicateSubjects      Remove subjects that are in both the treated and
-#'                                     comparatorcohort? Note that this is typically done in
-#'                                     thecreateStudyPopulation function, but can already be donehere
-#'                                     for efficiency reasons.
+#'                                     comparatorcohort? See details for allowed values.N ote that this
+#'                                     is typically done in thecreateStudyPopulation function, but can
+#'                                     already be donehere for efficiency reasons.
 #' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are
 #'                                     observed?
 #' @param washoutPeriod                The mininum required continuous observation time prior to
@@ -73,7 +73,7 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #' @param washoutPeriod                    The mininum required continuous observation time prior
 #'                                         toindex date for a person to be included in the cohort.
 #' @param removeDuplicateSubjects          Remove subjects that are in both the treated and
-#'                                         comparatorcohort?
+#'                                         comparatorcohort? See details for allowed values.
 #' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the
 #'                                         riskwindow start?
 #' @param priorOutcomeLookback             How many days should we look back when identifying
@@ -87,6 +87,8 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #'                                         indexdata (+ days of exposure if the
 #'                                         addExposureDaysToEndparameter is specified).
 #' @param addExposureDaysToEnd             Add the length of exposure the risk window?
+#' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be
+#'                                         censoredwhen the new time-at-risk starts to prevent overlap?
 #'
 #' @export
 createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
@@ -99,7 +101,8 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
                                             riskWindowStart = 0,
                                             addExposureDaysToStart = FALSE,
                                             riskWindowEnd = 0,
-                                            addExposureDaysToEnd = TRUE) {
+                                            addExposureDaysToEnd = TRUE,
+                                            censorAtNewRiskWindow = FALSE) {
   # First: get default values:
   analysis <- list()
   for (name in names(formals(createCreateStudyPopulationArgs))) {

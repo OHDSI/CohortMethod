@@ -35,6 +35,13 @@
 #' \code{comparatorId} arguments do not represent concept IDs, you will need to manually add the drugs
 #' and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
 #'
+#' The \code{removeduplicateSubjects} argument can have one of the following values:
+#' \describe{
+#'   \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
+#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+#'   \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
+#' }
+#'
 #' @param connectionDetails            An R object of type\cr\code{connectionDetails} created using the
 #'                                     function \code{createConnectionDetails} in the
 #'                                     \code{DatabaseConnector} package.
@@ -90,7 +97,7 @@
 #'                                     that this is typically done in the \code{createStudyPopulation}
 #'                                     function, but can already be done here for efficiency reasons.
 #' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator
-#'                                     cohort? Note that this is typically done in the
+#'                                     cohort? See details for allowed values.N ote that this is typically done in the
 #'                                     \code{createStudyPopulation} function, but can already be done
 #'                                     here for efficiency reasons.
 #' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are observed?
@@ -145,6 +152,14 @@ getDbCohortMethodData <- function(connectionDetails,
     stop("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
     stop("Study end date must have format YYYYMMDD")
+  if (is.logical(removeDuplicateSubjects)) {
+    if (removeDuplicateSubjects)
+      removeDuplicateSubjects <- "remove all"
+    else
+      removeDuplicateSubjects <- "keep all"
+  }
+  if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
+    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
 
   connection <- DatabaseConnector::connect(connectionDetails)
 
@@ -238,7 +253,7 @@ getDbCohortMethodData <- function(connectionDetails,
                    comparatorId = comparatorId,
                    studyStartDate = studyStartDate,
                    studyEndDate = studyEndDate)
-  if (firstExposureOnly || removeDuplicateSubjects || washoutPeriod != 0) {
+  if (firstExposureOnly || removeDuplicateSubjects != "keep all" || washoutPeriod != 0) {
     rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
@@ -263,9 +278,12 @@ getDbCohortMethodData <- function(connectionDetails,
     if (firstExposureOnly) {
       label <- c(label, "first exp. only")
     }
-    if (removeDuplicateSubjects) {
+    if (removeDuplicateSubjects == "remove all") {
       label <- c(label, "removed subs in both cohorts")
+    } else if (removeDuplicateSubjects == "keep first") {
+      label <- c(label, "first cohort only")
     }
+
     if (restrictToCommonPeriod) {
       label <- c(label, "restrict to common period")
     }

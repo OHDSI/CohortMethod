@@ -28,7 +28,7 @@ limitations under the License.
 {DEFAULT @study_end_date = '' }
 {DEFAULT @first_only = FALSE}
 {DEFAULT @washout_period = 0}
-{DEFAULT @remove_duplicate_subjects = FALSE}
+{DEFAULT @remove_duplicate_subjects = 'keep all'}
 {DEFAULT @restrict_to_common_period = FALSE}
 
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
@@ -80,28 +80,37 @@ FROM (
 		MIN(cohort_end_date) AS cohort_end_date
 	FROM (
 }
+{@remove_duplicate_subjects == 'keep first'} ? {
+		SELECT subject_id,
+		  cohort_definition_id,
+		  cohort_start_date,
+		  cohort_end_date,
+		  ROW_NUMBER() OVER (PARTITION BY subject_id ORDER BY cohort_start_date) AS cohort_number
+		FROM (
+}
 {@exposure_table == 'drug_era' } ? {
 	SELECT exposure_table.person_id AS subject_id,
 		drug_concept_id AS cohort_definition_id,
 		drug_era_start_date AS cohort_start_date,
 		drug_era_end_date AS cohort_end_date
 	FROM  @exposure_database_schema.@exposure_table exposure_table
-	{@remove_duplicate_subjects} ? {
-		INNER JOIN
-		(SELECT person_id,
-						COUNT(DISTINCT(drug_concept_id)) drug_count
-			 FROM @exposure_database_schema.@exposure_table
-			 WHERE drug_concept_id IN (@target_id, @comparator_id)
-			 GROUP BY person_id) temp
-		ON
-			exposure_table.person_id = temp.person_id
-		WHERE
-			temp.drug_count = 1
-			AND
+	{@remove_duplicate_subjects == 'remove all'} ? {
+	INNER JOIN (	
+		SELECT person_id,
+			COUNT(DISTINCT(drug_concept_id)) drug_count
+		FROM @exposure_database_schema.@exposure_table
+		WHERE drug_concept_id IN (@target_id, @comparator_id)
+		GROUP BY person_id
+	) temp
+	ON
+		exposure_table.person_id = temp.person_id
+	WHERE
+		temp.drug_count = 1
+		AND
 	} : {
-		WHERE
+	WHERE
 	}
-			exposure_table.drug_concept_id IN (@target_id, @comparator_id)
+		exposure_table.drug_concept_id IN (@target_id, @comparator_id)
 } : {
 	SELECT exposure_table.subject_id,
 {@cdm_version == "4"} ? {
@@ -113,7 +122,7 @@ FROM (
 		cohort_end_date
 	FROM @exposure_database_schema.@exposure_table exposure_table
 	{@cdm_version == "4"} ? {
-		{@remove_duplicate_subjects} ? {
+		{@remove_duplicate_subjects == 'remove all'} ? {
 			INNER JOIN
 			(SELECT subject_id, COUNT(DISTINCT(cohort_concept_id)) cohort_count
 			 FROM @exposure_database_schema.@exposure_table
@@ -129,7 +138,7 @@ FROM (
 		}
 		  cohort_concept_id IN (@target_id, @comparator_id)
 	} : {
-		{@remove_duplicate_subjects} ? {
+		{@remove_duplicate_subjects == 'remove all'} ? {
 			INNER JOIN
 			(SELECT subject_id, COUNT(DISTINCT(cohort_definition_id)) cohort_count
 			 FROM @exposure_database_schema.@exposure_table
@@ -145,6 +154,10 @@ FROM (
 		}
 		cohort_definition_id IN (@target_id, @comparator_id)
 	}
+}
+{@remove_duplicate_subjects == 'keep first'} ? {
+  ) temp
+  WHERE cohort_number = 1
 }
 	) raw_cohorts
 {@first_only} ? {
