@@ -144,9 +144,10 @@ createPs <- function(cohortMethodData,
                                     ff::as.ff(covariateIds)))
       ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
       OhdsiRTools::logInfo("High correlation between covariate(s) and treatment detected:")
-      OhdsiRTools::logInfo(paste(colnames(x), collapse = "\t"))
+      OhdsiRTools::logInfo(paste(colnames(ref), collapse = "\t"))
+      ref$covariateName <- as.character(ref$covariateName)
       for (i in 1:nrow(ref))
-        OhdsiRTools::logInfo(paste(as.character(ref[i, ]), collapse = "\t"))
+        OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
       message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
       if (stopOnError) {
         OhdsiRTools::logFatal(message)
