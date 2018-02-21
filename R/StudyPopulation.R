@@ -89,7 +89,7 @@ createStudyPopulation <- function(cohortMethodData,
       removeDuplicateSubjects <- "keep all"
   }
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
-    OhdsiRTools::logFatal("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
   if (missing(outcomeId))
     OhdsiRTools::logTrace("Creating study population without outcome ID")
   else

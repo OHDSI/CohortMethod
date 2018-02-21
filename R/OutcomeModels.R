@@ -62,15 +62,15 @@ fitOutcomeModel <- function(population,
                                                     cvRepetitions = 10,
                                                     noiseLevel = "quiet")) {
   if (stratified && is.null(population$stratumId))
-    OhdsiRTools::logFatal("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
+    stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
   if (is.null(population$outcomeCount))
-    OhdsiRTools::logFatal("No outcome variable found in population object. Use createStudyPopulation to create variable.")
+    stop("No outcome variable found in population object. Use createStudyPopulation to create variable.")
   if (missing(cohortMethodData) && useCovariates)
-    OhdsiRTools::logFatal("Requested all covariates for model, but no cohortMethodData object specified")
+    stop("Requested all covariates for model, but no cohortMethodData object specified")
   if (inversePsWeighting && is.null(population$propensityScore))
-    OhdsiRTools::logFatal("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
+    stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
-    OhdsiRTools::logFatal(paste("Unknown modelType '",
+    stop(paste("Unknown modelType '",
                                 modelType,
                                 "', please choose either 'logistic', 'poisson', or 'cox'",
                                 sep = ""))
@@ -253,7 +253,7 @@ modelTypeToCyclopsModelType <- function(modelType, stratified) {
       return("cpr") else return("pr")
   } else if (modelType == "cox") {
     return("cox")
-  } else OhdsiRTools::logFatal(paste("Unknown model type:", modelType))
+  } else stop(paste("Unknown model type:", modelType))
 }
 
 #' @export
@@ -301,7 +301,7 @@ coef.outcomeModel <- function(object, ...) {
 confint.outcomeModel <- function(object, parm, level = 0.95, ...) {
   missing(parm)  # suppresses R CMD check note
   if (level != 0.95)
-    OhdsiRTools::logFatal("Only supporting 95% confidence interval")
+    stop("Only supporting 95% confidence interval")
   return(c(object$outcomeModelTreatmentEstimate$logLb95,
            object$outcomeModelTreatmentEstimate$logUb95))
 }
@@ -408,7 +408,7 @@ plotKaplanMeier <- function(population,
                             title,
                             fileName = NULL) {
   if (!is.null(population$stratumId))
-    OhdsiRTools::logWarn("The population has strata, but the stratification is not visible in the plot")
+    warning("The population has strata, but the stratification is not visible in the plot")
 
   population$y <- 0
   population$y[population$outcomeCount != 0] <- 1

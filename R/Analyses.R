@@ -94,20 +94,20 @@ createCmAnalysis <- function(analysisId = 1,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
-    OhdsiRTools::logFatal("Need to pick one matching or stratification function")
+    stop("Need to pick one matching or stratification function")
   }
   if (trimByPs && trimByPsToEquipoise) {
-    OhdsiRTools::logFatal("Cannot trim to fraction and equipoise at the same time")
+    stop("Cannot trim to fraction and equipoise at the same time")
   }
   if (!createPs && (trimByPs | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
-    OhdsiRTools::logFatal("Must create propensity score model to use it for trimming, matching, or stratification")
+    stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
       fitOutcomeModelArgs$stratified) {
-    OhdsiRTools::logFatal("Must create strata by using matching or stratification to fit a stratified outcome model")
+    stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
-    OhdsiRTools::logFatal("Cannot compute covariate balance without matching or stratification")
+    stop("Cannot compute covariate balance without matching or stratification")
   }
   if (!createPs) {
     createPsArgs <- NULL

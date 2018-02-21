@@ -42,7 +42,7 @@
 #' @export
 computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
   if (modelType != "cox")
-    OhdsiRTools::logFatal("Currently only MDRR for Cox is supported")
+    stop("Currently only MDRR for Cox is supported")
   if (twoSided) {
     z1MinAlpha <- qnorm(1 - alpha/2)
   } else {
@@ -129,7 +129,7 @@ plotFollowUpDistribution <- function(population,
                                      title = "Follow-up distribution",
                                      fileName = NULL) {
   if (yScale != "percent" && scale != "count")
-    OhdsiRTools::logFatal("Scale must be either 'percent' or 'count'")
+    stop("Scale must be either 'percent' or 'count'")
   if (yScale == "percent") {
     yLabel <- "Percent of subjects (cumulative)"
   } else {

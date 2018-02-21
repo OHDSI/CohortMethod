@@ -103,7 +103,7 @@ constructEras <- function(connectionDetails,
                           rollUpVocabularyId = "RxNorm",
                           cdmVersion = "5") {
   if (connectionDetails$dbms == "pdw")
-    OhdsiRTools::logFatal("Currently not supporting Microsoft PDW")
+    stop("Currently not supporting Microsoft PDW")
   if (!rollUp)
     rollUpConceptClassId <- ""
   if (sourceTable == "drug_exposure") {
@@ -213,13 +213,13 @@ checkCmInstallation <- function(connectionDetails) {
   cyclopsData <- Cyclops::createCyclopsData(counts ~ outcome + treatment, modelType = "pr")
   cyclopsFit <- fitCyclopsModel(cyclopsData)
   if (length(coef(cyclopsFit)) != 5)
-    OhdsiRTools::logFatal("Error fitting regression model")
+    stop("Error fitting regression model")
   OhdsiRTools::logInfo("- Ok")
 
   OhdsiRTools::logInfo("\nChecking support for large data objects")
   x <- ff::as.ffdf(data.frame(a = 1:100, b = "test"))
   if (nrow(x) != 100)
-    OhdsiRTools::logFatal("Error creating large data object")
+    stop("Error creating large data object")
   OhdsiRTools::logInfo("- Ok")
 
   OhdsiRTools::logInfo("\nCohortMethod is correctly installed")

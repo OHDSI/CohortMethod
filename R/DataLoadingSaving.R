@@ -149,9 +149,9 @@ getDbCohortMethodData <- function(connectionDetails,
                                   maxCohortSize = 0,
                                   covariateSettings) {
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
-    OhdsiRTools::logFatal("Study start date must have format YYYYMMDD")
+    stop("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
-    OhdsiRTools::logFatal("Study end date must have format YYYYMMDD")
+    stop("Study end date must have format YYYYMMDD")
   if (is.logical(removeDuplicateSubjects)) {
     if (removeDuplicateSubjects)
       removeDuplicateSubjects <- "remove all"
@@ -159,14 +159,14 @@ getDbCohortMethodData <- function(connectionDetails,
       removeDuplicateSubjects <- "keep all"
   }
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
-    OhdsiRTools::logFatal("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
   OhdsiRTools::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
 
   if (excludeDrugsFromCovariates) {
     if (exposureTable != "drug_era")
-      OhdsiRTools::logWarn("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
+      warning("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
     sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_id, @comparator_id)"
     sql <- SqlRender::renderSql(sql,
                                 cdm_database_schema = cdmDatabaseSchema,
@@ -392,11 +392,11 @@ getDbCohortMethodData <- function(connectionDetails,
 #' @export
 saveCohortMethodData <- function(cohortMethodData, file) {
   if (missing(cohortMethodData))
-    OhdsiRTools::logFatal("Must specify cohortMethodData")
+    stop("Must specify cohortMethodData")
   if (missing(file))
-    OhdsiRTools::logFatal("Must specify file")
+    stop("Must specify file")
   if (class(cohortMethodData) != "cohortMethodData")
-    OhdsiRTools::logFatal("Data not of class cohortMethodData")
+    stop("Data not of class cohortMethodData")
   OhdsiRTools::logTrace("Saving CohortMethodData to ", file)
 
   covariates <- cohortMethodData$covariates
@@ -429,9 +429,9 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' @export
 loadCohortMethodData <- function(file, readOnly = TRUE) {
   if (!file.exists(file))
-    OhdsiRTools::logFatal(paste("Cannot find folder", file))
+    stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
-    OhdsiRTools::logFatal(paste("Not a folder", file))
+    stop(paste("Not a folder", file))
   OhdsiRTools::logTrace("Loading CohortMethodData from ", file)
 
   temp <- setwd(file)
@@ -534,7 +534,7 @@ print.summary.cohortMethodData <- function(x, ...) {
 #' @export
 grepCovariateNames <- function(pattern, object) {
   if (is.null(object$covariateRef)) {
-    OhdsiRTools::logFatal("object does not contain a covariateRef")
+    stop("object does not contain a covariateRef")
   }
   select <- ffbase::ffwhich(object$covariateRef, grepl(pattern, covariateName))
   if (is.null(select)) {

@@ -134,7 +134,7 @@ runCmAnalyses <- function(connectionDetails,
                           outcomeCvThreads = 1,
                           outcomeIdsOfInterest) {
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome){
-    OhdsiRTools::logFatal("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
+    stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {
     stopifnot(class(drugComparatorOutcomes) == "drugComparatorOutcomes")
@@ -147,12 +147,12 @@ runCmAnalyses <- function(connectionDetails,
                                                                            "comparatorId",
                                                                            "outcomeIds")))
   if (length(uniquedrugComparatorOutcomesList) != length(drugComparatorOutcomesList)) {
-    OhdsiRTools::logFatal("Duplicate drug-comparator-outcomes combinations are not allowed")
+    stop("Duplicate drug-comparator-outcomes combinations are not allowed")
   }
   analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
   uniqueAnalysisIds <- unique(analysisIds)
   if (length(uniqueAnalysisIds) != length(analysisIds)) {
-    OhdsiRTools::logFatal("Duplicate analysis IDs are not allowed")
+    stop("Duplicate analysis IDs are not allowed")
   }
   if (!file.exists(outputFolder))
     dir.create(outputFolder)
@@ -966,7 +966,7 @@ createReferenceTable <- function(cmAnalysisList,
 .selectByType <- function(type, value, label) {
   if (is.null(type)) {
     if (is.list(value)) {
-      OhdsiRTools::logFatal(paste("Multiple ",
+      stop(paste("Multiple ",
                                   label,
                                   "s specified, but none selected in analyses (comparatorType).",
                                   sep = ""))
@@ -974,7 +974,7 @@ createReferenceTable <- function(cmAnalysisList,
     return(value)
   } else {
     if (!is.list(value) || is.null(value[type])) {
-      OhdsiRTools::logFatal(paste(label, "type not found:", type))
+      stop(paste(label, "type not found:", type))
     }
     return(value[type])
   }
