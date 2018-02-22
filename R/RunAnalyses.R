@@ -68,6 +68,9 @@
 #'                                       after people who already had the outcome are removed)? If
 #'                                       false, a single propensity model will be fitted, and people
 #'                                       who had the outcome previously will be removed afterwards.
+#' @param refitPsForEveryStudyPopulation Should the propensity model be fitted for every study population
+#'                                       definition? If false, a single propensity model will be fitted,
+#'                                       and the study population criteria will be applied afterwards.
 #' @param getDbCohortMethodDataThreads   The number of parallel threads to use for building the
 #'                                       cohortMethod data objects.
 #' @param createPsThreads                The number of parallel threads to use for fitting the
@@ -124,6 +127,7 @@ runCmAnalyses <- function(connectionDetails,
                           cmAnalysisList,
                           drugComparatorOutcomesList,
                           refitPsForEveryOutcome = FALSE,
+                          refitPsForEveryStudyPopulation = TRUE,
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
                           psCvThreads = 1,
@@ -135,6 +139,9 @@ runCmAnalyses <- function(connectionDetails,
                           outcomeIdsOfInterest) {
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome){
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
+  }
+  if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
+    stop("Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
   }
   for (drugComparatorOutcomes in drugComparatorOutcomesList) {
     stopifnot(class(drugComparatorOutcomes) == "drugComparatorOutcomes")
@@ -161,6 +168,7 @@ runCmAnalyses <- function(connectionDetails,
                                          drugComparatorOutcomesList,
                                          outputFolder,
                                          refitPsForEveryOutcome,
+                                         refitPsForEveryStudyPopulation,
                                          outcomeIdsOfInterest)
 
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
@@ -276,7 +284,7 @@ runCmAnalyses <- function(connectionDetails,
     if (length(modelsToFit) != 0) {
       cluster <- OhdsiRTools::makeCluster(createPsThreads)
       OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-      dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitSharedPsModel)
+      dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitSharedPsModel, refitPsForEveryStudyPopulation)
       OhdsiRTools::stopCluster(cluster)
     }
     OhdsiRTools::logInfo("*** Adding propensity scores to study population objects ***")
@@ -457,12 +465,16 @@ fitPsModel <- function(params) {
   return(NULL)
 }
 
-fitSharedPsModel <- function(params) {
+fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
-  args <- params$createStudyPopArgs
-  args$cohortMethodData <- cohortMethodData
-  OhdsiRTools::logInfo("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
-  studyPop <- do.call("createStudyPopulation", args)
+  if (refitPsForEveryStudyPopulation) {
+    args <- params$createStudyPopArgs
+    args$cohortMethodData <- cohortMethodData
+    OhdsiRTools::logInfo("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
+    studyPop <- do.call("createStudyPopulation", args)
+  } else {
+    studyPop <- NULL
+  }
   args <- params$createPsArg
   args$cohortMethodData <- cohortMethodData
   args$population <- studyPop
@@ -607,6 +619,7 @@ createReferenceTable <- function(cmAnalysisList,
                                  drugComparatorOutcomesList,
                                  outputFolder,
                                  refitPsForEveryOutcome,
+                                 refitPsForEveryStudyPopulation,
                                  outcomeIdsOfInterest) {
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
@@ -707,43 +720,53 @@ createReferenceTable <- function(cmAnalysisList,
   if (refitPsForEveryOutcome) {
     referenceTable$sharedPsFile <- ""
   } else {
-    # Find equivalent studyPopArgs, so we can reuse PS over those as well:
-    studyPopArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createStudyPopArgs"))
-    studyPopArgsList <- lapply(studyPopArgsList, function(x) return(x[[1]]))
-    equivalent <- function(studyPopArgs1, studyPopArgs2) {
-      if (identical(studyPopArgs1, studyPopArgs2)) {
-        return(TRUE)
+    if (refitPsForEveryStudyPopulation) {
+      # Find equivalent studyPopArgs, so we can reuse PS over those as well:
+      studyPopArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createStudyPopArgs"))
+      studyPopArgsList <- lapply(studyPopArgsList, function(x) return(x[[1]]))
+      equivalent <- function(studyPopArgs1, studyPopArgs2) {
+        if (identical(studyPopArgs1, studyPopArgs2)) {
+          return(TRUE)
+        }
+        if (studyPopArgs1$firstExposureOnly != studyPopArgs2$firstExposureOnly ||
+            studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
+            studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
+            studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
+            studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
+            studyPopArgs1$minDaysAtRisk != 0) {
+          return(FALSE)
+        } else {
+          return(TRUE)
+        }
       }
-      if (studyPopArgs1$firstExposureOnly != studyPopArgs2$firstExposureOnly ||
-          studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
-          studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
-          studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
-          studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
-          studyPopArgs1$minDaysAtRisk != 0) {
-        return(FALSE)
-      } else {
-        return(TRUE)
+      findFirstEquivalent <- function(studyPopArgsList, studyPopArgs) {
+        for (i in 1:length(studyPopArgsList)) {
+          if (equivalent(studyPopArgsList[[i]], studyPopArgs))
+            return(i)
+        }
       }
+      studyPopArgsEquivalentId <- sapply(cmAnalysisList,
+                                         function(cmAnalysis, studyPopArgsList) return(findFirstEquivalent(studyPopArgsList,
+                                                                                                           cmAnalysis$createStudyPopArgs)),
+                                         studyPopArgsList)
+      analysisIdToStudyPopArgsEquivalentId <- data.frame(analysisId = analysisIds,
+                                                         studyPopArgsEquivalentId = studyPopArgsEquivalentId)
+      referenceTable <- merge(referenceTable, analysisIdToStudyPopArgsEquivalentId)
+      referenceTable$sharedPsFile[idx] <- .createPsFileName(folder = outputFolder,
+                                                            loadId = referenceTable$loadArgsId[idx],
+                                                            studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
+                                                            psId = referenceTable$psArgsId[idx],
+                                                            targetId = referenceTable$targetId[idx],
+                                                            comparatorId = referenceTable$comparatorId[idx])
+    } else {
+      # One propensity model across all study population settings:
+      referenceTable$sharedPsFile[idx] <- .createPsFileName(folder = outputFolder,
+                                                            loadId = referenceTable$loadArgsId[idx],
+                                                            studyPopId = NULL,
+                                                            psId = referenceTable$psArgsId[idx],
+                                                            targetId = referenceTable$targetId[idx],
+                                                            comparatorId = referenceTable$comparatorId[idx])
     }
-    findFirstEquivalent <- function(studyPopArgsList, studyPopArgs) {
-      for (i in 1:length(studyPopArgsList)) {
-        if (equivalent(studyPopArgsList[[i]], studyPopArgs))
-          return(i)
-      }
-    }
-    studyPopArgsEquivalentId <- sapply(cmAnalysisList,
-                                       function(cmAnalysis, studyPopArgsList) return(findFirstEquivalent(studyPopArgsList,
-                                                                                                         cmAnalysis$createStudyPopArgs)),
-                                       studyPopArgsList)
-    analysisIdToStudyPopArgsEquivalentId <- data.frame(analysisId = analysisIds,
-                                                       studyPopArgsEquivalentId = studyPopArgsEquivalentId)
-    referenceTable <- merge(referenceTable, analysisIdToStudyPopArgsEquivalentId)
-    referenceTable$sharedPsFile[idx] <- .createPsFileName(folder = outputFolder,
-                                                          loadId = referenceTable$loadArgsId[idx],
-                                                          studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
-                                                          psId = referenceTable$psArgsId[idx],
-                                                          targetId = referenceTable$targetId[idx],
-                                                          comparatorId = referenceTable$comparatorId[idx])
     referenceTable$sharedPsFile[!idx] <- ""
   }
 
@@ -868,17 +891,29 @@ createReferenceTable <- function(cmAnalysisList,
 }
 
 .createPsFileName <- function(folder, loadId, studyPopId, psId, targetId, comparatorId) {
-  name <- paste("Ps_l",
-                loadId,
-                "_s",
-                studyPopId,
-                "_p",
-                psId,
-                "_t",
-                .f(targetId),
-                "_c",
-                .f(comparatorId),
-                sep = "")
+  if (is.null(studyPopId)) {
+    name <- paste("Ps_l",
+                  loadId,
+                  "_p",
+                  psId,
+                  "_t",
+                  .f(targetId),
+                  "_c",
+                  .f(comparatorId),
+                  sep = "")
+  } else {
+    name <- paste("Ps_l",
+                  loadId,
+                  "_s",
+                  studyPopId,
+                  "_p",
+                  psId,
+                  "_t",
+                  .f(targetId),
+                  "_c",
+                  .f(comparatorId),
+                  sep = "")
+  }
   name <- paste(name, ".rds", sep = "")
   return(file.path(folder, name))
 }
@@ -967,9 +1002,9 @@ createReferenceTable <- function(cmAnalysisList,
   if (is.null(type)) {
     if (is.list(value)) {
       stop(paste("Multiple ",
-                                  label,
-                                  "s specified, but none selected in analyses (comparatorType).",
-                                  sep = ""))
+                 label,
+                 "s specified, but none selected in analyses (comparatorType).",
+                 sep = ""))
     }
     return(value)
   } else {
