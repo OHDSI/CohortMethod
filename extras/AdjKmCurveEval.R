@@ -2,21 +2,32 @@ library(CohortMethod)
 options(fftempdir = "c:/fftemp")
 
 ps <- readRDS('c:/temp/ps.rds')
-ps <- ps[sample.int(nrow(ps), 10000), ]
+#ps <- ps[sample.int(nrow(ps), 100000), ]
 population <- matchOnPs(ps, maxRatio = 1)
 
 system.time(
-  plotKaplanMeier(population, nBootstrap = 100, treatmentLabel = "Celecoxib", comparatorLabel = "Diclofenac", fileName = "c:/temp/KM_1_to_1.png")
+  plotKaplanMeier(population, treatmentLabel = "Celecoxib", comparatorLabel = "Diclofenac", fileName = "c:/temp/KM_1_to_1.png")
 )
 
 population <- matchOnPs(ps, maxRatio = 100)
 
 system.time(
-plotKaplanMeier(population, nBootstrap = 100, treatmentLabel = "Celecoxib", comparatorLabel = "Diclofenac", fileName = "c:/temp/KM_var_ratio.png")
+plotKaplanMeier(population, treatmentLabel = "Celecoxib", comparatorLabel = "Diclofenac", fileName = "c:/temp/KM_var_ratio.png")
 )
+
+
+population <- stratifyByPs(ps, numberOfStrata = 5)
+plotKaplanMeier(population,  treatmentLabel = "Celecoxib", comparatorLabel = "Diclofenac", fileName = "c:/temp/KM_5_strata.png")
+
+
+population <- stratifyByPs(ps, numberOfStrata = 10)
+plotKaplanMeier(population,  treatmentLabel = "Celecoxib", comparatorLabel = "Diclofenac", fileName = "c:/temp/KM_10_strata.png")
+
 
 om <- fitOutcomeModel(population, modelType = "cox", stratified = TRUE, useCovariates = FALSE)
 om
+
+
 
 #
 population$stratumId <- NULL
@@ -24,7 +35,7 @@ plotKaplanMeier(population)
 
 population$y <- 0
 population$y[population$outcomeCount != 0] <- 1
-nBootstrap <- 1000
+nBootstrap <- 100
 idx <- population$treatment == 0
 survComparator <- CohortMethod:::adjustedKm(stratumId = population$stratumId[idx],
                                         time = population$survivalTime[idx],
@@ -33,14 +44,28 @@ survComparator <- CohortMethod:::adjustedKm(stratumId = population$stratumId[idx
 
 survComparator$upper <- survComparator$s^exp(qnorm(1-0.025)/log(survComparator$s)*sqrt(survComparator$var)/survComparator$s)
 survComparator$lower <- survComparator$s^exp(qnorm(0.025)/log(survComparator$s)*sqrt(survComparator$var)/survComparator$s)
+survComparator$lower2 <- survComparator$s^exp(qnorm(0.025)/log(survComparator$s)*sqrt(survComparator$var2)/survComparator$s)
+saveRDS(survComparator, "c:/temp/surv.rds")
+old <- survComparator
+
+survComparator$var[1:100]
+survComparator$var2[1:100]
+survComparator$lower[1:100]
+survComparator$lower2[1:100]
+
 
 library(survey)
 
-design<-svydesign(id=~rowId, strata=~treatment, data=population)
+population$y <- 0
+population$y[population$outcomeCount != 0] <- 1
+design<-svydesign(id=~rowId, strata=~treatment, data=pop, weights = pop$w)
 sv <- svykm(survival::Surv(survivalTime, y) ~ treatment, design = design, se=TRUE)
 plot(sv[[2]],col="purple")
 confint(sv[[2]], parm=365*(1:5))
 quantile(sv[[1]], ci=TRUE)
+sv[[2]]$time[1:100]
+sv[[2]]$surv[1:100]
+survComparator$s[1:100]
 
 
 library(survival)
@@ -70,6 +95,34 @@ survComparator$s[1:100]
 data$upper[data$strata =="treatment=0"][1:100]
 survComparator$upper[1:100]
 
+
+# MacKenzie IPTW -----------
+obj.glm <- glm((PROC1) ~ AGE + MALE, familybinomial)
+PS <- obj.glm$fit #PSPropensity Score (for CABG)
+wt.cabg <- ifelse(PROC1, 1/PS, 0)
+wt.ptca <- ifelse(PROC2, 1/(1-PS), 0)
+IW.cabg <-survfit(Surv(years,MRS) ~ 1, weightwt.cabg)
+IW.ptca <-survfit(Surv(years,MRS) ~ 1, weightwt.ptca)
+plot(c(0,max(years)), c(0,1), type = "n")
+lines(IW.cabg$time, IW.cabg$surv, lty1, type = "s")
+lines(IW.ptca$time, IW.ptca$surv, lty2, type = "s")
+
+# IPWsurvival package ---------------------------------
+Pr0 <- glm(ecd ~ 1, family = binomial(link="logit"), data=DIVAT)$fitted.values[1]
+Pr1 <- glm(ecd ~ age + hla + retransplant, data=DIVAT,
+           family=binomial(link = "logit"))$fitted.values
+W <- (DIVAT$ecd==1) * (1/Pr1) + (DIVAT$ecd==0) * (1)/(1-Pr1)
+res.akm <- adjusted.KM(times=DIVAT$times, failures=DIVAT$failures,
+                       variable=DIVAT$ecd, weights=W)
+lines(res.akm$times[res.akm$variable==1], res.akm$survival[res.akm$variable==1],
+      type="s",col=2,lwd=2)
+lines(res.akm$times[res.akm$variable==0], res.akm$survival[res.akm$variable==0],
+      type="s",col=1,lwd=2)
+
+# Xie et al -----------------------------------------------------
+n <- nrow(survComparator)
+survComparator$delta[2:n] <- survComparator$s[2:n] / survComparator$s[1:(n-1)]
+survComparator$delta[1] <- survComparator$s[1]
 
 tail(pop)
 
@@ -202,3 +255,40 @@ adjustedKm <- function(population) {
   }
   target <- population[population$treatment == 1, ]
 }
+
+
+# Generalization to all stratified data ----------------------------------------------------------
+population$stratumSizeT <- 1
+strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1,], sum)
+strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
+colnames(strataSizesC)[2] <- "stratumSizeC"
+weights <- merge(strataSizesT, strataSizesC)
+weights$stratumSize <- weights$stratumSizeC + weights$stratumSizeC
+mOverN <- sum(population$treatment == 1) / nrow(population)
+weights$weight <- mOverN / (weights$stratumSizeT / weights$stratumSize)
+
+
+
+weights$weight <- weights$stratumSizeT / weights$stratumSizeC
+population <- merge(population, weights[, c("stratumId", "weight")])
+population$weight[population$treatment == 1] <- 1
+
+survComparator <- CohortMethod:::adjustedKm(weight = population$weight[idx],
+                                            time = population$survivalTime[idx],
+                                            y = population$y[idx])
+survComparator$upper <- survComparator$s^exp(qnorm(1-0.025)/log(survComparator$s)*sqrt(survComparator$var)/survComparator$s)
+survComparator$lower <- survComparator$s^exp(qnorm(0.025)/log(survComparator$s)*sqrt(survComparator$var)/survComparator$s)
+
+survComparator$s[1:100]
+data$surv[1:100]
+old$s[1:100]
+survComparator$lower[1:100]
+data$lower[1:100]
+old$lower[1:100]
+
+
+
+
+
+population$size <- 1
+sizes <- aggregate(size ~ stratumId + treatment, population, sum)

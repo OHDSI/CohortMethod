@@ -41,7 +41,7 @@ namespace ohdsi {
 
 		struct AdjustedKm {
 		public:
-			static Surv surv(const std::vector<int> &stratumId, const std::vector<int> &time, const std::vector<int> &y, const unsigned int nBootstrap);
+			static Surv surv(const std::vector<double> &weight, const std::vector<int> &time, const std::vector<int> &y);
 		};
 	}
 }

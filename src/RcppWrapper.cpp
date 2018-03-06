@@ -107,12 +107,12 @@ DataFrame bySumFf(List ffValues, List ffBins) {
 }
 
 // [[Rcpp::export]]
-DataFrame adjustedKm(const std::vector<int> &stratumId, const std::vector<int> &time, const std::vector<int> &y, int nBootstrap) {
+DataFrame adjustedKm(const std::vector<double> &weight, const std::vector<int> &time, const std::vector<int> &y) {
 
   using namespace ohdsi::cohortMethod;
 
   try {
-    Surv surv = AdjustedKm::surv(stratumId, time, y, nBootstrap);
+    Surv surv = AdjustedKm::surv(weight, time, y);
 
     return DataFrame::create(_["time"] = surv.time, _["s"] = surv.s, _["var"] = surv.var);
   } catch (std::exception &e) {

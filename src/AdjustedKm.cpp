@@ -37,98 +37,39 @@
 namespace ohdsi {
 namespace cohortMethod {
 
-Surv AdjustedKm::surv(const std::vector<int> &stratumId, const std::vector<int> &time, const std::vector<int> &y, const unsigned int nBootstrap) {
-  std::set<int> stratumIdSet(stratumId.begin(), stratumId.end());
-  std::vector<int> uniqueStratumIds(stratumIdSet.begin(), stratumIdSet.end());
-  unsigned int nStrata = uniqueStratumIds.size();
-  std::map<int, unsigned int> stratumIdToIndex;
-  for (unsigned int i = 0; i < uniqueStratumIds.size();i++)
-    stratumIdToIndex[uniqueStratumIds[i]] = i;
-  std::vector<int> stratumIndices(stratumId.size());
-  std::vector<int> size(nStrata, 0);
-  for (unsigned int i = 0; i < stratumId.size();i++) {
-    int index = stratumIdToIndex[stratumId[i]];
-    stratumIndices[i] = index;
-    size[index]++;
-  }
-
+Surv AdjustedKm::surv(const std::vector<double> &weight, const std::vector<int> &time, const std::vector<int> &y) {
   std::set<int> timesSet(time.begin(), time.end());
   std::vector<int> uniqueTimes(timesSet.begin(), timesSet.end());
   std::sort(uniqueTimes.begin(), uniqueTimes.end());
   unsigned int nTimes = uniqueTimes.size();
 
-  std::vector<double> rates(nTimes);
   std::vector<double> s(nTimes);
   std::vector<double> var(nTimes);
 
-  std::vector<std::vector<int>> bootstrapStratumIndices(nBootstrap);
-  std::vector<std::vector<double>> bootstrapRates(nBootstrap);
-  for (unsigned int i = 0; i < nBootstrap; i++) {
-    std::vector<int> sampledStratumIndices = std::vector<int>(nStrata);
-    for (unsigned int j = 0; j < nStrata; j++) {
-      sampledStratumIndices[j] = std::floor(std::rand() % nStrata);
-    }
-    bootstrapStratumIndices[i] = sampledStratumIndices;
-    bootstrapRates[i] = std::vector<double>(nTimes);
-  }
+  double si = 1;
+  double varPart = 0; // sum(1-s/Ms) in Xie equation 4
   for (unsigned int i = 0; i < nTimes;i++) {
     int timeCursor = uniqueTimes[i];
     // std::cout << "Time = " << timeCursor << "\n";
-    std::vector<int> events(nStrata, 0);
-    std::vector<int> atRisk(nStrata, 0);
-    for (unsigned int j = 0; j < stratumIndices.size();j++) {
-      int index = stratumIndices[j];
-      if (y[j] == 1 && time[j] == timeCursor)
-        events[index]++;
-      if (time[j] >= timeCursor)
-        atRisk[index]++;
-    }
     double totalEvents = 0;
     double totalAtRisk = 0;
-    for (unsigned int j = 0; j < nStrata; j++) {
-      double weight = 1.0 / (double)size[j];
-      totalEvents += (double)events[j] * weight;
-      totalAtRisk += (double)atRisk[j] * weight;
-    }
-    rates[i] = 1.0 - (totalEvents / totalAtRisk);
-    double temp = 1.0;
-    for (unsigned int j = 0; j <= i; j++) {
-      temp *= rates[j];
-    }
-    s[i] = temp;
-
-    // Perform bootstrap to get variance
-    // std::cout << "Bootstrapping\n";
-    std::vector<double> bootstrapS(nBootstrap);
-    double sumBootstrapS = 0;
-    for (unsigned int j = 0; j < nBootstrap; j++) {
-      totalEvents = 0;
-      totalAtRisk = 0;
-      for (unsigned int k = 0; k < nStrata; k++) {
-        int index = bootstrapStratumIndices[j][k];
-        double weight = 1.0 / (double)size[index];
-        totalEvents += (double)events[index] * weight;
-        totalAtRisk += (double)atRisk[index] * weight;
-        // std::cout << "Index = " << index << ", weight = " << weight << ", events = " << totalEvents << ", at risk = " << totalAtRisk << "\n";
+    double sumWsquared = 0;
+    for (unsigned int j = 0; j < weight.size();j++) {
+      double subjectWeight = weight[j];
+      if (y[j] == 1 && time[j] == timeCursor)
+        totalEvents += subjectWeight;
+      if (time[j] >= timeCursor) {
+        totalAtRisk += subjectWeight;
+        sumWsquared += pow(subjectWeight, 2);
       }
-      bootstrapRates[j][i] = 1.0 - (totalEvents / totalAtRisk);
-      double temp = 1;
-      for (unsigned int k = 0; k <= i; k++) {
-        temp *= bootstrapRates[j][k];
-      }
-      bootstrapS[j] = temp;
-      sumBootstrapS += temp;
-      // std::cout << temp << "\n";
     }
-    double meanBootstrapS = sumBootstrapS / (double)nBootstrap;
-    // std::cout << "Mean: " << meanBootstrapS << "\n";
-    double sumV = 0;
-    for (unsigned int j = 0; j < nBootstrap; j++) {
-      sumV += pow(bootstrapS[j] - meanBootstrapS, 2);
-    }
-    var[i] = (1.0/((double)nBootstrap - 1.0)) * sumV;
+    double rate = 1.0 - (totalEvents / totalAtRisk);
+    si *= rate;
+    s[i] = si;
+    double m = pow(totalAtRisk, 2) / sumWsquared;
+    varPart += (1 - rate) / m;
+    var[i] = pow(si, 2) * varPart; // Xie equation 4
   }
-
   return(Surv(uniqueTimes, s, var));
 }
 }
