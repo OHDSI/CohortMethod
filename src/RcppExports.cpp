@@ -55,12 +55,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// adjustedKm
+DataFrame adjustedKm(const std::vector<int>& stratumId, const std::vector<int>& time, const std::vector<int>& y, int nBootstrap);
+RcppExport SEXP _CohortMethod_adjustedKm(SEXP stratumIdSEXP, SEXP timeSEXP, SEXP ySEXP, SEXP nBootstrapSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type stratumId(stratumIdSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type time(timeSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type nBootstrap(nBootstrapSEXP);
+    rcpp_result_gen = Rcpp::wrap(adjustedKm(stratumId, time, y, nBootstrap));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_CohortMethod_matchPsInternal", (DL_FUNC) &_CohortMethod_matchPsInternal, 4},
     {"_CohortMethod_aucWithCi", (DL_FUNC) &_CohortMethod_aucWithCi, 2},
     {"_CohortMethod_aucWithoutCi", (DL_FUNC) &_CohortMethod_aucWithoutCi, 2},
     {"_CohortMethod_bySumFf", (DL_FUNC) &_CohortMethod_bySumFf, 2},
+    {"_CohortMethod_adjustedKm", (DL_FUNC) &_CohortMethod_adjustedKm, 4},
     {NULL, NULL, 0}
 };
 
