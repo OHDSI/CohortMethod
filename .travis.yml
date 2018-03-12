@@ -14,6 +14,7 @@ r_github_packages:
   - OHDSI/OhdsiRTools
   - OHDSI/SqlRender
   - OHDSI/DatabaseConnector
+  - OHDSI/Cyclops
   - OHDSI/FeatureExtraction
 
 before_script:
