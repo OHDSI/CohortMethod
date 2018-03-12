@@ -27,7 +27,7 @@
 #' @importFrom grDevices rgb
 #' @importFrom methods is
 #' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time
-#' @importFrom utils setTxtProgressBar txtProgressBar
+#' @importFrom utils setTxtProgressBar txtProgressBar read.csv
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @import FeatureExtraction

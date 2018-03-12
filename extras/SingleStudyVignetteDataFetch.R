@@ -168,6 +168,8 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 # balance <- readRDS('s:/temp/cohortMethodVignette/balance.rds')
 
+table1 <- createCmTable1(balance)
+print(table1, row.names = FALSE, right = FALSE)
 plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
 # plotCovariateBalanceOfTopVariables(balance, fileName = "s:/temp/top.png")
 

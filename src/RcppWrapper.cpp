@@ -31,6 +31,7 @@
 #include "Match.h"
 #include "Auc.h"
 #include "BySum.h"
+#include "AdjustedKm.h"
 
 using namespace Rcpp;
 
@@ -97,6 +98,23 @@ DataFrame bySumFf(List ffValues, List ffBins) {
       sums.push_back(iter->second);
     }
     return DataFrame::create(_["bins"] = bins, _["sums"] = sums);
+  } catch (std::exception &e) {
+    forward_exception_to_r(e);
+  } catch (...) {
+    ::Rf_error("c++ exception (unknown reason)");
+  }
+  return DataFrame::create();
+}
+
+// [[Rcpp::export]]
+DataFrame adjustedKm(const std::vector<double> &weight, const std::vector<int> &time, const std::vector<int> &y) {
+
+  using namespace ohdsi::cohortMethod;
+
+  try {
+    Surv surv = AdjustedKm::surv(weight, time, y);
+
+    return DataFrame::create(_["time"] = surv.time, _["s"] = surv.s, _["var"] = surv.var);
   } catch (std::exception &e) {
     forward_exception_to_r(e);
   } catch (...) {

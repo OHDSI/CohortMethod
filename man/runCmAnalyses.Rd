@@ -11,10 +11,10 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = 5,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
-  getDbCohortMethodDataThreads = 1, createPsThreads = 1, psCvThreads = 1,
-  createStudyPopThreads = 1, trimMatchStratifyThreads = 1,
-  computeCovarBalThreads = 1, fitOutcomeModelThreads = 1,
-  outcomeCvThreads = 1, outcomeIdsOfInterest)
+  refitPsForEveryStudyPopulation = TRUE, getDbCohortMethodDataThreads = 1,
+  createPsThreads = 1, psCvThreads = 1, createStudyPopThreads = 1,
+  trimMatchStratifyThreads = 1, computeCovarBalThreads = 1,
+  fitOutcomeModelThreads = 1, outcomeCvThreads = 1, outcomeIdsOfInterest)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the
@@ -68,6 +68,10 @@ function.}
 after people who already had the outcome are removed)? If
 false, a single propensity model will be fitted, and people
 who had the outcome previously will be removed afterwards.}
+
+\item{refitPsForEveryStudyPopulation}{Should the propensity model be fitted for every study population
+definition? If false, a single propensity model will be fitted,
+and the study population criteria will be applied afterwards.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
