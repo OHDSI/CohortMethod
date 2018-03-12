@@ -1,8 +1,8 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 .travis.yml
-standalone
 ^\.travis\.yml$
 extras
 ^\.git
 deploy.sh
+compare_versions

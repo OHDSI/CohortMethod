@@ -2,6 +2,10 @@ language: r
 sudo: false
 cache: packages
 
+branches:
+  except:
+    - /^*-v[0-9]/
+
 r_packages:
   - covr
   - drat
@@ -15,9 +19,8 @@ r_github_packages:
 before_script:
   - export PKG_NAME=$(Rscript -e 'cat(paste0(devtools::as.package(".")$package))')
   - export PKG_TARBALL=$(Rscript -e 'pkg <- devtools::as.package("."); cat(paste0(pkg$package,"_",pkg$version,".tar.gz"))')
-#  - export GIT_COMMIT=$(git rev-parse HEAD)
 
- # Build and check package
+# Build and check package
 script:
   - R CMD build .
   - _R_CHECK_CRAN_INCOMING_=FALSE R CMD check "${PKG_TARBALL}" --as-cran
@@ -32,11 +35,8 @@ notifications:
     on_failure: change
 
 after_success:
+  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && perl compare_versions --tag && bash deploy.sh && curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/broadsea-methodslibrary/trigger/f0b51cec-4027-4781-9383-4b38b42dd4f5/
   - Rscript -e 'library(covr);codecov()'
-  # Rebuild docker container
-  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/broadsea-methodslibrary/trigger/f0b51cec-4027-4781-9383-4b38b42dd4f5/
-  # Deploy to drat repo
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 
 env:
   global:
