@@ -16,6 +16,7 @@ vignette: >
 ---
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
+options(width=200)
 library(CohortMethod)
 knitr::opts_chunk$set(
   cache=FALSE,
@@ -435,6 +436,24 @@ if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
 
 The 'before matching' population is the population as extracted by the `getDbCohortMethodData` function, so before any further filtering steps.
 
+## Inspecting select population characteristics
+
+It is customary to include a table in your paper that lists some select population characteristics before and after matching/stratification/trimming. This is usually the first table, and so will be referred to as 'table 1'. To generate this table, you can use the `createCmTable1` function:
+
+```{r tidy=TRUE,eval=FALSE}
+createCmTable1(balance)
+```
+\fontsize{6.5}{6.5}
+\selectfont
+```{r comment=NA,echo=FALSE,message=FALSE}
+if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+  table1 <- createCmTable1(balance)
+  print(table1, row.names = FALSE, right = FALSE)
+}
+```
+\fontsize{10}{12}
+\selectfont
+
 ## Inserting the population cohort in the database ##
 
 For various reasons it might be necessary to insert the study population back into the database, for example because we want to use an external cohort characterization tool. We can use the `insertDbPopulation` function for this purpose:
@@ -468,6 +487,8 @@ computeMdrr(population = studyPop,
             power = 0.8,
             twoSided = TRUE)
 ```
+\fontsize{6.5}{6.5}
+\selectfont
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
 computeMdrr(population = studyPop,
@@ -477,6 +498,8 @@ computeMdrr(population = studyPop,
             twoSided = TRUE)
 }
 ```
+\fontsize{10}{12}
+\selectfont
 
 In this example we used the `studyPop` object, so the population before any matching or trimming. If we want to know the MDRR after matching, we use the `matchedPop` object we created earlier instead:
 
@@ -487,6 +510,8 @@ computeMdrr(population = matchedPop,
             power = 0.8,
             twoSided = TRUE)
 ```
+\fontsize{6.5}{6.5}
+\selectfont
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")){
 computeMdrr(population = matchedPop,
@@ -496,6 +521,8 @@ computeMdrr(population = matchedPop,
             twoSided = TRUE)
 }
 ```
+\fontsize{10}{12}
+\selectfont
 
 Even thought the MDRR in the matched population is higher, meaning we have less power, we should of course not be fooled: matching most likely eliminates confounding, and is therefore preferred to not matching.
 
@@ -631,6 +658,8 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
   plotKaplanMeier(matchedPop, includeZero = FALSE)
 }
 ```
+
+Note that the Kaplan-Meier plot will automatically adjust for any stratification, matching, or trimming that may have been applied.
 
 # Acknowledgments
 
