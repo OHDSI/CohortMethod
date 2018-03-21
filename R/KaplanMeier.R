@@ -119,6 +119,7 @@ plotKaplanMeier <- function(population,
     data <- rbind(survTarget, survComparator)
     data$upper <- data$s^exp(qnorm(1-0.025)/log(data$s)*sqrt(data$var)/data$s)
     data$lower <- data$s^exp(qnorm(0.025)/log(data$s)*sqrt(data$var)/data$s)
+    data$lower[data$s > 0.9999] <- data$s[data$s > 0.9999]
   }
   data$strata <- factor(data$strata, levels = c(treatmentLabel, comparatorLabel))
   cutoff <- quantile(population$survivalTime, dataCutoff)
@@ -161,7 +162,8 @@ plotKaplanMeier <- function(population,
     ggplot2::scale_x_continuous(xLabel, limits = xlims, breaks = xBreaks) +
     ggplot2::scale_y_continuous(yLabel, limits = ylims) +
     ggplot2::theme(legend.title = ggplot2::element_blank(),
-                   legend.position = "top")
+                   legend.position = "top",
+                   plot.title = ggplot2::element_text(hjust = 0.5))
 
   if (censorMarks == TRUE) {
     plot <- plot + ggplot2::geom_point(data = subset(data, n.censor >= 1),
