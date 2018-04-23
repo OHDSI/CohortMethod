@@ -34,7 +34,6 @@ Imports:
     ffbase (>= 0.12.3),
     plyr,
     Rcpp (>= 0.11.2),
-    RJDBC,
     SqlRender (>= 1.1.1),
     survival,
     OhdsiRTools (>= 1.5.1)
@@ -47,4 +46,4 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 6.0.1
+RoxygenNote: 6.0.1.9000

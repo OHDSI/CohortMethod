@@ -22,7 +22,6 @@
 #' @name CohortMethod
 #' @importFrom Rcpp evalCpp
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
-#' @importFrom RJDBC dbDisconnect
 #' @importFrom survival survfit Surv
 #' @importFrom grDevices rgb
 #' @importFrom methods is
