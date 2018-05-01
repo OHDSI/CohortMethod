@@ -41,6 +41,10 @@
 #' @param control               The control object used to control the cross-validation used to
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              \code{\link[Cyclops]{createControl}} for details.
+#' @param estimateHeterogeneity Whether to estimate potential heterogeneity in the treatment effect
+#'                              as a function of covariates. Heterogeneity is estimated by
+#'                              including the regression model interactions terms between
+#'                              treatment and covariates.
 #'
 #' @return
 #' An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and
@@ -60,7 +64,8 @@ fitOutcomeModel <- function(population,
                                                     startingVariance = 0.01,
                                                     tolerance = 2e-07,
                                                     cvRepetitions = 10,
-                                                    noiseLevel = "quiet")) {
+                                                    noiseLevel = "quiet"),
+                            estimateHeterogeneity = FALSE) {
   if (stratified && is.null(population$stratumId))
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
   if (is.null(population$outcomeCount))
