@@ -118,7 +118,7 @@ fitOutcomeModel <- function(population,
   } else if (sum(population$y) == 0) {
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
   } else {
-    if (useCovariates) {
+    if (useCovariates || estimateHeterogeneity) {
       covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, ff::as.ff(population$rowId))
       if (length(includeCovariateIds) != 0) {
         includeCovariateIds <- c(includeCovariateIds, treatmentVarId)
@@ -149,6 +149,15 @@ fitOutcomeModel <- function(population,
                                                           vmode = "double"),
                                      covariateValue = ff::as.ff(population$treatment,
                                                                 vmode = "double"))
+      if (estimateHeterogeneity) {
+        covariateIdOffset <- treatmentVarId + 1
+        interactions <- createInteractionWithTreatment(covariates, population, covariateIdOffset)
+        if (useCovariates) {
+          covariates <- ffbase::ffappend(interactions, covariates)
+        } else {
+          covariates <- interactions
+        }
+      }
       covariates <- ffbase::ffdfappend(treatmentCovariate, covariates)
       if (stratified) {
         informativeStrata <- unique(population$stratumId[population$y != 0])
@@ -247,6 +256,27 @@ fitOutcomeModel <- function(population,
   OhdsiRTools::logInfo(paste("Fitting outcome model took", signif(delta, 3), attr(delta, "units")))
   OhdsiRTools::logDebug("Outcome model fitting status is: ", status)
   return(outcomeModel)
+}
+
+createInteractionWithTreatment <- function (covariates, population, covariateIdOffset) {
+  matchedRowId <- match(covariates$rowId[], population$rowId)
+  covariateValue <- population$treatment[matchedRowId] * covariates$covariateValue[]
+  nonzeroIndices <- which(covariateValue != 0)
+  interactionCovariate <- ff::ffdf(
+    rowId = ff::as.ff(
+      covariates$rowId[nonzeroIndices],
+      vmode = "double"
+    ),
+    covariateId = ff::as.ff(
+      covariateIdOffset + covariates$covariateId[nonzeroIndices],
+      vmode = "double"
+    ),
+    covariateValue = ff::as.ff(
+      covariateValue[nonzeroIndices],
+      vmode = "double"
+    )
+  )
+  return(interactionCovariate)
 }
 
 modelTypeToCyclopsModelType <- function(modelType, stratified) {
