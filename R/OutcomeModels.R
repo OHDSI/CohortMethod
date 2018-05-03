@@ -152,6 +152,7 @@ fitOutcomeModel <- function(population,
       if (estimateHeterogeneity) {
         covariateIdOffset <- treatmentVarId + 1
         interactions <- createInteractionWithTreatment(covariates, population, covariateIdOffset)
+        interactionCovariatesId <- unique(interactions$covariateId[])
         if (useCovariates) {
           covariates <- ffbase::ffappend(interactions, covariates)
         } else {
@@ -220,6 +221,11 @@ fitOutcomeModel <- function(population,
       status <- "OK"
       coefficients <- coef(fit)
       logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
+      nonzeroCoef <- coefficients[coefficients != 0]
+      heterogeneityCoefId <- interactionCovariatesId[
+        as.character(interactionCovariatesId) %in% names(nonzeroCoef)
+      ] # TODO: discuss if `as.character` is a reliable way to subset the vector; seems like it will fail when the id numbers become large.
+      heterogeneityCoef <- nonzeroCoef[names(nonzeroCoef) %in% as.character(heterogeneityCoefId)]
       ci <- tryCatch({
         confint(fit, parm = treatmentVarId, includePenalty = TRUE)
       }, error = function(e) {
@@ -245,6 +251,8 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePsWeighting <- inversePsWeighting
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
+  outcomeModel$outcomeModelTreatmentHeterogeneityCoef <- heterogeneityCoef
+  outcomeModel$outcomeModelTreatmentHeterogeneityCoefId <- heterogeneityCoefId
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- populationCounts
   outcomeModel$outcomeCounts <- outcomeCounts
