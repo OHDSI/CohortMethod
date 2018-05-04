@@ -22,46 +22,29 @@ library(DatabaseConnector)
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
-dbms <- "postgresql"
-user <- "postgres"
-pw <- Sys.getenv("pwPostgres")
-server <- "localhost/ohdsi"
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
+                                                                server = "localhost/ohdsi",
+                                                                user = "postgres",
+                                                                password = Sys.getenv("pwPostgres"))
 cdmDatabaseSchema <- "cdm_synpuf"
 resultsDatabaseSchema <- "scratch"
-port <- NULL
+cdmVersion <- "5"
 extraSettings <- NULL
 
-dbms <- "pdw"
-user <- NULL
-pw <- NULL
-server <- "JRDUSAPSCTL01"
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
 cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
-port <- 17001
 cdmVersion <- "5"
 extraSettings <- NULL
 
-dbms <- "redshift"
-user <- "mschuemi"
-pw <- Sys.getenv("pwRedShift")
-server <- "hicoe.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/truven_mdcr"
-cdmDatabaseSchema <- "cdm"
-resultsDatabaseSchema <- "scratch_mschuemi_22"
-port <- 5439
-cdmVersion <- "5"
-extraSettings <- "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
-
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
-                                                                server = server,
-                                                                user = user,
-                                                                password = pw,
-                                                                port = port,
-                                                                extraSettings = extraSettings)
 connection <- DatabaseConnector::connect(connectionDetails)
-
 sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
                               packageName = "CohortMethod",
-                              dbms = dbms,
+                              dbms = connectionDetails$dbms,
                               cdmDatabaseSchema = cdmDatabaseSchema,
                               resultsDatabaseSchema = resultsDatabaseSchema)
 DatabaseConnector::executeSql(connection, sql)
@@ -71,13 +54,6 @@ sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSche
 sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 DatabaseConnector::querySql(connection, sql)
-
-# # Get all NSAIDs:
-# sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-# sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-# nsaids <- DatabaseConnector::querySql(connection, sql)
-# nsaids <- nsaids$CONCEPT_ID
 
 DatabaseConnector::disconnect(connection)
 

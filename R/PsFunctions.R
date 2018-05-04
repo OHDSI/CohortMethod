@@ -82,77 +82,83 @@ createPs <- function(cohortMethodData,
     stop("Missing column treatment in population")
 
   start <- Sys.time()
-  covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, population$rowId)
-  if (length(includeCovariateIds) != 0) {
-    idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
-    covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
-  }
-  if (length(excludeCovariateIds) != 0) {
-    idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
-    covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
-  }
-  covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
-                                                        covariateRef = cohortMethodData$covariateRef,
-                                                        populationSize = nrow(population),
-                                                        minFraction = 0.001,
-                                                        normalize = TRUE,
-                                                        removeRedundancy = TRUE)
-  covariates <- covariateData$covariates
-  attr(population, "metaData")$deletedInfrequentCovariateIds <- covariateData$metaData$deletedInfrequentCovariateIds
-  attr(population, "metaData")$deletedRedundantCovariateIds <- covariateData$metaData$deletedRedundantCovariateIds
-  sampled <- FALSE
-  if (maxCohortSizeForFitting != 0) {
-    set.seed(0)
-    targetRowIds <- population$rowId[population$treatment == 1]
-    if (length(targetRowIds) > maxCohortSizeForFitting) {
-      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
-      targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
-      sampled <- TRUE
+  if (is.data.frame(cohortMethodData$covariates)) {
+    error <- "No covariate data, so cannot fit model"
+    sampled <- FALSE
+    ref <- NULL
+  } else {
+    covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, population$rowId)
+    if (length(includeCovariateIds) != 0) {
+      idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
+      covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
     }
-    comparatorRowIds <- population$rowId[population$treatment == 0]
-    if (length(comparatorRowIds) > maxCohortSizeForFitting) {
-      OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
-      comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
-      sampled <- TRUE
+    if (length(excludeCovariateIds) != 0) {
+      idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
+      covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
     }
-    if (sampled) {
-      fullPopulation <- population
-      fullCovariates <- covariates
-      population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
-      covariates <- FeatureExtraction::filterByRowId(covariates, population$rowId)
+    covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
+                                                          covariateRef = cohortMethodData$covariateRef,
+                                                          populationSize = nrow(population),
+                                                          minFraction = 0.001,
+                                                          normalize = TRUE,
+                                                          removeRedundancy = TRUE)
+    covariates <- covariateData$covariates
+    attr(population, "metaData")$deletedInfrequentCovariateIds <- covariateData$metaData$deletedInfrequentCovariateIds
+    attr(population, "metaData")$deletedRedundantCovariateIds <- covariateData$metaData$deletedRedundantCovariateIds
+    sampled <- FALSE
+    if (maxCohortSizeForFitting != 0) {
+      set.seed(0)
+      targetRowIds <- population$rowId[population$treatment == 1]
+      if (length(targetRowIds) > maxCohortSizeForFitting) {
+        OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+        sampled <- TRUE
+      }
+      comparatorRowIds <- population$rowId[population$treatment == 0]
+      if (length(comparatorRowIds) > maxCohortSizeForFitting) {
+        OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+        sampled <- TRUE
+      }
+      if (sampled) {
+        fullPopulation <- population
+        fullCovariates <- covariates
+        population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
+        covariates <- FeatureExtraction::filterByRowId(covariates, population$rowId)
+      }
     }
-  }
-  if (!Cyclops::isSorted(population, "rowId")) {
-    population <- population[order(population$rowId), ]
-  }
-  outcomes <- ff::as.ffdf(population)
-  colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
-  cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr", quiet = TRUE)
-  ff::close.ffdf(outcomes)
-  ff::close.ffdf(covariates)
-  rm(outcomes)
-  rm(covariates)
-  rm(covariateData)
-  error <- NULL
-  ref <- NULL
-  if (errorOnHighCorrelation) {
-    suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
-    suspect <- suspect[!is.na(suspect)]
-    if (length(suspect) != 0) {
-      covariateIds <- as.numeric(names(suspect))
-      idx <- !is.na(ffbase::ffmatch(cohortMethodData$covariateRef$covariateId,
-                                    ff::as.ff(covariateIds)))
-      ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
-      OhdsiRTools::logInfo("High correlation between covariate(s) and treatment detected:")
-      OhdsiRTools::logInfo(paste(colnames(ref), collapse = "\t"))
-      ref$covariateName <- as.character(ref$covariateName)
-      for (i in 1:nrow(ref))
-        OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
-      message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
-      if (stopOnError) {
-        stop(message)
-      } else {
-        error <- message
+    if (!Cyclops::isSorted(population, "rowId")) {
+      population <- population[order(population$rowId), ]
+    }
+    outcomes <- ff::as.ffdf(population)
+    colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
+    cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr", quiet = TRUE)
+    ff::close.ffdf(outcomes)
+    ff::close.ffdf(covariates)
+    rm(outcomes)
+    rm(covariates)
+    rm(covariateData)
+    error <- NULL
+    ref <- NULL
+    if (errorOnHighCorrelation) {
+      suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
+      suspect <- suspect[!is.na(suspect)]
+      if (length(suspect) != 0) {
+        covariateIds <- as.numeric(names(suspect))
+        idx <- !is.na(ffbase::ffmatch(cohortMethodData$covariateRef$covariateId,
+                                      ff::as.ff(covariateIds)))
+        ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
+        OhdsiRTools::logInfo("High correlation between covariate(s) and treatment detected:")
+        OhdsiRTools::logInfo(paste(colnames(ref), collapse = "\t"))
+        ref$covariateName <- as.character(ref$covariateName)
+        for (i in 1:nrow(ref))
+          OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
+        message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
+        if (stopOnError) {
+          stop(message)
+        } else {
+          error <- message
+        }
       }
     }
   }
@@ -177,6 +183,7 @@ createPs <- function(cohortMethodData,
     }
   }
   if (is.null(error)) {
+    error <- "OK"
     cfs <- coef(cyclopsFit)
     if (all(cfs[2:length(cfs)] == 0)) {
       warning("All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?")
@@ -326,10 +333,10 @@ plotPs <- function(data,
   }
   if (type != "density" && type != "histogram")
     stop(paste("Unknown type '", type, "', please choose either 'density' or 'histogram'"),
-                          sep = "")
+         sep = "")
   if (scale != "propensity" && scale != "preference")
     stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"),
-                          sep = "")
+         sep = "")
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -609,8 +616,8 @@ matchOnPs <- function(population,
     stop("Missing column propensityScore in population")
   if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
     stop(paste("Unknown caliperScale '",
-                                caliperScale,
-                                "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
+               caliperScale,
+               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   population <- population[order(population$propensityScore), ]
   propensityScore <- population$propensityScore
@@ -730,8 +737,8 @@ matchOnPsAndCovariates <- function(population,
                                    covariateIds) {
   if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
     stop(paste("Unknown caliperScale '",
-                                caliperScale,
-                                "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
+               caliperScale,
+               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
@@ -798,7 +805,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   }
   if (length(stratificationColumns) == 0) {
     if (length(psStrata) == 1) {
-      population$stratumId <- 1
+      population$stratumId <- rep(1, nrow(population))
     } else {
       population$stratumId <- as.integer(as.character(cut(population$propensityScore,
                                                           breaks = c(0, psStrata, 1),
@@ -808,7 +815,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   } else {
     f <- function(subset, psStrata, numberOfStrata) {
       if (length(psStrata) == 1) {
-        subset$stratumId <- 1
+        subset$stratumId <- rep(1, nrow(population))
       } else {
         subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
                                                         breaks = c(0, psStrata, 1),

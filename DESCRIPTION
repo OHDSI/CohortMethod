@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 2.6.1
-Date: 2018-03-12
+Version: 2.6.2
+Date: 2018-05-04
 Author: Martijn J. Schuemie [aut, cre],
     Marc A. Suchard [aut],
     Patrick B. Ryan [aut]
@@ -40,7 +40,6 @@ Imports:
 Suggests:
     testthat,
     pROC,
-    gnm,
     knitr,
     rmarkdown,
     EmpiricalCalibration

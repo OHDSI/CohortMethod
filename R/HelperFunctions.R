@@ -180,12 +180,11 @@ constructEras <- function(connectionDetails,
                                                    roll_up_vocabulary_id = rollUpVocabularyId,
                                                    cdm_version = cdmVersion)
   conn <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(conn))
 
   OhdsiRTools::logInfo("Executing one large query. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE)
   OhdsiRTools::logInfo("Done")
-
-  RJDBC::dbDisconnect(conn)
   return()
 }
 

@@ -20,20 +20,14 @@
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
-pw <- NULL
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
 cdmDatabaseSchema <- "CDM_Truven_MDCD_V610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
-port <- 17001
-cdmVersion <- 5
 
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
-                                                                server = server,
-                                                                user = user,
-                                                                password = pw,
-                                                                port = port)
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
 
 covariateSettings <- createCovariateSettings(useDemographicsAgeGroup = TRUE,
                                              useDemographicsGender = TRUE,
@@ -50,7 +44,6 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           exposureTable = "drug_era",
                                           outcomeDatabaseSchema = cdmDatabaseSchema,
                                           outcomeTable = "condition_era",
-                                          cdmVersion = cdmVersion,
                                           studyStartDate = "",
                                           studyEndDate = "",
                                           excludeDrugsFromCovariates = TRUE,

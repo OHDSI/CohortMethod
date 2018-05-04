@@ -163,6 +163,7 @@ getDbCohortMethodData <- function(connectionDetails,
   OhdsiRTools::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
 
   if (excludeDrugsFromCovariates) {
     if (exposureTable != "drug_era")
@@ -253,6 +254,13 @@ getDbCohortMethodData <- function(connectionDetails,
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
   OhdsiRTools::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
+  if (nrow(cohorts) == 0) {
+    warning("Target and comparator cohorts are empty")
+  } else if (sum(cohorts$treatment == 1) == 0) {
+    warning("Target cohort is empty")
+  } else if (sum(cohorts$treatment == 0) == 0) {
+    warning("Comparator cohort is empty")
+  }
   metaData <- list(targetId = targetId,
                    comparatorId = comparatorId,
                    studyStartDate = studyStartDate,
@@ -272,11 +280,19 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      study_end_date = studyEndDate)
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql)
     colnames(rawCount) <- SqlRender::snakeCaseToCamelCase(colnames(rawCount))
-    counts <- data.frame(description = "Original cohorts",
-                         treatedPersons = rawCount$exposedCount[rawCount$treatment ==  1],
-                         comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-                         treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
-                         comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
+    if (nrow(rawCount) == 0) {
+      counts <- data.frame(description = "Original cohorts",
+                           treatedPersons = 0,
+                           comparatorPersons = 0,
+                           treatedExposures = 0,
+                           comparatorExposures = 0)
+    } else {
+      counts <- data.frame(description = "Original cohorts",
+                           treatedPersons = rawCount$exposedCount[rawCount$treatment ==  1],
+                           comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
+                           treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
+                           comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
+    }
     metaData$attrition <- counts
     label <- c()
     if (firstExposureOnly) {
@@ -360,7 +376,6 @@ getDbCohortMethodData <- function(connectionDetails,
                                 renderedSql,
                                 progressBar = FALSE,
                                 reportOverallTime = FALSE)
-  DatabaseConnector::disconnect(connection)
 
   metaData <- covariateData$metaData
   metaData$call <- match.call()
@@ -402,7 +417,14 @@ saveCohortMethodData <- function(cohortMethodData, file) {
   covariates <- cohortMethodData$covariates
   covariateRef <- cohortMethodData$covariateRef
   analysisRef <- cohortMethodData$analysisRef
-  ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
+  if (is.data.frame(covariates)) {
+    dir.create(file, recursive = TRUE)
+    saveRDS(covariates, file = file.path(file, "covariates.rds"))
+    saveRDS(covariateRef, file = file.path(file, "covariateRef.rds"))
+    saveRDS(analysisRef, file = file.path(file, "analysisRef.rds"))
+  } else {
+    ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
+  }
   saveRDS(cohortMethodData$cohorts, file = file.path(file, "cohorts.rds"))
   saveRDS(cohortMethodData$outcomes, file = file.path(file, "outcomes.rds"))
   saveRDS(cohortMethodData$metaData, file = file.path(file, "metaData.rds"))
@@ -434,24 +456,39 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
     stop(paste("Not a folder", file))
   OhdsiRTools::logTrace("Loading CohortMethodData from ", file)
 
-  temp <- setwd(file)
-  absolutePath <- setwd(temp)
-
-  e <- new.env()
-  ffbase::load.ffdf(absolutePath, e)
-  result <- list(covariates = get("covariates", envir = e),
-                 covariateRef = get("covariateRef", envir = e),
+  if (file.exists(file.path(file, "covariates.rds"))) {
+    OhdsiRTools::logDebug("Covariates are empty data frame")
+    covariates <- readRDS(file.path(file, "covariates.rds"))
+    covariateRef <- readRDS(file.path(file, "covariateRef.rds"))
+    if (file.exists(file.path(file, "analysisRef.rds"))) {
+      analysisRef <- readRDS(file.path(file, "analysisRef.rds"))
+    } else {
+      analysisRef <- NULL
+    }
+  } else {
+    temp <- setwd(file)
+    absolutePath <- setwd(temp)
+    e <- new.env()
+    ffbase::load.ffdf(absolutePath, e)
+    covariates = get("covariates", envir = e)
+    covariateRef = get("covariateRef", envir = e)
+    open(covariates, readonly = readOnly)
+    open(covariateRef, readonly = readOnly)
+    if (exists("analysisRef", envir = e)) {
+      analysisRef <- get("analysisRef", envir = e)
+      open(analysisRef, readonly = readOnly)
+    } else {
+      analysisRef <- NULL
+    }
+    rm(e)
+  }
+  result <- list(covariates = covariates,
+                 covariateRef = covariateRef,
+                 analysisRef = analysisRef,
                  cohorts = readRDS(file.path(file, "cohorts.rds")),
                  outcomes = readRDS(file.path(file, "outcomes.rds")),
                  metaData = readRDS(file.path(file, "metaData.rds")))
-  if (exists("analysisRef", envir = e)) {
-    result$analysisRef <- get("analysisRef", envir = e)
-    open(result$analysisRef, readonly = readOnly)
-  }
-  open(result$covariates, readonly = readOnly)
-  open(result$covariateRef, readonly = readOnly)
   class(result) <- "cohortMethodData"
-  rm(e)
   return(result)
 }
 

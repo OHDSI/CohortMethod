@@ -8,7 +8,11 @@ cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
 resultsDatabaseSchema <- "Scratch.dbo"
 cdmVersion <- "5"
 
-connectionDetails <- createConnectionDetails(dbms = "pdw", server = "JRDUSAPSCTL01", port = "17001")
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
 
 checkCmInstallation(connectionDetails)
 
