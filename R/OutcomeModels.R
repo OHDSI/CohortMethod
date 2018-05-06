@@ -222,10 +222,10 @@ fitOutcomeModel <- function(population,
       coefficients <- coef(fit)
       logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
       nonzeroCoef <- coefficients[coefficients != 0]
-      heterogeneityCoefId <- interactionCovariatesId[
-        as.character(interactionCovariatesId) %in% names(nonzeroCoef)
-      ] # TODO: discuss if `as.character` is a reliable way to subset the vector; seems like it will fail when the id numbers become large.
-      heterogeneityCoef <- nonzeroCoef[names(nonzeroCoef) %in% as.character(heterogeneityCoefId)]
+      heterogeneityCoefId <- intersect(names(nonzeroCoef), as.character(interactions$covariateId[]))
+        # TODO: discuss if `as.character` is a reliable way to subset the vector; seems like it will fail when the id numbers become large.
+      heterogeneityCoef <- nonzeroCoef[match(heterogeneityCoefId, names(nonzeroCoef))]
+      heterogeneityCoefId <- as.numeric(heterogeneityCoefId)
       ci <- tryCatch({
         confint(fit, parm = treatmentVarId, includePenalty = TRUE)
       }, error = function(e) {
