@@ -226,6 +226,8 @@ fitOutcomeModel <- function(population,
         # TODO: discuss if `as.character` is a reliable way to subset the vector; seems like it will fail when the id numbers become large.
       heterogeneityCoef <- nonzeroCoef[match(heterogeneityCoefId, names(nonzeroCoef))]
       heterogeneityCoefId <- as.numeric(heterogeneityCoefId)
+      activeInteractions <- interactions[interactions$covariateId[] %in% heterogeneityCoefId, ]
+      heterogeneousTreatmentEffects <- computeIndividualEffect(heterogeneityCoef, activeInteractions)
       ff::close.ffdf(interactions)
       rm(interactions)
       ci <- tryCatch({
@@ -253,6 +255,8 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePsWeighting <- inversePsWeighting
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
+  outcomeModel$outcomeModelHeterogenousEffectEstimate <- heterogeneousTreatmentEffects
+    # Deviation from the average effect.
   outcomeModel$outcomeModelTreatmentHeterogeneityCoef <- heterogeneityCoef
   outcomeModel$outcomeModelTreatmentHeterogeneityCoefId <- heterogeneityCoefId
   outcomeModel$outcomeModelStatus <- status
@@ -287,6 +291,28 @@ createInteractionWithTreatment <- function (covariates, population, covariateIdO
     )
   )
   return(interactionCovariate)
+}
+
+computeIndividualEffect <- function (coef, covariates) {
+  uniqueRowId <- unique(covariates$rowId[])
+  consecutiveRowId <- 1:length(uniqueRowId)
+  mappedRowId <- consecutiveRowId[
+    match(covariates$rowId[], uniqueRowId)
+  ]
+  consecutiveColId <- 1:length(coef)
+  mappedColId <- consecutiveColId[
+    match(as.character(covariates$covariateId[]), names(coef))
+  ]
+  X <- Matrix::sparseMatrix(
+    i = mappedRowId,
+    j = mappedColId,
+    x = covariates$covariateValue[]
+  )
+  individualEffects <- data.frame(
+    value = as.vector(X %*% coef),
+    rowId = uniqueRowId
+  )
+  return(individualEffects)
 }
 
 modelTypeToCyclopsModelType <- function(modelType, stratified) {
