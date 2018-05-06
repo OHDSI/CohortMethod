@@ -226,6 +226,8 @@ fitOutcomeModel <- function(population,
         # TODO: discuss if `as.character` is a reliable way to subset the vector; seems like it will fail when the id numbers become large.
       heterogeneityCoef <- nonzeroCoef[match(heterogeneityCoefId, names(nonzeroCoef))]
       heterogeneityCoefId <- as.numeric(heterogeneityCoefId)
+      ff::close.ffdf(interactions)
+      rm(interactions)
       ci <- tryCatch({
         confint(fit, parm = treatmentVarId, includePenalty = TRUE)
       }, error = function(e) {
