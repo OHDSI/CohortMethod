@@ -207,6 +207,9 @@ fitOutcomeModel <- function(population,
     } else {
       fit <- tryCatch({
         Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+          # TODO: Make sure that Cyclops used stratified cross-validation to ensure each fold has
+          # the number of outcomes proportional to the entire population. This is critical for rare
+          # outcomes.
       }, error = function(e) {
         e$message
       })
@@ -228,6 +231,10 @@ fitOutcomeModel <- function(population,
       heterogeneityCoefId <- as.numeric(heterogeneityCoefId)
       activeInteractions <- interactions[interactions$covariateId[] %in% heterogeneityCoefId, ]
       heterogeneousTreatmentEffects <- computeIndividualEffect(heterogeneityCoef, activeInteractions)
+        # TODO: add a function to compute confidence intervals (as a function of selected interaction terms) 
+        # for heterogeneous treatment effects. It seems like Cyclops does not yet have a functionality to
+        # to get confidence intervals for regularized parameters? I am not sure what the flag 
+        # 'overrideNoRegularization' does.
       ff::close.ffdf(interactions)
       rm(interactions)
       ci <- tryCatch({
