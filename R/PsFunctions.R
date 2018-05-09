@@ -800,16 +800,18 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   psStrata <- unique(quantile(basePop,
                               (1:(numberOfStrata - 1))/numberOfStrata))
   attr(population, "strata") <- psStrata
-  if (length(psStrata) == 1) {
-    warning("Only 1 strata detected")
+  breaks <- unique(c(0, psStrata, 1))
+  breaks[1] <- -1 # So 0 is included in the left-most stratum
+  if (length(breaks) - 1 < numberOfStrata) {
+    warning("Specified ", numberOfStrata, " strata, but only ", length(breaks) - 1, " could be created")
   }
   if (length(stratificationColumns) == 0) {
     if (length(psStrata) == 1) {
       population$stratumId <- rep(1, nrow(population))
     } else {
       population$stratumId <- as.integer(as.character(cut(population$propensityScore,
-                                                          breaks = c(0, psStrata, 1),
-                                                          labels = 1:(length(psStrata) + 1))))
+                                                          breaks = breaks,
+                                                          labels = 1:(length(breaks)-1))))
     }
     return(population)
   } else {
@@ -818,8 +820,8 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
         subset$stratumId <- rep(1, nrow(population))
       } else {
         subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
-                                                        breaks = c(0, psStrata, 1),
-                                                        labels = 1:(length(psStrata) + 1))))
+                                                        breaks = breaks,
+                                                        labels = 1:(length(breaks)-1))))
       }
       return(subset)
     }
