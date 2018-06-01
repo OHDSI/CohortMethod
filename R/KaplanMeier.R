@@ -125,7 +125,7 @@ plotKaplanMeier <- function(population,
   cutoff <- quantile(population$survivalTime, dataCutoff)
   xLabel <- "Time in days"
   yLabel <- "Survival probability"
-  xlims <- c(0, cutoff)
+  xlims <- c(-cutoff/40, cutoff)
 
   if (cutoff <= 300) {
     xBreaks <- seq(0, cutoff, by = 50)
