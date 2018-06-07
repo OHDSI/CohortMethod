@@ -5,7 +5,7 @@
 \title{Plot the propensity score distribution}
 \usage{
 plotPs(data, unfilteredData = NULL, scale = "preference",
-  type = "density", binWidth = 0.05, treatmentLabel = "Treated",
+  type = "density", binWidth = 0.05, targetLabel = "Target",
   comparatorLabel = "Comparator", fileName = NULL)
 }
 \arguments{
@@ -24,7 +24,7 @@ defined by Walker et al (2013).}
 
 \item{binWidth}{For histograms, the width of the bins}
 
-\item{treatmentLabel}{A label to us for the treated cohort.}
+\item{targetLabel}{A label to us for the target cohort.}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
 
@@ -41,7 +41,7 @@ format.
 }
 \details{
 The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{

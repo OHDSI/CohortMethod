@@ -285,7 +285,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param type              Type of plot. Two possible values: \code{type = 'density'} or \code{type =
 #'                          'histogram'}
 #' @param binWidth          For histograms, the width of the bins
-#' @param treatmentLabel    A label to us for the treated cohort.
+#' @param targetLabel       A label to us for the target cohort.
 #' @param comparatorLabel   A label to us for the comparator cohort.
 #' @param fileName          Name of the file where the plot should be saved, for example 'plot.png'.
 #'                          See the function \code{ggsave} in the ggplot2 package for supported file
@@ -293,7 +293,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #'
 #' @details
 #' The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 #' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
@@ -318,7 +318,7 @@ plotPs <- function(data,
                    scale = "preference",
                    type = "density",
                    binWidth = 0.05,
-                   treatmentLabel = "Treated",
+                   targetLabel = "Target",
                    comparatorLabel = "Comparator",
                    fileName = NULL) {
   if (!("treatment" %in% colnames(data)))
@@ -346,9 +346,9 @@ plotPs <- function(data,
     data$SCORE <- data$propensityScore
     label <- "Propensity score"
   }
-  data$GROUP <- treatmentLabel
+  data$GROUP <- targetLabel
   data$GROUP[data$treatment == 0] <- comparatorLabel
-  data$GROUP <- factor(data$GROUP, levels = c(treatmentLabel, comparatorLabel))
+  data$GROUP <- factor(data$GROUP, levels = c(targetLabel, comparatorLabel))
   if (type == "density") {
     plot <- ggplot2::ggplot(data,
                             ggplot2::aes(x = SCORE, color = GROUP, group = GROUP, fill = GROUP)) +
@@ -403,7 +403,7 @@ plotPs <- function(data,
 #'                              large data sets)
 #' @details
 #' The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 #' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
@@ -445,7 +445,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #' @details
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 #' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
@@ -466,9 +466,9 @@ trimByPs <- function(population, trimFraction = 0.05) {
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
   OhdsiRTools::logTrace("Trimming based on propensity score")
-  cutoffTreated <- quantile(population$propensityScore[population$treatment == 1], 1 - trimFraction)
+  cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], 1 - trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], trimFraction)
-  result <- population[(population$propensityScore <= cutoffTreated & population$treatment == 1) |
+  result <- population[(population$propensityScore <= cutoffTarget & population$treatment == 1) |
                          (population$propensityScore >= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
     attr(result,
@@ -490,7 +490,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
 #' @details
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 #' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
@@ -549,7 +549,7 @@ logit <- function(p){
 #' Match persons by propensity score
 #'
 #' @description
-#' \code{matchOnPs} uses the provided propensity scores to match treated to comparator persons.
+#' \code{matchOnPs} uses the provided propensity scores to match target to comparator persons.
 #'
 #' @param population              A data frame with the three columns described below.
 #' @param caliper                 The caliper for matching. A caliper is the distance which is
@@ -565,7 +565,7 @@ logit <- function(p){
 #'                                (Austin, 2011).
 #' @param maxRatio                The maximum number of persons int the comparator arm to be matched to
 #'                                each person in the treatment arm. A maxRatio of 0 means no maximum:
-#'                                all comparators will be assigned to a treated person.
+#'                                all comparators will be assigned to a target person.
 #' @param stratificationColumns   Names or numbers of one or more columns in the \code{data} data.frame
 #'                                on which subjects should be stratified prior to matching. No persons
 #'                                will be matched with persons outside of the strata identified by the
@@ -574,7 +574,7 @@ logit <- function(p){
 #' @details
 #' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
 #' \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 #' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 #' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 #'
@@ -683,7 +683,7 @@ matchOnPs <- function(population,
 #'
 #' @description
 #' \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
-#' treated to comparator persons.
+#' target to comparator persons.
 #'
 #' @param population         A data frame with the three columns described below.
 #' @param caliper            The caliper for matching. A caliper is the distance which is acceptable
@@ -699,7 +699,7 @@ matchOnPs <- function(population,
 #'                                (Austin, 2011).
 #' @param maxRatio           The maximum number of persons int the comparator arm to be matched to each
 #'                           person in the treatment arm. A maxRatio of 0 means no maximum: all
-#'                           comparators will be assigned to a treated person.
+#'                           comparators will be assigned to a target person.
 #' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
 #'                           \code{getDbCohortMethodData}.
 #' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
@@ -708,7 +708,7 @@ matchOnPs <- function(population,
 #' @details
 #' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
 #' \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 #' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 #' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 #'
@@ -755,7 +755,7 @@ matchOnPsAndCovariates <- function(population,
 #'
 #' @param population              A data frame with the three columns described below
 #' @param numberOfStrata          How many strata? The boundaries of the strata are automatically
-#'                                defined to contain equal numbers of treated persons.
+#'                                defined to contain equal numbers of target persons.
 #' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which
 #'                                subjects should also be stratified in addition to stratification on
 #'                                propensity score.
@@ -766,7 +766,7 @@ matchOnPsAndCovariates <- function(population,
 #' @details
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 #' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
@@ -806,22 +806,22 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
     warning("Specified ", numberOfStrata, " strata, but only ", length(breaks) - 1, " could be created")
   }
   if (length(stratificationColumns) == 0) {
-    if (length(psStrata) == 1) {
+    if (length(breaks) - 1 == 1) {
       population$stratumId <- rep(1, nrow(population))
     } else {
       population$stratumId <- as.integer(as.character(cut(population$propensityScore,
                                                           breaks = breaks,
-                                                          labels = 1:(length(breaks)-1))))
+                                                          labels = 1:(length(breaks) - 1))))
     }
     return(population)
   } else {
     f <- function(subset, psStrata, numberOfStrata) {
-      if (length(psStrata) == 1) {
-        subset$stratumId <- rep(1, nrow(population))
+      if (length(breaks) - 1 == 1) {
+        subset$stratumId <- rep(1, nrow(subset))
       } else {
         subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
                                                         breaks = breaks,
-                                                        labels = 1:(length(breaks)-1))))
+                                                        labels = 1:(length(breaks) - 1))))
       }
       return(subset)
     }
@@ -854,7 +854,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' @param population         A data frame with the three columns described below
 #' @param numberOfStrata     Into how many strata should the propensity score be divided? The
 #'                           boundaries of the strata are automatically defined to contain equal
-#'                           numbers of treated persons.
+#'                           numbers of target persons.
 #' @param baseSelection      What is the base selection of subjects where the strata bounds are
 #'                           to be determined? Strata are defined as equally-sized strata inside
 #'                           this selection. Possible values are "all", "target", and "comparator".
@@ -866,7 +866,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' @details
 #' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
 #' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 #' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 #'
 #' @return
@@ -963,30 +963,30 @@ computeMeanAndSd <- function(cohorts, covariates, treatment) {
 }
 
 computeMeansPerGroup <- function(cohorts, covariates) {
-  nOverall <- nrow(cohorts)
-  nTreated <- ffbase::sum.ff(cohorts$treatment == 1)
-  nComparator <- nOverall - nTreated
+  # nOverall <- nrow(cohorts)
+  # nTarget <- ffbase::sum.ff(cohorts$treatment == 1)
+  # nComparator <- nOverall - nTarget
 
-  treated <- computeMeanAndSd(cohorts, covariates, treatment = 1)
-  colnames(treated)[colnames(treated) == "sum"] <- "sumTreated"
-  colnames(treated)[colnames(treated) == "mean"] <- "meanTreated"
-  colnames(treated)[colnames(treated) == "sd"] <- "sdTreated"
+  target <- computeMeanAndSd(cohorts, covariates, treatment = 1)
+  colnames(target)[colnames(target) == "sum"] <- "sumTarget"
+  colnames(target)[colnames(target) == "mean"] <- "meanTarget"
+  colnames(target)[colnames(target) == "sd"] <- "sdTarget"
 
   comparator <- computeMeanAndSd(cohorts, covariates, treatment = 0)
   colnames(comparator)[colnames(comparator) == "sum"] <- "sumComparator"
   colnames(comparator)[colnames(comparator) == "mean"] <- "meanComparator"
   colnames(comparator)[colnames(comparator) == "sd"] <- "sdComparator"
 
-  result <- merge(treated[,
-                          c("covariateId", "meanTreated", "sumTreated", "sdTreated")],
+  result <- merge(target[,
+                         c("covariateId", "meanTarget", "sumTarget", "sdTarget")],
                   comparator[,
                              c("covariateId", "meanComparator", "sumComparator", "sdComparator")],
                   all = TRUE)
-  result$sd <- sqrt((result$sdTreated^2 + result$sdComparator^2)/2)
+  result$sd <- sqrt((result$sdTarget^2 + result$sdComparator^2)/2)
   result <- result[, c("covariateId",
-                       "meanTreated",
+                       "meanTarget",
                        "meanComparator",
-                       "sumTreated",
+                       "sumTarget",
                        "sumComparator",
                        "sd")]
   return(result)
@@ -1004,10 +1004,13 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'                           and/or trimming.
 #' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
 #'                           \code{getDbCohortMethodData}.
+#' @param subgroupCovariateId  Optional: a covariate ID of a binary covariate that indicates a subgroup of
+#'                             interest. Both the before and after populations will be restricted to this
+#'                             subgroup before computing covariate balance.
 #' @details
 #' The population data frame should have at least the following columns: \tabular{lll}{ \verb{rowId}
 #' \tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator (0)\cr
+#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator (0)\cr
 #' \tab \tab group \cr }
 #'
 #' @return
@@ -1018,22 +1021,32 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #' matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 #'
 #' @export
-computeCovariateBalance <- function(population, cohortMethodData) {
+computeCovariateBalance <- function(population, cohortMethodData, subgroupCovariateId = NULL) {
   OhdsiRTools::logTrace("Computing covariate balance")
   start <- Sys.time()
   cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
-  covariates <- cohortMethodData$covariates
-
-  # Try to undo normalization of covariate values:
-  # normFactors <- attr(cohortMethodData$covariates, "normFactors")
-  # if (!is.null(normFactors)) {
-  #   covariates <- ffbase::merge.ffdf(covariates, ff::as.ffdf(normFactors))
-  #   covariates$covariateValue <- covariates$covariateValue * covariates$maxs
-  #   covariates$maxs <- NULL
-  # }
-
-  beforeMatching <- computeMeansPerGroup(cohorts, covariates)
   cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
+  covariates <- cohortMethodData$covariates
+  if (!is.null(subgroupCovariateId)) {
+    idx <- covariates$covariateId == subgroupCovariateId
+    if (!ffbase::any.ff(idx)) {
+      stop("Cannot find covariate with ID ", subgroupCovariateId)
+    }
+    subGroupRowIds <- covariates$rowId[idx]
+    row.names(cohorts) <- NULL
+    idx <- ffbase::`%in%`(cohorts$rowId, subGroupRowIds)
+    if (!ffbase::any.ff(idx)) {
+      stop("Cannot find covariate with ID ", subgroupCovariateId, " in population before matching/trimming")
+    }
+    cohorts <- cohorts[idx, ]
+    row.names(cohortsAfterMatching) <- NULL
+    idx <- ffbase::`%in%`(cohortsAfterMatching$rowId, subGroupRowIds)
+    if (!ffbase::any.ff(idx)) {
+      stop("Cannot find covariate with ID ", subgroupCovariateId, " in population after matching/trimming")
+    }
+    cohortsAfterMatching <- cohortsAfterMatching[idx, ]
+  }
+  beforeMatching <- computeMeansPerGroup(cohorts, covariates)
   afterMatching <- computeMeansPerGroup(cohortsAfterMatching, covariates)
 
   ff::close.ffdf(cohorts)
@@ -1041,20 +1054,20 @@ computeCovariateBalance <- function(population, cohortMethodData) {
   rm(cohorts)
   rm(cohortsAfterMatching)
 
-  colnames(beforeMatching)[colnames(beforeMatching) == "meanTreated"] <- "beforeMatchingMeanTreated"
+  colnames(beforeMatching)[colnames(beforeMatching) == "meanTarget"] <- "beforeMatchingMeanTarget"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
-  colnames(beforeMatching)[colnames(beforeMatching) == "sumTreated"] <- "beforeMatchingSumTreated"
+  colnames(beforeMatching)[colnames(beforeMatching) == "sumTarget"] <- "beforeMatchingSumTarget"
   colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingSumComparator"
   colnames(beforeMatching)[colnames(beforeMatching) == "sd"] <- "beforeMatchingSd"
-  colnames(afterMatching)[colnames(afterMatching) == "meanTreated"] <- "afterMatchingMeanTreated"
+  colnames(afterMatching)[colnames(afterMatching) == "meanTarget"] <- "afterMatchingMeanTarget"
   colnames(afterMatching)[colnames(afterMatching) == "meanComparator"] <- "afterMatchingMeanComparator"
-  colnames(afterMatching)[colnames(afterMatching) == "sumTreated"] <- "afterMatchingSumTreated"
+  colnames(afterMatching)[colnames(afterMatching) == "sumTarget"] <- "afterMatchingSumTarget"
   colnames(afterMatching)[colnames(afterMatching) == "sumComparator"] <- "afterMatchingSumComparator"
   colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
   balance <- merge(beforeMatching, afterMatching)
   balance <- merge(balance, ff::as.ram(cohortMethodData$covariateRef))
-  balance$beforeMatchingStdDiff <- (balance$beforeMatchingMeanTreated - balance$beforeMatchingMeanComparator)/balance$beforeMatchingSd
-  balance$afterMatchingStdDiff <- (balance$afterMatchingMeanTreated - balance$afterMatchingMeanComparator)/balance$afterMatchingSd
+  balance$beforeMatchingStdDiff <- (balance$beforeMatchingMeanTarget - balance$beforeMatchingMeanComparator)/balance$beforeMatchingSd
+  balance$afterMatchingStdDiff <- (balance$afterMatchingMeanTarget - balance$afterMatchingMeanComparator)/balance$afterMatchingSd
   balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]

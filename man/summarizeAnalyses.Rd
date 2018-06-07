@@ -16,9 +16,9 @@ for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target drug
 ID(s) of indications in which to nest to study. \cr \verb{outcomeId} \tab The ID of the outcome.\cr
 \verb{rr} \tab The estimated effect size.\cr \verb{ci95lb} \tab The lower bound of the 95 percent
 confidence interval.\cr \verb{ci95ub} \tab The upper bound of the 95 percent confidence
-interval.\cr \verb{treated} \tab The number of subjects in the treated group (after any trimming
+interval.\cr \verb{target} \tab The number of subjects in the target group (after any trimming
 and matching).\cr \verb{comparator} \tab The number of subjects in the comparator group (after any
-trimming and matching).\cr \verb{eventsTreated} \tab The number of outcomes in the treated group
+trimming and matching).\cr \verb{eventsTarget} \tab The number of outcomes in the target group
 (after any trimming and matching).\cr \verb{eventsComparator} \tab The number of outcomes in the
 comparator group (after any trimming and \cr \tab matching).\cr \verb{logRr} \tab The log of the
 estimated relative risk.\cr \verb{seLogRr} \tab The standard error of the log of the estimated

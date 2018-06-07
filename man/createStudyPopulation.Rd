@@ -27,12 +27,12 @@ transformations will be performed.}
 that this is typically done in the
 \code{createStudyPopulation} function,}
 
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
 
 \item{washoutPeriod}{The mininum required continuous observation time prior to
 index date for a person to be included in the cohort.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
+\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
 cohort? See details for allowed values.}
 
 \item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk
@@ -75,7 +75,8 @@ window, and determining which outcomes fall inside the risk window.
 The \code{removeduplicateSubjects} argument can have one of the following values:
 \describe{
   \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
-  \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+  \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
+  If both cohorts start simultaneous, the person is removed from the analysis.}
   \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
 }
 }

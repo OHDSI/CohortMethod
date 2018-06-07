@@ -96,7 +96,7 @@
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Note
 #'                                     that this is typically done in the \code{createStudyPopulation}
 #'                                     function, but can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator
+#' @param removeDuplicateSubjects      Remove subjects that are in both the target and comparator
 #'                                     cohort? See details for allowed values.N ote that this is typically done in the
 #'                                     \code{createStudyPopulation} function, but can already be done
 #'                                     here for efficiency reasons.
@@ -189,7 +189,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  OhdsiRTools::logInfo("\nConstructing treatment and comparator cohorts")
+  OhdsiRTools::logInfo("\nConstructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -219,12 +219,12 @@ getDbCohortMethodData <- function(connectionDetails,
     preSampleCounts <- DatabaseConnector::querySql(connection, renderedSql)
     colnames(preSampleCounts) <- SqlRender::snakeCaseToCamelCase(colnames(preSampleCounts))
     OhdsiRTools::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
-    preSampleCounts <- data.frame(treatedPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
+    preSampleCounts <- data.frame(targetPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
                                   comparatorPersons = preSampleCounts$personCount[preSampleCounts$treatment == 0],
-                                  treatedExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
+                                  targetExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
                                   comparatorExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 0])
-    if (preSampleCounts$treatedExposures > maxCohortSize) {
-      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$treatedExposures, " to ", maxCohortSize))
+    if (preSampleCounts$targetExposures > maxCohortSize) {
+      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (preSampleCounts$comparatorExposures > maxCohortSize) {
@@ -282,15 +282,15 @@ getDbCohortMethodData <- function(connectionDetails,
     colnames(rawCount) <- SqlRender::snakeCaseToCamelCase(colnames(rawCount))
     if (nrow(rawCount) == 0) {
       counts <- data.frame(description = "Original cohorts",
-                           treatedPersons = 0,
+                           targetPersons = 0,
                            comparatorPersons = 0,
-                           treatedExposures = 0,
+                           targetExposures = 0,
                            comparatorExposures = 0)
     } else {
       counts <- data.frame(description = "Original cohorts",
-                           treatedPersons = rawCount$exposedCount[rawCount$treatment ==  1],
+                           targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
                            comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-                           treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
+                           targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
                            comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
     }
     metaData$attrition <- counts
@@ -488,6 +488,14 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
                  cohorts = readRDS(file.path(file, "cohorts.rds")),
                  outcomes = readRDS(file.path(file, "outcomes.rds")),
                  metaData = readRDS(file.path(file, "metaData.rds")))
+
+  # For backwards compatability with version < 3.0.0:
+  metaData <- attr(result$cohorts, "metaData")
+  if (!is.null(metaData$attrition$treatedPersons)) {
+    colnames(metaData$attrition)[colnames(metaData$attrition) == "treatedPersons"] <- "targetPersons"
+    colnames(metaData$attrition)[colnames(metaData$attrition) == "treatedExposures"] <- "targetExposures"
+    attr(result$cohorts, "metaData") <- metaData
+  }
   class(result) <- "cohortMethodData"
   return(result)
 }
@@ -504,7 +512,7 @@ print.cohortMethodData <- function(x, ...) {
 
 #' @export
 summary.cohortMethodData <- function(object, ...) {
-  treatedPersons <- length(unique(object$cohorts$subjectId[object$cohorts$treatment == 1]))
+  targetPersons <- length(unique(object$cohorts$subjectId[object$cohorts$treatment == 1]))
   comparatorPersons <- length(unique(object$cohorts$subjectId[object$cohorts$treatment == 0]))
   outcomeCounts <- data.frame(outcomeId = attr(object$outcomes, "metaData")$outcomeIds,
                               eventCount = 0,
@@ -517,7 +525,7 @@ summary.cohortMethodData <- function(object, ...) {
   }
   result <- list(metaData = append(append(object$metaData, attr(object$cohorts, "metaData")),
                                    attr(object$outcomes, "metaData")),
-                 treatedPersons = treatedPersons,
+                 targetPersons = targetPersons,
                  comparatorPersons = comparatorPersons,
                  outcomeCounts = outcomeCounts,
                  covariateCount = nrow(object$covariateRef),
@@ -534,7 +542,7 @@ print.summary.cohortMethodData <- function(x, ...) {
   writeLines(paste("Comparator concept ID:", x$metaData$comparatorId))
   writeLines(paste("Outcome concept ID(s):", x$metaData$outcomeIds, collapse = ","))
   writeLines("")
-  writeLines(paste("Treated persons:", paste(x$treatedPersons)))
+  writeLines(paste("Treated persons:", paste(x$targetPersons)))
   writeLines(paste("Comparator persons:", paste(x$comparatorPersons)))
   writeLines("")
   writeLines("Outcome counts:")
@@ -592,7 +600,7 @@ grepCovariateNames <- function(pattern, object) {
 #'
 #' @param population             Either an object of type \code{cohortMethodData} or a population
 #'                               object generated by functions like \code{createStudyPopulation}.
-#' @param cohortIds              The IDs to be used for the treated and comparator cohort,
+#' @param cohortIds              The IDs to be used for the target and comparator cohort,
 #'                               respectively.
 #' @param connectionDetails      An R object of type\cr\code{connectionDetails} created using the
 #'                               function \code{createConnectionDetails} in the

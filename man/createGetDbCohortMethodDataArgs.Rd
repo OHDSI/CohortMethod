@@ -27,7 +27,7 @@ cohortIDs).}
 this is typically done in the createStudyPopulationfunction, but
 can already be done here for efficiency reasons.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and
+\item{removeDuplicateSubjects}{Remove subjects that are in both the target and
 comparatorcohort? See details for allowed values.N ote that this
 is typically done in thecreateStudyPopulation function, but can
 already be donehere for efficiency reasons.}

@@ -61,6 +61,20 @@ test_that("createStudyPop: removeDuplicateSubjects = 'keep first'", {
   expect_equal(sp$rowId, c(1,2,3))
 })
 
+test_that("createStudyPop: removeDuplicateSubjects = 'keep first' removing ties", {
+  tempCmd <- cohortMethodData
+  tempCmd$cohorts <- rbind(tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts)
+  tempCmd$cohorts$rowId <- c(1,2,3,4)
+  tempCmd$cohorts$treatment <- c(1, 0, 1, 0)
+  tempCmd$cohorts$subjectId <- c(1, 1, 2, 2)
+  tempCmd$cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2001-02-01", "2000-01-01", "2000-01-01"))
+
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = "keep first")
+  expect_equal(sp$rowId, c(1))
+  sp <- createStudyPopulation(cohortMethodData = tempCmd, removeDuplicateSubjects = "keep all")
+  expect_equal(sp$rowId, c(1, 2, 3, 4))
+})
+
 test_that("createStudyPop: restrictToCommonPeriod", {
   tempCmd <- cohortMethodData
   tempCmd$cohorts <- rbind(tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts, tempCmd$cohorts)
@@ -156,6 +170,7 @@ test_that("createStudyPop: censor at new risk window start", {
   tempCmd$cohorts$subjectId <- c(1, 1, 2)
   tempCmd$cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2000-02-01", "2000-01-01"))
   tempCmd$cohorts$daysToCohortEnd <- c(100, 100, 100)
+  tempCmd$cohorts$daysToObsEnd <- c(1000, 1000, 1000)
 
   sp <- createStudyPopulation(cohortMethodData = tempCmd, outcomeId = 0, censorAtNewRiskWindow = TRUE)
   expect_equal(sp$timeAtRisk, c(31, 101, 101))

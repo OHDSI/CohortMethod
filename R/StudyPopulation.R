@@ -25,7 +25,8 @@
 #' The \code{removeduplicateSubjects} argument can have one of the following values:
 #' \describe{
 #'   \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
-#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
+#'   If both cohorts start simultaneous, the person is removed from the analysis.}
 #'   \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
 #' }
 #'
@@ -39,9 +40,9 @@
 #' @param firstExposureOnly                Should only the first exposure per subject be included? Note
 #'                                         that this is typically done in the
 #'                                         \code{createStudyPopulation} function,
-#' @param removeDuplicateSubjects          Remove subjects that are in both the treated and comparator
+#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
-#' @param restrictToCommonPeriod           Restrict the analysis to the period when both treatments are observed?
+#' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
@@ -125,6 +126,11 @@ createStudyPopulation <- function(cohortMethodData,
   } else if (removeDuplicateSubjects == "keep first") {
     OhdsiRTools::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
+    # Remove ties:
+    idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
+    idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
+    population <- population[!idx, ]
+    # Keeping first:
     idx <- duplicated(population[, c("subjectId")])
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition,
@@ -173,7 +179,7 @@ createStudyPopulation <- function(cohortMethodData,
     population$startDate <- as.Date(population$cohortStartDate) + population$riskStart
     population$endDate <- as.Date(population$cohortStartDate) + population$riskEnd
     population <- population[order(population$subjectId, population$riskStart), ]
-    idx <- 1:(nrow(population)-1)
+    idx <- 1:(nrow(population) - 1)
     idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
                    population$subjectId[idx] == population$subjectId[idx + 1])
     if (length(idx) > 0) {
@@ -259,14 +265,14 @@ getAttritionTable <- function(object) {
 }
 
 getCounts <- function(population, description = "") {
-  treatedPersons <- length(unique(population$subjectId[population$treatment == 1]))
+  targetPersons <- length(unique(population$subjectId[population$treatment == 1]))
   comparatorPersons <- length(unique(population$subjectId[population$treatment == 0]))
-  treatedExposures <- length(population$subjectId[population$treatment == 1])
+  targetExposures <- length(population$subjectId[population$treatment == 1])
   comparatorExposures <- length(population$subjectId[population$treatment == 0])
   counts <- data.frame(description = description,
-                       treatedPersons = treatedPersons,
+                       targetPersons = targetPersons,
                        comparatorPersons = comparatorPersons,
-                       treatedExposures = treatedExposures,
+                       targetExposures = targetExposures,
                        comparatorExposures = comparatorExposures)
   return(counts)
 }

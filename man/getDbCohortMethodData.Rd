@@ -84,7 +84,7 @@ IDs).}
 that this is typically done in the \code{createStudyPopulation}
 function, but can already be done here for efficiency reasons.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and comparator
+\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
 cohort? See details for allowed values.N ote that this is typically done in the
 \code{createStudyPopulation} function, but can already be done
 here for efficiency reasons.}

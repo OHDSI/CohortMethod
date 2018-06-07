@@ -19,9 +19,9 @@
 #' Run a list of analyses
 #'
 #' @details
-#' Run a list of analyses for the drug-comparator-outcomes of interest. This function will run all
+#' Run a list of analyses for the target-comparator-outcomes of interest. This function will run all
 #' specified analyses against all hypotheses of interest, meaning that the total number of outcome
-#' models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an
+#' models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an
 #' outcome model should be fitted). When you provide several analyses it will determine whether any of
 #' the analyses have anything in common, and will take advantage of this fact. For example, if we
 #' specify several analyses that only differ in the way the outcome model is fitted, then this
@@ -61,8 +61,8 @@
 #' @param outputFolder                   Name of the folder where all the outputs will written to.
 #' @param cmAnalysisList                 A list of objects of type \code{cmAnalysis} as created using
 #'                                       the \code{\link{createCmAnalysis}} function.
-#' @param drugComparatorOutcomesList     A list of objects of type \code{drugComparatorOutcomes} as
-#'                                       created using the \code{\link{createDrugComparatorOutcomes}}
+#' @param targetComparatorOutcomesList   A list of objects of type \code{targetComparatorOutcomes} as
+#'                                       created using the \code{\link{createTargetComparatorOutcomes}}
 #'                                       function.
 #' @param refitPsForEveryOutcome         Should the propensity model be fitted for every outcome (i.e.
 #'                                       after people who already had the outcome are removed)? If
@@ -81,8 +81,6 @@
 #'                                       one time could be `createPsThreads * psCvThreads`.
 #' @param createStudyPopThreads          The number of parallel threads to use for creating the study
 #'                                       population.
-#' @param computeCovarBalThreads         The number of parallel threads to use for computing the
-#'                                       covariate balance.
 #' @param trimMatchStratifyThreads       The number of parallel threads to use for trimming, matching
 #'                                       and stratifying.
 #' @param fitOutcomeModelThreads         The number of parallel threads to use for fitting the outcome
@@ -97,7 +95,7 @@
 #'
 #' @return
 #' A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-#' for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target drug.\cr
+#' for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target exposure.\cr
 #' \verb{comparatorId} \tab The ID of the comparator group.\cr \verb{excludedCovariateConceptIds} \tab
 #' The ID(s) of concepts that cannot be used to construct covariates. \cr
 #' \verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct
@@ -109,9 +107,7 @@
 #' stratification on the PS.\cr \verb{psFile} \tab The name of file containing the propensity scores
 #' for a specific \cr \tab outcomes (ie after people with prior outcomes have been removed).\cr
 #' \verb{strataFile} \tab The name of the file containing the identifiers of the population \cr \tab
-#' after any trimming, matching or stratifying, including their strata.\cr \verb{covariateBalanceFile}
-#' \tab The name of the file containing the covariate balance (ie. the \cr \tab output of the
-#' \code{computeCovariateBalance} function.\cr \verb{outcomeModelFile} \tab The name of the file
+#' after any trimming, matching or stratifying, including their strata.\cr \verb{outcomeModelFile} \tab The name of the file
 #' containing the outcome model.\cr }
 #'
 #' @export
@@ -125,7 +121,7 @@ runCmAnalyses <- function(connectionDetails,
                           cdmVersion = 5,
                           outputFolder = "./CohortMethodOutput",
                           cmAnalysisList,
-                          drugComparatorOutcomesList,
+                          targetComparatorOutcomesList,
                           refitPsForEveryOutcome = FALSE,
                           refitPsForEveryStudyPopulation = TRUE,
                           getDbCohortMethodDataThreads = 1,
@@ -133,28 +129,27 @@ runCmAnalyses <- function(connectionDetails,
                           psCvThreads = 1,
                           createStudyPopThreads = 1,
                           trimMatchStratifyThreads = 1,
-                          computeCovarBalThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
                           outcomeIdsOfInterest) {
-  if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome){
+  if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
   if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
     stop("Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
   }
-  for (drugComparatorOutcomes in drugComparatorOutcomesList) {
-    stopifnot(class(drugComparatorOutcomes) == "drugComparatorOutcomes")
+  for (targetComparatorOutcomes in targetComparatorOutcomesList) {
+    stopifnot(class(targetComparatorOutcomes) == "targetComparatorOutcomes")
   }
   for (cmAnalysis in cmAnalysisList) {
     stopifnot(class(cmAnalysis) == "cmAnalysis")
   }
-  uniquedrugComparatorOutcomesList <- unique(OhdsiRTools::selectFromList(drugComparatorOutcomesList,
+  uniquetargetComparatorOutcomesList <- unique(OhdsiRTools::selectFromList(targetComparatorOutcomesList,
                                                                          c("targetId",
                                                                            "comparatorId",
                                                                            "outcomeIds")))
-  if (length(uniquedrugComparatorOutcomesList) != length(drugComparatorOutcomesList)) {
-    stop("Duplicate drug-comparator-outcomes combinations are not allowed")
+  if (length(uniquetargetComparatorOutcomesList) != length(targetComparatorOutcomesList)) {
+    stop("Duplicate target-comparator-outcomes combinations are not allowed")
   }
   analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
   uniqueAnalysisIds <- unique(analysisIds)
@@ -165,7 +160,7 @@ runCmAnalyses <- function(connectionDetails,
     dir.create(outputFolder)
 
   referenceTable <- createReferenceTable(cmAnalysisList,
-                                         drugComparatorOutcomesList,
+                                         targetComparatorOutcomesList,
                                          outputFolder,
                                          refitPsForEveryOutcome,
                                          refitPsForEveryStudyPopulation,
@@ -332,24 +327,6 @@ runCmAnalyses <- function(connectionDetails,
     OhdsiRTools::stopCluster(cluster)
   }
 
-  OhdsiRTools::logInfo("*** Computing covariate balance ***")
-  tasks <- list()
-  for (covariateBalanceFile in unique(referenceTable$covariateBalanceFile)) {
-    if (covariateBalanceFile != "" && !file.exists((covariateBalanceFile))) {
-      refRow <- referenceTable[referenceTable$covariateBalanceFile == covariateBalanceFile, ][1, ]
-      tasks[[length(tasks) + 1]] <- list(strataFile = refRow$strataFile,
-                                         cohortMethodDataFolder = refRow$cohortMethodDataFolder,
-                                         covariateBalanceFile = refRow$covariateBalanceFile)
-    }
-  }
-
-  if (length(tasks) != 0) {
-    cluster <- OhdsiRTools::makeCluster(computeCovarBalThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, tasks, computeCovarBal)
-    OhdsiRTools::stopCluster(cluster)
-  }
-
   if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
     OhdsiRTools::logInfo("*** Fitting outcome models ***")
   } else {
@@ -479,6 +456,15 @@ fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   args$cohortMethodData <- cohortMethodData
   args$population <- studyPop
   ps <- do.call("createPs", args)
+  # ps <- createPs(cohortMethodData = args$cohortMethodData,
+  #                population = args$population,
+  #                excludeCovariateIds = args$excludeCovariateIds,
+  #                includeCovariateIds = args$includeCovariateIds,
+  #                maxCohortSizeForFitting = args$maxCohortSizeForFitting,
+  #                errorOnHighCorrelation = args$errorOnHighCorrelation,
+  #                stopOnError = args$stopOnError,
+  #                prior = args$prior,
+  #                control = args$control)
   saveRDS(ps, params$sharedPsFile)
   return(NULL)
 }
@@ -515,14 +501,6 @@ trimMatchStratify <- function(params) {
   return(NULL)
 }
 
-computeCovarBal <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
-  strata <- readRDS(params$strataFile)
-  balance <- computeCovariateBalance(strata, cohortMethodData)
-  saveRDS(balance, params$covariateBalanceFile)
-  return(NULL)
-}
-
 doFitOutcomeModel <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
   studyPop <- readRDS(params$studyPopFile)
@@ -534,7 +512,10 @@ doFitOutcomeModel <- function(params) {
                                   modelType = args$modelType,
                                   stratified = args$stratified,
                                   useCovariates = args$useCovariates,
-                                  inversePsWeighting = args$inversePsWeighting,
+                                  inversePtWeighting = args$inversePtWeighting,
+                                  includeCovariateIds = args$includeCovariateIds,
+                                  excludeCovariateIds = args$excludeCovariateIds,
+                                  interactionCovariateIds = args$interactionCovariateIds,
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
@@ -607,7 +588,10 @@ doFitOutcomeModelPlus <- function(params) {
                                   modelType = args$modelType,
                                   stratified = args$stratified,
                                   useCovariates = args$useCovariates,
-                                  inversePsWeighting = args$inversePsWeighting,
+                                  inversePtWeighting = args$inversePtWeighting,
+                                  includeCovariateIds = args$includeCovariateIds,
+                                  excludeCovariateIds = args$excludeCovariateIds,
+                                  interactionCovariateIds = args$interactionCovariateIds,
                                   prior = args$prior,
                                   control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
@@ -616,7 +600,7 @@ doFitOutcomeModelPlus <- function(params) {
 
 
 createReferenceTable <- function(cmAnalysisList,
-                                 drugComparatorOutcomesList,
+                                 targetComparatorOutcomesList,
                                  outputFolder,
                                  refitPsForEveryOutcome,
                                  refitPsForEveryStudyPopulation,
@@ -656,7 +640,7 @@ createReferenceTable <- function(cmAnalysisList,
   referenceTable <- do.call("rbind",
                             lapply(cmAnalysisList,
                                    instantiateDcos,
-                                   dcos = drugComparatorOutcomesList,
+                                   dcos = targetComparatorOutcomesList,
                                    folder = outputFolder))
 
   # Find unique load operations
@@ -812,21 +796,6 @@ createReferenceTable <- function(cmAnalysisList,
                                                                  outcomeId = referenceTable$outcomeId[idx])
   referenceTable$strataFile[!idx] <- ""
 
-  # Add covariateBalance filenames
-  idx <- which.list(OhdsiRTools::selectFromList(cmAnalysisList, "computeCovariateBalance"),
-                    list(computeCovariateBalance = TRUE))
-  balIds <- analysisIds[idx]
-  idx <- referenceTable$analysisId %in% balIds
-  referenceTable$covariateBalanceFile[idx] <- .createCovariateBalanceFileName(folder = outputFolder,
-                                                                              loadId = referenceTable$loadArgsId[idx],
-                                                                              studyPopId = referenceTable$studyPopArgsId[idx],
-                                                                              psId = referenceTable$psArgsId[idx],
-                                                                              strataId = referenceTable$strataArgsId[idx],
-                                                                              targetId = referenceTable$targetId[idx],
-                                                                              comparatorId = referenceTable$comparatorId[idx],
-                                                                              outcomeId = referenceTable$outcomeId[idx])
-  referenceTable$covariateBalanceFile[!idx] <- ""
-
   # Add interest flag
   if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
     referenceTable$outcomeOfInterest <- TRUE
@@ -836,7 +805,6 @@ createReferenceTable <- function(cmAnalysisList,
     referenceTable$studyPopFile[!referenceTable$outcomeOfInterest] <- ""
     referenceTable$psFile[!referenceTable$outcomeOfInterest] <- ""
     referenceTable$strataFile[!referenceTable$outcomeOfInterest] <- ""
-    referenceTable$covariateBalanceFile[!referenceTable$outcomeOfInterest] <- ""
   }
   # Some cleanup:
   referenceTable <- referenceTable[, c("analysisId",
@@ -851,7 +819,6 @@ createReferenceTable <- function(cmAnalysisList,
                                        "sharedPsFile",
                                        "psFile",
                                        "strataFile",
-                                       "covariateBalanceFile",
                                        "outcomeModelFile")]
   referenceTable <- referenceTable[order(referenceTable$analysisId,
                                          referenceTable$targetId,
@@ -966,31 +933,6 @@ createReferenceTable <- function(cmAnalysisList,
   return(file.path(folder, name))
 }
 
-.createCovariateBalanceFileName <- function(folder,
-                                            loadId,
-                                            studyPopId,
-                                            psId,
-                                            strataId,
-                                            targetId,
-                                            comparatorId,
-                                            outcomeId) {
-  name <- paste("Bal_l",
-                loadId,
-                "_s",
-                studyPopId,
-                "_p",
-                psId,
-                "_t",
-                .f(targetId),
-                "_c",
-                .f(comparatorId),
-                sep = "")
-  name <- paste(name, "_s", strataId, sep = "")
-  name <- paste(name, "_o", .f(outcomeId), sep = "")
-  name <- paste(name, ".rds", sep = "")
-  return(file.path(folder, name))
-}
-
 .createOutcomeModelFileName <- function(folder, targetId, comparatorId, outcomeId) {
   name <- paste("om_t", .f(targetId), "_c", .f(comparatorId), sep = "")
   name <- paste(name, "_o", .f(outcomeId), sep = "")
@@ -1026,9 +968,9 @@ createReferenceTable <- function(cmAnalysisList,
 #' ID(s) of indications in which to nest to study. \cr \verb{outcomeId} \tab The ID of the outcome.\cr
 #' \verb{rr} \tab The estimated effect size.\cr \verb{ci95lb} \tab The lower bound of the 95 percent
 #' confidence interval.\cr \verb{ci95ub} \tab The upper bound of the 95 percent confidence
-#' interval.\cr \verb{treated} \tab The number of subjects in the treated group (after any trimming
+#' interval.\cr \verb{target} \tab The number of subjects in the target group (after any trimming
 #' and matching).\cr \verb{comparator} \tab The number of subjects in the comparator group (after any
-#' trimming and matching).\cr \verb{eventsTreated} \tab The number of outcomes in the treated group
+#' trimming and matching).\cr \verb{eventsTarget} \tab The number of outcomes in the target group
 #' (after any trimming and matching).\cr \verb{eventsComparator} \tab The number of outcomes in the
 #' comparator group (after any trimming and \cr \tab matching).\cr \verb{logRr} \tab The log of the
 #' estimated relative risk.\cr \verb{seLogRr} \tab The standard error of the log of the estimated
@@ -1042,11 +984,11 @@ summarizeAnalyses <- function(referenceTable) {
                          ci95lb = 0,
                          ci95ub = 0,
                          p = 1,
-                         treated = 0,
+                         target = 0,
                          comparator = 0,
-                         treatedDays = NA,
+                         targetDays = NA,
                          comparatorDays = NA,
-                         eventsTreated = 0,
+                         eventsTarget = 0,
                          eventsComparator = 0,
                          logRr = 0,
                          seLogRr = 0)
@@ -1064,24 +1006,33 @@ summarizeAnalyses <- function(referenceTable) {
         z <- coef(outcomeModel)/outcomeModel$outcomeModelTreatmentEstimate$seLogRr
         result$p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
       }
-      result$treated <- outcomeModel$populationCounts$treatedPersons
+      result$target <- outcomeModel$populationCounts$targetPersons
       result$comparator <- outcomeModel$populationCounts$comparatorPersons
       if (outcomeModel$outcomeModelType %in% c("cox", "poisson")) {
-        result$treatedDays <- outcomeModel$timeAtRisk$treatedDays
+        result$targetDays <- outcomeModel$timeAtRisk$targetDays
         result$comparatorDays <- outcomeModel$timeAtRisk$comparatorDays
       }
-      result$eventsTreated <- outcomeModel$outcomeCounts$treatedOutcomes
+      result$eventsTarget <- outcomeModel$outcomeCounts$targetOutcomes
       result$eventsComparator <- outcomeModel$outcomeCounts$comparatorOutcomes
       result$logRr <- if (is.null(coef(outcomeModel)))
         NA else coef(outcomeModel)
       result$seLogRr <- if (is.null(coef(outcomeModel)))
         NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr
+      if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
+        for (i in 1:nrow(outcomeModel$outcomeModelInteractionEstimates)) {
+          result[, paste("rr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logRr[i])
+          result[, paste("ci95lb", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logLb95[i])
+          result[, paste("ci95ub", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[i])
+          result[, paste("logRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$logRr[i]
+          result[, paste("seLogRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$seLogRr[i]
+        }
+      }
     }
     return(result)
   }
   columns <- c("analysisId", "targetId", "comparatorId", "outcomeId")
   results <- lapply(referenceTable$outcomeModelFile, summarizeOneAnalysis)
-  results <- do.call(rbind, results)
+  results <- do.call(plyr::rbind.fill, results)
   results <- cbind(referenceTable[, columns], results)
   return(results)
 }

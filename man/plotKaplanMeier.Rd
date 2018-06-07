@@ -6,7 +6,7 @@
 \usage{
 plotKaplanMeier(population, censorMarks = FALSE, confidenceIntervals = TRUE,
   includeZero = FALSE, dataTable = TRUE, dataCutoff = 0.9,
-  treatmentLabel = "Treated", comparatorLabel = "Comparator", title,
+  targetLabel = "Treated", comparatorLabel = "Comparator", title,
   fileName = NULL)
 }
 \arguments{
@@ -25,7 +25,7 @@ survival? The default is FALSE, as recommended by Pocock et al.}
 \item{dataCutoff}{Fraction of the data (number censored) after which the graph will not
 be shown. The default is 90 percent as recommended by Pocock et al.}
 
-\item{treatmentLabel}{A label to us for the treated cohort.}
+\item{targetLabel}{A label to us for the target cohort.}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
 

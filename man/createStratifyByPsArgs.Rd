@@ -9,7 +9,7 @@ createStratifyByPsArgs(numberOfStrata = 5, stratificationColumns = c(),
 }
 \arguments{
 \item{numberOfStrata}{How many strata? The boundaries of the strata are
-automaticallydefined to contain equal numbers of treated persons.}
+automaticallydefined to contain equal numbers of target persons.}
 
 \item{stratificationColumns}{Names of one or more columns in the data data.frame on whichsubjects
 should also be stratified in addition to stratification onpropensity

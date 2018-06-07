@@ -23,7 +23,7 @@ scale(Austin, 2011).}
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched
 toeach person in the treatment arm. A maxRatio of 0 means no
-maximum:all comparators will be assigned to a treated person.}
+maximum:all comparators will be assigned to a target person.}
 
 \item{stratificationColumns}{Names or numbers of one or more columns in the data data.frameon
 which subjects should be stratified prior to matching. No personswill

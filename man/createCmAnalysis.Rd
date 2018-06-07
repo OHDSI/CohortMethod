@@ -12,8 +12,7 @@ createCmAnalysis(analysisId = 1, description = "", targetType = NULL,
   matchOnPsAndCovariates = FALSE, matchOnPsAndCovariatesArgs = NULL,
   stratifyByPs = FALSE, stratifyByPsArgs = NULL,
   stratifyByPsAndCovariates = FALSE, stratifyByPsAndCovariatesArgs = NULL,
-  computeCovariateBalance = FALSE, fitOutcomeModel = FALSE,
-  fitOutcomeModelArgs = NULL)
+  fitOutcomeModel = FALSE, fitOutcomeModelArgs = NULL)
 }
 \arguments{
 \item{analysisId}{An integer that will be used later to refer to this specific
@@ -76,9 +75,6 @@ be used in this analysis?}
 
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link{stratifyByPsAndCovariates}} function.}
-
-\item{computeCovariateBalance}{Should the \code{\link{computeCovariateBalance}} function be
-used in this analysis?}
 
 \item{fitOutcomeModel}{Should the \code{\link{fitOutcomeModel}} function be used in
 this analysis?}

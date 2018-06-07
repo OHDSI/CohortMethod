@@ -136,6 +136,8 @@ model[model$id %% 1000 == 902, ]
 # trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
 
 matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+
+
 # getAttritionTable(matchedPop) plotPs(matchedPop, ps)
 
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
@@ -170,7 +172,7 @@ outcomeModel <- fitOutcomeModel(population = ps,
                                 modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE,
-                                inversePsWeighting = TRUE)
+                                inversePtWeighting = TRUE)
 outcomeModel
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
 
@@ -190,8 +192,30 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 
+population <- stratifyByPs(ps, numberOfStrata = 10)
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+outcomeModel <- fitOutcomeModel(population = matchedPop,
+                                cohortMethodData = cohortMethodData,
+                                modelType = "cox",
+                                stratified = TRUE,
+                                useCovariates = FALSE,
+                                inversePtWeighting = FALSE,
+                                interactionCovariateIds = interactionCovariateIds,
+                                control = createControl(threads = 6))
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel4.rds")
+
+balanceFemale <- computeCovariateBalance(matchedPop, cohortMethodData, subgroupCovariateId = 8532001)
+saveRDS(balanceFemale, file = "s:/temp/cohortMethodVignette/balanceFemale.rds")
+
+dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
 
 
+balanceOverall <- computeCovariateBalance(population, cohortMethodData)
+dummy <- plotCovariateBalanceScatterPlot(balanceOverall, fileName = "s:/temp/balance.png")
+balanceFemale <- computeCovariateBalance(population, cohortMethodData, subgroupCovariateId = 8532001)
+dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
+
+# grepCovariateNames("ANTITHROMBOTIC AGENTS", cohortMethodData)
 
 # outcomeModel <- readRDS(file = 's:/temp/cohortMethodVignette/OutcomeModel3.rds')
 # drawAttritionDiagram(outcomeModel, fileName = 's:/temp/attrition.png') summary(outcomeModel)

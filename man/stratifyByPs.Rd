@@ -11,7 +11,7 @@ stratifyByPs(population, numberOfStrata = 5, stratificationColumns = c(),
 \item{population}{A data frame with the three columns described below}
 
 \item{numberOfStrata}{How many strata? The boundaries of the strata are automatically
-defined to contain equal numbers of treated persons.}
+defined to contain equal numbers of target persons.}
 
 \item{stratificationColumns}{Names of one or more columns in the \code{data} data.frame on which
 subjects should also be stratified in addition to stratification on
@@ -31,7 +31,7 @@ stratification variables for stratifications can also be used.
 \details{
 The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{

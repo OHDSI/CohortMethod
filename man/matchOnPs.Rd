@@ -25,7 +25,7 @@ scale because the PS is more likely to be normally distributed on that scale
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched to
 each person in the treatment arm. A maxRatio of 0 means no maximum:
-all comparators will be assigned to a treated person.}
+all comparators will be assigned to a target person.}
 
 \item{stratificationColumns}{Names or numbers of one or more columns in the \code{data} data.frame
 on which subjects should be stratified prior to matching. No persons
@@ -37,12 +37,12 @@ Returns a date frame with the same columns as the input data plus one extra colu
 rows that could not be matched are removed
 }
 \description{
-\code{matchOnPs} uses the provided propensity scores to match treated to comparator persons.
+\code{matchOnPs} uses the provided propensity scores to match target to comparator persons.
 }
 \details{
 The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
 \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 

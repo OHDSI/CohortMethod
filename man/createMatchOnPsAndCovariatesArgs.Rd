@@ -22,7 +22,7 @@ distributed on that scale(Austin, 2011).}
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched to
 eachperson in the treatment arm. A maxRatio of 0 means no maximum:
-allcomparators will be assigned to a treated person.}
+allcomparators will be assigned to a target person.}
 
 \item{covariateIds}{One or more covariate IDs in the cohortMethodData object on whichsubjects
 should be also matched.}
