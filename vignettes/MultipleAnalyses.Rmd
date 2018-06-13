@@ -481,7 +481,7 @@ Analysis 6 explored interactions with certain variables. The estimates for these
 
 
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 6: Matching plus full outcome model
+# Analysis 6: Stratification plus interaction terms
 negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRrI8532001, negCons$seLogRrI8532001)

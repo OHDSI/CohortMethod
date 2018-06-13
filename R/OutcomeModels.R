@@ -230,7 +230,20 @@ fitOutcomeModel <- function(population,
       addIntercept <- TRUE
     }
     if (inversePtWeighting) {
-      informativePopulation$weight <- informativePopulation$treatment / informativePopulation$propensityScore + (1 - informativePopulation$treatment) / (1 - informativePopulation$propensityScore)
+      # ATE:
+      # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+      #                                        1/informativePopulation$propensityScore,
+      #                                        1/(1 - informativePopulation$propensityScore))
+
+      # 'Stabilized' ATE:
+      informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+                                             mean(informativePopulation$treatment == 1)/informativePopulation$propensityScore,
+                                             mean(informativePopulation$treatment == 0)/(1 - informativePopulation$propensityScore))
+
+      # ATT:
+      # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+      #                                        1,
+      #                                        informativePopulation$propensityScore/(1 - informativePopulation$propensityScore))
     } else {
       informativePopulation$weight <- NULL
     }

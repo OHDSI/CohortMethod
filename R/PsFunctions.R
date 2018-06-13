@@ -438,7 +438,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #' \code{trimByPs} uses the provided propensity scores to trim subjects with extreme scores.
 #'
 #' @param population     A data frame with the three columns described below
-#' @param trimFraction   This fraction will be removed from each treatment group. In the treatment
+#' @param trimFraction   This fraction will be removed from each treatment group. In the target
 #'                       group, persons with the highest propensity scores will be removed, in the
 #'                       comparator group person with the lowest scores will be removed.
 #'
@@ -466,10 +466,10 @@ trimByPs <- function(population, trimFraction = 0.05) {
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
   OhdsiRTools::logTrace("Trimming based on propensity score")
-  cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], 1 - trimFraction)
-  cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], trimFraction)
-  result <- population[(population$propensityScore <= cutoffTarget & population$treatment == 1) |
-                         (population$propensityScore >= cutoffComparator & population$treatment == 0), ]
+  cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
+  cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
+  result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
+                         (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
     attr(result,
          "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))

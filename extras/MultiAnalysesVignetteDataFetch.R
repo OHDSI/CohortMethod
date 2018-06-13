@@ -132,14 +132,14 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
-# createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
-#                                    control = createControl(cvType = "auto",
-#                                                            startingVariance = 0.01,
-#                                                            noiseLevel = "quiet",
-#                                                            cvRepetitions = 1))
-
 createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
-                                   prior = createPrior("laplace", variance = 0.0105))
+                                   control = createControl(cvType = "auto",
+                                                           startingVariance = 0.01,
+                                                           noiseLevel = "quiet",
+                                                           cvRepetitions = 1))
+
+# createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
+#                                    prior = createPrior("laplace", variance = 0.0105))
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
@@ -156,7 +156,7 @@ cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
                                 fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
+                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
 stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
 
@@ -174,12 +174,16 @@ cmAnalysis3 <- createCmAnalysis(analysisId = 3,
 fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
                                                   inversePtWeighting = TRUE)
 
+trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.01)
+
 cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 description = "Inverse probability weighting",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
+                                trimByPs = TRUE,
+                                trimByPsArgs = trimByPsArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
@@ -246,20 +250,13 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         psCvThreads = 16,
                         createStudyPopThreads = 3,
                         trimMatchStratifyThreads = 5,
-                        fitOutcomeModelThreads = 1,#4,
+                        fitOutcomeModelThreads = 4,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
 # result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
 
-sharedPs <- readRDS(result$sharedPsFile[100])
-any(is.na(sharedPs$propensityScore))
-ps <- readRDS(result$psFile[result$analysisId == 4 & result$outcomeId == 255573])
-cmData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
-nrow(cmData$cohorts)
-nrow(sharedPs)
-
 analysisSum <- summarizeAnalyses(result)
-head(cmData$cohorts, 25)
+
 saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 # cleanup:
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
