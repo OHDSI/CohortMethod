@@ -124,28 +124,28 @@ createCmTable1 <- function(balance,
                                                       balanceSubset$covariateName))
           if (specifications$covariateIds[i] == "" || length(covariateIds) > 1) {
             resultsTable <- rbind(resultsTable, data.frame(Characteristic = specifications$label[i],
-                                                           beforeMatchingMeanTreated = NA,
+                                                           beforeMatchingMeanTarget = NA,
                                                            beforeMatchingMeanComparator = NA,
                                                            beforeMatchingStdDiff = NA,
-                                                           afterMatchingMeanTreated = NA,
+                                                           afterMatchingMeanTarget = NA,
                                                            afterMatchingMeanComparator = NA,
                                                            afterMatchingStdDiff = NA,
                                                            stringsAsFactors = FALSE))
             resultsTable <- rbind(resultsTable,
                                   data.frame(Characteristic = paste0("  ", balanceSubset$covariateName),
-                                             beforeMatchingMeanTreated = balanceSubset$beforeMatchingMeanTreated,
+                                             beforeMatchingMeanTarget = balanceSubset$beforeMatchingMeanTarget,
                                              beforeMatchingMeanComparator = balanceSubset$beforeMatchingMeanComparator,
                                              beforeMatchingStdDiff = balanceSubset$beforeMatchingStdDiff,
-                                             afterMatchingMeanTreated = balanceSubset$afterMatchingMeanTreated,
+                                             afterMatchingMeanTarget = balanceSubset$afterMatchingMeanTarget,
                                              afterMatchingMeanComparator = balanceSubset$afterMatchingMeanComparator,
                                              afterMatchingStdDiff = balanceSubset$afterMatchingStdDiff,
                                              stringsAsFactors = FALSE))
           } else {
             resultsTable <- rbind(resultsTable, data.frame(Characteristic = specifications$label[i],
-                                                           beforeMatchingMeanTreated = balanceSubset$beforeMatchingMeanTreated,
+                                                           beforeMatchingMeanTarget = balanceSubset$beforeMatchingMeanTarget,
                                                            beforeMatchingMeanComparator = balanceSubset$beforeMatchingMeanComparator,
                                                            beforeMatchingStdDiff = balanceSubset$beforeMatchingStdDiff,
-                                                           afterMatchingMeanTreated = balanceSubset$afterMatchingMeanTreated,
+                                                           afterMatchingMeanTarget = balanceSubset$afterMatchingMeanTarget,
                                                            afterMatchingMeanComparator = balanceSubset$afterMatchingMeanComparator,
                                                            afterMatchingStdDiff = balanceSubset$afterMatchingStdDiff,
                                                            stringsAsFactors = FALSE))
@@ -154,27 +154,27 @@ createCmTable1 <- function(balance,
       }
     }
   }
-  resultsTable$beforeMatchingMeanTreated <- formatPercent(resultsTable$beforeMatchingMeanTreated)
+  resultsTable$beforeMatchingMeanTarget <- formatPercent(resultsTable$beforeMatchingMeanTarget)
   resultsTable$beforeMatchingMeanComparator <- formatPercent(resultsTable$beforeMatchingMeanComparator)
   resultsTable$beforeMatchingStdDiff <- formatStdDiff(resultsTable$beforeMatchingStdDiff)
-  resultsTable$afterMatchingMeanTreated <- formatPercent(resultsTable$afterMatchingMeanTreated)
+  resultsTable$afterMatchingMeanTarget <- formatPercent(resultsTable$afterMatchingMeanTarget)
   resultsTable$afterMatchingMeanComparator <- formatPercent(resultsTable$afterMatchingMeanComparator)
   resultsTable$afterMatchingStdDiff <- formatStdDiff(resultsTable$afterMatchingStdDiff)
 
   headerRow <- as.data.frame(t(rep("", ncol(resultsTable))))
   colnames(headerRow) <- colnames(resultsTable)
-  headerRow$beforeMatchingMeanTreated <- targetLabel
+  headerRow$beforeMatchingMeanTarget <- targetLabel
   headerRow$beforeMatchingMeanComparator <- comparatorLabel
-  headerRow$afterMatchingMeanTreated <- targetLabel
+  headerRow$afterMatchingMeanTarget <- targetLabel
   headerRow$afterMatchingMeanComparator <- comparatorLabel
 
   subHeaderRow <- as.data.frame(t(rep("", ncol(resultsTable))))
   colnames(subHeaderRow) <- colnames(resultsTable)
   subHeaderRow$Characteristic <- "Characteristic"
   if (missing(beforeTargetPopSize)) {
-    subHeaderRow$beforeMatchingMeanTreated <- "%"
+    subHeaderRow$beforeMatchingMeanTarget <- "%"
   } else {
-    subHeaderRow$beforeMatchingMeanTreated <- paste0("% (n = ",format(beforeTargetPopSize, big.mark = ","), ")")
+    subHeaderRow$beforeMatchingMeanTarget <- paste0("% (n = ",format(beforeTargetPopSize, big.mark = ","), ")")
   }
   if (missing(beforeComparatorPopSize)) {
     subHeaderRow$beforeMatchingMeanComparator <- "%"
@@ -183,9 +183,9 @@ createCmTable1 <- function(balance,
   }
   subHeaderRow$beforeMatchingStdDiff <- "Std. diff"
   if (missing(afterTargetPopSize)) {
-    subHeaderRow$afterMatchingMeanTreated <- "%"
+    subHeaderRow$afterMatchingMeanTarget <- "%"
   } else {
-    subHeaderRow$afterMatchingMeanTreated <- paste0("% (n = ",format(afterTargetPopSize, big.mark = ","), ")")
+    subHeaderRow$afterMatchingMeanTarget <- paste0("% (n = ",format(afterTargetPopSize, big.mark = ","), ")")
   }
   if (missing(afterComparatorPopSize)) {
     subHeaderRow$afterMatchingMeanComparator <- "%"
