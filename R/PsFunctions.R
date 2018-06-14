@@ -245,16 +245,21 @@ createPs <- function(cohortMethodData,
 #'
 #' @export
 getPsModel <- function(propensityScore, cohortMethodData) {
-  cfs <- attr(propensityScore, "metaData")$psModelCoef
-  cfs <- cfs[cfs != 0]
-  attr(cfs, "names")[1] <- 0  #Rename intercept to 0
-  cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
-  cfs <- merge(ff::as.ffdf(cfs), cohortMethodData$covariateRef, by.x = "id", by.y = "covariateId")
-  cfs <- ff::as.ram(cfs[, c("coefficient", "id", "covariateName")])
-  if (length(cfs$coefficient) > 1) {
-    cfs <- cfs[order(-abs(cfs$coefficient)), ]
+  coefficients <- attr(propensityScore, "metaData")$psModelCoef
+  result <- data.frame(coefficient = coefficients[1],
+                             covariateId = NA,
+                       covariateName = "(Intercept)")
+  coefficients <- coefficients[2:length(coefficients)]
+  coefficients <- coefficients[coefficients != 0]
+  if (length(coefficients) != 0) {
+    coefficients <- data.frame(coefficient = coefficients,
+                               covariateId = as.numeric(attr(coefficients, "names")))
+    coefficients <- merge(ff::as.ffdf(coefficients), cohortMethodData$covariateRef)
+    coefficients <- ff::as.ram(coefficients[, c("coefficient", "covariateId", "covariateName")])
+    result <- rbind(result, coefficients)
+    result <- result[order(-abs(result$coefficient)), ]
   }
-  return(cfs)
+  return(result)
 }
 
 computePreferenceScore <- function(data, unfilteredData = NULL) {
