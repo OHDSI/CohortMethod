@@ -6,7 +6,9 @@
 \usage{
 plotPs(data, unfilteredData = NULL, scale = "preference",
   type = "density", binWidth = 0.05, targetLabel = "Target",
-  comparatorLabel = "Comparator", fileName = NULL)
+  comparatorLabel = "Comparator", showCountsLabel = FALSE,
+  showAucLabel = FALSE, showEquiposeLabel = FALSE,
+  equipoiseBounds = c(0.25, 0.75), fileName = NULL)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
@@ -27,6 +29,15 @@ defined by Walker et al (2013).}
 \item{targetLabel}{A label to us for the target cohort.}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
+
+\item{showCountsLabel}{Show subject counts?}
+
+\item{showAucLabel}{Show the AUC?}
+
+\item{showEquiposeLabel}{Show the percentage of the population in equipoise?}
+
+\item{equipoiseBounds}{The bounds on the preference score to determine whether a subject is in
+equipoise.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
 See the function \code{ggsave} in the ggplot2 package for supported file

@@ -123,6 +123,11 @@ model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
 model[model$id %% 1000 == 902, ]
 
+plotPs(ps, showAucLabel = TRUE)
+plotPs(ps)
+plotPs(ps, scale = "propensity", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
+plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
+
 # insertDbPopulation(population = studyPop, cohortIds = c(101,100), connectionDetails =
 # connectionDetails, cohortDatabaseSchema = resultsDatabaseSchema, cohortTable = 'mschuemi_test',
 # createTable = TRUE, dropTableIfExists = TRUE, cdmVersion = 5)
@@ -148,7 +153,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 table1 <- createCmTable1(balance)
 print(table1, row.names = FALSE, right = FALSE)
-plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
+plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png", showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 # plotCovariateBalanceOfTopVariables(balance, fileName = "s:/temp/top.png")
 
 outcomeModel <- fitOutcomeModel(population = studyPop,

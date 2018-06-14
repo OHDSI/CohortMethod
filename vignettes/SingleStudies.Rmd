@@ -311,11 +311,11 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 We can also plot the propensity score distribution, although we prefer the preference score distribution:
 
 ```{r tidy=TRUE,eval=FALSE}
-plotPs(ps, scale = "preference")
+plotPs(ps, scale = "preference", showCountsLabel = TRUE, showAucLabel = TRUE, showEquiposeLabel = TRUE)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  plotPs(ps, scale = "preference")
+  plotPs(ps, scale = "preference", showCountsLabel = TRUE, showAucLabel = TRUE, showEquiposeLabel = TRUE)
 }
 ```
 
@@ -326,11 +326,11 @@ propensityModel <- getPsModel(ps, cohortMethodData)
 head(propensityModel)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")) {
   propensityModel <- getPsModel(ps, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
-    x[nc > (n-3)] <- paste('...',substr(x[nc > (n-3)], nc[nc > (n-3)]-n+1, nc[nc > (n-3)]),sep="")
+    x[nc > (n - 3)] <- paste('...',substr(x[nc > (n - 3)], nc[nc > (n - 3)] - n + 1, nc[nc > (n - 3)]),sep = "")
     x
   }
   propensityModel$covariateName <- truncRight(as.character(propensityModel$covariateName),40)
@@ -418,11 +418,11 @@ if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
 }
 ```
 ```{r tidy=TRUE,eval=FALSE}
-plotCovariateBalanceScatterPlot(balance)
+plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=7,fig.height=4.5}
 if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
-  plotCovariateBalanceScatterPlot(balance)
+  plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 }
 ```
 ```{r tidy=TRUE,eval=FALSE}
