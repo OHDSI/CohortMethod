@@ -262,6 +262,7 @@ fitOutcomeModel <- function(population,
     if (!is.null(interactionTerms)) {
       # Check separability:
       separability <- Cyclops::getUnivariableSeparability(cyclopsData)
+      separability[as.character(treatmentVarId)] <- FALSE
       if (any(separability)) {
         removeCovariateIds <- as.numeric(names(separability)[separability])
         # Add main effects of separable interaction effects, and the other way around:

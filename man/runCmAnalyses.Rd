@@ -11,9 +11,10 @@ runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = 5,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   targetComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
-  refitPsForEveryStudyPopulation = TRUE, getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1, psCvThreads = 1, createStudyPopThreads = 1,
-  trimMatchStratifyThreads = 1, fitOutcomeModelThreads = 1,
+  refitPsForEveryStudyPopulation = TRUE, prefilterCovariates = TRUE,
+  getDbCohortMethodDataThreads = 1, createPsThreads = 1, psCvThreads = 1,
+  createStudyPopThreads = 1, trimMatchStratifyThreads = 1,
+  prefilterCovariatesThreads = 1, fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1, outcomeIdsOfInterest)
 }
 \arguments{
@@ -73,6 +74,13 @@ who had the outcome previously will be removed afterwards.}
 definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.}
 
+\item{prefilterCovariates}{If TRUE, and some outcome models require filtering covariates
+by concept ID (e.g. because \code{includeCovariateIds} or
+\code{interactionCovariateIds} is specified), this filtering
+will be done once for all outcome models that need it. This
+can greatly speed up the analyses if multiple outcome models
+require the same filtering.}
+
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
 
@@ -89,6 +97,8 @@ population.}
 
 \item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming, matching
 and stratifying.}
+
+\item{prefilterCovariatesThreads}{The number of parallel threads to use for prefiltering covariates.}
 
 \item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the outcome
 models.}

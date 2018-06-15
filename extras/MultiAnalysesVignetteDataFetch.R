@@ -250,7 +250,8 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         psCvThreads = 16,
                         createStudyPopThreads = 3,
                         trimMatchStratifyThreads = 5,
-                        fitOutcomeModelThreads = 4,
+                        prefilterCovariatesThreads = 3,
+                        fitOutcomeModelThreads = 1,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
 # result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
