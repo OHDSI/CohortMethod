@@ -364,31 +364,33 @@ runCmAnalyses <- function(connectionDetails,
   } else {
     OhdsiRTools::logInfo("*** Fitting outcome models for outcomes of interest ***")
   }
-  modelsToFit <- list()
-  for (i in 1:nrow(referenceTable)) {
-    if (referenceTable$outcomeOfInterest[i]) {
-      outcomeModelFile <- referenceTable$outcomeModelFile[i]
-      if (outcomeModelFile != "" && !file.exists((outcomeModelFile))) {
-        refRow <- referenceTable[referenceTable$outcomeModelFile == outcomeModelFile, ][1, ]
-        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
-                                                list(analysisId = refRow$analysisId))[[1]]
-        args <- analysisRow$fitOutcomeModelArgs
-        args$control$threads <- outcomeCvThreads
-        if (refRow$strataFile != "") {
-          studyPopFile <- refRow$strataFile
-        } else if (refRow$psFile != "") {
-          studyPopFile <- refRow$psFile
-        } else {
-          studyPopFile <- refRow$studyPopFile
-        }
-        modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
-                                                       prefilteredCovariatesFolder = refRow$prefilteredCovariatesFolder,
-                                                       args = args,
-                                                       studyPopFile = studyPopFile,
-                                                       outcomeModelFile = outcomeModelFile)
-      }
+  subset <- referenceTable[referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "", ]
+  subset <- subset[!file.exists(subset$outcomeModelFile) , ]
+  createOutcomeModelTask <- function(i) {
+    refRow <- subset[i, ]
+    analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+                                            list(analysisId = refRow$analysisId))[[1]]
+    args <- analysisRow$fitOutcomeModelArgs
+    args$control$threads <- outcomeCvThreads
+    if (refRow$strataFile != "") {
+      studyPopFile <- refRow$strataFile
+    } else if (refRow$psFile != "") {
+      studyPopFile <- refRow$psFile
+    } else {
+      studyPopFile <- refRow$studyPopFile
     }
+    return(list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
+                prefilteredCovariatesFolder = refRow$prefilteredCovariatesFolder,
+                args = args,
+                studyPopFile = studyPopFile,
+                outcomeModelFile = refRow$outcomeModelFile))
   }
+  if (nrow(subset) == 0) {
+    modelsToFit <- list()
+  } else {
+    modelsToFit <- lapply(1:nrow(subset), createOutcomeModelTask)
+  }
+
   if (length(modelsToFit) != 0) {
     cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
     OhdsiRTools::clusterRequire(cluster, "CohortMethod")
@@ -398,6 +400,7 @@ runCmAnalyses <- function(connectionDetails,
 
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
     OhdsiRTools::logInfo("*** Fitting outcome models for other outcomes ***")
+
     subset <- referenceTable[!referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "" & !file.exists(referenceTable$outcomeModelFile) , ]
     createArgs <- function(i) {
       refRow <- subset[i, ]
