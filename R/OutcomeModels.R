@@ -201,7 +201,8 @@ fitOutcomeModel <- function(population,
                                                                                                     interactionCovariateIds)])
           interactionTerms <- data.frame(covariateId = interactionCovariateIds,
                                          interactionId = treatmentVarId + 1:length(interactionCovariateIds),
-                                         interactionName = paste("treatment", interactionNames, sep = " * "))
+                                         interactionName = paste("treatment", interactionNames, sep = " * "),
+                                         stringsAsFactors = FALSE)
 
           interactionEffects <- cohortMethodData$covariates[idx, ]
           interactionEffects <- ffbase::merge.ffdf(interactionEffects,
@@ -258,6 +259,38 @@ fitOutcomeModel <- function(population,
                                                  checkRowIds = FALSE,
                                                  normalize = NULL,
                                                  quiet = TRUE)
+    if (!is.null(interactionTerms)) {
+      # Check separability:
+      separability <- Cyclops::getUnivariableSeparability(cyclopsData)
+      if (any(separability)) {
+        removeCovariateIds <- as.numeric(names(separability)[separability])
+        # Add main effects of separable interaction effects, and the other way around:
+        removeCovariateIds <- unique(c(removeCovariateIds,
+                                       interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]))
+        removeCovariateIds <- unique(c(removeCovariateIds,
+                                       interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]))
+        covariates <- covariates[!ffbase::`%in%`(covariates$covariateId, removeCovariateIds), ]
+        cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
+                                                     covariates = covariates,
+                                                     addIntercept = addIntercept,
+                                                     modelType = modelTypeToCyclopsModelType(modelType,
+                                                                                             stratified),
+                                                     checkSorting = TRUE,
+                                                     checkRowIds = FALSE,
+                                                     normalize = NULL,
+                                                     quiet = TRUE)
+        warning("Separable interaction terms found and removed")
+        ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
+        OhdsiRTools::logInfo("Separable interactions:")
+        for (i in 1:nrow(ref))
+          OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
+        interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
+        if (nrow(interactionTerms) == 0) {
+          interactionTerms <- NULL
+        }
+      }
+    }
+
     ff::close.ffdf(outcomes)
     ff::close.ffdf(covariates)
     rm(outcomes)
