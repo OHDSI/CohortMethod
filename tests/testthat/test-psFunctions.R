@@ -106,10 +106,10 @@ test_that("Trimming", {
   propensityScore <- rep(1:100, 2)/100
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
   result <- trimByPs(data, 0.05)
-  expect_equal(min(result$propensityScore[result$treatment == 0]), 0.06)
-  expect_equal(max(result$propensityScore[result$treatment == 1]), 0.95)
-  expect_equal(min(result$propensityScore[result$treatment == 1]), 0.01)
-  expect_equal(max(result$propensityScore[result$treatment == 0]), 1)
+  expect_equal(min(result$propensityScore[result$treatment == 0]), 0.01)
+  expect_equal(max(result$propensityScore[result$treatment == 1]), 1)
+  expect_equal(min(result$propensityScore[result$treatment == 1]), 0.06)
+  expect_equal(max(result$propensityScore[result$treatment == 0]), 0.95)
 })
 
 test_that("Stratification", {

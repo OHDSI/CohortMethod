@@ -248,7 +248,14 @@ fitOutcomeModel <- function(population,
     } else {
       informativePopulation$weight <- NULL
     }
-    outcomes <- ff::as.ffdf(informativePopulation)
+    columns <- c("rowId", "y")
+    if (stratified) {
+      columns <- c(columns, "stratumId")
+    }
+    if (modelType == "poisson" || modelType == "cox") {
+      columns <- c(columns, "time")
+    }
+    outcomes <- ff::as.ffdf(informativePopulation[, columns])
     row.names(covariates) <- NULL
     cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                  covariates = covariates,

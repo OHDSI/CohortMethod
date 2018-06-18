@@ -16,6 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+fastDuplicated <- function(data, columns) {
+  results <- lapply(columns, function(column, data) data[2:nrow(data), column] == data[1:(nrow(data) - 1), column], data = data)
+  result <- results[[1]]
+  if (length(columns) > 1) {
+    for (i in 2:length(columns)) {
+      result <- result & results[[i]]
+    }
+  }
+  return(c(FALSE, result))
+}
+
 #' Create a study population
 #'
 #' @details
@@ -103,7 +114,8 @@ createStudyPopulation <- function(cohortMethodData,
   if (firstExposureOnly) {
     OhdsiRTools::logInfo("Keeping only first exposure per subject")
     population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
-    idx <- duplicated(population[, c("subjectId", "treatment")])
+    # idx <- duplicated(population[, c("subjectId", "treatment")])
+    idx <- fastDuplicated(population, c("subjectId", "treatment"))
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
   }
@@ -127,11 +139,13 @@ createStudyPopulation <- function(cohortMethodData,
     OhdsiRTools::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
     # Remove ties:
-    idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
+    # idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
+    idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
     idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
     population <- population[!idx, ]
     # Keeping first:
-    idx <- duplicated(population[, c("subjectId")])
+    # idx <- duplicated(population[, c("subjectId")])
+    idx <- fastDuplicated(population, "subjectId")
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Restricting duplicate subjects to first cohort")))
