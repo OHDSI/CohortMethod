@@ -78,9 +78,9 @@ fitOutcomeModel <- function(population,
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
     stop(paste("Unknown modelType '",
-                                modelType,
-                                "', please choose either 'logistic', 'poisson', or 'cox'",
-                                sep = ""))
+               modelType,
+               "', please choose either 'logistic', 'poisson', or 'cox'",
+               sep = ""))
   OhdsiRTools::logTrace("Fitting outcome model")
 
   start <- Sys.time()
@@ -127,231 +127,235 @@ fitOutcomeModel <- function(population,
     } else {
       informativePopulation <- population
     }
-    if (useCovariates) {
-      # Add covariates ---------------------------------------------------------------------------------
-      covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, ff::as.ff(informativePopulation$rowId))
-      if (length(includeCovariateIds) != 0) {
-        includeCovariateIds <- c(includeCovariateIds, treatmentVarId, interactionCovariateIds)
-        idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
-        covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
-      }
-      if (length(excludeCovariateIds) != 0) {
-        idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
-        covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
-      }
-      covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
-                                                            covariateRef = cohortMethodData$covariateRef,
-                                                            populationSize = nrow(informativePopulation),
-                                                            normalize = TRUE,
-                                                            removeRedundancy = TRUE)
-      covariates <- covariateData$covariates
-      attr(population, "metaData")$deletedCovariateIdsforOutcomeModel <- covariateData$metaData$deletedCovariateIds
-      rm(covariateData)
-      treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
-      if (stratified || modelType == "cox") {
-        prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
-      } else {
-        prior$exclude <- c(0, treatmentVarId)  # Exclude treatment variable and intercept from regularization
-      }
-      treatmentCovariate <- ff::ffdf(rowId = ff::as.ff(informativePopulation$rowId),
-                                     covariateId = ff::ff(treatmentVarId,
-                                                          length = nrow(informativePopulation),
-                                                          vmode = "double"),
-                                     covariateValue = ff::as.ff(informativePopulation$treatment,
-                                                                vmode = "double"))
-      covariates <- ffbase::ffdfappend(treatmentCovariate, covariates)
-      if (stratified) {
-        covariates <- ffbase::merge.ffdf(covariates,
-                                         ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
-      }
+    if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
+      status <- "NO STRATA WITH BOTH TARGET, COMPARATOR, AS WELL AS THE OUTCOME. CANNOT FIT"
     } else {
-      # Don't add covariates, only use treatment as covariate -------------------------------------------------------------
-      prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior
-      treatmentVarId <- 1
-      covariates <- ff::ffdf(rowId = ff::as.ff(informativePopulation$rowId),
-                             covariateId = ff::ff(treatmentVarId, length = nrow(informativePopulation)),
-                             covariateValue = ff::as.ff(informativePopulation$treatment))
-      if (stratified) {
-        covariates$stratumId <- ff::as.ff(informativePopulation$stratumId)
-      }
-    }
-
-    # Interaction terms -----------------------------------------------------------------------------------
-    interactionTerms <- NULL
-    if (length(interactionCovariateIds) != 0) {
-      idx <- ffbase::`%in%`(cohortMethodData$covariates$covariateId, ff::as.ff(interactionCovariateIds))
-      idx[idx] <- idx[idx] & ffbase::`%in%`(cohortMethodData$covariates$rowId[idx], ff::as.ff(informativePopulation$rowId))
-      if (!useCovariates) {
-        # Add covariates for main effects:
-        if (ffbase::any.ff(idx)) {
-          mainEffects <- cohortMethodData$covariates[idx, ]
-          if (stratified) {
-            mainEffects <- ffbase::merge.ffdf(mainEffects,
-                                             ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
-          }
-          covariates <- ffbase::ffdfappend(covariates, mainEffects)
+      if (useCovariates) {
+        # Add covariates ---------------------------------------------------------------------------------
+        covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, ff::as.ff(informativePopulation$rowId))
+        if (length(includeCovariateIds) != 0) {
+          includeCovariateIds <- c(includeCovariateIds, treatmentVarId, interactionCovariateIds)
+          idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
+          covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+        }
+        if (length(excludeCovariateIds) != 0) {
+          idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
+          covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+        }
+        covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
+                                                              covariateRef = cohortMethodData$covariateRef,
+                                                              populationSize = nrow(informativePopulation),
+                                                              normalize = TRUE,
+                                                              removeRedundancy = TRUE)
+        covariates <- covariateData$covariates
+        attr(population, "metaData")$deletedCovariateIdsforOutcomeModel <- covariateData$metaData$deletedCovariateIds
+        rm(covariateData)
+        treatmentVarId <- ffbase::max.ff(cohortMethodData$covariates$covariateId) + 1
+        if (stratified || modelType == "cox") {
+          prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
+        } else {
+          prior$exclude <- c(0, treatmentVarId)  # Exclude treatment variable and intercept from regularization
+        }
+        treatmentCovariate <- ff::ffdf(rowId = ff::as.ff(informativePopulation$rowId),
+                                       covariateId = ff::ff(treatmentVarId,
+                                                            length = nrow(informativePopulation),
+                                                            vmode = "double"),
+                                       covariateValue = ff::as.ff(informativePopulation$treatment,
+                                                                  vmode = "double"))
+        covariates <- ffbase::ffdfappend(treatmentCovariate, covariates)
+        if (stratified) {
+          covariates <- ffbase::merge.ffdf(covariates,
+                                           ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+        }
+      } else {
+        # Don't add covariates, only use treatment as covariate -------------------------------------------------------------
+        prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior
+        treatmentVarId <- 1
+        covariates <- ff::ffdf(rowId = ff::as.ff(informativePopulation$rowId),
+                               covariateId = ff::ff(treatmentVarId, length = nrow(informativePopulation)),
+                               covariateValue = ff::as.ff(informativePopulation$treatment))
+        if (stratified) {
+          covariates$stratumId <- ff::as.ff(informativePopulation$stratumId)
         }
       }
-      # Add covariates for interaction terms:
-      if (ffbase::any.ff(idx)) {
-        idx[idx] <- idx[idx] & ffbase::`%in%`(cohortMethodData$covariates$rowId[idx],
-                                              ff::as.ff(informativePopulation$rowId[informativePopulation$treatment == 1]))
-        if (ffbase::any.ff(idx)) {
-          interactionNames <- ff::as.ram(cohortMethodData$covariateRef$covariateName[ffbase::`%in%`(cohortMethodData$covariateRef$covariateId,
-                                                                                                    interactionCovariateIds)])
-          interactionTerms <- data.frame(covariateId = interactionCovariateIds,
-                                         interactionId = treatmentVarId + 1:length(interactionCovariateIds),
-                                         interactionName = paste("treatment", interactionNames, sep = " * "),
-                                         stringsAsFactors = FALSE)
 
-          interactionEffects <- cohortMethodData$covariates[idx, ]
-          interactionEffects <- ffbase::merge.ffdf(interactionEffects,
-                                                   ff::as.ffdf(interactionTerms[, c("covariateId", "interactionId")]))
-          interactionEffects <- ff::ffdf(rowId = interactionEffects$rowId,
-                                         covariateId = interactionEffects$interactionId,
-                                         covariateValue = interactionEffects$covariateValue)
-          if (stratified) {
-            interactionEffects <- ffbase::merge.ffdf(interactionEffects,
-                                                     ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+      # Interaction terms -----------------------------------------------------------------------------------
+      interactionTerms <- NULL
+      if (length(interactionCovariateIds) != 0) {
+        idx <- ffbase::`%in%`(cohortMethodData$covariates$covariateId, ff::as.ff(interactionCovariateIds))
+        idx[idx] <- idx[idx] & ffbase::`%in%`(cohortMethodData$covariates$rowId[idx], ff::as.ff(informativePopulation$rowId))
+        if (!useCovariates) {
+          # Add covariates for main effects:
+          if (ffbase::any.ff(idx)) {
+            mainEffects <- cohortMethodData$covariates[idx, ]
+            if (stratified) {
+              mainEffects <- ffbase::merge.ffdf(mainEffects,
+                                                ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+            }
+            covariates <- ffbase::ffdfappend(covariates, mainEffects)
           }
-          covariates <- ffbase::ffdfappend(covariates, interactionEffects)
-          interactionTerms <- interactionTerms[interactionTerms$interactionId %in% ff::as.ram(ffbase::unique.ff(interactionEffects$covariateId)), ]
+        }
+        # Add covariates for interaction terms:
+        if (ffbase::any.ff(idx)) {
+          idx[idx] <- idx[idx] & ffbase::`%in%`(cohortMethodData$covariates$rowId[idx],
+                                                ff::as.ff(informativePopulation$rowId[informativePopulation$treatment == 1]))
+          if (ffbase::any.ff(idx)) {
+            interactionNames <- ff::as.ram(cohortMethodData$covariateRef$covariateName[ffbase::`%in%`(cohortMethodData$covariateRef$covariateId,
+                                                                                                      interactionCovariateIds)])
+            interactionTerms <- data.frame(covariateId = interactionCovariateIds,
+                                           interactionId = treatmentVarId + 1:length(interactionCovariateIds),
+                                           interactionName = paste("treatment", interactionNames, sep = " * "),
+                                           stringsAsFactors = FALSE)
+
+            interactionEffects <- cohortMethodData$covariates[idx, ]
+            interactionEffects <- ffbase::merge.ffdf(interactionEffects,
+                                                     ff::as.ffdf(interactionTerms[, c("covariateId", "interactionId")]))
+            interactionEffects <- ff::ffdf(rowId = interactionEffects$rowId,
+                                           covariateId = interactionEffects$interactionId,
+                                           covariateValue = interactionEffects$covariateValue)
+            if (stratified) {
+              interactionEffects <- ffbase::merge.ffdf(interactionEffects,
+                                                       ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+            }
+            covariates <- ffbase::ffdfappend(covariates, interactionEffects)
+            interactionTerms <- interactionTerms[interactionTerms$interactionId %in% ff::as.ram(ffbase::unique.ff(interactionEffects$covariateId)), ]
+            if (nrow(interactionTerms) == 0) {
+              interactionTerms <- NULL
+            }
+          }
+        }
+        if (useCovariates && !is.null(interactionTerms)) {
+          prior$exclude <- unique(c(prior$exclude, interactionTerms$covariateId, interactionTerms$interactionId))
+        }
+      }
+      if (stratified || modelType == "cox") {
+        addIntercept <- FALSE
+      } else {
+        addIntercept <- TRUE
+      }
+      if (inversePtWeighting) {
+        # ATE:
+        # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+        #                                        1/informativePopulation$propensityScore,
+        #                                        1/(1 - informativePopulation$propensityScore))
+
+        # 'Stabilized' ATE:
+        informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+                                               mean(informativePopulation$treatment == 1)/informativePopulation$propensityScore,
+                                               mean(informativePopulation$treatment == 0)/(1 - informativePopulation$propensityScore))
+
+        # ATT:
+        # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+        #                                        1,
+        #                                        informativePopulation$propensityScore/(1 - informativePopulation$propensityScore))
+      } else {
+        informativePopulation$weight <- NULL
+      }
+      columns <- c("rowId", "y")
+      if (stratified) {
+        columns <- c(columns, "stratumId")
+      }
+      if (modelType == "poisson" || modelType == "cox") {
+        columns <- c(columns, "time")
+      }
+      outcomes <- ff::as.ffdf(informativePopulation[, columns])
+      row.names(covariates) <- NULL
+      cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
+                                                   covariates = covariates,
+                                                   addIntercept = addIntercept,
+                                                   modelType = modelTypeToCyclopsModelType(modelType,
+                                                                                           stratified),
+                                                   checkSorting = TRUE,
+                                                   checkRowIds = FALSE,
+                                                   normalize = NULL,
+                                                   quiet = TRUE)
+      if (!is.null(interactionTerms)) {
+        # Check separability:
+        separability <- Cyclops::getUnivariableSeparability(cyclopsData)
+        separability[as.character(treatmentVarId)] <- FALSE
+        if (any(separability)) {
+          removeCovariateIds <- as.numeric(names(separability)[separability])
+          # Add main effects of separable interaction effects, and the other way around:
+          removeCovariateIds <- unique(c(removeCovariateIds,
+                                         interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]))
+          removeCovariateIds <- unique(c(removeCovariateIds,
+                                         interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]))
+          covariates <- covariates[!ffbase::`%in%`(covariates$covariateId, removeCovariateIds), ]
+          cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
+                                                       covariates = covariates,
+                                                       addIntercept = addIntercept,
+                                                       modelType = modelTypeToCyclopsModelType(modelType,
+                                                                                               stratified),
+                                                       checkSorting = TRUE,
+                                                       checkRowIds = FALSE,
+                                                       normalize = NULL,
+                                                       quiet = TRUE)
+          warning("Separable interaction terms found and removed")
+          ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
+          OhdsiRTools::logInfo("Separable interactions:")
+          for (i in 1:nrow(ref))
+            OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
+          interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
           if (nrow(interactionTerms) == 0) {
             interactionTerms <- NULL
           }
         }
       }
-      if (useCovariates && !is.null(interactionTerms)) {
-        prior$exclude <- unique(c(prior$exclude, interactionTerms$covariateId, interactionTerms$interactionId))
+
+      ff::close.ffdf(outcomes)
+      ff::close.ffdf(covariates)
+      rm(outcomes)
+      rm(covariates)
+      if (prior$priorType != "none" && prior$useCrossValidation && control$selectorType == "byPid" &&
+          length(unique(population$stratumId)) < control$fold) {
+        fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
+      } else {
+        fit <- tryCatch({
+          Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+        }, error = function(e) {
+          e$message
+        })
       }
-    }
-    if (stratified || modelType == "cox") {
-      addIntercept <- FALSE
-    } else {
-      addIntercept <- TRUE
-    }
-    if (inversePtWeighting) {
-      # ATE:
-      # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
-      #                                        1/informativePopulation$propensityScore,
-      #                                        1/(1 - informativePopulation$propensityScore))
-
-      # 'Stabilized' ATE:
-      informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
-                                             mean(informativePopulation$treatment == 1)/informativePopulation$propensityScore,
-                                             mean(informativePopulation$treatment == 0)/(1 - informativePopulation$propensityScore))
-
-      # ATT:
-      # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
-      #                                        1,
-      #                                        informativePopulation$propensityScore/(1 - informativePopulation$propensityScore))
-    } else {
-      informativePopulation$weight <- NULL
-    }
-    columns <- c("rowId", "y")
-    if (stratified) {
-      columns <- c(columns, "stratumId")
-    }
-    if (modelType == "poisson" || modelType == "cox") {
-      columns <- c(columns, "time")
-    }
-    outcomes <- ff::as.ffdf(informativePopulation[, columns])
-    row.names(covariates) <- NULL
-    cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
-                                                 covariates = covariates,
-                                                 addIntercept = addIntercept,
-                                                 modelType = modelTypeToCyclopsModelType(modelType,
-                                                                                         stratified),
-                                                 checkSorting = TRUE,
-                                                 checkRowIds = FALSE,
-                                                 normalize = NULL,
-                                                 quiet = TRUE)
-    if (!is.null(interactionTerms)) {
-      # Check separability:
-      separability <- Cyclops::getUnivariableSeparability(cyclopsData)
-      separability[as.character(treatmentVarId)] <- FALSE
-      if (any(separability)) {
-        removeCovariateIds <- as.numeric(names(separability)[separability])
-        # Add main effects of separable interaction effects, and the other way around:
-        removeCovariateIds <- unique(c(removeCovariateIds,
-                                       interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]))
-        removeCovariateIds <- unique(c(removeCovariateIds,
-                                       interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]))
-        covariates <- covariates[!ffbase::`%in%`(covariates$covariateId, removeCovariateIds), ]
-        cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
-                                                     covariates = covariates,
-                                                     addIntercept = addIntercept,
-                                                     modelType = modelTypeToCyclopsModelType(modelType,
-                                                                                             stratified),
-                                                     checkSorting = TRUE,
-                                                     checkRowIds = FALSE,
-                                                     normalize = NULL,
-                                                     quiet = TRUE)
-        warning("Separable interaction terms found and removed")
-        ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
-        OhdsiRTools::logInfo("Separable interactions:")
-        for (i in 1:nrow(ref))
-          OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
-        interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
-        if (nrow(interactionTerms) == 0) {
-          interactionTerms <- NULL
-        }
-      }
-    }
-
-    ff::close.ffdf(outcomes)
-    ff::close.ffdf(covariates)
-    rm(outcomes)
-    rm(covariates)
-    if (prior$priorType != "none" && prior$useCrossValidation && control$selectorType == "byPid" &&
-        length(unique(population$stratumId)) < control$fold) {
-      fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
-    } else {
-      fit <- tryCatch({
-        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-      }, error = function(e) {
-        e$message
-      })
-    }
-    if (is.character(fit)) {
-      status <- fit
-    } else if (fit$return_flag == "ILLCONDITIONED") {
-      status <- "ILL CONDITIONED, CANNOT FIT"
-    } else if (fit$return_flag == "MAX_ITERATIONS") {
-      status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
-    } else {
-      status <- "OK"
-      coefficients <- coef(fit)
-      logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-      ci <- tryCatch({
-        confint(fit, parm = treatmentVarId, includePenalty = TRUE)
-      }, error = function(e) {
-        missing(e)  # suppresses R CMD check note
-        c(0, -Inf, Inf)
-      })
-      if (identical(ci, c(0, -Inf, Inf)))
-        status <- "ERROR COMPUTING CI"
-      seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
-      treatmentEstimate <- data.frame(logRr = logRr,
-                                      logLb95 = ci[2],
-                                      logUb95 = ci[3],
-                                      seLogRr = seLogRr)
-      priorVariance <- fit$variance[1]
-      if (!is.null(interactionTerms)) {
-        logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
+      if (is.character(fit)) {
+        status <- fit
+      } else if (fit$return_flag == "ILLCONDITIONED") {
+        status <- "ILL CONDITIONED, CANNOT FIT"
+      } else if (fit$return_flag == "MAX_ITERATIONS") {
+        status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
+      } else {
+        status <- "OK"
+        coefficients <- coef(fit)
+        logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
         ci <- tryCatch({
-          confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+          confint(fit, parm = treatmentVarId, includePenalty = TRUE)
         }, error = function(e) {
           missing(e)  # suppresses R CMD check note
-          t(array(c(0, -Inf, Inf), dim = c(3,nrow(interactionTerms))))
+          c(0, -Inf, Inf)
         })
-        seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
-        interactionEstimates <- data.frame(covariateId = interactionTerms$covariateId,
-                                           interactionName = interactionTerms$interactionName,
-                                           logRr = logRr,
-                                           logLb95 = ci[ ,2],
-                                           logUb95 = ci[ ,3],
-                                           seLogRr = seLogRr)
+        if (identical(ci, c(0, -Inf, Inf)))
+          status <- "ERROR COMPUTING CI"
+        seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
+        treatmentEstimate <- data.frame(logRr = logRr,
+                                        logLb95 = ci[2],
+                                        logUb95 = ci[3],
+                                        seLogRr = seLogRr)
+        priorVariance <- fit$variance[1]
+        if (!is.null(interactionTerms)) {
+          logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
+          ci <- tryCatch({
+            confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+          }, error = function(e) {
+            missing(e)  # suppresses R CMD check note
+            t(array(c(0, -Inf, Inf), dim = c(3,nrow(interactionTerms))))
+          })
+          seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
+          interactionEstimates <- data.frame(covariateId = interactionTerms$covariateId,
+                                             interactionName = interactionTerms$interactionName,
+                                             logRr = logRr,
+                                             logLb95 = ci[ ,2],
+                                             logUb95 = ci[ ,3],
+                                             seLogRr = seLogRr)
+        }
       }
     }
   }
