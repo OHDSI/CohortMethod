@@ -906,32 +906,37 @@ createReferenceTable <- function(cmAnalysisList,
       }
     }
     loadingFittingArgsList <- plyr::compact(lapply(loadingFittingArgsList, needsFilter))
-    relevantArgsList <- OhdsiRTools::selectFromList(loadingFittingArgsList,
-                                                    c("getDbCohortMethodDataArgs", "relevantFields"))
-    uniqueRelevantArgsList <- unique(relevantArgsList)
-    prefilterIds <- sapply(relevantArgsList,
-                           function(relevantArgs, uniqueRelevantArgsList) return(which.list(uniqueRelevantArgsList,
-                                                                                            relevantArgs)),
-                           uniqueRelevantArgsList)
-    matchableArgsList <- OhdsiRTools::selectFromList(loadingFittingArgsList,
-                                                    c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs"))
+    if (length(loadingFittingArgsList) == 0) {
+      # No filtering needed
+      referenceTable$prefilteredCovariatesFolder <- ""
+    } else {
+      # Filtering needed
+      relevantArgsList <- OhdsiRTools::selectFromList(loadingFittingArgsList,
+                                                      c("getDbCohortMethodDataArgs", "relevantFields"))
+      uniqueRelevantArgsList <- unique(relevantArgsList)
+      prefilterIds <- sapply(relevantArgsList,
+                             function(relevantArgs, uniqueRelevantArgsList) return(which.list(uniqueRelevantArgsList,
+                                                                                              relevantArgs)),
+                             uniqueRelevantArgsList)
+      matchableArgsList <- OhdsiRTools::selectFromList(loadingFittingArgsList,
+                                                       c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs"))
 
-    matchingIds <- sapply(OhdsiRTools::selectFromList(cmAnalysisList,
-                                                      c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")),
-                          function(cmAnalysis, matchableArgs) return(which.list(matchableArgs,
-                                                                                cmAnalysis)),
-                          matchableArgsList)
-    analysisIdToPrefilterId <- data.frame(analysisId = analysisIds,
-                                          prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
-    referenceTable <- merge(referenceTable, analysisIdToPrefilterId)
-    referenceTable$prefilteredCovariatesFolder <- .createPrefilteredCovariatesFileName(folder = outputFolder,
-                                                                                       loadId = referenceTable$loadArgsId,
-                                                                                       targetId = referenceTable$targetId,
-                                                                                       comparatorId = referenceTable$comparatorId,
-                                                                                       prefilterId = referenceTable$prefilterId)
+      matchingIds <- sapply(OhdsiRTools::selectFromList(cmAnalysisList,
+                                                        c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")),
+                            function(cmAnalysis, matchableArgs) return(which.list(matchableArgs,
+                                                                                  cmAnalysis)),
+                            matchableArgsList)
+      analysisIdToPrefilterId <- data.frame(analysisId = analysisIds,
+                                            prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
+      referenceTable <- merge(referenceTable, analysisIdToPrefilterId)
+      referenceTable$prefilteredCovariatesFolder <- .createPrefilteredCovariatesFileName(folder = outputFolder,
+                                                                                         loadId = referenceTable$loadArgsId,
+                                                                                         targetId = referenceTable$targetId,
+                                                                                         comparatorId = referenceTable$comparatorId,
+                                                                                         prefilterId = referenceTable$prefilterId)
 
+    }
   }
-
 
   # Some cleanup:
   referenceTable <- referenceTable[, c("analysisId",
