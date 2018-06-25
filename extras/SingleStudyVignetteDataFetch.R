@@ -199,7 +199,7 @@ saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 
 population <- stratifyByPs(ps, numberOfStrata = 10)
 interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
-outcomeModel <- fitOutcomeModel(population = matchedPop,
+outcomeModel <- fitOutcomeModel(population = population,
                                 cohortMethodData = cohortMethodData,
                                 modelType = "cox",
                                 stratified = TRUE,
