@@ -90,6 +90,7 @@ fitOutcomeModel <- function(population,
   fit <- NULL
   priorVariance <- NULL
   treatmentVarId <- NA
+  subgroupCounts <- NULL
   status <- "NO MODEL FITTED"
 
   colnames(population)[colnames(population) == "outcomeCount"] <- "y"
@@ -180,7 +181,6 @@ fitOutcomeModel <- function(population,
 
       # Interaction terms -----------------------------------------------------------------------------------
       interactionTerms <- NULL
-      subgroupCounts <- NULL
       if (length(interactionCovariateIds) != 0) {
         idx <- ffbase::`%in%`(cohortMethodData$covariates$covariateId, ff::as.ff(interactionCovariateIds))
         informativeIdx <- ff::clone.ff(idx)
