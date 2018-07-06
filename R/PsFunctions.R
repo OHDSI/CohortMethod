@@ -110,13 +110,13 @@ createPs <- function(cohortMethodData,
       set.seed(0)
       targetRowIds <- population$rowId[population$treatment == 1]
       if (length(targetRowIds) > maxCohortSizeForFitting) {
-        OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        ParallelLogger::logInfo(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
         targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
       comparatorRowIds <- population$rowId[population$treatment == 0]
       if (length(comparatorRowIds) > maxCohortSizeForFitting) {
-        OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        ParallelLogger::logInfo(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
         comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
@@ -148,11 +148,11 @@ createPs <- function(cohortMethodData,
         idx <- !is.na(ffbase::ffmatch(cohortMethodData$covariateRef$covariateId,
                                       ff::as.ff(covariateIds)))
         ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
-        OhdsiRTools::logInfo("High correlation between covariate(s) and treatment detected:")
-        OhdsiRTools::logInfo(paste(colnames(ref), collapse = "\t"))
+        ParallelLogger::logInfo("High correlation between covariate(s) and treatment detected:")
+        ParallelLogger::logInfo(paste(colnames(ref), collapse = "\t"))
         ref$covariateName <- as.character(ref$covariateName)
         for (i in 1:nrow(ref))
-          OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
+          ParallelLogger::logInfo(paste(ref[i, ], collapse = "\t"))
         message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
         if (stopOnError) {
           stop(message)
@@ -223,8 +223,8 @@ createPs <- function(cohortMethodData,
   }
   population <- computePreferenceScore(population)
   delta <- Sys.time() - start
-  OhdsiRTools::logDebug("Propensity model fitting finished with status ", error)
-  OhdsiRTools::logInfo(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
+  ParallelLogger::logInfo(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
   return(population)
 }
 
@@ -524,7 +524,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
     stop("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
-  OhdsiRTools::logTrace("Trimming based on propensity score")
+  ParallelLogger::logTrace("Trimming based on propensity score")
   cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
   result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
@@ -533,7 +533,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
     attr(result,
          "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))
   }
-  OhdsiRTools::logDebug("Population size after trimming is ", nrow(result))
+  ParallelLogger::logDebug("Population size after trimming is ", nrow(result))
   return(result)
 }
 
@@ -574,14 +574,14 @@ trimByPsToEquipoise <- function(population, bounds = c(0.25, 0.75)) {
     stop("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
-  OhdsiRTools::logTrace("Trimming to equipoise")
+  ParallelLogger::logTrace("Trimming to equipoise")
   temp <- computePreferenceScore(population)
   population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
   if (!is.null(attr(population, "metaData"))) {
     attr(population,
          "metaData")$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
   }
-  OhdsiRTools::logDebug("Population size after trimming is ", nrow(population))
+  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   return(population)
 }
 
@@ -702,7 +702,7 @@ matchOnPs <- function(population,
       attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition,
                                                       getCounts(population, paste("Matched on propensity score")))
     }
-    OhdsiRTools::logDebug("Population size after matching is ", nrow(result))
+    ParallelLogger::logDebug("Population size after matching is ", nrow(result))
     return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
@@ -733,7 +733,7 @@ matchOnPs <- function(population,
       attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition,
                                                   getCounts(result, paste("Trimmed to equipoise")))
     }
-    OhdsiRTools::logDebug("Population size after matching is ", nrow(result))
+    ParallelLogger::logDebug("Population size after matching is ", nrow(result))
     return(result)
   }
 }
@@ -845,7 +845,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
     stop("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
-  OhdsiRTools::logTrace("Stratifying by propensity score")
+  ParallelLogger::logTrace("Stratifying by propensity score")
   baseSelection <- tolower(baseSelection)
   if (baseSelection == "all") {
     basePop <- population$propensityScore

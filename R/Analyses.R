@@ -161,8 +161,8 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
-  OhdsiRTools::logTrace("Saving cmAnalysisList to ", file)
-  OhdsiRTools::saveSettingsToJson(cmAnalysisList, file)
+  ParallelLogger::logTrace("Saving cmAnalysisList to ", file)
+  ParallelLogger::saveSettingsToJson(cmAnalysisList, file)
 }
 
 #' Load a list of cmAnalysis from file
@@ -177,8 +177,8 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
-  OhdsiRTools::logTrace("Loading cmAnalysisList from ", file)
-  return(OhdsiRTools::loadSettingsFromJson(file))
+  ParallelLogger::logTrace("Loading cmAnalysisList from ", file)
+  return(ParallelLogger::loadSettingsFromJson(file))
 }
 
 #' Create target-comparator-outcomes combinations.
@@ -245,7 +245,7 @@ saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file)
   for (i in 1:length(targetComparatorOutcomesList)) {
     stopifnot(class(targetComparatorOutcomesList[[i]]) == "targetComparatorOutcomes")
   }
-  OhdsiRTools::saveSettingsToJson(targetComparatorOutcomesList, file)
+  ParallelLogger::saveSettingsToJson(targetComparatorOutcomesList, file)
 }
 
 #' Load a list of targetComparatorOutcomes from file
@@ -260,5 +260,5 @@ saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file)
 #'
 #' @export
 loadTargetComparatorOutcomesList <- function(file) {
-  return(OhdsiRTools::loadSettingsFromJson(file))
+  return(ParallelLogger::loadSettingsFromJson(file))
 }

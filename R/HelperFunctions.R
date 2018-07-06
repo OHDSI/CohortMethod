@@ -182,9 +182,9 @@ constructEras <- function(connectionDetails,
   conn <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(conn))
 
-  OhdsiRTools::logInfo("Executing one large query. This could take a while")
+  ParallelLogger::logInfo("Executing one large query. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE)
-  OhdsiRTools::logInfo("Done")
+  ParallelLogger::logInfo("Done")
   return()
 }
 
@@ -200,12 +200,12 @@ constructEras <- function(connectionDetails,
 #'
 #' @export
 checkCmInstallation <- function(connectionDetails) {
-  OhdsiRTools::logInfo("Checking database connectivity")
+  ParallelLogger::logInfo("Checking database connectivity")
   conn <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::disconnect(conn)
-  OhdsiRTools::logInfo("- Ok")
+  ParallelLogger::logInfo("- Ok")
 
-  OhdsiRTools::logInfo("\nChecking large scale regression engine")
+  ParallelLogger::logInfo("\nChecking large scale regression engine")
   counts <- c(18, 17, 15, 20, 10, 20, 25, 13, 12)
   outcome <- gl(3, 1, 9)
   treatment <- gl(3, 3)
@@ -213,14 +213,14 @@ checkCmInstallation <- function(connectionDetails) {
   cyclopsFit <- fitCyclopsModel(cyclopsData)
   if (length(coef(cyclopsFit)) != 5)
     stop("Error fitting regression model")
-  OhdsiRTools::logInfo("- Ok")
+  ParallelLogger::logInfo("- Ok")
 
-  OhdsiRTools::logInfo("\nChecking support for large data objects")
+  ParallelLogger::logInfo("\nChecking support for large data objects")
   x <- ff::as.ffdf(data.frame(a = 1:100, b = "test"))
   if (nrow(x) != 100)
     stop("Error creating large data object")
-  OhdsiRTools::logInfo("- Ok")
+  ParallelLogger::logInfo("- Ok")
 
-  OhdsiRTools::logInfo("\nCohortMethod is correctly installed")
-  OhdsiRTools::logInfo(paste0("\nResponse code: ", round(pi * 123456)))
+  ParallelLogger::logInfo("\nCohortMethod is correctly installed")
+  ParallelLogger::logInfo(paste0("\nResponse code: ", round(pi * 123456)))
 }

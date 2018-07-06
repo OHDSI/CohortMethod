@@ -160,7 +160,7 @@ getDbCohortMethodData <- function(connectionDetails,
   }
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
     stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
-  OhdsiRTools::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
+  ParallelLogger::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
@@ -177,7 +177,7 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(connection, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
-    OhdsiRTools::logDebug("Excluding concept Ids from covariates: ", paste(conceptIds, collapse = ", "))
+    ParallelLogger::logDebug("Excluding concept Ids from covariates: ", paste(conceptIds, collapse = ", "))
     if (is(covariateSettings, "covariateSettings")) {
       covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
                                                          conceptIds)
@@ -189,7 +189,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  OhdsiRTools::logInfo("\nConstructing target and comparator cohorts")
+  ParallelLogger::logInfo("\nConstructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -218,17 +218,17 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      target_id = targetId)
     preSampleCounts <- DatabaseConnector::querySql(connection, renderedSql)
     colnames(preSampleCounts) <- SqlRender::snakeCaseToCamelCase(colnames(preSampleCounts))
-    OhdsiRTools::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
+    ParallelLogger::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
     preSampleCounts <- data.frame(targetPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
                                   comparatorPersons = preSampleCounts$personCount[preSampleCounts$treatment == 0],
                                   targetExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
                                   comparatorExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 0])
     if (preSampleCounts$targetExposures > maxCohortSize) {
-      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize))
+      ParallelLogger::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (preSampleCounts$comparatorExposures > maxCohortSize) {
-      OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
+      ParallelLogger::logInfo(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (sampled) {
@@ -242,7 +242,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  OhdsiRTools::logInfo("Fetching cohorts from server")
+  ParallelLogger::logInfo("Fetching cohorts from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                  packageName = "CohortMethod",
@@ -253,7 +253,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  sampled = sampled)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
-  OhdsiRTools::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
+  ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
   if (nrow(cohorts) == 0) {
     warning("Target and comparator cohorts are empty")
   } else if (sum(cohorts$treatment == 1) == 0) {
@@ -331,7 +331,7 @@ getDbCohortMethodData <- function(connectionDetails,
   attr(cohorts, "metaData") <- metaData
 
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logInfo(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
   if (sampled) {
     cohortTable <- "#cohort_sample"
   } else {
@@ -345,8 +345,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                          cohortTableIsTemp = TRUE,
                                                          rowIdField = "row_id",
                                                          covariateSettings = covariateSettings)
-  OhdsiRTools::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
-  OhdsiRTools::logInfo("Fetching outcomes from server")
+  ParallelLogger::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
+  ParallelLogger::logInfo("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                   packageName = "CohortMethod",
@@ -363,8 +363,8 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- data.frame(outcomeIds = outcomeIds)
   attr(outcomes, "metaData") <- metaData
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
-  OhdsiRTools::logDebug("Fetched outcomes total count is ", nrow(outcomes))
+  ParallelLogger::logInfo(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logDebug("Fetched outcomes total count is ", nrow(outcomes))
 
   # Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
@@ -412,7 +412,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
     stop("Must specify file")
   if (class(cohortMethodData) != "cohortMethodData")
     stop("Data not of class cohortMethodData")
-  OhdsiRTools::logTrace("Saving CohortMethodData to ", file)
+  ParallelLogger::logTrace("Saving CohortMethodData to ", file)
 
   covariates <- cohortMethodData$covariates
   covariateRef <- cohortMethodData$covariateRef
@@ -454,10 +454,10 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder", file))
-  OhdsiRTools::logTrace("Loading CohortMethodData from ", file)
+  ParallelLogger::logTrace("Loading CohortMethodData from ", file)
 
   if (file.exists(file.path(file, "covariates.rds"))) {
-    OhdsiRTools::logDebug("Covariates are empty data frame")
+    ParallelLogger::logDebug("Covariates are empty data frame")
     covariates <- readRDS(file.path(file, "covariates.rds"))
     covariateRef <- readRDS(file.path(file, "covariateRef.rds"))
     if (file.exists(file.path(file, "analysisRef.rds"))) {
@@ -639,7 +639,7 @@ insertDbPopulation <- function(population,
   population$cohortEndDate <- NA
   colnames(population) <- SqlRender::camelCaseToSnakeCase(colnames(population))
   connection <- DatabaseConnector::connect(connectionDetails)
-  OhdsiRTools::logInfo(paste("Writing",
+  ParallelLogger::logInfo(paste("Writing",
                              nrow(population),
                              "rows to",
                              paste(cohortDatabaseSchema, cohortTable, sep = ".")))
@@ -668,6 +668,6 @@ insertDbPopulation <- function(population,
                                  oracleTempSchema = NULL)
   DatabaseConnector::disconnect(connection)
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
   invisible(TRUE)
 }

@@ -81,7 +81,7 @@ fitOutcomeModel <- function(population,
                modelType,
                "', please choose either 'logistic', 'poisson', or 'cox'",
                sep = ""))
-  OhdsiRTools::logTrace("Fitting outcome model")
+  ParallelLogger::logTrace("Fitting outcome model")
 
   start <- Sys.time()
   treatmentEstimate <- NULL
@@ -322,9 +322,9 @@ fitOutcomeModel <- function(population,
                                                        quiet = TRUE)
           warning("Separable interaction terms found and removed")
           ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
-          OhdsiRTools::logInfo("Separable interactions:")
+          ParallelLogger::logInfo("Separable interactions:")
           for (i in 1:nrow(ref))
-            OhdsiRTools::logInfo(paste(ref[i, ], collapse = "\t"))
+            ParallelLogger::logInfo(paste(ref[i, ], collapse = "\t"))
           interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
           if (nrow(interactionTerms) == 0) {
             interactionTerms <- NULL
@@ -410,8 +410,8 @@ fitOutcomeModel <- function(population,
   }
   class(outcomeModel) <- "outcomeModel"
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Fitting outcome model took", signif(delta, 3), attr(delta, "units")))
-  OhdsiRTools::logDebug("Outcome model fitting status is: ", status)
+  ParallelLogger::logInfo(paste("Fitting outcome model took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logDebug("Outcome model fitting status is: ", status)
   return(outcomeModel)
 }
 

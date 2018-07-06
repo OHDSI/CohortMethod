@@ -152,7 +152,7 @@ computeMeansPerGroup <- function(cohorts, covariates) {
 #'
 #' @export
 computeCovariateBalance <- function(population, cohortMethodData, subgroupCovariateId = NULL) {
-  OhdsiRTools::logTrace("Computing covariate balance")
+  ParallelLogger::logTrace("Computing covariate balance")
   start <- Sys.time()
   cohorts <- ff::as.ffdf(cohortMethodData$cohorts[, c("rowId", "treatment")])
   cohortsAfterMatching <- ff::as.ffdf(population[, c("rowId", "treatment", "stratumId")])
@@ -202,7 +202,7 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logInfo(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
 }
 
@@ -223,6 +223,8 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
 #'                    function \code{ggsave} in the ggplot2 package for supported file formats.
 #' @param beforeLabel Label for the x-axis.
 #' @param afterLabel  Label for the y-axis.
+#' @param showCovariateCountLabel  Show a label with the number of covariates included in the plot?
+#' @param showMaxLabel Show a label with the maximum absolute standardized difference after matching/stratification?
 #'
 #' @export
 plotCovariateBalanceScatterPlot <- function(balance,

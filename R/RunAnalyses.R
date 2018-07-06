@@ -153,14 +153,14 @@ runCmAnalyses <- function(connectionDetails,
   for (cmAnalysis in cmAnalysisList) {
     stopifnot(class(cmAnalysis) == "cmAnalysis")
   }
-  uniquetargetComparatorOutcomesList <- unique(OhdsiRTools::selectFromList(targetComparatorOutcomesList,
+  uniquetargetComparatorOutcomesList <- unique(ParallelLogger::selectFromList(targetComparatorOutcomesList,
                                                                          c("targetId",
                                                                            "comparatorId",
                                                                            "outcomeIds")))
   if (length(uniquetargetComparatorOutcomesList) != length(targetComparatorOutcomesList)) {
     stop("Duplicate target-comparator-outcomes combinations are not allowed")
   }
-  analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
+  analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
   uniqueAnalysisIds <- unique(analysisIds)
   if (length(uniqueAnalysisIds) != length(analysisIds)) {
     stop("Duplicate analysis IDs are not allowed")
@@ -178,12 +178,12 @@ runCmAnalyses <- function(connectionDetails,
 
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
-  OhdsiRTools::logInfo("*** Creating cohortMethodData objects ***")
+  ParallelLogger::logInfo("*** Creating cohortMethodData objects ***")
   objectsToCreate <- list()
   for (cohortMethodDataFolder in unique(referenceTable$cohortMethodDataFolder)) {
     if (cohortMethodDataFolder != "" && !file.exists(cohortMethodDataFolder)) {
       refRow <- referenceTable[referenceTable$cohortMethodDataFolder == cohortMethodDataFolder, ][1, ]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                               list(analysisId = refRow$analysisId))[[1]]
       getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
       covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
@@ -217,18 +217,18 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (length(objectsToCreate) != 0) {
-    cluster <- OhdsiRTools::makeCluster(getDbCohortMethodDataThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createCmDataObject)
-    OhdsiRTools::stopCluster(cluster)
+    cluster <- ParallelLogger::makeCluster(getDbCohortMethodDataThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, createCmDataObject)
+    ParallelLogger::stopCluster(cluster)
   }
 
-  OhdsiRTools::logInfo("*** Creating study populations ***")
+  ParallelLogger::logInfo("*** Creating study populations ***")
   objectsToCreate <- list()
   for (studyPopFile in unique(referenceTable$studyPopFile)) {
     if (studyPopFile != "" && !file.exists(studyPopFile)) {
       refRow <- referenceTable[referenceTable$studyPopFile == studyPopFile, ][1, ]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                               list(analysisId = refRow$analysisId))[[1]]
       args <- analysisRow$createStudyPopArgs
       args$outcomeId <- refRow$outcomeId
@@ -239,19 +239,19 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (length(objectsToCreate) != 0) {
-    cluster <- OhdsiRTools::makeCluster(createStudyPopThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, objectsToCreate, createStudyPopObject)
-    OhdsiRTools::stopCluster(cluster)
+    cluster <- ParallelLogger::makeCluster(createStudyPopThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, createStudyPopObject)
+    ParallelLogger::stopCluster(cluster)
   }
 
   if (refitPsForEveryOutcome) {
-    OhdsiRTools::logInfo("*** Fitting propensity score models ***")
+    ParallelLogger::logInfo("*** Fitting propensity score models ***")
     modelsToFit <- list()
     for (psFile in unique(referenceTable$psFile)) {
       if (psFile != "" && !file.exists((psFile))) {
         refRow <- referenceTable[referenceTable$psFile == psFile, ][1, ]
-        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+        analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                                 list(analysisId = refRow$analysisId))[[1]]
         args <- analysisRow$createPsArgs
         args$control$threads <- psCvThreads
@@ -263,18 +263,18 @@ runCmAnalyses <- function(connectionDetails,
     }
 
     if (length(modelsToFit) != 0) {
-      cluster <- OhdsiRTools::makeCluster(createPsThreads)
-      OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-      dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitPsModel)
-      OhdsiRTools::stopCluster(cluster)
+      cluster <- ParallelLogger::makeCluster(createPsThreads)
+      ParallelLogger::clusterRequire(cluster, "CohortMethod")
+      dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, fitPsModel)
+      ParallelLogger::stopCluster(cluster)
     }
   } else {
-    OhdsiRTools::logInfo("*** Fitting shared propensity score models ***")
+    ParallelLogger::logInfo("*** Fitting shared propensity score models ***")
     modelsToFit <- list()
     for (sharedPsFile in unique(referenceTable$sharedPsFile)) {
       if (sharedPsFile != "" && !file.exists(sharedPsFile)) {
         refRow <- referenceTable[referenceTable$sharedPsFile == sharedPsFile, ][1, ]
-        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+        analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                                 list(analysisId = refRow$analysisId))[[1]]
 
         createPsArg <- analysisRow$createPsArg
@@ -287,12 +287,12 @@ runCmAnalyses <- function(connectionDetails,
     }
 
     if (length(modelsToFit) != 0) {
-      cluster <- OhdsiRTools::makeCluster(createPsThreads)
-      OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-      dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, fitSharedPsModel, refitPsForEveryStudyPopulation)
-      OhdsiRTools::stopCluster(cluster)
+      cluster <- ParallelLogger::makeCluster(createPsThreads)
+      ParallelLogger::clusterRequire(cluster, "CohortMethod")
+      dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, fitSharedPsModel, refitPsForEveryStudyPopulation)
+      ParallelLogger::stopCluster(cluster)
     }
-    OhdsiRTools::logInfo("*** Adding propensity scores to study population objects ***")
+    ParallelLogger::logInfo("*** Adding propensity scores to study population objects ***")
     psFiles <- unique(referenceTable$psFile)
     psFiles <- psFiles[psFiles != ""]
     psFiles <- psFiles[!file.exists(psFiles)]
@@ -317,12 +317,12 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
 
-  OhdsiRTools::logInfo("*** Trimming/Matching/Stratifying ***")
+  ParallelLogger::logInfo("*** Trimming/Matching/Stratifying ***")
   tasks <- list()
   for (strataFile in unique(referenceTable$strataFile)) {
     if (strataFile != "" && !file.exists(strataFile)) {
       refRow <- referenceTable[referenceTable$strataFile == strataFile, ][1, ]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                               list(analysisId = refRow$analysisId))[[1]]
 
       tasks[[length(tasks) + 1]] <- list(psFile = refRow$psFile,
@@ -331,19 +331,19 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
   if (length(tasks) != 0) {
-    cluster <- OhdsiRTools::makeCluster(trimMatchStratifyThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, tasks, trimMatchStratify)
-    OhdsiRTools::stopCluster(cluster)
+    cluster <- ParallelLogger::makeCluster(trimMatchStratifyThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, tasks, trimMatchStratify)
+    ParallelLogger::stopCluster(cluster)
   }
 
   if (prefilterCovariates) {
-    OhdsiRTools::logInfo("*** Prefiltering covariates for outcome models ***")
+    ParallelLogger::logInfo("*** Prefiltering covariates for outcome models ***")
     tasks <- list()
     for (prefilteredCovariatesFolder in unique(referenceTable$prefilteredCovariatesFolder)) {
       if (prefilteredCovariatesFolder != "" && !file.exists(prefilteredCovariatesFolder)) {
         refRow <- referenceTable[referenceTable$prefilteredCovariatesFolder == prefilteredCovariatesFolder, ][1, ]
-        analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+        analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                                 list(analysisId = refRow$analysisId))[[1]]
 
         tasks[[length(tasks) + 1]] <- list(cohortMethodDataFolder = refRow$cohortMethodDataFolder,
@@ -352,23 +352,23 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
     if (length(tasks) != 0) {
-      cluster <- OhdsiRTools::makeCluster(min(prefilterCovariatesThreads, length(tasks)))
-      OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-      dummy <- OhdsiRTools::clusterApply(cluster, tasks, doPrefilterCovariates)
-      OhdsiRTools::stopCluster(cluster)
+      cluster <- ParallelLogger::makeCluster(min(prefilterCovariatesThreads, length(tasks)))
+      ParallelLogger::clusterRequire(cluster, "CohortMethod")
+      dummy <- ParallelLogger::clusterApply(cluster, tasks, doPrefilterCovariates)
+      ParallelLogger::stopCluster(cluster)
     }
   }
 
   if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
-    OhdsiRTools::logInfo("*** Fitting outcome models ***")
+    ParallelLogger::logInfo("*** Fitting outcome models ***")
   } else {
-    OhdsiRTools::logInfo("*** Fitting outcome models for outcomes of interest ***")
+    ParallelLogger::logInfo("*** Fitting outcome models for outcomes of interest ***")
   }
   subset <- referenceTable[referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "", ]
   subset <- subset[!file.exists(subset$outcomeModelFile) , ]
   createOutcomeModelTask <- function(i) {
     refRow <- subset[i, ]
-    analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+    analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                             list(analysisId = refRow$analysisId))[[1]]
     args <- analysisRow$fitOutcomeModelArgs
     args$control$threads <- outcomeCvThreads
@@ -392,19 +392,19 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (length(modelsToFit) != 0) {
-    cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
-    OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-    dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, doFitOutcomeModel)
-    OhdsiRTools::stopCluster(cluster)
+    cluster <- ParallelLogger::makeCluster(fitOutcomeModelThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModel)
+    ParallelLogger::stopCluster(cluster)
   }
 
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
-    OhdsiRTools::logInfo("*** Fitting outcome models for other outcomes ***")
+    ParallelLogger::logInfo("*** Fitting outcome models for other outcomes ***")
 
     subset <- referenceTable[!referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "" & !file.exists(referenceTable$outcomeModelFile) , ]
     createArgs <- function(i) {
       refRow <- subset[i, ]
-      analysisRow <- OhdsiRTools::matchInList(cmAnalysisList,
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                               list(analysisId = refRow$analysisId))[[1]]
       analysisRow$fitOutcomeModelArgs$control$threads <- outcomeCvThreads
       analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
@@ -422,10 +422,10 @@ runCmAnalyses <- function(connectionDetails,
     }
 
     if (length(modelsToFit) != 0) {
-      cluster <- OhdsiRTools::makeCluster(fitOutcomeModelThreads)
-      OhdsiRTools::clusterRequire(cluster, "CohortMethod")
-      dummy <- OhdsiRTools::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
-      OhdsiRTools::stopCluster(cluster)
+      cluster <- ParallelLogger::makeCluster(fitOutcomeModelThreads)
+      ParallelLogger::clusterRequire(cluster, "CohortMethod")
+      dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
+      ParallelLogger::stopCluster(cluster)
     }
   }
   invisible(referenceTable)
@@ -484,7 +484,7 @@ fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   if (refitPsForEveryStudyPopulation) {
     args <- params$createStudyPopArgs
     args$cohortMethodData <- cohortMethodData
-    OhdsiRTools::logInfo("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
+    ParallelLogger::logInfo("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
     studyPop <- do.call("createStudyPopulation", args)
   } else {
     studyPop <- NULL
@@ -684,7 +684,7 @@ createReferenceTable <- function(cmAnalysisList,
                                  prefilterCovariates,
                                  outcomeIdsOfInterest) {
   # Create all rows per target-comparator-outcome-analysis combination:
-  analysisIds <- unlist(OhdsiRTools::selectFromList(cmAnalysisList, "analysisId"))
+  analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
   instantiateDco <- function(dco, cmAnalysis, folder) {
     rows <- data.frame(analysisId = cmAnalysis$analysisId,
                        targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
@@ -728,7 +728,7 @@ createReferenceTable <- function(cmAnalysisList,
     }, list, object)))
   }
 
-  loadingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
+  loadingArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList,
                                                         "getDbCohortMethodDataArgs"))
   loadingArgsList <- lapply(loadingArgsList, function(x) return(x[[1]]))
   loadArgsId <- sapply(cmAnalysisList,
@@ -743,7 +743,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                                            comparatorId = referenceTable$comparatorId)
 
   # Add studypop filenames
-  studyPopArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createStudyPopArgs"))
+  studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopArgs"))
   studyPopArgsList <- lapply(studyPopArgsList, function(x) return(x[[1]]))
   studyPopArgsId <- sapply(cmAnalysisList,
                            function(cmAnalysis, studyPopArgsList) return(which.list(studyPopArgsList,
@@ -760,7 +760,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                                 outcomeId = referenceTable$outcomeId)
 
   # Add PS filenames
-  psArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createPsArgs"))
+  psArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createPsArgs"))
   psArgsList <- lapply(psArgsList,
                        function(x) return(if (length(x) > 0) return(x[[1]]) else return(NULL)))
   noPsIds <- which(sapply(psArgsList, is.null))
@@ -784,7 +784,7 @@ createReferenceTable <- function(cmAnalysisList,
   } else {
     if (refitPsForEveryStudyPopulation) {
       # Find equivalent studyPopArgs, so we can reuse PS over those as well:
-      studyPopArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, "createStudyPopArgs"))
+      studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopArgs"))
       studyPopArgsList <- lapply(studyPopArgsList, function(x) return(x[[1]]))
       equivalent <- function(studyPopArgs1, studyPopArgs2) {
         if (identical(studyPopArgs1, studyPopArgs2)) {
@@ -845,7 +845,7 @@ createReferenceTable <- function(cmAnalysisList,
             "stratifyByPsArgs",
             "stratifyByPsAndCovariates",
             "stratifyByPsAndCovariatesArgs")
-  strataArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList, args))
+  strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
                                                                         strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
@@ -889,7 +889,7 @@ createReferenceTable <- function(cmAnalysisList,
   if (!prefilterCovariates) {
     referenceTable$prefilteredCovariatesFolder <- ""
   } else {
-    loadingFittingArgsList <- unique(OhdsiRTools::selectFromList(cmAnalysisList,
+    loadingFittingArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList,
                                                                  c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")))
     needsFilter <- function(loadingFittingArgs) {
       keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (!is.null(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) |
@@ -911,17 +911,17 @@ createReferenceTable <- function(cmAnalysisList,
       referenceTable$prefilteredCovariatesFolder <- ""
     } else {
       # Filtering needed
-      relevantArgsList <- OhdsiRTools::selectFromList(loadingFittingArgsList,
+      relevantArgsList <- ParallelLogger::selectFromList(loadingFittingArgsList,
                                                       c("getDbCohortMethodDataArgs", "relevantFields"))
       uniqueRelevantArgsList <- unique(relevantArgsList)
       prefilterIds <- sapply(relevantArgsList,
                              function(relevantArgs, uniqueRelevantArgsList) return(which.list(uniqueRelevantArgsList,
                                                                                               relevantArgs)),
                              uniqueRelevantArgsList)
-      matchableArgsList <- OhdsiRTools::selectFromList(loadingFittingArgsList,
+      matchableArgsList <- ParallelLogger::selectFromList(loadingFittingArgsList,
                                                        c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs"))
 
-      matchingIds <- sapply(OhdsiRTools::selectFromList(cmAnalysisList,
+      matchingIds <- sapply(ParallelLogger::selectFromList(cmAnalysisList,
                                                         c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")),
                             function(cmAnalysis, matchableArgs) return(which.list(matchableArgs,
                                                                                   cmAnalysis)),

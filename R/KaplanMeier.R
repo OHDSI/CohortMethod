@@ -82,7 +82,7 @@ plotKaplanMeier <- function(population,
     levels(data$strata)[levels(data$strata) == "treatment=0"] <- comparatorLabel
     levels(data$strata)[levels(data$strata) == "treatment=1"] <- targetLabel
   } else {
-    OhdsiRTools::logInfo("Variable size strata detected so using adjusted KM for stratified data")
+    ParallelLogger::logInfo("Variable size strata detected so using adjusted KM for stratified data")
     population$stratumSizeT <- 1
     strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1,], sum)
     strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)

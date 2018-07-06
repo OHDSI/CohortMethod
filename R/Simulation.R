@@ -35,17 +35,17 @@
 #'
 #' @export
 createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
-  OhdsiRTools::logInfo("Computing covariate prevalence")  # (Note: currently assuming binary covariates)
+  ParallelLogger::logInfo("Computing covariate prevalence")  # (Note: currently assuming binary covariates)
   sums <- quickSum(cohortMethodData$covariates)
   covariatePrevalence <- sums$sum/nrow(cohortMethodData$cohorts)
   attr(covariatePrevalence, "names") <- sums$covariateId
 
-  OhdsiRTools::logInfo("Computing propensity model")
+  ParallelLogger::logInfo("Computing propensity model")
   propensityScore <- createPs(cohortMethodData,
                               prior = Cyclops::createPrior("laplace", 0.1, exclude = 0))
   propensityModel <- attr(propensityScore, "metaData")$psModelCoef
 
-  OhdsiRTools::logInfo("Fitting outcome model(s)")
+  ParallelLogger::logInfo("Fitting outcome model(s)")
   outcomeIds <- attr(cohortMethodData$outcomes, "metaData")$outcomeIds
   outcomeModels <- vector("list", length(outcomeIds))
   for (i in 1:length(outcomeIds)) {
@@ -66,7 +66,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     outcomeModels[[i]] <- outcomeModel$outcomeModelCoefficients
   }
 
-  OhdsiRTools::logInfo("Computing rates of prior outcomes")
+  ParallelLogger::logInfo("Computing rates of prior outcomes")
   totalTime <- sum(cohortMethodData$cohorts$daysFromObsStart)
   preIndexOutcomeRates <- aggregate(rowId ~ outcomeId,
                                     data = cohortMethodData$outcomes[cohortMethodData$outcomes$daysToEvent <
@@ -74,7 +74,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   preIndexOutcomeRates$rate <- preIndexOutcomeRates$rowId/totalTime
   preIndexOutcomeRates$rowId <- NULL
 
-  OhdsiRTools::logInfo("Fitting models for time to observation period start, end and time to cohort end")
+  ParallelLogger::logInfo("Fitting models for time to observation period start, end and time to cohort end")
   obsEnd <- cohortMethodData$cohorts$daysToObsEnd
   cohortEnd <- cohortMethodData$cohorts$daysToCohortEnd
   event <- as.integer(cohortEnd < obsEnd)
@@ -128,7 +128,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 simulateCohortMethodData <- function(profile, n = 10000) {
   # Note: currently, simulation is done completely in-memory. Could easily do batch-wise, storing in
   # ffdf
-  OhdsiRTools::logInfo("Generating covariates")
+  ParallelLogger::logInfo("Generating covariates")
   # Treatment variable is generated elsewhere:
   covariatePrevalence <- profile$covariatePrevalence[names(profile$covariatePrevalence) != "1"]
 
@@ -148,7 +148,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                            covariateId = covariateId,
                            covariateValue = covariateValue)
 
-  OhdsiRTools::logInfo("Generating treatment variable")
+  ParallelLogger::logInfo("Generating treatment variable")
   betas <- profile$propensityModel
   intercept <- betas[1]
   betas <- betas[2:length(betas)]
@@ -166,7 +166,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   treatment <- treatment[, c("rowId", "covariateValue")]
   treatment$covariateId <- 1
 
-  OhdsiRTools::logInfo("Generating cohorts")
+  ParallelLogger::logInfo("Generating cohorts")
   cohorts <- data.frame(rowId = treatment$rowId,
                         treatment = treatment$covariateValue,
                         subjectId = treatment$rowId,
@@ -177,7 +177,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                         daysToObsEnd = round(rexp(n, profile$cohortEndRate)))
   attr(cohorts, "metaData") <- profile$cohortsMetaData
 
-  OhdsiRTools::logInfo("Generating outcomes after index date")
+  ParallelLogger::logInfo("Generating outcomes after index date")
   allOutcomes <- data.frame()
   for (i in 1:length(profile$outcomesMetaData$outcomeIds)) {
     betas <- profile$outcomeModels[[i]]
@@ -210,7 +210,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     allOutcomes <- rbind(allOutcomes, outcomes)
   }
 
-  OhdsiRTools::logInfo("Generating outcomes before index date")
+  ParallelLogger::logInfo("Generating outcomes before index date")
   for (i in 1:length(profile$outcomesMetaData$outcomeIds)) {
     outcomeId <- profile$outcomesMetaData$outcomeIds[i]
     rate <- profile$preIndexOutcomeRates$rate[profile$preIndexOutcomeRates$outcomeId == outcomeId]
