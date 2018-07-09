@@ -85,6 +85,20 @@ plotKaplanMeier <- function(population,
     ParallelLogger::logInfo("Variable size strata detected so using adjusted KM for stratified data")
     population$stratumSizeT <- 1
     strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1,], sum)
+    if (max(strataSizesT$stratumSizeT) == 1) {
+      # variable ratio matching: use propensity score to compute IPTW
+      if (is.null(population$propensityScore)) {
+        stop("Variable ratio matching detected, but no propensity score found")
+      }
+      weights <- aggregate(propensityScore ~ stratumId, population, mean)
+      weights$weight <- weights$propensityScore / (1 - weights$propensityScore)
+    } else {
+      # stratification: infer probability of treatment from subject counts
+      strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
+      colnames(strataSizesC)[2] <- "stratumSizeC"
+      weights <- merge(strataSizesT, strataSizesC)
+      weights$weight <- weights$stratumSizeT / weights$stratumSizeC
+    }
     strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
     colnames(strataSizesC)[2] <- "stratumSizeC"
     weights <- merge(strataSizesT, strataSizesC)
