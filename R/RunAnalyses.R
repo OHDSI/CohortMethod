@@ -705,7 +705,8 @@ createReferenceTable <- function(cmAnalysisList,
                        outcomeId = dco$outcomeIds)
 
     if (cmAnalysis$fitOutcomeModel) {
-      rows$outcomeModelFile <- .createOutcomeModelFileName(targetId = rows$targetId,
+      rows$outcomeModelFile <- .createOutcomeModelFileName(folder = folder,
+                                                           targetId = rows$targetId,
                                                            comparatorId = rows$comparatorId,
                                                            outcomeId = rows$outcomeId)
     } else {
@@ -1069,11 +1070,11 @@ createReferenceTable <- function(cmAnalysisList,
   return(name)
 }
 
-.createOutcomeModelFileName <- function(targetId, comparatorId, outcomeId) {
+.createOutcomeModelFileName <- function(folder, targetId, comparatorId, outcomeId) {
   name <- paste("om_t", .f(targetId), "_c", .f(comparatorId), sep = "")
   name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
-  return(name)
+  return(file.path(folder, name))
 }
 
 .selectByType <- function(type, value, label) {
