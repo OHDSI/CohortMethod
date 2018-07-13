@@ -4,10 +4,12 @@
 \alias{summarizeAnalyses}
 \title{Create a summary report of the analyses}
 \usage{
-summarizeAnalyses(referenceTable)
+summarizeAnalyses(referenceTable, outputFolder)
 }
 \arguments{
 \item{referenceTable}{A data.frame as created by the \code{\link{runCmAnalyses}} function.}
+
+\item{outputFolder}{Name of the folder where all the outputs have been written to.}
 }
 \value{
 A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
