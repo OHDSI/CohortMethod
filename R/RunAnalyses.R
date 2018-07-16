@@ -419,8 +419,12 @@ runCmAnalyses <- function(connectionDetails,
                                                  list(analysisId = refRow$analysisId))[[1]]
       analysisRow$fitOutcomeModelArgs$control$threads <- outcomeCvThreads
       analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
+      prefilteredCovariatesFolder <- refRow$prefilteredCovariatesFolder
+      if (prefilteredCovariatesFolder != "") {
+        prefilteredCovariatesFolder = file.path(outputFolder, refRow$prefilteredCovariatesFolder)
+      }
       params <- list(cohortMethodDataFolder = file.path(outputFolder, refRow$cohortMethodDataFolder),
-                     prefilteredCovariatesFolder = file.path(outputFolder, refRow$prefilteredCovariatesFolder),
+                     prefilteredCovariatesFolder = prefilteredCovariatesFolder,
                      sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
                      args = analysisRow,
                      outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile))
