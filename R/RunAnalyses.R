@@ -384,8 +384,12 @@ runCmAnalyses <- function(connectionDetails,
     } else {
       studyPopFile <- refRow$studyPopFile
     }
+    prefilteredCovariatesFolder <- refRow$prefilteredCovariatesFolder
+    if (prefilteredCovariatesFolder != "") {
+      prefilteredCovariatesFolder = file.path(outputFolder, refRow$prefilteredCovariatesFolder)
+    }
     return(list(cohortMethodDataFolder = file.path(outputFolder, refRow$cohortMethodDataFolder),
-                prefilteredCovariatesFolder = file.path(outputFolder, refRow$prefilteredCovariatesFolder),
+                prefilteredCovariatesFolder = prefilteredCovariatesFolder,
                 args = args,
                 studyPopFile = file.path(outputFolder, studyPopFile),
                 outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile)))
@@ -717,7 +721,7 @@ createReferenceTable <- function(cmAnalysisList,
   instantiateDcos <- function(cmAnalysis, dcos, folder) {
     analysisFolder <- paste("Analysis_", cmAnalysis$analysisId, sep = "")
     if (!file.exists(file.path(folder, analysisFolder)))
-      dir.create(analysisFolder)
+      dir.create(file.path(folder, analysisFolder))
 
     return(do.call("rbind", lapply(dcos, instantiateDco, cmAnalysis, analysisFolder)))
   }
