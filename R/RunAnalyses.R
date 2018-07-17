@@ -571,7 +571,10 @@ doPrefilterCovariates <- function(params) {
   } else {
     idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
   }
-  if (ffbase::any.ff(!idx)) {
+  if (!ffbase::any.ff(idx)) {
+    # ffdf cannot have zero rows. Just select first row of covariates.
+    covariates <- covariates[ff::ff(as.integer(1)), ]
+  } else if (ffbase::any.ff(!idx)) {
     covariates <- covariates[idx, ]
   } else {
     covariates <- ff::clone.ffdf(covariates)
