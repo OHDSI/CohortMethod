@@ -1180,7 +1180,7 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
     return(result)
   }
   columns <- c("analysisId", "targetId", "comparatorId", "outcomeId")
-  results <- plyr::llply(referenceTable$outcomeModelFile, summarizeOneAnalysis, outputFolder = outputFolder, .progress = TRUE)
+  results <- plyr::llply(referenceTable$outcomeModelFile, summarizeOneAnalysis, outputFolder = outputFolder, .progress = "text")
   results <- do.call(plyr::rbind.fill, results)
   results <- cbind(referenceTable[, columns], results)
   return(results)

@@ -183,75 +183,77 @@ fitOutcomeModel <- function(population,
       interactionTerms <- NULL
       if (length(interactionCovariateIds) != 0) {
         idx <- ffbase::`%in%`(cohortMethodData$covariates$covariateId, ff::as.ff(interactionCovariateIds))
-        informativeIdx <- ff::clone.ff(idx)
-        informativeIdx[informativeIdx] <- informativeIdx[informativeIdx] &
-          ffbase::`%in%`(cohortMethodData$covariates$rowId[informativeIdx], ff::as.ff(informativePopulation$rowId))
-        if (!useCovariates) {
-          # Add covariates for main effects:
-          if (ffbase::any.ff(informativeIdx)) {
-            mainEffects <- cohortMethodData$covariates[informativeIdx, ]
-            if (stratified) {
-              mainEffects <- ffbase::merge.ffdf(mainEffects,
-                                                ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+        if (ffbase::any.ff(idx)) {
+          informativeIdx <- ff::clone.ff(idx)
+          informativeIdx[informativeIdx] <- informativeIdx[informativeIdx] &
+            ffbase::`%in%`(cohortMethodData$covariates$rowId[informativeIdx], ff::as.ff(informativePopulation$rowId))
+          if (!useCovariates) {
+            # Add covariates for main effects:
+            if (ffbase::any.ff(informativeIdx)) {
+              mainEffects <- cohortMethodData$covariates[informativeIdx, ]
+              if (stratified) {
+                mainEffects <- ffbase::merge.ffdf(mainEffects,
+                                                  ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+              }
+              covariates <- ffbase::ffdfappend(covariates, mainEffects)
             }
-            covariates <- ffbase::ffdfappend(covariates, mainEffects)
           }
-        }
-        # Add covariates for interaction terms:
-        if (ffbase::any.ff(informativeIdx)) {
-          interactionIdx <- ff::clone.ff(informativeIdx)
-          interactionIdx[interactionIdx] <- informativeIdx[interactionIdx] & ffbase::`%in%`(cohortMethodData$covariates$rowId[interactionIdx],
-                                                                                            ff::as.ff(informativePopulation$rowId[informativePopulation$treatment == 1]))
-          if (ffbase::any.ff(interactionIdx)) {
-            interactionNames <- ff::as.ram(cohortMethodData$covariateRef$covariateName[ffbase::ffmatch(ff::as.ff(interactionCovariateIds),
-                                                                                                       cohortMethodData$covariateRef$covariateId)])
-            interactionTerms <- data.frame(covariateId = interactionCovariateIds,
-                                           interactionId = treatmentVarId + 1:length(interactionCovariateIds),
-                                           interactionName = paste("treatment", interactionNames, sep = " * "),
-                                           stringsAsFactors = FALSE)
+          # Add covariates for interaction terms:
+          if (ffbase::any.ff(informativeIdx)) {
+            interactionIdx <- ff::clone.ff(informativeIdx)
+            interactionIdx[interactionIdx] <- informativeIdx[interactionIdx] & ffbase::`%in%`(cohortMethodData$covariates$rowId[interactionIdx],
+                                                                                              ff::as.ff(informativePopulation$rowId[informativePopulation$treatment == 1]))
+            if (ffbase::any.ff(interactionIdx)) {
+              interactionNames <- ff::as.ram(cohortMethodData$covariateRef$covariateName[ffbase::ffmatch(ff::as.ff(interactionCovariateIds),
+                                                                                                         cohortMethodData$covariateRef$covariateId)])
+              interactionTerms <- data.frame(covariateId = interactionCovariateIds,
+                                             interactionId = treatmentVarId + 1:length(interactionCovariateIds),
+                                             interactionName = paste("treatment", interactionNames, sep = " * "),
+                                             stringsAsFactors = FALSE)
 
-            interactionEffects <- cohortMethodData$covariates[interactionIdx, ]
-            interactionEffects <- ffbase::merge.ffdf(interactionEffects,
-                                                     ff::as.ffdf(interactionTerms[, c("covariateId", "interactionId")]))
-            interactionEffects <- ff::ffdf(rowId = interactionEffects$rowId,
-                                           covariateId = interactionEffects$interactionId,
-                                           covariateValue = interactionEffects$covariateValue)
-            if (stratified) {
+              interactionEffects <- cohortMethodData$covariates[interactionIdx, ]
               interactionEffects <- ffbase::merge.ffdf(interactionEffects,
-                                                       ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
-            }
-            covariates <- ffbase::ffdfappend(covariates, interactionEffects)
-            interactionTerms <- interactionTerms[interactionTerms$interactionId %in% ff::as.ram(ffbase::unique.ff(interactionEffects$covariateId)), ]
-            if (nrow(interactionTerms) == 0) {
-              interactionTerms <- NULL
-            }
+                                                       ff::as.ffdf(interactionTerms[, c("covariateId", "interactionId")]))
+              interactionEffects <- ff::ffdf(rowId = interactionEffects$rowId,
+                                             covariateId = interactionEffects$interactionId,
+                                             covariateValue = interactionEffects$covariateValue)
+              if (stratified) {
+                interactionEffects <- ffbase::merge.ffdf(interactionEffects,
+                                                         ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
+              }
+              covariates <- ffbase::ffdfappend(covariates, interactionEffects)
+              interactionTerms <- interactionTerms[interactionTerms$interactionId %in% ff::as.ram(ffbase::unique.ff(interactionEffects$covariateId)), ]
+              if (nrow(interactionTerms) == 0) {
+                interactionTerms <- NULL
+              }
 
-            # Compute counts for subgroups:
-            subgroups <- cohortMethodData$covariates[idx, ]
-            subgroups <- ffbase::merge.ffdf(subgroups,
-                                            ff::as.ffdf(population[, c("rowId", "treatment", "time", "y", "subjectId")]))
-            subgroupNames <- data.frame(name = interactionNames,
-                                        covariateId = interactionCovariateIds)
-            subgroupCovariateIds <- ff::as.ram(ffbase::unique.ff(subgroups$covariateId))
+              # Compute counts for subgroups:
+              subgroups <- cohortMethodData$covariates[idx, ]
+              subgroups <- ffbase::merge.ffdf(subgroups,
+                                              ff::as.ffdf(population[, c("rowId", "treatment", "time", "y", "subjectId")]))
+              subgroupNames <- data.frame(name = interactionNames,
+                                          covariateId = interactionCovariateIds)
+              subgroupCovariateIds <- ff::as.ram(ffbase::unique.ff(subgroups$covariateId))
 
-            createSubgroupCounts <- function(subgroupCovariateId) {
-              subgroup <- ff::as.ram(subgroups[subgroups$covariateId == subgroupCovariateId, ])
-              subPopulationCounts <- getCounts(subgroup, subgroupNames$name[subgroupNames$covariateId == subgroupCovariateId])
-              subOutcomeCounts <- data.frame(targetOutcomePersons = length(unique(subgroup$subjectId[subgroup$treatment == 1 & subgroup$y != 0])),
-                                             comparatorOutcomePersons = length(unique(subgroup$subjectId[subgroup$treatment == 0 & subgroup$y != 0])),
-                                             targetOutcomeExposures = length(subgroup$subjectId[subgroup$treatment == 1 & subgroup$y != 0]),
-                                             comparatorOutcomeExposures = length(subgroup$subjectId[subgroup$treatment == 0 & subgroup$y != 0]),
-                                             targetOutcomes = sum(subgroup$y[subgroup$treatment == 1]),
-                                             comparatorOutcomes = sum(subgroup$y[subgroup$treatment == 0]))
-              subTimeAtRisk <- data.frame(targetDays = sum(subgroup$time[subgroup$treatment == 1]),
-                                          comparatorDays = sum(subgroup$time[subgroup$treatment == 0]))
-              counts <- cbind(subPopulationCounts, subOutcomeCounts, subTimeAtRisk)
-              counts$subgroupCovariateId <- subgroupCovariateId
-              return(counts)
+              createSubgroupCounts <- function(subgroupCovariateId) {
+                subgroup <- ff::as.ram(subgroups[subgroups$covariateId == subgroupCovariateId, ])
+                subPopulationCounts <- getCounts(subgroup, subgroupNames$name[subgroupNames$covariateId == subgroupCovariateId])
+                subOutcomeCounts <- data.frame(targetOutcomePersons = length(unique(subgroup$subjectId[subgroup$treatment == 1 & subgroup$y != 0])),
+                                               comparatorOutcomePersons = length(unique(subgroup$subjectId[subgroup$treatment == 0 & subgroup$y != 0])),
+                                               targetOutcomeExposures = length(subgroup$subjectId[subgroup$treatment == 1 & subgroup$y != 0]),
+                                               comparatorOutcomeExposures = length(subgroup$subjectId[subgroup$treatment == 0 & subgroup$y != 0]),
+                                               targetOutcomes = sum(subgroup$y[subgroup$treatment == 1]),
+                                               comparatorOutcomes = sum(subgroup$y[subgroup$treatment == 0]))
+                subTimeAtRisk <- data.frame(targetDays = sum(subgroup$time[subgroup$treatment == 1]),
+                                            comparatorDays = sum(subgroup$time[subgroup$treatment == 0]))
+                counts <- cbind(subPopulationCounts, subOutcomeCounts, subTimeAtRisk)
+                counts$subgroupCovariateId <- subgroupCovariateId
+                return(counts)
+              }
+
+              subgroupCounts <- lapply(subgroupCovariateIds, createSubgroupCounts)
+              subgroupCounts <- do.call("rbind", subgroupCounts)
             }
-
-            subgroupCounts <- lapply(subgroupCovariateIds, createSubgroupCounts)
-            subgroupCounts <- do.call("rbind", subgroupCounts)
           }
         }
         if (useCovariates && !is.null(interactionTerms)) {
