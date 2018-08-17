@@ -142,6 +142,9 @@ createStudyPopulation <- function(cohortMethodData,
     # idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
     idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
     idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
+    if (all(idx)) {
+      stop("All cohort entries are ties, with same subject ID and cohort start date")
+    }
     population <- population[!idx, ]
     # Keeping first:
     # idx <- duplicated(population[, c("subjectId")])

@@ -132,7 +132,13 @@ createPs <- function(cohortMethodData,
     }
     outcomes <- ff::as.ffdf(population)
     colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
-    cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr", quiet = TRUE)
+    floatingPoint <- getOption("floatingPoint")
+    if (is.null(floatingPoint)) {
+      floatingPoint <- 64
+    } else {
+       ParallelLogger::logInfo("Cyclops using precision of ", floatingPoint)
+    }
+    cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
     ff::close.ffdf(outcomes)
     ff::close.ffdf(covariates)
     rm(outcomes)
