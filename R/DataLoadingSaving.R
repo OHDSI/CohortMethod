@@ -400,12 +400,13 @@ getDbCohortMethodData <- function(connectionDetails,
 #'                           \code{getDbCohortMethodData}.
 #' @param file               The name of the folder where the data will be written. The folder should
 #'                           not yet exist.
+#' @param compress           Should compression be used when saving?
 #'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
 #'
 #' @export
-saveCohortMethodData <- function(cohortMethodData, file) {
+saveCohortMethodData <- function(cohortMethodData, file, compress = FALSE) {
   if (missing(cohortMethodData))
     stop("Must specify cohortMethodData")
   if (missing(file))
@@ -423,7 +424,13 @@ saveCohortMethodData <- function(cohortMethodData, file) {
     saveRDS(covariateRef, file = file.path(file, "covariateRef.rds"))
     saveRDS(analysisRef, file = file.path(file, "analysisRef.rds"))
   } else {
-    ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
+    if (compress) {
+      saveCompressedFfdf(covariates, file.path(file, "covariates"))
+      saveCompressedFfdf(covariateRef, file.path(file, "covariateRef"))
+      saveCompressedFfdf(covariateRef, file.path(file, "analysisRef"))
+    } else {
+      ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
+    }
   }
   saveRDS(cohortMethodData$cohorts, file = file.path(file, "cohorts.rds"))
   saveRDS(cohortMethodData$outcomes, file = file.path(file, "outcomes.rds"))
@@ -436,8 +443,9 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' \code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file
 #' system.
 #'
-#' @param file       The name of the folder containing the data.
-#' @param readOnly   If true, the data is opened read only.
+#' @param file           The name of the folder containing the data.
+#' @param readOnly       If true, the data is opened read only.
+#' @param skipCovariates Do not load the covariates. Can save a lot of time.
 #'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
@@ -449,14 +457,17 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' # todo
 #'
 #' @export
-loadCohortMethodData <- function(file, readOnly = TRUE) {
+loadCohortMethodData <- function(file, readOnly = TRUE, skipCovariates = FALSE) {
   if (!file.exists(file))
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder", file))
   ParallelLogger::logTrace("Loading CohortMethodData from ", file)
-
-  if (file.exists(file.path(file, "covariates.rds"))) {
+  if (skipCovariates) {
+    covariates <- NULL
+    covariateRef <- NULL
+    analysisRef <- NULL
+  }  else if (file.exists(file.path(file, "covariates.rds")) && !file.exists(file.path(file, "covariateRef.rds"))) {
     ParallelLogger::logDebug("Covariates are empty data frame")
     covariates <- readRDS(file.path(file, "covariates.rds"))
     covariateRef <- readRDS(file.path(file, "covariateRef.rds"))
@@ -468,19 +479,25 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
   } else {
     temp <- setwd(file)
     absolutePath <- setwd(temp)
-    e <- new.env()
-    ffbase::load.ffdf(absolutePath, e)
-    covariates = get("covariates", envir = e)
-    covariateRef = get("covariateRef", envir = e)
-    open(covariates, readonly = readOnly)
-    open(covariateRef, readonly = readOnly)
-    if (exists("analysisRef", envir = e)) {
-      analysisRef <- get("analysisRef", envir = e)
-      open(analysisRef, readonly = readOnly)
+    if (file.exists(file.path(absolutePath, "covariates.zip"))) {
+      covariates <- loadCompressedFfdf(file.path(absolutePath, "covariates"))
+      covariateRef <- loadCompressedFfdf(file.path(absolutePath, "covariateRef"))
+      analysisRef <- loadCompressedFfdf(file.path(absolutePath, "analysisRef"))
     } else {
-      analysisRef <- NULL
+      e <- new.env()
+      ffbase::load.ffdf(absolutePath, e)
+      covariates = get("covariates", envir = e)
+      covariateRef = get("covariateRef", envir = e)
+      open(covariates, readonly = readOnly)
+      open(covariateRef, readonly = readOnly)
+      if (exists("analysisRef", envir = e)) {
+        analysisRef <- get("analysisRef", envir = e)
+        open(analysisRef, readonly = readOnly)
+      } else {
+        analysisRef <- NULL
+      }
+      rm(e)
     }
-    rm(e)
   }
   result <- list(covariates = covariates,
                  covariateRef = covariateRef,
@@ -670,4 +687,32 @@ insertDbPopulation <- function(population,
   delta <- Sys.time() - start
   ParallelLogger::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
   invisible(TRUE)
+}
+
+
+saveCompressedFfdf <- function(ffdf, fileName) {
+  dir.create(dirname(fileName), showWarnings = FALSE, recursive = TRUE)
+  saveRDS(ffdf, paste0(fileName, ".rds"))
+  fileNames <- sapply(bit::physical(ffdf), function(x) bit::physical(x)$filename)
+  sourceDir <- dirname(fileNames[1])
+  oldWd <- setwd(sourceDir)
+  on.exit(setwd(oldWd))
+  sourceNames <- basename(fileNames)
+  zip::zip(zipfile = paste0(fileName, ".zip"), files = sourceNames)
+}
+
+loadCompressedFfdf <- function(fileName) {
+  ffdf <- readRDS(paste0(fileName, ".rds"))
+  tempRoot <- ff::fftempfile("temp")
+  utils::unzip(zipfile = paste0(fileName, ".zip"), exdir = tempRoot)
+  for (ff in bit::physical(ffdf)) {
+    newFileName <- ff::fftempfile("")
+    file.rename(file.path(tempRoot, basename(bit::physical(ff)$filename)), newFileName)
+    bit::physical(ff)$filename <- newFileName
+    bit::physical(ff)$finalizer <- "delete"
+    ff::open.ff(ff)
+    reg.finalizer(attr(ff,"physical"), ff::finalize.ff_pointer, onexit = bit::physical(ff)$finonexit)
+  }
+  unlink(tempRoot, recursive = TRUE)
+  return(ffdf)
 }

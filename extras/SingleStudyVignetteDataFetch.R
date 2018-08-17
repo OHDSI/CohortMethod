@@ -84,9 +84,10 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           covariateSettings = covSettings)
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataComp", compress = TRUE)
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
-
+# cohortMethodDataComp <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodDataComp')
 # summary(cohortMethodData) getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
@@ -116,8 +117,35 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        cvRepetitions = 1,
                                        threads = 10))
 
+options(floatingPoint = 32)
+ps <- createPs(cohortMethodData = cohortMethodData,
+               population = studyPop,
+               prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+               control = createControl(cvType = "auto",
+                                       startingVariance = 0.01,
+                                       noiseLevel = "quiet",
+                                       tolerance = 2e-07,
+                                       cvRepetitions = 1,
+                                       threads = 10,
+                                       seed = 123))
+
+ps <- createPs(cohortMethodData = cohortMethodData,
+               population = studyPop,
+               prior = createPrior("laplace", exclude = c(0), useCrossValidation = FALSE, variance = 0.01),
+               control = createControl(cvType = "auto",
+                                       startingVariance = 0.01,
+                                       noiseLevel = "quiet",
+                                       tolerance = 2e-07,
+                                       cvRepetitions = 1,
+                                       threads = 10))
+plotPs(ps)
+
 # computePsAuc(ps) plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps32.rds")
+ps32 <- ps
+ps64 <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+
 # ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]

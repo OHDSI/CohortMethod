@@ -4,12 +4,14 @@
 \alias{loadCohortMethodData}
 \title{Load the cohort data from a folder}
 \usage{
-loadCohortMethodData(file, readOnly = TRUE)
+loadCohortMethodData(file, readOnly = TRUE, skipCovariates = FALSE)
 }
 \arguments{
 \item{file}{The name of the folder containing the data.}
 
 \item{readOnly}{If true, the data is opened read only.}
+
+\item{skipCovariates}{Do not load the covariates. Can save a lot of time.}
 }
 \value{
 An object of class cohortMethodData.

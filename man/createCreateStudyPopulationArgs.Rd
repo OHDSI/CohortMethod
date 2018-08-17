@@ -6,8 +6,9 @@
 \usage{
 createCreateStudyPopulationArgs(firstExposureOnly = FALSE,
   restrictToCommonPeriod = FALSE, washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
-  priorOutcomeLookback = 99999, minDaysAtRisk = 1, riskWindowStart = 0,
+  removeDuplicateSubjects = FALSE,
+  removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
+  minDaysAtRisk = 1, riskWindowStart = 0,
   addExposureDaysToStart = FALSE, riskWindowEnd = 0,
   addExposureDaysToEnd = TRUE, censorAtNewRiskWindow = FALSE)
 }

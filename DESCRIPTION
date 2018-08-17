@@ -36,7 +36,8 @@ Imports:
     Rcpp (>= 0.11.2),
     SqlRender (>= 1.1.1),
     survival,
-    ParallelLogger
+    ParallelLogger,
+    zip
 Suggests:
     testthat,
     pROC,
@@ -45,4 +46,4 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 6.0.1.9000
+RoxygenNote: 6.1.0

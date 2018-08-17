@@ -4,7 +4,7 @@
 \alias{saveCohortMethodData}
 \title{Save the cohort data to folder}
 \usage{
-saveCohortMethodData(cohortMethodData, file)
+saveCohortMethodData(cohortMethodData, file, compress = FALSE)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
@@ -12,6 +12,8 @@ saveCohortMethodData(cohortMethodData, file)
 
 \item{file}{The name of the folder where the data will be written. The folder should
 not yet exist.}
+
+\item{compress}{Should compression be used when saving?}
 }
 \description{
 \code{saveCohortMethodData} saves an object of type cohortMethodData to folder.

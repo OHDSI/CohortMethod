@@ -6,9 +6,10 @@
 \usage{
 constructEras(connectionDetails, sourceDatabaseSchema,
   sourceTable = "drug_exposure",
-  targetDatabaseSchema = sourceDatabaseSchema, targetTable = "drug_era",
-  createTargetTable = FALSE, cdmDatabaseSchema = sourceDatabaseSchema,
-  gracePeriod = 30, rollUp = TRUE, rollUpConceptClassId = "Ingredient",
+  targetDatabaseSchema = sourceDatabaseSchema,
+  targetTable = "drug_era", createTargetTable = FALSE,
+  cdmDatabaseSchema = sourceDatabaseSchema, gracePeriod = 30,
+  rollUp = TRUE, rollUpConceptClassId = "Ingredient",
   rollUpVocabularyId = "RxNorm", cdmVersion = "5")
 }
 \arguments{

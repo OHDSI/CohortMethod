@@ -5,9 +5,10 @@
 \title{Get the cohort data from the server}
 \usage{
 getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
-  oracleTempSchema = cdmDatabaseSchema, targetId, comparatorId, outcomeIds,
-  studyStartDate = "", studyEndDate = "",
-  exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
+  oracleTempSchema = cdmDatabaseSchema, targetId, comparatorId,
+  outcomeIds, studyStartDate = "", studyEndDate = "",
+  exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = "5",
   excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,

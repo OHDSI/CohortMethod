@@ -6,16 +6,18 @@
 \usage{
 runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema,
-  exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
+  exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = 5,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
   targetComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
   refitPsForEveryStudyPopulation = TRUE, prefilterCovariates = TRUE,
-  getDbCohortMethodDataThreads = 1, createPsThreads = 1, psCvThreads = 1,
-  createStudyPopThreads = 1, trimMatchStratifyThreads = 1,
-  prefilterCovariatesThreads = 1, fitOutcomeModelThreads = 1,
-  outcomeCvThreads = 1, outcomeIdsOfInterest)
+  getDbCohortMethodDataThreads = 1, createPsThreads = 1,
+  psCvThreads = 1, createStudyPopThreads = 1,
+  trimMatchStratifyThreads = 1, prefilterCovariatesThreads = 1,
+  fitOutcomeModelThreads = 1, outcomeCvThreads = 1,
+  outcomeIdsOfInterest, compressCohortMethodData = FALSE)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the
@@ -111,6 +113,8 @@ could be `fitOutcomeModelThreads * outcomeCvThreads`.}
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
 for all other outcome IDs. This could be helpful to speed up
 analyses with many controls.}
+
+\item{compressCohortMethodData}{Compress CohortMethodData objects?}
 }
 \value{
 A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier

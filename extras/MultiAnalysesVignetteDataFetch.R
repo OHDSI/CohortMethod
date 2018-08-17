@@ -113,6 +113,7 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    removeDuplicateSubjects = "remove all",
                                                    studyStartDate = "",
                                                    studyEndDate = "",
+                                                   maxCohortSize = 10000,
                                                    excludeDrugsFromCovariates = FALSE,
                                                    covariateSettings = covarSettings)
 
@@ -135,6 +136,7 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
 createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
                                    control = createControl(cvType = "auto",
                                                            startingVariance = 0.01,
+                                                           tolerance = 1E-5,
                                                            noiseLevel = "quiet",
                                                            cvRepetitions = 1))
 

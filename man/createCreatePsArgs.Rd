@@ -4,12 +4,12 @@
 \alias{createCreatePsArgs}
 \title{Create a parameter object for the function createPs}
 \usage{
-createCreatePsArgs(excludeCovariateIds = c(), includeCovariateIds = c(),
-  maxCohortSizeForFitting = 250000, errorOnHighCorrelation = TRUE,
-  stopOnError = TRUE, prior = createPrior("laplace", exclude = c(0),
-  useCrossValidation = TRUE), control = createControl(noiseLevel = "silent",
-  cvType = "auto", tolerance = 2e-07, cvRepetitions = 10, startingVariance =
-  0.01))
+createCreatePsArgs(excludeCovariateIds = c(),
+  includeCovariateIds = c(), maxCohortSizeForFitting = 250000,
+  errorOnHighCorrelation = TRUE, stopOnError = TRUE,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation =
+  TRUE), control = createControl(noiseLevel = "silent", cvType = "auto",
+  tolerance = 2e-07, cvRepetitions = 10, startingVariance = 0.01))
 }
 \arguments{
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}

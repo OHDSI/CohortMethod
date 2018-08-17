@@ -8,9 +8,9 @@ createStudyPopulation(cohortMethodData, population = NULL, outcomeId,
   firstExposureOnly = FALSE, restrictToCommonPeriod = FALSE,
   washoutPeriod = 0, removeDuplicateSubjects = FALSE,
   removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
-  minDaysAtRisk = 1, riskWindowStart = 0, addExposureDaysToStart = FALSE,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
-  censorAtNewRiskWindow = FALSE)
+  minDaysAtRisk = 1, riskWindowStart = 0,
+  addExposureDaysToStart = FALSE, riskWindowEnd = 0,
+  addExposureDaysToEnd = TRUE, censorAtNewRiskWindow = FALSE)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using

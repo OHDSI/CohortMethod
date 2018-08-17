@@ -4,8 +4,8 @@
 \alias{stratifyByPs}
 \title{Stratify persons by propensity score}
 \usage{
-stratifyByPs(population, numberOfStrata = 5, stratificationColumns = c(),
-  baseSelection = "all")
+stratifyByPs(population, numberOfStrata = 5,
+  stratificationColumns = c(), baseSelection = "all")
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}

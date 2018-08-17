@@ -99,6 +99,7 @@
 #' @param outcomeIdsOfInterest           If provided, creation of non-essential files will be skipped
 #'                                       for all other outcome IDs. This could be helpful to speed up
 #'                                       analyses with many controls.
+#' @param compressCohortMethodData       Compress CohortMethodData objects?
 #'
 #' @return
 #' A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
@@ -140,7 +141,8 @@ runCmAnalyses <- function(connectionDetails,
                           prefilterCovariatesThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
-                          outcomeIdsOfInterest) {
+                          outcomeIdsOfInterest,
+                          compressCohortMethodData = FALSE) {
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
@@ -212,6 +214,7 @@ runCmAnalyses <- function(connectionDetails,
                    comparatorId = refRow$comparatorId)
       args <- append(args, getDbCohortMethodDataArgs)
       objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args,
+                                                             compressCohortMethodData = compressCohortMethodData,
                                                              cohortMethodDataFolder = file.path(outputFolder, cohortMethodDataFolder))
     }
   }
@@ -470,7 +473,7 @@ getPs <- function(psFile) {
 
 createCmDataObject <- function(params) {
   cohortMethodData <- do.call("getDbCohortMethodData", params$args)
-  saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder)
+  saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder, params$compressCohortMethodData)
   return(NULL)
 }
 

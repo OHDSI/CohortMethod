@@ -4,8 +4,8 @@
 \alias{plotCovariateBalanceScatterPlot}
 \title{Create a scatterplot of the covariate balance}
 \usage{
-plotCovariateBalanceScatterPlot(balance, absolute = TRUE, threshold = 0,
-  fileName = NULL, beforeLabel = "Before matching",
+plotCovariateBalanceScatterPlot(balance, absolute = TRUE,
+  threshold = 0, fileName = NULL, beforeLabel = "Before matching",
   afterLabel = "After matching", showCovariateCountLabel = FALSE,
   showMaxLabel = FALSE)
 }
