@@ -698,7 +698,9 @@ saveCompressedFfdf <- function(ffdf, fileName) {
   oldWd <- setwd(sourceDir)
   on.exit(setwd(oldWd))
   sourceNames <- basename(fileNames)
+  ff::close.ffdf(ffdf)
   zip::zip(zipfile = paste0(fileName, ".zip"), files = sourceNames)
+  ff::open.ffdf(ffdf)
 }
 
 loadCompressedFfdf <- function(fileName) {
