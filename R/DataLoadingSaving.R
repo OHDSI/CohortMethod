@@ -462,7 +462,7 @@ loadCohortMethodData <- function(file, readOnly = TRUE, skipCovariates = FALSE) 
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder", file))
-  ParallelLogger::logTrace("Loading CohortMethodData from ", file)
+  ParallelLogger::logTrace("Loading CohortMethodData from ", file, if (skipCovariates) ", skipping covariates" else "")
   if (skipCovariates) {
     covariates <- NULL
     covariateRef <- NULL

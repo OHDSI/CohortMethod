@@ -449,13 +449,15 @@ runCmAnalyses <- function(connectionDetails,
   invisible(referenceTable)
 }
 
-getCohortMethodData <- function(cohortMethodDataFolder) {
-  if (mget("cohortMethodDataFolder", envir = globalenv(), ifnotfound = "") == cohortMethodDataFolder) {
+getCohortMethodData <- function(cohortMethodDataFolder, requireCovariates = TRUE) {
+  if (mget("cohortMethodDataFolder", envir = globalenv(), ifnotfound = "") == cohortMethodDataFolder &&
+      (!requireCovariates || mget("hasCovariates", envir = globalenv(), ifnotfound = FALSE))) {
     cohortMethodData <- get("cohortMethodData", envir = globalenv())
   } else {
-    cohortMethodData <- loadCohortMethodData(cohortMethodDataFolder, readOnly = TRUE)
+    cohortMethodData <- loadCohortMethodData(cohortMethodDataFolder, readOnly = TRUE, skipCovariates = !requireCovariates)
     assign("cohortMethodData", cohortMethodData, envir = globalenv())
     assign("cohortMethodDataFolder", cohortMethodDataFolder, envir = globalenv())
+    assign("hasCovariates", requireCovariates, envir = globalenv())
   }
   return(cohortMethodData)
 }
@@ -478,7 +480,7 @@ createCmDataObject <- function(params) {
 }
 
 createStudyPopObject <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = FALSE)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
@@ -487,7 +489,7 @@ createStudyPopObject <- function(params) {
 }
 
 fitPsModel <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = TRUE)
   studyPop <- readRDS(params$studyPopFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
@@ -498,7 +500,7 @@ fitPsModel <- function(params) {
 }
 
 fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = TRUE)
   if (refitPsForEveryStudyPopulation) {
     args <- params$createStudyPopArgs
     args$cohortMethodData <- cohortMethodData
@@ -511,15 +513,6 @@ fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   args$cohortMethodData <- cohortMethodData
   args$population <- studyPop
   ps <- do.call("createPs", args)
-  # ps <- createPs(cohortMethodData = args$cohortMethodData,
-  #                population = args$population,
-  #                excludeCovariateIds = args$excludeCovariateIds,
-  #                includeCovariateIds = args$includeCovariateIds,
-  #                maxCohortSizeForFitting = args$maxCohortSizeForFitting,
-  #                errorOnHighCorrelation = args$errorOnHighCorrelation,
-  #                stopOnError = args$stopOnError,
-  #                prior = args$prior,
-  #                control = args$control)
   saveRDS(ps, params$sharedPsFile)
   return(NULL)
 }
@@ -588,7 +581,8 @@ doPrefilterCovariates <- function(params) {
 }
 
 doFitOutcomeModel <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
+  requireCovariates <- ((length(params$args$interactionCovariateIds) != 0 || params$args$useCovariates) && params$prefilteredCovariatesFolder == "")
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = requireCovariates)
   if (params$prefilteredCovariatesFolder != "") {
     covariates <- NULL
     ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates ffdf
@@ -615,7 +609,8 @@ doFitOutcomeModel <- function(params) {
 }
 
 doFitOutcomeModelPlus <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder)
+  requireCovariates <- ((length(params$args$fitOutcomeModelArgs$interactionCovariateIds) != 0 || params$args$fitOutcomeModelArgs$useCovariates) && params$prefilteredCovariatesFolder == "")
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = requireCovariates)
   if (params$prefilteredCovariatesFolder != "") {
     covariates <- NULL
     ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates ffdf
@@ -625,21 +620,21 @@ doFitOutcomeModelPlus <- function(params) {
 
   # Create study pop
   args <- params$args$createStudyPopArgs
-  # args$cohortMethodData <- cohortMethodData
-  # studyPop <- do.call("createStudyPopulation", args)
-  studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                    population = NULL,
-                                    outcomeId = args$outcomeId,
-                                    firstExposureOnly = args$firstExposureOnly,
-                                    washoutPeriod = args$washoutPeriod,
-                                    removeDuplicateSubjects = args$removeDuplicateSubjects,
-                                    removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
-                                    priorOutcomeLookback = args$priorOutcomeLookback,
-                                    minDaysAtRisk = args$minDaysAtRisk,
-                                    riskWindowStart = args$riskWindowStart,
-                                    addExposureDaysToStart = args$addExposureDaysToStart,
-                                    riskWindowEnd = args$riskWindowEnd,
-                                    addExposureDaysToEnd = args$addExposureDaysToEnd)
+  args$cohortMethodData <- cohortMethodData
+  studyPop <- do.call("createStudyPopulation", args)
+  # studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+  #                                   population = NULL,
+  #                                   outcomeId = args$outcomeId,
+  #                                   firstExposureOnly = args$firstExposureOnly,
+  #                                   washoutPeriod = args$washoutPeriod,
+  #                                   removeDuplicateSubjects = args$removeDuplicateSubjects,
+  #                                   removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
+  #                                   priorOutcomeLookback = args$priorOutcomeLookback,
+  #                                   minDaysAtRisk = args$minDaysAtRisk,
+  #                                   riskWindowStart = args$riskWindowStart,
+  #                                   addExposureDaysToStart = args$addExposureDaysToStart,
+  #                                   riskWindowEnd = args$riskWindowEnd,
+  #                                   addExposureDaysToEnd = args$addExposureDaysToEnd)
 
   if (params$args$createPs) {
     # Add PS
@@ -680,18 +675,18 @@ doFitOutcomeModelPlus <- function(params) {
   args <- params$args$fitOutcomeModelArgs
   args$population <- ps
   args$cohortMethodData <- cohortMethodData
-  # outcomeModel <- do.call('fitOutcomeModel', args)
-  outcomeModel <- fitOutcomeModel(population = args$population,
-                                  cohortMethodData = args$cohortMethodData,
-                                  modelType = args$modelType,
-                                  stratified = args$stratified,
-                                  useCovariates = args$useCovariates,
-                                  inversePtWeighting = args$inversePtWeighting,
-                                  includeCovariateIds = args$includeCovariateIds,
-                                  excludeCovariateIds = args$excludeCovariateIds,
-                                  interactionCovariateIds = args$interactionCovariateIds,
-                                  prior = args$prior,
-                                  control = args$control)
+  outcomeModel <- do.call('fitOutcomeModel', args)
+  # outcomeModel <- fitOutcomeModel(population = args$population,
+  #                                 cohortMethodData = args$cohortMethodData,
+  #                                 modelType = args$modelType,
+  #                                 stratified = args$stratified,
+  #                                 useCovariates = args$useCovariates,
+  #                                 inversePtWeighting = args$inversePtWeighting,
+  #                                 includeCovariateIds = args$includeCovariateIds,
+  #                                 excludeCovariateIds = args$excludeCovariateIds,
+  #                                 interactionCovariateIds = args$interactionCovariateIds,
+  #                                 prior = args$prior,
+  #                                 control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
 }
