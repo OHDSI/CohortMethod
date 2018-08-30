@@ -575,8 +575,12 @@ doPrefilterCovariates <- function(params) {
   } else {
     covariates <- ff::clone.ffdf(covariates)
   }
-  ffbase::save.ffdf(covariates, dir = params$prefilteredCovariatesFolder)
+  covariateRef <- ff::clone.ffdf(cohortMethodData$covariateRef)
+  analysisRef <- ff::clone.ffdf(cohortMethodData$analysisRef)
+  ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = params$prefilteredCovariatesFolder)
   ff::close.ffdf(covariates)
+  ff::close.ffdf(covariateRef)
+  ff::close.ffdf(analysisRef)
   return(NULL)
 }
 
@@ -585,9 +589,15 @@ doFitOutcomeModel <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = requireCovariates)
   if (params$prefilteredCovariatesFolder != "") {
     covariates <- NULL
-    ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates ffdf
+    covariateRef <- NULL
+    analysisRef <- NULL
+    ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates, covariateRef, and analysisRef ffdfs
     ff::open.ffdf(covariates, readonly = TRUE)
+    ff::open.ffdf(covariateRef, readonly = TRUE)
+    ff::open.ffdf(analysisRef, readonly = TRUE)
     cohortMethodData$covariates <- covariates
+    cohortMethodData$covariateRef <- covariateRef
+    cohortMethodData$analysisRef <- analysisRef
   }
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
@@ -613,9 +623,15 @@ doFitOutcomeModelPlus <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = requireCovariates)
   if (params$prefilteredCovariatesFolder != "") {
     covariates <- NULL
-    ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates ffdf
+    covariateRef <- NULL
+    analysisRef <- NULL
+    ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates, covariateRef, and analysisRef ffdfs
     ff::open.ffdf(covariates, readonly = TRUE)
+    ff::open.ffdf(covariateRef, readonly = TRUE)
+    ff::open.ffdf(analysisRef, readonly = TRUE)
     cohortMethodData$covariates <- covariates
+    cohortMethodData$covariateRef <- covariateRef
+    cohortMethodData$analysisRef <- analysisRef
   }
 
   # Create study pop
