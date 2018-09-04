@@ -206,6 +206,7 @@ fitOutcomeModel <- function(population,
             if (ffbase::any.ff(interactionIdx)) {
               interactionNames <- ff::as.ram(cohortMethodData$covariateRef$covariateName[ffbase::ffmatch(ff::as.ff(interactionCovariateIds),
                                                                                                          cohortMethodData$covariateRef$covariateId)])
+              interactionNames <- as.character(interactionNames) # Drops unused levels to save lots of space
               interactionTerms <- data.frame(covariateId = interactionCovariateIds,
                                              interactionId = treatmentVarId + 1:length(interactionCovariateIds),
                                              interactionName = paste("treatment", interactionNames, sep = " * "),
