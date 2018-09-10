@@ -699,7 +699,7 @@ saveCompressedFfdf <- function(ffdf, fileName) {
   on.exit(setwd(oldWd))
   sourceNames <- basename(fileNames)
   ff::close.ffdf(ffdf)
-  zip::zip(zipfile = paste0(fileName, ".zip"), files = sourceNames)
+  DatabaseConnector::createZipFile(zipFile = paste0(fileName, ".zip"), files = sourceNames)
   ff::open.ffdf(ffdf)
 }
 

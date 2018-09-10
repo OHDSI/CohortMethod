@@ -22,7 +22,7 @@ License: Apache License 2.0
 VignetteBuilder: knitr
 Depends:
     R (>= 3.2.2),
-    DatabaseConnector (>= 1.11.4),
+    DatabaseConnector (>= 2.2.0),
     Cyclops (>= 1.2.0),
     FeatureExtraction  (>= 2.0.0)
 Imports:
@@ -36,8 +36,7 @@ Imports:
     Rcpp (>= 0.11.2),
     SqlRender (>= 1.1.1),
     survival,
-    ParallelLogger,
-    zip
+    ParallelLogger
 Suggests:
     testthat,
     pROC,
