@@ -181,44 +181,45 @@ runCmAnalyses <- function(connectionDetails,
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
   ParallelLogger::logInfo("*** Creating cohortMethodData objects ***")
-  objectsToCreate <- list()
-  for (cohortMethodDataFolder in unique(referenceTable$cohortMethodDataFolder)) {
-    if (cohortMethodDataFolder != "" && !file.exists(file.path(outputFolder, cohortMethodDataFolder))) {
-      refRow <- referenceTable[referenceTable$cohortMethodDataFolder == cohortMethodDataFolder, ][1, ]
-      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
-                                                 list(analysisId = refRow$analysisId))[[1]]
-      getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
-      covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
-      if (is(covariateSettings, "covariateSettings"))
-        covariateSettings <- list(covariateSettings)
-      for (i in 1:length(covariateSettings)) {
-        covariateSettings[[i]]$excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(as.character(refRow$excludedCovariateConceptIds),
-                                                                                                  ","))),
-                                                                       covariateSettings[[i]]$excludedCovariateConceptIds))
-        covariateSettings[[i]]$includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(as.character(refRow$includedCovariateConceptIds),
-                                                                                                  ","))),
-                                                                       covariateSettings[[i]]$includedCovariateConceptIds))
-      }
-      getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
-      outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFolder == cohortMethodDataFolder])
-      args <- list(connectionDetails = connectionDetails,
-                   cdmDatabaseSchema = cdmDatabaseSchema,
-                   oracleTempSchema = oracleTempSchema,
-                   exposureDatabaseSchema = exposureDatabaseSchema,
-                   exposureTable = exposureTable,
-                   outcomeDatabaseSchema = outcomeDatabaseSchema,
-                   outcomeTable = outcomeTable,
-                   cdmVersion = cdmVersion,
-                   outcomeIds = outcomeIds,
-                   targetId = refRow$targetId,
-                   comparatorId = refRow$comparatorId)
-      args <- append(args, getDbCohortMethodDataArgs)
-      objectsToCreate[[length(objectsToCreate) + 1]] <- list(args = args,
-                                                             compressCohortMethodData = compressCohortMethodData,
-                                                             cohortMethodDataFolder = file.path(outputFolder, cohortMethodDataFolder))
+  createCmDataTask <- function(cohortMethodDataFolder) {
+    refRow <- referenceTable[referenceTable$cohortMethodDataFolder == cohortMethodDataFolder, ][1, ]
+    analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                               list(analysisId = refRow$analysisId))[[1]]
+    getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
+    covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
+    if (is(covariateSettings, "covariateSettings"))
+      covariateSettings <- list(covariateSettings)
+    for (i in 1:length(covariateSettings)) {
+      covariateSettings[[i]]$excludedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(as.character(refRow$excludedCovariateConceptIds),
+                                                                                                ","))),
+                                                                     covariateSettings[[i]]$excludedCovariateConceptIds))
+      covariateSettings[[i]]$includedCovariateConceptIds <- unique(c(as.numeric(unlist(strsplit(as.character(refRow$includedCovariateConceptIds),
+                                                                                                ","))),
+                                                                     covariateSettings[[i]]$includedCovariateConceptIds))
     }
+    getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
+    outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFolder == cohortMethodDataFolder])
+    args <- list(connectionDetails = connectionDetails,
+                 cdmDatabaseSchema = cdmDatabaseSchema,
+                 oracleTempSchema = oracleTempSchema,
+                 exposureDatabaseSchema = exposureDatabaseSchema,
+                 exposureTable = exposureTable,
+                 outcomeDatabaseSchema = outcomeDatabaseSchema,
+                 outcomeTable = outcomeTable,
+                 cdmVersion = cdmVersion,
+                 outcomeIds = outcomeIds,
+                 targetId = refRow$targetId,
+                 comparatorId = refRow$comparatorId)
+    args <- append(args, getDbCohortMethodDataArgs)
+    task <- list(args = args,
+                 compressCohortMethodData = compressCohortMethodData,
+                 cohortMethodDataFolder = file.path(outputFolder, cohortMethodDataFolder))
+    return(task)
   }
-
+  subset <- unique(referenceTable$cohortMethodDataFolder)
+  subset <- subset[subset != ""]
+  subset <- subset[!file.exists(file.path(outputFolder, subset))]
+  objectsToCreate <- lapply(subset, createCmDataTask)
   if (length(objectsToCreate) != 0) {
     cluster <- ParallelLogger::makeCluster(getDbCohortMethodDataThreads)
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -227,21 +228,22 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   ParallelLogger::logInfo("*** Creating study populations ***")
-  objectsToCreate <- list()
-  for (studyPopFile in unique(referenceTable$studyPopFile)) {
-    if (studyPopFile != "" && !file.exists(file.path(outputFolder, studyPopFile))) {
-      refRow <- referenceTable[referenceTable$studyPopFile == studyPopFile, ][1, ]
-      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
-                                                 list(analysisId = refRow$analysisId))[[1]]
-      args <- analysisRow$createStudyPopArgs
-      args$outcomeId <- refRow$outcomeId
-      objectsToCreate[[length(objectsToCreate) + 1]] <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                                                                refRow$cohortMethodDataFolder),
-                                                             args = args,
-                                                             studyPopFile = file.path(outputFolder, studyPopFile))
-    }
+  createStudyPopTask <- function(studyPopFile) {
+    refRow <- referenceTable[referenceTable$studyPopFile == studyPopFile, ][1, ]
+    analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                               list(analysisId = refRow$analysisId))[[1]]
+    args <- analysisRow$createStudyPopArgs
+    args$outcomeId <- refRow$outcomeId
+    task <- list(cohortMethodDataFolder = file.path(outputFolder,
+                                                    refRow$cohortMethodDataFolder),
+                 args = args,
+                 studyPopFile = file.path(outputFolder, studyPopFile))
+    return(task)
   }
-
+  subset <- unique(referenceTable$studyPopFile)
+  subset <- subset[subset != ""]
+  subset <- subset[!file.exists(file.path(outputFolder, subset))]
+  objectsToCreate <- lapply(subset, createStudyPopTask)
   if (length(objectsToCreate) != 0) {
     cluster <- ParallelLogger::makeCluster(createStudyPopThreads)
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -251,22 +253,23 @@ runCmAnalyses <- function(connectionDetails,
 
   if (refitPsForEveryOutcome) {
     ParallelLogger::logInfo("*** Fitting propensity score models ***")
-    modelsToFit <- list()
-    for (psFile in unique(referenceTable$psFile)) {
-      if (psFile != "" && !file.exists(file.path(outputFolder, psFile))) {
-        refRow <- referenceTable[referenceTable$psFile == psFile, ][1, ]
-        analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
-                                                   list(analysisId = refRow$analysisId))[[1]]
-        args <- analysisRow$createPsArgs
-        args$control$threads <- psCvThreads
-        modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                                                          refRow$cohortMethodDataFolder),
-                                                       studyPopFile = file.path(outputFolder, refRow$studyPopFile),
-                                                       args = args,
-                                                       psFile = file.path(outputFolder, psFile))
-      }
+    createPsTask <- function(psFile) {
+      refRow <- referenceTable[referenceTable$psFile == psFile, ][1, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
+      args <- analysisRow$createPsArgs
+      args$control$threads <- psCvThreads
+      task <- list(cohortMethodDataFolder = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFolder),
+                   studyPopFile = file.path(outputFolder, refRow$studyPopFile),
+                   args = args,
+                   psFile = file.path(outputFolder, psFile))
+      return(task)
     }
-
+    subset <- unique(referenceTable$psFile)
+    subset <- subset[subset != ""]
+    subset <- subset[!file.exists(file.path(outputFolder, subset))]
+    modelsToFit <- lapply(subset, createPsTask)
     if (length(modelsToFit) != 0) {
       cluster <- ParallelLogger::makeCluster(createPsThreads)
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -275,23 +278,24 @@ runCmAnalyses <- function(connectionDetails,
     }
   } else {
     ParallelLogger::logInfo("*** Fitting shared propensity score models ***")
-    modelsToFit <- list()
-    for (sharedPsFile in unique(referenceTable$sharedPsFile)) {
-      if (sharedPsFile != "" && !file.exists(file.path(outputFolder, sharedPsFile))) {
-        refRow <- referenceTable[referenceTable$sharedPsFile == sharedPsFile, ][1, ]
-        analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
-                                                   list(analysisId = refRow$analysisId))[[1]]
+    createSharedPsTask <- function(sharedPsFile) {
+      refRow <- referenceTable[referenceTable$sharedPsFile == sharedPsFile, ][1, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
 
-        createPsArg <- analysisRow$createPsArg
-        createPsArg$control$threads <- psCvThreads
-        modelsToFit[[length(modelsToFit) + 1]] <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                                                          refRow$cohortMethodDataFolder),
-                                                       createPsArg = createPsArg,
-                                                       createStudyPopArgs = analysisRow$createStudyPopArgs,
-                                                       sharedPsFile = file.path(outputFolder, sharedPsFile))
-      }
+      createPsArg <- analysisRow$createPsArg
+      createPsArg$control$threads <- psCvThreads
+      task <- list(cohortMethodDataFolder = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFolder),
+                   createPsArg = createPsArg,
+                   createStudyPopArgs = analysisRow$createStudyPopArgs,
+                   sharedPsFile = file.path(outputFolder, sharedPsFile))
+      return(task)
     }
-
+    subset <- unique(referenceTable$sharedPsFile)
+    subset <- subset[subset != ""]
+    subset <- subset[!file.exists(file.path(outputFolder, subset))]
+    modelsToFit <- lapply(subset, createSharedPsTask)
     if (length(modelsToFit) != 0) {
       cluster <- ParallelLogger::makeCluster(createPsThreads)
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -324,18 +328,20 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   ParallelLogger::logInfo("*** Trimming/Matching/Stratifying ***")
-  tasks <- list()
-  for (strataFile in unique(referenceTable$strataFile)) {
-    if (strataFile != "" && !file.exists(file.path(outputFolder, strataFile))) {
-      refRow <- referenceTable[referenceTable$strataFile == strataFile, ][1, ]
-      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
-                                                 list(analysisId = refRow$analysisId))[[1]]
+  createTrimMatchStratTask <- function(strataFile) {
+    refRow <- referenceTable[referenceTable$strataFile == strataFile, ][1, ]
+    analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                               list(analysisId = refRow$analysisId))[[1]]
 
-      tasks[[length(tasks) + 1]] <- list(psFile = file.path(outputFolder, refRow$psFile),
-                                         args = analysisRow,
-                                         strataFile = file.path(outputFolder, strataFile))
-    }
+    task <- list(psFile = file.path(outputFolder, refRow$psFile),
+                 args = analysisRow,
+                 strataFile = file.path(outputFolder, strataFile))
+    return(task)
   }
+  subset <- unique(referenceTable$strataFile)
+  subset <- subset[subset != ""]
+  subset <- subset[!file.exists(file.path(outputFolder, subset))]
+  tasks <- lapply(subset, createTrimMatchStratTask)
   if (length(tasks) != 0) {
     cluster <- ParallelLogger::makeCluster(trimMatchStratifyThreads)
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -345,20 +351,22 @@ runCmAnalyses <- function(connectionDetails,
 
   if (prefilterCovariates) {
     ParallelLogger::logInfo("*** Prefiltering covariates for outcome models ***")
-    tasks <- list()
-    for (prefilteredCovariatesFolder in unique(referenceTable$prefilteredCovariatesFolder)) {
-      if (prefilteredCovariatesFolder != "" && !file.exists(file.path(outputFolder, prefilteredCovariatesFolder))) {
-        refRow <- referenceTable[referenceTable$prefilteredCovariatesFolder == prefilteredCovariatesFolder, ][1, ]
-        analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
-                                                   list(analysisId = refRow$analysisId))[[1]]
+    createPrefilterTask <- function(prefilteredCovariatesFolder) {
+      refRow <- referenceTable[referenceTable$prefilteredCovariatesFolder == prefilteredCovariatesFolder, ][1, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
 
-        tasks[[length(tasks) + 1]] <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                                              refRow$cohortMethodDataFolder),
-                                           args = analysisRow$fitOutcomeModelArgs,
-                                           prefilteredCovariatesFolder = file.path(outputFolder,
-                                                                                   prefilteredCovariatesFolder))
-      }
+      task <- list(cohortMethodDataFolder = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFolder),
+                   args = analysisRow$fitOutcomeModelArgs,
+                   prefilteredCovariatesFolder = file.path(outputFolder,
+                                                           prefilteredCovariatesFolder))
+      return(task)
     }
+    subset <- unique(referenceTable$prefilteredCovariatesFolder)
+    subset <- subset[subset != ""]
+    subset <- subset[!file.exists(file.path(outputFolder, subset))]
+    tasks <- lapply(subset, createPrefilterTask)
     if (length(tasks) != 0) {
       cluster <- ParallelLogger::makeCluster(min(prefilterCovariatesThreads, length(tasks)))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
