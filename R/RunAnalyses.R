@@ -304,14 +304,12 @@ runCmAnalyses <- function(connectionDetails,
       ParallelLogger::stopCluster(cluster)
     }
     ParallelLogger::logInfo("*** Adding propensity scores to study population objects ***")
-    psFiles <- unique(referenceTable$psFile)
-    psFiles <- psFiles[psFiles != ""]
-    psFiles <- psFiles[!file.exists(file.path(outputFolder, psFiles))]
-    if (length(psFiles) > 0) {
-      pb <- txtProgressBar(style = 3)
-      for (i in 1:length(psFiles)) {
-        psFile <- psFiles[i]
-        refRow <- referenceTable[referenceTable$psFile == psFile, ][1, ]
+    subset <- referenceTable[!duplicated(referenceTable$psFile), ]
+    subset <- subset[subset$psFile != "", ]
+    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
+    if (nrow(subset) != 0) {
+      addPSToStudyPop <- function(i) {
+        refRow <- subset[i, ]
         studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
         ps <- readRDS(file.path(outputFolder, refRow$sharedPsFile))
         newMetaData <- attr(studyPop, "metaData")
@@ -321,10 +319,9 @@ runCmAnalyses <- function(connectionDetails,
         studyPop$propensityScore <- ps$propensityScore[idx]
         ps <- studyPop
         attr(ps, "metaData") <- newMetaData
-        saveRDS(ps, file.path(outputFolder, psFile))
-        setTxtProgressBar(pb, i/length(psFiles))
+        saveRDS(ps, file.path(outputFolder, refRow$psFile))
       }
-      close(pb)
+      plyr::l_ply(1:nrow(subset), addPSToStudyPop, .progress = "text")
     }
   }
 
