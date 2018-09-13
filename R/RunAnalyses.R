@@ -307,21 +307,13 @@ runCmAnalyses <- function(connectionDetails,
     subset <- referenceTable[!duplicated(referenceTable$psFile), ]
     subset <- subset[subset$psFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
+
     if (nrow(subset) != 0) {
-      addPSToStudyPop <- function(i) {
-        refRow <- subset[i, ]
-        studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
-        ps <- readRDS(file.path(outputFolder, refRow$sharedPsFile))
-        newMetaData <- attr(studyPop, "metaData")
-        newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
-        newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-        idx <- match(studyPop$rowId, ps$rowId)
-        studyPop$propensityScore <- ps$propensityScore[idx]
-        ps <- studyPop
-        attr(ps, "metaData") <- newMetaData
-        saveRDS(ps, file.path(outputFolder, refRow$psFile))
-      }
-      plyr::l_ply(1:nrow(subset), addPSToStudyPop, .progress = "text")
+      tasks <- split(subset, subset$sharedPsFile)
+      cluster <- ParallelLogger::makeCluster(trimMatchStratifyThreads)
+      ParallelLogger::clusterRequire(cluster, "CohortMethod")
+      dummy <- ParallelLogger::clusterApply(cluster, tasks, addPsToStudyPop, outputFolder = outputFolder)
+      ParallelLogger::stopCluster(cluster)
     }
   }
 
@@ -521,6 +513,25 @@ fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   saveRDS(ps, params$sharedPsFile)
   return(NULL)
 }
+
+addPsToStudyPop <- function(subset, outputFolder) {
+  ps <- readRDS(file.path(outputFolder, subset$sharedPsFile[1]))
+
+  addToStudyPop <- function(i) {
+    refRow <- subset[i, ]
+    studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
+    newMetaData <- attr(studyPop, "metaData")
+    newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
+    newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
+    idx <- match(studyPop$rowId, ps$rowId)
+    studyPop$propensityScore <- ps$propensityScore[idx]
+    attr(studyPop, "metaData") <- newMetaData
+    saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
+    return(NULL)
+  }
+  plyr::l_ply(1:nrow(subset), addToStudyPop)
+}
+
 
 trimMatchStratify <- function(params) {
   ps <- getPs(params$psFile)
