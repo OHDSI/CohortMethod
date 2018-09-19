@@ -441,7 +441,7 @@ plotPs <- function(data,
       labelsRight <- c(labelsRight, sprintf("AUC:\t\t%0.2f", auc))
     }
     if (showEquiposeLabel) {
-      if (is.null(ps$preferenceScore)) {
+      if (is.null(data$preferenceScore)) {
         data <- computePreferenceScore(data, unfilteredData)
       }
       equipoise <- mean(data$preferenceScore >= equipoiseBounds[1] & data$preferenceScore <= equipoiseBounds[2])
