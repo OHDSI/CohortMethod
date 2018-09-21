@@ -472,7 +472,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
                          (population$propensityScore >= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
     attr(result,
-         "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))
+         "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
   }
   OhdsiRTools::logDebug("Population size after trimming is ", nrow(result))
   return(result)
