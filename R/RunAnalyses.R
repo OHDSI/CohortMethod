@@ -241,6 +241,7 @@ runCmAnalyses <- function(connectionDetails,
       task <- list(cohortMethodDataFolder = file.path(outputFolder,
                                                       refRow$cohortMethodDataFolder),
                    args = args,
+                   minimizeFileSizes = getOption("minimizeFileSizes"),
                    studyPopFile = file.path(outputFolder, refRow$studyPopFile))
       return(task)
     }
@@ -481,10 +482,10 @@ createStudyPopObject <- function(params) {
   args <- params$args
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
-  saveRDS(studyPop, params$studyPopFile)
-  if (!is.null(getOption("minimizeFileSizes")) && getOption("minimizeFileSizes")) {
+  if (!is.null(params$minimizeFileSizes) && params$minimizeFileSizes) {
     studyPop <- studyPop[, c("rowId", "treatment", "subjectId", "outcomeCount", "timeAtRisk", "survivalTime")]
   }
+  saveRDS(studyPop, params$studyPopFile)
   return(NULL)
 }
 
