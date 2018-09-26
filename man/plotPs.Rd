@@ -8,7 +8,7 @@ plotPs(data, unfilteredData = NULL, scale = "preference",
   type = "density", binWidth = 0.05, targetLabel = "Target",
   comparatorLabel = "Comparator", showCountsLabel = FALSE,
   showAucLabel = FALSE, showEquiposeLabel = FALSE,
-  equipoiseBounds = c(0.25, 0.75), fileName = NULL)
+  equipoiseBounds = c(0.25, 0.75), title = NULL, fileName = NULL)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
@@ -38,6 +38,8 @@ defined by Walker et al (2013).}
 
 \item{equipoiseBounds}{The bounds on the preference score to determine whether a subject is in
 equipoise.}
+
+\item{title}{Optional: the main title for the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
 See the function \code{ggsave} in the ggplot2 package for supported file

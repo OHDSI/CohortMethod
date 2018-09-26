@@ -5,7 +5,8 @@
 \title{Create a scatterplot of the covariate balance}
 \usage{
 plotCovariateBalanceScatterPlot(balance, absolute = TRUE,
-  threshold = 0, fileName = NULL, beforeLabel = "Before matching",
+  threshold = 0, title = "Standardized difference of mean",
+  fileName = NULL, beforeLabel = "Before matching",
   afterLabel = "After matching", showCovariateCountLabel = FALSE,
   showMaxLabel = FALSE)
 }
@@ -15,6 +16,8 @@ plotCovariateBalanceScatterPlot(balance, absolute = TRUE,
 \item{absolute}{Should the absolute value of the difference be used?}
 
 \item{threshold}{Show a threshold value for after matching standardized difference.}
+
+\item{title}{The main title for the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See the
 function \code{ggsave} in the ggplot2 package for supported file formats.}

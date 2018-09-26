@@ -5,7 +5,7 @@
 \title{Plot variables with largest imbalance}
 \usage{
 plotCovariateBalanceOfTopVariables(balance, n = 20, maxNameWidth = 100,
-  fileName = NULL, beforeLabel = "before matching",
+  title = NULL, fileName = NULL, beforeLabel = "before matching",
   afterLabel = "after matching")
 }
 \arguments{
@@ -15,6 +15,8 @@ plotCovariateBalanceOfTopVariables(balance, n = 20, maxNameWidth = 100,
 
 \item{maxNameWidth}{Covariate names longer than this number of characters are truncated to create
 a nicer plot.}
+
+\item{title}{Optional: the main title for the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'. See
 the function \code{ggsave} in the ggplot2 package for supported file formats.}
