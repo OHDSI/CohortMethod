@@ -219,6 +219,7 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
 #' @param balance     A data frame created by the \code{computeCovariateBalance} funcion.
 #' @param absolute    Should the absolute value of the difference be used?
 #' @param threshold   Show a threshold value for after matching standardized difference.
+#' @param title       The main title for the plot.
 #' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                    function \code{ggsave} in the ggplot2 package for supported file formats.
 #' @param beforeLabel Label for the x-axis.
@@ -230,11 +231,14 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
 plotCovariateBalanceScatterPlot <- function(balance,
                                             absolute = TRUE,
                                             threshold = 0,
+                                            title = "Standardized difference of mean",
                                             fileName = NULL,
                                             beforeLabel = "Before matching",
                                             afterLabel = "After matching",
                                             showCovariateCountLabel = FALSE,
                                             showMaxLabel = FALSE) {
+  beforeLabel <- as.character(beforeLabel)
+  afterLabel <- as.character(afterLabel)
   if (absolute) {
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
@@ -243,11 +247,11 @@ plotCovariateBalanceScatterPlot <- function(balance,
               max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE))
   plot <- ggplot2::ggplot(balance,
                           ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
-    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3)) +
+    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::geom_vline(xintercept = 0) +
-    ggplot2::ggtitle("Standardized difference of mean") +
+    ggplot2::ggtitle(title) +
     ggplot2::scale_x_continuous(beforeLabel, limits = limits) +
     ggplot2::scale_y_continuous(afterLabel, limits = limits)
   if (threshold != 0) {
@@ -295,6 +299,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
 #' @param n              Count of variates to plot.
 #' @param maxNameWidth   Covariate names longer than this number of characters are truncated to create
 #'                       a nicer plot.
+#' @param title          Optional: the main title for the plot.
 #' @param fileName       Name of the file where the plot should be saved, for example 'plot.png'. See
 #'                       the function \code{ggsave} in the ggplot2 package for supported file formats.
 #' @param beforeLabel    Label for identifying data before matching / stratification / trimming.
@@ -304,9 +309,12 @@ plotCovariateBalanceScatterPlot <- function(balance,
 plotCovariateBalanceOfTopVariables <- function(balance,
                                                n = 20,
                                                maxNameWidth = 100,
+                                               title = NULL,
                                                fileName = NULL,
                                                beforeLabel = "before matching",
                                                afterLabel = "after matching") {
+  beforeLabel <- as.character(beforeLabel)
+  afterLabel <- as.character(afterLabel)
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   topBefore <- topBefore[1:n, ]
   topBefore$facet <- paste("Top", n, beforeLabel)
@@ -344,6 +352,9 @@ plotCovariateBalanceOfTopVariables <- function(balance,
                    legend.position = "top",
                    legend.direction = "vertical",
                    legend.title = ggplot2::element_blank())
+  if (!is.null(title)) {
+    plot <- plot + ggplot2::ggtitle(title)
+  }
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 10, height = max(2 + n * 0.2, 5), dpi = 400)
   return(plot)

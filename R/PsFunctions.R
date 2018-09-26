@@ -303,6 +303,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param showEquiposeLabel Show the percentage of the population in equipoise?
 #' @param equipoiseBounds   The bounds on the preference score to determine whether a subject is in
 #'                          equipoise.
+#' @param title             Optional: the main title for the plot.
 #' @param fileName          Name of the file where the plot should be saved, for example 'plot.png'.
 #'                          See the function \code{ggsave} in the ggplot2 package for supported file
 #'                          formats.
@@ -340,6 +341,7 @@ plotPs <- function(data,
                    showAucLabel = FALSE,
                    showEquiposeLabel = FALSE,
                    equipoiseBounds = c(0.25, 0.75),
+                   title = NULL,
                    fileName = NULL) {
   if (!("treatment" %in% colnames(data)))
     stop("Missing column treatment in data")
@@ -357,6 +359,8 @@ plotPs <- function(data,
   if (scale != "propensity" && scale != "preference")
     stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"),
          sep = "")
+  targetLabel <- as.character(targetLabel)
+  comparatorLabel <- as.character(comparatorLabel)
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -437,7 +441,7 @@ plotPs <- function(data,
       labelsRight <- c(labelsRight, sprintf("AUC:\t\t%0.2f", auc))
     }
     if (showEquiposeLabel) {
-      if (is.null(ps$preferenceScore)) {
+      if (is.null(data$preferenceScore)) {
         data <- computePreferenceScore(data, unfilteredData)
       }
       equipoise <- mean(data$preferenceScore >= equipoiseBounds[1] & data$preferenceScore <= equipoiseBounds[2])
@@ -452,6 +456,9 @@ plotPs <- function(data,
       dummy <- data.frame(text = paste(labelsRight, collapse = "\n"))
       plot <- plot + ggplot2::geom_label(x = 1, y =  max(d$y) * 1.24, hjust = "right", vjust = "top", alpha = 0.8, ggplot2::aes(label = text), data = dummy, size = 3.5)
     }
+  }
+  if (!is.null(title)) {
+    plot <- plot + ggplot2::ggtitle(title)
   }
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 5, height = 3.5, dpi = 400)
@@ -537,7 +544,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
                          (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
     attr(result,
-         "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))
+         "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
   }
   ParallelLogger::logDebug("Population size after trimming is ", nrow(result))
   return(result)

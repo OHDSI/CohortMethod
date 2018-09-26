@@ -586,7 +586,7 @@ Instead of matching or stratifying we can also perform Inverse Probability of Tr
 ```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(population = ps,
                                 modelType = "cox",
-                                inversePsWeighting = TRUE)
+                                inversePtWeighting = TRUE)
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
