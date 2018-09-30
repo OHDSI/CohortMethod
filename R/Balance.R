@@ -49,9 +49,8 @@ computeMeanAndSd <- function(cohorts, covariates, treatment) {
     w <- merge(w, cohorts[cohorts$treatment == treatment, ])
     w <- w[, c("rowId", "weight")]
     w$weight <- w$weight/sum(w$weight)  # Normalize so sum(w) == 1
-    t <- cohorts$treatment == treatment
-    t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
-    covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+    covariatesSubset <- covariates[ffbase::`%in%`(covariates$rowId,
+                                                  cohorts$rowId[cohorts$treatment == treatment]), ]
     covariatesSubset <- ffbase::merge.ffdf(covariatesSubset, ff::as.ffdf(w))
     covariatesSubset$wValue <- covariatesSubset$weight * covariatesSubset$covariateValue
     covariatesSubset$wValueSquared <- covariatesSubset$wValue * covariatesSubset$covariateValue
@@ -79,10 +78,9 @@ computeMeanAndSd <- function(cohorts, covariates, treatment) {
     result$sd <- sqrt(result$variance)
   } else {
     # Used uniform strata size, no need to weigh
-    t <- cohorts$treatment == treatment
-    personCount <- sum(t)
-    t <- !is.na(ffbase::ffmatch(covariates$rowId, cohorts$rowId[ffbase::ffwhich(t, t == TRUE)]))
-    covariatesSubset <- covariates[ffbase::ffwhich(t, t == TRUE), ]
+    personCount <- ffbase::sum.ff(cohorts$treatment == treatment)
+    covariatesSubset <- covariates[ffbase::`%in%`(covariates$rowId,
+                                                  cohorts$rowId[cohorts$treatment == treatment]), ]
     result <- quickSum(covariatesSubset)
     resultSqr <- quickSum(covariatesSubset, squared = TRUE)
     result <- merge(result, resultSqr)
