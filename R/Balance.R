@@ -169,12 +169,20 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
       stop("Cannot find covariate with ID ", subgroupCovariateId, " in population before matching/trimming")
     }
     cohorts <- cohorts[idx, ]
+    sumTreatment <- sum(cohorts$treatment)
+    if (sumTreatment == 0 || sumTreatment == nrow(cohorts)) {
+      stop("Subgroup population before matching/trimming doesn't have both target and comparator")
+    }
     row.names(cohortsAfterMatching) <- NULL
     idx <- ffbase::`%in%`(cohortsAfterMatching$rowId, subGroupRowIds)
     if (!ffbase::any.ff(idx)) {
       stop("Cannot find covariate with ID ", subgroupCovariateId, " in population after matching/trimming")
     }
     cohortsAfterMatching <- cohortsAfterMatching[idx, ]
+    sumTreatment <- sum(cohortsAfterMatching$treatment)
+    if (sumTreatment == 0 || sumTreatment == nrow(cohortsAfterMatching)) {
+      stop("Subgroup population before matching/trimming doesn't have both target and comparator")
+    }
   }
   beforeMatching <- computeMeansPerGroup(cohorts, covariates)
   afterMatching <- computeMeansPerGroup(cohortsAfterMatching, covariates)
