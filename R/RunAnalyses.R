@@ -483,7 +483,9 @@ createStudyPopObject <- function(params) {
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
   if (!is.null(params$minimizeFileSizes) && params$minimizeFileSizes) {
+    metaData <- attr(studyPop, "metaData")
     studyPop <- studyPop[, c("rowId", "treatment", "subjectId", "outcomeCount", "timeAtRisk", "survivalTime")]
+    attr(studyPop, "metaData") <- metaData
   }
   saveRDS(studyPop, params$studyPopFile)
   return(NULL)
