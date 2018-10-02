@@ -575,15 +575,15 @@ doPrefilterCovariates <- function(params) {
   cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
   covariates <- cohortMethodData$covariates
   if (params$args$useCovariates) {
-    if (!is.null(params$args$includeCovariateIds)) {
+    if (length(params$args$includeCovariateIds) != 0) {
       idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$includeCovariateIds))
     } else {
       idx <- ff::ff(TRUE, nrow(covariates))
     }
-    if (!is.null(params$args$excludeCovariateIds)) {
+    if (length(params$args$excludeCovariateIds) != 0) {
       idx[idx] <- !ffbase::`%in%`(covariates$covariateId[idx], ff::as.ff(params$args$excludeCovariateIds))
     }
-    if (!is.null(params$args$interactionCovariateIds)) {
+    if (length(params$args$interactionCovariateIds) != 0) {
       idx <- idx & ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
     }
   } else {
@@ -899,6 +899,7 @@ createReferenceTable <- function(cmAnalysisList,
                                           function(strataArgs) return(strataArgs$trimByPs |
                                                                         strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
                                                                         strataArgs$stratifyByPsAndCovariates))]
+  strataArgsList <- lapply(strataArgsList, function(strataArgs) {return(strataArgs[args])})
   if (length(strataArgsList) == 0) {
     referenceTable$strataArgsId <- 0
   } else {
@@ -940,9 +941,9 @@ createReferenceTable <- function(cmAnalysisList,
     loadingFittingArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList,
                                                                     c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")))
     needsFilter <- function(loadingFittingArgs) {
-      keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (!is.null(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) |
-                                                                         !is.null(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds))) |
-        !is.null(loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds)
+      keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (length(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
+                                                                         length(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
+        length(loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds) != 0
       if (keep) {
         loadingFittingArgs$relevantFields <- list(useCovariates = loadingFittingArgs$fitOutcomeModelArgs$useCovariates,
                                                   excludeCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds,
