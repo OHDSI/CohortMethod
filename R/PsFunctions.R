@@ -389,7 +389,9 @@ plotPs <- function(data,
                                              rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
       ggplot2::scale_y_continuous("Density", limits = c(0, max(d$y)*yMultiplier)) +
-      ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "top")
+      ggplot2::theme(legend.title = ggplot2::element_blank(),
+                     legend.position = "top",
+                     legend.text = ggplot2::element_text(margin = ggplot2::margin(0, 0.5, 0, 0.1, "cm")))
     if (!is.null(attr(data, "strata"))) {
       strata <- data.frame(propensityScore = attr(data, "strata"))
       if (scale == "preference") {

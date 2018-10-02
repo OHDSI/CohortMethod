@@ -449,7 +449,7 @@ runCmAnalyses <- function(connectionDetails,
 
 getCohortMethodData <- function(cohortMethodDataFolder, requireCovariates = TRUE) {
   if (mget("cohortMethodDataFolder", envir = globalenv(), ifnotfound = "") == cohortMethodDataFolder &&
-      (!requireCovariates || mget("hasCovariates", envir = globalenv(), ifnotfound = FALSE))) {
+      (!requireCovariates || as.logical(mget("hasCovariates", envir = globalenv(), ifnotfound = FALSE)))) {
     cohortMethodData <- get("cohortMethodData", envir = globalenv())
   } else {
     cohortMethodData <- loadCohortMethodData(cohortMethodDataFolder, readOnly = TRUE, skipCovariates = !requireCovariates)

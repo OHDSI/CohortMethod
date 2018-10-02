@@ -2,7 +2,7 @@ Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
 Version: 3.0.0
-Date: 2018-06-07
+Date: 2018-10-01
 Author: Martijn J. Schuemie [aut, cre],
     Marc A. Suchard [aut],
     Patrick B. Ryan [aut]
@@ -23,7 +23,7 @@ VignetteBuilder: knitr
 Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 2.2.0),
-    Cyclops (>= 1.2.0),
+    Cyclops (>= 1.9.9),
     FeatureExtraction  (>= 2.0.0)
 Imports:
     methods,
@@ -34,7 +34,7 @@ Imports:
     ffbase (>= 0.12.3),
     plyr,
     Rcpp (>= 0.11.2),
-    SqlRender (>= 1.1.1),
+    SqlRender (>= 1.5.2),
     survival,
     ParallelLogger
 Suggests:

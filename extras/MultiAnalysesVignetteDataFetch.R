@@ -253,12 +253,12 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         createStudyPopThreads = 3,
                         trimMatchStratifyThreads = 5,
                         prefilterCovariatesThreads = 3,
-                        fitOutcomeModelThreads = 1,
+                        fitOutcomeModelThreads = 5,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
 # result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
 
-analysisSum <- summarizeAnalyses(result)
+analysisSum <- summarizeAnalyses(result, outputFolder = "s:/temp/cohortMethodVignette2")
 
 saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 # cleanup:

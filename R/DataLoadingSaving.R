@@ -148,6 +148,12 @@ getDbCohortMethodData <- function(connectionDetails,
                                   washoutPeriod = 0,
                                   maxCohortSize = 0,
                                   covariateSettings) {
+  if (is.null(studyStartDate)) {
+    studyStartDate <- ""
+  }
+  if (is.null(studyEndDate)) {
+    studyEndDate <- ""
+  }
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
     stop("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)

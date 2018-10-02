@@ -68,9 +68,10 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
+outputFolder <- "./CohortMethodOutput"
 ```
 
-The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last three lines define the `cdmDatabaseSchema`, `resultSchema`, and `outputFolder` variables. We'll use these later to tell R where the data in CDM format live,  where we want to write intermediate tables, and where the intermediate and output files should be stored in the local file system. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome. 
 
@@ -263,7 +264,12 @@ cmAnalysis6 <- createCmAnalysis(analysisId = 6,
 These analyses can be combined in a list:
 
 ```{r tidy=FALSE,eval=TRUE}
-cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
+cmAnalysisList <- list(cmAnalysis1, 
+                       cmAnalysis2, 
+                       cmAnalysis3, 
+                       cmAnalysis4, 
+                       cmAnalysis5, 
+                       cmAnalysis6)
 ```
 
 A convenient way to save `cmAnalysisList` to file is by using the `saveCmAnalysisList` function, and we can load it again using the `loadCmAnalysisList` function.
@@ -331,7 +337,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
                         cdmVersion = cdmVersion,
-                        outputFolder = "./CohortMethodOutput",
+                        outputFolder = outputFolder,
                         cmAnalysisList = cmAnalysisList,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
                         getDbCohortMethodDataThreads = 1,
@@ -358,17 +364,18 @@ psFile <- result$psFile[result$targetId == 1118084 &
                         result$comparatorId == 1124300 & 
                         result$outcomeId == 192671 &
                         result$analysisId == 5]
-ps <- readRDS(psFile)
+ps <- readRDS(file.path(outputFolder, psFile))
 plotPs(ps)
 ```
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")) {
+  outputFolder <- "s:/temp/cohortMethodVignette2"
   result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
   psFile <- result$psFile[result$targetId == 1118084 & 
                             result$comparatorId == 1124300 & 
                             result$outcomeId == 192671 &
                             result$analysisId == 5]
-  ps <- readRDS(psFile)
+  ps <- readRDS(file.path(outputFolder, psFile))
   plotPs(ps)
 }
 ```
@@ -377,7 +384,7 @@ Note that some of the file names will appear several times in the table. For exa
 
 We can create a summary of the results using `summarizeAnalyses()`:
 ```{r tidy=FALSE,eval=FALSE}
-analysisSum <- summarizeAnalyses(result)
+analysisSum <- summarizeAnalyses(result, outputFolder)
 head(analysisSum)
 ```
 ```{r echo=FALSE,message=FALSE}
