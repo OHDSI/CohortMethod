@@ -9,7 +9,7 @@ trimByPs(population, trimFraction = 0.05)
 \arguments{
 \item{population}{A data frame with the three columns described below}
 
-\item{trimFraction}{This fraction will be removed from each treatment group. In the treatment
+\item{trimFraction}{This fraction will be removed from each treatment group. In the target
 group, persons with the highest propensity scores will be removed, in the
 comparator group person with the lowest scores will be removed.}
 }
@@ -22,7 +22,7 @@ Returns a date frame with the same three columns as the input.
 \details{
 The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{

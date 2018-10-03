@@ -62,8 +62,6 @@
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the \code{\link{stratifyByPsAndCovariates}} function.
-#' @param computeCovariateBalance         Should the \code{\link{computeCovariateBalance}} function be
-#'                                        used in this analysis?
 #' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
@@ -90,7 +88,6 @@ createCmAnalysis <- function(analysisId = 1,
                              stratifyByPsArgs = NULL,
                              stratifyByPsAndCovariates = FALSE,
                              stratifyByPsAndCovariatesArgs = NULL,
-                             computeCovariateBalance = FALSE,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
@@ -105,9 +102,6 @@ createCmAnalysis <- function(analysisId = 1,
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
       fitOutcomeModelArgs$stratified) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
-  }
-  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && computeCovariateBalance) {
-    stop("Cannot compute covariate balance without matching or stratification")
   }
   if (!createPs) {
     createPsArgs <- NULL
@@ -167,8 +161,8 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
   for (i in 1:length(cmAnalysisList)) {
     stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
   }
-  OhdsiRTools::logTrace("Saving cmAnalysisList to ", file)
-  OhdsiRTools::saveSettingsToJson(cmAnalysisList, file)
+  ParallelLogger::logTrace("Saving cmAnalysisList to ", file)
+  ParallelLogger::saveSettingsToJson(cmAnalysisList, file)
 }
 
 #' Load a list of cmAnalysis from file
@@ -183,11 +177,11 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
-  OhdsiRTools::logTrace("Loading cmAnalysisList from ", file)
-  return(OhdsiRTools::loadSettingsFromJson(file))
+  ParallelLogger::logTrace("Loading cmAnalysisList from ", file)
+  return(ParallelLogger::loadSettingsFromJson(file))
 }
 
-#' Create drug-comparator-outcomes combinations.
+#' Create target-comparator-outcomes combinations.
 #'
 #' @details
 #' Create a set of hypotheses of interest, to be used with the \code{\link{runCmAnalyses}} function.
@@ -214,57 +208,57 @@ loadCmAnalysisList <- function(file) {
 #'                                      concepts that are specific to the drug-comparator combination.
 #'
 #' @export
-createDrugComparatorOutcomes <- function(targetId,
-                                         comparatorId,
-                                         outcomeIds,
-                                         excludedCovariateConceptIds = c(),
-                                         includedCovariateConceptIds = c()) {
+createTargetComparatorOutcomes <- function(targetId,
+                                           comparatorId,
+                                           outcomeIds,
+                                           excludedCovariateConceptIds = c(),
+                                           includedCovariateConceptIds = c()) {
   # First: get the default values:
-  drugComparatorOutcomes <- list()
-  for (name in names(formals(createDrugComparatorOutcomes))) {
-    drugComparatorOutcomes[[name]] <- get(name)
+  targetComparatorOutcomes <- list()
+  for (name in names(formals(createTargetComparatorOutcomes))) {
+    targetComparatorOutcomes[[name]] <- get(name)
   }
 
   # Next: overwrite defaults with actual values if specified:
   values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
   for (name in names(values)) {
-    if (name %in% names(drugComparatorOutcomes)) {
-      drugComparatorOutcomes[[name]] <- values[[name]]
+    if (name %in% names(targetComparatorOutcomes)) {
+      targetComparatorOutcomes[[name]] <- values[[name]]
     }
   }
-  class(drugComparatorOutcomes) <- "drugComparatorOutcomes"
-  return(drugComparatorOutcomes)
+  class(targetComparatorOutcomes) <- "targetComparatorOutcomes"
+  return(targetComparatorOutcomes)
 }
 
-#' Save a list of drugComparatorOutcome to file
+#' Save a list of targetComparatorOutcomes to file
 #'
 #' @description
-#' Write a list of objects of type \code{drugComparatorOutcomes} to file. The file is in JSON format.
+#' Write a list of objects of type \code{targetComparatorOutcomes} to file. The file is in JSON format.
 #'
-#' @param drugComparatorOutcomesList   The drugComparatorOutcomes list to be written to file
+#' @param targetComparatorOutcomesList   The targetComparatorOutcomes list to be written to file
 #' @param file                         The name of the file where the results will be written
 #'
 #' @export
-saveDrugComparatorOutcomesList <- function(drugComparatorOutcomesList, file) {
-  stopifnot(is.list(drugComparatorOutcomesList))
-  stopifnot(length(drugComparatorOutcomesList) > 0)
-  for (i in 1:length(drugComparatorOutcomesList)) {
-    stopifnot(class(drugComparatorOutcomesList[[i]]) == "drugComparatorOutcomes")
+saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file) {
+  stopifnot(is.list(targetComparatorOutcomesList))
+  stopifnot(length(targetComparatorOutcomesList) > 0)
+  for (i in 1:length(targetComparatorOutcomesList)) {
+    stopifnot(class(targetComparatorOutcomesList[[i]]) == "targetComparatorOutcomes")
   }
-  OhdsiRTools::saveSettingsToJson(drugComparatorOutcomesList, file)
+  ParallelLogger::saveSettingsToJson(targetComparatorOutcomesList, file)
 }
 
-#' Load a list of drugComparatorOutcomes from file
+#' Load a list of targetComparatorOutcomes from file
 #'
 #' @description
-#' Load a list of objects of type \code{drugComparatorOutcomes} from file. The file is in JSON format.
+#' Load a list of objects of type \code{targetComparatorOutcomes} from file. The file is in JSON format.
 #'
 #' @param file   The name of the file
 #'
 #' @return
-#' A list of objects of type \code{drugComparatorOutcome}.
+#' A list of objects of type \code{targetComparatorOutcomes}.
 #'
 #' @export
-loadDrugComparatorOutcomesList <- function(file) {
-  return(OhdsiRTools::loadSettingsFromJson(file))
+loadTargetComparatorOutcomesList <- function(file) {
+  return(ParallelLogger::loadSettingsFromJson(file))
 }

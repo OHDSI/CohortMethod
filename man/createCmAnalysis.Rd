@@ -8,11 +8,11 @@ createCmAnalysis(analysisId = 1, description = "", targetType = NULL,
   comparatorType = NULL, getDbCohortMethodDataArgs, createStudyPopArgs,
   createPs = FALSE, createPsArgs = NULL, trimByPs = FALSE,
   trimByPsArgs = NULL, trimByPsToEquipoise = FALSE,
-  trimByPsToEquipoiseArgs = NULL, matchOnPs = FALSE, matchOnPsArgs = NULL,
-  matchOnPsAndCovariates = FALSE, matchOnPsAndCovariatesArgs = NULL,
-  stratifyByPs = FALSE, stratifyByPsArgs = NULL,
-  stratifyByPsAndCovariates = FALSE, stratifyByPsAndCovariatesArgs = NULL,
-  computeCovariateBalance = FALSE, fitOutcomeModel = FALSE,
+  trimByPsToEquipoiseArgs = NULL, matchOnPs = FALSE,
+  matchOnPsArgs = NULL, matchOnPsAndCovariates = FALSE,
+  matchOnPsAndCovariatesArgs = NULL, stratifyByPs = FALSE,
+  stratifyByPsArgs = NULL, stratifyByPsAndCovariates = FALSE,
+  stratifyByPsAndCovariatesArgs = NULL, fitOutcomeModel = FALSE,
   fitOutcomeModelArgs = NULL)
 }
 \arguments{
@@ -76,9 +76,6 @@ be used in this analysis?}
 
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link{stratifyByPsAndCovariates}} function.}
-
-\item{computeCovariateBalance}{Should the \code{\link{computeCovariateBalance}} function be
-used in this analysis?}
 
 \item{fitOutcomeModel}{Should the \code{\link{fitOutcomeModel}} function be used in
 this analysis?}

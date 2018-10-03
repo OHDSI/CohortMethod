@@ -311,11 +311,11 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 We can also plot the propensity score distribution, although we prefer the preference score distribution:
 
 ```{r tidy=TRUE,eval=FALSE}
-plotPs(ps, scale = "preference")
+plotPs(ps, scale = "preference", showCountsLabel = TRUE, showAucLabel = TRUE, showEquiposeLabel = TRUE)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  plotPs(ps, scale = "preference")
+  plotPs(ps, scale = "preference", showCountsLabel = TRUE, showAucLabel = TRUE, showEquiposeLabel = TRUE)
 }
 ```
 
@@ -326,11 +326,11 @@ propensityModel <- getPsModel(ps, cohortMethodData)
 head(propensityModel)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")){
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")) {
   propensityModel <- getPsModel(ps, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
-    x[nc > (n-3)] <- paste('...',substr(x[nc > (n-3)], nc[nc > (n-3)]-n+1, nc[nc > (n-3)]),sep="")
+    x[nc > (n - 3)] <- paste('...',substr(x[nc > (n - 3)], nc[nc > (n - 3)] - n + 1, nc[nc > (n - 3)]),sep = "")
     x
   }
   propensityModel$covariateName <- truncRight(as.character(propensityModel$covariateName),40)
@@ -418,11 +418,11 @@ if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
 }
 ```
 ```{r tidy=TRUE,eval=FALSE}
-plotCovariateBalanceScatterPlot(balance)
+plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=7,fig.height=4.5}
 if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
-  plotCovariateBalanceScatterPlot(balance)
+  plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 }
 ```
 ```{r tidy=TRUE,eval=FALSE}
@@ -470,11 +470,8 @@ insertDbPopulation(population = matchedPop,
 
 This function will store the population in a table with the same structure as the `cohort` table in the CDM, in this case in the same table where we had created our original cohorts.
 
-# Outcome models
 
-The outcome model is a model describing which variables are associated with the outcome.
-
-## Considering follow-up and power
+# Follow-up and power
 
 Before we start fitting an outcome model, we might be interested to know whether we have sufficient power to detect a
 particular effect size. It makes sense to perform these power calculations once the study population has been fully defined,
@@ -548,15 +545,17 @@ plotFollowUpDistribution(population = matchedPop)
 }
 ```
 
-## Fitting the outcome model
+# Outcome models
+
+The outcome model is a model describing which variables are associated with the outcome.
+
+## Fitting a simple outcome model
 
 In theory we could fit an outcome model without using the propensity scores. In this example we are fitting an outcome model using a Cox regression:
 
 ```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(population = studyPop,
-                                modelType = "cox",
-                                stratified = FALSE,
-                                useCovariates = FALSE)
+                                modelType = "cox")
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
@@ -571,8 +570,7 @@ But of course we want to make use of the matching done on the propensity score:
 ```{r tidy=FALSE,eval=FALSE}
 outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 modelType = "cox",
-                                stratified = TRUE,
-                                useCovariates = FALSE)
+                                stratified = TRUE)
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
@@ -583,6 +581,66 @@ if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2.rds")) {
 ```
 
 Note that we define the sub-population to be only those in the `matchedPop` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+
+Instead of matching or stratifying we can also perform Inverse Probability of Treatment Weighting (IPTW):
+```{r tidy=FALSE,eval=FALSE}
+outcomeModel <- fitOutcomeModel(population = ps,
+                                modelType = "cox",
+                                inversePtWeighting = TRUE)
+outcomeModel
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2w.rds")) {
+  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
+  outcomeModel
+}
+```
+
+
+## Adding interaction terms
+
+We may be interested whether the effect is different across different groups in the population. To explore this, we may include interaction terms in the model. In this example we include three interaction terms:
+
+\fontsize{5.5}{5.5}
+\selectfont
+```{r tidy=FALSE,eval=FALSE}
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) 
+# 8532001 = Female
+# 201826210 = Type 2 Diabetes
+# 21600960413 = Concurent use of antithrombotic agents
+outcomeModel <- fitOutcomeModel(population = matchedPop,
+                                modelType = "cox",
+                                stratified = TRUE,
+                                interactionCovariateIds = interactionCovariateIds)
+outcomeModel
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE}
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel4.rds")) {
+  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel4.rds")
+  outcomeModel
+}
+```
+\fontsize{10}{12}
+\selectfont
+
+Note that you can use the `grepCovariateNames` to find covariate IDs.
+
+It is prudent to verify that covariate balance has also been achieved in the subgroups of interest. For example, we can check the covariate balance in the subpopulation of females:
+
+```{r tidy=FALSE,eval=FALSE}
+balanceFemale <- computeCovariateBalance(population = matchedPop, 
+                                         cohortMethodData = cohortMethodData, 
+                                         subgroupCovariateId = 8532001)
+plotCovariateBalanceScatterPlot(balanceFemale)
+```
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
+if (file.exists("s:/temp/cohortMethodVignette/balanceFemale.rds")) {
+  balanceFemale <- readRDS("s:/temp/cohortMethodVignette/balanceFemale.rds")
+  plotCovariateBalanceScatterPlot(balanceFemale)
+}
+```
+
+## Adding covariates to the outcome model
 
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the `Cyclops` package. (Note that the treatment variable is automatically excluded from regularization.)
 
@@ -639,7 +697,7 @@ fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
 head(fullOutcomeModel)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")){
+if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
   fullOutcomeModel <- getOutcomeModel(outcomeModel,cohortMethodData)
   fullOutcomeModel$covariateName <- truncRight(as.character(fullOutcomeModel$covariateName),40)
   head(fullOutcomeModel)
@@ -676,6 +734,3 @@ citation("Cyclops")
 ```
 
 This work is supported in part through the National Science Foundation grant IIS 1251151.
-
-
-

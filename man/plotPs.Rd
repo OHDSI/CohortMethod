@@ -5,8 +5,10 @@
 \title{Plot the propensity score distribution}
 \usage{
 plotPs(data, unfilteredData = NULL, scale = "preference",
-  type = "density", binWidth = 0.05, treatmentLabel = "Treated",
-  comparatorLabel = "Comparator", fileName = NULL)
+  type = "density", binWidth = 0.05, targetLabel = "Target",
+  comparatorLabel = "Comparator", showCountsLabel = FALSE,
+  showAucLabel = FALSE, showEquiposeLabel = FALSE,
+  equipoiseBounds = c(0.25, 0.75), title = NULL, fileName = NULL)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
@@ -24,9 +26,20 @@ defined by Walker et al (2013).}
 
 \item{binWidth}{For histograms, the width of the bins}
 
-\item{treatmentLabel}{A label to us for the treated cohort.}
+\item{targetLabel}{A label to us for the target cohort.}
 
 \item{comparatorLabel}{A label to us for the comparator cohort.}
+
+\item{showCountsLabel}{Show subject counts?}
+
+\item{showAucLabel}{Show the AUC?}
+
+\item{showEquiposeLabel}{Show the percentage of the population in equipoise?}
+
+\item{equipoiseBounds}{The bounds on the preference score to determine whether a subject is in
+equipoise.}
+
+\item{title}{Optional: the main title for the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
 See the function \code{ggsave} in the ggplot2 package for supported file
@@ -41,7 +54,7 @@ format.
 }
 \details{
 The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{

@@ -84,9 +84,10 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           covariateSettings = covSettings)
 
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataComp", compress = TRUE)
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
-
+# cohortMethodDataComp <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodDataComp')
 # summary(cohortMethodData) getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
@@ -116,12 +117,44 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        cvRepetitions = 1,
                                        threads = 10))
 
+options(floatingPoint = 32)
+ps <- createPs(cohortMethodData = cohortMethodData,
+               population = studyPop,
+               prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+               control = createControl(cvType = "auto",
+                                       startingVariance = 0.01,
+                                       noiseLevel = "quiet",
+                                       tolerance = 2e-07,
+                                       cvRepetitions = 1,
+                                       threads = 10,
+                                       seed = 123))
+
+ps <- createPs(cohortMethodData = cohortMethodData,
+               population = studyPop,
+               prior = createPrior("laplace", exclude = c(0), useCrossValidation = FALSE, variance = 0.01),
+               control = createControl(cvType = "auto",
+                                       startingVariance = 0.01,
+                                       noiseLevel = "quiet",
+                                       tolerance = 2e-07,
+                                       cvRepetitions = 1,
+                                       threads = 10))
+plotPs(ps)
+
 # computePsAuc(ps) plotPs(ps)
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps32.rds")
+ps32 <- ps
+ps64 <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+
 # ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
 model[model$id %% 1000 == 902, ]
+
+plotPs(ps, showAucLabel = TRUE)
+plotPs(ps)
+plotPs(ps, scale = "propensity", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
+plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
 
 # insertDbPopulation(population = studyPop, cohortIds = c(101,100), connectionDetails =
 # connectionDetails, cohortDatabaseSchema = resultsDatabaseSchema, cohortTable = 'mschuemi_test',
@@ -136,6 +169,8 @@ model[model$id %% 1000 == 902, ]
 # trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
 
 matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+
+
 # getAttritionTable(matchedPop) plotPs(matchedPop, ps)
 
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
@@ -146,7 +181,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 table1 <- createCmTable1(balance)
 print(table1, row.names = FALSE, right = FALSE)
-plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png")
+plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png", showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 # plotCovariateBalanceOfTopVariables(balance, fileName = "s:/temp/top.png")
 
 outcomeModel <- fitOutcomeModel(population = studyPop,
@@ -170,7 +205,7 @@ outcomeModel <- fitOutcomeModel(population = ps,
                                 modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE,
-                                inversePsWeighting = TRUE)
+                                inversePtWeighting = TRUE)
 outcomeModel
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
 
@@ -190,8 +225,30 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                                         noiseLevel = "quiet"))
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
 
+population <- stratifyByPs(ps, numberOfStrata = 10)
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+outcomeModel <- fitOutcomeModel(population = population,
+                                cohortMethodData = cohortMethodData,
+                                modelType = "cox",
+                                stratified = TRUE,
+                                useCovariates = FALSE,
+                                inversePtWeighting = FALSE,
+                                interactionCovariateIds = interactionCovariateIds,
+                                control = createControl(threads = 6))
+saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel4.rds")
+
+balanceFemale <- computeCovariateBalance(matchedPop, cohortMethodData, subgroupCovariateId = 8532001)
+saveRDS(balanceFemale, file = "s:/temp/cohortMethodVignette/balanceFemale.rds")
+
+dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
 
 
+balanceOverall <- computeCovariateBalance(population, cohortMethodData)
+dummy <- plotCovariateBalanceScatterPlot(balanceOverall, fileName = "s:/temp/balance.png")
+balanceFemale <- computeCovariateBalance(population, cohortMethodData, subgroupCovariateId = 8532001)
+dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
+
+# grepCovariateNames("ANTITHROMBOTIC AGENTS", cohortMethodData)
 
 # outcomeModel <- readRDS(file = 's:/temp/cohortMethodVignette/OutcomeModel3.rds')
 # drawAttritionDiagram(outcomeModel, fileName = 's:/temp/attrition.png') summary(outcomeModel)

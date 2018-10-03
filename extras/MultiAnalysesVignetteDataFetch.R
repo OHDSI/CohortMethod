@@ -64,7 +64,7 @@ DatabaseConnector::disconnect(connection)
 
 nsaids <- 21603933
 
-dcos <- createDrugComparatorOutcomes(targetId = 1118084,
+tcos <- createTargetComparatorOutcomes(targetId = 1118084,
                                      comparatorId = 1124300,
                                      outcomeIds = c(192671,
                                                     24609,
@@ -102,7 +102,7 @@ dcos <- createDrugComparatorOutcomes(targetId = 1118084,
                                                     443800,
                                                     4084966,
                                                     4288310))
-drugComparatorOutcomesList <- list(dcos)
+targetComparatorOutcomesList <- list(tcos)
 
 covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
                                                 addDescendantsToExclude = TRUE)
@@ -113,6 +113,7 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    removeDuplicateSubjects = "remove all",
                                                    studyStartDate = "",
                                                    studyEndDate = "",
+                                                   maxCohortSize = 10000,
                                                    excludeDrugsFromCovariates = FALSE,
                                                    covariateSettings = covarSettings)
 
@@ -123,9 +124,7 @@ createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOut
                                                       riskWindowEnd = 30,
                                                       addExposureDaysToEnd = TRUE)
 
-fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(useCovariates = FALSE,
-                                                  modelType = "cox",
-                                                  stratified = FALSE)
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 
 cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "No matching, simple outcome model",
@@ -134,34 +133,37 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
-createPsArgs <- createCreatePsArgs(control = createControl(cvType = "auto",
+createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
+                                   control = createControl(cvType = "auto",
                                                            startingVariance = 0.01,
+                                                           tolerance = 1E-5,
                                                            noiseLevel = "quiet",
-                                                           tolerance = 2e-07,
-                                                           cvRepetitions = 10))
+                                                           cvRepetitions = 1))
+
+# createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
+#                                    prior = createPrior("laplace", variance = 0.0105))
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
+
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                  stratified = TRUE)
+
 cmAnalysis2 <- createCmAnalysis(analysisId = 2,
-                                description = "Matching plus simple outcome model",
+                                description = "Matching",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
-                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
+                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
 stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
 
-fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(useCovariates = FALSE,
-                                                  modelType = "cox",
-                                                  stratified = TRUE)
-
 cmAnalysis3 <- createCmAnalysis(analysisId = 3,
-                                description = "Stratification plus stratified outcome model",
+                                description = "Stratification",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
@@ -171,30 +173,19 @@ cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                  inversePtWeighting = TRUE)
+
+trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.01)
+
 cmAnalysis4 <- createCmAnalysis(analysisId = 4,
-                                description = "Matching plus stratified outcome model",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
-                                matchOnPsArgs = matchOnPsArgs,
-                                computeCovariateBalance = TRUE,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
-
-fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(useCovariates = FALSE,
-                                                  modelType = "cox",
-                                                  stratified = FALSE,
-                                                  inversePsWeighting = TRUE)
-
-cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 description = "Inverse probability weighting",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                matchOnPs = FALSE,
+                                trimByPs = TRUE,
+                                trimByPsArgs = trimByPsArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
@@ -202,13 +193,12 @@ fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
                                                   modelType = "cox",
                                                   stratified = TRUE,
                                                   control = createControl(cvType = "auto",
-                                                                          startingVariance = 0.1,
+                                                                          startingVariance = 0.01,
                                                                           selectorType = "byPid",
                                                                           cvRepetitions = 1,
-                                                                          tolerance = 2e-07,
                                                                           noiseLevel = "quiet"))
 
-cmAnalysis6 <- createCmAnalysis(analysisId = 6,
+cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 description = "Matching plus full outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
@@ -216,19 +206,35 @@ cmAnalysis6 <- createCmAnalysis(analysisId = 6,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
-                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+
+fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                  stratified = TRUE,
+                                                  interactionCovariateIds = interactionCovariateIds,
+                                                  control = createControl(threads = 6))
+
+cmAnalysis6 <- createCmAnalysis(analysisId = 6,
+                                description = "Stratification plus interaction terms",
+                                getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
+                                createPs = TRUE,
+                                createPsArgs = createPsArgs,
+                                stratifyByPs = TRUE,
+                                stratifyByPsArgs = stratifyByPsArgs,
+                                fitOutcomeModel = TRUE,
+                                fitOutcomeModelArgs = fitOutcomeModelArgs5)
 cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
 
-saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodVignette2/cmAnalysisList.txt")
-saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
-                               "s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt")
+saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodVignette2/cmAnalysisList.json")
+saveTargetComparatorOutcomesList(targetComparatorOutcomesList,
+                               "s:/temp/cohortMethodVignette2/targetComparatorOutcomesList.json")
 
-# cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.txt')
+# cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.json')
 
-# drugComparatorOutcomesList <- loadDrugComparatorOutcomesList('s:/temp/cohortMethodVignette2/drugComparatorOutcomesList.txt')
+# targetComparatorOutcomesList <- loadTargetComparatorOutcomesList('s:/temp/cohortMethodVignette2/targetComparatorOutcomesList.json')
 
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -237,22 +243,22 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
-                        outputFolder = "s:/temp/cohortMethodVignette",
+                        outputFolder = "s:/temp/cohortMethodVignette2",
                         cdmVersion = cdmVersion,
                         cmAnalysisList = cmAnalysisList,
-                        drugComparatorOutcomesList = drugComparatorOutcomesList,
+                        targetComparatorOutcomesList = targetComparatorOutcomesList,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 16,
                         createStudyPopThreads = 3,
-                        computeCovarBalThreads = 3,
                         trimMatchStratifyThreads = 5,
-                        fitOutcomeModelThreads = 1,
+                        prefilterCovariatesThreads = 3,
+                        fitOutcomeModelThreads = 5,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
 # result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
 
-analysisSum <- summarizeAnalyses(result)
+analysisSum <- summarizeAnalyses(result, outputFolder = "s:/temp/cohortMethodVignette2")
 
 saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 # cleanup:

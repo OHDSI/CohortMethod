@@ -5,8 +5,9 @@
 \title{Plot the distribution of follow-up time}
 \usage{
 plotFollowUpDistribution(population, targetLabel = "Target",
-  comparatorLabel = "Comparator", yScale = "percent", logYScale = FALSE,
-  dataCutoff = 0.95, title = "Follow-up distribution", fileName = NULL)
+  comparatorLabel = "Comparator", yScale = "percent",
+  logYScale = FALSE, dataCutoff = 0.95,
+  title = "Follow-up distribution", fileName = NULL)
 }
 \arguments{
 \item{population}{A data frame describing the study population as created using the

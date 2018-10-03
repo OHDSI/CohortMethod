@@ -16,6 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+fastDuplicated <- function(data, columns) {
+  results <- lapply(columns, function(column, data) data[2:nrow(data), column] == data[1:(nrow(data) - 1), column], data = data)
+  result <- results[[1]]
+  if (length(columns) > 1) {
+    for (i in 2:length(columns)) {
+      result <- result & results[[i]]
+    }
+  }
+  return(c(FALSE, result))
+}
+
 #' Create a study population
 #'
 #' @details
@@ -25,7 +36,8 @@
 #' The \code{removeduplicateSubjects} argument can have one of the following values:
 #' \describe{
 #'   \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
-#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
+#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
+#'   If both cohorts start simultaneous, the person is removed from the analysis.}
 #'   \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
 #' }
 #'
@@ -39,9 +51,9 @@
 #' @param firstExposureOnly                Should only the first exposure per subject be included? Note
 #'                                         that this is typically done in the
 #'                                         \code{createStudyPopulation} function,
-#' @param removeDuplicateSubjects          Remove subjects that are in both the treated and comparator
+#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
-#' @param restrictToCommonPeriod           Restrict the analysis to the period when both treatments are observed?
+#' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
@@ -91,23 +103,24 @@ createStudyPopulation <- function(cohortMethodData,
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
     stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
   if (missing(outcomeId))
-    OhdsiRTools::logTrace("Creating study population without outcome ID")
+    ParallelLogger::logTrace("Creating study population without outcome ID")
   else
-    OhdsiRTools::logTrace("Creating study population for outcome ID ", outcomeId)
+    ParallelLogger::logTrace("Creating study population for outcome ID ", outcomeId)
 
   if (is.null(population)) {
     population <- cohortMethodData$cohorts
   }
   metaData <- attr(population, "metaData")
   if (firstExposureOnly) {
-    OhdsiRTools::logInfo("Keeping only first exposure per subject")
+    ParallelLogger::logInfo("Keeping only first exposure per subject")
     population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
-    idx <- duplicated(population[, c("subjectId", "treatment")])
+    # idx <- duplicated(population[, c("subjectId", "treatment")])
+    idx <- fastDuplicated(population, c("subjectId", "treatment"))
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
   }
   if (restrictToCommonPeriod) {
-    OhdsiRTools::logInfo("Restrict to common period")
+    ParallelLogger::logInfo("Restrict to common period")
     cohortStartDate <- as.Date(population$cohortStartDate)
     periodStart <- max(aggregate(cohortStartDate ~ population$treatment, FUN = min)$cohortStartDate)
     periodEnd <- min(aggregate(cohortStartDate ~ population$treatment, FUN = max)$cohortStartDate)
@@ -115,7 +128,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
   if (removeDuplicateSubjects == "remove all") {
-    OhdsiRTools::logInfo("Removing all subject that are in both cohorts (if any)")
+    ParallelLogger::logInfo("Removing all subject that are in both cohorts (if any)")
     targetSubjectIds <- population$subjectId[population$treatment == 1]
     comparatorSubjectIds <- population$subjectId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
@@ -123,16 +136,26 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
   } else if (removeDuplicateSubjects == "keep first") {
-    OhdsiRTools::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
+    ParallelLogger::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
-    idx <- duplicated(population[, c("subjectId")])
+    # Remove ties:
+    # idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
+    idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
+    idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
+    if (all(idx)) {
+      stop("All cohort entries are ties, with same subject ID and cohort start date")
+    }
+    population <- population[!idx, ]
+    # Keeping first:
+    # idx <- duplicated(population[, c("subjectId")])
+    idx <- fastDuplicated(population, "subjectId")
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Restricting duplicate subjects to first cohort")))
   }
 
   if (washoutPeriod) {
-    OhdsiRTools::logInfo(paste("Requiring", washoutPeriod, "days of observation prior index date"))
+    ParallelLogger::logInfo(paste("Requiring", washoutPeriod, "days of observation prior index date"))
     population <- population[population$daysFromObsStart >= washoutPeriod, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("At least",
                                                                                 washoutPeriod,
@@ -140,9 +163,9 @@ createStudyPopulation <- function(cohortMethodData,
   }
   if (removeSubjectsWithPriorOutcome) {
     if (missing(outcomeId) || is.null(outcomeId)) {
-      OhdsiRTools::logInfo("No outcome specified so skipping removing people with prior outcomes")
+      ParallelLogger::logInfo("No outcome specified so skipping removing people with prior outcomes")
     } else {
-      OhdsiRTools::logInfo("Removing subjects with prior outcomes (if any)")
+      ParallelLogger::logInfo("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
       if (addExposureDaysToStart) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
@@ -169,11 +192,11 @@ createStudyPopulation <- function(cohortMethodData,
   population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd >
                                                                                                 population$daysToObsEnd]
   if (censorAtNewRiskWindow) {
-    OhdsiRTools::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
+    ParallelLogger::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
     population$startDate <- as.Date(population$cohortStartDate) + population$riskStart
     population$endDate <- as.Date(population$cohortStartDate) + population$riskEnd
     population <- population[order(population$subjectId, population$riskStart), ]
-    idx <- 1:(nrow(population)-1)
+    idx <- 1:(nrow(population) - 1)
     idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
                    population$subjectId[idx] == population$subjectId[idx + 1])
     if (length(idx) > 0) {
@@ -191,14 +214,14 @@ createStudyPopulation <- function(cohortMethodData,
     population$endDate <- NULL
   }
   if (minDaysAtRisk != 0) {
-    OhdsiRTools::logInfo(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
+    ParallelLogger::logInfo(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     population <- population[population$riskEnd - population$riskStart >= minDaysAtRisk, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least",
                                                                                 minDaysAtRisk,
                                                                                 "days at risk")))
   }
   if (missing(outcomeId) || is.null(outcomeId)) {
-    OhdsiRTools::logInfo("No outcome specified so not creating outcome and time variables")
+    ParallelLogger::logInfo("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
     outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
@@ -231,7 +254,7 @@ createStudyPopulation <- function(cohortMethodData,
   population$riskStart <- NULL
   population$riskEnd <- NULL
   attr(population, "metaData") <- metaData
-  OhdsiRTools::logDebug("Study population has ", nrow(population), " rows")
+  ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
   return(population)
 }
 
@@ -259,14 +282,14 @@ getAttritionTable <- function(object) {
 }
 
 getCounts <- function(population, description = "") {
-  treatedPersons <- length(unique(population$subjectId[population$treatment == 1]))
+  targetPersons <- length(unique(population$subjectId[population$treatment == 1]))
   comparatorPersons <- length(unique(population$subjectId[population$treatment == 0]))
-  treatedExposures <- length(population$subjectId[population$treatment == 1])
+  targetExposures <- length(population$subjectId[population$treatment == 1])
   comparatorExposures <- length(population$subjectId[population$treatment == 0])
   counts <- data.frame(description = description,
-                       treatedPersons = treatedPersons,
+                       targetPersons = targetPersons,
                        comparatorPersons = comparatorPersons,
-                       treatedExposures = treatedExposures,
+                       targetExposures = targetExposures,
                        comparatorExposures = comparatorExposures)
   return(counts)
 }

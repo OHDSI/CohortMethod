@@ -6,8 +6,9 @@
 \usage{
 createCreateStudyPopulationArgs(firstExposureOnly = FALSE,
   restrictToCommonPeriod = FALSE, washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE, removeSubjectsWithPriorOutcome = TRUE,
-  priorOutcomeLookback = 99999, minDaysAtRisk = 1, riskWindowStart = 0,
+  removeDuplicateSubjects = FALSE,
+  removeSubjectsWithPriorOutcome = TRUE, priorOutcomeLookback = 99999,
+  minDaysAtRisk = 1, riskWindowStart = 0,
   addExposureDaysToStart = FALSE, riskWindowEnd = 0,
   addExposureDaysToEnd = TRUE, censorAtNewRiskWindow = FALSE)
 }
@@ -16,13 +17,13 @@ createCreateStudyPopulationArgs(firstExposureOnly = FALSE,
 Notethat this is typically done in thecreateStudyPopulation
 function,}
 
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are
 observed?}
 
 \item{washoutPeriod}{The mininum required continuous observation time prior
 toindex date for a person to be included in the cohort.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the treated and
+\item{removeDuplicateSubjects}{Remove subjects that are in both the target and
 comparatorcohort? See details for allowed values.}
 
 \item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the

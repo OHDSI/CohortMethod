@@ -21,14 +21,14 @@ library(CohortMethod)
 if (file.exists("S:/temp"))
   setwd("s:/temp")
 knitr::opts_chunk$set(
-  cache=FALSE,
+  cache = FALSE,
   comment = "#>",
   error = FALSE,
   tidy = FALSE)
 ```
 # Introduction
 
-In this vignette we focus on running several different analyses on several drug-comparator-outcome combinations. This can be useful when we want to explore the sensitivity to analyses choices, include controls, or run an experiment similar to the OMOP experiment to empirically identify the optimal analysis choices for a particular research question.
+In this vignette we focus on running several different analyses on several target-comparator-outcome combinations. This can be useful when we want to explore the sensitivity to analyses choices, include controls, or run an experiment similar to the OMOP experiment to empirically identify the optimal analysis choices for a particular research question.
 
 This vignette assumes you are already familiar with the `CohortMethod` package and are able to perform single studies. We will walk through all the steps needed to perform an exemplar set of analyses, and we have selected the well-studied topic of the effect of coxibs versus non-selective nonsteroidal anti-inflammatory drugs (NSAIDs) on gastrointestinal (GI) bleeding-related hospitalization. For simplicity, we focus on one coxib -- celecoxib -- and one non-selective NSAID -- diclofenac. We will execute various variations of an analysis for the primary outcome and a large set of negative control outcomes.
 
@@ -43,14 +43,13 @@ An analysis will be executed by calling these functions in sequence:
 2. `createPs()` (optional)
 3. `trimByPs()` or `trimByPsToEquipoise()` (optional)
 4. `matchOnPs()`, `matchOnPsAndCovariates()`, `stratifyByPs()`, or `stratifyByPsAndCovariates()` (optional)
-5. `computeCovariateBalance()` (optional)
-6. `fitOutcomeModel()` (optional)
+5. `fitOutcomeModel()` (optional)
 
 When you provide several analyses to the `CohortMethod` package, it will determine whether any of the analyses have anything in common, and will take advantage of this fact. For example, if we specify several analyses that only differ in the way the outcome model is fitted, then `CohortMethod` will extract the data and fit the propensity model only once, and re-use this in all the analyses. 
 
 The function arguments you need to define have been divided into four groups:
 
-1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of drug, comparator, and outcome.
+1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of target, comparator, and outcome.
 2. **Analyses**: arguments that are not directly specific to a hypothesis of interest, such as the washout window, whether to include drugs as covariates, etc.
 3. Arguments that are the output of a previous function in the `CohortMethod` package, such as the `cohortMethodData` argument of the `createPs` function. These cannot be specified by the user.
 4. Arguments that are specific to an environment, such as the connection details for connecting to the server, and the name of the schema holding the CDM data.
@@ -69,9 +68,10 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
+outputFolder <- "./CohortMethodOutput"
 ```
 
-The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last three lines define the `cdmDatabaseSchema`, `resultSchema`, and `outputFolder` variables. We'll use these later to tell R where the data in CDM format live,  where we want to write intermediate tables, and where the intermediate and output files should be stored in the local file system. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
 
 We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome. 
 
@@ -118,27 +118,27 @@ In this code, we first read the SQL from the file into memory. In the next line,
 
 # Specifying hypotheses of interest
 
-The first group of arguments define the drug, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
+The first group of arguments define the target, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
 
 ```{r tidy=FALSE,eval=FALSE}
-dcos <- createDrugComparatorOutcomes(targetId = 1118084,
-                                     comparatorId = 1124300,
-                                     outcomeIds = c(192671, 29735, 140673, 197494, 
-                                                    198185, 198199, 200528, 257315, 
-                                                    314658, 317376, 321319, 380731, 
-                                                    432661, 432867, 433516, 433701, 
-                                                    433753, 435140, 435459, 435524, 
-                                                    435783, 436665, 436676, 442619, 
-                                                    444252, 444429, 4131756, 4134120, 
-                                                    4134454, 4152280, 4165112, 4174262, 
-                                                    4182210, 4270490, 4286201, 4289933))
+tcos <- createTargetComparatorOutcomes(targetId = 1118084,
+                                       comparatorId = 1124300,
+                                       outcomeIds = c(192671, 29735, 140673, 197494, 
+                                                      198185, 198199, 200528, 257315, 
+                                                      314658, 317376, 321319, 380731, 
+                                                      432661, 432867, 433516, 433701, 
+                                                      433753, 435140, 435459, 435524, 
+                                                      435783, 436665, 436676, 442619, 
+                                                      444252, 444429, 4131756, 4134120, 
+                                                      4134454, 4152280, 4165112, 4174262, 
+                                                      4182210, 4270490, 4286201, 4289933))
 
-drugComparatorOutcomesList <- list(dcos)
+targetComparatorOutcomesList <- list(tcos)
 ```
 
 We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes. 
 
-A convenient way to save `drugComparatorOutcomeList` to file is by using the `saveDrugComparatorOutcomesList` function, and we can load it again using the `loadDrugComparatorOutcomesList` function.
+A convenient way to save `targetComparatorOutcomesList` to file is by using the `saveTargetComparatorOutcomesList` function, and we can load it again using the `loadTargetComparatorOutcomesList` function.
 
 # Specifying analyses
 
@@ -166,9 +166,7 @@ createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOut
                                                       riskWindowEnd = 30,
                                                       addExposureDaysToEnd = TRUE)
 
-fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(useCovariates = FALSE,
-                                                  modelType = "cox",
-                                                  stratified = FALSE)
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 ```
 
 Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:
@@ -184,33 +182,31 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
 
 Note that we have assigned an analysis ID (1) to this set of arguments. We can use this later to link the results back to this specific set of choices. We also include a short description of the analysis.
 
-We can easily create more analyses, for example by using matching or stratification, or by using more sophisticated outcome models:
+We can easily create more analyses, for example by using matching, stratification, inverse probability of treatment weighting, or by using more sophisticated outcome models:
 
 ```{r tidy=FALSE,eval=TRUE}
-createPsArgs <- createCreatePsArgs() # Using only defaults
+createPsArgs <- createCreatePsArgs() # Use default settings only
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                  stratified = TRUE)
+
 cmAnalysis2 <- createCmAnalysis(analysisId = 2,
-                                description = "Matching plus simple outcome model",
+                                description = "Matching",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
-                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
 stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
 
-fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(useCovariates = FALSE,
-                                                  modelType = "cox",
-                                                  stratified = TRUE)
-
 cmAnalysis3 <- createCmAnalysis(analysisId = 3,
-                                description = "Stratification plus stratified outcome model",
+                                description = "Stratification",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
@@ -220,19 +216,19 @@ cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                  inversePtWeighting = TRUE)
+
 cmAnalysis4 <- createCmAnalysis(analysisId = 4,
-                                description = "Matching plus stratified outcome model",
+                                description = "Inverse probability weighting",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
-                                matchOnPsArgs = matchOnPsArgs,
-                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
+                                fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
-fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(useCovariates = TRUE,
+fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
                                                   modelType = "cox",
                                                   stratified = TRUE)
 
@@ -244,15 +240,36 @@ cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
-                                computeCovariateBalance = TRUE,
                                 fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs3)
+                                fitOutcomeModelArgs = fitOutcomeModelArgs4)
+
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+
+fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                  stratified = TRUE,
+                                                  interactionCovariateIds = interactionCovariateIds)
+
+cmAnalysis6 <- createCmAnalysis(analysisId = 6,
+                                description = "Stratification plus interaction terms",
+                                getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                createStudyPopArgs = createStudyPopArgs,
+                                createPs = TRUE,
+                                createPsArgs = createPsArgs,
+                                stratifyByPs = TRUE,
+                                stratifyByPsArgs = stratifyByPsArgs,
+                                fitOutcomeModel = TRUE,
+                                fitOutcomeModelArgs = fitOutcomeModelArgs5)
 ```
 
 These analyses can be combined in a list:
 
 ```{r tidy=FALSE,eval=TRUE}
-cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5)
+cmAnalysisList <- list(cmAnalysis1, 
+                       cmAnalysis2, 
+                       cmAnalysis3, 
+                       cmAnalysis4, 
+                       cmAnalysis5, 
+                       cmAnalysis6)
 ```
 
 A convenient way to save `cmAnalysisList` to file is by using the `saveCmAnalysisList` function, and we can load it again using the `loadCmAnalysisList` function.
@@ -267,11 +284,11 @@ In the situation where the comparator choice becomes part of the analyses, we ca
 comparatorIds = list(drugInSameClass = 1124300,
                      drugWithSameIndication = 1125315)
 
-dcos <- createDrugComparatorOutcomes(targetId = 1118084,
+tcos <- createTargetComparatorOutcomes(targetId = 1118084,
                                      comparatorId = comparatorIds,
                                      outcomeIds = 192671)
 
-drugComparatorOutcomesList2 <- list(dcos)
+targetComparatorOutcomesList2 <- list(tcos)
 ```
 
 When we specify an analysis, we can then refer to one comparator or another:
@@ -281,7 +298,7 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "Analysis using drug in same class",
                                 comparatorType = "drugInSameClass",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
-								createStudyPopArgs = createStudyPopArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
@@ -293,7 +310,7 @@ cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 description = "Analysis using drug with same indication",
                                 comparatorType = "drugWithSameIndication",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
-								createStudyPopArgs = createStudyPopArgs,
+                                createStudyPopArgs = createStudyPopArgs,
                                 createPs = TRUE,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
@@ -310,7 +327,7 @@ The same mechanism can be used to specify types for the targetId.
 
 # Executing multiple analyses
 
-We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()` function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
+We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()` function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
 
 ```{r tidy=FALSE,eval=FALSE}
 result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -320,14 +337,13 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
                         cdmVersion = cdmVersion,
-                        outputFolder = "./CohortMethodOutput",
+                        outputFolder = outputFolder,
                         cmAnalysisList = cmAnalysisList,
-                        drugComparatorOutcomesList = drugComparatorOutcomesList,
+                        targetComparatorOutcomesList = targetComparatorOutcomesList,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 10,
                         createStudyPopThreads = 4,
-                        computeCovarBalThreads = 2,
                         trimMatchStratifyThreads = 10,
                         fitOutcomeModelThreads = 4,
                         outcomeCvThreads = 10)
@@ -341,43 +357,44 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 
 # Retrieving the results
 
-The result of the `runCmAnalyses()` is a data frame with one row per drug-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our drug, comparator, outcome of interest, and last analysis:
+The result of the `runCmAnalyses()` is a data frame with one row per target-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our target, comparator, outcome of interest, and last analysis:
 
 ```{r tidy=FALSE,eval=FALSE}
 psFile <- result$psFile[result$targetId == 1118084 & 
                         result$comparatorId == 1124300 & 
                         result$outcomeId == 192671 &
                         result$analysisId == 5]
-ps <- readRDS(psFile)
+ps <- readRDS(file.path(outputFolder, psFile))
 plotPs(ps)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")) {
+  outputFolder <- "s:/temp/cohortMethodVignette2"
   result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
   psFile <- result$psFile[result$targetId == 1118084 & 
                             result$comparatorId == 1124300 & 
                             result$outcomeId == 192671 &
                             result$analysisId == 5]
-  ps <- readRDS(psFile)
+  ps <- readRDS(file.path(outputFolder, psFile))
   plotPs(ps)
 }
 ```
 
-Note that some of the file names will appear several times in the table. For example, analysis 4 and 5 only differ in terms of the outcome model, and will share the same propensity score files.
+Note that some of the file names will appear several times in the table. For example, analysis 3 and 5 only differ in terms of the outcome model, and will share the same propensity score and stratification files.
 
 We can create a summary of the results using `summarizeAnalyses()`:
 ```{r tidy=FALSE,eval=FALSE}
-analysisSum <- summarizeAnalyses(result)
+analysisSum <- summarizeAnalyses(result, outputFolder)
 head(analysisSum)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   analysisSum <- readRDS("s:/temp/cohortMethodVignette2/analysisSummary.rds")
   head(analysisSum)
 }
 ```
 
-This tells us, per drug-target-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
+This tells us, per target-comparator-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
 
 ## Empirical calibration
 
@@ -394,7 +411,7 @@ null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   library(EmpiricalCalibration)
   negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 192671, ]
@@ -404,14 +421,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 ```
 
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 2: Matching plus simple outcome model
+# Analysis 2: Matching
 negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -420,14 +437,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 ```
 
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 3: Stratification plus simple outcome model
+# Analysis 3: Stratification
 negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -436,14 +453,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 ```
 
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 4: Matching plus stratified outcome model
+# Analysis 4: Inverse probability of treatment weighting
 negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -452,14 +469,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 ```
 
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 5: Inverse probability of treatment weighting
+# Analysis 5: Stratification plus full outcome model
 negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -467,19 +484,28 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
 }
 ```
 
+Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are also stored in the analysis summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with 'gender = female' (covariate ID 8532001): 
+
+
 ```{r tidy=FALSE,eval=FALSE}
-# Analysis 6: Matching plus full outcome model
+# Analysis 6: Stratification plus interaction terms
 negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+null <- fitNull(negCons$logRrI8532001, negCons$seLogRrI8532001)
+plotCalibrationEffect(logRrNegatives = negCons$logRrI8532001, 
+                      seLogRrNegatives = negCons$seLogRrI8532001, 
+                      logRrPositives = hoi$logRrI8532001, 
+                      seLogRrPositives = hoi$seLogRrI8532001, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")){
+if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+  null <- fitNull(negCons$logRrI8532001, negCons$seLogRrI8532001)
+  plotCalibrationEffect(logRrNegatives = negCons$logRrI8532001, 
+                        seLogRrNegatives = negCons$seLogRrI8532001, 
+                        logRrPositives = hoi$logRrI8532001, 
+                        seLogRrPositives = hoi$seLogRrI8532001, null)
 }
 ```
 

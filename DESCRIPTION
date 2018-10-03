@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 2.6.2
-Date: 2018-05-04
+Version: 3.0.0
+Date: 2018-10-01
 Author: Martijn J. Schuemie [aut, cre],
     Marc A. Suchard [aut],
     Patrick B. Ryan [aut]
@@ -22,21 +22,22 @@ License: Apache License 2.0
 VignetteBuilder: knitr
 Depends:
     R (>= 3.2.2),
-    DatabaseConnector (>= 1.11.4),
-    Cyclops (>= 1.2.0),
+    DatabaseConnector (>= 2.2.0),
+    Cyclops (>= 2.0.0),
     FeatureExtraction  (>= 2.0.0)
 Imports:
     methods,
     ggplot2,
     gridExtra,
     grid,
+    bit,
     ff,
     ffbase (>= 0.12.3),
     plyr,
     Rcpp (>= 0.11.2),
-    SqlRender (>= 1.1.1),
+    SqlRender (>= 1.5.2),
     survival,
-    OhdsiRTools (>= 1.5.1)
+    ParallelLogger
 Suggests:
     testthat,
     pROC,
@@ -45,4 +46,4 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 6.0.1.9000
+RoxygenNote: 6.1.0

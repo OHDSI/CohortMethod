@@ -25,8 +25,9 @@
 #' @importFrom survival survfit Surv
 #' @importFrom grDevices rgb
 #' @importFrom methods is
-#' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time
+#' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time density
 #' @importFrom utils setTxtProgressBar txtProgressBar read.csv
+#' @importFrom graphics text
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @import FeatureExtraction

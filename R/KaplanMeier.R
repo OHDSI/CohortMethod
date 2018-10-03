@@ -36,7 +36,7 @@
 #' @param dataTable             Should the numbers at risk be shown in a table? Default is TRUE, as recommended by Pocock et al.
 #' @param dataCutoff            Fraction of the data (number censored) after which the graph will not
 #'                              be shown. The default is 90 percent as recommended by Pocock et al.
-#' @param treatmentLabel        A label to us for the treated cohort.
+#' @param targetLabel           A label to us for the target cohort.
 #' @param comparatorLabel       A label to us for the comparator cohort.
 #' @param title                 The main title of the plot.
 #' @param fileName              Name of the file where the plot should be saved, for example
@@ -65,7 +65,7 @@ plotKaplanMeier <- function(population,
                             includeZero = FALSE,
                             dataTable = TRUE,
                             dataCutoff = 0.90,
-                            treatmentLabel = "Treated",
+                            targetLabel = "Treated",
                             comparatorLabel = "Comparator",
                             title,
                             fileName = NULL) {
@@ -80,11 +80,25 @@ plotKaplanMeier <- function(population,
                        upper = sv$upper,
                        lower = sv$lower)
     levels(data$strata)[levels(data$strata) == "treatment=0"] <- comparatorLabel
-    levels(data$strata)[levels(data$strata) == "treatment=1"] <- treatmentLabel
+    levels(data$strata)[levels(data$strata) == "treatment=1"] <- targetLabel
   } else {
-    OhdsiRTools::logInfo("Variable size strata detected so using adjusted KM for stratified data")
+    ParallelLogger::logInfo("Variable size strata detected so using adjusted KM for stratified data")
     population$stratumSizeT <- 1
     strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1,], sum)
+    if (max(strataSizesT$stratumSizeT) == 1) {
+      # variable ratio matching: use propensity score to compute IPTW
+      if (is.null(population$propensityScore)) {
+        stop("Variable ratio matching detected, but no propensity score found")
+      }
+      weights <- aggregate(propensityScore ~ stratumId, population, mean)
+      weights$weight <- weights$propensityScore / (1 - weights$propensityScore)
+    } else {
+      # stratification: infer probability of treatment from subject counts
+      strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
+      colnames(strataSizesC)[2] <- "stratumSizeC"
+      weights <- merge(strataSizesT, strataSizesC)
+      weights$weight <- weights$stratumSizeT / weights$stratumSizeC
+    }
     strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
     colnames(strataSizesC)[2] <- "stratumSizeC"
     weights <- merge(strataSizesT, strataSizesC)
@@ -95,7 +109,7 @@ plotKaplanMeier <- function(population,
     survTarget <- adjustedKm(weight = population$weight[idx],
                              time = population$survivalTime[idx],
                              y = population$y[idx])
-    survTarget$strata <- treatmentLabel
+    survTarget$strata <- targetLabel
     idx <- population$treatment == 0
     survComparator <- adjustedKm(weight = population$weight[idx],
                                  time = population$survivalTime[idx],
@@ -117,11 +131,11 @@ plotKaplanMeier <- function(population,
     }
 
     data <- rbind(survTarget, survComparator)
-    data$upper <- data$s^exp(qnorm(1-0.025)/log(data$s)*sqrt(data$var)/data$s)
+    data$upper <- data$s^exp(qnorm(1 - 0.025)/log(data$s)*sqrt(data$var)/data$s)
     data$lower <- data$s^exp(qnorm(0.025)/log(data$s)*sqrt(data$var)/data$s)
     data$lower[data$s > 0.9999] <- data$s[data$s > 0.9999]
   }
-  data$strata <- factor(data$strata, levels = c(treatmentLabel, comparatorLabel))
+  data$strata <- factor(data$strata, levels = c(targetLabel, comparatorLabel))
   cutoff <- quantile(population$survivalTime, dataCutoff)
   xLabel <- "Time in days"
   yLabel <- "Survival probability"
@@ -175,28 +189,28 @@ plotKaplanMeier <- function(population,
     plot <- plot + ggplot2::ggtitle(title)
   }
   if (dataTable) {
-    treatmentAtRisk <- c()
+    targetAtRisk <- c()
     comparatorAtRisk <- c()
     for (xBreak in xBreaks) {
-      treatmentAtRisk <- c(treatmentAtRisk, sum(population$treatment == 1 & population$survivalTime >= xBreak))
+      targetAtRisk <- c(targetAtRisk, sum(population$treatment == 1 & population$survivalTime >= xBreak))
       comparatorAtRisk <- c(comparatorAtRisk, sum(population$treatment == 0 & population$survivalTime >= xBreak))
     }
     labels <- data.frame(x = c(0, xBreaks, xBreaks),
-                         y = as.factor(c("Number at risk", rep(treatmentLabel, length(xBreaks)), rep(comparatorLabel, length(xBreaks)))),
-                         label = c("", formatC(treatmentAtRisk, big.mark = ","), formatC(comparatorAtRisk, big.mark = ",")))
-    labels$y <- factor(labels$y, levels = c(comparatorLabel, treatmentLabel, "Number at risk"))
+                         y = as.factor(c("Number at risk", rep(targetLabel, length(xBreaks)), rep(comparatorLabel, length(xBreaks)))),
+                         label = c("", formatC(targetAtRisk, big.mark = ","), formatC(comparatorAtRisk, big.mark = ",")))
+    labels$y <- factor(labels$y, levels = c(comparatorLabel, targetLabel, "Number at risk"))
     dataTable <- ggplot2::ggplot(labels, ggplot2::aes(x = x, y = y, label = label)) +
-      ggplot2::geom_text(size = 3.5, vjust=0.5) +
+      ggplot2::geom_text(size = 3.5, vjust = 0.5) +
       ggplot2::scale_x_continuous(xLabel, limits = xlims, breaks = xBreaks) +
       ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
                      panel.grid.minor = ggplot2::element_blank(),
                      legend.position = "none",
                      panel.border = ggplot2::element_blank(),
                      panel.background = ggplot2::element_blank(),
-                     axis.text.x = ggplot2::element_text(colour="white"),
-                     axis.title.x = ggplot2::element_text(colour="white"),
+                     axis.text.x = ggplot2::element_text(color = "white"),
+                     axis.title.x = ggplot2::element_text(color = "white"),
                      axis.title.y = ggplot2::element_blank(),
-                     axis.ticks = ggplot2::element_line(colour="white"))
+                     axis.ticks = ggplot2::element_line(color = "white"))
     plots <- list(plot, dataTable)
     grobs <- widths <- list()
     for (i in 1:length(plots)) {

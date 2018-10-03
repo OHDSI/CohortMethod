@@ -96,7 +96,7 @@
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Note
 #'                                     that this is typically done in the \code{createStudyPopulation}
 #'                                     function, but can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and comparator
+#' @param removeDuplicateSubjects      Remove subjects that are in both the target and comparator
 #'                                     cohort? See details for allowed values.N ote that this is typically done in the
 #'                                     \code{createStudyPopulation} function, but can already be done
 #'                                     here for efficiency reasons.
@@ -148,6 +148,12 @@ getDbCohortMethodData <- function(connectionDetails,
                                   washoutPeriod = 0,
                                   maxCohortSize = 0,
                                   covariateSettings) {
+  if (is.null(studyStartDate)) {
+    studyStartDate <- ""
+  }
+  if (is.null(studyEndDate)) {
+    studyEndDate <- ""
+  }
   if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
     stop("Study start date must have format YYYYMMDD")
   if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
@@ -160,7 +166,7 @@ getDbCohortMethodData <- function(connectionDetails,
   }
   if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
     stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
-  OhdsiRTools::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
+  ParallelLogger::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
@@ -177,7 +183,7 @@ getDbCohortMethodData <- function(connectionDetails,
     conceptIds <- DatabaseConnector::querySql(connection, sql)
     names(conceptIds) <- SqlRender::snakeCaseToCamelCase(names(conceptIds))
     conceptIds <- conceptIds$descendantConceptId
-    OhdsiRTools::logDebug("Excluding concept Ids from covariates: ", paste(conceptIds, collapse = ", "))
+    ParallelLogger::logDebug("Excluding concept Ids from covariates: ", paste(conceptIds, collapse = ", "))
     if (is(covariateSettings, "covariateSettings")) {
       covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
                                                          conceptIds)
@@ -189,7 +195,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  OhdsiRTools::logInfo("\nConstructing treatment and comparator cohorts")
+  ParallelLogger::logInfo("\nConstructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -218,17 +224,17 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      target_id = targetId)
     preSampleCounts <- DatabaseConnector::querySql(connection, renderedSql)
     colnames(preSampleCounts) <- SqlRender::snakeCaseToCamelCase(colnames(preSampleCounts))
-    OhdsiRTools::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
-    preSampleCounts <- data.frame(treatedPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
+    ParallelLogger::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
+    preSampleCounts <- data.frame(targetPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
                                   comparatorPersons = preSampleCounts$personCount[preSampleCounts$treatment == 0],
-                                  treatedExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
+                                  targetExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
                                   comparatorExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 0])
-    if (preSampleCounts$treatedExposures > maxCohortSize) {
-      OhdsiRTools::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$treatedExposures, " to ", maxCohortSize))
+    if (preSampleCounts$targetExposures > maxCohortSize) {
+      ParallelLogger::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (preSampleCounts$comparatorExposures > maxCohortSize) {
-      OhdsiRTools::logInfo(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
+      ParallelLogger::logInfo(paste0("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize))
       sampled <- TRUE
     }
     if (sampled) {
@@ -242,7 +248,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  OhdsiRTools::logInfo("Fetching cohorts from server")
+  ParallelLogger::logInfo("Fetching cohorts from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                  packageName = "CohortMethod",
@@ -253,7 +259,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                  sampled = sampled)
   cohorts <- DatabaseConnector::querySql(connection, cohortSql)
   colnames(cohorts) <- SqlRender::snakeCaseToCamelCase(colnames(cohorts))
-  OhdsiRTools::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
+  ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
   if (nrow(cohorts) == 0) {
     warning("Target and comparator cohorts are empty")
   } else if (sum(cohorts$treatment == 1) == 0) {
@@ -282,15 +288,15 @@ getDbCohortMethodData <- function(connectionDetails,
     colnames(rawCount) <- SqlRender::snakeCaseToCamelCase(colnames(rawCount))
     if (nrow(rawCount) == 0) {
       counts <- data.frame(description = "Original cohorts",
-                           treatedPersons = 0,
+                           targetPersons = 0,
                            comparatorPersons = 0,
-                           treatedExposures = 0,
+                           targetExposures = 0,
                            comparatorExposures = 0)
     } else {
       counts <- data.frame(description = "Original cohorts",
-                           treatedPersons = rawCount$exposedCount[rawCount$treatment ==  1],
+                           targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
                            comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-                           treatedExposures = rawCount$exposureCount[rawCount$treatment == 1],
+                           targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
                            comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
     }
     metaData$attrition <- counts
@@ -331,7 +337,7 @@ getDbCohortMethodData <- function(connectionDetails,
   attr(cohorts, "metaData") <- metaData
 
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logInfo(paste("Fetching cohorts took", signif(delta, 3), attr(delta, "units")))
   if (sampled) {
     cohortTable <- "#cohort_sample"
   } else {
@@ -345,8 +351,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                                          cohortTableIsTemp = TRUE,
                                                          rowIdField = "row_id",
                                                          covariateSettings = covariateSettings)
-  OhdsiRTools::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
-  OhdsiRTools::logInfo("Fetching outcomes from server")
+  ParallelLogger::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
+  ParallelLogger::logInfo("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                   packageName = "CohortMethod",
@@ -363,8 +369,8 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- data.frame(outcomeIds = outcomeIds)
   attr(outcomes, "metaData") <- metaData
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
-  OhdsiRTools::logDebug("Fetched outcomes total count is ", nrow(outcomes))
+  ParallelLogger::logInfo(paste("Fetching outcomes took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logDebug("Fetched outcomes total count is ", nrow(outcomes))
 
   # Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
@@ -400,19 +406,20 @@ getDbCohortMethodData <- function(connectionDetails,
 #'                           \code{getDbCohortMethodData}.
 #' @param file               The name of the folder where the data will be written. The folder should
 #'                           not yet exist.
+#' @param compress           Should compression be used when saving?
 #'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
 #'
 #' @export
-saveCohortMethodData <- function(cohortMethodData, file) {
+saveCohortMethodData <- function(cohortMethodData, file, compress = FALSE) {
   if (missing(cohortMethodData))
     stop("Must specify cohortMethodData")
   if (missing(file))
     stop("Must specify file")
   if (class(cohortMethodData) != "cohortMethodData")
     stop("Data not of class cohortMethodData")
-  OhdsiRTools::logTrace("Saving CohortMethodData to ", file)
+  ParallelLogger::logTrace("Saving CohortMethodData to ", file)
 
   covariates <- cohortMethodData$covariates
   covariateRef <- cohortMethodData$covariateRef
@@ -423,7 +430,13 @@ saveCohortMethodData <- function(cohortMethodData, file) {
     saveRDS(covariateRef, file = file.path(file, "covariateRef.rds"))
     saveRDS(analysisRef, file = file.path(file, "analysisRef.rds"))
   } else {
-    ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
+    if (compress) {
+      saveCompressedFfdf(covariates, file.path(file, "covariates"))
+      saveCompressedFfdf(covariateRef, file.path(file, "covariateRef"))
+      saveCompressedFfdf(covariateRef, file.path(file, "analysisRef"))
+    } else {
+      ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = file, clone = TRUE)
+    }
   }
   saveRDS(cohortMethodData$cohorts, file = file.path(file, "cohorts.rds"))
   saveRDS(cohortMethodData$outcomes, file = file.path(file, "outcomes.rds"))
@@ -436,8 +449,9 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' \code{loadCohortMethodData} loads an object of type cohortMethodData from a folder in the file
 #' system.
 #'
-#' @param file       The name of the folder containing the data.
-#' @param readOnly   If true, the data is opened read only.
+#' @param file           The name of the folder containing the data.
+#' @param readOnly       If true, the data is opened read only.
+#' @param skipCovariates Do not load the covariates. Can save a lot of time.
 #'
 #' @details
 #' The data will be written to a set of files in the folder specified by the user.
@@ -449,15 +463,18 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' # todo
 #'
 #' @export
-loadCohortMethodData <- function(file, readOnly = TRUE) {
+loadCohortMethodData <- function(file, readOnly = TRUE, skipCovariates = FALSE) {
   if (!file.exists(file))
     stop(paste("Cannot find folder", file))
   if (!file.info(file)$isdir)
     stop(paste("Not a folder", file))
-  OhdsiRTools::logTrace("Loading CohortMethodData from ", file)
-
-  if (file.exists(file.path(file, "covariates.rds"))) {
-    OhdsiRTools::logDebug("Covariates are empty data frame")
+  ParallelLogger::logTrace("Loading CohortMethodData from ", file, if (skipCovariates) ", skipping covariates" else "")
+  if (skipCovariates) {
+    covariates <- NULL
+    covariateRef <- NULL
+    analysisRef <- NULL
+  }  else if (file.exists(file.path(file, "covariates.rds")) && !file.exists(file.path(file, "covariateRef.rds"))) {
+    ParallelLogger::logDebug("Covariates are empty data frame")
     covariates <- readRDS(file.path(file, "covariates.rds"))
     covariateRef <- readRDS(file.path(file, "covariateRef.rds"))
     if (file.exists(file.path(file, "analysisRef.rds"))) {
@@ -468,19 +485,25 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
   } else {
     temp <- setwd(file)
     absolutePath <- setwd(temp)
-    e <- new.env()
-    ffbase::load.ffdf(absolutePath, e)
-    covariates = get("covariates", envir = e)
-    covariateRef = get("covariateRef", envir = e)
-    open(covariates, readonly = readOnly)
-    open(covariateRef, readonly = readOnly)
-    if (exists("analysisRef", envir = e)) {
-      analysisRef <- get("analysisRef", envir = e)
-      open(analysisRef, readonly = readOnly)
+    if (file.exists(file.path(absolutePath, "covariates.zip"))) {
+      covariates <- loadCompressedFfdf(file.path(absolutePath, "covariates"))
+      covariateRef <- loadCompressedFfdf(file.path(absolutePath, "covariateRef"))
+      analysisRef <- loadCompressedFfdf(file.path(absolutePath, "analysisRef"))
     } else {
-      analysisRef <- NULL
+      e <- new.env()
+      ffbase::load.ffdf(absolutePath, e)
+      covariates = get("covariates", envir = e)
+      covariateRef = get("covariateRef", envir = e)
+      open(covariates, readonly = readOnly)
+      open(covariateRef, readonly = readOnly)
+      if (exists("analysisRef", envir = e)) {
+        analysisRef <- get("analysisRef", envir = e)
+        open(analysisRef, readonly = readOnly)
+      } else {
+        analysisRef <- NULL
+      }
+      rm(e)
     }
-    rm(e)
   }
   result <- list(covariates = covariates,
                  covariateRef = covariateRef,
@@ -488,6 +511,14 @@ loadCohortMethodData <- function(file, readOnly = TRUE) {
                  cohorts = readRDS(file.path(file, "cohorts.rds")),
                  outcomes = readRDS(file.path(file, "outcomes.rds")),
                  metaData = readRDS(file.path(file, "metaData.rds")))
+
+  # For backwards compatability with version < 3.0.0:
+  metaData <- attr(result$cohorts, "metaData")
+  if (!is.null(metaData$attrition$treatedPersons)) {
+    colnames(metaData$attrition)[colnames(metaData$attrition) == "treatedPersons"] <- "targetPersons"
+    colnames(metaData$attrition)[colnames(metaData$attrition) == "treatedExposures"] <- "targetExposures"
+    attr(result$cohorts, "metaData") <- metaData
+  }
   class(result) <- "cohortMethodData"
   return(result)
 }
@@ -504,7 +535,7 @@ print.cohortMethodData <- function(x, ...) {
 
 #' @export
 summary.cohortMethodData <- function(object, ...) {
-  treatedPersons <- length(unique(object$cohorts$subjectId[object$cohorts$treatment == 1]))
+  targetPersons <- length(unique(object$cohorts$subjectId[object$cohorts$treatment == 1]))
   comparatorPersons <- length(unique(object$cohorts$subjectId[object$cohorts$treatment == 0]))
   outcomeCounts <- data.frame(outcomeId = attr(object$outcomes, "metaData")$outcomeIds,
                               eventCount = 0,
@@ -517,7 +548,7 @@ summary.cohortMethodData <- function(object, ...) {
   }
   result <- list(metaData = append(append(object$metaData, attr(object$cohorts, "metaData")),
                                    attr(object$outcomes, "metaData")),
-                 treatedPersons = treatedPersons,
+                 targetPersons = targetPersons,
                  comparatorPersons = comparatorPersons,
                  outcomeCounts = outcomeCounts,
                  covariateCount = nrow(object$covariateRef),
@@ -534,7 +565,7 @@ print.summary.cohortMethodData <- function(x, ...) {
   writeLines(paste("Comparator concept ID:", x$metaData$comparatorId))
   writeLines(paste("Outcome concept ID(s):", x$metaData$outcomeIds, collapse = ","))
   writeLines("")
-  writeLines(paste("Treated persons:", paste(x$treatedPersons)))
+  writeLines(paste("Treated persons:", paste(x$targetPersons)))
   writeLines(paste("Comparator persons:", paste(x$comparatorPersons)))
   writeLines("")
   writeLines("Outcome counts:")
@@ -592,7 +623,7 @@ grepCovariateNames <- function(pattern, object) {
 #'
 #' @param population             Either an object of type \code{cohortMethodData} or a population
 #'                               object generated by functions like \code{createStudyPopulation}.
-#' @param cohortIds              The IDs to be used for the treated and comparator cohort,
+#' @param cohortIds              The IDs to be used for the target and comparator cohort,
 #'                               respectively.
 #' @param connectionDetails      An R object of type\cr\code{connectionDetails} created using the
 #'                               function \code{createConnectionDetails} in the
@@ -631,7 +662,7 @@ insertDbPopulation <- function(population,
   population$cohortEndDate <- NA
   colnames(population) <- SqlRender::camelCaseToSnakeCase(colnames(population))
   connection <- DatabaseConnector::connect(connectionDetails)
-  OhdsiRTools::logInfo(paste("Writing",
+  ParallelLogger::logInfo(paste("Writing",
                              nrow(population),
                              "rows to",
                              paste(cohortDatabaseSchema, cohortTable, sep = ".")))
@@ -660,6 +691,36 @@ insertDbPopulation <- function(population,
                                  oracleTempSchema = NULL)
   DatabaseConnector::disconnect(connection)
   delta <- Sys.time() - start
-  OhdsiRTools::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
   invisible(TRUE)
+}
+
+
+saveCompressedFfdf <- function(ffdf, fileName) {
+  dir.create(dirname(fileName), showWarnings = FALSE, recursive = TRUE)
+  saveRDS(ffdf, paste0(fileName, ".rds"))
+  fileNames <- sapply(bit::physical(ffdf), function(x) bit::physical(x)$filename)
+  sourceDir <- dirname(fileNames[1])
+  oldWd <- setwd(sourceDir)
+  on.exit(setwd(oldWd))
+  sourceNames <- basename(fileNames)
+  ff::close.ffdf(ffdf)
+  DatabaseConnector::createZipFile(zipFile = paste0(fileName, ".zip"), files = sourceNames)
+  ff::open.ffdf(ffdf)
+}
+
+loadCompressedFfdf <- function(fileName) {
+  ffdf <- readRDS(paste0(fileName, ".rds"))
+  tempRoot <- ff::fftempfile("temp")
+  utils::unzip(zipfile = paste0(fileName, ".zip"), exdir = tempRoot)
+  for (ff in bit::physical(ffdf)) {
+    newFileName <- ff::fftempfile("")
+    file.rename(file.path(tempRoot, basename(bit::physical(ff)$filename)), newFileName)
+    bit::physical(ff)$filename <- newFileName
+    bit::physical(ff)$finalizer <- "delete"
+    ff::open.ff(ff)
+    reg.finalizer(attr(ff,"physical"), ff::finalize.ff_pointer, onexit = bit::physical(ff)$finonexit)
+  }
+  unlink(tempRoot, recursive = TRUE)
+  return(ffdf)
 }

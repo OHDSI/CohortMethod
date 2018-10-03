@@ -42,7 +42,7 @@ Dependencies
  * Cyclops
  * DatabaseConnector
  * SqlRender
- * OhdsiRTools
+ * ParallelLogger
  * FeatureExtraction
 
 Getting Started

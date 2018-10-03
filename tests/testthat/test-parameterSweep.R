@@ -30,11 +30,12 @@ test_that("cohortMethodData functions", {
   expect_output(print(cohortMethodData), "CohortMethodData object.*")
   s <- summary(cohortMethodData)
   expect_is(s, "summary.cohortMethodData")
-  expect_equal(s$treatedPersons + s$comparatorPersons, sampleSize)
+  expect_equal(s$targetPersons + s$comparatorPersons, sampleSize)
   expect_output(print(s), "CohortMethodData object summary.*")
 
-  saveCohortMethodData(cohortMethodData, "temp")
-  cmd2 <- loadCohortMethodData("temp")
+  folder <- tempdir()
+  saveCohortMethodData(cohortMethodData, folder)
+  cmd2 <- loadCohortMethodData(folder)
   expect_identical(cohortMethodData$cohorts, cmd2$cohorts)
   expect_identical(cohortMethodData$outcomes, cmd2$outcomes)
   expect_equal(cohortMethodData$covariates, cmd2$covariates)
@@ -44,7 +45,7 @@ test_that("cohortMethodData functions", {
   ff::close.ffdf(cmd2$covariates)
   ff::close.ffdf(cmd2$covariateRef)
   ff::close.ffdf(cmd2$analysisRef)
-  unlink("temp", recursive = TRUE, force = TRUE)
+  unlink(folder, recursive = TRUE, force = TRUE)
 
   cn <- grepCovariateNames("^age group.*", cohortMethodData)
   expect_gt(nrow(cn), 1)
@@ -104,7 +105,7 @@ test_that("Propensity score functions", {
     strata <- stratifyByPsAndCovariates(psTrimmed,
                                         numberOfStrata = numberOfStrata,
                                         cohortMethodData = cohortMethodData,
-                                        covariateIds = c(11:27, 8507))  #age + sex
+                                        covariateIds = c(0:27 * 1000 + 3, 8532001))  #age + sex
     expect_is(strata, "data.frame")
   }
 
@@ -232,8 +233,8 @@ test_that("Functions on outcome model", {
 
   cf <- coef(outcomeModel)
   ci <- confint(outcomeModel)
-  expect_more_than(cf, ci[1])
-  expect_less_than(cf, ci[2])
+  expect_gt(cf, ci[1])
+  expect_lt(cf, ci[2])
 
   fullOutcomeModel <- getOutcomeModel(outcomeModel, cohortMethodData)
   expect_is(fullOutcomeModel, "data.frame")

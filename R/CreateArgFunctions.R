@@ -18,7 +18,7 @@
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Notethat
 #'                                     this is typically done in the createStudyPopulationfunction, but
 #'                                     can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the treated and
+#' @param removeDuplicateSubjects      Remove subjects that are in both the target and
 #'                                     comparatorcohort? See details for allowed values.N ote that this
 #'                                     is typically done in thecreateStudyPopulation function, but can
 #'                                     already be donehere for efficiency reasons.
@@ -68,11 +68,11 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #' @param firstExposureOnly                Should only the first exposure per subject be included?
 #'                                         Notethat this is typically done in thecreateStudyPopulation
 #'                                         function,
-#' @param restrictToCommonPeriod           Restrict the analysis to the period when both treatments are
+#' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are
 #'                                         observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior
 #'                                         toindex date for a person to be included in the cohort.
-#' @param removeDuplicateSubjects          Remove subjects that are in both the treated and
+#' @param removeDuplicateSubjects          Remove subjects that are in both the target and
 #'                                         comparatorcohort? See details for allowed values.
 #' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the
 #'                                         riskwindow start?
@@ -238,7 +238,7 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
 #'                                scale(Austin, 2011).
 #' @param maxRatio                The maximum number of persons int the comparator arm to be matched
 #'                                toeach person in the treatment arm. A maxRatio of 0 means no
-#'                                maximum:all comparators will be assigned to a treated person.
+#'                                maximum:all comparators will be assigned to a target person.
 #' @param stratificationColumns   Names or numbers of one or more columns in the data data.frameon
 #'                                which subjects should be stratified prior to matching. No personswill
 #'                                be matched with persons outside of the strata identified by thevalues
@@ -281,7 +281,7 @@ createMatchOnPsArgs <- function(caliper = 0.2,
 #'                       distributed on that scale(Austin, 2011).
 #' @param maxRatio       The maximum number of persons int the comparator arm to be matched to
 #'                       eachperson in the treatment arm. A maxRatio of 0 means no maximum:
-#'                       allcomparators will be assigned to a treated person.
+#'                       allcomparators will be assigned to a target person.
 #' @param covariateIds   One or more covariate IDs in the cohortMethodData object on whichsubjects
 #'                       should be also matched.
 #'
@@ -311,7 +311,7 @@ createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
 #' Create an object defining the parameter values.
 #'
 #' @param numberOfStrata          How many strata? The boundaries of the strata are
-#'                                automaticallydefined to contain equal numbers of treated persons.
+#'                                automaticallydefined to contain equal numbers of target persons.
 #' @param stratificationColumns   Names of one or more columns in the data data.frame on whichsubjects
 #'                                should also be stratified in addition to stratification onpropensity
 #'                                score.
@@ -344,7 +344,7 @@ createStratifyByPsArgs <- function(numberOfStrata = 5,
 #' Create an object defining the parameter values.
 #'
 #' @param numberOfStrata   Into how many strata should the propensity score be divided? Theboundaries
-#'                         of the strata are automatically defined to contain equalnumbers of treated
+#'                         of the strata are automatically defined to contain equalnumbers of target
 #'                         persons.
 #' @param baseSelection    What is the base selection of subjects where the strata bounds areto be
 #'                         determined? Strata are defined as equally-sized strata insidethis selection.
@@ -376,26 +376,29 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param modelType             The type of outcome model that will be used. Possible values
-#'                              are"logistic", "poisson", or "cox".
-#' @param stratified            Should the regression be conditioned on the strata defined in
-#'                              thepopulation object (e.g. by matching or stratifying on
-#'                              propensityscores)?
-#' @param useCovariates         Whether to use the covariate matrix in the cohortMethodDataobject in
-#'                              the outcome model.
-#' @param inversePsWeighting    Use inverse probability of treatment weigting?
-#' @param excludeCovariateIds   Exclude these covariates from the outcome model.
-#' @param includeCovariateIds   Include only these covariates in the outcome model.
-#' @param prior                 The prior used to fit the model. See createPriorfor details.
-#' @param control               The control object used to control the cross-validation used
-#'                              todetermine the hyperparameters of the prior (if applicable).
-#'                              SeecreateControl for details.
+#' @param modelType                 The type of outcome model that will be used. Possible values
+#'                                  are"logistic", "poisson", or "cox".
+#' @param stratified                Should the regression be conditioned on the strata defined in
+#'                                  thepopulation object (e.g. by matching or stratifying on
+#'                                  propensityscores)?
+#' @param useCovariates             Whether to use the covariate matrix in the cohortMethodDataobject
+#'                                  in the outcome model.
+#' @param inversePtWeighting        Use inverse probability of treatment weigting?
+#' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate
+#'                                  interactionswith the main treatment effect.
+#' @param excludeCovariateIds       Exclude these covariates from the outcome model.
+#' @param includeCovariateIds       Include only these covariates in the outcome model.
+#' @param prior                     The prior used to fit the model. See createPriorfor details.
+#' @param control                   The control object used to control the cross-validation used
+#'                                  todetermine the hyperparameters of the prior (if applicable).
+#'                                  SeecreateControl for details.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "logistic",
-                                      stratified = TRUE,
-                                      useCovariates = TRUE,
-                                      inversePsWeighting = FALSE,
+                                      stratified = FALSE,
+                                      useCovariates = FALSE,
+                                      inversePtWeighting = FALSE,
+                                      interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),
                                       prior = createPrior("laplace", useCrossValidation = TRUE),

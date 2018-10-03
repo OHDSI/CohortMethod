@@ -21,7 +21,7 @@ equipoise
 \details{
 The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
 \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the treated (1) or comparator\cr \tab \tab (0) group \cr
+Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
 \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
 }
 \examples{

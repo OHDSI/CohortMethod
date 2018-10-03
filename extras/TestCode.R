@@ -63,14 +63,14 @@ fitOutcomeModel(population = strata,
 
 
 
-drugComparatorOutcomes1 <- createDrugComparatorOutcomes(targetId = 755695,
+targetComparatorOutcomes1 <- createTargetComparatorOutcomes(targetId = 755695,
                                                         comparatorId = 739138,
                                                         outcomeIds = c(194133, 123))
 
-drugComparatorOutcomesList <- list(drugComparatorOutcomes1)
+targetComparatorOutcomesList <- list(targetComparatorOutcomes1)
 
-saveDrugComparatorOutcomesList(drugComparatorOutcomesList,
-                               "s:/temp/drugComparatorOutcomesList.json.txt")
+saveTargetComparatorOutcomesList(targetComparatorOutcomesList,
+                               "s:/temp/targetComparatorOutcomesList.json.txt")
 
 
 
@@ -161,7 +161,7 @@ cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
 saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodAnalysisList.json.txt")
 
 cmAnalysisList <- loadCmAnalysisList("s:/temp/cohortMethodAnalysisList.json.txt")
-drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.json.txt")
+targetComparatorOutcomesList <- loadTargetComparatorOutcomesList("s:/temp/targetComparatorOutcomesList.json.txt")
 
 
 
@@ -173,7 +173,7 @@ drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugCompar
 
 
 cmAnalysisList <- loadCmAnalysisList("s:/temp/cohortMethodAnalysisList.json.txt")
-drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/drugComparatorOutcomesList.json.txt")
+targetComparatorOutcomesList <- loadTargetComparatorOutcomesList("s:/temp/targetComparatorOutcomesList.json.txt")
 
 
 # Settings for running SQL against JnJ Sql Server:
@@ -198,7 +198,7 @@ ref <- runCmAnalyses(connectionDetails = connectionDetails,
                      cdmDatabaseSchema = cdmDatabaseSchema,
                      outputFolder = "s:/temp/cmOutput",
                      cmAnalysisList = cmAnalysisList,
-                     drugComparatorOutcomesList = drugComparatorOutcomesList,
+                     targetComparatorOutcomesList = targetComparatorOutcomesList,
                      underSampleComparatorToTreatedRatio = 1,
                      getDbCohortMethodDataThreads = 2,
                      createPsThreads = 1,

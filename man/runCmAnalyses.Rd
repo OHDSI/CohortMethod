@@ -6,15 +6,18 @@
 \usage{
 runCmAnalyses(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema,
-  exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
+  exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence", cdmVersion = 5,
   outputFolder = "./CohortMethodOutput", cmAnalysisList,
-  drugComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
-  refitPsForEveryStudyPopulation = TRUE, getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1, psCvThreads = 1, createStudyPopThreads = 1,
-  trimMatchStratifyThreads = 1, computeCovarBalThreads = 1,
-  fitOutcomeModelThreads = 1, outcomeCvThreads = 1, outcomeIdsOfInterest)
+  targetComparatorOutcomesList, refitPsForEveryOutcome = FALSE,
+  refitPsForEveryStudyPopulation = TRUE, prefilterCovariates = TRUE,
+  getDbCohortMethodDataThreads = 1, createPsThreads = 1,
+  psCvThreads = 1, createStudyPopThreads = 1,
+  trimMatchStratifyThreads = 1, prefilterCovariatesThreads = 1,
+  fitOutcomeModelThreads = 1, outcomeCvThreads = 1,
+  outcomeIdsOfInterest, compressCohortMethodData = FALSE)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{connectionDetails} created using the
@@ -60,8 +63,8 @@ SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 \item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
 the \code{\link{createCmAnalysis}} function.}
 
-\item{drugComparatorOutcomesList}{A list of objects of type \code{drugComparatorOutcomes} as
-created using the \code{\link{createDrugComparatorOutcomes}}
+\item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
+created using the \code{\link{createTargetComparatorOutcomes}}
 function.}
 
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
@@ -72,6 +75,13 @@ who had the outcome previously will be removed afterwards.}
 \item{refitPsForEveryStudyPopulation}{Should the propensity model be fitted for every study population
 definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.}
+
+\item{prefilterCovariates}{If TRUE, and some outcome models require filtering covariates
+by concept ID (e.g. because \code{includeCovariateIds} or
+\code{interactionCovariateIds} is specified), this filtering
+will be done once for all outcome models that need it. This
+can greatly speed up the analyses if multiple outcome models
+require the same filtering.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
@@ -90,8 +100,7 @@ population.}
 \item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming, matching
 and stratifying.}
 
-\item{computeCovarBalThreads}{The number of parallel threads to use for computing the
-covariate balance.}
+\item{prefilterCovariatesThreads}{The number of parallel threads to use for prefiltering covariates.}
 
 \item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the outcome
 models.}
@@ -104,10 +113,12 @@ could be `fitOutcomeModelThreads * outcomeCvThreads`.}
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
 for all other outcome IDs. This could be helpful to speed up
 analyses with many controls.}
+
+\item{compressCohortMethodData}{Compress CohortMethodData objects?}
 }
 \value{
 A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target drug.\cr
+for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target exposure.\cr
 \verb{comparatorId} \tab The ID of the comparator group.\cr \verb{excludedCovariateConceptIds} \tab
 The ID(s) of concepts that cannot be used to construct covariates. \cr
 \verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct
@@ -119,18 +130,16 @@ name of the file containing the study population (prior\cr \tab and trimming, ma
 stratification on the PS.\cr \verb{psFile} \tab The name of file containing the propensity scores
 for a specific \cr \tab outcomes (ie after people with prior outcomes have been removed).\cr
 \verb{strataFile} \tab The name of the file containing the identifiers of the population \cr \tab
-after any trimming, matching or stratifying, including their strata.\cr \verb{covariateBalanceFile}
-\tab The name of the file containing the covariate balance (ie. the \cr \tab output of the
-\code{computeCovariateBalance} function.\cr \verb{outcomeModelFile} \tab The name of the file
+after any trimming, matching or stratifying, including their strata.\cr \verb{outcomeModelFile} \tab The name of the file
 containing the outcome model.\cr }
 }
 \description{
 Run a list of analyses
 }
 \details{
-Run a list of analyses for the drug-comparator-outcomes of interest. This function will run all
+Run a list of analyses for the target-comparator-outcomes of interest. This function will run all
 specified analyses against all hypotheses of interest, meaning that the total number of outcome
-models is `length(cmAnalysisList) * length(drugComparatorOutcomesList)` (if all analyses specify an
+models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an
 outcome model should be fitted). When you provide several analyses it will determine whether any of
 the analyses have anything in common, and will take advantage of this fact. For example, if we
 specify several analyses that only differ in the way the outcome model is fitted, then this

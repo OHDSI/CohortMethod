@@ -26,7 +26,7 @@ scale because the PS is more likely to be normally distributed on that scale
 
 \item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each
 person in the treatment arm. A maxRatio of 0 means no maximum: all
-comparators will be assigned to a treated person.}
+comparators will be assigned to a target person.}
 
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
 \code{getDbCohortMethodData}.}
@@ -40,12 +40,12 @@ rows that could not be matched are removed
 }
 \description{
 \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
-treated to comparator persons.
+target to comparator persons.
 }
 \details{
 The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
 \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the treated (1) or comparator\cr \tab
+\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
 \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
 implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
 

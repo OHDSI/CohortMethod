@@ -9,7 +9,7 @@ createStratifyByPsAndCovariatesArgs(numberOfStrata = 5,
 }
 \arguments{
 \item{numberOfStrata}{Into how many strata should the propensity score be divided? Theboundaries
-of the strata are automatically defined to contain equalnumbers of treated
+of the strata are automatically defined to contain equalnumbers of target
 persons.}
 
 \item{baseSelection}{What is the base selection of subjects where the strata bounds areto be
