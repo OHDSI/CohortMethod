@@ -23,13 +23,14 @@ VignetteBuilder: knitr
 Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 2.2.0),
-    Cyclops (>= 1.9.9),
+    Cyclops (>= 2.0.0),
     FeatureExtraction  (>= 2.0.0)
 Imports:
     methods,
     ggplot2,
     gridExtra,
     grid,
+    bit,
     ff,
     ffbase (>= 0.12.3),
     plyr,
