@@ -894,22 +894,24 @@ createReferenceTable <- function(cmAnalysisList,
             "stratifyByPsArgs",
             "stratifyByPsAndCovariates",
             "stratifyByPsAndCovariatesArgs")
+  normStrataArgs <- function(strataArgs) {
+    return(strataArgs[args][!is.na(names(strataArgs[args]))])
+  }
   strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
                                                                         strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
                                                                         strataArgs$stratifyByPsAndCovariates))]
-  strataArgsList <- lapply(strataArgsList, function(strataArgs) {return(strataArgs[args])})
+  strataArgsList <- lapply(strataArgsList, normStrataArgs)
   if (length(strataArgsList) == 0) {
     referenceTable$strataArgsId <- 0
   } else {
-    strataArgsId <- sapply(cmAnalysisList, function(cmAnalysis, strataArgsList) {
-      i <- which.list(strataArgsList, cmAnalysis[args][!is.na(names(cmAnalysis[args]))])
+    strataArgsId <- sapply(cmAnalysisList, function(cmAnalysis) {
+      i <- which.list(strataArgsList, normStrataArgs(cmAnalysis))
       if (is.null(i))
         i <- 0
       return(i)
-    }, strataArgsList)
-    # strataArgsId[strataArgsId %in% noStrataIds] <- NA
+    })
     analysisIdToStrataArgsId <- data.frame(analysisId = analysisIds, strataArgsId = strataArgsId)
     referenceTable <- merge(referenceTable, analysisIdToStrataArgsId)
   }
