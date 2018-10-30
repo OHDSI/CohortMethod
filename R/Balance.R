@@ -314,7 +314,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
 #'
 #' @export
 plotCovariateBalanceOfTopVariables <- function(balance,
-                                               n = low(nrow(balance), 20),
+                                               n = min(nrow(balance), 20),
                                                maxNameWidth = 100,
                                                title = NULL,
                                                fileName = NULL,
