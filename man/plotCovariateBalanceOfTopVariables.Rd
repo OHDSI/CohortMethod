@@ -11,7 +11,7 @@ plotCovariateBalanceOfTopVariables(balance, n = 20, maxNameWidth = 100,
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
 
-\item{n}{Count of variates to plot.}
+\item{n}{(Maximum) count of variates to plot.}
 
 \item{maxNameWidth}{Covariate names longer than this number of characters are truncated to create
 a nicer plot.}
