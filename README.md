@@ -24,13 +24,13 @@ Screenshots
 <table>
 <tr valign="bottom">
 <td width = 50%>
-  
-![](https://github.com/OHDSI/CohortMethod/blob/master/extras/ps.png)
+
+<img src="https://github.com/OHDSI/CohortMethod/blob/master/extras/ps.png"/>
 
 </td>
 <td width = 50%>
   
-![](https://github.com/OHDSI/CohortMethod/blob/master/extras/balanceScatterplot.png)
+<img src="https://github.com/OHDSI/CohortMethod/blob/master/extras/balanceScatterplot.png)"/>
 
 </td>
 </tr><tr>
