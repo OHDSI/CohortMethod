@@ -25,12 +25,12 @@ Screenshots
 <tr valign="bottom">
 <td width = 50%>
 
-<img src="https://github.com/OHDSI/CohortMethod/blob/master/extras/ps.png"/>
+<img src="https://github.com/OHDSI/CohortMethod/raw/master/extras/ps.png"/>
 
 </td>
 <td width = 50%>
   
-<img src="https://github.com/OHDSI/CohortMethod/blob/master/extras/balanceScatterplot.png)"/>
+<img src="https://github.com/OHDSI/CohortMethod/raw/master/extras/balanceScatterplot.png"/>
 
 </td>
 </tr><tr>
