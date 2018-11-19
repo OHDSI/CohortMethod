@@ -151,7 +151,7 @@ model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
 model[model$id %% 1000 == 902, ]
 
-plotPs(ps, showAucLabel = TRUE)
+plotPs(ps, showAucLabel = TRUE, showCountsLabel = TRUE, fileName = "extras/ps.png")
 plotPs(ps)
 plotPs(ps, scale = "propensity", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
 plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
@@ -181,7 +181,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 table1 <- createCmTable1(balance)
 print(table1, row.names = FALSE, right = FALSE)
-plotCovariateBalanceScatterPlot(balance, fileName = "s:/temp/scatter.png", showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
+plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE, fileName = "extras/balanceScatterplot.png")
 # plotCovariateBalanceOfTopVariables(balance, fileName = "s:/temp/top.png")
 
 outcomeModel <- fitOutcomeModel(population = studyPop,
