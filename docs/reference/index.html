@@ -123,35 +123,125 @@
     <tbody>
       <tr>
         <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
+          <h2 id="section-getting-data-and-creating-a-study-population" class="hasAnchor"><a href="#section-getting-data-and-creating-a-study-population" class="anchor"></a>Getting data and creating a study population</h2>
+          <p class="section-desc"><p>Functions for getting the necessary data from the database in Common Data Model, and creating a study population.</p></p>
         </th>
       </tr>
       <tr>
         
         <td>
-          <p><code><a href="checkCmInstallation.html">checkCmInstallation()</a></code> </p>
+          <p><code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code> </p>
         </td>
-        <td><p>Check is CohortMethod and its dependencies are correctly installed</p></td>
+        <td><p>Get the cohort data from the server</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="CohortMethod.html">CohortMethod</a></code> </p>
+          <p><code><a href="saveCohortMethodData.html">saveCohortMethodData()</a></code> </p>
         </td>
-        <td><p>CohortMethod</p></td>
+        <td><p>Save the cohort data to folder</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="cohortMethodDataSimulationProfile.html">cohortMethodDataSimulationProfile</a></code> </p>
+          <p><code><a href="loadCohortMethodData.html">loadCohortMethodData()</a></code> </p>
         </td>
-        <td><p>A simulation profile</p></td>
+        <td><p>Load the cohort data from a folder</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code> </p>
+          <p><code><a href="createStudyPopulation.html">createStudyPopulation()</a></code> </p>
         </td>
-        <td><p>Compute covariate balance before and after matching and trimming</p></td>
+        <td><p>Create a study population</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-propensity-scores" class="hasAnchor"><a href="#section-propensity-scores" class="anchor"></a>Propensity scores</h2>
+          <p class="section-desc"><p>Functions for creating and using propensity scores.</p></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="createPs.html">createPs()</a></code> </p>
+        </td>
+        <td><p>Create propensity scores</p></td>
       </tr><tr>
+        
+        <td>
+          <p><code><a href="getPsModel.html">getPsModel()</a></code> </p>
+        </td>
+        <td><p>Get the propensity model</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="matchOnPs.html">matchOnPs()</a></code> </p>
+        </td>
+        <td><p>Match persons by propensity score</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> </p>
+        </td>
+        <td><p>Match by propensity score as well as other covariates</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="trimByPs.html">trimByPs()</a></code> </p>
+        </td>
+        <td><p>Trim persons by propensity score</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> </p>
+        </td>
+        <td><p>Keep only persons in clinical equipoise</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="stratifyByPs.html">stratifyByPs()</a></code> </p>
+        </td>
+        <td><p>Stratify persons by propensity score</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> </p>
+        </td>
+        <td><p>Stratify persons by propensity score and other covariates</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-outcome-models" class="hasAnchor"><a href="#section-outcome-models" class="anchor"></a>Outcome models</h2>
+          <p class="section-desc"><p>Functions for creating and viewing outcome models.</p></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> </p>
+        </td>
+        <td><p>Create an outcome model, and compute the relative risk</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="getOutcomeModel.html">getOutcomeModel()</a></code> </p>
+        </td>
+        <td><p>Get the outcome model</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plotKaplanMeier.html">plotKaplanMeier()</a></code> </p>
+        </td>
+        <td><p>Plot the Kaplan-Meier curve</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-diagnostics" class="hasAnchor"><a href="#section-diagnostics" class="anchor"></a>Diagnostics</h2>
+          <p class="section-desc"><p>Functions for producing various study diagnostics.</p></p>
+        </th>
+      </tr>
+      <tr>
         
         <td>
           <p><code><a href="computeMdrr.html">computeMdrr()</a></code> </p>
@@ -160,21 +250,21 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="computePsAuc.html">computePsAuc()</a></code> </p>
+          <p><code><a href="getAttritionTable.html">getAttritionTable()</a></code> </p>
         </td>
-        <td><p>Compute the area under the ROC curve</p></td>
+        <td><p>Get the attrition table for a population</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="constructEras.html">constructEras()</a></code> </p>
+          <p><code><a href="drawAttritionDiagram.html">drawAttritionDiagram()</a></code> </p>
         </td>
-        <td><p>Build eras</p></td>
+        <td><p>Draw the attrition diagram</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="createCmAnalysis.html">createCmAnalysis()</a></code> </p>
+          <p><code><a href="plotFollowUpDistribution.html">plotFollowUpDistribution()</a></code> </p>
         </td>
-        <td><p>Create a CohortMethod analysis specification</p></td>
+        <td><p>Plot the distribution of follow-up time</p></td>
       </tr><tr>
         
         <td>
@@ -184,10 +274,54 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="createCohortMethodDataSimulationProfile.html">createCohortMethodDataSimulationProfile()</a></code> </p>
+          <p><code><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications()</a></code> </p>
         </td>
-        <td><p>Create simulation profile</p></td>
+        <td><p>Get the default table 1 specifications</p></td>
       </tr><tr>
+        
+        <td>
+          <p><code><a href="getFollowUpDistribution.html">getFollowUpDistribution()</a></code> </p>
+        </td>
+        <td><p>Get the distribution of follow-up time</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plotPs.html">plotPs()</a></code> </p>
+        </td>
+        <td><p>Plot the propensity score distribution</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="computePsAuc.html">computePsAuc()</a></code> </p>
+        </td>
+        <td><p>Compute the area under the ROC curve</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code> </p>
+        </td>
+        <td><p>Compute covariate balance before and after matching and trimming</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables()</a></code> </p>
+        </td>
+        <td><p>Plot variables with largest imbalance</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot()</a></code> </p>
+        </td>
+        <td><p>Create a scatterplot of the covariate balance</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-running-multiple-analyses" class="hasAnchor"><a href="#section-running-multiple-analyses" class="anchor"></a>Running multiple analyses</h2>
+          <p class="section-desc"><p>Functions for running multiple analyses in an efficient way.</p></p>
+        </th>
+      </tr>
+      <tr>
         
         <td>
           <p><code><a href="createCreatePsArgs.html">createCreatePsArgs()</a></code> </p>
@@ -226,12 +360,6 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="createPs.html">createPs()</a></code> </p>
-        </td>
-        <td><p>Create propensity scores</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="createStratifyByPsAndCovariatesArgs.html">createStratifyByPsAndCovariatesArgs()</a></code> </p>
         </td>
         <td><p>Create a parameter object for the function stratifyByPsAndCovariates</p></td>
@@ -241,18 +369,6 @@
           <p><code><a href="createStratifyByPsArgs.html">createStratifyByPsArgs()</a></code> </p>
         </td>
         <td><p>Create a parameter object for the function stratifyByPs</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="createStudyPopulation.html">createStudyPopulation()</a></code> </p>
-        </td>
-        <td><p>Create a study population</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code> </p>
-        </td>
-        <td><p>Create target-comparator-outcomes combinations.</p></td>
       </tr><tr>
         
         <td>
@@ -268,129 +384,9 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="drawAttritionDiagram.html">drawAttritionDiagram()</a></code> </p>
+          <p><code><a href="createCmAnalysis.html">createCmAnalysis()</a></code> </p>
         </td>
-        <td><p>Draw the attrition diagram</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> </p>
-        </td>
-        <td><p>Create an outcome model, and compute the relative risk</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getAttritionTable.html">getAttritionTable()</a></code> </p>
-        </td>
-        <td><p>Get the attrition table for a population</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code> </p>
-        </td>
-        <td><p>Get the cohort data from the server</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications()</a></code> </p>
-        </td>
-        <td><p>Get the default table 1 specifications</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getFollowUpDistribution.html">getFollowUpDistribution()</a></code> </p>
-        </td>
-        <td><p>Get the distribution of follow-up time</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getOutcomeModel.html">getOutcomeModel()</a></code> </p>
-        </td>
-        <td><p>Get the outcome model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="getPsModel.html">getPsModel()</a></code> </p>
-        </td>
-        <td><p>Get the propensity model</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="grepCovariateNames.html">grepCovariateNames()</a></code> </p>
-        </td>
-        <td><p>Extract covariate names</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="insertDbPopulation.html">insertDbPopulation()</a></code> </p>
-        </td>
-        <td><p>Insert a population into a database</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="loadCmAnalysisList.html">loadCmAnalysisList()</a></code> </p>
-        </td>
-        <td><p>Load a list of cmAnalysis from file</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="loadCohortMethodData.html">loadCohortMethodData()</a></code> </p>
-        </td>
-        <td><p>Load the cohort data from a folder</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="loadTargetComparatorOutcomesList.html">loadTargetComparatorOutcomesList()</a></code> </p>
-        </td>
-        <td><p>Load a list of targetComparatorOutcomes from file</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="matchOnPs.html">matchOnPs()</a></code> </p>
-        </td>
-        <td><p>Match persons by propensity score</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> </p>
-        </td>
-        <td><p>Match by propensity score as well as other covariates</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables()</a></code> </p>
-        </td>
-        <td><p>Plot variables with largest imbalance</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot()</a></code> </p>
-        </td>
-        <td><p>Create a scatterplot of the covariate balance</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plotFollowUpDistribution.html">plotFollowUpDistribution()</a></code> </p>
-        </td>
-        <td><p>Plot the distribution of follow-up time</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plotKaplanMeier.html">plotKaplanMeier()</a></code> </p>
-        </td>
-        <td><p>Plot the Kaplan-Meier curve</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plotPs.html">plotPs()</a></code> </p>
-        </td>
-        <td><p>Plot the propensity score distribution</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="runCmAnalyses.html">runCmAnalyses()</a></code> </p>
-        </td>
-        <td><p>Run a list of analyses</p></td>
+        <td><p>Create a CohortMethod analysis specification</p></td>
       </tr><tr>
         
         <td>
@@ -400,9 +396,15 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="saveCohortMethodData.html">saveCohortMethodData()</a></code> </p>
+          <p><code><a href="loadCmAnalysisList.html">loadCmAnalysisList()</a></code> </p>
         </td>
-        <td><p>Save the cohort data to folder</p></td>
+        <td><p>Load a list of cmAnalysis from file</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code> </p>
+        </td>
+        <td><p>Create target-comparator-outcomes combinations.</p></td>
       </tr><tr>
         
         <td>
@@ -412,39 +414,79 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="simulateCohortMethodData.html">simulateCohortMethodData()</a></code> </p>
+          <p><code><a href="loadTargetComparatorOutcomesList.html">loadTargetComparatorOutcomesList()</a></code> </p>
         </td>
-        <td><p>Generate simulated data</p></td>
+        <td><p>Load a list of targetComparatorOutcomes from file</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="stratifyByPs.html">stratifyByPs()</a></code> </p>
+          <p><code><a href="runCmAnalyses.html">runCmAnalyses()</a></code> </p>
         </td>
-        <td><p>Stratify persons by propensity score</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> </p>
-        </td>
-        <td><p>Stratify persons by propensity score and other covariates</p></td>
+        <td><p>Run a list of analyses</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="summarizeAnalyses.html">summarizeAnalyses()</a></code> </p>
         </td>
         <td><p>Create a summary report of the analyses</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-simulation" class="hasAnchor"><a href="#section-simulation" class="anchor"></a>Simulation</h2>
+          <p class="section-desc"><p>Functions for simulating cohort method data objects.</p></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="createCohortMethodDataSimulationProfile.html">createCohortMethodDataSimulationProfile()</a></code> </p>
+        </td>
+        <td><p>Create simulation profile</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="trimByPs.html">trimByPs()</a></code> </p>
+          <p><code><a href="simulateCohortMethodData.html">simulateCohortMethodData()</a></code> </p>
         </td>
-        <td><p>Trim persons by propensity score</p></td>
+        <td><p>Generate simulated data</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> </p>
+          <p><code><a href="cohortMethodDataSimulationProfile.html">cohortMethodDataSimulationProfile</a></code> </p>
         </td>
-        <td><p>Keep only persons in clinical equipoise</p></td>
+        <td><p>A simulation profile</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-helper-functions" class="hasAnchor"><a href="#section-helper-functions" class="anchor"></a>Helper functions</h2>
+          <p class="section-desc"><p>Various helper functions</p></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="checkCmInstallation.html">checkCmInstallation()</a></code> </p>
+        </td>
+        <td><p>Check is CohortMethod and its dependencies are correctly installed</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="insertDbPopulation.html">insertDbPopulation()</a></code> </p>
+        </td>
+        <td><p>Insert a population into a database</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="constructEras.html">constructEras()</a></code> </p>
+        </td>
+        <td><p>Build eras</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="grepCovariateNames.html">grepCovariateNames()</a></code> </p>
+        </td>
+        <td><p>Extract covariate names</p></td>
       </tr>
     </tbody>
     </table>
@@ -453,7 +495,13 @@
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
+      <li><a href="#section-getting-data-and-creating-a-study-population">Getting data and creating a study population</a></li>
+      <li><a href="#section-propensity-scores">Propensity scores</a></li>
+      <li><a href="#section-outcome-models">Outcome models</a></li>
+      <li><a href="#section-diagnostics">Diagnostics</a></li>
+      <li><a href="#section-running-multiple-analyses">Running multiple analyses</a></li>
+      <li><a href="#section-simulation">Simulation</a></li>
+      <li><a href="#section-helper-functions">Helper functions</a></li>
     </ul>
   </div>
 </div>
