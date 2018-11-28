@@ -28,6 +28,8 @@
 #include <cmath>
 #include <iostream>
 
+#include <Rcpp.h>
+
 #include "Match.h"
 
 //#include <queue>
@@ -65,6 +67,97 @@ std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> Match::initi
   return heap;
 }
 
+unsigned int Match::whatEver(unsigned int targetRatio,
+                     PriorityQueue& heap,
+              const std::vector<double>& propensityScores,
+              const std::vector<int>& treatment,
+              std::vector<int64_t>& stratumIds,
+              std::vector<unsigned int>& stratumSizes,
+              // unsigned int& matchedTreatedCount,
+              unsigned int& treatedCount,
+              unsigned int& comparatorCount,
+              unsigned int& matchedComparatorCount,
+              const double caliper
+              ) {
+
+    // std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
+    // if (heap.empty()){
+    //   break;
+    // }
+    unsigned int matchedTreatedCount = 0;
+    MatchPair pair = heap.top();
+    heap.pop();
+    while (pair.distance < caliper && matchedTreatedCount < treatedCount && matchedComparatorCount < comparatorCount) {
+      int64_t stratumIdTreated = stratumIds[pair.indexTreated];
+      int64_t stratumIdComparator = stratumIds[pair.indexComparator];
+      if (stratumIdTreated == -1 && stratumIdComparator == -1) { //First time treated person is matched, comparator is unmatched
+        int stratumId = stratumSizes.size();
+        stratumIds[pair.indexTreated] = stratumId;
+        stratumIds[pair.indexComparator] = stratumId;
+        stratumSizes.push_back(1);
+        matchedTreatedCount++;
+        matchedComparatorCount++;
+      } else if (stratumIdTreated != -1 && stratumIdComparator == -1) { //Already have a match for treated person, comparator is unmatched
+        if (stratumSizes[stratumIdTreated] < targetRatio) { //We need another match for this person
+          stratumIds[pair.indexTreated] = stratumIdTreated;
+          stratumIds[pair.indexComparator] = stratumIdTreated;
+          stratumSizes[stratumIdTreated] = stratumSizes[stratumIdTreated] + 1;
+          matchedTreatedCount++;
+          matchedComparatorCount++;
+        }
+      } else if ((stratumIdTreated == -1 || stratumSizes[stratumIdTreated] < targetRatio) && stratumIds[pair.indexComparator] != -1) {
+        //We need another match for this treated person, but this comparator is already matched. Create a new one and put it on the heap
+
+        //Look back:
+        int candidateBack = -1;
+        unsigned int cursor = pair.indexTreated;
+        while (cursor != 0) {
+          cursor--;
+          if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
+            candidateBack = cursor;
+            break;
+          }
+        }
+        //Look forward:
+        int candidateForward = -1;
+        cursor = pair.indexTreated;
+        while (cursor != treatment.size()) {
+          if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
+            candidateForward = cursor;
+            break;
+          }
+          cursor++;
+        }
+        if (candidateBack == -1 && candidateForward != -1) {
+          double distanceForward = distance(propensityScores[pair.indexTreated], propensityScores[candidateForward]);
+          heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
+        } else if (candidateBack != -1 && candidateForward == -1) {
+          double distanceBack = distance(propensityScores[pair.indexTreated], propensityScores[candidateBack]);
+          heap.push(MatchPair(pair.indexTreated, candidateBack, distanceBack));
+        } else if (candidateBack != -1 && candidateForward != -1) {
+          double distanceBack = distance(propensityScores[pair.indexTreated], propensityScores[candidateBack]);
+          double distanceForward = distance(propensityScores[pair.indexTreated], propensityScores[candidateForward]);
+          if (distanceBack < distanceForward) {
+            heap.push(MatchPair(pair.indexTreated, candidateBack, distanceBack));
+          } else {
+            heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
+          }
+        }
+      }
+      if (!heap.empty() && matchedComparatorCount < comparatorCount) {
+        pair = heap.top();
+        heap.pop();
+      }
+    } //end while
+    // if (matchedComparatorCount == comparatorCount) { //Every comparator is matched: stop
+    //   break;
+    // }
+    // if (matchedTreatedCount == 0){ //No person was matched this round
+    //   break;
+    // }
+    return matchedTreatedCount;
+}
+
 std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
                                   const double caliper) {
   unsigned int treatedCount = 0;
@@ -74,6 +167,31 @@ std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, c
   unsigned int matchedComparatorCount = 0;
   std::vector<int64_t> stratumIds(treatment.size(), -1);
   std::vector<unsigned int> stratumSizes;
+
+#if 1
+
+  for (unsigned int targetRatio = 1; targetRatio <= maxRatio; ++targetRatio) {
+    std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
+    if (heap.empty()){
+      break;
+    }
+
+    auto matchedTreatedCount = whatEver(targetRatio, heap,
+                                                propensityScores, treatment, stratumIds, stratumSizes,
+                                                treatedCount, comparatorCount, matchedComparatorCount, caliper);
+
+    if (matchedComparatorCount == comparatorCount) { //Every comparator is matched: stop
+      break;
+    }
+    if (matchedTreatedCount == 0) { //No person was matched this round
+      break;
+    }
+
+    Rcpp::checkUserInterrupt();
+  }
+
+#else
+
   for (unsigned int targetRatio = 1; targetRatio <= maxRatio; targetRatio++) {
     std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> heap = initializeHeap(propensityScores, treatment, stratumIds);
     if (heap.empty()){
@@ -151,6 +269,9 @@ std::vector<int64_t> Match::match(const std::vector<double> &propensityScores, c
       break;
     }
   }
+
+#endif
+
   return stratumIds;
 }
 }

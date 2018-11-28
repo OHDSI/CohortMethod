@@ -232,3 +232,35 @@ for (i in 1:nrow(result)) {
   writeLines(paste(computeMdrr(population)$se, om$outcomeModelTreatmentEstimate$seLogRr))
 }
 
+# Profile variable-ratio matching
+library(CohortMethod)
+for (i in 1:20) {
+  rowId <- 1:1e+06
+  treatment <- rep(0:1, 2.5e+04)
+  set.seed(123)
+  propensityScore <- runif(length(rowId), 0, 1)
+  data <-
+    data.frame(rowId = rowId,
+               treatment = treatment,
+               propensityScore = propensityScore)
+  system.time(result <- matchOnPs(data, caliper = 0, maxRatio = 100))
+}
+
+
+# Unit test
+rowId <- 1:1e+03
+treatment <- rep(0:1, length(rowId) / 2)
+set.seed(123)
+propensityScore <- runif(length(rowId), 0, 1)
+data <-
+  data.frame(rowId = rowId,
+             treatment = treatment,
+             propensityScore = propensityScore)
+system.time(result <- matchOnPs(data, caliper = 0, maxRatio = 100))
+# unitTestResult <- result
+# save(unitTestResult, file = "unitTest.Rda")
+load("unitTest.Rda")
+
+
+
+
