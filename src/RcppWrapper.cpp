@@ -41,7 +41,8 @@ DataFrame matchPsInternal(std::vector<double> propensityScores, std::vector<int>
 	using namespace ohdsi::cohortMethod;
 
 	try {
-		std::vector<int64_t> stratumIds = Match::match(propensityScores, treatment, maxRatio, caliper);
+	  Match match(propensityScores, treatment, maxRatio, caliper);
+		std::vector<int64_t> stratumIds = match.match();
 		return DataFrame::create(_["propensityScore"] = propensityScores, _["treatment"] = treatment,_["stratumId"] = stratumIds);
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);

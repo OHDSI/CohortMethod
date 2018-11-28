@@ -53,26 +53,36 @@ namespace ohdsi {
 
 		  using PriorityQueue = std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair>;
 
-			static std::vector<int64_t> match(const std::vector<double> &propensityScores, const std::vector<int> &treatment, const unsigned int maxRatio,
-					const double caliper);
+		  Match(const std::vector<double> &propensityScores,
+          const std::vector<int> &treatment,
+          const unsigned int maxRatio,
+          const double caliper);
+
+		  std::vector<int64_t> match();
+
 		private:
 
-		  static unsigned int whatEver(unsigned int targetRatio,
-                                 PriorityQueue& heap,
-                                 const std::vector<double>& propensityScores,
-                                 const std::vector<int>& treatment,
-                                 std::vector<int64_t>& stratumIds,
-                                 std::vector<unsigned int>& stratumSizes,
-                                 // unsigned int& matchedTreatedCount,
-                                 unsigned int& treatedCount,
-                                 unsigned int& comparatorCount,
-                                 unsigned int& matchedComparatorCount,
-                                 const double caliper
-		  );
+		  unsigned int matchOnePerTarget(unsigned int targetRatio, PriorityQueue& heap);
 
-			static double distance(double score1, double score2);
-			static std::priority_queue<MatchPair, std::vector<MatchPair>, ComparePair> initializeHeap(const std::vector<double> &propensityScores,
-					const std::vector<int> &treatment, const std::vector<int64_t> &stratumIds);
+			double distance(double score1, double score2);
+
+			PriorityQueue initializeHeap(const std::vector<double> &propensityScores,
+                                const std::vector<int> &treatment,
+                                const std::vector<int64_t> &stratumIds);
+			void findNewComparator(MatchPair& pair,
+                                 PriorityQueue& heap);
+			void updateIndices(unsigned int index);
+			const std::vector<double>& propensityScores;
+			const std::vector<int>& treatment;
+			unsigned int maxRatio;
+			const double caliper;
+			unsigned int treatedCount;
+			unsigned int comparatorCount;
+			unsigned int matchedComparatorCount;
+			std::vector<int64_t> stratumIds;
+			std::vector<unsigned int> stratumSizes;
+			std::vector<int> backIndices;
+			std::vector<int> forthIndices;
 		};
 	}
 }
