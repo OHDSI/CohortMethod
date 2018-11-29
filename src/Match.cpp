@@ -50,16 +50,16 @@ Match::Match(const std::vector<double>& propensityScores,
 
   // Fill back and forth indices to point to next unused comparator:
   int priorComparator = -1;
-  for (unsigned int i = 0; i < treatment.size();i++) {
+  for (unsigned int i = 0; i < treatment.size(); i++) {
     backIndices[i] = priorComparator;
-    if (treatment[i] == 1)
+    if (treatment[i] == 0)
       priorComparator = i;
   }
   int nextComparator = -1;
-  for (int i = treatment.size() - 1; i >= 0 ; i--) {
+  for (int i = treatment.size() - 1; i >= 0; i--) {
     forthIndices[i] = nextComparator;
-    if (treatment[i] == 1)
-      forthIndices[i] = i;
+    if (treatment[i] == 0)
+      nextComparator = i;
   }
 }
 
@@ -97,29 +97,45 @@ Match::PriorityQueue Match::initializeHeap(const std::vector<double> &propensity
 void Match::findNewComparator(MatchPair& pair,
                               PriorityQueue& heap) {
 
-  int candidateBack = backIndices[pair.indexTreated];
-  int candidateForward = forthIndices[pair.indexTreated];
-//
-//   //Look back:
-//   int candidateBack = -1;
-//   unsigned int cursor = pair.indexTreated;
-//   while (cursor != 0) {
-//     cursor--;
-//     if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
-//       candidateBack = cursor;
-//       break;
-//     }
-//   }
-//   //Look forward:
-//   int candidateForward = -1;
-//   cursor = pair.indexTreated;
-//   while (cursor != treatment.size()) {
-//     if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
-//       candidateForward = cursor;
-//       break;
-//     }
-//     cursor++;
-//   }
+  int candidateBackNew = backIndices[pair.indexTreated];
+  int candidateForwardNew = forthIndices[pair.indexTreated];
+
+#if 1
+
+  int candidateBack = candidateBackNew;
+  int candidateForward = candidateForwardNew;
+
+#else
+
+  //Look back:
+  int candidateBack = -1;
+  unsigned int cursor = pair.indexTreated;
+  while (cursor != 0) {
+    cursor--;
+    if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
+      candidateBack = cursor;
+      break;
+    }
+  }
+  //Look forward:
+  int candidateForward = -1;
+  cursor = pair.indexTreated;
+  while (cursor != treatment.size()) {
+    if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
+      candidateForward = cursor;
+      break;
+    }
+    cursor++;
+  }
+
+#endif
+
+  // // Check
+  // std::cerr << pair.indexTreated << std::endl;
+  // std::cerr << candidateBack << " ? " << candidateBackNew << std::endl;
+  // std::cerr << candidateForward << " ? " << candidateForwardNew << std::endl << std::endl;
+
+
   if (candidateBack == -1 && candidateForward != -1) {
     double distanceForward = distance(propensityScores[pair.indexTreated], propensityScores[candidateForward]);
     heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
@@ -135,15 +151,22 @@ void Match::findNewComparator(MatchPair& pair,
       heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
     }
   }
+
+
+
 }
 
 void Match::updateIndices(unsigned int index) {
   auto nextComparator = forthIndices[index];
   auto priorComparator = backIndices[index];
-  int begin = (priorComparator == -1) ? 0 : priorComparator;
-    std::fill(std::begin(backIndices) + begin, std::begin(backIndices) + index, nextComparator);
+
+  // std::cerr << "index: " << index << std::endl;
+
   int end = (nextComparator == -1) ? forthIndices.size() - 1 : nextComparator;
-  std::fill(std::begin(forthIndices) + index, std::begin(forthIndices) + end, priorComparator);
+  std::fill(std::begin(backIndices) + index, std::begin(backIndices) + end + 1, priorComparator);
+
+  int begin = (priorComparator == -1) ? 0 : priorComparator;
+  std::fill(std::begin(forthIndices) + begin, std::begin(forthIndices) + index + 1, nextComparator);
 }
 
 unsigned int Match::matchOnePerTarget(unsigned int targetRatio,

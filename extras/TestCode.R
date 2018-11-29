@@ -248,7 +248,8 @@ for (i in 1:20) {
 
 
 # Unit test
-rowId <- 1:1e+03
+library(CohortMethod)
+rowId <- 1:1e+06
 treatment <- rep(0:1, length(rowId) / 2)
 set.seed(123)
 propensityScore <- runif(length(rowId), 0, 1)
