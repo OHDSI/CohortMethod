@@ -97,45 +97,8 @@ Match::PriorityQueue Match::initializeHeap(const std::vector<double> &propensity
 void Match::findNewComparator(MatchPair& pair,
                               PriorityQueue& heap) {
 
-  int candidateBackNew = backIndices[pair.indexTreated];
-  int candidateForwardNew = forthIndices[pair.indexTreated];
-
-#if 1
-
-  int candidateBack = candidateBackNew;
-  int candidateForward = candidateForwardNew;
-
-#else
-
-  //Look back:
-  int candidateBack = -1;
-  unsigned int cursor = pair.indexTreated;
-  while (cursor != 0) {
-    cursor--;
-    if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
-      candidateBack = cursor;
-      break;
-    }
-  }
-  //Look forward:
-  int candidateForward = -1;
-  cursor = pair.indexTreated;
-  while (cursor != treatment.size()) {
-    if (treatment[cursor] == 0 && stratumIds[cursor] == -1) {
-      candidateForward = cursor;
-      break;
-    }
-    cursor++;
-  }
-
-#endif
-
-  // // Check
-  // std::cerr << pair.indexTreated << std::endl;
-  // std::cerr << candidateBack << " ? " << candidateBackNew << std::endl;
-  // std::cerr << candidateForward << " ? " << candidateForwardNew << std::endl << std::endl;
-
-
+  int candidateBack = backIndices[pair.indexTreated];
+  int candidateForward = forthIndices[pair.indexTreated];
   if (candidateBack == -1 && candidateForward != -1) {
     double distanceForward = distance(propensityScores[pair.indexTreated], propensityScores[candidateForward]);
     heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
@@ -151,20 +114,13 @@ void Match::findNewComparator(MatchPair& pair,
       heap.push(MatchPair(pair.indexTreated, candidateForward, distanceForward));
     }
   }
-
-
-
 }
 
 void Match::updateIndices(unsigned int index) {
   auto nextComparator = forthIndices[index];
   auto priorComparator = backIndices[index];
-
-  // std::cerr << "index: " << index << std::endl;
-
   int end = (nextComparator == -1) ? forthIndices.size() - 1 : nextComparator;
   std::fill(std::begin(backIndices) + index, std::begin(backIndices) + end + 1, priorComparator);
-
   int begin = (priorComparator == -1) ? 0 : priorComparator;
   std::fill(std::begin(forthIndices) + begin, std::begin(forthIndices) + index + 1, nextComparator);
 }
@@ -187,7 +143,6 @@ unsigned int Match::matchOnePerTarget(unsigned int targetRatio,
         matchedComparatorCount++;
       } else if (stratumIdTreated != -1 && stratumIdComparator == -1) { //Already have a match for treated person, comparator is unmatched
         if (stratumSizes[stratumIdTreated] < targetRatio) { //We need another match for this person
-          // stratumIds[pair.indexTreated] = stratumIdTreated;
           stratumIds[pair.indexComparator] = stratumIdTreated;
           updateIndices(pair.indexComparator);
           stratumSizes[stratumIdTreated] = stratumSizes[stratumIdTreated] + 1;
