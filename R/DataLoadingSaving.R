@@ -222,13 +222,26 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      oracleTempSchema = oracleTempSchema,
                                                      cdm_version = cdmVersion,
                                                      target_id = targetId)
-    preSampleCounts <- DatabaseConnector::querySql(connection, renderedSql)
-    colnames(preSampleCounts) <- SqlRender::snakeCaseToCamelCase(colnames(preSampleCounts))
-    ParallelLogger::logDebug("Pre-sample total row count is ", sum(preSampleCounts$rowCount))
-    preSampleCounts <- data.frame(targetPersons = preSampleCounts$personCount[preSampleCounts$treatment == 1],
-                                  comparatorPersons = preSampleCounts$personCount[preSampleCounts$treatment == 0],
-                                  targetExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 1],
-                                  comparatorExposures = preSampleCounts$rowCount[preSampleCounts$treatment == 0])
+    counts <- DatabaseConnector::querySql(connection, renderedSql)
+    colnames(counts) <- SqlRender::snakeCaseToCamelCase(colnames(counts))
+    ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
+    preSampleCounts <- data.frame(dummy = 0)
+    idx <- which(counts$treatment == 1)
+    if (length(idx) == 0) {
+      preSampleCounts$targetPersons = 0
+      preSampleCounts$targetExposures = 0
+    } else {
+      preSampleCounts$targetPersons = counts$personCount[idx]
+      preSampleCounts$targetExposures = counts$rowCount[idx]
+    }
+    idx <- which(counts$treatment == 0)
+    if (length(idx) == 0) {
+      preSampleCounts$comparatorPersons = 0
+      preSampleCounts$comparatorExposures = 0
+    } else {
+      preSampleCounts$comparatorPersons = counts$personCount[idx]
+      preSampleCounts$comparatorExposures = counts$rowCount[idx]
+    }
     if (preSampleCounts$targetExposures > maxCohortSize) {
       ParallelLogger::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize))
       sampled <- TRUE
