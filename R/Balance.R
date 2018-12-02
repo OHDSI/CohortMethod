@@ -202,6 +202,7 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
   balance <- merge(beforeMatching, afterMatching)
   balance <- merge(balance, ff::as.ram(cohortMethodData$covariateRef))
+  balance$covariateName <- as.character(balance$covariateName)
   balance$beforeMatchingStdDiff <- (balance$beforeMatchingMeanTarget - balance$beforeMatchingMeanComparator)/balance$beforeMatchingSd
   balance$afterMatchingStdDiff <- (balance$afterMatchingMeanTarget - balance$afterMatchingMeanComparator)/balance$afterMatchingSd
   balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
@@ -302,7 +303,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
 #' format.
 #'
 #' @param balance        A data frame created by the \code{computeCovariateBalance} funcion.
-#' @param n              Count of variates to plot.
+#' @param n              (Maximum) count of variates to plot.
 #' @param maxNameWidth   Covariate names longer than this number of characters are truncated to create
 #'                       a nicer plot.
 #' @param title          Optional: the main title for the plot.
@@ -319,6 +320,7 @@ plotCovariateBalanceOfTopVariables <- function(balance,
                                                fileName = NULL,
                                                beforeLabel = "before matching",
                                                afterLabel = "after matching") {
+  n <- min(n, nrow(balance))
   beforeLabel <- as.character(beforeLabel)
   afterLabel <- as.character(afterLabel)
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]

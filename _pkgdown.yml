@@ -1,0 +1,85 @@
+template:
+  params:
+    bootswatch: cosmo
+
+home:
+  links:
+  - text: Ask a question
+    href: http://forums.ohdsi.org
+
+reference:
+  - title: "Getting data and creating a study population"
+    desc: >
+      Functions for getting the necessary data from the database in Common Data Model, and creating a study population.
+    contents:
+      - getDbCohortMethodData
+      - saveCohortMethodData
+      - loadCohortMethodData
+      - createStudyPopulation
+  - title: "Propensity scores"
+    desc: >
+      Functions for creating and using propensity scores.
+    contents:
+      - createPs
+      - getPsModel
+      - matchOnPs
+      - matchOnPsAndCovariates
+      - trimByPs
+      - trimByPsToEquipoise
+      - stratifyByPs
+      - stratifyByPsAndCovariates
+  - title: "Outcome models"
+    desc: >
+      Functions for creating and viewing outcome models.
+    contents:
+      - fitOutcomeModel
+      - getOutcomeModel
+      - plotKaplanMeier
+  - title: "Diagnostics"
+    desc: >
+      Functions for producing various study diagnostics.
+    contents:
+      - computeMdrr
+      - getAttritionTable
+      - drawAttritionDiagram
+      - plotFollowUpDistribution
+      - createCmTable1
+      - getDefaultCmTable1Specifications
+      - getFollowUpDistribution
+      - plotPs
+      - computePsAuc
+      - computeCovariateBalance
+      - plotCovariateBalanceOfTopVariables
+      - plotCovariateBalanceScatterPlot
+  - title: "Running multiple analyses"
+    desc: >
+      Functions for running multiple analyses in an efficient way.
+    contents:
+      - ends_with("Args")
+      - createCmAnalysis
+      - saveCmAnalysisList
+      - loadCmAnalysisList
+      - createTargetComparatorOutcomes
+      - saveTargetComparatorOutcomesList
+      - loadTargetComparatorOutcomesList
+      - runCmAnalyses
+      - summarizeAnalyses
+  - title: "Simulation"
+    desc: >
+      Functions for simulating cohort method data objects.
+    contents:
+      - createCohortMethodDataSimulationProfile
+      - simulateCohortMethodData
+      - cohortMethodDataSimulationProfile
+  - title: "Helper functions"
+    desc: >
+      Various helper functions
+    contents:
+      - checkCmInstallation
+      - insertDbPopulation
+      - constructEras
+      - grepCovariateNames
+      - checkCmInstallation
+
+
+

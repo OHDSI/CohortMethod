@@ -1,12 +1,14 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 3.0.0
-Date: 2018-10-01
-Author: Martijn J. Schuemie [aut, cre],
-    Marc A. Suchard [aut],
-    Patrick B. Ryan [aut]
-Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
+Version: 3.0.1
+Date: 2018-10-04
+Authors@R: c(
+    person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
+    person("Marc", "Suchard", role = c("aut")),
+    person("Patrick", "Ryan", role = c("aut"))
+    )
+Maintainer: Martijn Schuemie <schuemie@ohdsi.org>
 Description: CohortMethod is an R package for performing new-user cohort studies
     in an observational database in the OMOP Common Data Model. It extracts the
     necessary data from a database in OMOP Common Data Model format, and uses a
@@ -20,10 +22,12 @@ Description: CohortMethod is an R package for performing new-user cohort studies
     (conditional) Poisson regression, and (stratified) Cox regression.
 License: Apache License 2.0
 VignetteBuilder: knitr
+URL: https://github.com/OHDSI/CohortMethod
+BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 2.2.0),
-    Cyclops (>= 2.0.0),
+    Cyclops,
     FeatureExtraction  (>= 2.0.0)
 Imports:
     methods,
