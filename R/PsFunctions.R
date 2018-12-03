@@ -861,6 +861,9 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
   ParallelLogger::logTrace("Stratifying by propensity score")
+  if (nrow(population) == 0) {
+    return(population)
+  }
   baseSelection <- tolower(baseSelection)
   if (baseSelection == "all") {
     basePop <- population$propensityScore
