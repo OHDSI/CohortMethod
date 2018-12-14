@@ -486,7 +486,7 @@ loadCohortMethodData <- function(file, readOnly = TRUE, skipCovariates = FALSE) 
     covariates <- NULL
     covariateRef <- NULL
     analysisRef <- NULL
-  }  else if (file.exists(file.path(file, "covariates.rds")) && file.exists(file.path(file, "covariateRef.rds"))) {
+  } else if (file.exists(file.path(file, "covariates.rds")) && !file.exists(file.path(file, "covariates.zip"))) {
     ParallelLogger::logDebug("Covariates are empty data frame")
     covariates <- readRDS(file.path(file, "covariates.rds"))
     covariateRef <- readRDS(file.path(file, "covariateRef.rds"))
