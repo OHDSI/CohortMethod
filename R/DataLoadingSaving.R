@@ -242,6 +242,7 @@ getDbCohortMethodData <- function(connectionDetails,
       preSampleCounts$comparatorPersons = counts$personCount[idx]
       preSampleCounts$comparatorExposures = counts$rowCount[idx]
     }
+    preSampleCounts$dummy <- NULL
     if (preSampleCounts$targetExposures > maxCohortSize) {
       ParallelLogger::logInfo(paste0("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize))
       sampled <- TRUE
