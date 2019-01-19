@@ -51,6 +51,7 @@ reference:
       - computeCovariateBalance
       - plotCovariateBalanceOfTopVariables
       - plotCovariateBalanceScatterPlot
+      - plotTimeToEvent
   - title: "Running multiple analyses"
     desc: >
       Functions for running multiple analyses in an efficient way.
