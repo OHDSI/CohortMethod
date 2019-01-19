@@ -29,7 +29,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">3.0.2</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released package">3.0.3</span>
       </span>
     </div>
 
@@ -85,7 +85,7 @@
       <h1>Single studies using the CohortMethod package</h1>
                         <h4 class="author">Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 class="date">2018-12-14</h4>
+            <h4 class="date">2019-01-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/master/vignettes/SingleStudies.Rmd"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="hidden name"><code>SingleStudies.Rmd</code></div>
@@ -692,16 +692,25 @@
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-72-1.png" width="700"></p>
 <p>Note that the Kaplan-Meier plot will automatically adjust for any stratification, matching, or trimming that may have been applied.</p>
 </div>
+<div id="time-to-event-plot" class="section level2">
+<h2 class="hasAnchor">
+<a href="#time-to-event-plot" class="anchor"></a>Time-to-event plot</h2>
+<p>We can also plot time-to-event, showing both events before and after the index date, and events during and outside the defined time-at-risk window. This plot can provide insight into the temporal pattern of the outcome relative to the exposures:</p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb62-1" data-line-number="1"><span class="kw"><a href="../reference/plotTimeToEvent.html">plotTimeToEvent</a></span>(<span class="dt">cohortMethodData =</span> cohortMethodData, <span class="dt">outcomeId =</span> <span class="dv">3</span>, <span class="dt">firstExposureOnly =</span> <span class="ot">FALSE</span>, <span class="dt">washoutPeriod =</span> <span class="dv">0</span>, <span class="dt">removeDuplicateSubjects =</span> <span class="ot">FALSE</span>, <span class="dt">minDaysAtRisk =</span> <span class="dv">1</span>, <span class="dt">riskWindowStart =</span> <span class="dv">0</span>, <span class="dt">addExposureDaysToStart =</span> <span class="ot">FALSE</span>, </a>
+<a class="sourceLine" id="cb62-2" data-line-number="2">    <span class="dt">riskWindowEnd =</span> <span class="dv">30</span>, <span class="dt">addExposureDaysToEnd =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-74-1.png" width="700"></p>
+<p>Note that this plot does not show any adjustment for the propensity score.</p>
+</div>
 </div>
 <div id="acknowledgments" class="section level1">
 <h1 class="hasAnchor">
 <a href="#acknowledgments" class="anchor"></a>Acknowledgments</h1>
 <p>Considerable work has been dedicated to provide the <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb62-1" data-line-number="1"><span class="kw">citation</span>(<span class="st">"CohortMethod"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb63-1" data-line-number="1"><span class="kw">citation</span>(<span class="st">"CohortMethod"</span>)</a></code></pre></div>
 <pre><code>#&gt; 
 #&gt; To cite package 'CohortMethod' in publications use:
 #&gt; 
-#&gt;   Martijn Schuemie, Marc Suchard and Patrick Ryan (2018). CohortMethod: New-user cohort method with large scale propensity and outcome models.
+#&gt;   Martijn Schuemie, Marc Suchard and Patrick Ryan (2019). CohortMethod: New-user cohort method with large scale propensity and outcome models.
 #&gt;   https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod.
 #&gt; 
 #&gt; A BibTeX entry for LaTeX users is
@@ -709,11 +718,11 @@
 #&gt;   @Manual{,
 #&gt;     title = {CohortMethod: New-user cohort method with large scale propensity and outcome models},
 #&gt;     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},
-#&gt;     year = {2018},
+#&gt;     year = {2019},
 #&gt;     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},
 #&gt;   }</code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb64"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb64-1" data-line-number="1"><span class="kw">citation</span>(<span class="st">"Cyclops"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb65-1" data-line-number="1"><span class="kw">citation</span>(<span class="st">"Cyclops"</span>)</a></code></pre></div>
 <pre><code>#&gt; 
 #&gt; To cite Cyclops in publications use:
 #&gt; 
@@ -768,6 +777,7 @@
       <li><a href="#adding-covariates-to-the-outcome-model">Adding covariates to the outcome model</a></li>
       <li><a href="#inpecting-the-outcome-model">Inpecting the outcome model</a></li>
       <li><a href="#kaplan-meier-plot">Kaplan-Meier plot</a></li>
+      <li><a href="#time-to-event-plot">Time-to-event plot</a></li>
       </ul>
 </li>
       <li><a href="#acknowledgments">Acknowledgments</a></li>

@@ -101,6 +101,20 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   addExposureDaysToStart = FALSE,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE)
+
+plotTimeToEvent(cohortMethodData = cohortMethodData,
+                                  outcomeId = 3,
+                                  firstExposureOnly = FALSE,
+                                  washoutPeriod = 0,
+                                  removeDuplicateSubjects = FALSE,
+                                  minDaysAtRisk = 1,
+                                  riskWindowStart = 0,
+                                  addExposureDaysToStart = FALSE,
+                                  riskWindowEnd = 30,
+                                  addExposureDaysToEnd = TRUE)
+
+
+
 # getAttritionTable(studyPop)
 
 saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")

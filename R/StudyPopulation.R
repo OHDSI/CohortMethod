@@ -251,8 +251,8 @@ createStudyPopulation <- function(cohortMethodData,
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
                                                                                       0] - population$riskStart[population$outcomeCount != 0] + 1
   }
-  population$riskStart <- NULL
-  population$riskEnd <- NULL
+  # population$riskStart <- NULL
+  # population$riskEnd <- NULL
   attr(population, "metaData") <- metaData
   ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
   return(population)
@@ -292,4 +292,208 @@ getCounts <- function(population, description = "") {
                        targetExposures = targetExposures,
                        comparatorExposures = comparatorExposures)
   return(counts)
+}
+
+
+#' Plot time-to-event
+#'
+#' @details
+#' Creates a plot showing the number of events over time in the target and comparator cohorts, both before and after
+#' index date. The plot also distinguishes between events inside and outside the time-at-risk period. This requires
+#' the user to (re)specify the time-at-risk using the same arguments as the \code{\link{createStudyPopulation}} function.
+#' Note that it is not possible to specify that people with the outcome prior should be removed, since the plot will
+#' show these prior events.
+#'
+#' @param cohortMethodData                 An object of type \code{cohortMethodData} as generated using
+#'                                         \code{getDbCohortMethodData}.
+#' @param population                       If specified, this population will be used as the starting
+#'                                         point instead of the cohorts in the \code{cohortMethodData}
+#'                                         object.
+#' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
+#'                                         transformations will be performed.
+#' @param firstExposureOnly                Should only the first exposure per subject be included? Note
+#'                                         that this is typically done in the
+#'                                         \code{createStudyPopulation} function,
+#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
+#'                                         cohort? See details for allowed values.
+#' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
+#' @param washoutPeriod                    The mininum required continuous observation time prior to
+#'                                         index date for a person to be included in the cohort.
+#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
+#'                                         window start?
+#' @param priorOutcomeLookback             How many days should we look back when identifying prior
+#'                                         outcomes?
+#' @param minDaysAtRisk                    The minimum required number of days at risk.
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the index
+#'                                         date (+ days of exposure if the
+#'                                         \code{addExposureDaysToStart} parameter is specified).
+#' @param addExposureDaysToStart           Add the length of exposure the start of the risk window?
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the index
+#'                                         data (+ days of exposure if the \code{addExposureDaysToEnd}
+#'                                         parameter is specified).
+#' @param addExposureDaysToEnd             Add the length of exposure the risk window?
+#' @param periodLength                     The length in days of each period shown in the plot.
+#' @param numberOfPeriods                  Number of periods to show in the plot. The periods are
+#'                                         equaly divided before and after the index date.
+#' @param showFittedLines                  Fit lines to the proportions and show them in the plot?
+#' @param targetLabel                      A label to us for the target cohort.
+#' @param comparatorLabel                  A label to us for the comparator cohort.
+#' @param title                            Optional: the main title for the plot.
+#' @param fileName              Name of the file where the plot should be saved, for example
+#'                              'plot.png'. See the function \code{ggsave} in the ggplot2 package for
+#'                              supported file formats.
+#'
+#' @return
+#' A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+#' format.
+#'
+#' @export
+plotTimeToEvent <- function(cohortMethodData,
+                            population = NULL,
+                            outcomeId,
+                            firstExposureOnly = FALSE,
+                            restrictToCommonPeriod = FALSE,
+                            washoutPeriod = 0,
+                            removeDuplicateSubjects = FALSE,
+                            minDaysAtRisk = 1,
+                            riskWindowStart = 0,
+                            addExposureDaysToStart = FALSE,
+                            riskWindowEnd = 0,
+                            addExposureDaysToEnd = TRUE,
+                            censorAtNewRiskWindow = FALSE,
+                            periodLength = 7,
+                            numberOfPeriods = 52,
+                            showFittedLines = TRUE,
+                            targetLabel = "Target",
+                            comparatorLabel = "Comparator",
+                            title = NULL,
+                            fileName = NULL) {
+  population <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                      population = population,
+                                      outcomeId = outcomeId,
+                                      firstExposureOnly = firstExposureOnly,
+                                      restrictToCommonPeriod = restrictToCommonPeriod,
+                                      washoutPeriod = washoutPeriod,
+                                      removeDuplicateSubjects = removeDuplicateSubjects,
+                                      removeSubjectsWithPriorOutcome = FALSE,
+                                      minDaysAtRisk = minDaysAtRisk,
+                                      riskWindowStart = riskWindowStart,
+                                      addExposureDaysToStart = addExposureDaysToStart,
+                                      riskWindowEnd = riskWindowEnd,
+                                      addExposureDaysToEnd = addExposureDaysToEnd,
+                                      censorAtNewRiskWindow = censorAtNewRiskWindow)
+  outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+  outcomes <- merge(population[, c("rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd")],
+                    outcomes[, c("rowId", "daysToEvent")])
+  outcomes <- outcomes[-outcomes$daysFromObsStart <= outcomes$daysToEvent & outcomes$daysToObsEnd >= outcomes$daysToEvent, ]
+  outcomes$exposed <- 0
+  outcomes$exposed[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd] <- 1
+  periods <- data.frame(number = -floor(numberOfPeriods/2):ceiling(numberOfPeriods/2))
+  periods$start <- periods$number*periodLength
+  periods$end <- periods$number*periodLength + periodLength
+  periods$eventsExposed <- 0
+  periods$eventsUnexposed <- 0
+  periods$observed <- 0
+  idxExposed <- outcomes$exposed == 1
+  idxTarget <- outcomes$treatment == 1
+  for (i in 1:nrow(periods)) {
+    idxInPeriod <- outcomes$daysToEvent >= periods$start[i] & outcomes$daysToEvent < periods$end[i]
+    periods$eventsExposedTarget[i] <- sum(idxInPeriod & idxExposed & idxTarget)
+    periods$eventsExposedComparator[i] <- sum(idxInPeriod & idxExposed & !idxTarget)
+    periods$eventsUnexposedTarget[i] <- sum(idxInPeriod & !idxExposed & idxTarget)
+    periods$eventsUnexposedComparator[i] <- sum(idxInPeriod & !idxExposed & !idxTarget)
+    idxInPeriod <- -population$daysFromObsStart <= periods$start[i] & population$daysToObsEnd >= periods$end[i]
+    periods$observedTarget[i] <- sum(idxInPeriod & population$treatment)
+    periods$observedComparator[i] <- sum(idxInPeriod & !population$treatment)
+  }
+  periods$rateExposedTarget <- periods$eventsExposedTarget / periods$observedTarget
+  periods$rateUnexposedTarget <- periods$eventsUnexposedTarget / periods$observedTarget
+  periods$rateExposedComparator <- periods$eventsExposedComparator / periods$observedComparator
+  periods$rateUnexposedComparator <- periods$eventsUnexposedComparator / periods$observedComparator
+  periods$rateTarget <- (periods$eventsExposedTarget + periods$eventsUnexposedTarget) / periods$observedTarget
+  periods$rateComparator <- (periods$eventsExposedComparator + periods$eventsUnexposedComparator) / periods$observedComparator
+  vizData <- rbind(data.frame(start = periods$start,
+                              end = periods$end,
+                              rate = periods$rateExposedTarget,
+                              status = "Exposed events",
+                              type = targetLabel),
+                   data.frame(start = periods$start,
+                              end = periods$end,
+                              rate = periods$rateUnexposedTarget,
+                              status = "Unexposed events",
+                              type = targetLabel),
+                   data.frame(start = periods$start,
+                              end = periods$end,
+                              rate = periods$rateExposedComparator,
+                              status = "Exposed events",
+                              type = comparatorLabel),
+                   data.frame(start = periods$start,
+                              end = periods$end,
+                              rate = periods$rateUnexposedComparator,
+                              status = "Unexposed events",
+                              type = comparatorLabel))
+  vizData$type <- factor(vizData$type, levels = c(targetLabel, comparatorLabel))
+
+  plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = start + periodLength / 2,
+                                                y = rate * 1000,
+                                                fill = status)) +
+    ggplot2::geom_col(width = periodLength, alpha = 0.8) +
+    ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, size = 1) +
+    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
+                                          rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_x_continuous("Days since exposure start") +
+    ggplot2::scale_y_continuous("Proportion (per 1,000 persons)") +
+    ggplot2::facet_grid(type~., scales = "free_y") +
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   panel.background = ggplot2::element_rect(fill = "#FAFAFA", colour = NA),
+                   panel.grid.major = ggplot2::element_line(colour = "#AAAAAA"),
+                   axis.ticks = ggplot2::element_blank(),
+                   strip.background = ggplot2::element_blank(),
+                   legend.title = ggplot2::element_blank(),
+                   legend.position = "top")
+
+  if (showFittedLines) {
+    preTarget <- periods[periods$start < 0, ]
+    preTarget <- cbind(preTarget, predict(lm(rateTarget ~ poly(number, 3), data = preTarget), interval = "confidence"))
+    preTarget$type <- targetLabel
+    preTarget$period <- "Pre"
+    postTarget <- periods[periods$start >= 0, ]
+    postTarget <- cbind(postTarget, predict(lm(rateTarget ~ poly(number, 3), data = postTarget), interval = "confidence"))
+    postTarget$type <- targetLabel
+    postTarget$period <- "Post"
+    preComparator <- periods[periods$start < 0, ]
+    preComparator <- cbind(preComparator, predict(lm(rateComparator ~ poly(number, 3), data = preComparator), interval = "confidence"))
+    preComparator$type <- comparatorLabel
+    preComparator$period <- "Pre"
+    postComparator <- periods[periods$start >= 0, ]
+    postComparator <- cbind(postComparator, predict(lm(rateComparator ~ poly(number, 3), data = postComparator), interval = "confidence"))
+    postComparator$type <- comparatorLabel
+    postComparator$period <- "Post"
+    curve <- rbind(preTarget, postTarget, preComparator, postComparator)
+    curve$rate <- 0
+    curve$status <- "Exposed events"
+    curve$type <- factor(curve$type, levels = c(targetLabel, comparatorLabel))
+
+    plot <- plot + ggplot2::geom_ribbon(ggplot2::aes(x = start + periodLength/2,
+                                                     ymin = lwr * 1000,
+                                                     ymax = upr * 1000,
+                                                     group = period),
+                                        fill = rgb(0,0,0),
+                                        alpha = 0.3,
+                                        data = curve) +
+      ggplot2::geom_line(ggplot2::aes(x = start + periodLength/2,
+                                      y = fit * 1000,
+                                      group = period),
+                         size = 1.5,
+                         alpha = 0.8,
+                         data = curve)
+  }
+
+  if (!is.null(title)) {
+    plot <- plot + ggplot2::ggtitle(title)
+  }
+    # fileName <- "S:/temp/plot1.png"
+  if (!is.null(fileName))
+    ggplot2::ggsave(fileName, plot, width = 7, height = 5, dpi = 400)
+  return(plot)
 }

@@ -719,6 +719,41 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 
 Note that the Kaplan-Meier plot will automatically adjust for any stratification, matching, or trimming that may have been applied.
 
+## Time-to-event plot
+
+We can also plot time-to-event, showing both events before and after the index date, and events during and outside the defined time-at-risk window. This plot can provide insight into the temporal pattern of the outcome relative to the exposures:
+
+```{r tidy=TRUE,eval=FALSE}
+plotTimeToEvent(cohortMethodData = cohortMethodData,
+                outcomeId = 3,
+                firstExposureOnly = FALSE,
+                washoutPeriod = 0,
+                removeDuplicateSubjects = FALSE,
+                minDaysAtRisk = 1,
+                riskWindowStart = 0,
+                addExposureDaysToStart = FALSE,
+                riskWindowEnd = 30,
+                addExposureDaysToEnd = TRUE)
+
+```
+```{r echo=FALSE, message=FALSE, results='hide'}
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")) {
+  plotTimeToEvent(cohortMethodData = cohortMethodData,
+                  outcomeId = 3,
+                  firstExposureOnly = FALSE,
+                  washoutPeriod = 0,
+                  removeDuplicateSubjects = FALSE,
+                  minDaysAtRisk = 1,
+                  riskWindowStart = 0,
+                  addExposureDaysToStart = FALSE,
+                  riskWindowEnd = 30,
+                  addExposureDaysToEnd = TRUE)
+  
+}
+```
+
+Note that this plot does not show any adjustment for the propensity score.
+
 # Acknowledgments
 
 Considerable work has been dedicated to provide the `CohortMethod` package.

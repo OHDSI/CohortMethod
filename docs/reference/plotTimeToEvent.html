@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Create a parameter object for the function createStudyPopulation — createCreateStudyPopulationArgs • CohortMethod</title>
+<title>Plot time-to-event — plotTimeToEvent • CohortMethod</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Create a parameter object for the function createStudyPopulation — createCreateStudyPopulationArgs" />
+<meta property="og:title" content="Plot time-to-event — plotTimeToEvent" />
 
-<meta property="og:description" content="Create a parameter object for the function createStudyPopulation" />
+<meta property="og:description" content="Plot time-to-event" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -115,58 +115,65 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Create a parameter object for the function createStudyPopulation</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/CreateArgFunctions.R'><code>R/CreateArgFunctions.R</code></a></small>
-    <div class="hidden name"><code>createCreateStudyPopulationArgs.Rd</code></div>
+    <h1>Plot time-to-event</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/StudyPopulation.R'><code>R/StudyPopulation.R</code></a></small>
+    <div class="hidden name"><code>plotTimeToEvent.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Create a parameter object for the function createStudyPopulation</p>
+    <p>Plot time-to-event</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>createCreateStudyPopulationArgs</span>(<span class='kw'>firstExposureOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>restrictToCommonPeriod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>washoutPeriod</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>removeDuplicateSubjects</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>removeSubjectsWithPriorOutcome</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>priorOutcomeLookback</span> <span class='kw'>=</span> <span class='fl'>99999</span>,
+    <pre class="usage"><span class='fu'>plotTimeToEvent</span>(<span class='no'>cohortMethodData</span>, <span class='kw'>population</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>outcomeId</span>,
+  <span class='kw'>firstExposureOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>restrictToCommonPeriod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>washoutPeriod</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>removeDuplicateSubjects</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>minDaysAtRisk</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>riskWindowStart</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>addExposureDaysToStart</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>riskWindowEnd</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>addExposureDaysToEnd</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>censorAtNewRiskWindow</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>addExposureDaysToEnd</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>censorAtNewRiskWindow</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>periodLength</span> <span class='kw'>=</span> <span class='fl'>7</span>, <span class='kw'>numberOfPeriods</span> <span class='kw'>=</span> <span class='fl'>52</span>, <span class='kw'>showFittedLines</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>targetLabel</span> <span class='kw'>=</span> <span class='st'>"Target"</span>, <span class='kw'>comparatorLabel</span> <span class='kw'>=</span> <span class='st'>"Comparator"</span>,
+  <span class='kw'>title</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fileName</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
+      <th>cohortMethodData</th>
+      <td><p>An object of type <code>cohortMethodData</code> as generated using
+<code>getDbCohortMethodData</code>.</p></td>
+    </tr>
+    <tr>
+      <th>population</th>
+      <td><p>If specified, this population will be used as the starting
+point instead of the cohorts in the <code>cohortMethodData</code>
+object.</p></td>
+    </tr>
+    <tr>
+      <th>outcomeId</th>
+      <td><p>The ID of the outcome. If not specified, no outcome-specific
+transformations will be performed.</p></td>
+    </tr>
+    <tr>
       <th>firstExposureOnly</th>
-      <td><p>Should only the first exposure per subject be included?
-Notethat this is typically done in thecreateStudyPopulation
-function,</p></td>
+      <td><p>Should only the first exposure per subject be included? Note
+that this is typically done in the
+<code>createStudyPopulation</code> function,</p></td>
     </tr>
     <tr>
       <th>restrictToCommonPeriod</th>
-      <td><p>Restrict the analysis to the period when both exposures are
-observed?</p></td>
+      <td><p>Restrict the analysis to the period when both exposures are observed?</p></td>
     </tr>
     <tr>
       <th>washoutPeriod</th>
-      <td><p>The mininum required continuous observation time prior
-toindex date for a person to be included in the cohort.</p></td>
+      <td><p>The mininum required continuous observation time prior to
+index date for a person to be included in the cohort.</p></td>
     </tr>
     <tr>
       <th>removeDuplicateSubjects</th>
-      <td><p>Remove subjects that are in both the target and
-comparatorcohort? See details for allowed values.</p></td>
-    </tr>
-    <tr>
-      <th>removeSubjectsWithPriorOutcome</th>
-      <td><p>Remove subjects that have the outcome prior to the
-riskwindow start?</p></td>
-    </tr>
-    <tr>
-      <th>priorOutcomeLookback</th>
-      <td><p>How many days should we look back when identifying
-prioroutcomes?</p></td>
+      <td><p>Remove subjects that are in both the target and comparator
+cohort? See details for allowed values.</p></td>
     </tr>
     <tr>
       <th>minDaysAtRisk</th>
@@ -174,9 +181,9 @@ prioroutcomes?</p></td>
     </tr>
     <tr>
       <th>riskWindowStart</th>
-      <td><p>The start of the risk window (in days) relative to the
-indexdate (+ days of exposure if theaddExposureDaysToStart
-parameter is specified).</p></td>
+      <td><p>The start of the risk window (in days) relative to the index
+date (+ days of exposure if the
+<code>addExposureDaysToStart</code> parameter is specified).</p></td>
     </tr>
     <tr>
       <th>addExposureDaysToStart</th>
@@ -184,24 +191,69 @@ parameter is specified).</p></td>
     </tr>
     <tr>
       <th>riskWindowEnd</th>
-      <td><p>The end of the risk window (in days) relative to the
-indexdata (+ days of exposure if the
-addExposureDaysToEndparameter is specified).</p></td>
+      <td><p>The end of the risk window (in days) relative to the index
+data (+ days of exposure if the <code>addExposureDaysToEnd</code>
+parameter is specified).</p></td>
     </tr>
     <tr>
       <th>addExposureDaysToEnd</th>
       <td><p>Add the length of exposure the risk window?</p></td>
     </tr>
     <tr>
-      <th>censorAtNewRiskWindow</th>
-      <td><p>If a subject is in multiple cohorts, should time-at-risk be
-censoredwhen the new time-at-risk starts to prevent overlap?</p></td>
+      <th>periodLength</th>
+      <td><p>The length in days of each period shown in the plot.</p></td>
+    </tr>
+    <tr>
+      <th>numberOfPeriods</th>
+      <td><p>Number of periods to show in the plot. The periods are
+equaly divided before and after the index date.</p></td>
+    </tr>
+    <tr>
+      <th>showFittedLines</th>
+      <td><p>Fit lines to the proportions and show them in the plot?</p></td>
+    </tr>
+    <tr>
+      <th>targetLabel</th>
+      <td><p>A label to us for the target cohort.</p></td>
+    </tr>
+    <tr>
+      <th>comparatorLabel</th>
+      <td><p>A label to us for the comparator cohort.</p></td>
+    </tr>
+    <tr>
+      <th>title</th>
+      <td><p>Optional: the main title for the plot.</p></td>
+    </tr>
+    <tr>
+      <th>fileName</th>
+      <td><p>Name of the file where the plot should be saved, for example
+'plot.png'. See the function <code>ggsave</code> in the ggplot2 package for
+supported file formats.</p></td>
+    </tr>
+    <tr>
+      <th>removeSubjectsWithPriorOutcome</th>
+      <td><p>Remove subjects that have the outcome prior to the risk
+window start?</p></td>
+    </tr>
+    <tr>
+      <th>priorOutcomeLookback</th>
+      <td><p>How many days should we look back when identifying prior
+outcomes?</p></td>
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A ggplot object. Use the <code><a href='https://ggplot2.tidyverse.org/reference/ggsave.html'>ggsave</a></code> function to save to file in a different
+format.</p>
+    
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Create an object defining the parameter values.</p>
+    <p>Creates a plot showing the number of events over time in the target and comparator cohorts, both before and after
+index date. The plot also distinguishes between events inside and outside the time-at-risk period. This requires
+the user to (re)specify the time-at-risk using the same arguments as the <code><a href='createStudyPopulation.html'>createStudyPopulation</a></code> function.
+Note that it is not possible to specify that people with the outcome prior should be removed, since the plot will
+show these prior events.</p>
     
 
   </div>
@@ -210,6 +262,8 @@ censoredwhen the new time-at-risk starts to prevent overlap?</p></td>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       
+      <li><a href="#value">Value</a></li>
+
       <li><a href="#details">Details</a></li>
           </ul>
 

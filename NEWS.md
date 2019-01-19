@@ -1,3 +1,11 @@
+CohortMethod 3.0.3
+==================
+
+Changes:
+
+1. Added plotTimeToEvent function
+
+
 CohortMethod 3.0.2
 ==================
 
