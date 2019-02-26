@@ -293,8 +293,9 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param scale             The scale of the graph. Two scales are supported: \code{ scale =
 #'                          'propensity'} or \code{scale = 'preference'}. The preference score scale is
 #'                          defined by Walker et al (2013).
-#' @param type              Type of plot. Two possible values: \code{type = 'density'} or \code{type =
-#'                          'histogram'}
+#' @param type              Type of plot. Four possible values: \code{type = 'density'} or \code{type =
+#'                          'histogram'} or \code{type = 'histogramCount'}
+#'                          or \code{type = 'histogramProportion'}. 'histogram' defaults to 'histogramCount'.
 #' @param binWidth          For histograms, the width of the bins
 #' @param targetLabel       A label to us for the target cohort.
 #' @param comparatorLabel   A label to us for the comparator cohort.
@@ -303,6 +304,7 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param showEquiposeLabel Show the percentage of the population in equipoise?
 #' @param equipoiseBounds   The bounds on the preference score to determine whether a subject is in
 #'                          equipoise.
+#' @param unitOfAnalysis    The unit of analysis in the input data. Defaults to 'subjects'.
 #' @param title             Optional: the main title for the plot.
 #' @param fileName          Name of the file where the plot should be saved, for example 'plot.png'.
 #'                          See the function \code{ggsave} in the ggplot2 package for supported file
@@ -341,6 +343,7 @@ plotPs <- function(data,
                    showAucLabel = FALSE,
                    showEquiposeLabel = FALSE,
                    equipoiseBounds = c(0.25, 0.75),
+                   unitOfAnalysis = "subjects",
                    title = NULL,
                    fileName = NULL) {
   if (!("treatment" %in% colnames(data)))
@@ -353,9 +356,11 @@ plotPs <- function(data,
     if (!("propensityScore" %in% colnames(unfilteredData)))
       stop("Missing column propensityScore in unfilteredData")
   }
-  if (type != "density" && type != "histogram")
-    stop(paste("Unknown type '", type, "', please choose either 'density' or 'histogram'"),
+  if (type != "density" && type != "histogram" && type != "histogramCount" && type != "histogramProportion")
+    stop(paste("Unknown type '", type, "', please choose either 'density', 'histogram', 'histogramCount', or 'histogramProportion'"),
          sep = "")
+  if (type == "histogram")
+    type <- "histogramCount"
   if (scale != "propensity" && scale != "preference")
     stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"),
          sep = "")
@@ -420,6 +425,11 @@ plotPs <- function(data,
                                                                                  rep(as.character(comparatorLabel), nrow(d0))))
     d$xmax <- d$xmin + binWidth
     d$treatment <- factor(d$treatment, levels = c(targetLabel, comparatorLabel))
+    yAxisScale <- "Number"
+    if (type == "histogramProportion") {
+      d$y <- d$y / sum(d$y)
+      yAxisScale <- "Proportion"
+    }
     plot <- ggplot2::ggplot(d, ggplot2::aes(x = xmin)) +
       ggplot2::geom_rect(ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = y, color = treatment, group = treatment, fill = treatment)) +
       ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
@@ -427,15 +437,15 @@ plotPs <- function(data,
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                              rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous("Number of subjects", limits = c(0, max(d$y)*1.25)) +
+      ggplot2::scale_y_continuous(paste(yAxisScale, "of", unitOfAnalysis), limits = c(0, max(d$y)*1.25)) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "top")
   }
   if (showAucLabel || showCountsLabel || showEquiposeLabel) {
     labelsLeft <- c()
     labelsRight <- c()
     if (showCountsLabel) {
-      labelsLeft <- c(labelsLeft, sprintf("%s: %s subjects", targetLabel, format(sum(data$treatment == 1), big.mark = ",", scientific = FALSE)))
-      labelsLeft <- c(labelsLeft, sprintf("%s: %s subjects", comparatorLabel, format(sum(data$treatment == 0), big.mark = ",", scientific = FALSE)))
+      labelsLeft <- c(labelsLeft, sprintf("%s: %s %s", targetLabel, format(sum(data$treatment == 1), big.mark = ",", scientific = FALSE), unitOfAnalysis))
+      labelsLeft <- c(labelsLeft, sprintf("%s: %s %s", comparatorLabel, format(sum(data$treatment == 0), big.mark = ",", scientific = FALSE), unitOfAnalysis))
     }
 
     if (showAucLabel) {
