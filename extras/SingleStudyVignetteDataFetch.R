@@ -41,6 +41,16 @@ resultsDatabaseSchema <- "scratch.dbo"
 cdmVersion <- "5"
 extraSettings <- NULL
 
+
+connectionDetails <- Eunomia::getEunomiaConnectionDetails()
+cdmDatabaseSchema <- "main"
+resultsDatabaseSchema <- "main"
+oracleTempSchema <- NULL
+extraSettings <- NULL
+cdmVersion <- "5"
+
+
+
 connection <- DatabaseConnector::connect(connectionDetails)
 sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
                               packageName = "CohortMethod",
@@ -57,7 +67,7 @@ DatabaseConnector::querySql(connection, sql)
 
 DatabaseConnector::disconnect(connection)
 
-nsaids <- 21603933
+nsaids <- c(1118084, 1124300)
 
 covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
                                               addDescendantsToExclude = TRUE)

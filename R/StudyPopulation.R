@@ -319,10 +319,6 @@ getCounts <- function(population, description = "") {
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
-#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
-#'                                         window start?
-#' @param priorOutcomeLookback             How many days should we look back when identifying prior
-#'                                         outcomes?
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the index
 #'                                         date (+ days of exposure if the
@@ -332,6 +328,8 @@ getCounts <- function(population, description = "") {
 #'                                         data (+ days of exposure if the \code{addExposureDaysToEnd}
 #'                                         parameter is specified).
 #' @param addExposureDaysToEnd             Add the length of exposure the risk window?
+#' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
+#'                                         when the new time-at-risk starts to prevent overlap?
 #' @param periodLength                     The length in days of each period shown in the plot.
 #' @param numberOfPeriods                  Number of periods to show in the plot. The periods are
 #'                                         equaly divided before and after the index date.

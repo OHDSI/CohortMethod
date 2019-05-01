@@ -51,6 +51,9 @@ parameter is specified).}
 
 \item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
 
+\item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be censored
+when the new time-at-risk starts to prevent overlap?}
+
 \item{periodLength}{The length in days of each period shown in the plot.}
 
 \item{numberOfPeriods}{Number of periods to show in the plot. The periods are
@@ -67,12 +70,6 @@ equaly divided before and after the index date.}
 \item{fileName}{Name of the file where the plot should be saved, for example
 'plot.png'. See the function \code{ggsave} in the ggplot2 package for
 supported file formats.}
-
-\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk
-window start?}
-
-\item{priorOutcomeLookback}{How many days should we look back when identifying prior
-outcomes?}
 }
 \value{
 A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different

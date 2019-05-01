@@ -29,7 +29,7 @@ Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 2.2.0),
     Cyclops,
-    FeatureExtraction  (>= 2.0.0)
+    FeatureExtraction  (>= 2.2.3)
 Imports:
     methods,
     ggplot2,

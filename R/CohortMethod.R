@@ -25,7 +25,7 @@
 #' @importFrom survival survfit Surv
 #' @importFrom grDevices rgb
 #' @importFrom methods is
-#' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time density
+#' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time density lm start
 #' @importFrom utils setTxtProgressBar txtProgressBar read.csv
 #' @importFrom graphics text
 #' @import Cyclops
@@ -41,23 +41,3 @@ NULL
 #' @usage
 #' data(cohortMethodDataSimulationProfile)
 NULL
-
-.onLoad <- function(libname, pkgname) {
-  missing(libname)  # suppresses R CMD check note
-  missing(pkgname)  # suppresses R CMD check note
-  # Copied this from the ff package:
-  if (is.null(getOption("ffmaxbytes"))) {
-    # memory.limit is windows specific
-    if (.Platform$OS.type == "windows") {
-      if (getRversion() >= "2.6.0")
-        options(ffmaxbytes = 0.5 * utils::memory.limit() * (1024^2)) else options(ffmaxbytes = 0.5 * utils::memory.limit())
-    } else {
-      # some magic constant
-      options(ffmaxbytes = 0.5 * 1024^3)
-    }
-  }
-
-  # Workaround for problem with ff on machines with lots of memory (see
-  # https://github.com/edwindj/ffbase/issues/37)
-  options(ffmaxbytes = min(getOption("ffmaxbytes"), .Machine$integer.max * 12))
-}

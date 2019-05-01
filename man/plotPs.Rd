@@ -8,7 +8,8 @@ plotPs(data, unfilteredData = NULL, scale = "preference",
   type = "density", binWidth = 0.05, targetLabel = "Target",
   comparatorLabel = "Comparator", showCountsLabel = FALSE,
   showAucLabel = FALSE, showEquiposeLabel = FALSE,
-  equipoiseBounds = c(0.25, 0.75), title = NULL, fileName = NULL)
+  equipoiseBounds = c(0.25, 0.75), unitOfAnalysis = "subjects",
+  title = NULL, fileName = NULL)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
@@ -21,8 +22,9 @@ frame should have the same structure as \code{data}.}
 'propensity'} or \code{scale = 'preference'}. The preference score scale is
 defined by Walker et al (2013).}
 
-\item{type}{Type of plot. Two possible values: \code{type = 'density'} or \code{type =
-'histogram'}}
+\item{type}{Type of plot. Four possible values: \code{type = 'density'} or \code{type =
+'histogram'} or \code{type = 'histogramCount'}
+or \code{type = 'histogramProportion'}. 'histogram' defaults to 'histogramCount'.}
 
 \item{binWidth}{For histograms, the width of the bins}
 
@@ -38,6 +40,8 @@ defined by Walker et al (2013).}
 
 \item{equipoiseBounds}{The bounds on the preference score to determine whether a subject is in
 equipoise.}
+
+\item{unitOfAnalysis}{The unit of analysis in the input data. Defaults to 'subjects'.}
 
 \item{title}{Optional: the main title for the plot.}
 
