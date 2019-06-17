@@ -9,7 +9,8 @@ createPs(cohortMethodData, population, excludeCovariateIds = c(),
   errorOnHighCorrelation = TRUE, stopOnError = TRUE,
   prior = createPrior("laplace", exclude = c(0), useCrossValidation =
   TRUE), control = createControl(noiseLevel = "silent", cvType = "auto",
-  tolerance = 2e-07, cvRepetitions = 10, startingVariance = 0.01))
+  seed = 1, tolerance = 2e-07, cvRepetitions = 10, startingVariance =
+  0.01))
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using

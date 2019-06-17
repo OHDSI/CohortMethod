@@ -126,7 +126,7 @@ plotFollowUpDistribution <- function(population,
                                      yScale = "percent",
                                      logYScale = FALSE,
                                      dataCutoff = 0.95,
-                                     title = "Follow-up distribution",
+                                     title = NULL,
                                      fileName = NULL) {
   if (yScale != "percent" && scale != "count")
     stop("Scale must be either 'percent' or 'count'")
@@ -165,12 +165,15 @@ plotFollowUpDistribution <- function(population,
                                            rgb(0, 0, 0.8, alpha = 0.5))) +
     ggplot2::scale_x_continuous("Follow-up (days)") +
     ggplot2::coord_cartesian(xlim = c(0, cutoff)) +
-    ggplot2::ggtitle(title) +
-    ggplot2::theme(legend.title = ggplot2::element_blank())
+    ggplot2::theme(legend.title = ggplot2::element_blank(),
+                   legend.position = "top",)
   if (logYScale) {
     plot <- plot + ggplot2::scale_y_log10(yLabel)
   } else {
     plot <- plot + ggplot2::scale_y_continuous(yLabel)
+  }
+  if (!is.null(title)) {
+    plot <- plot + ggplot2::ggtitle(title)
   }
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 5, height = 3.5, dpi = 400)

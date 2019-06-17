@@ -71,6 +71,7 @@ createPs <- function(cohortMethodData,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
                      control = createControl(noiseLevel = "silent",
                                              cvType = "auto",
+                                             seed = 1,
                                              tolerance = 2e-07,
                                              cvRepetitions = 10,
                                              startingVariance = 0.01)) {

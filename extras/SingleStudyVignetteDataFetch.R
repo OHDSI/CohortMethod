@@ -22,6 +22,7 @@ library(DatabaseConnector)
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
+# Synpuf on Postgres
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
                                                                 server = "localhost/ohdsi",
                                                                 user = "postgres",
@@ -31,6 +32,18 @@ resultsDatabaseSchema <- "scratch"
 cdmVersion <- "5"
 extraSettings <- NULL
 
+# Synpuf on PDW
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
+cdmDatabaseSchema <- "cdm_synpuf_v667.dbo"
+resultsDatabaseSchema <- "scratch.dbo"
+cdmVersion <- "5"
+extraSettings <- NULL
+
+# MDCD on PDW
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
                                                                 server = Sys.getenv("PDW_SERVER"),
                                                                 user = NULL,
@@ -41,7 +54,7 @@ resultsDatabaseSchema <- "scratch.dbo"
 cdmVersion <- "5"
 extraSettings <- NULL
 
-
+# Eunomia
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 cdmDatabaseSchema <- "main"
 resultsDatabaseSchema <- "main"
@@ -93,7 +106,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           washoutPeriod = 180,
                                           covariateSettings = covSettings)
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataSynpuf")
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataComp", compress = TRUE)
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
@@ -165,7 +178,7 @@ ps <- createPs(cohortMethodData = cohortMethodData,
 plotPs(ps)
 
 # computePsAuc(ps) plotPs(ps)
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/psSynpuf.rds")
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps32.rds")
 ps32 <- ps
 ps64 <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
