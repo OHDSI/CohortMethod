@@ -21,7 +21,7 @@ library(CohortMethod)
 library(SqlRender)
 options(fftempdir = "s:/fftemp")
 
-
+# PDW
 pw <- NULL
 dbms <- "pdw"
 user <- NULL
@@ -36,11 +36,19 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 user = user,
                                                                 password = pw,
                                                                 port = port)
+
+# Eunomia
+cdmDatabaseSchema <- "main"
+resultsDatabaseSchema <- "main"
+cdmVersion <- "5"
+
+connectionDetails <- Eunomia::getEunomiaConnectionDetails()
+
 connection <- DatabaseConnector::connect(connectionDetails)
 
 sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
                               packageName = "CohortMethod",
-                              dbms = dbms,
+                              dbms = connectionDetails$dbms,
                               cdmDatabaseSchema = cdmDatabaseSchema,
                               resultsDatabaseSchema = resultsDatabaseSchema)
 
@@ -49,8 +57,8 @@ DatabaseConnector::executeSql(connection, sql)
 
 # Check number of subjects per cohort:
 sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_definition_id"
-sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
+sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
 DatabaseConnector::querySql(connection, sql)
 
 # Get all NSAIDs:
@@ -120,9 +128,9 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
 createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
                                                       minDaysAtRisk = 1,
                                                       riskWindowStart = 0,
-                                                      addExposureDaysToStart = FALSE,
+                                                      startAnchor = "cohort start",
                                                       riskWindowEnd = 30,
-                                                      addExposureDaysToEnd = TRUE)
+                                                      endAnchor = "cohort end")
 
 fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 
@@ -243,14 +251,14 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
-                        outputFolder = "s:/temp/cohortMethodVignette2",
+                        outputFolder = "s:/temp/test2",
                         cdmVersion = cdmVersion,
                         cmAnalysisList = cmAnalysisList,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 16,
-                        createStudyPopThreads = 3,
+                        createStudyPopThreads = 1,
                         trimMatchStratifyThreads = 5,
                         prefilterCovariatesThreads = 3,
                         fitOutcomeModelThreads = 5,

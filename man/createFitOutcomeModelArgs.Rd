@@ -9,7 +9,7 @@ createFitOutcomeModelArgs(modelType = "logistic", stratified = FALSE,
   interactionCovariateIds = c(), excludeCovariateIds = c(),
   includeCovariateIds = c(), prior = createPrior("laplace",
   useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10,
+  seed = 1, startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10,
   noiseLevel = "quiet"))
 }
 \arguments{

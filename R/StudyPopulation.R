@@ -61,14 +61,16 @@ fastDuplicated <- function(data, columns) {
 #' @param priorOutcomeLookback             How many days should we look back when identifying prior
 #'                                         outcomes?
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
-#' @param riskWindowStart                  The start of the risk window (in days) relative to the index
-#'                                         date (+ days of exposure if the
-#'                                         \code{addExposureDaysToStart} parameter is specified).
-#' @param addExposureDaysToStart           Add the length of exposure the start of the risk window?
-#' @param riskWindowEnd                    The end of the risk window (in days) relative to the index
-#'                                         data (+ days of exposure if the \code{addExposureDaysToEnd}
-#'                                         parameter is specified).
-#' @param addExposureDaysToEnd             Add the length of exposure the risk window?
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the \code{startAnchor}.
+#' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk window?
+#'                                         Use \code{startAnchor} instead.
+#' @param startAnchor                      The anchor point for the start of the risk window. Can be "cohort start"
+#'                                         or "cohort end".
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the \code{endAnchor}.
+#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?
+#'                                         Use \code{endAnchor} instead.
+#' @param endAnchor                        The anchor point for the end of the risk window. Can be "cohort start"
+#'                                         or "cohort end".
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
 #'                                         when the new time-at-risk starts to prevent overlap?
 #' @return
@@ -90,10 +92,37 @@ createStudyPopulation <- function(cohortMethodData,
                                   priorOutcomeLookback = 99999,
                                   minDaysAtRisk = 1,
                                   riskWindowStart = 0,
-                                  addExposureDaysToStart = FALSE,
+                                  addExposureDaysToStart = NULL,
+                                  startAnchor = "cohort start",
                                   riskWindowEnd = 0,
-                                  addExposureDaysToEnd = TRUE,
+                                  addExposureDaysToEnd = NULL,
+                                  endAnchor = "cohort end",
                                   censorAtNewRiskWindow = FALSE) {
+  if (!missing(addExposureDaysToStart) && !is.null(addExposureDaysToStart)) {
+    warning("The addExposureDaysToStart argument is deprecated. Please use the startAnchor argument instead.")
+    if (addExposureDaysToStart) {
+      startAnchor <- "cohort end"
+    } else {
+      startAnchor <- "cohort start"
+    }
+  }
+  if (!missing(addExposureDaysToEnd) && !is.null(addExposureDaysToEnd)) {
+    warning("The addExposureDaysToEnd argument is deprecated. Please use the endAnchor argument instead.")
+    if (addExposureDaysToEnd) {
+      endAnchor <- "cohort end"
+    } else {
+      endAnchor <- "cohort start"
+    }
+  }
+  if (!grepl("start$|end$", startAnchor, ignore.case = TRUE)) {
+    stop("startAnchor should have value 'cohort start' or 'cohort end'")
+  }
+  if (!grepl("start$|end$", endAnchor, ignore.case = TRUE)) {
+    stop("endAnchor should have value 'cohort start' or 'cohort end'")
+  }
+  isEnd <- function(anchor) {
+    return(grepl("end$", anchor, ignore.case = TRUE))
+  }
   if (is.logical(removeDuplicateSubjects)) {
     if (removeDuplicateSubjects)
       removeDuplicateSubjects <- "remove all"
@@ -167,7 +196,7 @@ createStudyPopulation <- function(cohortMethodData,
     } else {
       ParallelLogger::logInfo("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
-      if (addExposureDaysToStart) {
+      if (isEnd(startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
                                                outcomes$daysToCohortEnd + riskWindowStart]
@@ -182,11 +211,11 @@ createStudyPopulation <- function(cohortMethodData,
   }
   # Create risk windows:
   population$riskStart <- rep(riskWindowStart, nrow(population))
-  if (addExposureDaysToStart) {
+  if (isEnd(startAnchor)) {
     population$riskStart <- population$riskStart + population$daysToCohortEnd
   }
   population$riskEnd <- rep(riskWindowEnd, nrow(population))
-  if (addExposureDaysToEnd) {
+  if (isEnd(endAnchor)) {
     population$riskEnd <- population$riskEnd + population$daysToCohortEnd
   }
   population$riskEnd[population$riskEnd > population$daysToObsEnd] <- population$daysToObsEnd[population$riskEnd >
@@ -320,14 +349,16 @@ getCounts <- function(population, description = "") {
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
-#' @param riskWindowStart                  The start of the risk window (in days) relative to the index
-#'                                         date (+ days of exposure if the
-#'                                         \code{addExposureDaysToStart} parameter is specified).
-#' @param addExposureDaysToStart           Add the length of exposure the start of the risk window?
-#' @param riskWindowEnd                    The end of the risk window (in days) relative to the index
-#'                                         data (+ days of exposure if the \code{addExposureDaysToEnd}
-#'                                         parameter is specified).
-#' @param addExposureDaysToEnd             Add the length of exposure the risk window?
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the \code{startAnchor}.
+#' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk window?
+#'                                         Use \code{startAnchor} instead.
+#' @param startAnchor                      The anchor point for the start of the risk window. Can be "cohort start"
+#'                                         or "cohort end".
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the \code{endAnchor}.
+#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?
+#'                                         Use \code{endAnchor} instead.
+#' @param endAnchor                        The anchor point for the end of the risk window. Can be "cohort start"
+#'                                         or "cohort end".
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
 #'                                         when the new time-at-risk starts to prevent overlap?
 #' @param periodLength                     The length in days of each period shown in the plot.
@@ -355,9 +386,11 @@ plotTimeToEvent <- function(cohortMethodData,
                             removeDuplicateSubjects = FALSE,
                             minDaysAtRisk = 1,
                             riskWindowStart = 0,
-                            addExposureDaysToStart = FALSE,
+                            addExposureDaysToStart = NULL,
+                            startAnchor = "cohort start",
                             riskWindowEnd = 0,
-                            addExposureDaysToEnd = TRUE,
+                            addExposureDaysToEnd = NULL,
+                            endAnchor = "cohort end",
                             censorAtNewRiskWindow = FALSE,
                             periodLength = 7,
                             numberOfPeriods = 52,
@@ -366,6 +399,22 @@ plotTimeToEvent <- function(cohortMethodData,
                             comparatorLabel = "Comparator",
                             title = NULL,
                             fileName = NULL) {
+  if (!missing(addExposureDaysToStart) && !is.null(addExposureDaysToStart)) {
+    warning("The addExposureDaysToStart argument is deprecated. Please use the startAnchor argument instead.")
+    if (addExposureDaysToStart) {
+      startAnchor <- "cohort end"
+    } else {
+      startAnchor <- "cohort start"
+    }
+  }
+  if (!missing(addExposureDaysToEnd) && !is.null(addExposureDaysToEnd)) {
+    warning("The addExposureDaysToEnd argument is deprecated. Please use the endAnchor argument instead.")
+    if (addExposureDaysToEnd) {
+      endAnchor <- "cohort end"
+    } else {
+      endAnchor <- "cohort start"
+    }
+  }
   population <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                       population = population,
                                       outcomeId = outcomeId,
@@ -376,9 +425,9 @@ plotTimeToEvent <- function(cohortMethodData,
                                       removeSubjectsWithPriorOutcome = FALSE,
                                       minDaysAtRisk = minDaysAtRisk,
                                       riskWindowStart = riskWindowStart,
-                                      addExposureDaysToStart = addExposureDaysToStart,
+                                      startAnchor = startAnchor,
                                       riskWindowEnd = riskWindowEnd,
-                                      addExposureDaysToEnd = addExposureDaysToEnd,
+                                      endAnchor = endAnchor,
                                       censorAtNewRiskWindow = censorAtNewRiskWindow)
   outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
   outcomes <- merge(population[, c("rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd")],

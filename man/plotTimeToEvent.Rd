@@ -8,8 +8,9 @@ plotTimeToEvent(cohortMethodData, population = NULL, outcomeId,
   firstExposureOnly = FALSE, restrictToCommonPeriod = FALSE,
   washoutPeriod = 0, removeDuplicateSubjects = FALSE,
   minDaysAtRisk = 1, riskWindowStart = 0,
-  addExposureDaysToStart = FALSE, riskWindowEnd = 0,
-  addExposureDaysToEnd = TRUE, censorAtNewRiskWindow = FALSE,
+  addExposureDaysToStart = NULL, startAnchor = "cohort start",
+  riskWindowEnd = 0, addExposureDaysToEnd = NULL,
+  endAnchor = "cohort end", censorAtNewRiskWindow = FALSE,
   periodLength = 7, numberOfPeriods = 52, showFittedLines = TRUE,
   targetLabel = "Target", comparatorLabel = "Comparator",
   title = NULL, fileName = NULL)
@@ -39,17 +40,21 @@ cohort? See details for allowed values.}
 
 \item{minDaysAtRisk}{The minimum required number of days at risk.}
 
-\item{riskWindowStart}{The start of the risk window (in days) relative to the index
-date (+ days of exposure if the
-\code{addExposureDaysToStart} parameter is specified).}
+\item{riskWindowStart}{The start of the risk window (in days) relative to the \code{startAnchor}.}
 
-\item{addExposureDaysToStart}{Add the length of exposure the start of the risk window?}
+\item{addExposureDaysToStart}{DEPRECATED: Add the length of exposure the start of the risk window?
+Use \code{startAnchor} instead.}
 
-\item{riskWindowEnd}{The end of the risk window (in days) relative to the index
-data (+ days of exposure if the \code{addExposureDaysToEnd}
-parameter is specified).}
+\item{startAnchor}{The anchor point for the start of the risk window. Can be "cohort start"
+or "cohort end".}
 
-\item{addExposureDaysToEnd}{Add the length of exposure the risk window?}
+\item{riskWindowEnd}{The end of the risk window (in days) relative to the \code{endAnchor}.}
+
+\item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window?
+Use \code{endAnchor} instead.}
+
+\item{endAnchor}{The anchor point for the end of the risk window. Can be "cohort start"
+or "cohort end".}
 
 \item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be censored
 when the new time-at-risk starts to prevent overlap?}

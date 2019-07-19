@@ -7,9 +7,9 @@
 createTrimByPsArgs(trimFraction = 0.05)
 }
 \arguments{
-\item{trimFraction}{This fraction will be removed from each treatment group. In the
-treatmentgroup, persons with the highest propensity scores will be removed, in
-thecomparator group person with the lowest scores will be removed.}
+\item{trimFraction}{This fraction will be removed from each treatment group. In the targetgroup,
+persons with the highest propensity scores will be removed, in thecomparator
+group person with the lowest scores will be removed.}
 }
 \description{
 Create a parameter object for the function trimByPs

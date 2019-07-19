@@ -80,13 +80,17 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #'                                         prioroutcomes?
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the
-#'                                         indexdate (+ days of exposure if theaddExposureDaysToStart
-#'                                         parameter is specified).
-#' @param addExposureDaysToStart           Add the length of exposure the start of the risk window?
+#'                                         startAnchor.
+#' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk
+#'                                         window?Use startAnchor instead.
+#' @param startAnchor                      The anchor point for the start of the risk window. Can be
+#'                                         "cohort start"or "cohort end".
 #' @param riskWindowEnd                    The end of the risk window (in days) relative to the
-#'                                         indexdata (+ days of exposure if the
-#'                                         addExposureDaysToEndparameter is specified).
-#' @param addExposureDaysToEnd             Add the length of exposure the risk window?
+#'                                         endAnchor.
+#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?Use
+#'                                         endAnchor instead.
+#' @param endAnchor                        The anchor point for the end of the risk window. Can be
+#'                                         "cohort start"or "cohort end".
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be
 #'                                         censoredwhen the new time-at-risk starts to prevent overlap?
 #'
@@ -99,9 +103,11 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
                                             priorOutcomeLookback = 99999,
                                             minDaysAtRisk = 1,
                                             riskWindowStart = 0,
-                                            addExposureDaysToStart = FALSE,
+                                            addExposureDaysToStart = NULL,
+                                            startAnchor = "cohort start",
                                             riskWindowEnd = 0,
-                                            addExposureDaysToEnd = TRUE,
+                                            addExposureDaysToEnd = NULL,
+                                            endAnchor = "cohort end",
                                             censorAtNewRiskWindow = FALSE) {
   # First: get default values:
   analysis <- list()
@@ -152,6 +158,7 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
                                                    useCrossValidation = TRUE),
                                control = createControl(noiseLevel = "silent",
                                                        cvType = "auto",
+                                                       seed = 1,
                                                        tolerance = 2e-07,
                                                        cvRepetitions = 10,
                                                        startingVariance = 0.01)) {
@@ -175,9 +182,9 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param trimFraction   This fraction will be removed from each treatment group. In the
-#'                       treatmentgroup, persons with the highest propensity scores will be removed, in
-#'                       thecomparator group person with the lowest scores will be removed.
+#' @param trimFraction   This fraction will be removed from each treatment group. In the targetgroup,
+#'                       persons with the highest propensity scores will be removed, in thecomparator
+#'                       group person with the lowest scores will be removed.
 #'
 #' @export
 createTrimByPsArgs <- function(trimFraction = 0.05) {
@@ -403,6 +410,7 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       includeCovariateIds = c(),
                                       prior = createPrior("laplace", useCrossValidation = TRUE),
                                       control = createControl(cvType = "auto",
+                                                              seed = 1,
                                                               startingVariance = 0.01,
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,

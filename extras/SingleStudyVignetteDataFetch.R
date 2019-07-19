@@ -121,9 +121,9 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   removeSubjectsWithPriorOutcome = TRUE,
                                   minDaysAtRisk = 1,
                                   riskWindowStart = 0,
-                                  addExposureDaysToStart = FALSE,
+                                  startAnchor = "cohort start",
                                   riskWindowEnd = 30,
-                                  addExposureDaysToEnd = TRUE)
+                                  endAnchor = "cohort end")
 
 plotTimeToEvent(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
