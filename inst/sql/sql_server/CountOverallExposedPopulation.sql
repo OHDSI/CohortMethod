@@ -77,5 +77,5 @@ INNER JOIN @cdm_database_schema.observation_period
 WHERE cohort_start_date <= observation_period_end_date
 	AND cohort_start_date >= observation_period_start_date
 {@study_start_date != '' } ? {AND cohort_start_date >= CAST('@study_start_date' AS DATE) } 
-{@study_end_date != '' } ? {AND cohort_start_date < CAST('@study_end_date' AS DATE) }
+{@study_end_date != '' } ? {AND cohort_start_date <= CAST('@study_end_date' AS DATE) }
 GROUP BY cohort_definition_id
