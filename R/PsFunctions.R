@@ -83,6 +83,7 @@ createPs <- function(cohortMethodData,
     stop("Missing column treatment in population")
 
   start <- Sys.time()
+  population <- population[order(population$rowId), ]
   if (is.data.frame(cohortMethodData$covariates)) {
     error <- "No covariate data, so cannot fit model"
     sampled <- FALSE
