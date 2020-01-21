@@ -4,13 +4,18 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortMethodData, population, excludeCovariateIds = c(),
-  includeCovariateIds = c(), maxCohortSizeForFitting = 250000,
-  errorOnHighCorrelation = TRUE, stopOnError = TRUE,
-  prior = createPrior("laplace", exclude = c(0), useCrossValidation =
-  TRUE), control = createControl(noiseLevel = "silent", cvType = "auto",
-  seed = 1, tolerance = 2e-07, cvRepetitions = 10, startingVariance =
-  0.01))
+createPs(
+  cohortMethodData,
+  population,
+  excludeCovariateIds = c(),
+  includeCovariateIds = c(),
+  maxCohortSizeForFitting = 250000,
+  errorOnHighCorrelation = TRUE,
+  stopOnError = TRUE,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+  control = createControl(noiseLevel = "silent", cvType = "auto", seed = 1, tolerance =
+    2e-07, cvRepetitions = 10, startingVariance = 0.01)
+)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using

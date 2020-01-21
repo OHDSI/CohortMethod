@@ -4,16 +4,30 @@
 \alias{plotTimeToEvent}
 \title{Plot time-to-event}
 \usage{
-plotTimeToEvent(cohortMethodData, population = NULL, outcomeId,
-  firstExposureOnly = FALSE, restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0, removeDuplicateSubjects = FALSE,
-  minDaysAtRisk = 1, riskWindowStart = 0,
-  addExposureDaysToStart = NULL, startAnchor = "cohort start",
-  riskWindowEnd = 0, addExposureDaysToEnd = NULL,
-  endAnchor = "cohort end", censorAtNewRiskWindow = FALSE,
-  periodLength = 7, numberOfPeriods = 52, showFittedLines = TRUE,
-  targetLabel = "Target", comparatorLabel = "Comparator",
-  title = NULL, fileName = NULL)
+plotTimeToEvent(
+  cohortMethodData,
+  population = NULL,
+  outcomeId,
+  firstExposureOnly = FALSE,
+  restrictToCommonPeriod = FALSE,
+  washoutPeriod = 0,
+  removeDuplicateSubjects = FALSE,
+  minDaysAtRisk = 1,
+  riskWindowStart = 0,
+  addExposureDaysToStart = NULL,
+  startAnchor = "cohort start",
+  riskWindowEnd = 0,
+  addExposureDaysToEnd = NULL,
+  endAnchor = "cohort end",
+  censorAtNewRiskWindow = FALSE,
+  periodLength = 7,
+  numberOfPeriods = 52,
+  showFittedLines = TRUE,
+  targetLabel = "Target",
+  comparatorLabel = "Comparator",
+  title = NULL,
+  fileName = NULL
+)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using

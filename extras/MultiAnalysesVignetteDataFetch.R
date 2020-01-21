@@ -271,8 +271,8 @@ analysisSum <- summarizeAnalyses(result, outputFolder = "s:/temp/cohortMethodVig
 saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 # cleanup:
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
-sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
-sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
+sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
 connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
 DatabaseConnector::disconnect(connection)

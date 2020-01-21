@@ -4,8 +4,12 @@
 \alias{drawAttritionDiagram}
 \title{Draw the attrition diagram}
 \usage{
-drawAttritionDiagram(object, targetLabel = "Target",
-  comparatorLabel = "Comparator", fileName = NULL)
+drawAttritionDiagram(
+  object,
+  targetLabel = "Target",
+  comparatorLabel = "Comparator",
+  fileName = NULL
+)
 }
 \arguments{
 \item{object}{Either an object of type \code{cohortMethodData}, a population object

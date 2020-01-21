@@ -4,9 +4,16 @@
 \alias{insertDbPopulation}
 \title{Insert a population into a database}
 \usage{
-insertDbPopulation(population, cohortIds = c(1, 0), connectionDetails,
-  cohortDatabaseSchema, cohortTable = "cohort", createTable = FALSE,
-  dropTableIfExists = TRUE, cdmVersion = "5")
+insertDbPopulation(
+  population,
+  cohortIds = c(1, 0),
+  connectionDetails,
+  cohortDatabaseSchema,
+  cohortTable = "cohort",
+  createTable = FALSE,
+  dropTableIfExists = TRUE,
+  cdmVersion = "5"
+)
 }
 \arguments{
 \item{population}{Either an object of type \code{cohortMethodData} or a population

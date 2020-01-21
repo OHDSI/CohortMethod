@@ -51,5 +51,5 @@ Suggests:
     EmpiricalCalibration
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Encoding: UTF-8

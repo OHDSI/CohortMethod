@@ -4,10 +4,17 @@
 \alias{createGetDbCohortMethodDataArgs}
 \title{Create a parameter object for the function getDbCohortMethodData}
 \usage{
-createGetDbCohortMethodDataArgs(studyStartDate = "", studyEndDate = "",
-  excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
-  removeDuplicateSubjects = FALSE, restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0, maxCohortSize = 0, covariateSettings)
+createGetDbCohortMethodDataArgs(
+  studyStartDate = "",
+  studyEndDate = "",
+  excludeDrugsFromCovariates = TRUE,
+  firstExposureOnly = FALSE,
+  removeDuplicateSubjects = FALSE,
+  restrictToCommonPeriod = FALSE,
+  washoutPeriod = 0,
+  maxCohortSize = 0,
+  covariateSettings
+)
 }
 \arguments{
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort

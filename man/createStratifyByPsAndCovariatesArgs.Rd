@@ -4,8 +4,11 @@
 \alias{createStratifyByPsAndCovariatesArgs}
 \title{Create a parameter object for the function stratifyByPsAndCovariates}
 \usage{
-createStratifyByPsAndCovariatesArgs(numberOfStrata = 5,
-  baseSelection = "all", covariateIds)
+createStratifyByPsAndCovariatesArgs(
+  numberOfStrata = 5,
+  baseSelection = "all",
+  covariateIds
+)
 }
 \arguments{
 \item{numberOfStrata}{Into how many strata should the propensity score be divided? Theboundaries

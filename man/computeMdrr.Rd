@@ -4,8 +4,13 @@
 \alias{computeMdrr}
 \title{Compute the minimum detectable relative risk}
 \usage{
-computeMdrr(population, alpha = 0.05, power = 0.8, twoSided = TRUE,
-  modelType = "cox")
+computeMdrr(
+  population,
+  alpha = 0.05,
+  power = 0.8,
+  twoSided = TRUE,
+  modelType = "cox"
+)
 }
 \arguments{
 \item{population}{A data frame describing the study population as created using the

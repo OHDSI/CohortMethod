@@ -4,8 +4,11 @@
 \alias{createStratifyByPsArgs}
 \title{Create a parameter object for the function stratifyByPs}
 \usage{
-createStratifyByPsArgs(numberOfStrata = 5, stratificationColumns = c(),
-  baseSelection = "all")
+createStratifyByPsArgs(
+  numberOfStrata = 5,
+  stratificationColumns = c(),
+  baseSelection = "all"
+)
 }
 \arguments{
 \item{numberOfStrata}{How many strata? The boundaries of the strata are

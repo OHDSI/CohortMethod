@@ -4,16 +4,28 @@
 \alias{getDbCohortMethodData}
 \title{Get the cohort data from the server}
 \usage{
-getDbCohortMethodData(connectionDetails, cdmDatabaseSchema,
-  oracleTempSchema = cdmDatabaseSchema, targetId, comparatorId,
-  outcomeIds, studyStartDate = "", studyEndDate = "",
+getDbCohortMethodData(
+  connectionDetails,
+  cdmDatabaseSchema,
+  oracleTempSchema = cdmDatabaseSchema,
+  targetId,
+  comparatorId,
+  outcomeIds,
+  studyStartDate = "",
+  studyEndDate = "",
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "condition_occurrence", cdmVersion = "5",
-  excludeDrugsFromCovariates = TRUE, firstExposureOnly = FALSE,
-  removeDuplicateSubjects = FALSE, restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0, maxCohortSize = 0, covariateSettings)
+  outcomeTable = "condition_occurrence",
+  cdmVersion = "5",
+  excludeDrugsFromCovariates = TRUE,
+  firstExposureOnly = FALSE,
+  removeDuplicateSubjects = FALSE,
+  restrictToCommonPeriod = FALSE,
+  washoutPeriod = 0,
+  maxCohortSize = 0,
+  covariateSettings
+)
 }
 \arguments{
 \item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the

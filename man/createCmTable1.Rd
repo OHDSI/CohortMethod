@@ -4,13 +4,20 @@
 \alias{createCmTable1}
 \title{Create a table 1}
 \usage{
-createCmTable1(balance,
+createCmTable1(
+  balance,
   specifications = getDefaultCmTable1Specifications(),
-  beforeTargetPopSize, beforeComparatorPopSize, afterTargetPopSize,
-  afterComparatorPopSize, beforeLabel = "Before matching",
-  afterLabel = "After matching", targetLabel = "Target",
-  comparatorLabel = "Comparator", percentDigits = 1,
-  stdDiffDigits = 2)
+  beforeTargetPopSize,
+  beforeComparatorPopSize,
+  afterTargetPopSize,
+  afterComparatorPopSize,
+  beforeLabel = "Before matching",
+  afterLabel = "After matching",
+  targetLabel = "Target",
+  comparatorLabel = "Comparator",
+  percentDigits = 1,
+  stdDiffDigits = 2
+)
 }
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
