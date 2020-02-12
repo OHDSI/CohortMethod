@@ -15,7 +15,7 @@ plotPs(
   showCountsLabel = FALSE,
   showAucLabel = FALSE,
   showEquiposeLabel = FALSE,
-  equipoiseBounds = c(0.25, 0.75),
+  equipoiseBounds = c(0.3, 0.7),
   unitOfAnalysis = "subjects",
   title = NULL,
   fileName = NULL

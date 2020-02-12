@@ -4,7 +4,7 @@
 \alias{trimByPsToEquipoise}
 \title{Keep only persons in clinical equipoise}
 \usage{
-trimByPsToEquipoise(population, bounds = c(0.25, 0.75))
+trimByPsToEquipoise(population, bounds = c(0.3, 0.7))
 }
 \arguments{
 \item{population}{A data frame with at least the three columns described below}

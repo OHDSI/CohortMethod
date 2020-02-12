@@ -9,6 +9,8 @@ Changes:
 
 3. Fixing random seeds for reproducibility.
 
+4. Changing default equipoise bounds from 0.25-0.75 to 0.3-0.7 to be consistent with Alec Walker's original paper.
+
 Bugfixes:
 
 1. No longer overriding ffmaxbytes and ffbatchbytes in .onLoad. Instead relying on FeatureExtraction to do that. Part of fixing chunk.default error caused by ff package on R v3.6.0 on machines with lots of memory.

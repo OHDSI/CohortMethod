@@ -344,7 +344,7 @@ plotPs <- function(data,
                    showCountsLabel = FALSE,
                    showAucLabel = FALSE,
                    showEquiposeLabel = FALSE,
-                   equipoiseBounds = c(0.25, 0.75),
+                   equipoiseBounds = c(0.3, 0.7),
                    unitOfAnalysis = "subjects",
                    title = NULL,
                    fileName = NULL) {
@@ -594,7 +594,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
 #' Comparative Effective Research, 3, 11-20
 #'
 #' @export
-trimByPsToEquipoise <- function(population, bounds = c(0.25, 0.75)) {
+trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
