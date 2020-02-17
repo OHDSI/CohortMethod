@@ -8,10 +8,12 @@
 
 <title>Match by propensity score as well as other covariates — matchOnPsAndCovariates • CohortMethod</title>
 
+
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
 
@@ -32,11 +34,12 @@
 
 
 
-<meta property="og:title" content="Match by propensity score as well as other covariates — matchOnPsAndCovariates" />
 
+<meta property="og:title" content="Match by propensity score as well as other covariates — matchOnPsAndCovariates" />
 <meta property="og:description" content="matchOnPsAndCovariates uses the provided propensity scores and a set of covariates to match
 target to comparator persons." />
 <meta name="twitter:card" content="summary" />
+
 
 
 
@@ -67,7 +70,7 @@ target to comparator persons." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1.1</span>
       </span>
     </div>
 
@@ -101,7 +104,6 @@ target to comparator persons." />
   <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/OHDSI/CohortMethod">
@@ -128,16 +130,19 @@ target to comparator persons." />
     </div>
 
     <div class="ref-description">
-    
     <p><code>matchOnPsAndCovariates</code> uses the provided propensity scores and a set of covariates to match
 target to comparator persons.</p>
-    
     </div>
 
-    <pre class="usage"><span class='fu'>matchOnPsAndCovariates</span>(<span class='no'>population</span>, <span class='kw'>caliper</span> <span class='kw'>=</span> <span class='fl'>0.2</span>,
-  <span class='kw'>caliperScale</span> <span class='kw'>=</span> <span class='st'>"standardized logit"</span>, <span class='kw'>maxRatio</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='no'>cohortMethodData</span>,
-  <span class='no'>covariateIds</span>)</pre>
-    
+    <pre class="usage"><span class='fu'>matchOnPsAndCovariates</span>(
+  <span class='no'>population</span>,
+  <span class='kw'>caliper</span> <span class='kw'>=</span> <span class='fl'>0.2</span>,
+  <span class='kw'>caliperScale</span> <span class='kw'>=</span> <span class='st'>"standardized logit"</span>,
+  <span class='kw'>maxRatio</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='no'>cohortMethodData</span>,
+  <span class='no'>covariateIds</span>
+)</pre>
+
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
@@ -179,12 +184,11 @@ comparators will be assigned to a target person.</p></td>
 subjects should be also matched.</p></td>
     </tr>
     </table>
-    
+
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
 rows that could not be matched are removed</p>
-    
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The data frame should have at least the following three columns:</p><table class='table'>
@@ -196,14 +200,12 @@ rows that could not be matched are removed</p>
 <p>This function
 implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).</p>
 <p>The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).</p>
-    
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
 score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.</p>
 <p>Austin, PC. (2011) Optimal caliper widths for propensity-score matching when estimating differences in
 means and differences in proportions in observational studies, Pharmaceutical statistics, March, 10(2):150-161.</p>
-    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'># todo
@@ -214,13 +216,9 @@ means and differences in proportions in observational studies, Pharmaceutical st
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
       <li><a href="#value">Value</a></li>
-
       <li><a href="#details">Details</a></li>
-
       <li><a href="#references">References</a></li>
-      
       <li><a href="#examples">Examples</a></li>
     </ul>
 
@@ -234,7 +232,7 @@ means and differences in proportions in observational studies, Pharmaceutical st
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9100.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
 
       </footer>
