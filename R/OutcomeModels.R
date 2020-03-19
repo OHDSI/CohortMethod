@@ -300,6 +300,9 @@ fitOutcomeModel <- function(population,
       if (modelType == "poisson" || modelType == "cox") {
         columns <- c(columns, "time")
       }
+      if (inversePtWeighting) {
+        columns <- c(columns, "weight")
+      }
       outcomes <- ff::as.ffdf(informativePopulation[, columns])
       row.names(covariates) <- NULL
       cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
