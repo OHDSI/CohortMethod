@@ -49,6 +49,8 @@ Suggests:
     knitr,
     rmarkdown,
     EmpiricalCalibration
+Remotes:
+    ohdsi/FeatureExtraction
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 6.1.1
