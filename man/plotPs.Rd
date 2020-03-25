@@ -4,12 +4,22 @@
 \alias{plotPs}
 \title{Plot the propensity score distribution}
 \usage{
-plotPs(data, unfilteredData = NULL, scale = "preference",
-  type = "density", binWidth = 0.05, targetLabel = "Target",
-  comparatorLabel = "Comparator", showCountsLabel = FALSE,
-  showAucLabel = FALSE, showEquiposeLabel = FALSE,
-  equipoiseBounds = c(0.25, 0.75), unitOfAnalysis = "subjects",
-  title = NULL, fileName = NULL)
+plotPs(
+  data,
+  unfilteredData = NULL,
+  scale = "preference",
+  type = "density",
+  binWidth = 0.05,
+  targetLabel = "Target",
+  comparatorLabel = "Comparator",
+  showCountsLabel = FALSE,
+  showAucLabel = FALSE,
+  showEquiposeLabel = FALSE,
+  equipoiseBounds = c(0.3, 0.7),
+  unitOfAnalysis = "subjects",
+  title = NULL,
+  fileName = NULL
+)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}

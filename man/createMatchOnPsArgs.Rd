@@ -4,8 +4,12 @@
 \alias{createMatchOnPsArgs}
 \title{Create a parameter object for the function matchOnPs}
 \usage{
-createMatchOnPsArgs(caliper = 0.2, caliperScale = "standardized logit",
-  maxRatio = 1, stratificationColumns = c())
+createMatchOnPsArgs(
+  caliper = 0.2,
+  caliperScale = "standardized logit",
+  maxRatio = 1,
+  stratificationColumns = c()
+)
 }
 \arguments{
 \item{caliper}{The caliper for matching. A caliper is the distance which

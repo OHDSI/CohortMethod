@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1.1</span>
       </span>
     </div>
 
@@ -88,7 +88,7 @@
       <h1>Single studies using the CohortMethod package</h1>
                         <h4 class="author">Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 class="date">2019-08-27</h4>
+            <h4 class="date">2020-02-17</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/master/vignettes/SingleStudies.Rmd"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="hidden name"><code>SingleStudies.Rmd</code></div>
@@ -108,7 +108,7 @@
 <p>Before installing the <code>CohortMethod</code> package make sure you have Java available. Java can be downloaded from <a href="http://www.java.com">www.java.com</a>. For Windows users, RTools is also necessary. RTools can be downloaded from <a href="http://cran.r-project.org/bin/windows/Rtools/">CRAN</a>.</p>
 <p>The <code>CohortMethod</code> package is currently maintained in a <a href="https://github.com/OHDSI/CohortMethod">Github repository</a>, and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the <code>drat</code> package:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"drat"</span>)</span>
-<span id="cb1-2"><a href="#cb1-2"></a>drat<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/drat/man/addRepo.html">addRepo</a></span>(<span class="st">"OHDSI"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2"></a>drat<span class="op">::</span><span class="kw">addRepo</span>(<span class="st">"OHDSI"</span>)</span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"CohortMethod"</span>)</span></code></pre></div>
 <p>Once installed, you can type <code><a href="https://rdrr.io/r/base/library.html">library(CohortMethod)</a></code> to load the package.</p>
 </div>
@@ -196,10 +196,10 @@
 <p>This is parameterized SQL which can be used by the <code>SqlRender</code> package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in <code>SqlRender</code>, we can make sure the SQL code can be run in many different environments.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(SqlRender)</span>
 <span id="cb4-2"><a href="#cb4-2"></a>sql &lt;-<span class="st"> </span><span class="kw">readSql</span>(<span class="st">"coxibVsNonselVsGiBleed.sql"</span>)</span>
-<span id="cb4-3"><a href="#cb4-3"></a>sql &lt;-<span class="st"> </span><span class="kw">renderSql</span>(sql,</span>
-<span id="cb4-4"><a href="#cb4-4"></a>                 <span class="dt">cdmDatabaseSchema =</span> cdmDatabaseSchema,</span>
-<span id="cb4-5"><a href="#cb4-5"></a>                 <span class="dt">resultsDatabaseSchema =</span> resultsDatabaseSchema)<span class="op">$</span>sql</span>
-<span id="cb4-6"><a href="#cb4-6"></a>sql &lt;-<span class="st"> </span><span class="kw">translateSql</span>(sql, <span class="dt">targetDialect =</span> connectionDetails<span class="op">$</span>dbms)<span class="op">$</span>sql</span>
+<span id="cb4-3"><a href="#cb4-3"></a>sql &lt;-<span class="st"> </span><span class="kw">render</span>(sql,</span>
+<span id="cb4-4"><a href="#cb4-4"></a>              <span class="dt">cdmDatabaseSchema =</span> cdmDatabaseSchema,</span>
+<span id="cb4-5"><a href="#cb4-5"></a>              <span class="dt">resultsDatabaseSchema =</span> resultsDatabaseSchema)</span>
+<span id="cb4-6"><a href="#cb4-6"></a>sql &lt;-<span class="st"> </span><span class="kw">translate</span>(sql, <span class="dt">targetDialect =</span> connectionDetails<span class="op">$</span>dbms)</span>
 <span id="cb4-7"><a href="#cb4-7"></a></span>
 <span id="cb4-8"><a href="#cb4-8"></a>connection &lt;-<span class="st"> </span><span class="kw">connect</span>(connectionDetails)</span>
 <span id="cb4-9"><a href="#cb4-9"></a><span class="kw">executeSql</span>(connection, sql)</span></code></pre></div>
@@ -208,8 +208,8 @@
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>sql &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(<span class="st">"SELECT cohort_definition_id, COUNT(*) AS count"</span>,</span>
 <span id="cb5-2"><a href="#cb5-2"></a>             <span class="st">"FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed"</span>,</span>
 <span id="cb5-3"><a href="#cb5-3"></a>             <span class="st">"GROUP BY cohort_definition_id"</span>)</span>
-<span id="cb5-4"><a href="#cb5-4"></a>sql &lt;-<span class="st"> </span><span class="kw">renderSql</span>(sql, <span class="dt">resultsDatabaseSchema =</span> resultsDatabaseSchema)<span class="op">$</span>sql</span>
-<span id="cb5-5"><a href="#cb5-5"></a>sql &lt;-<span class="st"> </span><span class="kw">translateSql</span>(sql, <span class="dt">targetDialect =</span> connectionDetails<span class="op">$</span>dbms)<span class="op">$</span>sql</span>
+<span id="cb5-4"><a href="#cb5-4"></a>sql &lt;-<span class="st"> </span><span class="kw">render</span>(sql, <span class="dt">resultsDatabaseSchema =</span> resultsDatabaseSchema)</span>
+<span id="cb5-5"><a href="#cb5-5"></a>sql &lt;-<span class="st"> </span><span class="kw">translate</span>(sql, <span class="dt">targetDialect =</span> connectionDetails<span class="op">$</span>dbms)</span>
 <span id="cb5-6"><a href="#cb5-6"></a></span>
 <span id="cb5-7"><a href="#cb5-7"></a><span class="kw">querySql</span>(connection, sql)</span></code></pre></div>
 <pre><code>#&gt;   cohort_concept_id  count
@@ -679,13 +679,13 @@
 <p>We can also see the covariates that ended up in the outcome model:</p>
 <div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1"></a>fullOutcomeModel &lt;-<span class="st"> </span><span class="kw"><a href="../reference/getOutcomeModel.html">getOutcomeModel</a></span>(outcomeModel, cohortMethodData)</span>
 <span id="cb59-2"><a href="#cb59-2"></a><span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(fullOutcomeModel)</span></code></pre></div>
-<pre><code>#&gt;    coefficient          id                               covariateName
-#&gt; 2    0.5499190   198124210 ...0 days relative to index: Kidney disease
-#&gt; 1    0.4828838     8507001                               gender = MALE
-#&gt; 8    0.3252432  2514408502 ...nation; Medical decision making of moder
-#&gt; 26   0.3017819 21601664412 ... relative to index: BETA BLOCKING AGENTS
-#&gt; 17   0.2805469  4329041212 ...0 through 0 days relative to index: Pain
-#&gt; 4    0.2762147   321588210 ... 0 days relative to index: Heart disease</code></pre>
+<pre><code>#&gt;             coefficient          id                               covariateName
+#&gt; 198124210     0.5499190   198124210 ...0 days relative to index: Kidney disease
+#&gt; 8507001       0.4828838     8507001                               gender = MALE
+#&gt; 2514408502    0.3252432  2514408502 ...nation; Medical decision making of moder
+#&gt; 21601664412   0.3017819 21601664412 ... relative to index: BETA BLOCKING AGENTS
+#&gt; 4329041212    0.2805469  4329041212 ...0 through 0 days relative to index: Pain
+#&gt; 321588210     0.2762147   321588210 ... 0 days relative to index: Heart disease</code></pre>
 </div>
 <div id="kaplan-meier-plot" class="section level2">
 <h2 class="hasAnchor">
@@ -713,7 +713,7 @@
 <pre><code>#&gt; 
 #&gt; To cite package 'CohortMethod' in publications use:
 #&gt; 
-#&gt;   Martijn Schuemie, Marc Suchard and Patrick Ryan (2019). CohortMethod: New-user cohort method with large scale propensity and outcome models.
+#&gt;   Martijn Schuemie, Marc Suchard and Patrick Ryan (2020). CohortMethod: New-user cohort method with large scale propensity and outcome models.
 #&gt;   https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod.
 #&gt; 
 #&gt; A BibTeX entry for LaTeX users is
@@ -721,7 +721,7 @@
 #&gt;   @Manual{,
 #&gt;     title = {CohortMethod: New-user cohort method with large scale propensity and outcome models},
 #&gt;     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},
-#&gt;     year = {2019},
+#&gt;     year = {2020},
 #&gt;     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},
 #&gt;   }</code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the <code>Cyclops</code> package.</p>
@@ -748,6 +748,7 @@
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
+
         <div id="tocnav">
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
@@ -797,7 +798,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9100.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
 
       </footer>

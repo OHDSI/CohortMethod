@@ -4,8 +4,11 @@
 \alias{computeCovariateBalance}
 \title{Compute covariate balance before and after matching and trimming}
 \usage{
-computeCovariateBalance(population, cohortMethodData,
-  subgroupCovariateId = NULL)
+computeCovariateBalance(
+  population,
+  cohortMethodData,
+  subgroupCovariateId = NULL
+)
 }
 \arguments{
 \item{population}{A data frame containing the people that are remaining after matching

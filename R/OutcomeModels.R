@@ -1,6 +1,6 @@
 # @file CohortMethod.R
 #
-# Copyright 2019 Observational Health Data Sciences and Informatics
+# Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -18,6 +18,9 @@
 
 #' Create an outcome model, and compute the relative risk
 #'
+#' @details
+#' IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010)
+#'
 #' @description
 #' \code{fitOutcomeModel} creates an outcome model, and computes the relative risk
 #'
@@ -33,7 +36,7 @@
 #'                              scores)?
 #' @param useCovariates         Whether to use the covariate matrix in the \code{cohortMethodData}
 #'                              object in the outcome model.
-#' @param inversePtWeighting    Use inverse probability of treatment weigting?
+#' @param inversePtWeighting    Use inverse probability of treatment weigting (IPTW)? See details.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -43,6 +46,11 @@
 #' @param control               The control object used to control the cross-validation used to
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              \code{\link[Cyclops]{createControl}} for details.
+#'
+#' @references
+#' Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
+#' as weights to directly estimate relative risk and its confidence intervals. Value Health.
+#' 2010;13(2):273–277. doi:10.1111/j.1524-4733.2009.00671.x
 #'
 #' @return
 #' An object of class \code{outcomeModel}. Generic function \code{summary}, \code{coef}, and

@@ -4,9 +4,13 @@
 \alias{matchOnPs}
 \title{Match persons by propensity score}
 \usage{
-matchOnPs(population, caliper = 0.2,
-  caliperScale = "standardized logit", maxRatio = 1,
-  stratificationColumns = c())
+matchOnPs(
+  population,
+  caliper = 0.2,
+  caliperScale = "standardized logit",
+  maxRatio = 1,
+  stratificationColumns = c()
+)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below.}

@@ -4,11 +4,17 @@
 \alias{plotCovariateBalanceScatterPlot}
 \title{Create a scatterplot of the covariate balance}
 \usage{
-plotCovariateBalanceScatterPlot(balance, absolute = TRUE,
-  threshold = 0, title = "Standardized difference of mean",
-  fileName = NULL, beforeLabel = "Before matching",
-  afterLabel = "After matching", showCovariateCountLabel = FALSE,
-  showMaxLabel = FALSE)
+plotCovariateBalanceScatterPlot(
+  balance,
+  absolute = TRUE,
+  threshold = 0,
+  title = "Standardized difference of mean",
+  fileName = NULL,
+  beforeLabel = "Before matching",
+  afterLabel = "After matching",
+  showCovariateCountLabel = FALSE,
+  showMaxLabel = FALSE
+)
 }
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}

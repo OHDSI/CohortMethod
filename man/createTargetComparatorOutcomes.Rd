@@ -4,8 +4,13 @@
 \alias{createTargetComparatorOutcomes}
 \title{Create target-comparator-outcomes combinations.}
 \usage{
-createTargetComparatorOutcomes(targetId, comparatorId, outcomeIds,
-  excludedCovariateConceptIds = c(), includedCovariateConceptIds = c())
+createTargetComparatorOutcomes(
+  targetId,
+  comparatorId,
+  outcomeIds,
+  excludedCovariateConceptIds = c(),
+  includedCovariateConceptIds = c()
+)
 }
 \arguments{
 \item{targetId}{A concept ID indentifying the target drug in the exposure

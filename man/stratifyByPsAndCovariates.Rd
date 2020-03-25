@@ -4,8 +4,13 @@
 \alias{stratifyByPsAndCovariates}
 \title{Stratify persons by propensity score and other covariates}
 \usage{
-stratifyByPsAndCovariates(population, numberOfStrata = 5,
-  baseSelection = "all", cohortMethodData, covariateIds)
+stratifyByPsAndCovariates(
+  population,
+  numberOfStrata = 5,
+  baseSelection = "all",
+  cohortMethodData,
+  covariateIds
+)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}

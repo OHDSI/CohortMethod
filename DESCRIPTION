@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 3.1.0
-Date: 2019-08-27
+Version: 3.1.1
+Date: 2020-02-17
 Authors@R: c(
     person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
     person("Marc", "Suchard", role = c("aut")),
@@ -53,5 +53,5 @@ Remotes:
     ohdsi/FeatureExtraction
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Encoding: UTF-8

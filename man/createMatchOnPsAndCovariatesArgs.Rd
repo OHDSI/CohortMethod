@@ -4,8 +4,12 @@
 \alias{createMatchOnPsAndCovariatesArgs}
 \title{Create a parameter object for the function matchOnPsAndCovariates}
 \usage{
-createMatchOnPsAndCovariatesArgs(caliper = 0.2,
-  caliperScale = "standardized logit", maxRatio = 1, covariateIds)
+createMatchOnPsAndCovariatesArgs(
+  caliper = 0.2,
+  caliperScale = "standardized logit",
+  maxRatio = 1,
+  covariateIds
+)
 }
 \arguments{
 \item{caliper}{The caliper for matching. A caliper is the distance which is acceptablefor any

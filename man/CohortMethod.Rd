@@ -3,7 +3,6 @@
 \docType{package}
 \name{CohortMethod}
 \alias{CohortMethod}
-\alias{CohortMethod-package}
 \title{CohortMethod}
 \description{
 CohortMethod

@@ -4,13 +4,18 @@
 \alias{createFitOutcomeModelArgs}
 \title{Create a parameter object for the function fitOutcomeModel}
 \usage{
-createFitOutcomeModelArgs(modelType = "logistic", stratified = FALSE,
-  useCovariates = FALSE, inversePtWeighting = FALSE,
-  interactionCovariateIds = c(), excludeCovariateIds = c(),
-  includeCovariateIds = c(), prior = createPrior("laplace",
-  useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  seed = 1, startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10,
-  noiseLevel = "quiet"))
+createFitOutcomeModelArgs(
+  modelType = "logistic",
+  stratified = FALSE,
+  useCovariates = FALSE,
+  inversePtWeighting = FALSE,
+  interactionCovariateIds = c(),
+  excludeCovariateIds = c(),
+  includeCovariateIds = c(),
+  prior = createPrior("laplace", useCrossValidation = TRUE),
+  control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
+    = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
+)
 }
 \arguments{
 \item{modelType}{The type of outcome model that will be used. Possible values

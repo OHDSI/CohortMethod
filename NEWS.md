@@ -1,3 +1,17 @@
+CohortMethod 3.1.1
+==================
+
+Changes:
+
+1. Updating documentation: adding literature reference for IPTW, and using new SqlRender interface in vignettes.
+
+2. Changing default equipoise bounds from 0.25-0.75 to 0.3-0.7 to be consistent with Alec Walker's original paper.
+
+Bugfixes:
+
+1. Fixing some issues when sampling before fitting propensity models.
+
+
 CohortMethod 3.1.0
 ==================
 
@@ -8,6 +22,8 @@ Changes:
 2. Deprecating addExposureDaysToStart and addExposureDaysToEnd arguments, adding new arguments called startAnchor and endAnchor. The hope is this is less confusing.
 
 3. Fixing random seeds for reproducibility.
+
+4. Changing default equipoise bounds from 0.25-0.75 to 0.3-0.7 to be consistent with Alec Walker's original paper.
 
 Bugfixes:
 

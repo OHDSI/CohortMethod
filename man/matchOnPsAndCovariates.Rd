@@ -4,9 +4,14 @@
 \alias{matchOnPsAndCovariates}
 \title{Match by propensity score as well as other covariates}
 \usage{
-matchOnPsAndCovariates(population, caliper = 0.2,
-  caliperScale = "standardized logit", maxRatio = 1, cohortMethodData,
-  covariateIds)
+matchOnPsAndCovariates(
+  population,
+  caliper = 0.2,
+  caliperScale = "standardized logit",
+  maxRatio = 1,
+  cohortMethodData,
+  covariateIds
+)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below.}

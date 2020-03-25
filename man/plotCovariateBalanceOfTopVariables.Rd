@@ -4,9 +4,15 @@
 \alias{plotCovariateBalanceOfTopVariables}
 \title{Plot variables with largest imbalance}
 \usage{
-plotCovariateBalanceOfTopVariables(balance, n = 20, maxNameWidth = 100,
-  title = NULL, fileName = NULL, beforeLabel = "before matching",
-  afterLabel = "after matching")
+plotCovariateBalanceOfTopVariables(
+  balance,
+  n = 20,
+  maxNameWidth = 100,
+  title = NULL,
+  fileName = NULL,
+  beforeLabel = "before matching",
+  afterLabel = "after matching"
+)
 }
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}

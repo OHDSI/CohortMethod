@@ -135,10 +135,10 @@ This is parameterized SQL which can be used by the `SqlRender` package. We use p
 ```{r tidy=FALSE,eval=FALSE}
 library(SqlRender)
 sql <- readSql("coxibVsNonselVsGiBleed.sql")
-sql <- renderSql(sql,
-                 cdmDatabaseSchema = cdmDatabaseSchema,
-                 resultsDatabaseSchema = resultsDatabaseSchema)$sql
-sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+sql <- render(sql,
+              cdmDatabaseSchema = cdmDatabaseSchema,
+              resultsDatabaseSchema = resultsDatabaseSchema)
+sql <- translate(sql, targetDialect = connectionDetails$dbms)
 
 connection <- connect(connectionDetails)
 executeSql(connection, sql)
@@ -152,8 +152,8 @@ If all went well, we now have a table with the events of interest. We can see ho
 sql <- paste("SELECT cohort_definition_id, COUNT(*) AS count",
              "FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed",
              "GROUP BY cohort_definition_id")
-sql <- renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema)$sql
-sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+sql <- render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
+sql <- translate(sql, targetDialect = connectionDetails$dbms)
 
 querySql(connection, sql)
 ```

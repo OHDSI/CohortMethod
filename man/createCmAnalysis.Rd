@@ -4,16 +4,30 @@
 \alias{createCmAnalysis}
 \title{Create a CohortMethod analysis specification}
 \usage{
-createCmAnalysis(analysisId = 1, description = "", targetType = NULL,
-  comparatorType = NULL, getDbCohortMethodDataArgs, createStudyPopArgs,
-  createPs = FALSE, createPsArgs = NULL, trimByPs = FALSE,
-  trimByPsArgs = NULL, trimByPsToEquipoise = FALSE,
-  trimByPsToEquipoiseArgs = NULL, matchOnPs = FALSE,
-  matchOnPsArgs = NULL, matchOnPsAndCovariates = FALSE,
-  matchOnPsAndCovariatesArgs = NULL, stratifyByPs = FALSE,
-  stratifyByPsArgs = NULL, stratifyByPsAndCovariates = FALSE,
-  stratifyByPsAndCovariatesArgs = NULL, fitOutcomeModel = FALSE,
-  fitOutcomeModelArgs = NULL)
+createCmAnalysis(
+  analysisId = 1,
+  description = "",
+  targetType = NULL,
+  comparatorType = NULL,
+  getDbCohortMethodDataArgs,
+  createStudyPopArgs,
+  createPs = FALSE,
+  createPsArgs = NULL,
+  trimByPs = FALSE,
+  trimByPsArgs = NULL,
+  trimByPsToEquipoise = FALSE,
+  trimByPsToEquipoiseArgs = NULL,
+  matchOnPs = FALSE,
+  matchOnPsArgs = NULL,
+  matchOnPsAndCovariates = FALSE,
+  matchOnPsAndCovariatesArgs = NULL,
+  stratifyByPs = FALSE,
+  stratifyByPsArgs = NULL,
+  stratifyByPsAndCovariates = FALSE,
+  stratifyByPsAndCovariatesArgs = NULL,
+  fitOutcomeModel = FALSE,
+  fitOutcomeModelArgs = NULL
+)
 }
 \arguments{
 \item{analysisId}{An integer that will be used later to refer to this specific
