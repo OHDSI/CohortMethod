@@ -1,3 +1,10 @@
+CohortMethod 3.1.2
+==================
+
+Bugfixes:
+
+1. Fixed bug in IPTW.
+
 CohortMethod 3.1.1
 ==================
 
