@@ -73,7 +73,7 @@ fitOutcomeModel <- function(population,
                                                     tolerance = 2e-07,
                                                     cvRepetitions = 10,
                                                     noiseLevel = "quiet")) {
-  if (stratified && is.null(population$stratumId))
+  if (stratified && nrow(population) > 0 && is.null(population$stratumId))
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
   if (is.null(population$outcomeCount))
     stop("No outcome variable found in population object. Use createStudyPopulation to create variable.")
