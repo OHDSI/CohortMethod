@@ -574,35 +574,46 @@ trimMatchStratify <- function(params) {
 doPrefilterCovariates <- function(params) {
   cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
   covariates <- cohortMethodData$covariates
-  if (params$args$useCovariates) {
-    if (length(params$args$includeCovariateIds) != 0) {
-      idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$includeCovariateIds))
+  if (nrow(covariates) > 0) {
+    if (params$args$useCovariates) {
+      if (length(params$args$includeCovariateIds) != 0) {
+        idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$includeCovariateIds))
+      } else {
+        idx <- ff::ff(TRUE, nrow(covariates))
+      }
+      if (length(params$args$excludeCovariateIds) != 0) {
+        idx[idx] <- !ffbase::`%in%`(covariates$covariateId[idx], ff::as.ff(params$args$excludeCovariateIds))
+      }
+      if (length(params$args$interactionCovariateIds) != 0) {
+        idx <- idx & ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
+      }
     } else {
-      idx <- ff::ff(TRUE, nrow(covariates))
+      idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
     }
-    if (length(params$args$excludeCovariateIds) != 0) {
-      idx[idx] <- !ffbase::`%in%`(covariates$covariateId[idx], ff::as.ff(params$args$excludeCovariateIds))
+    if (!ffbase::any.ff(idx)) {
+      # ffdf cannot have zero rows. Just select first row of covariates.
+      covariates <- covariates[ff::ff(as.integer(1)), ]
+    } else if (ffbase::any.ff(!idx)) {
+      covariates <- covariates[idx, ]
+    } else {
+      covariates <- ff::clone.ffdf(covariates)
     }
-    if (length(params$args$interactionCovariateIds) != 0) {
-      idx <- idx & ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
-    }
+
+    covariateRef <- ff::clone.ffdf(cohortMethodData$covariateRef)
+    analysisRef <- ff::clone.ffdf(cohortMethodData$analysisRef)
+    ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = params$prefilteredCovariatesFolder)
+    ff::close.ffdf(covariates)
+    ff::close.ffdf(covariateRef)
+    ff::close.ffdf(analysisRef)
   } else {
-    idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
+    covariates <- data.frame(covariateId = -1, covariateValue = 0, covariateName = "dummy")
+    covariateRef <- data.frame(covariateId = -1, covariateName = "dummy", conceptId = -1, analysisId = -1)
+    analysisRef <- data.frame(analysisId = -1, analysisName = "dummy", domainId = -1, endDay = -1,
+                              isBinary = TRUE,  missingMeansZero = TRUE, startDay = -1)
+    ffbase::save.ffdf(ff::as.ffdf(covariates),
+                      ff::as.ffdf(covariateRef),
+                      ff::as.ffdf(analysisRef), dir = params$prefilteredCovariatesFolder)
   }
-  if (!ffbase::any.ff(idx)) {
-    # ffdf cannot have zero rows. Just select first row of covariates.
-    covariates <- covariates[ff::ff(as.integer(1)), ]
-  } else if (ffbase::any.ff(!idx)) {
-    covariates <- covariates[idx, ]
-  } else {
-    covariates <- ff::clone.ffdf(covariates)
-  }
-  covariateRef <- ff::clone.ffdf(cohortMethodData$covariateRef)
-  analysisRef <- ff::clone.ffdf(cohortMethodData$analysisRef)
-  ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = params$prefilteredCovariatesFolder)
-  ff::close.ffdf(covariates)
-  ff::close.ffdf(covariateRef)
-  ff::close.ffdf(analysisRef)
   return(NULL)
 }
 
