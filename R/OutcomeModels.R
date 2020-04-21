@@ -100,6 +100,7 @@ fitOutcomeModel <- function(population,
   priorVariance <- NULL
   treatmentVarId <- NA
   subgroupCounts <- NULL
+  logLikelihoodProfile <- NULL
   status <- "NO MODEL FITTED"
 
   colnames(population)[colnames(population) == "outcomeCount"] <- "y"
@@ -401,6 +402,16 @@ fitOutcomeModel <- function(population,
                                              logUb95 = ci[ ,3],
                                              seLogRr = seLogRr)
         }
+
+        if (!is.null(control$profileLogLikelihood) && control$profileLogLikelihood) {
+          x <- seq(log(0.1), log(10), length.out = 100) # TODO Evil magic numbers
+          y <- Cyclops::getCyclopsProfileLogLikelihood(fit, parm = treatmentVarId, x)$value
+          logLikelihoodProfile <- data.frame(
+            covariateId = treatmentVarId,
+            value = x,
+            logLikelihood = y
+          )
+        }
       }
     }
   }
@@ -422,6 +433,9 @@ fitOutcomeModel <- function(population,
   }
   if (!is.null(subgroupCounts)) {
     outcomeModel$subgroupCounts <- subgroupCounts
+  }
+  if (!is.null(logLikelihoodProfile)) {
+    outcomeModel$logLikelihoodProfile <- logLikelihoodProfile
   }
   class(outcomeModel) <- "outcomeModel"
   delta <- Sys.time() - start
