@@ -95,6 +95,7 @@ fitOutcomeModel <- function(population,
   start <- Sys.time()
   treatmentEstimate <- NULL
   interactionEstimates <- NULL
+  mainEffectEstimates <- NULL
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
@@ -125,6 +126,8 @@ fitOutcomeModel <- function(population,
     timeAtRisk <- data.frame(targetDays = sum(population$time[population$treatment == 1]),
                              comparatorDays = sum(population$time[population$treatment == 0]))
   }
+
+  mainEffectTerms <- NULL
 
   if (nrow(population) == 0) {
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
@@ -177,6 +180,17 @@ fitOutcomeModel <- function(population,
           covariates <- ffbase::merge.ffdf(covariates,
                                            ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
         }
+
+        mainEffectIds <- as.numeric(ff::as.ram(ffbase::unique.ff(covariates$covariateId)))
+        mainEffectIds <- mainEffectIds[mainEffectIds != treatmentVarId]
+
+        mainEffectNames <- ff::as.ram(
+          cohortMethodData$covariateRef$covariateName[
+            ffbase::ffmatch(ff::as.ff(mainEffectIds),
+                            cohortMethodData$covariateRef$covariateId)])
+        mainEffectNames <- as.character(mainEffectNames) # Drops unused levels to save lots of space
+        mainEffectTerms <- data.frame(id = mainEffectIds, name = mainEffectNames)
+
       } else {
         # Don't add covariates, only use treatment as covariate -------------------------------------------------------------
         prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior
@@ -197,7 +211,7 @@ fitOutcomeModel <- function(population,
           informativeIdx <- ff::clone.ff(idx)
           informativeIdx[informativeIdx] <- informativeIdx[informativeIdx] &
             ffbase::`%in%`(cohortMethodData$covariates$rowId[informativeIdx], ff::as.ff(informativePopulation$rowId))
-          if (!useCovariates) {
+          if (!useCovariates) {  # TODO possible bug?  Should remove !?
             # Add covariates for main effects:
             if (ffbase::any.ff(informativeIdx)) {
               mainEffects <- cohortMethodData$covariates[informativeIdx, ]
@@ -315,6 +329,7 @@ fitOutcomeModel <- function(population,
                                                    checkRowIds = FALSE,
                                                    normalize = NULL,
                                                    quiet = TRUE)
+
       if (!is.null(interactionTerms)) {
         # Check separability:
         separability <- Cyclops::getUnivariableSeparability(cyclopsData)
@@ -386,6 +401,26 @@ fitOutcomeModel <- function(population,
                                         logUb95 = ci[3],
                                         seLogRr = seLogRr)
         priorVariance <- fit$variance[1]
+
+        if (!is.null(mainEffectTerms)) {
+          logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
+          ci <- tryCatch({
+            confint(fit, parm = mainEffectTerms$id, includePenalty = TRUE,
+                    overrideNoRegularization = TRUE)
+          }, error = function(e) {
+            missing(e)  # suppresses R CMD check note
+            t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
+          })
+          seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
+          mainEffectEstimates <- data.frame(
+            covariateId = mainEffectTerms$id,
+            coariateName = mainEffectTerms$name,
+            logRr = logRr,
+            logLb95 = ci[ ,2],
+            logUb95 = ci[ ,3],
+            seLogRr = seLogRr)
+        }
+
         if (!is.null(interactionTerms)) {
           logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
           ci <- tryCatch({
@@ -424,7 +459,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePtWeighting <- inversePtWeighting
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
-  outcomeModel$outcomeModelInteractionEstimates <- interactionEstimates
+  outcomeModel$outcomeModelInteractionEstimates <- rbind(mainEffectEstimates, interactionEstimates)
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- populationCounts
   outcomeModel$outcomeCounts <- outcomeCounts
