@@ -28,7 +28,7 @@ BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
     R (>= 3.2.2),
     DatabaseConnector (>= 2.2.0),
-    Cyclops,
+    Cyclops (>= 2.0.3),
     FeatureExtraction  (>= 2.2.3)
 Imports:
     methods,
