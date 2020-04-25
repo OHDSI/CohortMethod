@@ -22,26 +22,8 @@ library(DatabaseConnector)
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
-# Synpuf on Postgres
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
-                                                                server = "localhost/ohdsi",
-                                                                user = "postgres",
-                                                                password = Sys.getenv("pwPostgres"))
-cdmDatabaseSchema <- "cdm_synpuf"
-resultsDatabaseSchema <- "scratch"
-cdmVersion <- "5"
-extraSettings <- NULL
 
-# Synpuf on PDW
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
-                                                                server = Sys.getenv("PDW_SERVER"),
-                                                                user = NULL,
-                                                                password = NULL,
-                                                                port = Sys.getenv("PDW_PORT"))
-cdmDatabaseSchema <- "cdm_synpuf_v667.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-cdmVersion <- "5"
-extraSettings <- NULL
+outputFolder <- "s:/temp/cohortMethodVignette"
 
 # MDCD on PDW
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
@@ -49,8 +31,9 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
                                                                 user = NULL,
                                                                 password = NULL,
                                                                 port = Sys.getenv("PDW_PORT"))
-cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1105.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
+oracleTempSchema <- NULL
 cdmVersion <- "5"
 extraSettings <- NULL
 
@@ -72,6 +55,13 @@ sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
                               resultsDatabaseSchema = resultsDatabaseSchema)
 DatabaseConnector::executeSql(connection, sql)
 
+sql <- loadRenderTranslateSql("arthralgia.sql",
+                              packageName = "CohortMethod",
+                              dbms = connectionDetails$dbms,
+                              cdmDatabaseSchema = cdmDatabaseSchema,
+                              resultsDatabaseSchema = resultsDatabaseSchema)
+DatabaseConnector::executeSql(connection, sql)
+
 # Check number of subjects per cohort:
 sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
 sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
@@ -79,6 +69,14 @@ sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
 DatabaseConnector::querySql(connection, sql)
 
 DatabaseConnector::disconnect(connection)
+
+# CohortDiagnostics::launchCohortExplorer(connectionDetails = connectionDetails,
+#                                         cdmDatabaseSchema = cdmDatabaseSchema,
+#                                         cohortDatabaseSchema = resultsDatabaseSchema,
+#                                         cohortTable = "coxibVsNonselVsGiBleed",
+#                                         cohortId = 2)
+
+
 
 nsaids <- c(1118084, 1124300)
 
@@ -104,14 +102,12 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           removeDuplicateSubjects = "remove all",
                                           restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
+                                          maxCohortSize = 100000,
                                           covariateSettings = covSettings)
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataSynpuf")
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataComp", compress = TRUE)
+saveCohortMethodData(cohortMethodData, file.path(outputFolder, "cohortMethodData"))
 
-# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
-# cohortMethodDataComp <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodDataComp')
-# summary(cohortMethodData) getAttritionTable(cohortMethodData)
+# cohortMethodData <- loadCohortMethodData(file.path(outputFolder, "cohortMethodData"))
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
@@ -126,23 +122,23 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   endAnchor = "cohort end")
 
 plotTimeToEvent(cohortMethodData = cohortMethodData,
-                                  outcomeId = 3,
-                                  firstExposureOnly = FALSE,
-                                  washoutPeriod = 0,
-                                  removeDuplicateSubjects = FALSE,
-                                  minDaysAtRisk = 1,
-                                  riskWindowStart = 0,
-                                  addExposureDaysToStart = FALSE,
-                                  riskWindowEnd = 30,
-                                  addExposureDaysToEnd = TRUE)
+                outcomeId = 3,
+                firstExposureOnly = FALSE,
+                washoutPeriod = 0,
+                removeDuplicateSubjects = FALSE,
+                minDaysAtRisk = 1,
+                riskWindowStart = 0,
+                addExposureDaysToStart = FALSE,
+                riskWindowEnd = 30,
+                addExposureDaysToEnd = TRUE)
 
 
 
 # getAttritionTable(studyPop)
 
-saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
+saveRDS(studyPop, file.path(outputFolder, "studyPop.rds"))
 
-# studyPop <- readRDS('s:/temp/cohortMethodVignette/studyPop.rds')
+# studyPop <- readRDS(file.path(outputFolder, "studyPop.rds"))
 
 ps <- createPs(cohortMethodData = cohortMethodData,
                population = studyPop,
@@ -154,36 +150,12 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        cvRepetitions = 1,
                                        threads = 10))
 
-options(floatingPoint = 32)
-ps <- createPs(cohortMethodData = cohortMethodData,
-               population = studyPop,
-               prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-               control = createControl(cvType = "auto",
-                                       startingVariance = 0.01,
-                                       noiseLevel = "quiet",
-                                       tolerance = 2e-07,
-                                       cvRepetitions = 1,
-                                       threads = 10,
-                                       seed = 123))
-
-ps <- createPs(cohortMethodData = cohortMethodData,
-               population = studyPop,
-               prior = createPrior("laplace", exclude = c(0), useCrossValidation = FALSE, variance = 0.01),
-               control = createControl(cvType = "auto",
-                                       startingVariance = 0.01,
-                                       noiseLevel = "quiet",
-                                       tolerance = 2e-07,
-                                       cvRepetitions = 1,
-                                       threads = 10))
 plotPs(ps)
 
 # computePsAuc(ps) plotPs(ps)
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/psSynpuf.rds")
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps32.rds")
-ps32 <- ps
-ps64 <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+saveRDS(ps, file = file.path(outputFolder, "ps.rds"))
 
-# ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+# ps <- readRDS(file.path(outputFolder, "ps.rds"))
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
 model[model$id %% 1000 == 902, ]
@@ -193,18 +165,6 @@ plotPs(ps)
 plotPs(ps, scale = "propensity", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
 plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
 
-# insertDbPopulation(population = studyPop, cohortIds = c(101,100), connectionDetails =
-# connectionDetails, cohortDatabaseSchema = resultsDatabaseSchema, cohortTable = 'mschuemi_test',
-# createTable = TRUE, dropTableIfExists = TRUE, cdmVersion = 5)
-
-# Check number of subjects per cohort: connection <- DatabaseConnector::connect(connectionDetails)
-# sql <- 'SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.mschuemi_test
-# GROUP BY cohort_definition_id' sql <- SqlRender::renderSql(sql, resultsDatabaseSchema =
-# resultsDatabaseSchema)$sql sql <- SqlRender::translateSql(sql, targetDialect =
-# connectionDetails$dbms)$sql DatabaseConnector::querySql(connection, sql) dbDisconnect(connection)
-
-# trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
-
 matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
 
@@ -212,9 +172,9 @@ matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRa
 
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
 
-saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
+saveRDS(balance, file = file.path(outputFolder, "balance.rds"))
 
-# balance <- readRDS('s:/temp/cohortMethodVignette/balance.rds')
+# balance <- readRDS(file.path(outputFolder, "balance.rds'))
 
 table1 <- createCmTable1(balance)
 print(table1, row.names = FALSE, right = FALSE)
@@ -227,13 +187,13 @@ outcomeModel <- fitOutcomeModel(population = studyPop,
                                 useCovariates = FALSE)
 # getAttritionTable(outcomeModel) outcomeModel summary(outcomeModel) coef(outcomeModel)
 # confint(outcomeModel)
-saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
+saveRDS(outcomeModel, file = file.path(outputFolder, "OutcomeModel1.rds"))
 
 outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 modelType = "cox",
                                 stratified = TRUE,
                                 useCovariates = FALSE)
-saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
+saveRDS(outcomeModel, file = file.path(outputFolder, "OutcomeModel2.rds"))
 weights <- ps$treatment / ps$propensityScore + (1-ps$treatment) / (1-ps$propensityScore)
 max(weights)
 min(weights)
@@ -244,7 +204,7 @@ outcomeModel <- fitOutcomeModel(population = ps,
                                 useCovariates = FALSE,
                                 inversePtWeighting = TRUE)
 outcomeModel
-saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
+saveRDS(outcomeModel, file = file.path(outputFolder, "OutcomeModel2w.rds"))
 
 
 outcomeModel <- fitOutcomeModel(population = matchedPop,
@@ -257,10 +217,10 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                                         startingVariance = 0.01,
                                                         selectorType = "byPid",
                                                         cvRepetitions = 1,
-                                                        tolerance = 2e-07,
+                                                        tolerance = 2e-06,
                                                         threads = 16,
                                                         noiseLevel = "quiet"))
-saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel3.rds")
+saveRDS(outcomeModel, file = file.path(outputFolder, "OutcomeModel3.rds"))
 
 population <- stratifyByPs(ps, numberOfStrata = 10)
 interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
@@ -272,20 +232,76 @@ outcomeModel <- fitOutcomeModel(population = population,
                                 inversePtWeighting = FALSE,
                                 interactionCovariateIds = interactionCovariateIds,
                                 control = createControl(threads = 6))
-saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel4.rds")
+saveRDS(outcomeModel, file = file.path(outputFolder, "OutcomeModel4.rds"))
 
-balanceFemale <- computeCovariateBalance(matchedPop, cohortMethodData, subgroupCovariateId = 8532001)
-saveRDS(balanceFemale, file = "s:/temp/cohortMethodVignette/balanceFemale.rds")
+# balanceFemale <- computeCovariateBalance(matchedPop, cohortMethodData, subgroupCovariateId = 8532001)
+# saveRDS(balanceFemale, file = "s:/temp/cohortMethodVignette/balanceFemale.rds")
 
-dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
+# dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
 
 
-balanceOverall <- computeCovariateBalance(population, cohortMethodData)
-dummy <- plotCovariateBalanceScatterPlot(balanceOverall, fileName = "s:/temp/balance.png")
-balanceFemale <- computeCovariateBalance(population, cohortMethodData, subgroupCovariateId = 8532001)
-dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
+# balanceOverall <- computeCovariateBalance(population, cohortMethodData)
+# dummy <- plotCovariateBalanceScatterPlot(balanceOverall, fileName = "s:/temp/balance.png")
+# balanceFemale <- computeCovariateBalance(population, cohortMethodData, subgroupCovariateId = 8532001)
+# dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
 
 # grepCovariateNames("ANTITHROMBOTIC AGENTS", cohortMethodData)
 
 # outcomeModel <- readRDS(file = 's:/temp/cohortMethodVignette/OutcomeModel3.rds')
 # drawAttritionDiagram(outcomeModel, fileName = 's:/temp/attrition.png') summary(outcomeModel)
+
+
+# Disease risk scores -------------------------------------------------
+plpData <- PatientLevelPrediction::getPlpData(connectionDetails = connectionDetails,
+                                              cdmDatabaseSchema = cdmDatabaseSchema,
+                                              cdmVersion = cdmVersion,
+                                              oracleTempSchema = oracleTempSchema,
+                                              cohortId = 4,
+                                              outcomeIds = 3,
+                                              cohortDatabaseSchema = resultsDatabaseSchema,
+                                              cohortTable = "coxibVsNonselVsGiBleed",
+                                              outcomeDatabaseSchema = resultsDatabaseSchema,
+                                              outcomeTable = "coxibVsNonselVsGiBleed",
+                                              washoutPeriod = 180,
+                                              sampleSize = 250000,
+                                              covariateSettings = covSettings)
+
+PatientLevelPrediction::savePlpData(plpData, file.path(outputFolder, "plpData"))
+
+plpStudyPop <- PatientLevelPrediction::createStudyPopulation(plpData = plpData,
+                                                          outcomeId = 3,
+                                                          includeAllOutcomes = TRUE,
+                                                          removeSubjectsWithPriorOutcome = TRUE,
+                                                          minTimeAtRisk = 1,
+                                                          riskWindowStart = 0,
+                                                          riskWindowEnd = 30)
+sum(plpStudyPop$outcomeCount > 0)
+
+model <- PatientLevelPrediction::fitGLMModel(population = plpStudyPop,
+                                             plpData = plpData,
+                                             modelType = "logistic")
+
+betas <- model$coefficients
+betas <- betas[betas != 0]
+saveRDS(betas, file.path(outputFolder, "drBetas.rds"))
+betas <- readRDS(file.path(outputFolder, "drBetas.rds"))
+
+drs <- createDrs(cohortMethodData = cohortMethodData,
+                 population = studyPop,
+                 coefficients = betas)
+plot <- plotDrs(drs)
+computeDrsAuc(drs)
+
+
+
+
+matchedOnDrsPop <- matchOnDrs(drs)
+plotDrs(matchedOnDrsPop)
+outcomeModel <- fitOutcomeModel(population = matchedOnDrsPop,
+                                modelType = "cox",
+                                stratified = TRUE,
+                                useCovariates = FALSE)
+saveRDS(outcomeModel, file = file.path(outputFolder, "OutcomeModel5.rds"))
+
+balanceDrs <- computeCovariateBalance(matchedOnDrsPop, cohortMethodData)
+plotCovariateBalanceScatterPlot(balanceDrs, fileName = "s:/temp/balDrs.png")

@@ -1,14 +1,14 @@
 /***********************************
 File VignetteOutcomes.sql
 ***********************************/
-IF OBJECT_ID('@resultsDatabaseSchema.outcomes', 'U') IS NOT NULL
-  DROP TABLE @resultsDatabaseSchema.outcomes;
+IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselAlloutcomes', 'U') IS NOT NULL
+  DROP TABLE @resultsDatabaseSchema.coxibVsNonselAlloutcomes;
 
 SELECT ancestor_concept_id AS cohort_definition_id,
 	condition_start_date AS cohort_start_date,
 	condition_end_date AS cohort_end_date,
 	condition_occurrence.person_id AS subject_id
-INTO @resultsDatabaseSchema.outcomes
+INTO @resultsDatabaseSchema.coxibVsNonselAlloutcomes
 FROM @cdmDatabaseSchema.condition_occurrence
 INNER JOIN @cdmDatabaseSchema.visit_occurrence
 	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id

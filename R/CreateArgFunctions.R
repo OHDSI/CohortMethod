@@ -45,16 +45,9 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             washoutPeriod = 0,
                                             maxCohortSize = 0,
                                             covariateSettings) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createGetDbCohortMethodDataArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -109,16 +102,9 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
                                             addExposureDaysToEnd = NULL,
                                             endAnchor = "cohort end",
                                             censorAtNewRiskWindow = FALSE) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createCreateStudyPopulationArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -162,16 +148,9 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
                                                        tolerance = 2e-07,
                                                        cvRepetitions = 10,
                                                        startingVariance = 0.01)) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createCreatePsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -188,16 +167,9 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
 #'
 #' @export
 createTrimByPsArgs <- function(trimFraction = 0.05) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createTrimByPsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -211,17 +183,10 @@ createTrimByPsArgs <- function(trimFraction = 0.05) {
 #' @param bounds   The upper and lower bound on the preference score for keeping persons
 #'
 #' @export
-createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
-  # First: get default values:
+createTrimByPsToEquipoiseArgs <- function(bounds = c(0.3, 0.7)) {
   analysis <- list()
   for (name in names(formals(createTrimByPsToEquipoiseArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -256,16 +221,9 @@ createMatchOnPsArgs <- function(caliper = 0.2,
                                 caliperScale = "standardized logit",
                                 maxRatio = 1,
                                 stratificationColumns = c()) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createMatchOnPsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -297,16 +255,9 @@ createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
                                              caliperScale = "standardized logit",
                                              maxRatio = 1,
                                              covariateIds) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createMatchOnPsAndCovariatesArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -330,16 +281,9 @@ createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
 createStratifyByPsArgs <- function(numberOfStrata = 5,
                                    stratificationColumns = c(),
                                    baseSelection = "all") {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createStratifyByPsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -363,16 +307,89 @@ createStratifyByPsArgs <- function(numberOfStrata = 5,
 createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
                                                 baseSelection = "all",
                                                 covariateIds) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createStratifyByPsAndCovariatesArgs))) {
     analysis[[name]] <- get(name)
   }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
+  class(analysis) <- "args"
+  return(analysis)
+}
+
+#' Create a parameter object for the function createDrs
+#'
+#' @details
+#' Create an object defining the parameter values.
+#'
+#' @param modelType   The type of disease risk model. Can be either 'logistic' or 'survival'.
+#'
+#' @export
+createCreateDrsArgs <- function(modelType = "logistic") {
+  analysis <- list()
+  for (name in names(formals(createCreateDrsArgs))) {
+    analysis[[name]] <- get(name)
+  }
+  class(analysis) <- "args"
+  return(analysis)
+}
+
+#' Create a parameter object for the function matchOnDrs
+#'
+#' @details
+#' Create an object defining the parameter values.
+#'
+#' @param caliper                 The caliper for matching. A caliper is the distance which
+#'                                isacceptable for any match. Observations which are outside of
+#'                                thecaliper are dropped. A caliper of 0 means no caliper is used.
+#' @param caliperScale            The scale on which the caliper is defined. Three scales are
+#'                                supported:caliperScale = 'disease risk score', caliperScale
+#'                                ='standardized', or caliperScale = 'standardized logit'.On the
+#'                                standardized scale, the caliper is interpreted in standarddeviations
+#'                                of the disease risk score distribution. 'standardized logit'is
+#'                                similar, except that the disease risk score is transformed to the
+#'                                logitscale because the DRS is more likely to be normally distributed
+#'                                on that scale.
+#' @param maxRatio                The maximum number of persons int the comparator arm to be matched
+#'                                toeach person in the treatment arm. A maxRatio of 0 means no
+#'                                maximum:all comparators will be assigned to a target person.
+#' @param stratificationColumns   Names or numbers of one or more columns in the data data.frameon
+#'                                which subjects should be stratified prior to matching. No personswill
+#'                                be matched with persons outside of the strata identified by thevalues
+#'                                in these columns.
+#'
+#' @export
+createMatchOnDrsArgs <- function(caliper = 0.2,
+                                 caliperScale = "standardized logit",
+                                 maxRatio = 1,
+                                 stratificationColumns = c()) {
+  analysis <- list()
+  for (name in names(formals(createMatchOnDrsArgs))) {
+    analysis[[name]] <- get(name)
+  }
+  class(analysis) <- "args"
+  return(analysis)
+}
+
+#' Create a parameter object for the function stratifyByDrs
+#'
+#' @details
+#' Create an object defining the parameter values.
+#'
+#' @param numberOfStrata          How many strata? The boundaries of the strata are
+#'                                automaticallydefined to contain equal numbers of target persons.
+#' @param stratificationColumns   Names of one or more columns in the data data.frame on whichsubjects
+#'                                should also be stratified in addition to stratification ondisease
+#'                                risk score.
+#' @param baseSelection           What is the base selection of subjects where the strata bounds areto
+#'                                be determined? Strata are defined as equally-sized strata insidethis
+#'                                selection. Possible values are "all", "target", and "comparator".
+#'
+#' @export
+createStratifyByDrsArgs <- function(numberOfStrata = 5,
+                                    stratificationColumns = c(),
+                                    baseSelection = "all") {
+  analysis <- list()
+  for (name in names(formals(createStratifyByDrsArgs))) {
+    analysis[[name]] <- get(name)
   }
   class(analysis) <- "args"
   return(analysis)
@@ -390,7 +407,7 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #'                                  propensityscores)?
 #' @param useCovariates             Whether to use the covariate matrix in the cohortMethodDataobject
 #'                                  in the outcome model.
-#' @param inversePtWeighting        Use inverse probability of treatment weigting?
+#' @param inversePtWeighting        Use inverse probability of treatment weigting (IPTW)? See details.
 #' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate
 #'                                  interactionswith the main treatment effect.
 #' @param excludeCovariateIds       Exclude these covariates from the outcome model.
@@ -415,16 +432,9 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
                                                               noiseLevel = "quiet")) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createFitOutcomeModelArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)

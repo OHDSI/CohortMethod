@@ -85,6 +85,8 @@
 #'                                       validation when estimating the hyperparameter for the
 #'                                       propensity model. Note that the total number of CV threads at
 #'                                       one time could be `createPsThreads * psCvThreads`.
+#' @param createDrsThreads               The number of parallel threads to use for computing the disease
+#'                                       risk scores.
 #' @param createStudyPopThreads          The number of parallel threads to use for creating the study
 #'                                       population.
 #' @param trimMatchStratifyThreads       The number of parallel threads to use for trimming, matching
@@ -136,6 +138,7 @@ runCmAnalyses <- function(connectionDetails,
                           getDbCohortMethodDataThreads = 1,
                           createPsThreads = 1,
                           psCvThreads = 1,
+                          createDrsThreads = 1,
                           createStudyPopThreads = 1,
                           trimMatchStratifyThreads = 1,
                           prefilterCovariatesThreads = 1,
@@ -318,6 +321,51 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
 
+  ParallelLogger::logInfo("*** Computing disease risk scores ***")
+  subset <- referenceTable[!duplicated(referenceTable$drsFile), ]
+  subset <- subset[subset$drsFile != "", ]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$drsFile)), ]
+  if (nrow(subset) != 0) {
+    createDrsTask <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
+      args <- analysisRow$createDrsArgs
+
+      if (!is.null(analysisRow$targetType)) {
+        targetId <- list()
+        targetId[[analysisRow$targetType]] <- refRow$targetId
+      } else {
+        targetId <- refRow$targetId
+      }
+
+      if (!is.null(analysisRow$comparatorType)) {
+        comparatorId <- list()
+        comparatorId[[analysisRow$comparatorType]] <- refRow$comparatorId
+      } else {
+        comparatorId <- refRow$comparatorId
+      }
+
+      tcos <- ParallelLogger::matchInList(targetComparatorOutcomesList,
+                                          list(targetId = targetId,
+                                               comparatorId = comparatorId))[[1]]
+      args$coefficients <- tcos$diseaseRiskModelCoefficients[[as.character(refRow$outcomeId)]]
+      # args$control$threads <- drsCvThreads
+      task <- list(cohortMethodDataFolder = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFolder),
+                   studyPopFile = file.path(outputFolder, refRow$studyPopFile),
+                   args = args,
+                   drsFile = file.path(outputFolder, refRow$drsFile))
+      return(task)
+    }
+
+    tasks <- lapply(1:nrow(subset), createDrsTask)
+    cluster <- ParallelLogger::makeCluster(createDrsThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, tasks, computeDrs)
+    ParallelLogger::stopCluster(cluster)
+  }
+
   ParallelLogger::logInfo("*** Trimming/Matching/Stratifying ***")
   subset <- referenceTable[!duplicated(referenceTable$strataFile), ]
   subset <- subset[subset$strataFile != "", ]
@@ -327,7 +375,11 @@ runCmAnalyses <- function(connectionDetails,
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                                  list(analysisId = refRow$analysisId))[[1]]
-      task <- list(psFile = file.path(outputFolder, refRow$psFile),
+      psOrDrsFile <- refRow$psFile
+      if (psOrDrsFile == "") {
+        psOrDrsFile <- refRow$drsFile
+      }
+      task <- list(psOrDrsFile = file.path(outputFolder, psOrDrsFile),
                    args = analysisRow,
                    strataFile = file.path(outputFolder, refRow$strataFile))
       return(task)
@@ -427,6 +479,8 @@ runCmAnalyses <- function(connectionDetails,
       params <- list(cohortMethodDataFolder = file.path(outputFolder, refRow$cohortMethodDataFolder),
                      prefilteredCovariatesFolder = prefilteredCovariatesFolder,
                      sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
+                     studyPopFile = file.path(outputFolder, refRow$studyPopFile),
+                     drsFile = file.path(outputFolder, refRow$drsFile),
                      args = analysisRow,
                      outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile))
       return(params)
@@ -460,15 +514,15 @@ getCohortMethodData <- function(cohortMethodDataFolder, requireCovariates = TRUE
   return(cohortMethodData)
 }
 
-getPs <- function(psFile) {
-  if (mget("psFile", envir = globalenv(), ifnotfound = "") == psFile) {
-    ps <- get("ps", envir = globalenv())
+getPsOrDrs <- function(psOrDrsFile) {
+  if (mget("psOrDrsFile", envir = globalenv(), ifnotfound = "") == psOrDrsFile) {
+    psOrDrs <- get("psOrDrs", envir = globalenv())
   } else {
-    ps <- readRDS(psFile)
-    assign("ps", ps, envir = globalenv())
-    assign("psFile", psFile, envir = globalenv())
+    psOrDrs <- readRDS(psOrDrsFile)
+    assign("psOrDrs", psOrDrs, envir = globalenv())
+    assign("psOrDrsFile", psOrDrsFile, envir = globalenv())
   }
-  return(ps)
+  return(psOrDrs)
 }
 
 createCmDataObject <- function(params) {
@@ -499,6 +553,22 @@ fitPsModel <- function(params) {
   args$population <- studyPop
   ps <- do.call("createPs", args)
   saveRDS(ps, params$psFile)
+  return(NULL)
+}
+
+computeDrs <- function(params) {
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = TRUE)
+  studyPop <- readRDS(params$studyPopFile)
+  args <- params$args
+  args$cohortMethodData <- cohortMethodData
+  args$population <- studyPop
+  # drs <- do.call("createDrs", args)
+  drs <- createDrs(cohortMethodData = args$cohortMethodData,
+            population = args$population,
+            coefficients = args$coefficients,
+            modelType = args$modelType)
+
+  saveRDS(drs, params$drsFile)
   return(NULL)
 }
 
@@ -540,34 +610,42 @@ addPsToStudyPop <- function(subset, outputFolder) {
 
 
 trimMatchStratify <- function(params) {
-  ps <- getPs(params$psFile)
+  population <- getPsOrDrs(params$psOrDrsFile)
   if (params$args$trimByPs) {
-    args <- list(population = ps)
+    args <- list(population = population)
     args <- append(args, params$args$trimByPsArgs)
-    ps <- do.call("trimByPs", args)
+    population <- do.call("trimByPs", args)
   } else if (params$args$trimByPsToEquipoise) {
-    args <- list(population = ps)
+    args <- list(population = population)
     args <- append(args, params$args$trimByPsToEquipoiseArgs)
-    ps <- do.call("trimByPsToEquipoise", args)
+    population <- do.call("trimByPsToEquipoise", args)
   }
   if (params$args$matchOnPs) {
-    args <- list(population = ps)
+    args <- list(population = population)
     args <- append(args, params$args$matchOnPsArgs)
-    ps <- do.call("matchOnPs", args)
+    population <- do.call("matchOnPs", args)
   } else if (params$args$matchOnPsAndCovariates) {
-    args <- list(population = ps)
+    args <- list(population = population)
     args <- append(args, params$args$matchOnPsAndCovariatesArgs)
-    ps <- do.call("matchOnPsAndCovariates", args)
+    population <- do.call("matchOnPsAndCovariates", args)
   } else if (params$args$stratifyByPs) {
-    args <- list(population = ps)
+    args <- list(population = population)
     args <- append(args, params$args$stratifyByPsArgs)
-    ps <- do.call("stratifyByPs", args)
+    population <- do.call("stratifyByPs", args)
   } else if (params$args$stratifyByPsAndCovariates) {
-    args <- list(population = ps)
+    args <- list(population = population)
     args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
-    ps <- do.call("stratifyByPsAndCovariates", args)
+    population <- do.call("stratifyByPsAndCovariates", args)
+  } else if (params$args$matchOnDrs) {
+    args <- list(population = population)
+    args <- append(args, params$args$matchOnDrsArgs)
+    population <- do.call("matchOnDrs", args)
+  } else if (params$args$stratifyByDrs) {
+    args <- list(population = population)
+    args <- append(args, params$args$stratifyByDrsArgs)
+    population <- do.call("stratifyByDrs", args)
   }
-  saveRDS(ps, params$strataFile)
+  saveRDS(population, params$strataFile)
   return(NULL)
 }
 
@@ -667,75 +745,70 @@ doFitOutcomeModelPlus <- function(params) {
     cohortMethodData$analysisRef <- analysisRef
   }
 
-  # Create study pop
-  args <- params$args$createStudyPopArgs
-  args$cohortMethodData <- cohortMethodData
-  studyPop <- do.call("createStudyPopulation", args)
-  # studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-  #                                   population = NULL,
-  #                                   outcomeId = args$outcomeId,
-  #                                   firstExposureOnly = args$firstExposureOnly,
-  #                                   washoutPeriod = args$washoutPeriod,
-  #                                   removeDuplicateSubjects = args$removeDuplicateSubjects,
-  #                                   removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
-  #                                   priorOutcomeLookback = args$priorOutcomeLookback,
-  #                                   minDaysAtRisk = args$minDaysAtRisk,
-  #                                   riskWindowStart = args$riskWindowStart,
-  #                                   addExposureDaysToStart = args$addExposureDaysToStart,
-  #                                   riskWindowEnd = args$riskWindowEnd,
-  #                                   addExposureDaysToEnd = args$addExposureDaysToEnd)
 
-  if (params$args$createPs) {
-    # Add PS
-    ps <- getPs(params$sharedPsFile)
-    idx <- match(studyPop$rowId, ps$rowId)
-    studyPop$propensityScore <- ps$propensityScore[idx]
-    ps <- studyPop
+  if (params$args$createDrs) {
+    population <- getPsOrDrs(params$drsFile)
+    if (params$args$matchOnDrs) {
+      args <- list(population = population)
+      args <- append(args, params$args$matchOnDrsArgs)
+      population <- do.call("matchOnDrs", args)
+    } else if (params$args$stratifyByDrs) {
+      args <- list(population = population)
+      args <- append(args, params$argsstratifyByDrsArgs)
+      population <- do.call("stratifyByDrs", args)
+    }
   } else {
-    ps <- studyPop
+    if (file.exists(params$studyPopFile)) {
+      studyPop <- readRDS(params$studyPopFile)
+    } else {
+      args <- params$args$createStudyPopArgs
+      args$cohortMethodData <- cohortMethodData
+      studyPop <- do.call("createStudyPopulation", args)
+    }
+
+    if (params$args$createPs) {
+      # Add PS
+      population <- getPsOrDrs(params$sharedPsFile)
+      idx <- match(studyPop$rowId, population$rowId)
+      studyPop$propensityScore <- population$propensityScore[idx]
+      population <- studyPop
+    } else {
+      population <- studyPop
+    }
+    # Trim, match. stratify
+    if (params$args$trimByPs) {
+      args <- list(population = population)
+      args <- append(args, params$args$trimByPsArgs)
+      population <- do.call("trimByPs", args)
+    } else if (params$args$trimByPsToEquipoise) {
+      args <- list(population = population)
+      args <- append(args, params$args$trimByPsToEquipoiseArgs)
+      population <- do.call("trimByPsToEquipoise", args)
+    }
+    if (params$args$matchOnPs) {
+      args <- list(population = population)
+      args <- append(args, params$args$matchOnPsArgs)
+      population <- do.call("matchOnPs", args)
+    } else if (params$args$matchOnPsAndCovariates) {
+      args <- list(population = population)
+      args <- append(args, params$args$matchOnPsAndCovariatesArgs)
+      population <- do.call("matchOnPsAndCovariates", args)
+    } else if (params$args$stratifyByPs) {
+      args <- list(population = population)
+      args <- append(args, params$args$stratifyByPsArgs)
+      population <- do.call("stratifyByPs", args)
+    } else if (params$args$stratifyByPsAndCovariates) {
+      args <- list(population = population)
+      args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
+      population <- do.call("stratifyByPsAndCovariates", args)
+    }
   }
-  # Trim, match. stratify
-  if (params$args$trimByPs) {
-    args <- list(population = ps)
-    args <- append(args, params$args$trimByPsArgs)
-    ps <- do.call("trimByPs", args)
-  } else if (params$args$trimByPsToEquipoise) {
-    args <- list(population = ps)
-    args <- append(args, params$args$trimByPsToEquipoiseArgs)
-    ps <- do.call("trimByPsToEquipoise", args)
-  }
-  if (params$args$matchOnPs) {
-    args <- list(population = ps)
-    args <- append(args, params$args$matchOnPsArgs)
-    ps <- do.call("matchOnPs", args)
-  } else if (params$args$matchOnPsAndCovariates) {
-    args <- list(population = ps)
-    args <- append(args, params$args$matchOnPsAndCovariatesArgs)
-    ps <- do.call("matchOnPsAndCovariates", args)
-  } else if (params$args$stratifyByPs) {
-    args <- list(population = ps)
-    args <- append(args, params$args$stratifyByPsArgs)
-    ps <- do.call("stratifyByPs", args)
-  } else if (params$args$stratifyByPsAndCovariates) {
-    args <- list(population = ps)
-    args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
-    ps <- do.call("stratifyByPsAndCovariates", args)
-  }
+
   args <- params$args$fitOutcomeModelArgs
-  args$population <- ps
+  args$population <- population
   args$cohortMethodData <- cohortMethodData
   outcomeModel <- do.call('fitOutcomeModel', args)
-  # outcomeModel <- fitOutcomeModel(population = args$population,
-  #                                 cohortMethodData = args$cohortMethodData,
-  #                                 modelType = args$modelType,
-  #                                 stratified = args$stratified,
-  #                                 useCovariates = args$useCovariates,
-  #                                 inversePtWeighting = args$inversePtWeighting,
-  #                                 includeCovariateIds = args$includeCovariateIds,
-  #                                 excludeCovariateIds = args$excludeCovariateIds,
-  #                                 interactionCovariateIds = args$interactionCovariateIds,
-  #                                 prior = args$prior,
-  #                                 control = args$control)
+
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
 }
@@ -750,17 +823,17 @@ createReferenceTable <- function(cmAnalysisList,
                                  outcomeIdsOfInterest) {
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
-  instantiateDco <- function(dco, cmAnalysis, folder) {
+  instantiateTco <- function(tco, cmAnalysis, folder) {
     rows <- data.frame(analysisId = cmAnalysis$analysisId,
-                       targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
+                       targetId = .selectByType(cmAnalysis$targetType, tco$targetId, "target"),
                        comparatorId = .selectByType(cmAnalysis$comparatorType,
-                                                    dco$comparatorId,
+                                                    tco$comparatorId,
                                                     "comparator"),
-                       includedCovariateConceptIds = paste(dco$includedCovariateConceptIds,
+                       includedCovariateConceptIds = paste(tco$includedCovariateConceptIds,
                                                            collapse = ","),
-                       excludedCovariateConceptIds = paste(dco$excludedCovariateConceptIds,
+                       excludedCovariateConceptIds = paste(tco$excludedCovariateConceptIds,
                                                            collapse = ","),
-                       outcomeId = dco$outcomeIds)
+                       outcomeId = tco$outcomeIds)
 
     if (cmAnalysis$fitOutcomeModel) {
       rows$outcomeModelFile <- .createOutcomeModelFileName(folder = folder,
@@ -772,18 +845,18 @@ createReferenceTable <- function(cmAnalysisList,
     }
     return(rows)
   }
-  instantiateDcos <- function(cmAnalysis, dcos, folder) {
+  instantiateTcos <- function(cmAnalysis, tcos, folder) {
     analysisFolder <- paste("Analysis_", cmAnalysis$analysisId, sep = "")
     if (!file.exists(file.path(folder, analysisFolder)))
       dir.create(file.path(folder, analysisFolder))
 
-    return(do.call("rbind", lapply(dcos, instantiateDco, cmAnalysis, analysisFolder)))
+    return(do.call("rbind", lapply(tcos, instantiateTco, cmAnalysis, analysisFolder)))
   }
 
   referenceTable <- do.call("rbind",
                             lapply(cmAnalysisList,
-                                   instantiateDcos,
-                                   dcos = targetComparatorOutcomesList,
+                                   instantiateTcos,
+                                   tcos = targetComparatorOutcomesList,
                                    folder = outputFolder))
 
   # Find unique load operations
@@ -892,6 +965,29 @@ createReferenceTable <- function(cmAnalysisList,
     referenceTable$sharedPsFile[!idx] <- ""
   }
 
+
+
+
+  # Add DRS filenames
+  drsArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createDrsArgs"))
+  drsArgsList <- lapply(drsArgsList,
+                        function(x) return(if (length(x) > 0) return(x[[1]]) else return(NULL)))
+  noDrsIds <- which(sapply(drsArgsList, is.null))
+  drsArgsId <- sapply(cmAnalysisList,
+                      function(cmAnalysis,
+                               drsArgsList) return(which.list(drsArgsList, cmAnalysis$createDrsArgs)),
+                      drsArgsList)
+  analysisIdToDrsArgsId <- data.frame(analysisId = analysisIds, drsArgsId = drsArgsId)
+  referenceTable <- merge(referenceTable, analysisIdToDrsArgsId)
+  idx <- !(referenceTable$drsArgsId %in% noDrsIds)
+  referenceTable$drsFile[idx] <- .createDrsOutcomeFileName(loadId = referenceTable$loadArgsId[idx],
+                                                           studyPopId = referenceTable$studyPopArgsId[idx],
+                                                           drsId = referenceTable$drsArgsId[idx],
+                                                           targetId = referenceTable$targetId[idx],
+                                                           comparatorId = referenceTable$comparatorId[idx],
+                                                           outcomeId = referenceTable$outcomeId[idx])
+  referenceTable$drsFile[!idx] <- ""
+
   # Add strata filenames
   args <- c("trimByPs",
             "trimByPsArgs",
@@ -904,15 +1000,24 @@ createReferenceTable <- function(cmAnalysisList,
             "stratifyByPs",
             "stratifyByPsArgs",
             "stratifyByPsAndCovariates",
-            "stratifyByPsAndCovariatesArgs")
+            "stratifyByPsAndCovariatesArgs",
+            "matchOnDrs",
+            "matchOnDrsArgs",
+            "stratifyByDrs",
+            "stratifyByDrsArgs")
   normStrataArgs <- function(strataArgs) {
     return(strataArgs[args][!is.na(names(strataArgs[args]))])
   }
   strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
-                                                                        strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
-                                                                        strataArgs$stratifyByPsAndCovariates))]
+                                                                        strataArgs$trimByPsToEquipoise |
+                                                                        strataArgs$matchOnPs |
+                                                                        strataArgs$matchOnPsAndCovariates |
+                                                                        strataArgs$stratifyByPs |
+                                                                        strataArgs$stratifyByPsAndCovariates |
+                                                                        strataArgs$matchOnDrs |
+                                                                        strataArgs$stratifyByDrs))]
   strataArgsList <- lapply(strataArgsList, normStrataArgs)
   if (length(strataArgsList) == 0) {
     referenceTable$strataArgsId <- 0
@@ -930,6 +1035,8 @@ createReferenceTable <- function(cmAnalysisList,
   referenceTable$strataFile[idx] <- .createStratifiedPopFileName(loadId = referenceTable$loadArgsId[idx],
                                                                  studyPopId = referenceTable$studyPopArgsId[idx],
                                                                  psId = referenceTable$psArgsId[idx],
+                                                                 drsId = referenceTable$drsArgsId[idx],
+                                                                 drs = referenceTable$drsFile[idx] != "",
                                                                  strataId = referenceTable$strataArgsId[idx],
                                                                  targetId = referenceTable$targetId[idx],
                                                                  comparatorId = referenceTable$comparatorId[idx],
@@ -942,7 +1049,8 @@ createReferenceTable <- function(cmAnalysisList,
   } else {
     referenceTable$outcomeOfInterest <- FALSE
     referenceTable$outcomeOfInterest[referenceTable$outcomeId %in% outcomeIdsOfInterest] <- TRUE
-    referenceTable$studyPopFile[!referenceTable$outcomeOfInterest] <- ""
+    createAnyway <- unique(referenceTable$studyPopFile[referenceTable$drsFile != ""])
+    referenceTable$studyPopFile[!referenceTable$outcomeOfInterest & !referenceTable$studyPopFile %in% createAnyway] <- ""
     referenceTable$psFile[!referenceTable$outcomeOfInterest] <- ""
     referenceTable$strataFile[!referenceTable$outcomeOfInterest] <- ""
   }
@@ -1011,6 +1119,7 @@ createReferenceTable <- function(cmAnalysisList,
                                        "studyPopFile",
                                        "sharedPsFile",
                                        "psFile",
+                                       "drsFile",
                                        "strataFile",
                                        "prefilteredCovariatesFolder",
                                        "outcomeModelFile")]
@@ -1107,27 +1216,40 @@ createReferenceTable <- function(cmAnalysisList,
   return(name)
 }
 
-.createStratifiedPopFileName <- function(loadId,
-                                         studyPopId,
-                                         psId,
-                                         strataId,
-                                         targetId,
-                                         comparatorId,
-                                         outcomeId) {
-  name <- paste("StratPop_l",
+.createDrsOutcomeFileName <- function(loadId,
+                                      studyPopId,
+                                      drsId,
+                                      targetId,
+                                      comparatorId,
+                                      outcomeId) {
+  name <- paste("Drs_l",
                 loadId,
                 "_s",
                 studyPopId,
-                "_p",
-                psId,
+                "_d",
+                drsId,
                 "_t",
                 .f(targetId),
                 "_c",
                 .f(comparatorId),
                 sep = "")
-  name <- paste(name, "_s", strataId, sep = "")
   name <- paste(name, "_o", .f(outcomeId), sep = "")
   name <- paste(name, ".rds", sep = "")
+  return(name)
+}
+
+.createStratifiedPopFileName <- function(loadId,
+                                         studyPopId,
+                                         psId,
+                                         drsId,
+                                         drs,
+                                         strataId,
+                                         targetId,
+                                         comparatorId,
+                                         outcomeId) {
+  psOrDrs <- sprintf("p%s", psId)
+  psOrDrs[drs] <- sprintf("d%s", drsId[drs])
+  name <- sprintf("StratPop_l%s_s%s_%s_t%s_c%s_s%s_o%s.rds", loadId, studyPopId, psOrDrs, .f(targetId), .f(comparatorId), strataId, .f(outcomeId))
   return(name)
 }
 

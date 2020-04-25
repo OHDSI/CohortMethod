@@ -25,6 +25,12 @@ createCmAnalysis(
   stratifyByPsArgs = NULL,
   stratifyByPsAndCovariates = FALSE,
   stratifyByPsAndCovariatesArgs = NULL,
+  createDrs = FALSE,
+  createDrsArgs = NULL,
+  matchOnDrs = FALSE,
+  matchOnDrsArgs = NULL,
+  stratifyByDrs = FALSE,
+  stratifyByDrsArgs = NULL,
   fitOutcomeModel = FALSE,
   fitOutcomeModelArgs = NULL
 )
@@ -90,6 +96,24 @@ be used in this analysis?}
 
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link{stratifyByPsAndCovariates}} function.}
+
+\item{createDrs}{Should the \code{\link{createDrs}} function be used in this
+analysis?}
+
+\item{createDrsArgs}{An object representing the arguments to be used when calling
+the \code{\link{createDrs}} function.}
+
+\item{matchOnDrs}{Should the \code{\link{matchOnDrs}} function be used in this
+analysis?}
+
+\item{matchOnDrsArgs}{An object representing the arguments to be used when calling
+the \code{\link{matchOnDrs}} function.}
+
+\item{stratifyByDrs}{Should the \code{\link{stratifyByDrs}} function be used in
+this analysis?}
+
+\item{stratifyByDrsArgs}{An object representing the arguments to be used when calling
+the \code{\link{stratifyByDrs}} function.}
 
 \item{fitOutcomeModel}{Should the \code{\link{fitOutcomeModel}} function be used in
 this analysis?}

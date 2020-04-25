@@ -4,6 +4,3 @@
 \name{CohortMethod}
 \alias{CohortMethod}
 \title{CohortMethod}
-\description{
-CohortMethod
-}

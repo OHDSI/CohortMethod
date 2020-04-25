@@ -77,6 +77,13 @@ rCode <- ParallelLogger::createArgFunction("stratifyByPs",
 rCode <- ParallelLogger::createArgFunction("stratifyByPsAndCovariates",
                                         excludeArgs = c("population", "cohortMethodData"),
                                         rCode = rCode)
+rCode <- ParallelLogger::createArgFunction("createDrs",
+                                           excludeArgs = c("cohortMethodData", "population", "coefficients"),
+                                           rCode = rCode)
+rCode <- ParallelLogger::createArgFunction("matchOnDrs", excludeArgs = c("population"), rCode = rCode)
+rCode <- ParallelLogger::createArgFunction("stratifyByDrs",
+                                           excludeArgs = c("population"),
+                                           rCode = rCode)
 rCode <- ParallelLogger::createArgFunction("fitOutcomeModel",
                                         excludeArgs = c("population", "cohortMethodData"),
                                         rCode = rCode)

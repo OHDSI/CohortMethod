@@ -22,6 +22,7 @@ runCmAnalyses(
   getDbCohortMethodDataThreads = 1,
   createPsThreads = 1,
   psCvThreads = 1,
+  createDrsThreads = 1,
   createStudyPopThreads = 1,
   trimMatchStratifyThreads = 1,
   prefilterCovariatesThreads = 1,
@@ -105,6 +106,9 @@ propensity models.}
 validation when estimating the hyperparameter for the
 propensity model. Note that the total number of CV threads at
 one time could be `createPsThreads * psCvThreads`.}
+
+\item{createDrsThreads}{The number of parallel threads to use for computing the disease
+risk scores.}
 
 \item{createStudyPopThreads}{The number of parallel threads to use for creating the study
 population.}

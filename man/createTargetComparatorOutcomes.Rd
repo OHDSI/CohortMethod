@@ -8,6 +8,7 @@ createTargetComparatorOutcomes(
   targetId,
   comparatorId,
   outcomeIds,
+  diseaseRiskModelCoefficients = NULL,
   excludedCovariateConceptIds = c(),
   includedCovariateConceptIds = c()
 )
@@ -29,6 +30,10 @@ parameter in the \code{\link{createCmAnalysis}} function.}
 
 \item{outcomeIds}{A vector of concept IDs indentifying the outcome(s) in the
 outcome table.}
+
+\item{diseaseRiskModelCoefficients}{When using external disease risk models this should be a list of
+coefficient vectors as defined in the \code{\link{createDrs}} function.
+The names of the vectors in the list should be the outcome IDs.}
 
 \item{excludedCovariateConceptIds}{A list of concept IDs that cannot be used to construct
 covariates. This argument is to be used only for exclusion

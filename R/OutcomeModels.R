@@ -181,16 +181,17 @@ fitOutcomeModel <- function(population,
                                            ff::as.ffdf(informativePopulation[, c("rowId", "stratumId")]))
         }
 
-        mainEffectIds <- as.numeric(ff::as.ram(ffbase::unique.ff(covariates$covariateId)))
-        mainEffectIds <- mainEffectIds[mainEffectIds != treatmentVarId]
+        if (prior$priorType == "none") {
+          mainEffectIds <- as.numeric(ff::as.ram(ffbase::unique.ff(covariates$covariateId)))
+          mainEffectIds <- mainEffectIds[mainEffectIds != treatmentVarId]
 
-        mainEffectNames <- ff::as.ram(
-          cohortMethodData$covariateRef$covariateName[
-            ffbase::ffmatch(ff::as.ff(mainEffectIds),
-                            cohortMethodData$covariateRef$covariateId)])
-        mainEffectNames <- as.character(mainEffectNames) # Drops unused levels to save lots of space
-        mainEffectTerms <- data.frame(id = mainEffectIds, name = mainEffectNames)
-
+          mainEffectNames <- ff::as.ram(
+            cohortMethodData$covariateRef$covariateName[
+              ffbase::ffmatch(ff::as.ff(mainEffectIds),
+                              cohortMethodData$covariateRef$covariateId)])
+          mainEffectNames <- as.character(mainEffectNames) # Drops unused levels to save lots of space
+          mainEffectTerms <- data.frame(id = mainEffectIds, name = mainEffectNames)
+        }
       } else {
         # Don't add covariates, only use treatment as covariate -------------------------------------------------------------
         prior <- createPrior("none")  # Only one variable, which we're not going to regularize, so effectively no prior

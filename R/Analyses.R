@@ -62,6 +62,18 @@
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the \code{\link{stratifyByPsAndCovariates}} function.
+#' @param createDrs                       Should the \code{\link{createDrs}} function be used in this
+#'                                        analysis?
+#' @param createDrsArgs                   An object representing the arguments to be used when calling
+#'                                        the \code{\link{createDrs}} function.
+#' @param matchOnDrs                      Should the \code{\link{matchOnDrs}} function be used in this
+#'                                        analysis?
+#' @param matchOnDrsArgs                  An object representing the arguments to be used when calling
+#'                                        the \code{\link{matchOnDrs}} function.
+#' @param stratifyByDrs                   Should the \code{\link{stratifyByDrs}} function be used in
+#'                                        this analysis?
+#' @param stratifyByDrsArgs               An object representing the arguments to be used when calling
+#'                                        the \code{\link{stratifyByDrs}} function.
 #' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
@@ -88,6 +100,12 @@ createCmAnalysis <- function(analysisId = 1,
                              stratifyByPsArgs = NULL,
                              stratifyByPsAndCovariates = FALSE,
                              stratifyByPsAndCovariatesArgs = NULL,
+                             createDrs = FALSE,
+                             createDrsArgs = NULL,
+                             matchOnDrs = FALSE,
+                             matchOnDrsArgs = NULL,
+                             stratifyByDrs = FALSE,
+                             stratifyByDrsArgs = NULL,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
@@ -99,7 +117,13 @@ createCmAnalysis <- function(analysisId = 1,
   if (!createPs && (trimByPs | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
-  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
+  if (!createDrs && (matchOnDrs | stratifyByDrs)) {
+    stop("Must create disease risk model to use it for matching or stratification")
+  }
+  if (createPs && createDrs) {
+    stop("Cannot use both propensity score and disease risk score in one analysis")
+  }
+  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates | matchOnDrs | stratifyByDrs) && !is.null(fitOutcomeModelArgs) &&
       fitOutcomeModelArgs$stratified) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
@@ -124,22 +148,22 @@ createCmAnalysis <- function(analysisId = 1,
   if (!stratifyByPsAndCovariates) {
     stratifyByPsAndCovariatesArgs <- NULL
   }
+  if (!createDrs) {
+    createDrsArgs <- NULL
+  }
+  if (!matchOnDrs) {
+    matchOnDrsArgs <- NULL
+  }
+  if (!stratifyByDrs) {
+    stratifyByDrsArgs <- NULL
+  }
   if (!fitOutcomeModel) {
     fitOutcomeModelArgs <- NULL
   }
 
-  # First: get the default values:
   analysis <- list()
   for (name in names(formals(createCmAnalysis))) {
     analysis[[name]] <- get(name)
-  }
-
-  # Next: overwrite defaults with actual values if specified:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis)) {
-      analysis[[name]] <- values[[name]]
-    }
   }
 
   class(analysis) <- "cmAnalysis"
@@ -200,6 +224,9 @@ loadCmAnalysisList <- function(file) {
 #'                                      parameter in the \code{\link{createCmAnalysis}} function.
 #' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
 #'                                      outcome table.
+#' @param diseaseRiskModelCoefficients  When using external disease risk models this should be a list of
+#'                                      coefficient vectors as defined in the \code{\link{createDrs}} function.
+#'                                      The names of the vectors in the list should be the outcome IDs.
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
 #'                                      concepts that are specific to the drug-comparator combination.
@@ -211,20 +238,20 @@ loadCmAnalysisList <- function(file) {
 createTargetComparatorOutcomes <- function(targetId,
                                            comparatorId,
                                            outcomeIds,
+                                           diseaseRiskModelCoefficients = NULL,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
-  # First: get the default values:
+  if (!is.null(diseaseRiskModelCoefficients)) {
+    if (!is.list(diseaseRiskModelCoefficients))
+      stop("diseaseRiskModelCoefficients must be a list")
+    namesAsIds <- as.numeric(names(diseaseRiskModelCoefficients))
+    if (length(namesAsIds) != length(outcomeIds) || !all(namesAsIds %in% outcomeIds))
+      stop("The names of the diseaseRiskModelCoefficients list must be the outcome IDs")
+  }
+
   targetComparatorOutcomes <- list()
   for (name in names(formals(createTargetComparatorOutcomes))) {
     targetComparatorOutcomes[[name]] <- get(name)
-  }
-
-  # Next: overwrite defaults with actual values if specified:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(targetComparatorOutcomes)) {
-      targetComparatorOutcomes[[name]] <- values[[name]]
-    }
   }
   class(targetComparatorOutcomes) <- "targetComparatorOutcomes"
   return(targetComparatorOutcomes)
@@ -245,6 +272,19 @@ saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file)
   for (i in 1:length(targetComparatorOutcomesList)) {
     stopifnot(class(targetComparatorOutcomesList[[i]]) == "targetComparatorOutcomes")
   }
+  # Named vectors lose their names in JSON, so convert to list:
+  for (i in 1:length(targetComparatorOutcomesList)) {
+    if (!is.null(targetComparatorOutcomesList[[i]]$diseaseRiskModelCoefficients)) {
+      diseaseRiskModelCoefficients <- targetComparatorOutcomesList[[i]]$diseaseRiskModelCoefficients
+      for (outcomeId in names(diseaseRiskModelCoefficients)) {
+        coefficients <- diseaseRiskModelCoefficients[[outcomeId]]
+        coefficients <- list(covariateId = names(coefficients),
+                             coefficient = coefficients)
+        diseaseRiskModelCoefficients[[outcomeId]] <- coefficients
+      }
+      targetComparatorOutcomesList[[i]]$diseaseRiskModelCoefficients <- diseaseRiskModelCoefficients
+    }
+  }
   ParallelLogger::saveSettingsToJson(targetComparatorOutcomesList, file)
 }
 
@@ -260,5 +300,28 @@ saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file)
 #'
 #' @export
 loadTargetComparatorOutcomesList <- function(file) {
-  return(ParallelLogger::loadSettingsFromJson(file))
+  targetComparatorOutcomesList <- ParallelLogger::loadSettingsFromJson(file)
+  for (i in 1:length(targetComparatorOutcomesList)) {
+    if (!is.null(targetComparatorOutcomesList[[i]]$diseaseRiskModelCoefficients)) {
+      diseaseRiskModelCoefficients <- targetComparatorOutcomesList[[i]]$diseaseRiskModelCoefficients
+      for (outcomeId in names(diseaseRiskModelCoefficients)) {
+        coefficients <- diseaseRiskModelCoefficients[[outcomeId]]
+        temp <- coefficients$coefficient
+        names(temp) <- coefficients$covariateId
+        diseaseRiskModelCoefficients[[outcomeId]] <- temp
+      }
+      targetComparatorOutcomesList[[i]]$diseaseRiskModelCoefficients <- diseaseRiskModelCoefficients
+    }
+    # For backwards compatability:
+    if (is.null(targetComparatorOutcomesList[[i]]$createDrs)) {
+      targetComparatorOutcomesList[[i]]$createDrs <- FALSE
+    }
+    if (is.null(targetComparatorOutcomesList[[i]]$matchOnDrs)) {
+      targetComparatorOutcomesList[[i]]$matchOnDrs <- FALSE
+    }
+    if (is.null(targetComparatorOutcomesList[[i]]$stratifyByDrs)) {
+      targetComparatorOutcomesList[[i]]$stratifyByDrs <- FALSE
+    }
+  }
+  return(targetComparatorOutcomesList)
 }
