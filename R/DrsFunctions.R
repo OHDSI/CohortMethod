@@ -200,7 +200,7 @@ plotDrs <- function(data,
 #'
 #' @examples
 #' outcomeCount <- rep(0:1, each = 100)
-#' propensityScore <- c(rnorm(100, mean = 0.4, sd = 0.25), rnorm(100, mean = 0.6, sd = 0.25))
+#' diseaseRiskScore <- c(rnorm(100, mean = 0.4, sd = 0.25), rnorm(100, mean = 0.6, sd = 0.25))
 #' data <- data.frame(outcomeCount = outcomeCount, diseaseRiskScore = diseaseRiskScore)
 #' data <- data[data$diseaseRiskScore > 0 & data$diseaseRiskScore < 1, ]
 #' computeDrsAuc(data)

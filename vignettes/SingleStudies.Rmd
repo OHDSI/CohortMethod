@@ -89,12 +89,26 @@ INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_end_date,
 	subject_id
 	)
-SELECT 1, -- Exposure
+SELECT DISTINCT 1, -- Target
 	drug_era_start_date,
 	drug_era_end_date,
-	person_id
-FROM @cdmDatabaseSchema.drug_era
-WHERE drug_concept_id = 1118084;-- celecoxib
+	drug_era.person_id
+FROM (
+	SELECT person_id,
+		MIN(drug_era_start_date) AS drug_era_start_date,
+		MIN(drug_era_end_date) AS drug_era_end_date
+	FROM  @cdmDatabaseSchema.drug_era
+	WHERE drug_concept_id = 1118084 -- celecoxib
+	GROUP BY person_id
+	) drug_era
+INNER JOIN @cdmDatabaseSchema.condition_occurrence
+  ON drug_era.person_id = condition_occurrence.person_id
+  AND condition_start_date <= drug_era_start_date
+WHERE condition_concept_id IN (
+	SELECT descendant_concept_id
+	FROM @cdmDatabaseSchema.concept_ancestor
+	WHERE ancestor_concept_id = 36516812 -- Arthralgia
+	);
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
@@ -102,12 +116,26 @@ INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_end_date,
 	subject_id
 	)
-SELECT 2, -- Comparator
+SELECT DISTINCT 2, -- Comparator
 	drug_era_start_date,
 	drug_era_end_date,
-	person_id
-FROM @cdmDatabaseSchema.drug_era
-WHERE drug_concept_id = 1124300; --diclofenac
+	drug_era.person_id
+FROM (
+	SELECT person_id,
+		MIN(drug_era_start_date) AS drug_era_start_date,
+		MIN(drug_era_end_date) AS drug_era_end_date
+	FROM  @cdmDatabaseSchema.drug_era
+	WHERE drug_concept_id = 1124300 -- diclofenac
+	GROUP BY person_id
+	) drug_era
+INNER JOIN @cdmDatabaseSchema.condition_occurrence
+  ON drug_era.person_id = condition_occurrence.person_id
+  AND condition_start_date <= drug_era_start_date
+WHERE condition_concept_id IN (
+	SELECT descendant_concept_id
+	FROM @cdmDatabaseSchema.concept_ancestor
+	WHERE ancestor_concept_id = 36516812 -- Arthralgia
+	);
 
 INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
 	cohort_definition_id,
