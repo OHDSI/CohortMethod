@@ -74,42 +74,7 @@ DatabaseConnector::querySql(connection, sql)
 DatabaseConnector::disconnect(connection)
 
 nsaids <- 21603933
-outcomeIds <- c(192671,
-                24609,
-                29735,
-                73754,
-                80004,
-                134718,
-                139099,
-                141932,
-                192367,
-                193739,
-                194997,
-                197236,
-                199074,
-                255573,
-                257007,
-                313459,
-                314658,
-                316084,
-                319843,
-                321596,
-                374366,
-                375292,
-                380094,
-                433753,
-                433811,
-                436665,
-                436676,
-                436940,
-                437784,
-                438134,
-                440358,
-                440374,
-                443617,
-                443800,
-                4084966,
-                4288310)
+outcomeIds <- c(192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
 
 diseaseRiskModelCoefficients <- list()
 for (outcomeId in outcomeIds) {
@@ -358,15 +323,17 @@ negControls <- negControls[!is.na(negControls$seLogRr), ]
 negControls <- purrr::map_df(split(negControls, 1:nrow(negControls)), computeAuc)
 library(ggplot2)
 ggplot(negControls, aes(x = auc, y = zScore)) +
-         geom_point()
+  geom_point()
 
 ggsave(file.path(outputFolder, "zScoreVsAuc.png"))
 
 # AUC vs delta (compared to PS matching)
-ncsPs <- analysisSummary[analysisSummary$analysisId == 2 & analysisSummary$outcomeId != 192671, ]
+ncsPs <- analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeId != 192671, ]
 m <- merge(negControls,
-           data.frame(outcomeId = ncsPs$outcomeId, logRrPs = ncsPs$logRr))
-
+           data.frame(outcomeId = ncsPs$outcomeId,
+                      logRrPs = ncsPs$logRr,
+                      pPs = ncsPs$p))
+View(m)
 m$delta <- abs(m$logRr - m$logRrPs)
 ggplot(m, aes(x = auc, y = delta)) +
   geom_point()
@@ -397,6 +364,12 @@ plotCalibrationEffect(goodNcs$logRr,
 
 
 # Disease risk scores ------------------------------------------------------------------------------------
+nsaids <- 21603933
+outcomeIds <- c(192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
+
+covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+
 plpData <- PatientLevelPrediction::getPlpData(connectionDetails = connectionDetails,
                                               cdmDatabaseSchema = cdmDatabaseSchema,
                                               cdmVersion = cdmVersion,
@@ -409,55 +382,60 @@ plpData <- PatientLevelPrediction::getPlpData(connectionDetails = connectionDeta
                                               outcomeTable = "coxibVsNonselAlloutcomes",
                                               washoutPeriod = 180,
                                               sampleSize = 250000,
-                                              covariateSettings = covSettings)
+                                              covariateSettings = covarSettings)
 
 PatientLevelPrediction::savePlpData(plpData, file.path(outputFolder, "plpData"))
 
-
 # plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
 # outcomeCounts <- summary(plpData)$outcomeCounts
-# goodOutcomeIds <- outcomeCounts$outcomeId[outcomeCounts$personCount > 2000]
 fitDiseaseRiskModel <- function(outcomeId, outputFolder) {
-  writeLines(paste("Fitting model for outcome ID", outcomeId))
-  plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
-  plpStudyPop <- PatientLevelPrediction::createStudyPopulation(plpData = plpData,
-                                                               outcomeId = outcomeId,
-                                                               includeAllOutcomes = TRUE,
-                                                               removeSubjectsWithPriorOutcome = TRUE,
-                                                               minTimeAtRisk = 1,
-                                                               riskWindowStart = 1,
-                                                               riskWindowEnd = 30)
-  # sum(studyPop$outcomeCount > 0)
+  fileName <- file.path(outputFolder, sprintf("drBetas_o%s.rds", outcomeId))
+  if (!file.exists(fileName)) {
+    writeLines(paste("Fitting model for outcome ID", outcomeId))
+    plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
+    plpStudyPop <- PatientLevelPrediction::createStudyPopulation(plpData = plpData,
+                                                                 outcomeId = outcomeId,
+                                                                 includeAllOutcomes = TRUE,
+                                                                 removeSubjectsWithPriorOutcome = TRUE,
+                                                                 minTimeAtRisk = 1,
+                                                                 riskWindowStart = 1,
+                                                                 riskWindowEnd = 30)
+    if (sum(plpStudyPop$outcomeCount > 0) == 0) {
+      # No outcomes
+      betas <- c(0)
+    } else {
+      model <- PatientLevelPrediction::fitGLMModel(population = plpStudyPop,
+                                                   plpData = plpData,
+                                                   modelType = "logistic",
+                                                   prior = Cyclops::createPrior(priorType = "normal",
+                                                                                useCrossValidation = TRUE),
+                                                   control = Cyclops::createControl(cvType = "auto",
+                                                                                    fold = 3,
+                                                                                    startingVariance = 0.01,
+                                                                                    tolerance  = 2e-06,
+                                                                                    cvRepetitions = 1,
+                                                                                    selectorType = "auto",
+                                                                                    noiseLevel = "silent",
+                                                                                    threads = 3,
+                                                                                    maxIterations = 3000))
 
-  model <- PatientLevelPrediction::fitGLMModel(population = plpStudyPop,
-                                               plpData = plpData,
-                                               modelType = "logistic",
-                                               control = Cyclops::createControl(cvType = "auto",
-                                                                                fold=3,
-                                                                                startingVariance = 0.01,
-                                                                                tolerance  = 2e-06,
-                                                                                cvRepetitions = 1,
-                                                                                selectorType = "auto",
-                                                                                noiseLevel = "silent",
-                                                                                threads=3,
-                                                                                maxIterations = 3000))
-
-  betas <- model$coefficients
-  betas <- betas[betas != 0]
-  saveRDS(betas, file.path(outputFolder, sprintf("drBetas_o%s.rds", outcomeId)))
+      betas <- model$coefficients
+      betas <- betas[betas != 0]
+    }
+    saveRDS(betas, fileName)
+  }
 }
-cluster <- ParallelLogger::makeCluster(5)
+cluster <- ParallelLogger::makeCluster(3)
 ParallelLogger::clusterApply(cluster, outcomeIds, fitDiseaseRiskModel, outputFolder = outputFolder)
-
 ParallelLogger::stopCluster(cluster)
 
 # Debug
 omr <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
-drs <- readRDS(file.path(outputFolder, omr$drsFile[omr$outcomeId == 139099 & omr$analysisId == 7]))
+drs <- readRDS(file.path(outputFolder, omr$drsFile[omr$outcomeId == 319843 & omr$analysisId == 7]))
 plotDrs(drs, fileName = file.path(outputFolder, "drs.png"))
 computeDrsAuc(drs)
-
+sum(drs$outcomeCount > 0)
 coefficients <- attr(drs, "metaData")$drsModelCoef
 
 strata <- stratifyByDrs(drs)
