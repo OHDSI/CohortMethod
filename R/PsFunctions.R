@@ -649,9 +649,10 @@ logit <- function(p){
 #'                                is similar, except that the propensity score is transformed to the logit
 #'                                scale because the PS is more likely to be normally distributed on that scale
 #'                                (Austin, 2011).
-#' @param maxRatio                The maximum number of persons int the comparator arm to be matched to
+#' @param maxRatio                The maximum number of persons in the comparator arm to be matched to
 #'                                each person in the treatment arm. A maxRatio of 0 means no maximum:
 #'                                all comparators will be assigned to a target person.
+#' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
 #' @param stratificationColumns   Names or numbers of one or more columns in the \code{data} data.frame
 #'                                on which subjects should be stratified prior to matching. No persons
 #'                                will be matched with persons outside of the strata identified by the
@@ -693,6 +694,7 @@ matchOnPs <- function(population,
                       caliper = 0.2,
                       caliperScale = "standardized logit",
                       maxRatio = 1,
+                      allowReverseMatch = FALSE,
                       stratificationColumns = c()) {
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
@@ -704,6 +706,11 @@ matchOnPs <- function(population,
     stop(paste("Unknown caliperScale '",
                caliperScale,
                "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
+
+  reverseTreatment <- (allowReverseMatch && sum(population$treatment == 1) > sum(population$treatment == 0))
+  if (reverseTreatment) {
+    population$treatment <- 1 - population$treatment
+  }
 
   population <- population[order(population$propensityScore), ]
   propensityScore <- population$propensityScore
@@ -729,6 +736,11 @@ matchOnPs <- function(population,
       attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition,
                                                       getCounts(population, paste("Matched on propensity score")))
     }
+
+    if (reverseTreatment) {
+      population$treatment <- 1 - population$treatment
+    }
+
     ParallelLogger::logDebug("Population size after matching is ", nrow(result))
     return(population)
   } else {
@@ -760,6 +772,11 @@ matchOnPs <- function(population,
       attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition,
                                                   getCounts(result, paste("Trimmed to equipoise")))
     }
+
+    if (reverseTreatment) {
+      result$treatment <- 1 - result$treatment
+    }
+
     ParallelLogger::logDebug("Population size after matching is ", nrow(result))
     return(result)
   }
@@ -783,9 +800,10 @@ matchOnPs <- function(population,
 #'                                is similar, except that the propensity score is transformed to the logit
 #'                                scale because the PS is more likely to be normally distributed on that scale
 #'                                (Austin, 2011).
-#' @param maxRatio           The maximum number of persons int the comparator arm to be matched to each
+#' @param maxRatio           The maximum number of persons in the comparator arm to be matched to each
 #'                           person in the treatment arm. A maxRatio of 0 means no maximum: all
 #'                           comparators will be assigned to a target person.
+#' @param allowReverseMatch  Allows n-to-1 matching if target arm is larger
 #' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
 #'                           \code{getDbCohortMethodData}.
 #' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
@@ -819,6 +837,7 @@ matchOnPsAndCovariates <- function(population,
                                    caliper = 0.2,
                                    caliperScale = "standardized logit",
                                    maxRatio = 1,
+                                   allowReverseMatch = FALSE,
                                    cohortMethodData,
                                    covariateIds) {
   if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
@@ -830,7 +849,7 @@ matchOnPsAndCovariates <- function(population,
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
                                                                                 covariateIds,
                                                                                 sep = "_")]
-  return(matchOnPs(population, caliper, caliperScale, maxRatio, stratificationColumns))
+  return(matchOnPs(population, caliper, caliperScale, maxRatio, allowReverseMatch, stratificationColumns))
 }
 
 #' Stratify persons by propensity score

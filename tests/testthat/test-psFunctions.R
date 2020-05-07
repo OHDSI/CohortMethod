@@ -64,6 +64,16 @@ test_that("Medium 1-on-n matching", {
   expect_equal(max(result$stratumId), 4999)
 })
 
+test_that("Medium n-on-1 matching", {
+  rowId <- 1:10000
+  treatment <- rep(c(1,1,1,0), 2500)
+  propensityScore <- (1:10000)/10000
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  result <- matchOnPs(data, caliper = 0, maxRatio = 2, allowReverseMatch = TRUE)
+  expect_equal(nrow(result), 7500)
+  expect_equal(data[data$rowId == 3, "treatment"], result[result$rowId == 3, "treatment"])
+})
+
 test_that("Large 1-on-n matching", {
   rowId <- 1:1e+06
   treatment <- rep(0:1, 5e+05)
