@@ -74,42 +74,7 @@ DatabaseConnector::querySql(connection, sql)
 DatabaseConnector::disconnect(connection)
 
 nsaids <- 21603933
-outcomeIds <- c(192671,
-                24609,
-                29735,
-                73754,
-                80004,
-                134718,
-                139099,
-                141932,
-                192367,
-                193739,
-                194997,
-                197236,
-                199074,
-                255573,
-                257007,
-                313459,
-                314658,
-                316084,
-                319843,
-                321596,
-                374366,
-                375292,
-                380094,
-                433753,
-                433811,
-                436665,
-                436676,
-                436940,
-                437784,
-                438134,
-                440358,
-                440374,
-                443617,
-                443800,
-                4084966,
-                4288310)
+outcomeIds <- c(192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
 
 diseaseRiskModelCoefficients <- list()
 for (outcomeId in outcomeIds) {
@@ -358,15 +323,17 @@ negControls <- negControls[!is.na(negControls$seLogRr), ]
 negControls <- purrr::map_df(split(negControls, 1:nrow(negControls)), computeAuc)
 library(ggplot2)
 ggplot(negControls, aes(x = auc, y = zScore)) +
-         geom_point()
+  geom_point()
 
 ggsave(file.path(outputFolder, "zScoreVsAuc.png"))
 
-# AUC vs delta (compared to PS matching)
-ncsPs <- analysisSummary[analysisSummary$analysisId == 2 & analysisSummary$outcomeId != 192671, ]
+# AUC vs delta (compared to PS stratification)
+ncsPs <- analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeId != 192671, ]
 m <- merge(negControls,
-           data.frame(outcomeId = ncsPs$outcomeId, logRrPs = ncsPs$logRr))
-
+           data.frame(outcomeId = ncsPs$outcomeId,
+                      logRrPs = ncsPs$logRr,
+                      pPs = ncsPs$p))
+View(m)
 m$delta <- abs(m$logRr - m$logRrPs)
 ggplot(m, aes(x = auc, y = delta)) +
   geom_point()
@@ -397,11 +364,17 @@ plotCalibrationEffect(goodNcs$logRr,
 
 
 # Disease risk scores ------------------------------------------------------------------------------------
+nsaids <- 21603933
+outcomeIds <- c(192671, 24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
+
+covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+
 plpData <- PatientLevelPrediction::getPlpData(connectionDetails = connectionDetails,
                                               cdmDatabaseSchema = cdmDatabaseSchema,
                                               cdmVersion = cdmVersion,
                                               oracleTempSchema = oracleTempSchema,
-                                              cohortId = 4,
+                                              cohortId = 5,
                                               outcomeIds = outcomeIds,
                                               cohortDatabaseSchema = resultsDatabaseSchema,
                                               cohortTable = "coxibVsNonselVsGiBleed",
@@ -409,14 +382,12 @@ plpData <- PatientLevelPrediction::getPlpData(connectionDetails = connectionDeta
                                               outcomeTable = "coxibVsNonselAlloutcomes",
                                               washoutPeriod = 180,
                                               sampleSize = 250000,
-                                              covariateSettings = covSettings)
+                                              covariateSettings = covarSettings)
 
 PatientLevelPrediction::savePlpData(plpData, file.path(outputFolder, "plpData"))
 
-
 # plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
 # outcomeCounts <- summary(plpData)$outcomeCounts
-# goodOutcomeIds <- outcomeCounts$outcomeId[outcomeCounts$personCount > 2000]
 fitDiseaseRiskModel <- function(outcomeId, outputFolder) {
   writeLines(paste("Fitting model for outcome ID", outcomeId))
   plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
@@ -433,32 +404,33 @@ fitDiseaseRiskModel <- function(outcomeId, outputFolder) {
                                                plpData = plpData,
                                                modelType = "logistic",
                                                control = Cyclops::createControl(cvType = "auto",
-                                                                                fold=3,
+                                                                                fold = 3,
                                                                                 startingVariance = 0.01,
                                                                                 tolerance  = 2e-06,
                                                                                 cvRepetitions = 1,
                                                                                 selectorType = "auto",
                                                                                 noiseLevel = "silent",
-                                                                                threads=3,
+                                                                                threads = 3,
                                                                                 maxIterations = 3000))
 
   betas <- model$coefficients
   betas <- betas[betas != 0]
   saveRDS(betas, file.path(outputFolder, sprintf("drBetas_o%s.rds", outcomeId)))
 }
-cluster <- ParallelLogger::makeCluster(5)
+cluster <- ParallelLogger::makeCluster(3)
 ParallelLogger::clusterApply(cluster, outcomeIds, fitDiseaseRiskModel, outputFolder = outputFolder)
-
 ParallelLogger::stopCluster(cluster)
 
 # Debug
 omr <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
-drs <- readRDS(file.path(outputFolder, omr$drsFile[omr$outcomeId == 139099 & omr$analysisId == 7]))
+drs <- readRDS(file.path(outputFolder, omr$drsFile[omr$outcomeId == 319843 & omr$analysisId == 7]))
 plotDrs(drs, fileName = file.path(outputFolder, "drs.png"))
 computeDrsAuc(drs)
-
+sum(drs$outcomeCount > 0)
 coefficients <- attr(drs, "metaData")$drsModelCoef
+
+
 
 strata <- stratifyByDrs(drs)
 plotDrs(strata)
@@ -466,6 +438,8 @@ plotDrs(strata)
 cohortMethodData <- loadCohortMethodData(file.path(outputFolder, omr$cohortMethodDataFolder[omr$outcomeId == 433753 & omr$analysisId == 7]))
 m <- getDrsModel(drs, cohortMethodData)
 View(m)
+
+
 
 
 
@@ -482,4 +456,135 @@ m <- merge(data.frame(outcomeId = ncs2$outcomeId, logRr2 = ncs2$logRr, seLogRr =
            data.frame(outcomeId = ncs7$outcomeId, logRr7 = ncs7$logRr))
 
 m$delta <- abs(m$logRr2 - m$logRr7)
+
+# Compare covariates in cases vs non cases:
+omr <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
+cohortMethodData <- loadCohortMethodData(file.path(outputFolder, omr$cohortMethodDataFolder[omr$outcomeId == 319843 & omr$analysisId == 7]))
+
+drs <- readRDS(file.path(outputFolder, omr$drsFile[omr$analysisId == 7 & omr$outcomeId ==  319843]))
+drsModel <- getDrsModel(drs, cohortMethodData)
+
+ps <- readRDS(file.path(outputFolder, omr$sharedPsFile[omr$analysisId == 3 & omr$outcomeId ==  319843]))
+psModel <- getPsModel(ps, cohortMethodData)
+
+ps <- merge(ps, drs[, c("rowId", "outcomeCount", "survivalTime")])
+drs <- stratifyByDrs(drs, numberOfStrata = 5)
+ps <- stratifyByPs(ps, numberOfStrata = 5)
+
+balExposureDrs <- computeCovariateBalance(drs, cohortMethodData)
+balExposurePs <- computeCovariateBalance(ps, cohortMethodData)
+saveRDS(balExposureDrs, file.path(outputFolder, "balExposureDrs.rds"))
+saveRDS(balExposurePs, file.path(outputFolder, "balOutcomePs.rds"))
+
+drs$treatment <- drs$outcomeCount > 0
+ps$treatment <- ps$outcomeCount > 0
+balOutcomeDrs <- computeCovariateBalance(drs, cohortMethodData)
+balOutcomePs <- computeCovariateBalance(ps, cohortMethodData)
+saveRDS(balOutcomeDrs, file.path(outputFolder, "balOutcomeDrs.rds"))
+saveRDS(balOutcomePs, file.path(outputFolder, "balOutcomePs.rds"))
+
+
+
+vizData <- data.frame(covariateId = balOutcomeDrs$covariateId,
+                      covariateName = balOutcomeDrs$covariateName,
+                      meanCases = balOutcomeDrs$beforeMatchingMeanTarget,
+                      meanNonCases = balOutcomeDrs$beforeMatchingMeanComparator)
+
+vizDataDrs <- merge(vizData,
+                    data.frame(covariateId = balExposureDrs$covariateId,
+                               stdDiff = balExposureDrs$afterMatchingStdDiff,
+                               strategy = "DRS"))
+vizDataDrs <- merge(vizDataDrs,
+                    data.frame(covariateId = drsModel$covariateId,
+                               coefficient = drsModel$coefficient),
+                    all.x = TRUE)
+
+vizDataPs <- merge(vizData,
+                    data.frame(covariateId = balExposurePs$covariateId,
+                               stdDiff = balExposurePs$afterMatchingStdDiff,
+                               strategy = "PS"))
+
+vizDataPs <- merge(vizDataPs,
+                    data.frame(covariateId = psModel$covariateId,
+                               coefficient = psModel$coefficient),
+                   all.x = TRUE)
+
+vizData <- rbind(vizDataDrs, vizDataPs)
+vizData$absStdDiff <- abs(vizData$stdDiff)
+vizData$coefficient[is.na(vizData$coefficient)] <- 0
+vizData$coefficient <- abs(vizData$coefficient)
+vizData$label <- gsub("^.*: ", "", vizData$covariateName)
+labelSubset <- vizData[vizData$covariateId %in% c(77074210, 80180210) & vizData$strategy == "DRS", ]
+
+library(ggplot2)
+max(vizData$meanCases, na.rm = TRUE)
+max(vizData$meanNonCases, na.rm = TRUE)
+
+plot <- ggplot(vizData, aes(x = meanNonCases, y = meanCases)) +
+  ggplot2::geom_point(aes(color = absStdDiff, size = coefficient), alpha = 0.3, shape = 16) +
+  ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  ggplot2::geom_hline(yintercept = 0) +
+  ggplot2::geom_vline(xintercept = 0) +
+  ggplot2::geom_text(aes(label = label), size = 2, vjust = 0, data = labelSubset) +
+  ggplot2::ggtitle("Negative control outcome: Mitral valve disorder") +
+  ggplot2::scale_x_continuous("Mean non-cases", limits = c(0,1)) +
+  ggplot2::scale_y_continuous("Mean cases", limits = c(0,1)) +
+  ggplot2::scale_size("Absolute\ncoefficient") +
+  ggplot2::scale_color_gradient("Absolute\nStd. Diff.", low = "blue", high = "red", space = "Lab", na.value = "red") +
+  ggplot2::facet_grid(~strategy)
+
+ggsave(plot = plot, file.path(outputFolder, "casesVsNonCases.png"), width = 8, height = 4)
+plotly::ggplotly(plot)
+
+vizData[vizData$coefficient > 3.5, ]
+# covariateId                                                                    covariateName meanCases meanNonCases    stdDiff strategy coefficient absStdDiff
+# 1071    77074210 condition_era group during day -365 through 0 days relative to index: Joint pain 0.7977973       0.7797 0.07124944      DRS    3.552831 0.07124944
+
+vizData[!is.na(vizData$absStdDiff) & vizData$absStdDiff > 0.37, ]
+# covariateId                                                                                                         covariateName meanCases meanNonCases
+# 1515     80180210                                  condition_era group during day -365 through 0 days relative to index: Osteoarthritis 0.5754619      0.38103
+# 45574  4178680210 condition_era group during day -365 through 0 days relative to index: Degenerative disorder of musculoskeletal system 0.5756750      0.38128
+# stdDiff strategy coefficient absStdDiff
+# 1515  0.3719572      DRS           0  0.3719572
+# 45574 0.3718537      DRS           0  0.3718537
+
+# Balance in population where model was fitted
+plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
+plpStudyPop <- PatientLevelPrediction::createStudyPopulation(plpData = plpData,
+                                                             outcomeId = 319843,
+                                                             includeAllOutcomes = TRUE,
+                                                             removeSubjectsWithPriorOutcome = TRUE,
+                                                             minTimeAtRisk = 1,
+                                                             riskWindowStart = 1,
+                                                             riskWindowEnd = 30)
+cases <- plpStudyPop[plpStudyPop$outcomeCount > 0, ]
+covarsCases <- list(covariates = plpData$covariates[ffbase::`%in%`(plpData$covariates$rowId, cases$rowId), ],
+                    covariateRef = plpData$covariateRef,
+                    analysisRef  = plpData$analysisRef,
+                    metaData = list(populationSize = nrow(cases)))
+class(covarsCases) <- "covariateData"
+covarsCases <- FeatureExtraction::aggregateCovariates(covarsCases)
+covarsCases$covariates <- ff::as.ram(covarsCases$covariates)
+covarsCases$covariateRef <- ff::as.ram(covarsCases$covariateRef)
+
+nonCases <- plpStudyPop[plpStudyPop$outcomeCount == 0, ]
+covarsNonCases <- list(covariates = plpData$covariates[ffbase::`%in%`(plpData$covariates$rowId, nonCases$rowId), ],
+                    covariateRef = plpData$covariateRef,
+                    analysisRef  = plpData$analysisRef,
+                    metaData = list(populationSize = nrow(nonCases)))
+class(covarsNonCases) <- "covariateData"
+covarsNonCases <- FeatureExtraction::aggregateCovariates(covarsNonCases)
+covarsNonCases$covariates <- ff::as.ram(covarsNonCases$covariates)
+
+m <- merge(data.frame(covariateId = covarsCases$covariates$covariateId,
+                      meanCases = covarsCases$covariates$averageValue),
+           data.frame(covariateId = covarsNonCases$covariates$covariateId,
+                      meanNonCases = covarsNonCases$covariates$averageValue))
+
+m <- merge(m,
+           data.frame(covariateId = covarsCases$covariateRef$covariateId,
+                      covariateName = covarsCases$covariateRef$covariateName))
+
+
+m[m$covariateId == 80180210, ]
 
