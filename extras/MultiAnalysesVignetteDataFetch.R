@@ -327,7 +327,7 @@ ggplot(negControls, aes(x = auc, y = zScore)) +
 
 ggsave(file.path(outputFolder, "zScoreVsAuc.png"))
 
-# AUC vs delta (compared to PS stratification)
+# AUC vs delta (compared to PS matching)
 ncsPs <- analysisSummary[analysisSummary$analysisId == 3 & analysisSummary$outcomeId != 192671, ]
 m <- merge(negControls,
            data.frame(outcomeId = ncsPs$outcomeId,
@@ -389,33 +389,41 @@ PatientLevelPrediction::savePlpData(plpData, file.path(outputFolder, "plpData"))
 # plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
 # outcomeCounts <- summary(plpData)$outcomeCounts
 fitDiseaseRiskModel <- function(outcomeId, outputFolder) {
-  writeLines(paste("Fitting model for outcome ID", outcomeId))
-  plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
-  plpStudyPop <- PatientLevelPrediction::createStudyPopulation(plpData = plpData,
-                                                               outcomeId = outcomeId,
-                                                               includeAllOutcomes = TRUE,
-                                                               removeSubjectsWithPriorOutcome = TRUE,
-                                                               minTimeAtRisk = 1,
-                                                               riskWindowStart = 1,
-                                                               riskWindowEnd = 30)
-  # sum(studyPop$outcomeCount > 0)
+  fileName <- file.path(outputFolder, sprintf("drBetas_o%s.rds", outcomeId))
+  if (!file.exists(fileName)) {
+    writeLines(paste("Fitting model for outcome ID", outcomeId))
+    plpData <- PatientLevelPrediction::loadPlpData(file.path(outputFolder, "plpData"))
+    plpStudyPop <- PatientLevelPrediction::createStudyPopulation(plpData = plpData,
+                                                                 outcomeId = outcomeId,
+                                                                 includeAllOutcomes = TRUE,
+                                                                 removeSubjectsWithPriorOutcome = TRUE,
+                                                                 minTimeAtRisk = 1,
+                                                                 riskWindowStart = 1,
+                                                                 riskWindowEnd = 30)
+    if (sum(plpStudyPop$outcomeCount > 0) == 0) {
+      # No outcomes
+      betas <- c(0)
+    } else {
+      model <- PatientLevelPrediction::fitGLMModel(population = plpStudyPop,
+                                                   plpData = plpData,
+                                                   modelType = "logistic",
+                                                   prior = Cyclops::createPrior(priorType = "normal",
+                                                                                useCrossValidation = TRUE),
+                                                   control = Cyclops::createControl(cvType = "auto",
+                                                                                    fold = 3,
+                                                                                    startingVariance = 0.01,
+                                                                                    tolerance  = 2e-06,
+                                                                                    cvRepetitions = 1,
+                                                                                    selectorType = "auto",
+                                                                                    noiseLevel = "silent",
+                                                                                    threads = 3,
+                                                                                    maxIterations = 3000))
 
-  model <- PatientLevelPrediction::fitGLMModel(population = plpStudyPop,
-                                               plpData = plpData,
-                                               modelType = "logistic",
-                                               control = Cyclops::createControl(cvType = "auto",
-                                                                                fold = 3,
-                                                                                startingVariance = 0.01,
-                                                                                tolerance  = 2e-06,
-                                                                                cvRepetitions = 1,
-                                                                                selectorType = "auto",
-                                                                                noiseLevel = "silent",
-                                                                                threads = 3,
-                                                                                maxIterations = 3000))
-
-  betas <- model$coefficients
-  betas <- betas[betas != 0]
-  saveRDS(betas, file.path(outputFolder, sprintf("drBetas_o%s.rds", outcomeId)))
+      betas <- model$coefficients
+      betas <- betas[betas != 0]
+    }
+    saveRDS(betas, fileName)
+  }
 }
 cluster <- ParallelLogger::makeCluster(3)
 ParallelLogger::clusterApply(cluster, outcomeIds, fitDiseaseRiskModel, outputFolder = outputFolder)
