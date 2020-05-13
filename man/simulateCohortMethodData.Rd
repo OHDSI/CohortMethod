@@ -7,16 +7,16 @@
 simulateCohortMethodData(profile, n = 10000)
 }
 \arguments{
-\item{profile}{An object of type \code{cohortMethodDataSimulationProfile} as generated using the
-\cr\code{createCohortMethodDataSimulationProfile} function.}
+\item{profile}{An object of type \code{CohortMethodDataSimulationProfile} as generated using the
+\code{\link[=createCohortMethodDataSimulationProfile]{createCohortMethodDataSimulationProfile()}} function.}
 
 \item{n}{The size of the population to be generated.}
 }
 \value{
-An object of type \code{cohortMethodData}.
+An object of type \link{CohortMethodData}.
 }
 \description{
-\code{simulateCohortMethodData} creates a cohortMethodData object with simulated data.
+Creates a \link{CohortMethodData} object with simulated data.
 }
 \details{
 This function generates simulated data that is in many ways similar to the original data on which

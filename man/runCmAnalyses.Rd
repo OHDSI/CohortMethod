@@ -104,7 +104,7 @@ propensity models.}
 \item{psCvThreads}{The number of parallel threads to use for the cross-
 validation when estimating the hyperparameter for the
 propensity model. Note that the total number of CV threads at
-one time could be `createPsThreads * psCvThreads`.}
+one time could be \code{createPsThreads * psCvThreads}.}
 
 \item{createStudyPopThreads}{The number of parallel threads to use for creating the study
 population.}
@@ -120,7 +120,7 @@ models.}
 \item{outcomeCvThreads}{The number of parallel threads to use for the cross-
 validation when estimating the hyperparameter for the outcome
 model. Note that the total number of CV threads at one time
-could be `fitOutcomeModelThreads * outcomeCvThreads`.}
+could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
 
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
 for all other outcome IDs. This could be helpful to speed up
@@ -151,7 +151,7 @@ Run a list of analyses
 \details{
 Run a list of analyses for the target-comparator-outcomes of interest. This function will run all
 specified analyses against all hypotheses of interest, meaning that the total number of outcome
-models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an
+models is \code{length(cmAnalysisList) * length(targetComparatorOutcomesList)} (if all analyses specify an
 outcome model should be fitted). When you provide several analyses it will determine whether any of
 the analyses have anything in common, and will take advantage of this fact. For example, if we
 specify several analyses that only differ in the way the outcome model is fitted, then this

@@ -1,5 +1,3 @@
-# @file PsFunctions.R
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -24,15 +22,15 @@
 #' Create propensity scores
 #'
 #' @description
-#' \code{createPs} creates propensity scores using a regularized logistic regression.
+#' Creates propensity scores using a regularized logistic regression.
 #'
-#' @param cohortMethodData         An object of type \code{cohortMethodData} as generated using
-#'                                 \code{getDbCohortMethodData}.
+#' @param cohortMethodData         An object of type [CohortMethodData] as generated using
+#'                                 [getDbCohortMethodData()].
 #' @param population               A data frame describing the population. This should at least have a
-#'                                 'rowId' column corresponding to the rowId column in the
-#'                                 \code{cohortMethodData} covariates object and a 'treatment' column.
+#'                                 `rowId` column corresponding to the `rowId` column in the
+#'                                 [CohortMethodData] covariates object and a `treatment` column.
 #'                                 If population is not specified, the full population in the
-#'                                 \code{cohortMethodData} will be used.
+#'                                 [CohortMethodData] will be used.
 #' @param excludeCovariateIds      Exclude these covariates from the propensity model.
 #' @param includeCovariateIds      Include only these covariates in the propensity model.
 #' @param maxCohortSizeForFitting  If the target or comparator cohort are larger than this number, they
@@ -47,13 +45,10 @@
 #' @param stopOnError              If an error occurrs, should the function stop? Else, the two cohorts
 #'                                 will be assumed to be perfectly separable.
 #' @param prior                    The prior used to fit the model. See
-#'                                 \code{\link[Cyclops]{createPrior}} for details.
+#'                                 [Cyclops::createPrior()] for details.
 #' @param control                  The control object used to control the cross-validation used to
 #'                                 determine the hyperparameters of the prior (if applicable). See
-#'                                 \code{\link[Cyclops]{createControl}} for details.
-#'
-#' @details
-#' \code{createPs} creates propensity scores using a regularized logistic regression.
+#'                                 [Cyclops::createControl()] for details.
 #'
 #' @examples
 #' data(cohortMethodDataSimulationProfile)
@@ -62,7 +57,7 @@
 #'
 #' @export
 createPs <- function(cohortMethodData,
-                     population,
+                     population = NULL,
                      excludeCovariateIds = c(),
                      includeCovariateIds = c(),
                      maxCohortSizeForFitting = 250000,
@@ -75,8 +70,10 @@ createPs <- function(cohortMethodData,
                                              tolerance = 2e-07,
                                              cvRepetitions = 10,
                                              startingVariance = 0.01)) {
-  if (missing(population))
-    population <- cohortMethodData$cohorts
+  if (is.null(population)) {
+    population <- cohortMethodData$cohorts %>%
+      collect()
+  }
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
@@ -84,29 +81,35 @@ createPs <- function(cohortMethodData,
 
   start <- Sys.time()
   population <- population[order(population$rowId), ]
-  if (is.data.frame(cohortMethodData$covariates)) {
+  if (cohortMethodData$covariates %>% count() %>% pull() == 0) {
     error <- "No covariate data, so cannot fit model"
     sampled <- FALSE
     ref <- NULL
   } else {
-    covariates <- FeatureExtraction::filterByRowId(cohortMethodData$covariates, population$rowId)
+    covariates <- cohortMethodData$covariates %>%
+      filter(.data$rowId %in% local(population$rowId))
+
     if (length(includeCovariateIds) != 0) {
-      idx <- !is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(includeCovariateIds)))
-      covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+      covariates <- covariates %>%
+        filter(.data$covariateId %in% includeCovariateIds)
     }
     if (length(excludeCovariateIds) != 0) {
-      idx <- is.na(ffbase::ffmatch(covariates$covariateId, ff::as.ff(excludeCovariateIds)))
-      covariates <- covariates[ffbase::ffwhich(idx, idx == TRUE), ]
+      covariates <- covariates %>%
+        filter(!.data$covariateId %in% includeCovariateIds)
     }
-    covariateData <- FeatureExtraction::tidyCovariateData(covariates = covariates,
-                                                          covariateRef = cohortMethodData$covariateRef,
-                                                          populationSize = nrow(population),
-                                                          minFraction = 0.001,
-                                                          normalize = TRUE,
-                                                          removeRedundancy = TRUE)
+    filteredCovariateData <- Andromeda::andromeda(covariates = covariates,
+                                                  covariateRef = cohortMethodData$covariateRef,
+                                                  analysisRef = cohortMethodData$analysisRef)
+    metaData <- attr(filteredCovariateData, "metaData")
+    metaData$populationSize <- nrow(population)
+    attr(filteredCovariateData, "metaData") <- metaData
+    class(filteredCovariateData) <- "CovariateData"
+
+    covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
+    close(filteredCovariateData)
     covariates <- covariateData$covariates
-    attr(population, "metaData")$deletedInfrequentCovariateIds <- covariateData$metaData$deletedInfrequentCovariateIds
-    attr(population, "metaData")$deletedRedundantCovariateIds <- covariateData$metaData$deletedRedundantCovariateIds
+    attr(population, "metaData")$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
+    attr(population, "metaData")$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
     sampled <- FALSE
     if (maxCohortSizeForFitting != 0) {
       set.seed(0)
@@ -126,26 +129,24 @@ createPs <- function(cohortMethodData,
         fullPopulation <- population
         fullCovariates <- covariates
         population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
-        covariates <- FeatureExtraction::filterByRowId(covariates, population$rowId)
+        covariates <- covariates %>%
+          filter(.data$rowId %in% local(population$rowId))
       }
     }
-    if (!Cyclops::isSorted(population, "rowId")) {
+    if (!Andromeda::isSorted(population, "rowId")) {
       population <- population[order(population$rowId), ]
     }
-    outcomes <- ff::as.ffdf(population)
+    outcomes <- population
     colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
+    covariateData$outcomes <- outcomes
     floatingPoint <- getOption("floatingPoint")
     if (is.null(floatingPoint)) {
       floatingPoint <- 64
     } else {
-       ParallelLogger::logInfo("Cyclops using precision of ", floatingPoint)
+      ParallelLogger::logInfo("Cyclops using precision of ", floatingPoint)
     }
-    cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
-    ff::close.ffdf(outcomes)
-    ff::close.ffdf(covariates)
-    rm(outcomes)
-    rm(covariates)
-    rm(covariateData)
+    cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
+    close(covariateData)
     error <- NULL
     ref <- NULL
     if (errorOnHighCorrelation) {
@@ -153,12 +154,11 @@ createPs <- function(cohortMethodData,
       suspect <- suspect[!is.na(suspect)]
       if (length(suspect) != 0) {
         covariateIds <- as.numeric(names(suspect))
-        idx <- !is.na(ffbase::ffmatch(cohortMethodData$covariateRef$covariateId,
-                                      ff::as.ff(covariateIds)))
-        ref <- ff::as.ram(cohortMethodData$covariateRef[ffbase::ffwhich(idx, idx == TRUE), ])
+        ref <- cohortMethodData$covariateRef %>%
+          filter(.data$covariateId %in% covariateIds) %>%
+          collect()
         ParallelLogger::logInfo("High correlation between covariate(s) and treatment detected:")
         ParallelLogger::logInfo(paste(colnames(ref), collapse = "\t"))
-        ref$covariateName <- as.character(ref$covariateName)
         for (i in 1:nrow(ref))
           ParallelLogger::logInfo(paste(ref[i, ], collapse = "\t"))
         message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
@@ -239,33 +239,33 @@ createPs <- function(cohortMethodData,
 #' Get the propensity model
 #'
 #' @description
-#' \code{getPsModel} shows the propensity score model
+#' Returns the coefficients and names of the covariates with non-zero coefficients.
 #'
-#' @param propensityScore    The propensity scores as generated using the \code{createPs} function.
-#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
-#'                           \code{getDbCohortMethodData}.
+#' @param propensityScore    The propensity scores as generated using the [createPs()] function.
 #'
-#' @details
-#' Shows the coefficients and names of the covariates with non-zero coefficients.
+#' @template CohortMethodData
 #'
-#' @examples
-#' # todo
+#' @return
+#' A tibble.
 #'
 #' @export
 getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
-  result <- data.frame(coefficient = coefficients[1],
-                       covariateId = NA,
-                       covariateName = "(Intercept)")
+  result <- tibble::tibble(coefficient = coefficients[1],
+                           covariateId = NA,
+                           covariateName = "(Intercept)")
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
-    coefficients <- data.frame(coefficient = coefficients,
+    coefficients <- tibble::tibble(coefficient = coefficients,
                                covariateId = as.numeric(attr(coefficients, "names")))
-    coefficients <- merge(ff::as.ffdf(coefficients), cohortMethodData$covariateRef)
-    coefficients <- ff::as.ram(coefficients[, c("coefficient", "covariateId", "covariateName")])
-    result <- rbind(result, coefficients)
-    result <- result[order(-abs(result$coefficient)), ]
+    covariateRef <- cohortMethodData$covariateRef %>%
+      collect()
+    coefficients <- coefficients %>%
+      inner_join(covariateRef, by = "covariateId") %>%
+      select(.data$coefficient, .data$covariateId, .data$covariateName)
+    result <- bind_rows(result, coefficients) %>%
+      arrange(-abs(.data$coefficient))
   }
   return(result)
 }
@@ -286,18 +286,18 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' Plot the propensity score distribution
 #'
 #' @description
-#' \code{plotPs} shows the propensity (or preference) score distribution
+#' Plots the propensity (or preference) score distribution.
 #'
 #' @param data              A data frame with at least the two columns described below
 #' @param unfilteredData    To be used when computing preference scores on data from which subjects
 #'                          have already been removed, e.g. through trimming and/or matching. This data
-#'                          frame should have the same structure as \code{data}.
-#' @param scale             The scale of the graph. Two scales are supported: \code{ scale =
-#'                          'propensity'} or \code{scale = 'preference'}. The preference score scale is
+#'                          frame should have the same structure as `data`.
+#' @param scale             The scale of the graph. Two scales are supported: `scale =
+#'                          'propensity'` or `scale = 'preference'`. The preference score scale is
 #'                          defined by Walker et al (2013).
-#' @param type              Type of plot. Four possible values: \code{type = 'density'} or \code{type =
-#'                          'histogram'} or \code{type = 'histogramCount'}
-#'                          or \code{type = 'histogramProportion'}. 'histogram' defaults to 'histogramCount'.
+#' @param type              Type of plot. Four possible values: `type = 'density'`  `type =
+#'                          'histogram'`, `type = 'histogramCount'`,
+#'                          or `type = 'histogramProportion'`. `'histogram'` defaults to `'histogramCount'`.
 #' @param binWidth          For histograms, the width of the bins
 #' @param targetLabel       A label to us for the target cohort.
 #' @param comparatorLabel   A label to us for the comparator cohort.
@@ -309,16 +309,16 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 #' @param unitOfAnalysis    The unit of analysis in the input data. Defaults to 'subjects'.
 #' @param title             Optional: the main title for the plot.
 #' @param fileName          Name of the file where the plot should be saved, for example 'plot.png'.
-#'                          See the function \code{ggsave} in the ggplot2 package for supported file
-#'                          formats.
+#'                          See the function [ggplot2::ggsave()] for supported file formats.
 #'
 #' @details
-#' The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+#' The data frame should have a least the following two columns:
+#'
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group
+#' - propensityScore (numeric): Propensity score
 #'
 #' @return
-#' A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+#' A ggplot object. Use the [ggplot2::ggsave()] function to save to file in a different
 #' format.
 #'
 #' @examples
@@ -482,18 +482,19 @@ plotPs <- function(data,
 #' Compute the area under the ROC curve
 #'
 #' @description
-#' \code{computePsAuc} computes the area under the ROC curve of the propensity score
+#' Compute the area under the ROC curve of the propensity score.
 #'
 #' @param data                  A data frame with at least the two columns described below
 #' @param confidenceIntervals   Compute 95 percent confidence intervals (computationally expensive for
 #'                              large data sets)
 #' @details
-#' The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+#' The data frame should have a least the following two columns:
+#'
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' @return
-#' A data frame holding the AUC and its 95 percent confidence interval
+#' A tibble holding the AUC and its 95 percent confidence interval
 #'
 #' @examples
 #' treatment <- rep(0:1, each = 100)
@@ -511,7 +512,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 
   if (confidenceIntervals) {
     auc <- aucWithCi(data$propensityScore, data$treatment)
-    return(data.frame(auc = auc[1], auc_lb95ci = auc[2], auc_lb95ci = auc[3]))
+    return(tibble::tibble(auc = auc[1], auc_lb95ci = auc[2], auc_lb95ci = auc[3]))
   } else {
     auc <- aucWithoutCi(data$propensityScore, data$treatment)
     return(auc)
@@ -521,7 +522,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #' Trim persons by propensity score
 #'
 #' @description
-#' \code{trimByPs} uses the provided propensity scores to trim subjects with extreme scores.
+#' Use the provided propensity scores to trim subjects with extreme scores.
 #'
 #' @param population     A data frame with the three columns described below
 #' @param trimFraction   This fraction will be removed from each treatment group. In the target
@@ -529,13 +530,15 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #'                       comparator group person with the lowest scores will be removed.
 #'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
-#' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' @return
-#' Returns a date frame with the same three columns as the input.
+#' Returns a tibble with the same three columns as the input.
+#'
 #' @examples
 #' rowId <- 1:2000
 #' treatment <- rep(0:1, each = 1000)
@@ -567,20 +570,21 @@ trimByPs <- function(population, trimFraction = 0.05) {
 #' Keep only persons in clinical equipoise
 #'
 #' @description
-#' \code{trimByPsToEquipoise} uses the preference score to trim subjects that are not in clinical
-#' equipoise
+#' Use the preference score to trim subjects that are not in clinical equipoise
 #'
-#' @param population   A data frame with at least the three columns described below
-#' @param bounds       The upper and lower bound on the preference score for keeping persons
+#' @param population   A data frame with at least the three columns described below.
+#' @param bounds       The upper and lower bound on the preference score for keeping persons.
 #'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
-#' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' @return
-#' Returns a date frame with the same three columns as the input.
+#' Returns a tibble with the same three columns as the input.
+#'
 #' @examples
 #' rowId <- 1:2000
 #' treatment <- rep(0:1, each = 1000)
@@ -635,15 +639,15 @@ logit <- function(p){
 #' Match persons by propensity score
 #'
 #' @description
-#' \code{matchOnPs} uses the provided propensity scores to match target to comparator persons.
+#' Use the provided propensity scores to match target to comparator persons.
 #'
 #' @param population              A data frame with the three columns described below.
 #' @param caliper                 The caliper for matching. A caliper is the distance which is
 #'                                acceptable for any match. Observations which are outside of the
 #'                                caliper are dropped. A caliper of 0 means no caliper is used.
 #' @param caliperScale            The scale on which the caliper is defined. Three scales are supported:
-#'                                \cr\code{caliperScale = 'propensity score'}, \code{caliperScale =
-#'                                'standardized'}, or \cr\code{caliperScale = 'standardized logit'}.
+#'                                `caliperScale = 'propensity score'`, `caliperScale =
+#'                                'standardized'`, or `caliperScale = 'standardized logit'`.
 #'                                On the standardized scale, the caliper is interpreted in standard
 #'                                deviations of the propensity score distribution. 'standardized logit'
 #'                                is similar, except that the propensity score is transformed to the logit
@@ -653,17 +657,17 @@ logit <- function(p){
 #'                                each person in the treatment arm. A maxRatio of 0 means no maximum:
 #'                                all comparators will be assigned to a target person.
 #' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
-#' @param stratificationColumns   Names or numbers of one or more columns in the \code{data} data.frame
+#' @param stratificationColumns   Names or numbers of one or more columns in the `data` data.frame
 #'                                on which subjects should be stratified prior to matching. No persons
 #'                                will be matched with persons outside of the strata identified by the
 #'                                values in these columns.
 #'
 #' @details
-#' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
-#' \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
-#' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
 #'
@@ -718,7 +722,7 @@ matchOnPs <- function(population,
     caliper <- 9999
   } else if (caliperScale == "standardized") {
     caliper <- caliper * sd(population$propensityScore)
-  } else if (caliperScale == "standardized logit"){
+  } else if (caliperScale == "standardized logit") {
     propensityScore <- logit(propensityScore)
     caliper <- caliper * sd(propensityScore)
   }
@@ -730,6 +734,7 @@ matchOnPs <- function(population,
                               population$treatment,
                               maxRatio,
                               caliper)
+    result <- tibble::as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
     if (!is.null(attr(population, "metaData"))) {
@@ -749,6 +754,7 @@ matchOnPs <- function(population,
                                    subset$treatment,
                                    maxRatio,
                                    caliper)
+      subResult <- tibble::as_tibble(subResult)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
       return(subset)
@@ -785,7 +791,7 @@ matchOnPs <- function(population,
 #' Match by propensity score as well as other covariates
 #'
 #' @description
-#' \code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
+#' Use the provided propensity scores and a set of covariates to match
 #' target to comparator persons.
 #'
 #' @param population         A data frame with the three columns described below.
@@ -793,8 +799,8 @@ matchOnPs <- function(population,
 #'                           for any match. Observations which are outside of the caliper are dropped.
 #'                           A caliper of 0 means no caliper is used.
 #' @param caliperScale            The scale on which the caliper is defined. Three scales are supported:
-#'                                \cr\code{caliperScale = 'propensity score'}, \code{caliperScale =
-#'                                'standardized'}, or \cr\code{caliperScale = 'standardized logit'}.
+#'                                `caliperScale = 'propensity score'`, `caliperScale =
+#'                                'standardized'`, or `caliperScale = 'standardized logit'`.
 #'                                On the standardized scale, the caliper is interpreted in standard
 #'                                deviations of the propensity score distribution. 'standardized logit'
 #'                                is similar, except that the propensity score is transformed to the logit
@@ -804,26 +810,23 @@ matchOnPs <- function(population,
 #'                           person in the treatment arm. A maxRatio of 0 means no maximum: all
 #'                           comparators will be assigned to a target person.
 #' @param allowReverseMatch  Allows n-to-1 matching if target arm is larger
-#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
-#'                           \code{getDbCohortMethodData}.
-#' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
+#' @param covariateIds       One or more covariate IDs in the `cohortMethodData` object on which
 #'                           subjects should be also matched.
 #'
+#' @template CohortMethodData
+#'
 #' @details
-#' The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
-#' \tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-#' \tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-#' \tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
-#' implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
 #'
 #' @return
-#' Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
+#' Returns a tibble with the same columns as the input data plus one extra column: stratumId. Any
 #' rows that could not be matched are removed
-#'
-#' @examples
-#' # todo
 #'
 #' @references
 #' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
@@ -855,13 +858,13 @@ matchOnPsAndCovariates <- function(population,
 #' Stratify persons by propensity score
 #'
 #' @description
-#' \code{stratifyByPs} uses the provided propensity scores to stratify persons. Additional
+#' Use the provided propensity scores to stratify persons. Additional
 #' stratification variables for stratifications can also be used.
 #'
 #' @param population              A data frame with the three columns described below
 #' @param numberOfStrata          How many strata? The boundaries of the strata are automatically
 #'                                defined to contain equal numbers of target persons.
-#' @param stratificationColumns   Names of one or more columns in the \code{data} data.frame on which
+#' @param stratificationColumns   Names of one or more columns in the `data` data.frame on which
 #'                                subjects should also be stratified in addition to stratification on
 #'                                propensity score.
 #' @param baseSelection           What is the base selection of subjects where the strata bounds are
@@ -869,13 +872,15 @@ matchOnPsAndCovariates <- function(population,
 #'                                this selection. Possible values are "all", "target", and "comparator".
 #'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
-#' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' @return
-#' Returns a date frame with the same columns as the input data plus one extra column: stratumId.
+#' Returns a tibble with the same columns as the input data plus one extra column: stratumId.
+#'
 #' @examples
 #' rowId <- 1:200
 #' treatment <- rep(0:1, each = 100)
@@ -956,7 +961,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' Stratify persons by propensity score and other covariates
 #'
 #' @description
-#' \code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify
+#' Use the provided propensity scores and covariatesto stratify
 #' persons.
 #'
 #' @param population         A data frame with the three columns described below
@@ -966,22 +971,21 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' @param baseSelection      What is the base selection of subjects where the strata bounds are
 #'                           to be determined? Strata are defined as equally-sized strata inside
 #'                           this selection. Possible values are "all", "target", and "comparator".
-#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
-#'                           \code{getDbCohortMethodData}.
-#' @param covariateIds       One or more covariate IDs in the \code{cohortMethodData} object on which
+#' @param covariateIds       One or more covariate IDs in the `cohortMethodData` object on which
 #'                           subjects should also be stratified.
 #'
+#' @template CohortMethodData
+#'
 #' @details
-#' The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
-#' \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-#' Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-#' \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
 #'
 #' @return
 #' Returns a date frame with the same columns as the input population plus one extra column:
 #' stratumId.
-#' @examples
-#' # todo
 #'
 #' @export
 stratifyByPsAndCovariates <- function(population,

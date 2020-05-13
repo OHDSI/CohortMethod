@@ -1,5 +1,3 @@
-# @file StudyPopulation.R
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -17,14 +15,20 @@
 # limitations under the License.
 
 fastDuplicated <- function(data, columns) {
-  results <- lapply(columns, function(column, data) data[2:nrow(data), column] == data[1:(nrow(data) - 1), column], data = data)
-  result <- results[[1]]
-  if (length(columns) > 1) {
-    for (i in 2:length(columns)) {
-      result <- result & results[[i]]
+  if (nrow(data) == 0) {
+    return(c())
+  } else if (nrow(data) == 1) {
+    return(c(FALSE))
+  } else {
+    results <- lapply(columns, function(column, data) data[2:nrow(data), column] == data[1:(nrow(data) - 1), column], data = data)
+    result <- results[[1]]
+    if (length(columns) > 1) {
+      for (i in 2:length(columns)) {
+        result <- result & results[[i]]
+      }
     }
+    return(c(FALSE, result))
   }
-  return(c(FALSE, result))
 }
 
 #' Create a study population
@@ -33,24 +37,19 @@ fastDuplicated <- function(data, columns) {
 #' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
 #' window, and determining which outcomes fall inside the risk window.
 #'
-#' The \code{removeduplicateSubjects} argument can have one of the following values:
-#' \describe{
-#'   \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
-#'   \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
-#'   If both cohorts start simultaneous, the person is removed from the analysis.}
-#'   \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
-#' }
+#' The `removeduplicateSubjects` argument can have one of the following values:
 #'
-#' @param cohortMethodData                 An object of type \code{cohortMethodData} as generated using
-#'                                         \code{getDbCohortMethodData}.
+#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
+#' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
+#' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
+#'
+#' @template CohortMethodData
+#'
 #' @param population                       If specified, this population will be used as the starting
-#'                                         point instead of the cohorts in the \code{cohortMethodData}
-#'                                         object.
+#'                                         point instead of the cohorts in the `cohortMethodData` object.
 #' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
 #'                                         transformations will be performed.
-#' @param firstExposureOnly                Should only the first exposure per subject be included? Note
-#'                                         that this is typically done in the
-#'                                         \code{createStudyPopulation} function,
+#' @param firstExposureOnly                Should only the first exposure per subject be included?
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
@@ -61,24 +60,27 @@ fastDuplicated <- function(data, columns) {
 #' @param priorOutcomeLookback             How many days should we look back when identifying prior
 #'                                         outcomes?
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
-#' @param riskWindowStart                  The start of the risk window (in days) relative to the \code{startAnchor}.
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
 #' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk window?
-#'                                         Use \code{startAnchor} instead.
-#' @param startAnchor                      The anchor point for the start of the risk window. Can be "cohort start"
-#'                                         or "cohort end".
-#' @param riskWindowEnd                    The end of the risk window (in days) relative to the \code{endAnchor}.
+#'                                         Use `startAnchor` instead.
+#' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
+#'                                         or `"cohort end"`.
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the `endAnchor`.
 #' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?
-#'                                         Use \code{endAnchor} instead.
-#' @param endAnchor                        The anchor point for the end of the risk window. Can be "cohort start"
-#'                                         or "cohort end".
+#'                                         Use `endAnchor` instead.
+#' @param endAnchor                        The anchor point for the end of the risk window. Can be `"cohort start"`
+#'                                         or `"cohort end"`.
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
 #'                                         when the new time-at-risk starts to prevent overlap?
 #' @return
-#' A data frame specifying the study population. This data frame will have the following columns:
-#' \describe{ \item{rowId}{A unique identifier for an exposure} \item{subjectId}{The person ID of the
-#' subject} \item{cohortStartdate}{The index date} \item{outcomeCount}{The number of outcomes observed
-#' during the risk window} \item{timeAtRisk}{The number of days in the risk window}
-#' \item{survivalTime}{The number of days until either the outcome or the end of the risk window} }
+#' A `tibble` specifying the study population. This `tibble` will have the following columns:
+#'
+#' - `rowId`: A unique identifier for an exposure.
+#' - `subjectId`: The person ID of the subject.
+#' - `cohortStartdate`: The index date.
+#' - `outcomeCount` The number of outcomes observed during the risk window.
+#' - `timeAtRisk`: The number of days in the risk window.
+#' - `survivalTime`: The number of days until either the outcome or the end of the risk window.
 #'
 #' @export
 createStudyPopulation <- function(cohortMethodData,
@@ -137,9 +139,10 @@ createStudyPopulation <- function(cohortMethodData,
     ParallelLogger::logTrace("Creating study population for outcome ID ", outcomeId)
 
   if (is.null(population)) {
-    population <- cohortMethodData$cohorts
+    population <- cohortMethodData$cohorts %>%
+      collect()
   }
-  metaData <- attr(population, "metaData")
+  metaData <- attr(cohortMethodData, "metaData")
   if (firstExposureOnly) {
     ParallelLogger::logInfo("Keeping only first exposure per subject")
     population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
@@ -195,7 +198,9 @@ createStudyPopulation <- function(cohortMethodData,
       ParallelLogger::logInfo("No outcome specified so skipping removing people with prior outcomes")
     } else {
       ParallelLogger::logInfo("Removing subjects with prior outcomes (if any)")
-      outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+      outcomes <- cohortMethodData$outcomes %>%
+        filter(.data$outcomeId == outcomeId) %>%
+        collect()
       if (isEnd(startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
@@ -253,7 +258,9 @@ createStudyPopulation <- function(cohortMethodData,
     ParallelLogger::logInfo("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
-    outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+    outcomes <- cohortMethodData$outcomes %>%
+      filter(.data$outcomeId == outcomeId) %>%
+      collect()
     outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
     outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
 
@@ -280,8 +287,6 @@ createStudyPopulation <- function(cohortMethodData,
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
                                                                                       0] - population$riskStart[population$outcomeCount != 0] + 1
   }
-  # population$riskStart <- NULL
-  # population$riskEnd <- NULL
   attr(population, "metaData") <- metaData
   ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
   return(population)
@@ -289,20 +294,17 @@ createStudyPopulation <- function(cohortMethodData,
 
 #' Get the attrition table for a population
 #'
-#' @param object   Either an object of type \code{cohortMethodData}, a population object generated by
-#'                 functions like \code{createStudyPopulation}, or an object of type
-#'                 \code{outcomeModel}.
+#' @param object   Either an object of type [CohortMethodData], a population object generated by
+#'                 functions like [createStudyPopulation()], or an object of type
+#'                 `outcomeModel`.
 #'
 #' @return
-#' A data frame specifying the number of people and exposures in the population after specific steps
+#' A `tibble` specifying the number of people and exposures in the population after specific steps
 #' of filtering.
 #'
 #'
 #' @export
 getAttritionTable <- function(object) {
-  if (is(object, "cohortMethodData")) {
-    object <- object$cohorts
-  }
   if (is(object, "outcomeModel")) {
     return(object$attrition)
   } else {
@@ -315,11 +317,11 @@ getCounts <- function(population, description = "") {
   comparatorPersons <- length(unique(population$subjectId[population$treatment == 0]))
   targetExposures <- length(population$subjectId[population$treatment == 1])
   comparatorExposures <- length(population$subjectId[population$treatment == 0])
-  counts <- data.frame(description = description,
-                       targetPersons = targetPersons,
-                       comparatorPersons = comparatorPersons,
-                       targetExposures = targetExposures,
-                       comparatorExposures = comparatorExposures)
+  counts <- tibble::tibble(description = description,
+                           targetPersons = targetPersons,
+                           comparatorPersons = comparatorPersons,
+                           targetExposures = targetExposures,
+                           comparatorExposures = comparatorExposures)
   return(counts)
 }
 
@@ -329,36 +331,33 @@ getCounts <- function(population, description = "") {
 #' @details
 #' Creates a plot showing the number of events over time in the target and comparator cohorts, both before and after
 #' index date. The plot also distinguishes between events inside and outside the time-at-risk period. This requires
-#' the user to (re)specify the time-at-risk using the same arguments as the \code{\link{createStudyPopulation}} function.
+#' the user to (re)specify the time-at-risk using the same arguments as the [createStudyPopulation()] function.
 #' Note that it is not possible to specify that people with the outcome prior should be removed, since the plot will
 #' show these prior events.
 #'
-#' @param cohortMethodData                 An object of type \code{cohortMethodData} as generated using
-#'                                         \code{getDbCohortMethodData}.
+#' @template CohortMethodData
+#'
 #' @param population                       If specified, this population will be used as the starting
-#'                                         point instead of the cohorts in the \code{cohortMethodData}
-#'                                         object.
+#'                                         point instead of the cohorts in the `cohortMethodData` object.
 #' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
 #'                                         transformations will be performed.
-#' @param firstExposureOnly                Should only the first exposure per subject be included? Note
-#'                                         that this is typically done in the
-#'                                         \code{createStudyPopulation} function,
+#' @param firstExposureOnly                Should only the first exposure per subject be included?
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
-#' @param riskWindowStart                  The start of the risk window (in days) relative to the \code{startAnchor}.
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
 #' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk window?
-#'                                         Use \code{startAnchor} instead.
-#' @param startAnchor                      The anchor point for the start of the risk window. Can be "cohort start"
-#'                                         or "cohort end".
-#' @param riskWindowEnd                    The end of the risk window (in days) relative to the \code{endAnchor}.
+#'                                         Use `startAnchor` instead.
+#' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
+#'                                         or `"cohort end"`.
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the `endAnchor`.
 #' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?
-#'                                         Use \code{endAnchor} instead.
-#' @param endAnchor                        The anchor point for the end of the risk window. Can be "cohort start"
-#'                                         or "cohort end".
+#'                                         Use `endAnchor` instead.
+#' @param endAnchor                        The anchor point for the end of the risk window. Can be `"cohort start"`
+#'                                         or `"cohort end"`.
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
 #'                                         when the new time-at-risk starts to prevent overlap?
 #' @param periodLength                     The length in days of each period shown in the plot.
@@ -369,11 +368,10 @@ getCounts <- function(population, description = "") {
 #' @param comparatorLabel                  A label to us for the comparator cohort.
 #' @param title                            Optional: the main title for the plot.
 #' @param fileName              Name of the file where the plot should be saved, for example
-#'                              'plot.png'. See the function \code{ggsave} in the ggplot2 package for
-#'                              supported file formats.
+#'                              'plot.png'. See [ggplot2::ggsave()] for supported file formats.
 #'
 #' @return
-#' A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+#' A ggplot object. Use the [ggplot2::ggsave()] function to save to file in a different
 #' format.
 #'
 #' @export
@@ -415,6 +413,10 @@ plotTimeToEvent <- function(cohortMethodData,
       endAnchor <- "cohort start"
     }
   }
+  if (is.null(population)) {
+    population <- cohortMethodData$cohorts %>%
+      collect()
+  }
   population <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                       population = population,
                                       outcomeId = outcomeId,
@@ -429,61 +431,68 @@ plotTimeToEvent <- function(cohortMethodData,
                                       riskWindowEnd = riskWindowEnd,
                                       endAnchor = endAnchor,
                                       censorAtNewRiskWindow = censorAtNewRiskWindow)
-  outcomes <- cohortMethodData$outcomes[cohortMethodData$outcomes$outcomeId == outcomeId, ]
+  outcomes <- cohortMethodData$outcomes %>%
+    filter(.data$outcomeId == outcomeId) %>%
+    collect()
   outcomes <- merge(population[, c("rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd")],
                     outcomes[, c("rowId", "daysToEvent")])
   outcomes <- outcomes[-outcomes$daysFromObsStart <= outcomes$daysToEvent & outcomes$daysToObsEnd >= outcomes$daysToEvent, ]
   outcomes$exposed <- 0
   outcomes$exposed[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd] <- 1
-  periods <- data.frame(number = -floor(numberOfPeriods/2):ceiling(numberOfPeriods/2))
-  periods$start <- periods$number*periodLength
-  periods$end <- periods$number*periodLength + periodLength
-  periods$eventsExposed <- 0
-  periods$eventsUnexposed <- 0
-  periods$observed <- 0
+
   idxExposed <- outcomes$exposed == 1
   idxTarget <- outcomes$treatment == 1
-  for (i in 1:nrow(periods)) {
-    idxInPeriod <- outcomes$daysToEvent >= periods$start[i] & outcomes$daysToEvent < periods$end[i]
-    periods$eventsExposedTarget[i] <- sum(idxInPeriod & idxExposed & idxTarget)
-    periods$eventsExposedComparator[i] <- sum(idxInPeriod & idxExposed & !idxTarget)
-    periods$eventsUnexposedTarget[i] <- sum(idxInPeriod & !idxExposed & idxTarget)
-    periods$eventsUnexposedComparator[i] <- sum(idxInPeriod & !idxExposed & !idxTarget)
-    idxInPeriod <- -population$daysFromObsStart <= periods$start[i] & population$daysToObsEnd >= periods$end[i]
-    periods$observedTarget[i] <- sum(idxInPeriod & population$treatment)
-    periods$observedComparator[i] <- sum(idxInPeriod & !population$treatment)
+  createPeriod <- function(number) {
+    start <- number*periodLength
+    end <- number*periodLength + periodLength
+    idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
+    idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
+    tibble::tibble(number = number,
+                   start = start,
+                   end = end,
+                   eventsExposed = 0,
+                   eventsUnexposed = 0,
+                   observed = 0,
+                   eventsExposedTarget = sum(idxInPeriod & idxExposed & idxTarget),
+                   eventsExposedComparator = sum(idxInPeriod & idxExposed & !idxTarget),
+                   eventsUnexposedTarget = sum(idxInPeriod & !idxExposed & idxTarget),
+                   eventsUnexposedComparator = sum(idxInPeriod & !idxExposed & !idxTarget),
+                   observedTarget = sum(idxPopInPeriod & population$treatment),
+                   observedComparator = sum(idxPopInPeriod & !population$treatment))
   }
+  periods <- lapply(-floor(numberOfPeriods/2):ceiling(numberOfPeriods/2), createPeriod)
+  periods <- do.call("rbind", periods)
   periods$rateExposedTarget <- periods$eventsExposedTarget / periods$observedTarget
   periods$rateUnexposedTarget <- periods$eventsUnexposedTarget / periods$observedTarget
   periods$rateExposedComparator <- periods$eventsExposedComparator / periods$observedComparator
   periods$rateUnexposedComparator <- periods$eventsUnexposedComparator / periods$observedComparator
   periods$rateTarget <- (periods$eventsExposedTarget + periods$eventsUnexposedTarget) / periods$observedTarget
   periods$rateComparator <- (periods$eventsExposedComparator + periods$eventsUnexposedComparator) / periods$observedComparator
-  vizData <- rbind(data.frame(start = periods$start,
-                              end = periods$end,
-                              rate = periods$rateExposedTarget,
-                              status = "Exposed events",
-                              type = targetLabel),
-                   data.frame(start = periods$start,
-                              end = periods$end,
-                              rate = periods$rateUnexposedTarget,
-                              status = "Unexposed events",
-                              type = targetLabel),
-                   data.frame(start = periods$start,
-                              end = periods$end,
-                              rate = periods$rateExposedComparator,
-                              status = "Exposed events",
-                              type = comparatorLabel),
-                   data.frame(start = periods$start,
-                              end = periods$end,
-                              rate = periods$rateUnexposedComparator,
-                              status = "Unexposed events",
-                              type = comparatorLabel))
+  vizData <- rbind(tibble::tibble(start = periods$start,
+                                  end = periods$end,
+                                  rate = periods$rateExposedTarget,
+                                  status = "Exposed events",
+                                  type = targetLabel),
+                   tibble::tibble(start = periods$start,
+                                  end = periods$end,
+                                  rate = periods$rateUnexposedTarget,
+                                  status = "Unexposed events",
+                                  type = targetLabel),
+                   tibble::tibble(start = periods$start,
+                                  end = periods$end,
+                                  rate = periods$rateExposedComparator,
+                                  status = "Exposed events",
+                                  type = comparatorLabel),
+                   tibble::tibble(start = periods$start,
+                                  end = periods$end,
+                                  rate = periods$rateUnexposedComparator,
+                                  status = "Unexposed events",
+                                  type = comparatorLabel))
   vizData$type <- factor(vizData$type, levels = c(targetLabel, comparatorLabel))
 
-  plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = start + periodLength / 2,
-                                                y = rate * 1000,
-                                                fill = status)) +
+  plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,
+                                                y = .data$rate * 1000,
+                                                fill = .data$status)) +
     ggplot2::geom_col(width = periodLength, alpha = 0.8) +
     ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, size = 1) +
     ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
@@ -539,7 +548,6 @@ plotTimeToEvent <- function(cohortMethodData,
   if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
   }
-    # fileName <- "S:/temp/plot1.png"
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 7, height = 5, dpi = 400)
   return(plot)

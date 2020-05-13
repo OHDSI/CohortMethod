@@ -14,16 +14,18 @@ group, persons with the highest propensity scores will be removed, in the
 comparator group person with the lowest scores will be removed.}
 }
 \value{
-Returns a date frame with the same three columns as the input.
+Returns a tibble with the same three columns as the input.
 }
 \description{
-\code{trimByPs} uses the provided propensity scores to trim subjects with extreme scores.
+Use the provided propensity scores to trim subjects with extreme scores.
 }
 \details{
-The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
-\tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-\verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+The data frame should have the following three columns:
+\itemize{
+\item rowId (numeric): A unique identifier for each row (e.g. the person ID).
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
+}
 }
 \examples{
 rowId <- 1:2000

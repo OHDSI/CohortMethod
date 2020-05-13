@@ -13,15 +13,17 @@ computePsAuc(data, confidenceIntervals = FALSE)
 large data sets)}
 }
 \value{
-A data frame holding the AUC and its 95 percent confidence interval
+A tibble holding the AUC and its 95 percent confidence interval
 }
 \description{
-\code{computePsAuc} computes the area under the ROC curve of the propensity score
+Compute the area under the ROC curve of the propensity score.
 }
 \details{
-The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-\tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+The data frame should have a least the following two columns:
+\itemize{
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
+}
 }
 \examples{
 treatment <- rep(0:1, each = 100)

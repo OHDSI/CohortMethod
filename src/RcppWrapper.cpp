@@ -30,7 +30,6 @@
 #include <map>
 #include "Match.h"
 #include "Auc.h"
-#include "BySum.h"
 #include "AdjustedKm.h"
 
 using namespace Rcpp;
@@ -83,28 +82,6 @@ double aucWithoutCi(std::vector<double> propensityScores, std::vector<int> treat
 		::Rf_error("c++ exception (unknown reason)");
 	}
 	return 0.0;
-}
-
-// [[Rcpp::export]]
-DataFrame bySumFf(List ffValues, List ffBins) {
-
-  using namespace ohdsi::cohortMethod;
-
-  try {
-    std::map<double,double> map = BySum::bySum(ffValues, ffBins);
-    std::vector<double> bins;
-    std::vector<double> sums;
-    for(std::map<double,double>::iterator iter = map.begin(); iter != map.end(); ++iter){
-      bins.push_back(iter->first);
-      sums.push_back(iter->second);
-    }
-    return DataFrame::create(_["bins"] = bins, _["sums"] = sums);
-  } catch (std::exception &e) {
-    forward_exception_to_r(e);
-  } catch (...) {
-    ::Rf_error("c++ exception (unknown reason)");
-  }
-  return DataFrame::create();
 }
 
 // [[Rcpp::export]]

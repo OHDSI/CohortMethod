@@ -26,17 +26,19 @@ to be determined? Strata are defined as equally-sized strata inside
 this selection. Possible values are "all", "target", and "comparator".}
 }
 \value{
-Returns a date frame with the same columns as the input data plus one extra column: stratumId.
+Returns a tibble with the same columns as the input data plus one extra column: stratumId.
 }
 \description{
-\code{stratifyByPs} uses the provided propensity scores to stratify persons. Additional
+Use the provided propensity scores to stratify persons. Additional
 stratification variables for stratifications can also be used.
 }
 \details{
-The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
-\tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-\verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+The data frame should have the following three columns:
+\itemize{
+\item rowId (numeric): A unique identifier for each row (e.g. the person ID).
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
+}
 }
 \examples{
 rowId <- 1:200

@@ -6,7 +6,7 @@
 \usage{
 createPs(
   cohortMethodData,
-  population,
+  population = NULL,
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
   maxCohortSizeForFitting = 250000,
@@ -18,14 +18,14 @@ createPs(
 )
 }
 \arguments{
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
 \item{population}{A data frame describing the population. This should at least have a
-'rowId' column corresponding to the rowId column in the
-\code{cohortMethodData} covariates object and a 'treatment' column.
+\code{rowId} column corresponding to the \code{rowId} column in the
+\link{CohortMethodData} covariates object and a \code{treatment} column.
 If population is not specified, the full population in the
-\code{cohortMethodData} will be used.}
+\link{CohortMethodData} will be used.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
 
@@ -46,17 +46,14 @@ error.}
 will be assumed to be perfectly separable.}
 
 \item{prior}{The prior used to fit the model. See
-\code{\link[Cyclops]{createPrior}} for details.}
+\code{\link[Cyclops:createPrior]{Cyclops::createPrior()}} for details.}
 
 \item{control}{The control object used to control the cross-validation used to
 determine the hyperparameters of the prior (if applicable). See
-\code{\link[Cyclops]{createControl}} for details.}
+\code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
 }
 \description{
-\code{createPs} creates propensity scores using a regularized logistic regression.
-}
-\details{
-\code{createPs} creates propensity scores using a regularized logistic regression.
+Creates propensity scores using a regularized logistic regression.
 }
 \examples{
 data(cohortMethodDataSimulationProfile)

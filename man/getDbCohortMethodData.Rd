@@ -18,7 +18,7 @@ getDbCohortMethodData(
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
   cdmVersion = "5",
-  excludeDrugsFromCovariates = TRUE,
+  excludeDrugsFromCovariates,
   firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE,
   restrictToCommonPeriod = FALSE,
@@ -28,12 +28,11 @@ getDbCohortMethodData(
 )
 }
 \arguments{
-\item{connectionDetails}{An R object of type\cr\code{connectionDetails} created using the
-function \code{createConnectionDetails} in the
-\code{DatabaseConnector} package.}
+\item{connectionDetails}{An R object of type \code{connectionDetails} created using the
+\code{\link[DatabaseConnector:createConnectionDetails]{DatabaseConnector::createConnectionDetails()}} function.}
 
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
-instance.  Requires read permissions to this database. On SQL
+instance. Requires read permissions to this database. On SQL
 Server, this should specifiy both the database and the schema,
 so for example 'cdm_instance.dbo'.}
 
@@ -42,19 +41,19 @@ all temporary tables to be managed. Requires create/insert
 permissions to this database.}
 
 \item{targetId}{A unique identifier to define the target cohort.  If
-exposureTable = DRUG_ERA, targetId is a CONCEPT_ID and all
-descendant concepts within that CONCEPT_ID will be used to
+exposureTable = DRUG_ERA, targetId is a concept ID and all
+descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable <> DRUG_ERA, targetId is
-used to select the cohort_concept_id in the cohort-like table.}
+used to select the COHORT_DEFINITION_ID in the cohort-like table.}
 
 \item{comparatorId}{A unique identifier to define the comparator cohort.  If
-exposureTable = DRUG_ERA, comparatorId is a CONCEPT_ID and all
-descendant concepts within that CONCEPT_ID will be used to
+exposureTable = DRUG_ERA, comparatorId is a concpet ID and all
+descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
-is used to select the cohort_concept_id in the cohort-like
+is used to select the COHORT_DEFINITION_ID in the cohort-like
 table.}
 
-\item{outcomeIds}{A list of cohort_definition_ids used to define outcomes.}
+\item{outcomeIds}{A list of cohort IDs used to define outcomes.}
 
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort index
 date can appear. Date format is 'yyyymmdd'.}
@@ -65,36 +64,30 @@ end data is also used to truncate risk windows, meaning no
 outcomes beyond the study end date will be considered.}
 
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where the
-exposure data used to define the exposure cohorts is available.
-If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used
-by assumed to be cdmSchema.  Requires read permissions to this
-database.}
+exposure data used to define the exposure cohorts is available.}
 
-\item{exposureTable}{The tablename that contains the exposure cohorts.  If
-exposureTable <> DRUG_ERA, then expectation is exposureTable has
-format of COHORT table: cohort_concept_id, SUBJECT_ID,
+\item{exposureTable}{The tablename that contains the exposure cohorts. If
+exposureTable <> DRUG_ERA, then expectation is \code{exposureTable} has
+format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where the
-data used to define the outcome cohorts is available. If
-exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
-used by assumed to be cdmSchema.  Requires read permissions to
-this database.}
+data used to define the outcome cohorts is available.}
 
 \item{outcomeTable}{The tablename that contains the outcome cohorts.  If
 outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+\item{cdmVersion}{Define the OMOP CDM version used: currently supports "5".}
 
-\item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their descendant
+\item{excludeDrugsFromCovariates}{DEPRECATED: Should the target and comparator drugs (and their descendant
 concepts) be excluded from the covariates? Note that this will
 work if the drugs are actualy drug concept IDs (and not cohort
 IDs).}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-that this is typically done in the \code{createStudyPopulation}
+that this is typically done in the \code{\link[=createStudyPopulation]{createStudyPopulation()}}
 function, but can already be done here for efficiency reasons.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
@@ -114,23 +107,10 @@ this number it will be sampled to this size. \code{maxCohortSize = 0}
 indicates no maximum size.}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
-\code{createCovariateSettings} function in the
-\code{FeatureExtraction} package.}
+\code{\link[FeatureExtraction:createCovariateSettings]{FeatureExtraction::createCovariateSettings()}} function.}
 }
 \value{
-Returns an object of type \code{cohortMethodData}, containing information on the cohorts, their
-outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for
-efficiency reasons. This object is a list with the following components: \describe{
-\item{outcomes}{A data frame listing the outcomes per person, including the time to event, and the
-outcome id. Outcomes are not yet filtered based on risk window, since this is done at a later
-stage.} \item{cohorts}{A data frame listing the persons in each cohort, listing their exposure
-status as well as the time to the end of the observation period and time to the end of the cohort
-(usually the end of the exposure era).} \item{covariates}{An ffdf object listing the baseline
-covariates per person in the two cohorts. This is done using a sparse representation: covariates
-with a value of 0 are omitted to save space.} \item{covariateRef}{An ffdf object describing the
-covariates that have been extracted.} \item{metaData}{A list of objects with information on how the
-cohortMethodData object was constructed.} } The generic \code{print()} and \code{summary()}
-functions have been implemented for this object.
+A \link{CohortMethodData} object.
 }
 \description{
 This function executes a large set of SQL statements against the database in OMOP CDM format to
@@ -139,21 +119,19 @@ extract the data needed to perform the analysis.
 \details{
 Based on the arguments, the treatment and comparator cohorts are retrieved, as well as outcomes
 occurring in exposed subjects. The treatment and comparator cohorts can be identified using the
-drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or
-in a separate schema. Similarly, outcomes are identified using the condition_era table or through
-user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
-Covariates are automatically extracted from the appropriate tables within the CDM. Important: The
-target and comparator drug must not be included in the covariates, including any descendant
-concepts. If the \code{targetId} and \code{comparatorId} arguments represent real concept IDs, you
-can set the \code{excludeDrugsFromCovariates} argument to TRUE and automatically the drugs and
-their descendants will be excluded from the covariates. However, if the \code{targetId} and
-\code{comparatorId} arguments do not represent concept IDs, you will need to manually add the drugs
-and descendants to the \code{excludedCovariateConceptIds} of the \code{covariateSettings} argument.
+DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
+in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
+user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
+Covariates are automatically extracted from the appropriate tables within the CDM.
+
+\strong{Important}: The target and comparator drug must not be included in the covariates, including any descendant
+concepts. You will need to manually add the drugs and descendants to the \code{excludedCovariateConceptIds}
+of the \code{covariateSettings} argument.
 
 The \code{removeduplicateSubjects} argument can have one of the following values:
-\describe{
-  \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
-  \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.}
-  \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
+\itemize{
+\item \code{"keep all"}: Do not remove subjects that appear in both target and comparator cohort
+\item \code{"keep first"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
+\item \code{"remove all"}: Remove subjects that appear in both target and comparator cohort completely from the analysis."
 }
 }

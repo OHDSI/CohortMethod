@@ -32,7 +32,7 @@ the function \code{ggsave} in the ggplot2 package for supported file formats.}
 \item{afterLabel}{Label for identifying data after matching / stratification / trimming.}
 }
 \value{
-A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+A ggplot object. Use the \link[ggplot2:ggsave]{ggplot2::ggsave} function to save to file in a different
 format.
 }
 \description{

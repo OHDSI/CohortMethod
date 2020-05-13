@@ -16,10 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#' CohortMethod
-#'
-#' @docType package
-#' @name CohortMethod
+#' @keywords internal
+"_PACKAGE"
+
 #' @importFrom Rcpp evalCpp
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
 #' @importFrom survival survfit Surv
@@ -28,9 +27,12 @@
 #' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time density lm start
 #' @importFrom utils setTxtProgressBar txtProgressBar read.csv
 #' @importFrom graphics text
+#' @importFrom rlang .data
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @import FeatureExtraction
+#' @import Andromeda
+#' @import dplyr
 #' @useDynLib CohortMethod
 NULL
 

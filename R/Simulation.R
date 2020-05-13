@@ -1,5 +1,3 @@
-# @file CohortMethod.R
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -19,19 +17,19 @@
 #' Create simulation profile
 #'
 #' @description
-#' \code{createCohortMethodDataSimulationProfile} creates a profile based on the provided
+#' Creates a profile based on the provided
 #' cohortMethodData object, which can be used to generate simulated data that has similar
 #' characteristics.
 #'
-#' @param cohortMethodData   An object of type \code{cohortMethodData} as generated using
-#'                           \code{getDbCohortMethodData}.
+#' @param cohortMethodData   An object of type [CohortMethodData] as generated using
+#'                           [getDbCohortMethodData()].
 #'
 #' @details
-#' The output of this function is an object that can be used by the \code{simulateCohortMethodData}
+#' The output of this function is an object that can be used by the [simulateCohortMethodData()]
 #' function to generate a cohortMethodData object.
 #'
 #' @return
-#' An object of type \code{cohortDataSimulationProfile}.
+#' An object of type `CohortDataSimulationProfile`.
 #'
 #' @export
 createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
@@ -70,7 +68,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   totalTime <- sum(cohortMethodData$cohorts$daysFromObsStart)
   preIndexOutcomeRates <- aggregate(rowId ~ outcomeId,
                                     data = cohortMethodData$outcomes[cohortMethodData$outcomes$daysToEvent <
-    0, ], length)
+                                                                       0, ], length)
   preIndexOutcomeRates$rate <- preIndexOutcomeRates$rowId/totalTime
   preIndexOutcomeRates$rowId <- NULL
 
@@ -80,7 +78,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   event <- as.integer(cohortEnd < obsEnd)
   time <- cohortEnd
   time[cohortEnd > obsEnd] <- obsEnd[cohortEnd > obsEnd]
-  data <- data.frame(time = time, event = event)
+  data <- tibble::tibble(time = time, event = event)
   data <- data[data$time > 0, ]
   fitCohortEnd <- survival::survreg(survival::Surv(time,
                                                    event) ~ 1, data = data, dist = "exponential")
@@ -103,17 +101,17 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
                  obsStartRate = 1/exp(coef(fitObsStart)),
                  minObsTime = minObsTime,
                  obsEndRate = 1/exp(coef(fitObsEnd)))
-  class(result) <- "cohortDataSimulationProfile"
+  class(result) <- "CohortDataSimulationProfile"
   return(result)
 }
 
 #' Generate simulated data
 #'
 #' @description
-#' \code{simulateCohortMethodData} creates a cohortMethodData object with simulated data.
+#' Creates a [CohortMethodData] object with simulated data.
 #'
-#' @param profile   An object of type \code{cohortMethodDataSimulationProfile} as generated using the
-#'                  \cr\code{createCohortMethodDataSimulationProfile} function.
+#' @param profile   An object of type `CohortMethodDataSimulationProfile` as generated using the
+#'                  [createCohortMethodDataSimulationProfile()] function.
 #' @param n         The size of the population to be generated.
 #'
 #' @details
@@ -122,12 +120,10 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 #' and the covariates and their 1st order statistics should be comparable.
 #'
 #' @return
-#' An object of type \code{cohortMethodData}.
+#' An object of type [CohortMethodData].
 #'
 #' @export
 simulateCohortMethodData <- function(profile, n = 10000) {
-  # Note: currently, simulation is done completely in-memory. Could easily do batch-wise, storing in
-  # ffdf
   ParallelLogger::logInfo("Generating covariates")
   # Treatment variable is generated elsewhere:
   covariatePrevalence <- profile$covariatePrevalence[names(profile$covariatePrevalence) != "1"]
@@ -144,46 +140,47 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                         covariateIds = covariateIds)
   covariateId <- do.call("c", covariateId)
   covariateValue <- rep(1, length(covariateId))
-  covariates <- data.frame(rowId = rowId,
-                           covariateId = covariateId,
-                           covariateValue = covariateValue)
+  covariates <- tibble::tibble(rowId = rowId,
+                               covariateId = covariateId,
+                               covariateValue = covariateValue)
 
   ParallelLogger::logInfo("Generating treatment variable")
   betas <- profile$propensityModel
   intercept <- betas[1]
   betas <- betas[2:length(betas)]
-  betas <- data.frame(beta = as.numeric(betas), covariateId = as.numeric(names(betas)))
-  treatment <- merge(covariates, betas)
-  treatment$value <- treatment$covariateValue * treatment$beta  #Currently pointless, since covariateValue is always 1
-  treatment <- aggregate(value ~ rowId, data = treatment, sum)
-  treatment$value <- treatment$value + intercept
+  betas <- tibble::tibble(beta = as.numeric(betas),
+                          covariateId = as.numeric(names(betas)))
+  treatmentVar <- covariates %>%
+    inner_join(betas, by = "covariateId") %>%
+    mutate(value = .data$covariateValue * .data$beta) %>%
+    group_by(.data$rowId) %>%
+    summarise(value = sum(.data$value) + intercept)
   link <- function(x) {
     return(1/(1 + exp(-x)))
   }
-  treatment$value <- link(treatment$value)
-  treatment$rand <- runif(nrow(treatment))
-  treatment$covariateValue <- as.integer(treatment$rand < treatment$value)
-  treatment <- treatment[, c("rowId", "covariateValue")]
-  treatment$covariateId <- 1
+  treatmentVar$value <- link(treatmentVar$value)
+  treatmentVar$rand <- runif(nrow(treatmentVar))
+  treatmentVar$covariateValue <- as.integer(treatmentVar$rand < treatmentVar$value)
+  treatmentVar <- treatmentVar[, c("rowId", "covariateValue")]
+  treatmentVar$covariateId <- 1
 
   ParallelLogger::logInfo("Generating cohorts")
-  cohorts <- data.frame(rowId = treatment$rowId,
-                        treatment = treatment$covariateValue,
-                        subjectId = treatment$rowId,
-                        cohortStartDate = "2000-01-01",
-                        daysFromObsStart = profile$minObsTime + round(rexp(n,
-                                                                           profile$obsStartRate)) - 1,
-                        daysToCohortEnd = round(rexp(n, profile$obsEndRate)),
-                        daysToObsEnd = round(rexp(n, profile$cohortEndRate)))
-  attr(cohorts, "metaData") <- profile$cohortsMetaData
+  cohorts <- tibble::tibble(rowId = treatmentVar$rowId,
+                            treatment = treatmentVar$covariateValue,
+                            subjectId = treatmentVar$rowId,
+                            cohortStartDate = "2000-01-01",
+                            daysFromObsStart = profile$minObsTime + round(rexp(n,
+                                                                               profile$obsStartRate)) - 1,
+                            daysToCohortEnd = round(rexp(n, profile$obsEndRate)),
+                            daysToObsEnd = round(rexp(n, profile$cohortEndRate)))
 
   ParallelLogger::logInfo("Generating outcomes after index date")
-  allOutcomes <- data.frame()
-  for (i in 1:length(profile$outcomesMetaData$outcomeIds)) {
+  allOutcomes <- tibble::tibble()
+  for (i in 1:length(profile$metaData$outcomeIds)) {
     betas <- profile$outcomeModels[[i]]
     intercept <- betas[1]
     betas <- betas[2:length(betas)]
-    betas <- data.frame(beta = as.numeric(betas), covariateId = as.numeric(names(betas)))
+    betas <- tibble::tibble(beta = as.numeric(betas), covariateId = as.numeric(names(betas)))
     temp <- merge(covariates, betas)
     temp$value <- temp$covariateValue * temp$beta  #Currently pointless, since covariateValue is always 1
     temp <- aggregate(value ~ rowId, data = temp, sum)
@@ -194,9 +191,9 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     temp$nOutcomes <- rpois(n, temp$value)
     temp$nOutcomes[temp$nOutcomes > temp$daysToObsEnd] <- temp$daysToObsEnd[temp$nOutcomes > temp$daysToObsEnd]
     outcomeRows <- sum(temp$nOutcomes)
-    outcomes <- data.frame(rowId = rep(0, outcomeRows),
-                           outcomeId = rep(profile$outcomesMetaData$outcomeIds[i], outcomeRows),
-                           daysToEvent = rep(0, outcomeRows))
+    outcomes <- tibble::tibble(rowId = rep(0, outcomeRows),
+                               outcomeId = rep(profile$outcomesMetaData$outcomeIds[i], outcomeRows),
+                               daysToEvent = rep(0, outcomeRows))
     cursor <- 1
     for (i in 1:nrow(temp)) {
       nOutcomes <- temp$nOutcomes[i]
@@ -211,15 +208,15 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   }
 
   ParallelLogger::logInfo("Generating outcomes before index date")
-  for (i in 1:length(profile$outcomesMetaData$outcomeIds)) {
-    outcomeId <- profile$outcomesMetaData$outcomeIds[i]
+  for (i in 1:length(profile$metaData$outcomeIds)) {
+    outcomeId <- profile$metaData$outcomeIds[i]
     rate <- profile$preIndexOutcomeRates$rate[profile$preIndexOutcomeRates$outcomeId == outcomeId]
     nOutcomes <- rpois(nrow(cohorts), rate * cohorts$daysFromObsStart)
     nOutcomes[nOutcomes > cohorts$daysFromObsStart] <- cohorts$daysFromObsStart[nOutcomes > cohorts$daysFromObsStart]
     outcomeRows <- sum(nOutcomes)
-    outcomes <- data.frame(rowId = rep(0, outcomeRows),
-                           outcomeId = rep(outcomeId, outcomeRows),
-                           daysToEvent = rep(0, outcomeRows))
+    outcomes <- tibble::tibble(rowId = rep(0, outcomeRows),
+                               outcomeId = rep(outcomeId, outcomeRows),
+                               daysToEvent = rep(0, outcomeRows))
     cursor <- 1
     for (j in 1:length(nOutcomes)) {
       if (nOutcomes[j] != 0) {
@@ -231,20 +228,16 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     }
     allOutcomes <- rbind(allOutcomes, outcomes)
   }
-  attr(allOutcomes, "metaData") <- profile$outcomesMetaData
 
-  # Remove rownames else they will be copied to the ffdf objects:
-  rownames(covariates) <- NULL
-  rownames(profile$covariateRef) <- NULL
-
-  result <- list(outcomes = allOutcomes,
-                 cohorts = cohorts,
-                 covariates = ff::as.ffdf(covariates),
-                 covariateRef = ff::as.ffdf(profile$covariateRef),
-                 analysisRef = ff::as.ffdf(profile$analysisRef),
-                 metaData = profile$metaData)
-
-  class(result) <- "cohortMethodData"
+  result <- Andromeda::andromeda(outcomes = allOutcomes,
+                                 cohorts = cohorts,
+                                 covariates = covariates,
+                                 covariateRef = profile$covariateRef,
+                                 analysisRef = profile$analysisRef)
+  metaData <- profile$metaData
+  metaData$populationSize <- n
+  attr(result, "metaData") <- metaData
+  class(result) <- "CohortMethodData"
   return(result)
 }
 

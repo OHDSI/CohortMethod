@@ -30,19 +30,16 @@ plotTimeToEvent(
 )
 }
 \arguments{
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
 \item{population}{If specified, this population will be used as the starting
-point instead of the cohorts in the \code{cohortMethodData}
-object.}
+point instead of the cohorts in the \code{cohortMethodData} object.}
 
 \item{outcomeId}{The ID of the outcome. If not specified, no outcome-specific
 transformations will be performed.}
 
-\item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-that this is typically done in the
-\code{createStudyPopulation} function,}
+\item{firstExposureOnly}{Should only the first exposure per subject be included?}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
 
@@ -59,16 +56,16 @@ cohort? See details for allowed values.}
 \item{addExposureDaysToStart}{DEPRECATED: Add the length of exposure the start of the risk window?
 Use \code{startAnchor} instead.}
 
-\item{startAnchor}{The anchor point for the start of the risk window. Can be "cohort start"
-or "cohort end".}
+\item{startAnchor}{The anchor point for the start of the risk window. Can be \code{"cohort start"}
+or \code{"cohort end"}.}
 
 \item{riskWindowEnd}{The end of the risk window (in days) relative to the \code{endAnchor}.}
 
 \item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window?
 Use \code{endAnchor} instead.}
 
-\item{endAnchor}{The anchor point for the end of the risk window. Can be "cohort start"
-or "cohort end".}
+\item{endAnchor}{The anchor point for the end of the risk window. Can be \code{"cohort start"}
+or \code{"cohort end"}.}
 
 \item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be censored
 when the new time-at-risk starts to prevent overlap?}
@@ -87,11 +84,10 @@ equaly divided before and after the index date.}
 \item{title}{Optional: the main title for the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example
-'plot.png'. See the function \code{ggsave} in the ggplot2 package for
-supported file formats.}
+'plot.png'. See \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} for supported file formats.}
 }
 \value{
-A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+A ggplot object. Use the \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} function to save to file in a different
 format.
 }
 \description{
@@ -100,7 +96,7 @@ Plot time-to-event
 \details{
 Creates a plot showing the number of events over time in the target and comparator cohorts, both before and after
 index date. The plot also distinguishes between events inside and outside the time-at-risk period. This requires
-the user to (re)specify the time-at-risk using the same arguments as the \code{\link{createStudyPopulation}} function.
+the user to (re)specify the time-at-risk using the same arguments as the \code{\link[=createStudyPopulation]{createStudyPopulation()}} function.
 Note that it is not possible to specify that people with the outcome prior should be removed, since the plot will
 show these prior events.
 }

@@ -7,18 +7,18 @@
 createCohortMethodDataSimulationProfile(cohortMethodData)
 }
 \arguments{
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 }
 \value{
-An object of type \code{cohortDataSimulationProfile}.
+An object of type \code{CohortDataSimulationProfile}.
 }
 \description{
-\code{createCohortMethodDataSimulationProfile} creates a profile based on the provided
+Creates a profile based on the provided
 cohortMethodData object, which can be used to generate simulated data that has similar
 characteristics.
 }
 \details{
-The output of this function is an object that can be used by the \code{simulateCohortMethodData}
+The output of this function is an object that can be used by the \code{\link[=simulateCohortMethodData]{simulateCohortMethodData()}}
 function to generate a cohortMethodData object.
 }

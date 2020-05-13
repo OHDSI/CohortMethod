@@ -7,18 +7,14 @@
 getPsModel(propensityScore, cohortMethodData)
 }
 \arguments{
-\item{propensityScore}{The propensity scores as generated using the \code{createPs} function.}
+\item{propensityScore}{The propensity scores as generated using the \code{\link[=createPs]{createPs()}} function.}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
+}
+\value{
+A tibble.
 }
 \description{
-\code{getPsModel} shows the propensity score model
-}
-\details{
-Shows the coefficients and names of the covariates with non-zero coefficients.
-}
-\examples{
-# todo
-
+Returns the coefficients and names of the covariates with non-zero coefficients.
 }
