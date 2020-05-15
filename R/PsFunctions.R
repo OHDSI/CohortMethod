@@ -100,7 +100,7 @@ createPs <- function(cohortMethodData,
     filteredCovariateData <- Andromeda::andromeda(covariates = covariates,
                                                   covariateRef = cohortMethodData$covariateRef,
                                                   analysisRef = cohortMethodData$analysisRef)
-    metaData <- attr(filteredCovariateData, "metaData")
+    metaData <- attr(cohortMethodData, "metaData")
     metaData$populationSize <- nrow(population)
     attr(filteredCovariateData, "metaData") <- metaData
     class(filteredCovariateData) <- "CovariateData"

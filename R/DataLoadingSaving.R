@@ -433,10 +433,10 @@ insertDbPopulation <- function(population,
     } else {
       sql <- "DELETE FROM @table WHERE cohort_definition_id IN (@cohort_ids);"
     }
-    sql <- SqlRender::renderSql(sql,
+    sql <- SqlRender::render(sql,
                                 table = paste(cohortDatabaseSchema, cohortTable, sep = "."),
-                                cohort_ids = cohortIds)$sql
-    sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+                                cohort_ids = cohortIds)
+    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
     DatabaseConnector::executeSql(connection = connection,
                                   sql = sql,
                                   progressBar = FALSE,

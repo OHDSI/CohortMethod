@@ -18,11 +18,10 @@
 #'
 #' @description
 #' Creates a profile based on the provided
-#' cohortMethodData object, which can be used to generate simulated data that has similar
+#' [CohortMethodData] object, which can be used to generate simulated data that has similar
 #' characteristics.
 #'
-#' @param cohortMethodData   An object of type [CohortMethodData] as generated using
-#'                           [getDbCohortMethodData()].
+#' @template CohortMethodData
 #'
 #' @details
 #' The output of this function is an object that can be used by the [simulateCohortMethodData()]
@@ -33,10 +32,25 @@
 #'
 #' @export
 createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
-  ParallelLogger::logInfo("Computing covariate prevalence")  # (Note: currently assuming binary covariates)
-  sums <- quickSum(cohortMethodData$covariates)
-  covariatePrevalence <- sums$sum/nrow(cohortMethodData$cohorts)
-  attr(covariatePrevalence, "names") <- sums$covariateId
+
+  ParallelLogger::logInfo("Computing covariate prevalence")
+  # (Note: currently limiting to binary covariates)
+  populationSize <- cohortMethodData$cohorts %>%
+    count() %>%
+    pull()
+  covariatePrevalence <- cohortMethodData$covariates %>%
+    group_by(.data$covariateId) %>%
+    summarise(sum = sum(.data$covariateValue, na.rm = TRUE)) %>%
+    mutate(prevalence = .data$sum / populationSize) %>%
+    ungroup() %>%
+    inner_join(cohortMethodData$covariateRef, by = "covariateId") %>%
+    inner_join(cohortMethodData$analysisRef, by = "analysisId") %>%
+    filter(.data$isBinary == "Y") %>%
+    select(.data$covariateId, .data$prevalence) %>%
+    collect()
+
+  # covariatePrevalence <- sums$prevalence
+  # names(covariatePrevalence) <- sums$covariateId
 
   ParallelLogger::logInfo("Computing propensity model")
   propensityScore <- createPs(cohortMethodData,

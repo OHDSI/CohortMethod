@@ -139,10 +139,13 @@ createStudyPopulation <- function(cohortMethodData,
     ParallelLogger::logTrace("Creating study population for outcome ID ", outcomeId)
 
   if (is.null(population)) {
+    metaData <- attr(cohortMethodData, "metaData")
     population <- cohortMethodData$cohorts %>%
       collect()
+  } else {
+    metaData <- attr(population, "metaData")
   }
-  metaData <- attr(cohortMethodData, "metaData")
+
   if (firstExposureOnly) {
     ParallelLogger::logInfo("Keeping only first exposure per subject")
     population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
@@ -305,7 +308,7 @@ createStudyPopulation <- function(cohortMethodData,
 #'
 #' @export
 getAttritionTable <- function(object) {
-  if (is(object, "outcomeModel")) {
+  if (is(object, "OutcomeModel")) {
     return(object$attrition)
   } else {
     return(attr(object, "metaData")$attrition)

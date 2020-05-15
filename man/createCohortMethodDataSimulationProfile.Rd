@@ -15,7 +15,7 @@ An object of type \code{CohortDataSimulationProfile}.
 }
 \description{
 Creates a profile based on the provided
-cohortMethodData object, which can be used to generate simulated data that has similar
+\link{CohortMethodData} object, which can be used to generate simulated data that has similar
 characteristics.
 }
 \details{

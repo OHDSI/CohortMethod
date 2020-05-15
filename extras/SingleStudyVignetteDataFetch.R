@@ -212,7 +212,10 @@ outcomeModel <- fitOutcomeModel(population = studyPop,
                                 modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE)
-# getAttritionTable(outcomeModel) outcomeModel summary(outcomeModel) coef(outcomeModel)
+getAttritionTable(outcomeModel)
+outcomeModel
+summary(outcomeModel)
+coef(outcomeModel)
 # confint(outcomeModel)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
 
@@ -221,9 +224,6 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 stratified = TRUE,
                                 useCovariates = FALSE)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
-weights <- ps$treatment / ps$propensityScore + (1-ps$treatment) / (1-ps$propensityScore)
-max(weights)
-min(weights)
 
 outcomeModel <- fitOutcomeModel(population = ps,
                                 modelType = "cox",

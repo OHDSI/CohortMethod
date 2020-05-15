@@ -131,44 +131,56 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   ParallelLogger::logTrace("Computing covariate balance")
   start <- Sys.time()
 
-  cohortMethodData$tempCohorts <- cohortMethodData$cohorts %>%
-    select(.data$rowId, .data$treatment)
-
-  cohortMethodData$tempCohortsAfterMatching <- population %>%
-    select(.data$rowId, .data$treatment, .data$stratumId)
-
   if (!is.null(subgroupCovariateId)) {
-    idx <- covariates$covariateId == subgroupCovariateId
-    if (!ffbase::any.ff(idx)) {
+    subGroupCovariate <- cohortMethodData$covariates %>%
+      filter(.data$covariateId == subgroupCovariateId) %>%
+      collect()
+
+    if (nrow(subGroupCovariate) == 0) {
       stop("Cannot find covariate with ID ", subgroupCovariateId)
     }
-    subGroupRowIds <- covariates$rowId[idx]
-    row.names(cohorts) <- NULL
-    idx <- ffbase::`%in%`(cohorts$rowId, subGroupRowIds)
-    if (!ffbase::any.ff(idx)) {
+
+    tempCohorts <- cohortMethodData$cohorts %>%
+      collect() %>%
+      filter(.data$rowId %in% subGroupCovariate$rowId)
+
+    if (nrow(tempCohorts) == 0) {
       stop("Cannot find covariate with ID ", subgroupCovariateId, " in population before matching/trimming")
     }
-    cohorts <- cohorts[idx, ]
-    sumTreatment <- sum(cohorts$treatment)
-    if (sumTreatment == 0 || sumTreatment == nrow(cohorts)) {
+
+    sumTreatment <- sum(tempCohorts$treatment)
+    if (sumTreatment == 0 || sumTreatment == nrow(tempCohorts)) {
       stop("Subgroup population before matching/trimming doesn't have both target and comparator")
     }
-    row.names(cohortsAfterMatching) <- NULL
-    idx <- ffbase::`%in%`(cohortsAfterMatching$rowId, subGroupRowIds)
-    if (!ffbase::any.ff(idx)) {
+
+    tempCohortsAfterMatching <- population %>%
+      filter(.data$rowId %in% subGroupCovariate$rowId)
+
+    if (nrow(tempCohortsAfterMatching) == 0) {
       stop("Cannot find covariate with ID ", subgroupCovariateId, " in population after matching/trimming")
     }
-    cohortsAfterMatching <- cohortsAfterMatching[idx, ]
-    sumTreatment <- sum(cohortsAfterMatching$treatment)
-    if (sumTreatment == 0 || sumTreatment == nrow(cohortsAfterMatching)) {
+    sumTreatment <- sum(tempCohortsAfterMatching$treatment)
+    if (sumTreatment == 0 || sumTreatment == nrow(tempCohortsAfterMatching)) {
       stop("Subgroup population before matching/trimming doesn't have both target and comparator")
     }
+
+    cohortMethodData$tempCohorts <- tempCohorts %>%
+      select(.data$rowId, .data$treatment)
+
+    cohortMethodData$tempCohortsAfterMatching <- tempCohortsAfterMatching %>%
+      select(.data$rowId, .data$treatment, .data$stratumId)
+  } else {
+    cohortMethodData$tempCohorts <- cohortMethodData$cohorts %>%
+      select(.data$rowId, .data$treatment)
+
+    cohortMethodData$tempCohortsAfterMatching <- population %>%
+      select(.data$rowId, .data$treatment, .data$stratumId)
   }
+  on.exit(cohortMethodData$tempCohorts <- NULL)
+  on.exit(cohortMethodData$tempCohortsAfterMatching <- NULL, add = TRUE)
+
   beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData)
   afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData)
-
-  cohortMethodData$tempCohorts <- NULL
-  cohortMethodData$tempCohortsAfterMatching <- NULL
 
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTarget"] <- "beforeMatchingMeanTarget"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
