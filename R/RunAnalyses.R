@@ -737,6 +737,18 @@ doFitOutcomeModelPlus <- function(params) {
   #                                 prior = args$prior,
   #                                 control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
+  if (!is.null(outcomeModel)) {
+    rm(outcomeModel)
+  }
+  if (!is.null(cohortMethodData)) {
+    rm(cohortMethodData)
+  }
+  if (!is.null(ps)) {
+    rm(ps)
+  }
+  if (!is.null(args)) {
+    rm(args)
+  }
   return(NULL)
 }
 
