@@ -28,9 +28,9 @@
 #' function will extract the data and fit the propensity model only once, and re-use this in all the
 #' analysis.
 #'
-#' @param connectionDetails              An R object of type \code{connectionDetails} created using the
-#'                                       function \code{createConnectionDetails} in the
-#'                                       \code{DatabaseConnector} package.
+#' @param connectionDetails              An R object of type `connectionDetails} created using the
+#'                                       function `createConnectionDetails} in the
+#'                                       `DatabaseConnector} package.
 #' @param cdmDatabaseSchema              The name of the database schema that contains the OMOP CDM
 #'                                       instance. Requires read permissions to this database. On SQL
 #'                                       Server, this should specifiy both the database and the schema,
@@ -59,10 +59,10 @@
 #'                                       outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                       SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param outputFolder                   Name of the folder where all the outputs will written to.
-#' @param cmAnalysisList                 A list of objects of type \code{cmAnalysis} as created using
-#'                                       the \code{\link{createCmAnalysis}} function.
-#' @param targetComparatorOutcomesList   A list of objects of type \code{targetComparatorOutcomes} as
-#'                                       created using the \code{\link{createTargetComparatorOutcomes}}
+#' @param cmAnalysisList                 A list of objects of type `cmAnalysis} as created using
+#'                                       the `\link{createCmAnalysis}} function.
+#' @param targetComparatorOutcomesList   A list of objects of type `targetComparatorOutcomes} as
+#'                                       created using the `\link{createTargetComparatorOutcomes}}
 #'                                       function.
 #' @param refitPsForEveryOutcome         Should the propensity model be fitted for every outcome (i.e.
 #'                                       after people who already had the outcome are removed)? If
@@ -72,8 +72,8 @@
 #'                                       definition? If false, a single propensity model will be fitted,
 #'                                       and the study population criteria will be applied afterwards.
 #' @param prefilterCovariates            If TRUE, and some outcome models require filtering covariates
-#'                                       by concept ID (e.g. because \code{includeCovariateIds} or
-#'                                       \code{interactionCovariateIds} is specified), this filtering
+#'                                       by concept ID (e.g. because `includeCovariateIds} or
+#'                                       `interactionCovariateIds} is specified), this filtering
 #'                                       will be done once for all outcome models that need it. This
 #'                                       can greatly speed up the analyses if multiple outcome models
 #'                                       require the same filtering.
@@ -1157,7 +1157,7 @@ createReferenceTable <- function(cmAnalysisList,
 
 #' Create a summary report of the analyses
 #'
-#' @param referenceTable   A data.frame as created by the \code{\link{runCmAnalyses}} function.
+#' @param referenceTable   A data.frame as created by the `\link{runCmAnalyses}} function.
 #' @param outputFolder     Name of the folder where all the outputs have been written to.
 #'
 #' @return

@@ -7,8 +7,6 @@
 summarizeAnalyses(referenceTable, outputFolder)
 }
 \arguments{
-\item{referenceTable}{A data.frame as created by the \code{\link{runCmAnalyses}} function.}
-
 \item{outputFolder}{Name of the folder where all the outputs have been written to.}
 }
 \value{

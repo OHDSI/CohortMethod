@@ -324,15 +324,15 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   topAfter$facet <- paste("Top", n, afterLabel)
   filtered <- rbind(topBefore, topAfter)
 
-  data <- data.frame(covariateId = rep(filtered$covariateId, 2),
-                     covariate = rep(filtered$covariateName, 2),
-                     difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
-                     group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
-                     facet = rep(filtered$facet, 2),
-                     rowId = rep(nrow(filtered):1, 2))
+  data <- tibble::tibble(covariateId = rep(filtered$covariateId, 2),
+                         covariate = rep(filtered$covariateName, 2),
+                         difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
+                         group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
+                         facet = rep(filtered$facet, 2),
+                         rowId = rep(nrow(filtered):1, 2))
   filtered$covariateName <- .truncRight(as.character(filtered$covariateName), maxNameWidth)
-  data$facet <- factor(data$facet, levels = rev(levels(data$facet)))
-  data$group <- factor(data$group, levels = rev(levels(data$group)))
+  data$facet <- factor(data$facet, levels = c(paste("Top", n, beforeLabel), paste("Top", n, afterLabel)))
+  data$group <- factor(data$group, levels = c(beforeLabel, afterLabel))
   plot <- ggplot2::ggplot(data, ggplot2::aes(x = difference,
                                              y = rowId,
                                              color = group,

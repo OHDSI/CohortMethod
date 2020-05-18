@@ -54,7 +54,7 @@ determine the hyperparameters of the prior (if applicable). See
 \code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
 }
 \value{
-An object of class \code{OutcomeModel}. Generic function \code{summary}, \code{coef}, and
+An object of class \code{OutcomeModel}. Generic function \code{print}, \code{coef}, and
 \code{confint} are available.
 }
 \description{

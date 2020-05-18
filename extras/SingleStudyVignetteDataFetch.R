@@ -267,7 +267,7 @@ saveRDS(balanceFemale, file = "s:/temp/cohortMethodVignette/balanceFemale.rds")
 dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
 
 
-balanceOverall <- computeCovariateBalance(population, cohortMethodData)
+balanceOverall <- computeCovariateBalance(matchedPop, cohortMethodData)
 dummy <- plotCovariateBalanceScatterPlot(balanceOverall, fileName = "s:/temp/balance.png")
 balanceFemale <- computeCovariateBalance(population, cohortMethodData, subgroupCovariateId = 8532001)
 dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")

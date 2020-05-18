@@ -32,10 +32,6 @@ runCmAnalyses(
 )
 }
 \arguments{
-\item{connectionDetails}{An R object of type \code{connectionDetails} created using the
-function \code{createConnectionDetails} in the
-\code{DatabaseConnector} package.}
-
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
 Server, this should specifiy both the database and the schema,
@@ -72,13 +68,6 @@ SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outputFolder}{Name of the folder where all the outputs will written to.}
 
-\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
-the \code{\link{createCmAnalysis}} function.}
-
-\item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
-created using the \code{\link{createTargetComparatorOutcomes}}
-function.}
-
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
 after people who already had the outcome are removed)? If
 false, a single propensity model will be fitted, and people
@@ -87,13 +76,6 @@ who had the outcome previously will be removed afterwards.}
 \item{refitPsForEveryStudyPopulation}{Should the propensity model be fitted for every study population
 definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.}
-
-\item{prefilterCovariates}{If TRUE, and some outcome models require filtering covariates
-by concept ID (e.g. because \code{includeCovariateIds} or
-\code{interactionCovariateIds} is specified), this filtering
-will be done once for all outcome models that need it. This
-can greatly speed up the analyses if multiple outcome models
-require the same filtering.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}

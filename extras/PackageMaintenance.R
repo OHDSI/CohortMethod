@@ -1,5 +1,3 @@
-# @file PackageMaintenance
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -30,6 +28,7 @@ rmarkdown::render("vignettes/SingleStudies.Rmd",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",
                                           toc = TRUE,
                                           number_sections = TRUE))
+unlink("inst/doc/SingleStudies.tex")
 
 rmarkdown::render("vignettes/MultipleAnalyses.Rmd",
                   output_file = "../inst/doc/MultipleAnalyses.pdf",
