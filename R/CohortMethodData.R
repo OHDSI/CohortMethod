@@ -65,19 +65,16 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' Loads an object of type [CohortMethodData] from a file in the file system.
 #'
 #' @param file       The name of the file containing the data.
-#' @param readOnly   DEPRECATED: If true, the data is opened read only.
 #'
 #' @return
 #' An object of class [CohortMethodData].
 #'
 #' @export
-loadCohortMethodData <- function(file, readOnly) {
+loadCohortMethodData <- function(file) {
   if (!file.exists(file))
     stop("Cannot find file ", file)
   if (file.info(file)$isdir)
     stop(file , " is a folder, but should be a file")
-  if (!missing(readOnly))
-    warning("readOnly argument has been deprecated")
   cohortMethodData <- Andromeda::loadAndromeda(file)
   class(cohortMethodData) <- "CohortMethodData"
   return(cohortMethodData)

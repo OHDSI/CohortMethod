@@ -107,6 +107,7 @@ createPs <- function(cohortMethodData,
 
     covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
     close(filteredCovariateData)
+    on.exit(close(covariateData))
     covariates <- covariateData$covariates
     attr(population, "metaData")$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
     attr(population, "metaData")$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
@@ -133,9 +134,7 @@ createPs <- function(cohortMethodData,
           filter(.data$rowId %in% local(population$rowId))
       }
     }
-    if (!Andromeda::isSorted(population, "rowId")) {
-      population <- population[order(population$rowId), ]
-    }
+    population <- population[order(population$rowId), ]
     outcomes <- population
     colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
     covariateData$outcomes <- outcomes
@@ -146,7 +145,6 @@ createPs <- function(cohortMethodData,
       ParallelLogger::logInfo("Cyclops using precision of ", floatingPoint)
     }
     cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
-    close(covariateData)
     error <- NULL
     ref <- NULL
     if (errorOnHighCorrelation) {
@@ -205,13 +203,9 @@ createPs <- function(cohortMethodData,
       delta <- log(y.odds) - log(y.odds.new)
       cfs[1] <- cfs[1] - delta  # Equation (7) in King and Zeng (2001)
       cyclopsFit$estimation$estimate[1] <- cfs[1]
-      fullOutcomes <- ff::as.ffdf(fullPopulation)
+      covariateData$fullOutcomes <- fullPopulation
       population <- fullPopulation
-      population$propensityScore <- predict(cyclopsFit, newOutcomes = fullOutcomes, newCovariates = fullCovariates)
-      ff::close.ffdf(fullOutcomes)
-      ff::close.ffdf(fullCovariates)
-      rm(fullOutcomes)
-      rm(fullCovariates)
+      population$propensityScore <- predict(cyclopsFit, newOutcomes = covariateData$fullOutcomes, newCovariates = fullCovariates)
     } else {
       population$propensityScore <- predict(cyclopsFit)
     }
@@ -220,8 +214,6 @@ createPs <- function(cohortMethodData,
   } else {
     if (sampled) {
       population <- fullPopulation
-      ff::close.ffdf(fullCovariates)
-      rm(fullCovariates)
     }
     population$propensityScore <- population$treatment
     attr(population, "metaData")$psError <- error
@@ -232,7 +224,7 @@ createPs <- function(cohortMethodData,
   population <- computePreferenceScore(population)
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
-  ParallelLogger::logInfo(paste("Creating propensity scores took", signif(delta, 3), attr(delta, "units")))
+  ParallelLogger::logInfo("Creating propensity scores took ", signif(delta, 3), " ", attr(delta, "units"))
   return(population)
 }
 
@@ -258,7 +250,7 @@ getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
     coefficients <- tibble::tibble(coefficient = coefficients,
-                               covariateId = as.numeric(attr(coefficients, "names")))
+                                   covariateId = as.numeric(attr(coefficients, "names")))
     covariateRef <- cohortMethodData$covariateRef %>%
       collect()
     coefficients <- coefficients %>%
@@ -617,17 +609,17 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
 }
 
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
+  covariateIds = c(2018006, 8527004)
+  covariates <- cohortMethodData$covariates %>%
+    filter(.data$covariateId %in% covariateIds) %>%
+    collect()
+
   for (covariateId in covariateIds) {
-    t <- cohortMethodData$covariates$covariateId == covariateId
-    if (ffbase::any.ff(t)) {
-      values <- ff::as.ram(cohortMethodData$covariates[ffbase::ffwhich(t, t == TRUE), c(1, 3)])
-      colnames(values)[colnames(values) == "covariateValue"] <- paste("covariateId", covariateId, sep = "_")
-      data <- merge(data, values, all.x = TRUE)
-      col <- which(colnames(data) == paste("covariateId", covariateId, sep = "_"))
-      data[is.na(data[, col]), col] <- 0
-    } else {
-      warning(paste("Not matching on covariate", covariateId, "because value is always 0"))
-    }
+    values <- covariates[covariates$covariateId == covariateId, c("rowId", "covariateValue")]
+    colnames(values)[colnames(values) == "covariateValue"] <- paste("covariateId", covariateId, sep = "_")
+    data <- merge(data, values, all.x = TRUE)
+    col <- which(colnames(data) == paste("covariateId", covariateId, sep = "_"))
+    data[is.na(data[, col]), col] <- 0
   }
   return(data)
 }

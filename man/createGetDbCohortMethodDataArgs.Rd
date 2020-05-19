@@ -7,7 +7,7 @@
 createGetDbCohortMethodDataArgs(
   studyStartDate = "",
   studyEndDate = "",
-  excludeDrugsFromCovariates = TRUE,
+  excludeDrugsFromCovariates,
   firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE,
   restrictToCommonPeriod = FALSE,
@@ -25,14 +25,14 @@ indexdate can appear. Date format is 'yyyymmdd'. Important: the
 studyend data is also used to truncate risk windows, meaning
 nooutcomes beyond the study end date will be considered.}
 
-\item{excludeDrugsFromCovariates}{Should the target and comparator drugs (and their
+\item{excludeDrugsFromCovariates}{DEPRECATED: Should the target and comparator drugs (and their
 descendantconcepts) be excluded from the covariates? Note that
 this willwork if the drugs are actualy drug concept IDs (and not
 cohortIDs).}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Notethat
-this is typically done in the createStudyPopulationfunction, but
-can already be done here for efficiency reasons.}
+this is typically done in the createStudyPopulation()function,
+but can already be done here for efficiency reasons.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the target and
 comparatorcohort? See details for allowed values.N ote that this
@@ -52,8 +52,7 @@ number it will be sampled to this size. maxCohortSize =
 0indicates no maximum size.}
 
 \item{covariateSettings}{An object of type covariateSettings as created using
-thecreateCovariateSettings function in theFeatureExtraction
-package.}
+theFeatureExtraction::createCovariateSettings() function.}
 }
 \description{
 Create a parameter object for the function getDbCohortMethodData

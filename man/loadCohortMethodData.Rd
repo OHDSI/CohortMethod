@@ -4,12 +4,10 @@
 \alias{loadCohortMethodData}
 \title{Load the cohort method data from a file}
 \usage{
-loadCohortMethodData(file, readOnly)
+loadCohortMethodData(file)
 }
 \arguments{
 \item{file}{The name of the file containing the data.}
-
-\item{readOnly}{DEPRECATED: If true, the data is opened read only.}
 }
 \value{
 An object of class \link{CohortMethodData}.

@@ -4,10 +4,10 @@
 \alias{createTrimByPsToEquipoiseArgs}
 \title{Create a parameter object for the function trimByPsToEquipoise}
 \usage{
-createTrimByPsToEquipoiseArgs(bounds = c(0.25, 0.75))
+createTrimByPsToEquipoiseArgs(bounds = c(0.3, 0.7))
 }
 \arguments{
-\item{bounds}{The upper and lower bound on the preference score for keeping persons}
+\item{bounds}{The upper and lower bound on the preference score for keeping persons.}
 }
 \description{
 Create a parameter object for the function trimByPsToEquipoise

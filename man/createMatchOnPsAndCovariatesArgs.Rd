@@ -8,25 +8,28 @@ createMatchOnPsAndCovariatesArgs(
   caliper = 0.2,
   caliperScale = "standardized logit",
   maxRatio = 1,
+  allowReverseMatch = FALSE,
   covariateIds
 )
 }
 \arguments{
-\item{caliper}{The caliper for matching. A caliper is the distance which is acceptablefor any
-match. Observations which are outside of the caliper are dropped.A caliper of
-0 means no caliper is used.}
+\item{caliper}{The caliper for matching. A caliper is the distance which is
+acceptablefor any match. Observations which are outside of the caliper
+are dropped.A caliper of 0 means no caliper is used.}
 
 \item{caliperScale}{The scale on which the caliper is defined. Three scales are
-supported:caliperScale = 'propensity score', caliperScale ='standardized', or
-caliperScale = 'standardized logit'.On the standardized scale, the caliper is
-interpreted in standarddeviations of the propensity score distribution.
-'standardized logit'is similar, except that the propensity score is
-transformed to the logitscale because the PS is more likely to be normally
-distributed on that scale(Austin, 2011).}
+supported:caliperScale = 'propensity score', caliperScale =
+'standardized', or caliperScale = 'standardized logit'.On the
+standardized scale, the caliper is interpreted in standarddeviations of
+the propensity score distribution. 'standardized logit'is similar, except
+that the propensity score is transformed to the logitscale because the PS
+is more likely to be normally distributed on that scale(Austin, 2011).}
 
-\item{maxRatio}{The maximum number of persons int the comparator arm to be matched to
+\item{maxRatio}{The maximum number of persons in the comparator arm to be matched to
 eachperson in the treatment arm. A maxRatio of 0 means no maximum:
 allcomparators will be assigned to a target person.}
+
+\item{allowReverseMatch}{Allows n-to-1 matching if target arm is larger}
 
 \item{covariateIds}{One or more covariate IDs in the cohortMethodData object on whichsubjects
 should be also matched.}

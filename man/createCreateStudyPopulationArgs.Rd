@@ -22,9 +22,7 @@ createCreateStudyPopulationArgs(
 )
 }
 \arguments{
-\item{firstExposureOnly}{Should only the first exposure per subject be included?
-Notethat this is typically done in thecreateStudyPopulation
-function,}
+\item{firstExposureOnly}{Should only the first exposure per subject be included?}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are
 observed?}

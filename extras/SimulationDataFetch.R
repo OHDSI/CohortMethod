@@ -1,5 +1,3 @@
-# @file SimulationDataFetch.R
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -18,10 +16,8 @@
 
 # This code should be used to create the simulation profile used in some of the unit tests
 library(CohortMethod)
-options(fftempdir = "s:/fftemp")
 
-cdmDatabaseSchema <- "CDM_Truven_MDCD_V610.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
                                                                 server = Sys.getenv("PDW_SERVER"),
@@ -33,7 +29,9 @@ covariateSettings <- createCovariateSettings(useDemographicsAgeGroup = TRUE,
                                              useDemographicsGender = TRUE,
                                              useDemographicsIndexYear = TRUE,
                                              useDemographicsIndexMonth = TRUE,
-                                             useConditionEraLongTerm = TRUE)
+                                             useConditionEraLongTerm = TRUE,
+                                             excludedCovariateConceptIds = c(755695, 739138),
+                                             addDescendantsToExclude = TRUE)
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
@@ -46,7 +44,6 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           outcomeTable = "condition_era",
                                           studyStartDate = "",
                                           studyEndDate = "",
-                                          excludeDrugsFromCovariates = TRUE,
                                           firstExposureOnly = TRUE,
                                           washoutPeriod = 183,
                                           removeDuplicateSubjects = TRUE,
@@ -65,6 +62,7 @@ save(cohortMethodDataSimulationProfile,
      file = "data/cohortMethodDataSimulationProfile.rda",
      compress = "xz")
 
-# load('cohortMethodDataSimulationProfile.rda')
+# load('data/cohortMethodDataSimulationProfile.rda')
 
 simData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
+summary(simData)

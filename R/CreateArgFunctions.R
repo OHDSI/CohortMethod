@@ -11,13 +11,13 @@
 #'                                     indexdate can appear. Date format is 'yyyymmdd'. Important: the
 #'                                     studyend data is also used to truncate risk windows, meaning
 #'                                     nooutcomes beyond the study end date will be considered.
-#' @param excludeDrugsFromCovariates   Should the target and comparator drugs (and their
+#' @param excludeDrugsFromCovariates   DEPRECATED: Should the target and comparator drugs (and their
 #'                                     descendantconcepts) be excluded from the covariates? Note that
 #'                                     this willwork if the drugs are actualy drug concept IDs (and not
 #'                                     cohortIDs).
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Notethat
-#'                                     this is typically done in the createStudyPopulationfunction, but
-#'                                     can already be done here for efficiency reasons.
+#'                                     this is typically done in the createStudyPopulation()function,
+#'                                     but can already be done here for efficiency reasons.
 #' @param removeDuplicateSubjects      Remove subjects that are in both the target and
 #'                                     comparatorcohort? See details for allowed values.N ote that this
 #'                                     is typically done in thecreateStudyPopulation function, but can
@@ -32,13 +32,12 @@
 #'                                     number it will be sampled to this size. maxCohortSize =
 #'                                     0indicates no maximum size.
 #' @param covariateSettings            An object of type covariateSettings as created using
-#'                                     thecreateCovariateSettings function in theFeatureExtraction
-#'                                     package.
+#'                                     theFeatureExtraction::createCovariateSettings() function.
 #'
 #' @export
 createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             studyEndDate = "",
-                                            excludeDrugsFromCovariates = TRUE,
+                                            excludeDrugsFromCovariates,
                                             firstExposureOnly = FALSE,
                                             removeDuplicateSubjects = FALSE,
                                             restrictToCommonPeriod = FALSE,
@@ -66,8 +65,6 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #' Create an object defining the parameter values.
 #'
 #' @param firstExposureOnly                Should only the first exposure per subject be included?
-#'                                         Notethat this is typically done in thecreateStudyPopulation
-#'                                         function,
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are
 #'                                         observed?
 #' @param washoutPeriod                    The mininum required continuous observation time prior
@@ -142,10 +139,11 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #'                                  anderror.
 #' @param stopOnError               If an error occurrs, should the function stop? Else, the two
 #'                                  cohortswill be assumed to be perfectly separable.
-#' @param prior                     The prior used to fit the model. SeecreatePrior for details.
+#' @param prior                     The prior used to fit the model. SeeCyclops::createPrior() for
+#'                                  details.
 #' @param control                   The control object used to control the cross-validation used
 #'                                  todetermine the hyperparameters of the prior (if applicable).
-#'                                  SeecreateControl for details.
+#'                                  SeeCyclops::createControl() for details.
 #'
 #' @export
 createCreatePsArgs <- function(excludeCovariateIds = c(),
@@ -208,10 +206,10 @@ createTrimByPsArgs <- function(trimFraction = 0.05) {
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param bounds   The upper and lower bound on the preference score for keeping persons
+#' @param bounds   The upper and lower bound on the preference score for keeping persons.
 #'
 #' @export
-createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
+createTrimByPsToEquipoiseArgs <- function(bounds = c(0.3, 0.7)) {
   # First: get default values:
   analysis <- list()
   for (name in names(formals(createTrimByPsToEquipoiseArgs))) {
@@ -236,16 +234,17 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
 #'                                isacceptable for any match. Observations which are outside of
 #'                                thecaliper are dropped. A caliper of 0 means no caliper is used.
 #' @param caliperScale            The scale on which the caliper is defined. Three scales are
-#'                                supported:caliperScale = 'propensity score', caliperScale
-#'                                ='standardized', or caliperScale = 'standardized logit'.On the
+#'                                supported:caliperScale = 'propensity score', caliperScale =
+#'                                'standardized', or caliperScale = 'standardized logit'.On the
 #'                                standardized scale, the caliper is interpreted in standarddeviations
 #'                                of the propensity score distribution. 'standardized logit'is similar,
 #'                                except that the propensity score is transformed to the logitscale
 #'                                because the PS is more likely to be normally distributed on that
 #'                                scale(Austin, 2011).
-#' @param maxRatio                The maximum number of persons int the comparator arm to be matched
+#' @param maxRatio                The maximum number of persons in the comparator arm to be matched
 #'                                toeach person in the treatment arm. A maxRatio of 0 means no
 #'                                maximum:all comparators will be assigned to a target person.
+#' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
 #' @param stratificationColumns   Names or numbers of one or more columns in the data data.frameon
 #'                                which subjects should be stratified prior to matching. No personswill
 #'                                be matched with persons outside of the strata identified by thevalues
@@ -255,6 +254,7 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.25, 0.75)) {
 createMatchOnPsArgs <- function(caliper = 0.2,
                                 caliperScale = "standardized logit",
                                 maxRatio = 1,
+                                allowReverseMatch = FALSE,
                                 stratificationColumns = c()) {
   # First: get default values:
   analysis <- list()
@@ -276,26 +276,28 @@ createMatchOnPsArgs <- function(caliper = 0.2,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param caliper        The caliper for matching. A caliper is the distance which is acceptablefor any
-#'                       match. Observations which are outside of the caliper are dropped.A caliper of
-#'                       0 means no caliper is used.
-#' @param caliperScale   The scale on which the caliper is defined. Three scales are
-#'                       supported:caliperScale = 'propensity score', caliperScale ='standardized', or
-#'                       caliperScale = 'standardized logit'.On the standardized scale, the caliper is
-#'                       interpreted in standarddeviations of the propensity score distribution.
-#'                       'standardized logit'is similar, except that the propensity score is
-#'                       transformed to the logitscale because the PS is more likely to be normally
-#'                       distributed on that scale(Austin, 2011).
-#' @param maxRatio       The maximum number of persons int the comparator arm to be matched to
-#'                       eachperson in the treatment arm. A maxRatio of 0 means no maximum:
-#'                       allcomparators will be assigned to a target person.
-#' @param covariateIds   One or more covariate IDs in the cohortMethodData object on whichsubjects
-#'                       should be also matched.
+#' @param caliper             The caliper for matching. A caliper is the distance which is
+#'                            acceptablefor any match. Observations which are outside of the caliper
+#'                            are dropped.A caliper of 0 means no caliper is used.
+#' @param caliperScale        The scale on which the caliper is defined. Three scales are
+#'                            supported:caliperScale = 'propensity score', caliperScale =
+#'                            'standardized', or caliperScale = 'standardized logit'.On the
+#'                            standardized scale, the caliper is interpreted in standarddeviations of
+#'                            the propensity score distribution. 'standardized logit'is similar, except
+#'                            that the propensity score is transformed to the logitscale because the PS
+#'                            is more likely to be normally distributed on that scale(Austin, 2011).
+#' @param maxRatio            The maximum number of persons in the comparator arm to be matched to
+#'                            eachperson in the treatment arm. A maxRatio of 0 means no maximum:
+#'                            allcomparators will be assigned to a target person.
+#' @param allowReverseMatch   Allows n-to-1 matching if target arm is larger
+#' @param covariateIds        One or more covariate IDs in the cohortMethodData object on whichsubjects
+#'                            should be also matched.
 #'
 #' @export
 createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
                                              caliperScale = "standardized logit",
                                              maxRatio = 1,
+                                             allowReverseMatch = FALSE,
                                              covariateIds) {
   # First: get default values:
   analysis <- list()
@@ -388,17 +390,18 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @param stratified                Should the regression be conditioned on the strata defined in
 #'                                  thepopulation object (e.g. by matching or stratifying on
 #'                                  propensityscores)?
-#' @param useCovariates             Whether to use the covariate matrix in the cohortMethodDataobject
-#'                                  in the outcome model.
-#' @param inversePtWeighting        Use inverse probability of treatment weigting?
+#' @param useCovariates             Whether to use the covariates in the cohortMethodDataobject in the
+#'                                  outcome model.
+#' @param inversePtWeighting        Use inverse probability of treatment weigting (IPTW)? See details.
 #' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate
 #'                                  interactionswith the main treatment effect.
 #' @param excludeCovariateIds       Exclude these covariates from the outcome model.
 #' @param includeCovariateIds       Include only these covariates in the outcome model.
-#' @param prior                     The prior used to fit the model. See createPriorfor details.
+#' @param prior                     The prior used to fit the model. See Cyclops::createPrior()for
+#'                                  details.
 #' @param control                   The control object used to control the cross-validation used
 #'                                  todetermine the hyperparameters of the prior (if applicable).
-#'                                  SeecreateControl for details.
+#'                                  SeeCyclops::createControl() for details.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "logistic",

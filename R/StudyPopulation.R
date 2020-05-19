@@ -202,7 +202,7 @@ createStudyPopulation <- function(cohortMethodData,
     } else {
       ParallelLogger::logInfo("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes %>%
-        filter(.data$outcomeId == outcomeId) %>%
+        filter(.data$outcomeId == !!outcomeId) %>%
         collect()
       if (isEnd(startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
@@ -262,7 +262,7 @@ createStudyPopulation <- function(cohortMethodData,
   } else {
     # Select outcomes during time at risk
     outcomes <- cohortMethodData$outcomes %>%
-      filter(.data$outcomeId == outcomeId) %>%
+      filter(.data$outcomeId == !!outcomeId) %>%
       collect()
     outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
     outcomes <- outcomes[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd, ]
@@ -435,7 +435,7 @@ plotTimeToEvent <- function(cohortMethodData,
                                       endAnchor = endAnchor,
                                       censorAtNewRiskWindow = censorAtNewRiskWindow)
   outcomes <- cohortMethodData$outcomes %>%
-    filter(.data$outcomeId == outcomeId) %>%
+    filter(.data$outcomeId == !!outcomeId) %>%
     collect()
   outcomes <- merge(population[, c("rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd")],
                     outcomes[, c("rowId", "daysToEvent")])

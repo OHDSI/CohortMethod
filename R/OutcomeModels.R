@@ -227,7 +227,6 @@ fitOutcomeModel <- function(population,
                                                    addIntercept = (!stratified && !modelType == "cox"),
                                                    modelType = modelTypeToCyclopsModelType(modelType,
                                                                                            stratified),
-                                                   checkSorting = TRUE,
                                                    checkRowIds = FALSE,
                                                    normalize = NULL,
                                                    quiet = TRUE)

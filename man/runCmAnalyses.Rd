@@ -27,11 +27,14 @@ runCmAnalyses(
   prefilterCovariatesThreads = 1,
   fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1,
-  outcomeIdsOfInterest,
-  compressCohortMethodData = FALSE
+  outcomeIdsOfInterest
 )
 }
 \arguments{
+\item{connectionDetails}{An R object of type \code{connectionDetails} created using the
+function \code{createConnectionDetails} in the
+\code{DatabaseConnector} package.}
+
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
 Server, this should specifiy both the database and the schema,
@@ -68,6 +71,13 @@ SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outputFolder}{Name of the folder where all the outputs will written to.}
 
+\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
+the `\link{createCmAnalysis} function.}
+
+\item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
+created using the \link{createTargetComparatorOutcomes}
+function.}
+
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
 after people who already had the outcome are removed)? If
 false, a single propensity model will be fitted, and people
@@ -76,6 +86,13 @@ who had the outcome previously will be removed afterwards.}
 \item{refitPsForEveryStudyPopulation}{Should the propensity model be fitted for every study population
 definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.}
+
+\item{prefilterCovariates}{If TRUE, and some outcome models require filtering covariates
+by concept ID (e.g. because \code{includeCovariateIds} or
+\code{interactionCovariateIds} is specified), this filtering
+will be done once for all outcome models that need it. This
+can greatly speed up the analyses if multiple outcome models
+require the same filtering.}
 
 \item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
 cohortMethod data objects.}
@@ -107,25 +124,10 @@ could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
 for all other outcome IDs. This could be helpful to speed up
 analyses with many controls.}
-
-\item{compressCohortMethodData}{Compress CohortMethodData objects?}
 }
 \value{
-A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target exposure.\cr
-\verb{comparatorId} \tab The ID of the comparator group.\cr \verb{excludedCovariateConceptIds} \tab
-The ID(s) of concepts that cannot be used to construct covariates. \cr
-\verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct
-covariates. \cr \verb{outcomeId} \tab The ID of the outcome \cr \verb{cohortMethodDataFolder} \tab
-The ID of the outcome.\cr \verb{sharedPsFile} \tab The name of the file containing the propensity
-scores of the shared \cr \tab propensity model. This model is used to create the outcome-specific
-\cr \tab propensity scores by removing people with prior outcomes.\cr \verb{studyPopFile} \tab The
-name of the file containing the study population (prior\cr \tab and trimming, matching, or
-stratification on the PS.\cr \verb{psFile} \tab The name of file containing the propensity scores
-for a specific \cr \tab outcomes (ie after people with prior outcomes have been removed).\cr
-\verb{strataFile} \tab The name of the file containing the identifiers of the population \cr \tab
-after any trimming, matching or stratifying, including their strata.\cr \verb{outcomeModelFile} \tab The name of the file
-containing the outcome model.\cr }
+A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
+outcome model files can be found, relative to the \code{outputFolder}.
 }
 \description{
 Run a list of analyses

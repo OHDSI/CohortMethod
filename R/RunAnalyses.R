@@ -1,5 +1,3 @@
-# @file RunAnalyses.R
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -28,9 +26,9 @@
 #' function will extract the data and fit the propensity model only once, and re-use this in all the
 #' analysis.
 #'
-#' @param connectionDetails              An R object of type `connectionDetails} created using the
-#'                                       function `createConnectionDetails} in the
-#'                                       `DatabaseConnector} package.
+#' @param connectionDetails              An R object of type `connectionDetails` created using the
+#'                                       function `createConnectionDetails` in the
+#'                                       `DatabaseConnector` package.
 #' @param cdmDatabaseSchema              The name of the database schema that contains the OMOP CDM
 #'                                       instance. Requires read permissions to this database. On SQL
 #'                                       Server, this should specifiy both the database and the schema,
@@ -59,10 +57,10 @@
 #'                                       outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                       SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param outputFolder                   Name of the folder where all the outputs will written to.
-#' @param cmAnalysisList                 A list of objects of type `cmAnalysis} as created using
-#'                                       the `\link{createCmAnalysis}} function.
-#' @param targetComparatorOutcomesList   A list of objects of type `targetComparatorOutcomes} as
-#'                                       created using the `\link{createTargetComparatorOutcomes}}
+#' @param cmAnalysisList                 A list of objects of type `cmAnalysis` as created using
+#'                                       the `[createCmAnalysis] function.
+#' @param targetComparatorOutcomesList   A list of objects of type `targetComparatorOutcomes` as
+#'                                       created using the [createTargetComparatorOutcomes]
 #'                                       function.
 #' @param refitPsForEveryOutcome         Should the propensity model be fitted for every outcome (i.e.
 #'                                       after people who already had the outcome are removed)? If
@@ -72,8 +70,8 @@
 #'                                       definition? If false, a single propensity model will be fitted,
 #'                                       and the study population criteria will be applied afterwards.
 #' @param prefilterCovariates            If TRUE, and some outcome models require filtering covariates
-#'                                       by concept ID (e.g. because `includeCovariateIds} or
-#'                                       `interactionCovariateIds} is specified), this filtering
+#'                                       by concept ID (e.g. because `includeCovariateIds` or
+#'                                       `interactionCovariateIds` is specified), this filtering
 #'                                       will be done once for all outcome models that need it. This
 #'                                       can greatly speed up the analyses if multiple outcome models
 #'                                       require the same filtering.
@@ -99,24 +97,10 @@
 #' @param outcomeIdsOfInterest           If provided, creation of non-essential files will be skipped
 #'                                       for all other outcome IDs. This could be helpful to speed up
 #'                                       analyses with many controls.
-#' @param compressCohortMethodData       Compress CohortMethodData objects?
 #'
 #' @return
-#' A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-#' for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target exposure.\cr
-#' \verb{comparatorId} \tab The ID of the comparator group.\cr \verb{excludedCovariateConceptIds} \tab
-#' The ID(s) of concepts that cannot be used to construct covariates. \cr
-#' \verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct
-#' covariates. \cr \verb{outcomeId} \tab The ID of the outcome \cr \verb{cohortMethodDataFolder} \tab
-#' The ID of the outcome.\cr \verb{sharedPsFile} \tab The name of the file containing the propensity
-#' scores of the shared \cr \tab propensity model. This model is used to create the outcome-specific
-#' \cr \tab propensity scores by removing people with prior outcomes.\cr \verb{studyPopFile} \tab The
-#' name of the file containing the study population (prior\cr \tab and trimming, matching, or
-#' stratification on the PS.\cr \verb{psFile} \tab The name of file containing the propensity scores
-#' for a specific \cr \tab outcomes (ie after people with prior outcomes have been removed).\cr
-#' \verb{strataFile} \tab The name of the file containing the identifiers of the population \cr \tab
-#' after any trimming, matching or stratifying, including their strata.\cr \verb{outcomeModelFile} \tab The name of the file
-#' containing the outcome model.\cr }
+#' A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
+#' outcome model files can be found, relative to the `outputFolder`.
 #'
 #' @export
 runCmAnalyses <- function(connectionDetails,
@@ -141,8 +125,7 @@ runCmAnalyses <- function(connectionDetails,
                           prefilterCovariatesThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
-                          outcomeIdsOfInterest,
-                          compressCohortMethodData = FALSE) {
+                          outcomeIdsOfInterest) {
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
@@ -181,9 +164,9 @@ runCmAnalyses <- function(connectionDetails,
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
   ParallelLogger::logInfo("*** Creating cohortMethodData objects ***")
-  subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFolder), ]
-  subset <- subset[subset$cohortMethodDataFolder != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$cohortMethodDataFolder)), ]
+  subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile), ]
+  subset <- subset[subset$cohortMethodDataFile != "", ]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$cohortMethodDataFile)), ]
   if (nrow(subset) != 0) {
     createCmDataTask <- function(i) {
       refRow <- subset[i, ]
@@ -202,7 +185,7 @@ runCmAnalyses <- function(connectionDetails,
                                                                        covariateSettings[[i]]$includedCovariateConceptIds))
       }
       getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
-      outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFolder == refRow$cohortMethodDataFolder])
+      outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFile == refRow$cohortMethodDataFile])
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
                    oracleTempSchema = oracleTempSchema,
@@ -216,8 +199,7 @@ runCmAnalyses <- function(connectionDetails,
                    comparatorId = refRow$comparatorId)
       args <- append(args, getDbCohortMethodDataArgs)
       task <- list(args = args,
-                   compressCohortMethodData = compressCohortMethodData,
-                   cohortMethodDataFolder = file.path(outputFolder, refRow$cohortMethodDataFolder))
+                   cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile))
       return(task)
     }
     objectsToCreate <- lapply(1:nrow(subset), createCmDataTask)
@@ -238,8 +220,8 @@ runCmAnalyses <- function(connectionDetails,
                                                  list(analysisId = refRow$analysisId))[[1]]
       args <- analysisRow$createStudyPopArgs
       args$outcomeId <- refRow$outcomeId
-      task <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                      refRow$cohortMethodDataFolder),
+      task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                    refRow$cohortMethodDataFile),
                    args = args,
                    minimizeFileSizes = getOption("minimizeFileSizes"),
                    studyPopFile = file.path(outputFolder, refRow$studyPopFile))
@@ -264,8 +246,8 @@ runCmAnalyses <- function(connectionDetails,
                                                    list(analysisId = refRow$analysisId))[[1]]
         args <- analysisRow$createPsArgs
         args$control$threads <- psCvThreads
-        task <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                        refRow$cohortMethodDataFolder),
+        task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFile),
                      studyPopFile = file.path(outputFolder, refRow$studyPopFile),
                      args = args,
                      psFile = file.path(outputFolder, refRow$psFile))
@@ -291,8 +273,8 @@ runCmAnalyses <- function(connectionDetails,
 
         createPsArg <- analysisRow$createPsArg
         createPsArg$control$threads <- psCvThreads
-        task <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                        refRow$cohortMethodDataFolder),
+        task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFile),
                      createPsArg = createPsArg,
                      createStudyPopArgs = analysisRow$createStudyPopArgs,
                      sharedPsFile = file.path(outputFolder, refRow$sharedPsFile))
@@ -342,19 +324,19 @@ runCmAnalyses <- function(connectionDetails,
 
   if (prefilterCovariates) {
     ParallelLogger::logInfo("*** Prefiltering covariates for outcome models ***")
-    subset <- referenceTable[!duplicated(referenceTable$prefilteredCovariatesFolder), ]
-    subset <- subset[subset$prefilteredCovariatesFolder != "", ]
-    subset <- subset[!file.exists(file.path(outputFolder, subset$prefilteredCovariatesFolder)), ]
+    subset <- referenceTable[!duplicated(referenceTable$prefilteredCovariatesFile), ]
+    subset <- subset[subset$prefilteredCovariatesFile != "", ]
+    subset <- subset[!file.exists(file.path(outputFolder, subset$prefilteredCovariatesFile)), ]
     if (nrow(subset) != 0) {
       createPrefilterTask <- function(i) {
         refRow <- subset[i, ]
         analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                                    list(analysisId = refRow$analysisId))[[1]]
-        task <- list(cohortMethodDataFolder = file.path(outputFolder,
-                                                        refRow$cohortMethodDataFolder),
+        task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                      refRow$cohortMethodDataFile),
                      args = analysisRow$fitOutcomeModelArgs,
-                     prefilteredCovariatesFolder = file.path(outputFolder,
-                                                             refRow$prefilteredCovariatesFolder))
+                     prefilteredCovariatesFile = file.path(outputFolder,
+                                                           refRow$prefilteredCovariatesFile))
         return(task)
       }
       tasks <- lapply(1:nrow(subset), createPrefilterTask)
@@ -385,12 +367,12 @@ runCmAnalyses <- function(connectionDetails,
     } else {
       studyPopFile <- refRow$studyPopFile
     }
-    prefilteredCovariatesFolder <- refRow$prefilteredCovariatesFolder
-    if (prefilteredCovariatesFolder != "") {
-      prefilteredCovariatesFolder = file.path(outputFolder, refRow$prefilteredCovariatesFolder)
+    prefilteredCovariatesFile <- refRow$prefilteredCovariatesFile
+    if (prefilteredCovariatesFile != "") {
+      prefilteredCovariatesFile = file.path(outputFolder, refRow$prefilteredCovariatesFile)
     }
-    return(list(cohortMethodDataFolder = file.path(outputFolder, refRow$cohortMethodDataFolder),
-                prefilteredCovariatesFolder = prefilteredCovariatesFolder,
+    return(list(cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
+                prefilteredCovariatesFile = prefilteredCovariatesFile,
                 args = args,
                 studyPopFile = file.path(outputFolder, studyPopFile),
                 outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile)))
@@ -420,12 +402,12 @@ runCmAnalyses <- function(connectionDetails,
                                                  list(analysisId = refRow$analysisId))[[1]]
       analysisRow$fitOutcomeModelArgs$control$threads <- outcomeCvThreads
       analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
-      prefilteredCovariatesFolder <- refRow$prefilteredCovariatesFolder
-      if (prefilteredCovariatesFolder != "") {
-        prefilteredCovariatesFolder = file.path(outputFolder, refRow$prefilteredCovariatesFolder)
+      prefilteredCovariatesFile <- refRow$prefilteredCovariatesFile
+      if (prefilteredCovariatesFile != "") {
+        prefilteredCovariatesFile = file.path(outputFolder, refRow$prefilteredCovariatesFile)
       }
-      params <- list(cohortMethodDataFolder = file.path(outputFolder, refRow$cohortMethodDataFolder),
-                     prefilteredCovariatesFolder = prefilteredCovariatesFolder,
+      params <- list(cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
+                     prefilteredCovariatesFile = prefilteredCovariatesFile,
                      sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
                      args = analysisRow,
                      outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile))
@@ -447,15 +429,26 @@ runCmAnalyses <- function(connectionDetails,
   invisible(referenceTable)
 }
 
-getCohortMethodData <- function(cohortMethodDataFolder, requireCovariates = TRUE) {
-  if (mget("cohortMethodDataFolder", envir = globalenv(), ifnotfound = "") == cohortMethodDataFolder &&
-      (!requireCovariates || as.logical(mget("hasCovariates", envir = globalenv(), ifnotfound = FALSE)))) {
+getCohortMethodData <- function(cohortMethodDataFile, prefilteredCovariatesFile = "") {
+  if (exists("cohortMethodData", envir = globalenv())) {
     cohortMethodData <- get("cohortMethodData", envir = globalenv())
-  } else {
-    cohortMethodData <- loadCohortMethodData(cohortMethodDataFolder, readOnly = TRUE, skipCovariates = !requireCovariates)
+  }
+  if (!mget("cohortMethodDataFile", envir = globalenv(), ifnotfound = "") == cohortMethodDataFile ||
+      !mget("prefilteredCovariatesFile", envir = globalenv(), ifnotfound = "") == cohortMethodDataFile) {
+    if (exists("cohortMethodData", envir = globalenv())) {
+      Andromeda::close(cohortMethodData)
+    }
+    cohortMethodData <- loadCohortMethodData(cohortMethodDataFile)
+    if (prefilteredCovariatesFile != "") {
+      covariateData <- Andromeda::loadAndromeda(prefilteredCovariatesFile)
+      cohortMethodData$covariates <- covariateData$covariates
+      cohortMethodData$covariateRef <- covariateData$covariateRef
+      cohortMethodData$analysisRef <- covariateData$analysisRef
+      Andromeda::close(covariateData)
+    }
     assign("cohortMethodData", cohortMethodData, envir = globalenv())
-    assign("cohortMethodDataFolder", cohortMethodDataFolder, envir = globalenv())
-    assign("hasCovariates", requireCovariates, envir = globalenv())
+    assign("cohortMethodDataFile", cohortMethodDataFile, envir = globalenv())
+    assign("prefilteredCovariatesFile", prefilteredCovariatesFile, envir = globalenv())
   }
   return(cohortMethodData)
 }
@@ -473,12 +466,12 @@ getPs <- function(psFile) {
 
 createCmDataObject <- function(params) {
   cohortMethodData <- do.call("getDbCohortMethodData", params$args)
-  saveCohortMethodData(cohortMethodData, params$cohortMethodDataFolder, params$compressCohortMethodData)
+  saveCohortMethodData(cohortMethodData, params$cohortMethodDataFile)
   return(NULL)
 }
 
 createStudyPopObject <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = FALSE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
@@ -492,7 +485,7 @@ createStudyPopObject <- function(params) {
 }
 
 fitPsModel <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = TRUE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   studyPop <- readRDS(params$studyPopFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
@@ -503,7 +496,7 @@ fitPsModel <- function(params) {
 }
 
 fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = TRUE)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   if (refitPsForEveryStudyPopulation) {
     args <- params$createStudyPopArgs
     args$cohortMethodData <- cohortMethodData
@@ -538,7 +531,6 @@ addPsToStudyPop <- function(subset, outputFolder) {
   plyr::l_ply(1:nrow(subset), addToStudyPop)
 }
 
-
 trimMatchStratify <- function(params) {
   ps <- getPs(params$psFile)
   if (params$args$trimByPs) {
@@ -572,66 +564,36 @@ trimMatchStratify <- function(params) {
 }
 
 doPrefilterCovariates <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFolder, readOnly = TRUE)
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
   covariates <- cohortMethodData$covariates
-  if (nrow(covariates) > 0) {
+  if (covariates %>% count() %>% pull() > 0) {
     if (params$args$useCovariates) {
-      if (length(params$args$includeCovariateIds) != 0) {
-        idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$includeCovariateIds))
-      } else {
-        idx <- ff::ff(TRUE, nrow(covariates))
-      }
-      if (length(params$args$excludeCovariateIds) != 0) {
-        idx[idx] <- !ffbase::`%in%`(covariates$covariateId[idx], ff::as.ff(params$args$excludeCovariateIds))
-      }
-      if (length(params$args$interactionCovariateIds) != 0) {
-        idx <- idx & ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
-      }
+      covariatesToInclude <- params$args$includeCovariateIds
+      covariatesToExclude <- params$args$excludeCovariateIds
     } else {
-      idx <- ffbase::`%in%`(covariates$covariateId, ff::as.ff(params$args$interactionCovariateIds))
+      covariatesToInclude <- c()
+      covariatesToExclude <- c()
     }
-    if (!ffbase::any.ff(idx)) {
-      # ffdf cannot have zero rows. Just select first row of covariates.
-      covariates <- covariates[ff::ff(as.integer(1)), ]
-    } else if (ffbase::any.ff(!idx)) {
-      covariates <- covariates[idx, ]
-    } else {
-      covariates <- ff::clone.ffdf(covariates)
+    covariatesToInclude <- unique(c(covariatesToInclude, params$args$includeCovariateIds))
+    if (length(covariatesToInclude) != 0) {
+      covariates <- covariates %>%
+        filter(.data$covariateId %in% covariatesToInclude)
     }
-
-    covariateRef <- ff::clone.ffdf(cohortMethodData$covariateRef)
-    analysisRef <- ff::clone.ffdf(cohortMethodData$analysisRef)
-    ffbase::save.ffdf(covariates, covariateRef, analysisRef, dir = params$prefilteredCovariatesFolder)
-    ff::close.ffdf(covariates)
-    ff::close.ffdf(covariateRef)
-    ff::close.ffdf(analysisRef)
-  } else {
-    covariates <- data.frame(covariateId = -1, covariateValue = 0, covariateName = "dummy")
-    covariateRef <- data.frame(covariateId = -1, covariateName = "dummy", conceptId = -1, analysisId = -1)
-    analysisRef <- data.frame(analysisId = -1, analysisName = "dummy", domainId = -1, endDay = -1,
-                              isBinary = TRUE,  missingMeansZero = TRUE, startDay = -1)
-    ffbase::save.ffdf(ff::as.ffdf(covariates),
-                      ff::as.ffdf(covariateRef),
-                      ff::as.ffdf(analysisRef), dir = params$prefilteredCovariatesFolder)
+    if (length(covariatesToExclude) != 0) {
+      covariates <- covariates %>%
+        filter(!.data$covariateId %in% covariatesToExclude)
+    }
   }
+  covariateData <- Andromeda::andromeda(covariates = covariates,
+                                        covariateRef = cohortMethodData$covariateRef,
+                                        analysisRef = cohortMethodData$analysisRef)
+
+  Andromeda::saveAndromeda(covariateData, params$prefilteredCovariatesFile)
   return(NULL)
 }
 
 doFitOutcomeModel <- function(params) {
-  requireCovariates <- ((length(params$args$interactionCovariateIds) != 0 || params$args$useCovariates) && params$prefilteredCovariatesFolder == "")
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = requireCovariates)
-  if (params$prefilteredCovariatesFolder != "") {
-    covariates <- NULL
-    covariateRef <- NULL
-    analysisRef <- NULL
-    ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates, covariateRef, and analysisRef ffdfs
-    ff::open.ffdf(covariates, readonly = TRUE)
-    ff::open.ffdf(covariateRef, readonly = TRUE)
-    ff::open.ffdf(analysisRef, readonly = TRUE)
-    cohortMethodData$covariates <- covariates
-    cohortMethodData$covariateRef <- covariateRef
-    cohortMethodData$analysisRef <- analysisRef
-  }
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile, params$prefilteredCovariatesFile)
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
@@ -652,38 +614,12 @@ doFitOutcomeModel <- function(params) {
 }
 
 doFitOutcomeModelPlus <- function(params) {
-  requireCovariates <- ((length(params$args$fitOutcomeModelArgs$interactionCovariateIds) != 0 || params$args$fitOutcomeModelArgs$useCovariates) && params$prefilteredCovariatesFolder == "")
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFolder, requireCovariates = requireCovariates)
-  if (params$prefilteredCovariatesFolder != "") {
-    covariates <- NULL
-    covariateRef <- NULL
-    analysisRef <- NULL
-    ffbase::load.ffdf(params$prefilteredCovariatesFolder) # Loads covariates, covariateRef, and analysisRef ffdfs
-    ff::open.ffdf(covariates, readonly = TRUE)
-    ff::open.ffdf(covariateRef, readonly = TRUE)
-    ff::open.ffdf(analysisRef, readonly = TRUE)
-    cohortMethodData$covariates <- covariates
-    cohortMethodData$covariateRef <- covariateRef
-    cohortMethodData$analysisRef <- analysisRef
-  }
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile, params$prefilteredCovariatesFile)
 
   # Create study pop
   args <- params$args$createStudyPopArgs
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
-  # studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-  #                                   population = NULL,
-  #                                   outcomeId = args$outcomeId,
-  #                                   firstExposureOnly = args$firstExposureOnly,
-  #                                   washoutPeriod = args$washoutPeriod,
-  #                                   removeDuplicateSubjects = args$removeDuplicateSubjects,
-  #                                   removeSubjectsWithPriorOutcome = args$removeSubjectsWithPriorOutcome,
-  #                                   priorOutcomeLookback = args$priorOutcomeLookback,
-  #                                   minDaysAtRisk = args$minDaysAtRisk,
-  #                                   riskWindowStart = args$riskWindowStart,
-  #                                   addExposureDaysToStart = args$addExposureDaysToStart,
-  #                                   riskWindowEnd = args$riskWindowEnd,
-  #                                   addExposureDaysToEnd = args$addExposureDaysToEnd)
 
   if (params$args$createPs) {
     # Add PS
@@ -725,21 +661,9 @@ doFitOutcomeModelPlus <- function(params) {
   args$population <- ps
   args$cohortMethodData <- cohortMethodData
   outcomeModel <- do.call('fitOutcomeModel', args)
-  # outcomeModel <- fitOutcomeModel(population = args$population,
-  #                                 cohortMethodData = args$cohortMethodData,
-  #                                 modelType = args$modelType,
-  #                                 stratified = args$stratified,
-  #                                 useCovariates = args$useCovariates,
-  #                                 inversePtWeighting = args$inversePtWeighting,
-  #                                 includeCovariateIds = args$includeCovariateIds,
-  #                                 excludeCovariateIds = args$excludeCovariateIds,
-  #                                 interactionCovariateIds = args$interactionCovariateIds,
-  #                                 prior = args$prior,
-  #                                 control = args$control)
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
 }
-
 
 createReferenceTable <- function(cmAnalysisList,
                                  targetComparatorOutcomesList,
@@ -751,16 +675,16 @@ createReferenceTable <- function(cmAnalysisList,
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
   instantiateDco <- function(dco, cmAnalysis, folder) {
-    rows <- data.frame(analysisId = cmAnalysis$analysisId,
-                       targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
-                       comparatorId = .selectByType(cmAnalysis$comparatorType,
-                                                    dco$comparatorId,
-                                                    "comparator"),
-                       includedCovariateConceptIds = paste(dco$includedCovariateConceptIds,
-                                                           collapse = ","),
-                       excludedCovariateConceptIds = paste(dco$excludedCovariateConceptIds,
-                                                           collapse = ","),
-                       outcomeId = dco$outcomeIds)
+    rows <- tibble::tibble(analysisId = cmAnalysis$analysisId,
+                           targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
+                           comparatorId = .selectByType(cmAnalysis$comparatorType,
+                                                        dco$comparatorId,
+                                                        "comparator"),
+                           includedCovariateConceptIds = paste(dco$includedCovariateConceptIds,
+                                                               collapse = ","),
+                           excludedCovariateConceptIds = paste(dco$excludedCovariateConceptIds,
+                                                               collapse = ","),
+                           outcomeId = dco$outcomeIds)
 
     if (cmAnalysis$fitOutcomeModel) {
       rows$outcomeModelFile <- .createOutcomeModelFileName(folder = folder,
@@ -780,11 +704,10 @@ createReferenceTable <- function(cmAnalysisList,
     return(do.call("rbind", lapply(dcos, instantiateDco, cmAnalysis, analysisFolder)))
   }
 
-  referenceTable <- do.call("rbind",
-                            lapply(cmAnalysisList,
-                                   instantiateDcos,
-                                   dcos = targetComparatorOutcomesList,
-                                   folder = outputFolder))
+  referenceTable <- bind_rows(lapply(cmAnalysisList,
+                                     instantiateDcos,
+                                     dcos = targetComparatorOutcomesList,
+                                     folder = outputFolder))
 
   # Find unique load operations
   which.list <- function(list, object) {
@@ -800,11 +723,11 @@ createReferenceTable <- function(cmAnalysisList,
                        function(cmAnalysis, loadingArgsList) return(which.list(loadingArgsList,
                                                                                cmAnalysis$getDbCohortMethodDataArgs)),
                        loadingArgsList)
-  analysisIdToLoadArgsId <- data.frame(analysisId = analysisIds, loadArgsId = loadArgsId)
-  referenceTable <- merge(referenceTable, analysisIdToLoadArgsId)
-  referenceTable$cohortMethodDataFolder <- .createCohortMethodDataFileName(loadId = referenceTable$loadArgsId,
-                                                                           targetId = referenceTable$targetId,
-                                                                           comparatorId = referenceTable$comparatorId)
+  analysisIdToLoadArgsId <- tibble::tibble(analysisId = analysisIds, loadArgsId = loadArgsId)
+  referenceTable <- inner_join(referenceTable, analysisIdToLoadArgsId, by = "analysisId")
+  referenceTable$cohortMethodDataFile <- .createCohortMethodDataFileName(loadId = referenceTable$loadArgsId,
+                                                                         targetId = referenceTable$targetId,
+                                                                         comparatorId = referenceTable$comparatorId)
 
   # Add studypop filenames
   studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopArgs"))
@@ -813,9 +736,9 @@ createReferenceTable <- function(cmAnalysisList,
                            function(cmAnalysis, studyPopArgsList) return(which.list(studyPopArgsList,
                                                                                     cmAnalysis$createStudyPopArgs)),
                            studyPopArgsList)
-  analysisIdToStudyPopArgsId <- data.frame(analysisId = analysisIds,
-                                           studyPopArgsId = studyPopArgsId)
-  referenceTable <- merge(referenceTable, analysisIdToStudyPopArgsId)
+  analysisIdToStudyPopArgsId <- tibble::tibble(analysisId = analysisIds,
+                                               studyPopArgsId = studyPopArgsId)
+  referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsId, by = "analysisId")
   referenceTable$studyPopFile <- .createStudyPopulationFileName(loadId = referenceTable$loadArgsId,
                                                                 studyPopId = referenceTable$studyPopArgsId,
                                                                 targetId = referenceTable$targetId,
@@ -831,19 +754,18 @@ createReferenceTable <- function(cmAnalysisList,
                      function(cmAnalysis,
                               psArgsList) return(which.list(psArgsList, cmAnalysis$createPsArgs)),
                      psArgsList)
-  analysisIdToPsArgsId <- data.frame(analysisId = analysisIds, psArgsId = psArgsId)
-  referenceTable <- merge(referenceTable, analysisIdToPsArgsId)
+  analysisIdToPsArgsId <- tibble::tibble(analysisId = analysisIds, psArgsId = psArgsId)
+  referenceTable <- inner_join(referenceTable, analysisIdToPsArgsId, by = "analysisId")
   idx <- !(referenceTable$psArgsId %in% noPsIds)
+  referenceTable$psFile <- ""
   referenceTable$psFile[idx] <- .createPsOutcomeFileName(loadId = referenceTable$loadArgsId[idx],
                                                          studyPopId = referenceTable$studyPopArgsId[idx],
                                                          psId = referenceTable$psArgsId[idx],
                                                          targetId = referenceTable$targetId[idx],
                                                          comparatorId = referenceTable$comparatorId[idx],
                                                          outcomeId = referenceTable$outcomeId[idx])
-  referenceTable$psFile[!idx] <- ""
-  if (refitPsForEveryOutcome) {
-    referenceTable$sharedPsFile <- ""
-  } else {
+  referenceTable$sharedPsFile <- ""
+  if (!refitPsForEveryOutcome) {
     if (refitPsForEveryStudyPopulation) {
       # Find equivalent studyPopArgs, so we can reuse PS over those as well:
       studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopArgs"))
@@ -873,9 +795,9 @@ createReferenceTable <- function(cmAnalysisList,
                                          function(cmAnalysis, studyPopArgsList) return(findFirstEquivalent(studyPopArgsList,
                                                                                                            cmAnalysis$createStudyPopArgs)),
                                          studyPopArgsList)
-      analysisIdToStudyPopArgsEquivalentId <- data.frame(analysisId = analysisIds,
-                                                         studyPopArgsEquivalentId = studyPopArgsEquivalentId)
-      referenceTable <- merge(referenceTable, analysisIdToStudyPopArgsEquivalentId)
+      analysisIdToStudyPopArgsEquivalentId <- tibble::tibble(analysisId = analysisIds,
+                                                             studyPopArgsEquivalentId = studyPopArgsEquivalentId)
+      referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsEquivalentId, by = "analysisId")
       referenceTable$sharedPsFile[idx] <- .createPsFileName(loadId = referenceTable$loadArgsId[idx],
                                                             studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
                                                             psId = referenceTable$psArgsId[idx],
@@ -889,7 +811,6 @@ createReferenceTable <- function(cmAnalysisList,
                                                             targetId = referenceTable$targetId[idx],
                                                             comparatorId = referenceTable$comparatorId[idx])
     }
-    referenceTable$sharedPsFile[!idx] <- ""
   }
 
   # Add strata filenames
@@ -923,10 +844,11 @@ createReferenceTable <- function(cmAnalysisList,
         i <- 0
       return(i)
     })
-    analysisIdToStrataArgsId <- data.frame(analysisId = analysisIds, strataArgsId = strataArgsId)
-    referenceTable <- merge(referenceTable, analysisIdToStrataArgsId)
+    analysisIdToStrataArgsId <- tibble::tibble(analysisId = analysisIds, strataArgsId = strataArgsId)
+    referenceTable <- inner_join(referenceTable, analysisIdToStrataArgsId, by = "analysisId")
   }
   idx <- referenceTable$strataArgsId != 0
+  referenceTable$strataFile <- ""
   referenceTable$strataFile[idx] <- .createStratifiedPopFileName(loadId = referenceTable$loadArgsId[idx],
                                                                  studyPopId = referenceTable$studyPopArgsId[idx],
                                                                  psId = referenceTable$psArgsId[idx],
@@ -934,7 +856,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                                  targetId = referenceTable$targetId[idx],
                                                                  comparatorId = referenceTable$comparatorId[idx],
                                                                  outcomeId = referenceTable$outcomeId[idx])
-  referenceTable$strataFile[!idx] <- ""
+
 
   # Add interest flag
   if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
@@ -949,7 +871,7 @@ createReferenceTable <- function(cmAnalysisList,
 
   # Add prefiltered covariate files
   if (!prefilterCovariates) {
-    referenceTable$prefilteredCovariatesFolder <- ""
+    referenceTable$prefilteredCovariatesFile <- ""
   } else {
     loadingFittingArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList,
                                                                     c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")))
@@ -968,10 +890,8 @@ createReferenceTable <- function(cmAnalysisList,
       }
     }
     loadingFittingArgsList <- plyr::compact(lapply(loadingFittingArgsList, needsFilter))
-    if (length(loadingFittingArgsList) == 0) {
-      # No filtering needed
-      referenceTable$prefilteredCovariatesFolder <- ""
-    } else {
+    referenceTable$prefilteredCovariatesFile <- ""
+    if (length(loadingFittingArgsList) != 0) {
       # Filtering needed
       relevantArgsList <- ParallelLogger::selectFromList(loadingFittingArgsList,
                                                          c("getDbCohortMethodDataArgs", "relevantFields"))
@@ -988,13 +908,13 @@ createReferenceTable <- function(cmAnalysisList,
                             function(cmAnalysis, matchableArgs) return(which.list(matchableArgs,
                                                                                   cmAnalysis)),
                             matchableArgsList)
-      analysisIdToPrefilterId <- data.frame(analysisId = analysisIds,
-                                            prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
-      referenceTable <- merge(referenceTable, analysisIdToPrefilterId)
-      referenceTable$prefilteredCovariatesFolder <- .createPrefilteredCovariatesFileName(loadId = referenceTable$loadArgsId,
-                                                                                         targetId = referenceTable$targetId,
-                                                                                         comparatorId = referenceTable$comparatorId,
-                                                                                         prefilterId = referenceTable$prefilterId)
+      analysisIdToPrefilterId <- tibble::tibble(analysisId = analysisIds,
+                                                prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
+      referenceTable <- inner_join(referenceTable, analysisIdToPrefilterId, by = "analysisId")
+      referenceTable$prefilteredCovariatesFile <- .createPrefilteredCovariatesFileName(loadId = referenceTable$loadArgsId,
+                                                                                       targetId = referenceTable$targetId,
+                                                                                       comparatorId = referenceTable$comparatorId,
+                                                                                       prefilterId = referenceTable$prefilterId)
 
     }
   }
@@ -1007,18 +927,17 @@ createReferenceTable <- function(cmAnalysisList,
                                        "includedCovariateConceptIds",
                                        "excludedCovariateConceptIds",
                                        "outcomeOfInterest",
-                                       "cohortMethodDataFolder",
+                                       "cohortMethodDataFile",
                                        "studyPopFile",
                                        "sharedPsFile",
                                        "psFile",
                                        "strataFile",
-                                       "prefilteredCovariatesFolder",
+                                       "prefilteredCovariatesFile",
                                        "outcomeModelFile")]
   referenceTable <- referenceTable[order(referenceTable$analysisId,
                                          referenceTable$targetId,
                                          referenceTable$comparatorId,
                                          referenceTable$outcomeId), ]
-  row.names(referenceTable) <- NULL
   return(referenceTable)
 }
 
@@ -1027,13 +946,13 @@ createReferenceTable <- function(cmAnalysisList,
 }
 
 .createCohortMethodDataFileName <- function(loadId, targetId, comparatorId) {
-  name <- paste("CmData_l", loadId, "_t", .f(targetId), "_c", .f(comparatorId), sep = "")
+  name <- sprintf("CmData_l%s_t%s_c%s.zip", loadId, .f(targetId), .f(comparatorId))
   return(name)
 }
 
 
 .createPrefilteredCovariatesFileName <- function(loadId, targetId, comparatorId, prefilterId) {
-  name <- paste("Prefilter_l", loadId, "_t", .f(targetId), "_c", .f(comparatorId), "_p", prefilterId, sep = "")
+  name <- sprintf("Prefilter_l%s_t%s_c%s_p%s.zip", loadId, .f(targetId), .f(comparatorId), prefilterId)
   name[prefilterId == -1] <- rep("", sum(prefilterId == -1))
   return(name)
 }
@@ -1043,45 +962,16 @@ createReferenceTable <- function(cmAnalysisList,
                                            targetId,
                                            comparatorId,
                                            outcomeId) {
-  name <- paste("StudyPop_l",
-                loadId,
-                "_s",
-                studyPopId,
-                "_t",
-                .f(targetId),
-                "_c",
-                .f(comparatorId),
-                sep = "")
-  name <- paste(name, "_o", .f(outcomeId), sep = "")
-  name <- paste(name, ".rds", sep = "")
+  name <- sprintf("StudyPop_l%s_s%s_t%s_c%s_o%s.rds", loadId, studyPopId, .f(targetId), .f(comparatorId), .f(outcomeId))
   return(name)
 }
 
 .createPsFileName <- function(loadId, studyPopId, psId, targetId, comparatorId) {
   if (is.null(studyPopId)) {
-    name <- paste("Ps_l",
-                  loadId,
-                  "_p",
-                  psId,
-                  "_t",
-                  .f(targetId),
-                  "_c",
-                  .f(comparatorId),
-                  sep = "")
+    name <- sprintf("Ps_l%s_p%s_t%s_c%s.rds", loadId, psId, .f(targetId), .f(comparatorId))
   } else {
-    name <- paste("Ps_l",
-                  loadId,
-                  "_s",
-                  studyPopId,
-                  "_p",
-                  psId,
-                  "_t",
-                  .f(targetId),
-                  "_c",
-                  .f(comparatorId),
-                  sep = "")
+    name <- sprintf("Ps_l%s_s%s_p%s_t%s_c%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId))
   }
-  name <- paste(name, ".rds", sep = "")
   return(name)
 }
 
@@ -1091,19 +981,7 @@ createReferenceTable <- function(cmAnalysisList,
                                      targetId,
                                      comparatorId,
                                      outcomeId) {
-  name <- paste("Ps_l",
-                loadId,
-                "_s",
-                studyPopId,
-                "_p",
-                psId,
-                "_t",
-                .f(targetId),
-                "_c",
-                .f(comparatorId),
-                sep = "")
-  name <- paste(name, "_o", .f(outcomeId), sep = "")
-  name <- paste(name, ".rds", sep = "")
+  name <- sprintf("Ps_l%s_s%s_p%s_t%s_c%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), .f(outcomeId))
   return(name)
 }
 
@@ -1114,27 +992,12 @@ createReferenceTable <- function(cmAnalysisList,
                                          targetId,
                                          comparatorId,
                                          outcomeId) {
-  name <- paste("StratPop_l",
-                loadId,
-                "_s",
-                studyPopId,
-                "_p",
-                psId,
-                "_t",
-                .f(targetId),
-                "_c",
-                .f(comparatorId),
-                sep = "")
-  name <- paste(name, "_s", strataId, sep = "")
-  name <- paste(name, "_o", .f(outcomeId), sep = "")
-  name <- paste(name, ".rds", sep = "")
+  name <- sprintf("StratPop_l%s_s%s_p%s_t%s_c%s_s%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, .f(outcomeId))
   return(name)
 }
 
 .createOutcomeModelFileName <- function(folder, targetId, comparatorId, outcomeId) {
-  name <- paste("om_t", .f(targetId), "_c", .f(comparatorId), sep = "")
-  name <- paste(name, "_o", .f(outcomeId), sep = "")
-  name <- paste(name, ".rds", sep = "")
+  name <- sprintf("om_t%s_c%s_o%s.rds", .f(targetId), .f(comparatorId), .f(outcomeId))
   return(file.path(folder, name))
 }
 
@@ -1157,40 +1020,28 @@ createReferenceTable <- function(cmAnalysisList,
 
 #' Create a summary report of the analyses
 #'
-#' @param referenceTable   A data.frame as created by the `\link{runCmAnalyses}} function.
+#' @param referenceTable   A tibble::tibble as created by the `\link{runCmAnalyses}} function.
 #' @param outputFolder     Name of the folder where all the outputs have been written to.
 #'
 #' @return
-#' A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-#' for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target drug.\cr
-#' \verb{comparatorId} \tab The ID of the comparator group.\cr \verb{indicationConceptIds} \tab The
-#' ID(s) of indications in which to nest to study. \cr \verb{outcomeId} \tab The ID of the outcome.\cr
-#' \verb{rr} \tab The estimated effect size.\cr \verb{ci95lb} \tab The lower bound of the 95 percent
-#' confidence interval.\cr \verb{ci95ub} \tab The upper bound of the 95 percent confidence
-#' interval.\cr \verb{target} \tab The number of subjects in the target group (after any trimming
-#' and matching).\cr \verb{comparator} \tab The number of subjects in the comparator group (after any
-#' trimming and matching).\cr \verb{eventsTarget} \tab The number of outcomes in the target group
-#' (after any trimming and matching).\cr \verb{eventsComparator} \tab The number of outcomes in the
-#' comparator group (after any trimming and \cr \tab matching).\cr \verb{logRr} \tab The log of the
-#' estimated relative risk.\cr \verb{seLogRr} \tab The standard error of the log of the estimated
-#' relative risk.\cr }
+#' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
 #'
 #' @export
 summarizeAnalyses <- function(referenceTable, outputFolder) {
 
   summarizeOneAnalysis <- function(outcomeModelFile, outputFolder) {
-    result <- data.frame(rr = 0,
-                         ci95lb = 0,
-                         ci95ub = 0,
-                         p = 1,
-                         target = 0,
-                         comparator = 0,
-                         targetDays = NA,
-                         comparatorDays = NA,
-                         eventsTarget = 0,
-                         eventsComparator = 0,
-                         logRr = 0,
-                         seLogRr = 0)
+    result <- tibble::tibble(rr = 0,
+                             ci95lb = 0,
+                             ci95ub = 0,
+                             p = 1,
+                             target = 0,
+                             comparator = 0,
+                             targetDays = NA,
+                             comparatorDays = NA,
+                             eventsTarget = 0,
+                             eventsComparator = 0,
+                             logRr = 0,
+                             seLogRr = 0)
     if (outcomeModelFile != "") {
       outcomeModel <- readRDS(file.path(outputFolder, outcomeModelFile))
       result$rr <- if (is.null(coef(outcomeModel)))
@@ -1231,7 +1082,7 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
   }
   columns <- c("analysisId", "targetId", "comparatorId", "outcomeId")
   results <- plyr::llply(referenceTable$outcomeModelFile, summarizeOneAnalysis, outputFolder = outputFolder, .progress = "text")
-  results <- do.call(plyr::rbind.fill, results)
-  results <- cbind(referenceTable[, columns], results)
+  results <- bind_rows(results)
+  results <- bind_cols(referenceTable[, columns], results)
   return(results)
 }

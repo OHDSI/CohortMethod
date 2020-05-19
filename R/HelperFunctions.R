@@ -216,8 +216,8 @@ checkCmInstallation <- function(connectionDetails) {
   ParallelLogger::logInfo("- Ok")
 
   ParallelLogger::logInfo("\nChecking support for large data objects")
-  x <- ff::as.ffdf(data.frame(a = 1:100, b = "test"))
-  if (nrow(x) != 100)
+  x <- Andromeda::andromdea(test = data.frame(a = 1:100, b = "test"))
+  if (x$test %>% count() %>% pull() != 100)
     stop("Error creating large data object")
   ParallelLogger::logInfo("- Ok")
 

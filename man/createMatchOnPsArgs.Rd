@@ -8,6 +8,7 @@ createMatchOnPsArgs(
   caliper = 0.2,
   caliperScale = "standardized logit",
   maxRatio = 1,
+  allowReverseMatch = FALSE,
   stratificationColumns = c()
 )
 }
@@ -17,17 +18,19 @@ isacceptable for any match. Observations which are outside of
 thecaliper are dropped. A caliper of 0 means no caliper is used.}
 
 \item{caliperScale}{The scale on which the caliper is defined. Three scales are
-supported:caliperScale = 'propensity score', caliperScale
-='standardized', or caliperScale = 'standardized logit'.On the
+supported:caliperScale = 'propensity score', caliperScale =
+'standardized', or caliperScale = 'standardized logit'.On the
 standardized scale, the caliper is interpreted in standarddeviations
 of the propensity score distribution. 'standardized logit'is similar,
 except that the propensity score is transformed to the logitscale
 because the PS is more likely to be normally distributed on that
 scale(Austin, 2011).}
 
-\item{maxRatio}{The maximum number of persons int the comparator arm to be matched
+\item{maxRatio}{The maximum number of persons in the comparator arm to be matched
 toeach person in the treatment arm. A maxRatio of 0 means no
 maximum:all comparators will be assigned to a target person.}
+
+\item{allowReverseMatch}{Allows n-to-1 matching if target arm is larger}
 
 \item{stratificationColumns}{Names or numbers of one or more columns in the data data.frameon
 which subjects should be stratified prior to matching. No personswill

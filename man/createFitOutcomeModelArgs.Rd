@@ -25,10 +25,10 @@ are"logistic", "poisson", or "cox".}
 thepopulation object (e.g. by matching or stratifying on
 propensityscores)?}
 
-\item{useCovariates}{Whether to use the covariate matrix in the cohortMethodDataobject
-in the outcome model.}
+\item{useCovariates}{Whether to use the covariates in the cohortMethodDataobject in the
+outcome model.}
 
-\item{inversePtWeighting}{Use inverse probability of treatment weigting?}
+\item{inversePtWeighting}{Use inverse probability of treatment weigting (IPTW)? See details.}
 
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate
 interactionswith the main treatment effect.}
@@ -37,11 +37,12 @@ interactionswith the main treatment effect.}
 
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
 
-\item{prior}{The prior used to fit the model. See createPriorfor details.}
+\item{prior}{The prior used to fit the model. See Cyclops::createPrior()for
+details.}
 
 \item{control}{The control object used to control the cross-validation used
 todetermine the hyperparameters of the prior (if applicable).
-SeecreateControl for details.}
+SeeCyclops::createControl() for details.}
 }
 \description{
 Create a parameter object for the function fitOutcomeModel
