@@ -12,6 +12,9 @@
 
 \S4method{summary}{CohortMethodData}(object)
 }
+\arguments{
+\item{object}{An object of type \code{CohortMethodData}.}
+}
 \description{
 \code{CohortMethodData} is an S4 class that inherits from \link[FeatureExtraction:CovariateData]{CoviarateData}, which in turn inherits from \link[Andromeda:Andromeda]{Andromeda}. It contains information on the cohorts, their
 outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for

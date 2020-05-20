@@ -77,10 +77,13 @@ loadCohortMethodData <- function(file) {
     stop(file , " is a folder, but should be a file")
   cohortMethodData <- Andromeda::loadAndromeda(file)
   class(cohortMethodData) <- "CohortMethodData"
+  attr(class(cohortMethodData), "package") <- "CohortMethod"
   return(cohortMethodData)
 }
 
 # show()
+#' @param object  An object of type `CohortMethodData`.
+#'
 #' @export
 #' @rdname CohortMethodData-class
 setMethod("show", "CohortMethodData", function(object) {
@@ -99,6 +102,8 @@ setMethod("show", "CohortMethodData", function(object) {
 
 
 # summary()
+#' @param object  An object of type `CohortMethodData`.
+#'
 #' @export
 #' @rdname CohortMethodData-class
 setMethod("summary", "CohortMethodData", function(object) {

@@ -66,5 +66,5 @@ IPTW estimates the average treatment effect using stabilized inverse propensity 
 \references{
 Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
 as weights to directly estimate relative risk and its confidence intervals. Value Health.
-2010;13(2):273–277. doi:10.1111/j.1524-4733.2009.00671.x
+2010;13(2):273-277. doi:10.1111/j.1524-4733.2009.00671.x
 }

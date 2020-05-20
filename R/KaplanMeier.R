@@ -157,12 +157,12 @@ plotKaplanMeier <- function(population,
   } else {
     ylims <- c(min(data$surv), 1)
   }
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = time,
-                                             y = s,
-                                             color = strata,
-                                             fill = strata,
-                                             ymin = lower,
-                                             ymax = upper))
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = .data$time,
+                                             y = .data$s,
+                                             color = .data$strata,
+                                             fill = .data$strata,
+                                             ymin = .data$lower,
+                                             ymax = .data$upper))
 
   if (confidenceIntervals)
     plot <- plot + ggplot2::geom_ribbon(color = rgb(0, 0, 0, alpha = 0))
@@ -180,8 +180,8 @@ plotKaplanMeier <- function(population,
                    plot.title = ggplot2::element_text(hjust = 0.5))
 
   if (censorMarks == TRUE) {
-    plot <- plot + ggplot2::geom_point(data = subset(data, n.censor >= 1),
-                                       ggplot2::aes(x = time, y = s),
+    plot <- plot + ggplot2::geom_point(data = subset(data, .data$n.censor >= 1),
+                                       ggplot2::aes(x = .data$time, y = .data$s),
                                        shape = "|",
                                        size = 3)
   }
@@ -199,7 +199,7 @@ plotKaplanMeier <- function(population,
                          y = as.factor(c("Number at risk", rep(targetLabel, length(xBreaks)), rep(comparatorLabel, length(xBreaks)))),
                          label = c("", formatC(targetAtRisk, big.mark = ","), formatC(comparatorAtRisk, big.mark = ",")))
     labels$y <- factor(labels$y, levels = c(comparatorLabel, targetLabel, "Number at risk"))
-    dataTable <- ggplot2::ggplot(labels, ggplot2::aes(x = x, y = y, label = label)) +
+    dataTable <- ggplot2::ggplot(labels, ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)) +
       ggplot2::geom_text(size = 3.5, vjust = 0.5) +
       ggplot2::scale_x_continuous(xLabel, limits = xlims, breaks = xBreaks) +
       ggplot2::theme(panel.grid.major = ggplot2::element_blank(),

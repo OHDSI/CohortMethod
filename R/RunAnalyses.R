@@ -1020,7 +1020,7 @@ createReferenceTable <- function(cmAnalysisList,
 
 #' Create a summary report of the analyses
 #'
-#' @param referenceTable   A tibble::tibble as created by the `\link{runCmAnalyses}} function.
+#' @param referenceTable   A [tibble::tibble] as created by the [runCmAnalyses] function.
 #' @param outputFolder     Name of the folder where all the outputs have been written to.
 #'
 #' @return

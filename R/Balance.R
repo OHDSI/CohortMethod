@@ -246,7 +246,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
   limits <- c(min(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE),
               max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE))
   plot <- ggplot2::ggplot(balance,
-                          ggplot2::aes(x = beforeMatchingStdDiff, y = afterMatchingStdDiff)) +
+                          ggplot2::aes(x = .data$beforeMatchingStdDiff, y = .data$afterMatchingStdDiff)) +
     ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0) +
@@ -333,12 +333,12 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   filtered$covariateName <- .truncRight(as.character(filtered$covariateName), maxNameWidth)
   data$facet <- factor(data$facet, levels = c(paste("Top", n, beforeLabel), paste("Top", n, afterLabel)))
   data$group <- factor(data$group, levels = c(beforeLabel, afterLabel))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = difference,
-                                             y = rowId,
-                                             color = group,
-                                             group = group,
-                                             fill = group,
-                                             shape = group)) +
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = .data$difference,
+                                             y = .data$rowId,
+                                             color = .data$group,
+                                             group = .data$group,
+                                             fill = .data$group,
+                                             shape = .data$group)) +
     ggplot2::geom_point() +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),

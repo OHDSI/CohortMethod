@@ -148,7 +148,7 @@ createStudyPopulation <- function(cohortMethodData,
 
   if (firstExposureOnly) {
     ParallelLogger::logInfo("Keeping only first exposure per subject")
-    population <- population[order(population$subjectId, population$treatment, as.Date(population$cohortStartDate)), ]
+    population <- population[order(population$subjectId, population$treatment, population$cohortStartDate), ]
     # idx <- duplicated(population[, c("subjectId", "treatment")])
     idx <- fastDuplicated(population, c("subjectId", "treatment"))
     population <- population[!idx, ]
@@ -156,7 +156,7 @@ createStudyPopulation <- function(cohortMethodData,
   }
   if (restrictToCommonPeriod) {
     ParallelLogger::logInfo("Restrict to common period")
-    cohortStartDate <- as.Date(population$cohortStartDate)
+    cohortStartDate <- population$cohortStartDate
     periodStart <- max(aggregate(cohortStartDate ~ population$treatment, FUN = min)$cohortStartDate)
     periodEnd <- min(aggregate(cohortStartDate ~ population$treatment, FUN = max)$cohortStartDate)
     population <- population[cohortStartDate >= periodStart & cohortStartDate <= periodEnd, ]
@@ -172,7 +172,7 @@ createStudyPopulation <- function(cohortMethodData,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
   } else if (removeDuplicateSubjects == "keep first") {
     ParallelLogger::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
-    population <- population[order(population$subjectId, as.Date(population$cohortStartDate)), ]
+    population <- population[order(population$subjectId, population$cohortStartDate), ]
     # Remove ties:
     # idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
     idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
@@ -230,15 +230,15 @@ createStudyPopulation <- function(cohortMethodData,
                                                                                                 population$daysToObsEnd]
   if (censorAtNewRiskWindow) {
     ParallelLogger::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
-    population$startDate <- as.Date(population$cohortStartDate) + population$riskStart
-    population$endDate <- as.Date(population$cohortStartDate) + population$riskEnd
+    population$startDate <- population$cohortStartDate + population$riskStart
+    population$endDate <- population$cohortStartDate + population$riskEnd
     population <- population[order(population$subjectId, population$riskStart), ]
     idx <- 1:(nrow(population) - 1)
     idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
                    population$subjectId[idx] == population$subjectId[idx + 1])
     if (length(idx) > 0) {
       population$endDate[idx] <- population$startDate[idx + 1] - 1
-      population$riskEnd[idx] <- population$endDate[idx] - as.Date(population$cohortStartDate[idx])
+      population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
       idx <- population$riskEnd < population$riskStart
       if (any(idx)) {
         population <- population[!idx, ]
@@ -534,15 +534,15 @@ plotTimeToEvent <- function(cohortMethodData,
     curve$type <- factor(curve$type, levels = c(targetLabel, comparatorLabel))
 
     plot <- plot + ggplot2::geom_ribbon(ggplot2::aes(x = start + periodLength/2,
-                                                     ymin = lwr * 1000,
-                                                     ymax = upr * 1000,
-                                                     group = period),
+                                                     ymin = .data$lwr * 1000,
+                                                     ymax = .data$upr * 1000,
+                                                     group = .data$period),
                                         fill = rgb(0,0,0),
                                         alpha = 0.3,
                                         data = curve) +
       ggplot2::geom_line(ggplot2::aes(x = start + periodLength/2,
-                                      y = fit * 1000,
-                                      group = period),
+                                      y = .data$fit * 1000,
+                                      group = .data$period),
                          size = 1.5,
                          alpha = 0.8,
                          data = curve)

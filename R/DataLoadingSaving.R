@@ -374,6 +374,7 @@ getDbCohortMethodData <- function(connectionDetails,
   covariateData$outcomes <- outcomes
   attr(covariateData, "metaData") <- append(attr(covariateData, "metaData"), metaData)
   class(covariateData) <- "CohortMethodData"
+  attr(class(covariateData), "package") <- "CohortMethod"
   return(covariateData)
 }
 

@@ -1,7 +1,6 @@
 library("testthat")
 library("pROC")
 
-
 test_that("Simple 1-on-1 matching", {
   rowId <- 1:5
   treatment <- c(1, 0, 1, 0, 1)

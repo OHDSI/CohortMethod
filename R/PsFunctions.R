@@ -81,7 +81,11 @@ createPs <- function(cohortMethodData,
 
   start <- Sys.time()
   population <- population[order(population$rowId), ]
-  if (cohortMethodData$covariates %>% count() %>% pull() == 0) {
+  if (cohortMethodData$cohorts %>% count() %>% pull() == 0) {
+    error <- "No subjects in population, so cannot fit model"
+    sampled <- FALSE
+    ref <- NULL
+  } else if (cohortMethodData$covariates %>% count() %>% pull() == 0) {
     error <- "No covariate data, so cannot fit model"
     sampled <- FALSE
     ref <- NULL
@@ -243,6 +247,11 @@ createPs <- function(cohortMethodData,
 #' @export
 getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
+  if (is.null(coefficients)) {
+    return(tibble::tibble(coefficient = NA,
+                          covariateId = NA,
+                          covariateName = NA))
+  }
   result <- tibble::tibble(coefficient = coefficients[1],
                            covariateId = NA,
                            covariateName = "(Intercept)")
@@ -380,8 +389,8 @@ plotPs <- function(data,
     d <- data.frame(x = c(d1$x, d0$x), y = c(d1$y, d0$y), treatment = c(rep(as.character(targetLabel), length(d1$x)),
                                                                         rep(as.character(comparatorLabel), length(d0$x))))
     d$treatment <- factor(d$treatment, levels = c(targetLabel, comparatorLabel))
-    plot <- ggplot2::ggplot(d, ggplot2::aes(x = x, y = y)) +
-      ggplot2::geom_density(stat = "identity", ggplot2::aes(color = treatment, group = treatment, fill = treatment)) +
+    plot <- ggplot2::ggplot(d, ggplot2::aes(x = .data$x, y = .data$y)) +
+      ggplot2::geom_density(stat = "identity", ggplot2::aes(color = .data$treatment, group = .data$treatment, fill = .data$treatment)) +
       ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                             rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
@@ -424,8 +433,8 @@ plotPs <- function(data,
       d$y <- d$y / sum(d$y)
       yAxisScale <- "Proportion"
     }
-    plot <- ggplot2::ggplot(d, ggplot2::aes(x = xmin)) +
-      ggplot2::geom_rect(ggplot2::aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = y, color = treatment, group = treatment, fill = treatment)) +
+    plot <- ggplot2::ggplot(d, ggplot2::aes(x = .data$xmin)) +
+      ggplot2::geom_rect(ggplot2::aes(xmin = .data$xmin, xmax = .data$xmax, ymin = 0, ymax = .data$y, color = .data$treatment, group = .data$treatment, fill = .data$treatment)) +
       ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
                                             rgb(0, 0, 0.8, alpha = 0.5))) +
       ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
@@ -503,8 +512,8 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
     stop("Missing column propensityScore in data")
 
   if (confidenceIntervals) {
-    auc <- aucWithCi(data$propensityScore, data$treatment)
-    return(tibble::tibble(auc = auc[1], auc_lb95ci = auc[2], auc_lb95ci = auc[3]))
+    aucCi <- aucWithCi(data$propensityScore, data$treatment)
+    return(tibble::tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
   } else {
     auc <- aucWithoutCi(data$propensityScore, data$treatment)
     return(auc)

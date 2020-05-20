@@ -189,7 +189,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   cohorts <- tibble::tibble(rowId = treatmentVar$rowId,
                             treatment = treatmentVar$covariateValue,
                             subjectId = treatmentVar$rowId,
-                            cohortStartDate = "2000-01-01",
+                            cohortStartDate = as.Date("2000-01-01"),
                             daysFromObsStart = profile$minObsTime + round(rexp(n,
                                                                                profile$obsStartRate)) - 1,
                             daysToCohortEnd = round(rexp(n, profile$obsEndRate)),
@@ -259,6 +259,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   metaData$populationSize <- n
   attr(result, "metaData") <- metaData
   class(result) <- "CohortMethodData"
+  attr(class(result), "package") <- "CohortMethod"
   return(result)
 }
 
