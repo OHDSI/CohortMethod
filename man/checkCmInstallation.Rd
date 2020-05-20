@@ -15,6 +15,6 @@ Check is CohortMethod and its dependencies are correctly installed
 }
 \details{
 This function checks whether CohortMethod and its dependencies are correctly installed. This will
-check the database connectivity, large scale regresion engine (Cyclops), and large data object
+check the database connectivity, large scale regression engine (Cyclops), and large data object
 handling (ff).
 }

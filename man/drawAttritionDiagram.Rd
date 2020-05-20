@@ -29,6 +29,6 @@ A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file 
 format.
 }
 \description{
-\code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from
+\code{drawAttritionDiagram} draws the attrition diagram, showing how many people were excluded from
 the study population, and for what reasons.
 }

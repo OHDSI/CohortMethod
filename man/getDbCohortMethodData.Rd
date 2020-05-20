@@ -33,7 +33,7 @@ getDbCohortMethodData(
 
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
-Server, this should specifiy both the database and the schema,
+Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.}
 
 \item{oracleTempSchema}{For Oracle only: the name of the database schema where you want
@@ -47,7 +47,7 @@ define the cohort.  If exposureTable <> DRUG_ERA, targetId is
 used to select the COHORT_DEFINITION_ID in the cohort-like table.}
 
 \item{comparatorId}{A unique identifier to define the comparator cohort.  If
-exposureTable = DRUG_ERA, comparatorId is a concpet ID and all
+exposureTable = DRUG_ERA, comparatorId is a concept ID and all
 descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
 is used to select the COHORT_DEFINITION_ID in the cohort-like
@@ -83,7 +83,7 @@ SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{excludeDrugsFromCovariates}{DEPRECATED: Should the target and comparator drugs (and their descendant
 concepts) be excluded from the covariates? Note that this will
-work if the drugs are actualy drug concept IDs (and not cohort
+work if the drugs are actually drug concept IDs (and not cohort
 IDs).}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Note
@@ -91,13 +91,13 @@ that this is typically done in the \code{\link[=createStudyPopulation]{createStu
 function, but can already be done here for efficiency reasons.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.N ote that this is typically done in the
+cohort? See details for allowed values.Note that this is typically done in the
 \code{createStudyPopulation} function, but can already be done
 here for efficiency reasons.}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
 
-\item{washoutPeriod}{The mininum required continuous observation time prior to index
+\item{washoutPeriod}{The minimum required continuous observation time prior to index
 date for a person to be included in the cohort. Note that this
 is typically done in the \code{createStudyPopulation} function,
 but can already be done here for efficiency reasons.}

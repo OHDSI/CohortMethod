@@ -58,6 +58,9 @@ saveCohortMethodData(cohortMethodData, "s:/temp/simulationCohortMethodData")
 
 cohortMethodDataSimulationProfile <- createCohortMethodDataSimulationProfile(cohortMethodData)
 
+# To avoid warnings about marked UTF-8 strings during R check:
+cohortMethodDataSimulationProfile$covariateRef$covariateName <- stringi::stri_enc_toascii(cohortMethodDataSimulationProfile$covariateRef$covariateName)
+
 save(cohortMethodDataSimulationProfile,
      file = "data/cohortMethodDataSimulationProfile.rda",
      compress = "xz")

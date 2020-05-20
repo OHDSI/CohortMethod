@@ -27,7 +27,7 @@ respectively.}
 
 \item{cohortDatabaseSchema}{The name of the database schema where the data will be written.
 Requires write permissions to this database. On SQL Server, this
-should specifiy both the database and the schema, so for example
+should specify both the database and the schema, so for example
 'cdm_instance.dbo'.}
 
 \item{cohortTable}{The name of the table in the database schema where the data will be

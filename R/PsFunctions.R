@@ -42,7 +42,7 @@
 #'                                 the treatment assignment. If any covariate has an unusually high
 #'                                 correlation (either positive or negative), this will throw and
 #'                                 error.
-#' @param stopOnError              If an error occurrs, should the function stop? Else, the two cohorts
+#' @param stopOnError              If an error occurr, should the function stop? Else, the two cohorts
 #'                                 will be assumed to be perfectly separable.
 #' @param prior                    The prior used to fit the model. See
 #'                                 [Cyclops::createPrior()] for details.
@@ -962,7 +962,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
 #' Stratify persons by propensity score and other covariates
 #'
 #' @description
-#' Use the provided propensity scores and covariatesto stratify
+#' Use the provided propensity scores and covariates to stratify
 #' persons.
 #'
 #' @param population         A data frame with the three columns described below

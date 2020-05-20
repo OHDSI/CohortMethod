@@ -35,7 +35,7 @@
 #'                              scores)?
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
-#' @param inversePtWeighting    Use inverse probability of treatment weigting (IPTW)? See details.
+#' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)? See details.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.

@@ -37,7 +37,7 @@ function \code{createConnectionDetails} in the
 
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
-Server, this should specifiy both the database and the schema,
+Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.}
 
 \item{oracleTempSchema}{For Oracle only: the name of the database schema where you

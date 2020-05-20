@@ -11,15 +11,15 @@ createStratifyByPsAndCovariatesArgs(
 )
 }
 \arguments{
-\item{numberOfStrata}{Into how many strata should the propensity score be divided? Theboundaries
-of the strata are automatically defined to contain equalnumbers of target
+\item{numberOfStrata}{Into how many strata should the propensity score be divided? The boundaries
+of the strata are automatically defined to contain equal numbers of target
 persons.}
 
-\item{baseSelection}{What is the base selection of subjects where the strata bounds areto be
-determined? Strata are defined as equally-sized strata insidethis selection.
-Possible values are "all", "target", and "comparator".}
+\item{baseSelection}{What is the base selection of subjects where the strata bounds are to be
+determined? Strata are defined as equally-sized strata inside this
+selection. Possible values are "all", "target", and "comparator".}
 
-\item{covariateIds}{One or more covariate IDs in the cohortMethodData object on whichsubjects
+\item{covariateIds}{One or more covariate IDs in the cohortMethodData object on which subjects
 should also be stratified.}
 }
 \description{

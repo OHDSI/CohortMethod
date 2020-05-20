@@ -38,7 +38,7 @@ transformations will be performed.}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
 
-\item{washoutPeriod}{The mininum required continuous observation time prior to
+\item{washoutPeriod}{The minimum required continuous observation time prior to
 index date for a person to be included in the cohort.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator

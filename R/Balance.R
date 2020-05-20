@@ -296,7 +296,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
 #' format.
 #'
 #' @param balance        A data frame created by the `computeCovariateBalance` funcion.
-#' @param n              (Maximum) count of variates to plot.
+#' @param n              (Maximum) count of covariates to plot.
 #' @param maxNameWidth   Covariate names longer than this number of characters are truncated to create
 #'                       a nicer plot.
 #' @param title          Optional: the main title for the plot.

@@ -5,34 +5,34 @@
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param studyStartDate               A calendar date specifying the minimum date that a cohort
-#'                                     indexdate can appear. Date format is 'yyyymmdd'.
-#' @param studyEndDate                 A calendar date specifying the maximum date that a cohort
-#'                                     indexdate can appear. Date format is 'yyyymmdd'. Important: the
-#'                                     studyend data is also used to truncate risk windows, meaning
-#'                                     nooutcomes beyond the study end date will be considered.
+#' @param studyStartDate               A calendar date specifying the minimum date that a cohort index
+#'                                     date can appear. Date format is 'yyyymmdd'.
+#' @param studyEndDate                 A calendar date specifying the maximum date that a cohort index
+#'                                     date can appear. Date format is 'yyyymmdd'. Important: the study
+#'                                     end data is also used to truncate risk windows, meaning no
+#'                                     outcomes beyond the study end date will be considered.
 #' @param excludeDrugsFromCovariates   DEPRECATED: Should the target and comparator drugs (and their
-#'                                     descendantconcepts) be excluded from the covariates? Note that
-#'                                     this willwork if the drugs are actualy drug concept IDs (and not
-#'                                     cohortIDs).
-#' @param firstExposureOnly            Should only the first exposure per subject be included? Notethat
-#'                                     this is typically done in the createStudyPopulation()function,
-#'                                     but can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the target and
-#'                                     comparatorcohort? See details for allowed values.N ote that this
-#'                                     is typically done in thecreateStudyPopulation function, but can
-#'                                     already be donehere for efficiency reasons.
+#'                                     descendant concepts) be excluded from the covariates? Note that
+#'                                     this will work if the drugs are actually drug concept IDs (and
+#'                                     not cohort IDs).
+#' @param firstExposureOnly            Should only the first exposure per subject be included? Note
+#'                                     that this is typically done in the createStudyPopulation()
+#'                                     function, but can already be done here for efficiency reasons.
+#' @param removeDuplicateSubjects      Remove subjects that are in both the target and comparator
+#'                                     cohort? See details for allowed values.Note that this is
+#'                                     typically done in the createStudyPopulation function, but can
+#'                                     already be done here for efficiency reasons.
 #' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are
 #'                                     observed?
-#' @param washoutPeriod                The mininum required continuous observation time prior to
-#'                                     indexdate for a person to be included in the cohort. Note that
-#'                                     thisis typically done in the createStudyPopulation function,but
-#'                                     can already be done here for efficiency reasons.
-#' @param maxCohortSize                If either the target or the comparator cohort is larger thanthis
-#'                                     number it will be sampled to this size. maxCohortSize =
-#'                                     0indicates no maximum size.
-#' @param covariateSettings            An object of type covariateSettings as created using
-#'                                     theFeatureExtraction::createCovariateSettings() function.
+#' @param washoutPeriod                The minimum required continuous observation time prior to index
+#'                                     date for a person to be included in the cohort. Note that this
+#'                                     is typically done in the createStudyPopulation function, but can
+#'                                     already be done here for efficiency reasons.
+#' @param maxCohortSize                If either the target or the comparator cohort is larger than
+#'                                     this number it will be sampled to this size. maxCohortSize = 0
+#'                                     indicates no maximum size.
+#' @param covariateSettings            An object of type covariateSettings as created using the
+#'                                     FeatureExtraction::createCovariateSettings() function.
 #'
 #' @export
 createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
@@ -44,16 +44,9 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             washoutPeriod = 0,
                                             maxCohortSize = 0,
                                             covariateSettings) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createGetDbCohortMethodDataArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -67,29 +60,30 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #' @param firstExposureOnly                Should only the first exposure per subject be included?
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are
 #'                                         observed?
-#' @param washoutPeriod                    The mininum required continuous observation time prior
-#'                                         toindex date for a person to be included in the cohort.
-#' @param removeDuplicateSubjects          Remove subjects that are in both the target and
-#'                                         comparatorcohort? See details for allowed values.
-#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the
-#'                                         riskwindow start?
-#' @param priorOutcomeLookback             How many days should we look back when identifying
-#'                                         prioroutcomes?
+#' @param washoutPeriod                    The minimum required continuous observation time prior to
+#'                                         index date for a person to be included in the cohort.
+#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
+#'                                         cohort? See details for allowed values.
+#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
+#'                                         window start?
+#' @param priorOutcomeLookback             How many days should we look back when identifying prior
+#'                                         outcomes?
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the
 #'                                         startAnchor.
 #' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk
-#'                                         window?Use startAnchor instead.
+#'                                         window? Use startAnchor instead.
 #' @param startAnchor                      The anchor point for the start of the risk window. Can be
-#'                                         "cohort start"or "cohort end".
+#'                                         "cohort start" or "cohort end".
 #' @param riskWindowEnd                    The end of the risk window (in days) relative to the
 #'                                         endAnchor.
-#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?Use
+#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window? Use
 #'                                         endAnchor instead.
 #' @param endAnchor                        The anchor point for the end of the risk window. Can be
-#'                                         "cohort start"or "cohort end".
+#'                                         "cohort start" or "cohort end".
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be
-#'                                         censoredwhen the new time-at-risk starts to prevent overlap?
+#'                                         censored when the new time-at-risk starts to prevent
+#'                                         overlap?
 #'
 #' @export
 createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
@@ -106,16 +100,9 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
                                             addExposureDaysToEnd = NULL,
                                             endAnchor = "cohort end",
                                             censorAtNewRiskWindow = FALSE) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createCreateStudyPopulationArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -129,21 +116,21 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #' @param excludeCovariateIds       Exclude these covariates from the propensity model.
 #' @param includeCovariateIds       Include only these covariates in the propensity model.
 #' @param maxCohortSizeForFitting   If the target or comparator cohort are larger than this number,
-#'                                  theywill be downsampled before fitting the propensity model. The
-#'                                  modelwill be used to compute propensity scores for all subjects.
-#'                                  Thepurpose of the sampling is to gain speed. Setting this number to
-#'                                  0means no downsampling will be applied.
-#' @param errorOnHighCorrelation    If true, the function will test each covariate for correlation
-#'                                  withthe treatment assignment. If any covariate has an unusually
-#'                                  highcorrelation (either positive or negative), this will throw
-#'                                  anderror.
-#' @param stopOnError               If an error occurrs, should the function stop? Else, the two
-#'                                  cohortswill be assumed to be perfectly separable.
-#' @param prior                     The prior used to fit the model. SeeCyclops::createPrior() for
+#'                                  they will be downsampled before fitting the propensity model. The
+#'                                  model will be used to compute propensity scores for all subjects.
+#'                                  The purpose of the sampling is to gain speed. Setting this number
+#'                                  to 0 means no downsampling will be applied.
+#' @param errorOnHighCorrelation    If true, the function will test each covariate for correlation with
+#'                                  the treatment assignment. If any covariate has an unusually high
+#'                                  correlation (either positive or negative), this will throw and
+#'                                  error.
+#' @param stopOnError               If an error occurr, should the function stop? Else, the two cohorts
+#'                                  will be assumed to be perfectly separable.
+#' @param prior                     The prior used to fit the model. See Cyclops::createPrior() for
 #'                                  details.
-#' @param control                   The control object used to control the cross-validation used
-#'                                  todetermine the hyperparameters of the prior (if applicable).
-#'                                  SeeCyclops::createControl() for details.
+#' @param control                   The control object used to control the cross-validation used to
+#'                                  determine the hyperparameters of the prior (if applicable). See
+#'                                  Cyclops::createControl() for details.
 #'
 #' @export
 createCreatePsArgs <- function(excludeCovariateIds = c(),
@@ -160,16 +147,9 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
                                                        tolerance = 2e-07,
                                                        cvRepetitions = 10,
                                                        startingVariance = 0.01)) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createCreatePsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -180,22 +160,15 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param trimFraction   This fraction will be removed from each treatment group. In the targetgroup,
-#'                       persons with the highest propensity scores will be removed, in thecomparator
+#' @param trimFraction   This fraction will be removed from each treatment group. In the target group,
+#'                       persons with the highest propensity scores will be removed, in the comparator
 #'                       group person with the lowest scores will be removed.
 #'
 #' @export
 createTrimByPsArgs <- function(trimFraction = 0.05) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createTrimByPsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -210,16 +183,9 @@ createTrimByPsArgs <- function(trimFraction = 0.05) {
 #'
 #' @export
 createTrimByPsToEquipoiseArgs <- function(bounds = c(0.3, 0.7)) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createTrimByPsToEquipoiseArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -230,25 +196,25 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.3, 0.7)) {
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param caliper                 The caliper for matching. A caliper is the distance which
-#'                                isacceptable for any match. Observations which are outside of
-#'                                thecaliper are dropped. A caliper of 0 means no caliper is used.
+#' @param caliper                 The caliper for matching. A caliper is the distance which is
+#'                                acceptable for any match. Observations which are outside of the
+#'                                caliper are dropped. A caliper of 0 means no caliper is used.
 #' @param caliperScale            The scale on which the caliper is defined. Three scales are
-#'                                supported:caliperScale = 'propensity score', caliperScale =
-#'                                'standardized', or caliperScale = 'standardized logit'.On the
-#'                                standardized scale, the caliper is interpreted in standarddeviations
-#'                                of the propensity score distribution. 'standardized logit'is similar,
-#'                                except that the propensity score is transformed to the logitscale
-#'                                because the PS is more likely to be normally distributed on that
-#'                                scale(Austin, 2011).
-#' @param maxRatio                The maximum number of persons in the comparator arm to be matched
-#'                                toeach person in the treatment arm. A maxRatio of 0 means no
-#'                                maximum:all comparators will be assigned to a target person.
+#'                                supported: caliperScale = 'propensity score', caliperScale =
+#'                                'standardized', or caliperScale = 'standardized logit'. On the
+#'                                standardized scale, the caliper is interpreted in standard deviations
+#'                                of the propensity score distribution. 'standardized logit' is
+#'                                similar, except that the propensity score is transformed to the logit
+#'                                scale because the PS is more likely to be normally distributed on
+#'                                that scale (Austin, 2011).
+#' @param maxRatio                The maximum number of persons in the comparator arm to be matched to
+#'                                each person in the treatment arm. A maxRatio of 0 means no maximum:
+#'                                all comparators will be assigned to a target person.
 #' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
-#' @param stratificationColumns   Names or numbers of one or more columns in the data data.frameon
-#'                                which subjects should be stratified prior to matching. No personswill
-#'                                be matched with persons outside of the strata identified by thevalues
-#'                                in these columns.
+#' @param stratificationColumns   Names or numbers of one or more columns in the data data.frame on
+#'                                which subjects should be stratified prior to matching. No persons
+#'                                will be matched with persons outside of the strata identified by the
+#'                                values in these columns.
 #'
 #' @export
 createMatchOnPsArgs <- function(caliper = 0.2,
@@ -256,16 +222,9 @@ createMatchOnPsArgs <- function(caliper = 0.2,
                                 maxRatio = 1,
                                 allowReverseMatch = FALSE,
                                 stratificationColumns = c()) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createMatchOnPsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -276,22 +235,22 @@ createMatchOnPsArgs <- function(caliper = 0.2,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param caliper             The caliper for matching. A caliper is the distance which is
-#'                            acceptablefor any match. Observations which are outside of the caliper
-#'                            are dropped.A caliper of 0 means no caliper is used.
-#' @param caliperScale        The scale on which the caliper is defined. Three scales are
-#'                            supported:caliperScale = 'propensity score', caliperScale =
-#'                            'standardized', or caliperScale = 'standardized logit'.On the
-#'                            standardized scale, the caliper is interpreted in standarddeviations of
-#'                            the propensity score distribution. 'standardized logit'is similar, except
-#'                            that the propensity score is transformed to the logitscale because the PS
-#'                            is more likely to be normally distributed on that scale(Austin, 2011).
-#' @param maxRatio            The maximum number of persons in the comparator arm to be matched to
-#'                            eachperson in the treatment arm. A maxRatio of 0 means no maximum:
-#'                            allcomparators will be assigned to a target person.
+#' @param caliper             The caliper for matching. A caliper is the distance which is acceptable
+#'                            for any match. Observations which are outside of the caliper are dropped.
+#'                            A caliper of 0 means no caliper is used.
+#' @param caliperScale        The scale on which the caliper is defined. Three scales are supported:
+#'                            caliperScale = 'propensity score', caliperScale = 'standardized', or
+#'                            caliperScale = 'standardized logit'. On the standardized scale, the
+#'                            caliper is interpreted in standard deviations of the propensity score
+#'                            distribution. 'standardized logit' is similar, except that the propensity
+#'                            score is transformed to the logit scale because the PS is more likely to
+#'                            be normally distributed on that scale (Austin, 2011).
+#' @param maxRatio            The maximum number of persons in the comparator arm to be matched to each
+#'                            person in the treatment arm. A maxRatio of 0 means no maximum: all
+#'                            comparators will be assigned to a target person.
 #' @param allowReverseMatch   Allows n-to-1 matching if target arm is larger
-#' @param covariateIds        One or more covariate IDs in the cohortMethodData object on whichsubjects
-#'                            should be also matched.
+#' @param covariateIds        One or more covariate IDs in the cohortMethodData object on which
+#'                            subjects should be also matched.
 #'
 #' @export
 createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
@@ -299,16 +258,9 @@ createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
                                              maxRatio = 1,
                                              allowReverseMatch = FALSE,
                                              covariateIds) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createMatchOnPsAndCovariatesArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -319,29 +271,22 @@ createMatchOnPsAndCovariatesArgs <- function(caliper = 0.2,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param numberOfStrata          How many strata? The boundaries of the strata are
-#'                                automaticallydefined to contain equal numbers of target persons.
-#' @param stratificationColumns   Names of one or more columns in the data data.frame on whichsubjects
-#'                                should also be stratified in addition to stratification onpropensity
+#' @param numberOfStrata          How many strata? The boundaries of the strata are automatically
+#'                                defined to contain equal numbers of target persons.
+#' @param stratificationColumns   Names of one or more columns in the data data.frame on which subjects
+#'                                should also be stratified in addition to stratification on propensity
 #'                                score.
-#' @param baseSelection           What is the base selection of subjects where the strata bounds areto
-#'                                be determined? Strata are defined as equally-sized strata insidethis
+#' @param baseSelection           What is the base selection of subjects where the strata bounds are to
+#'                                be determined? Strata are defined as equally-sized strata inside this
 #'                                selection. Possible values are "all", "target", and "comparator".
 #'
 #' @export
 createStratifyByPsArgs <- function(numberOfStrata = 5,
                                    stratificationColumns = c(),
                                    baseSelection = "all") {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createStratifyByPsArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -352,29 +297,22 @@ createStratifyByPsArgs <- function(numberOfStrata = 5,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param numberOfStrata   Into how many strata should the propensity score be divided? Theboundaries
-#'                         of the strata are automatically defined to contain equalnumbers of target
+#' @param numberOfStrata   Into how many strata should the propensity score be divided? The boundaries
+#'                         of the strata are automatically defined to contain equal numbers of target
 #'                         persons.
-#' @param baseSelection    What is the base selection of subjects where the strata bounds areto be
-#'                         determined? Strata are defined as equally-sized strata insidethis selection.
-#'                         Possible values are "all", "target", and "comparator".
-#' @param covariateIds     One or more covariate IDs in the cohortMethodData object on whichsubjects
+#' @param baseSelection    What is the base selection of subjects where the strata bounds are to be
+#'                         determined? Strata are defined as equally-sized strata inside this
+#'                         selection. Possible values are "all", "target", and "comparator".
+#' @param covariateIds     One or more covariate IDs in the cohortMethodData object on which subjects
 #'                         should also be stratified.
 #'
 #' @export
 createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
                                                 baseSelection = "all",
                                                 covariateIds) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createStratifyByPsAndCovariatesArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)
@@ -385,23 +323,23 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param modelType                 The type of outcome model that will be used. Possible values
-#'                                  are"logistic", "poisson", or "cox".
-#' @param stratified                Should the regression be conditioned on the strata defined in
-#'                                  thepopulation object (e.g. by matching or stratifying on
-#'                                  propensityscores)?
-#' @param useCovariates             Whether to use the covariates in the cohortMethodDataobject in the
+#' @param modelType                 The type of outcome model that will be used. Possible values are
+#'                                  "logistic", "poisson", or "cox".
+#' @param stratified                Should the regression be conditioned on the strata defined in the
+#'                                  population object (e.g. by matching or stratifying on propensity
+#'                                  scores)?
+#' @param useCovariates             Whether to use the covariates in the cohortMethodData object in the
 #'                                  outcome model.
-#' @param inversePtWeighting        Use inverse probability of treatment weigting (IPTW)? See details.
-#' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate
-#'                                  interactionswith the main treatment effect.
+#' @param inversePtWeighting        Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate interactions
+#'                                  with the main treatment effect.
 #' @param excludeCovariateIds       Exclude these covariates from the outcome model.
 #' @param includeCovariateIds       Include only these covariates in the outcome model.
-#' @param prior                     The prior used to fit the model. See Cyclops::createPrior()for
+#' @param prior                     The prior used to fit the model. See Cyclops::createPrior() for
 #'                                  details.
-#' @param control                   The control object used to control the cross-validation used
-#'                                  todetermine the hyperparameters of the prior (if applicable).
-#'                                  SeeCyclops::createControl() for details.
+#' @param control                   The control object used to control the cross-validation used to
+#'                                  determine the hyperparameters of the prior (if applicable). See
+#'                                  Cyclops::createControl() for details.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "logistic",
@@ -418,16 +356,9 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
                                                               noiseLevel = "quiet")) {
-  # First: get default values:
   analysis <- list()
   for (name in names(formals(createFitOutcomeModelArgs))) {
     analysis[[name]] <- get(name)
-  }
-  # Second: overwrite defaults with actual values:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis))
-      analysis[[name]] <- values[[name]]
   }
   class(analysis) <- "args"
   return(analysis)

@@ -19,6 +19,7 @@ OhdsiRTools::formatRFolder()
 OhdsiRTools::checkUsagePackage("CohortMethod")
 OhdsiRTools::updateCopyrightYearFolder()
 OhdsiRTools::findNonAsciiStringsInFolder()
+devtools::spell_check()
 
 # Create manual and vignettes:
 shell("rm extras/CohortMethod.pdf")

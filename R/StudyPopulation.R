@@ -53,7 +53,7 @@ fastDuplicated <- function(data, columns) {
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
-#' @param washoutPeriod                    The mininum required continuous observation time prior to
+#' @param washoutPeriod                    The minimum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
 #'                                         window start?
@@ -348,7 +348,7 @@ getCounts <- function(population, description = "") {
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
 #' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
-#' @param washoutPeriod                    The mininum required continuous observation time prior to
+#' @param washoutPeriod                    The minimum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
@@ -365,7 +365,7 @@ getCounts <- function(population, description = "") {
 #'                                         when the new time-at-risk starts to prevent overlap?
 #' @param periodLength                     The length in days of each period shown in the plot.
 #' @param numberOfPeriods                  Number of periods to show in the plot. The periods are
-#'                                         equaly divided before and after the index date.
+#'                                         equally divided before and after the index date.
 #' @param showFittedLines                  Fit lines to the proportions and show them in the plot?
 #' @param targetLabel                      A label to us for the target cohort.
 #' @param comparatorLabel                  A label to us for the comparator cohort.

@@ -20,7 +20,7 @@
 #' Plot the Kaplan-Meier curve
 #'
 #' @description
-#' \code{plotKaplanMeier} creates the Kaplain-Meier (KM) survival plot. Based (partially) on recommendations
+#' \code{plotKaplanMeier} creates the Kaplan-Meier (KM) survival plot. Based (partially) on recommendations
 #' in Pocock et al (2002).
 #'
 #' When variable-sized strata are detected, an adjusted KM plot is computed to account for stratified data,

@@ -73,7 +73,7 @@ when the new time-at-risk starts to prevent overlap?}
 \item{periodLength}{The length in days of each period shown in the plot.}
 
 \item{numberOfPeriods}{Number of periods to show in the plot. The periods are
-equaly divided before and after the index date.}
+equally divided before and after the index date.}
 
 \item{showFittedLines}{Fit lines to the proportions and show them in the plot?}
 

@@ -27,17 +27,17 @@ createCreateStudyPopulationArgs(
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are
 observed?}
 
-\item{washoutPeriod}{The mininum required continuous observation time prior
-toindex date for a person to be included in the cohort.}
+\item{washoutPeriod}{The minimum required continuous observation time prior to
+index date for a person to be included in the cohort.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the target and
-comparatorcohort? See details for allowed values.}
+\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
+cohort? See details for allowed values.}
 
-\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the
-riskwindow start?}
+\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk
+window start?}
 
-\item{priorOutcomeLookback}{How many days should we look back when identifying
-prioroutcomes?}
+\item{priorOutcomeLookback}{How many days should we look back when identifying prior
+outcomes?}
 
 \item{minDaysAtRisk}{The minimum required number of days at risk.}
 
@@ -45,22 +45,23 @@ prioroutcomes?}
 startAnchor.}
 
 \item{addExposureDaysToStart}{DEPRECATED: Add the length of exposure the start of the risk
-window?Use startAnchor instead.}
+window? Use startAnchor instead.}
 
 \item{startAnchor}{The anchor point for the start of the risk window. Can be
-"cohort start"or "cohort end".}
+"cohort start" or "cohort end".}
 
 \item{riskWindowEnd}{The end of the risk window (in days) relative to the
 endAnchor.}
 
-\item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window?Use
+\item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window? Use
 endAnchor instead.}
 
 \item{endAnchor}{The anchor point for the end of the risk window. Can be
-"cohort start"or "cohort end".}
+"cohort start" or "cohort end".}
 
 \item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be
-censoredwhen the new time-at-risk starts to prevent overlap?}
+censored when the new time-at-risk starts to prevent
+overlap?}
 }
 \description{
 Create a parameter object for the function createStudyPopulation

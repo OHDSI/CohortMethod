@@ -37,7 +37,7 @@ scores)?}
 \item{useCovariates}{Whether to use the covariates in the \code{cohortMethodData}
 object in the outcome model.}
 
-\item{inversePtWeighting}{Use inverse probability of treatment weigting (IPTW)? See details.}
+\item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)? See details.}
 
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.}

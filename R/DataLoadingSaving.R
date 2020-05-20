@@ -42,7 +42,7 @@
 #'                                     [DatabaseConnector::createConnectionDetails()] function.
 #' @param cdmDatabaseSchema            The name of the database schema that contains the OMOP CDM
 #'                                     instance. Requires read permissions to this database. On SQL
-#'                                     Server, this should specifiy both the database and the schema,
+#'                                     Server, this should specify both the database and the schema,
 #'                                     so for example 'cdm_instance.dbo'.
 #' @param oracleTempSchema             For Oracle only: the name of the database schema where you want
 #'                                     all temporary tables to be managed. Requires create/insert
@@ -53,7 +53,7 @@
 #'                                     define the cohort.  If exposureTable <> DRUG_ERA, targetId is
 #'                                     used to select the COHORT_DEFINITION_ID in the cohort-like table.
 #' @param comparatorId                 A unique identifier to define the comparator cohort.  If
-#'                                     exposureTable = DRUG_ERA, comparatorId is a concpet ID and all
+#'                                     exposureTable = DRUG_ERA, comparatorId is a concept ID and all
 #'                                     descendant concepts within that concept ID will be used to
 #'                                     define the cohort.  If exposureTable <> DRUG_ERA, comparatorId
 #'                                     is used to select the COHORT_DEFINITION_ID in the cohort-like
@@ -80,17 +80,17 @@
 #' @param cdmVersion                   Define the OMOP CDM version used: currently supports "5".
 #' @param excludeDrugsFromCovariates   DEPRECATED: Should the target and comparator drugs (and their descendant
 #'                                     concepts) be excluded from the covariates? Note that this will
-#'                                     work if the drugs are actualy drug concept IDs (and not cohort
+#'                                     work if the drugs are actually drug concept IDs (and not cohort
 #'                                     IDs).
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Note
 #'                                     that this is typically done in the [createStudyPopulation()]
 #'                                     function, but can already be done here for efficiency reasons.
 #' @param removeDuplicateSubjects      Remove subjects that are in both the target and comparator
-#'                                     cohort? See details for allowed values.N ote that this is typically done in the
+#'                                     cohort? See details for allowed values.Note that this is typically done in the
 #'                                     `createStudyPopulation` function, but can already be done
 #'                                     here for efficiency reasons.
 #' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are observed?
-#' @param washoutPeriod                The mininum required continuous observation time prior to index
+#' @param washoutPeriod                The minimum required continuous observation time prior to index
 #'                                     date for a person to be included in the cohort. Note that this
 #'                                     is typically done in the `createStudyPopulation` function,
 #'                                     but can already be done here for efficiency reasons.
@@ -393,7 +393,7 @@ getDbCohortMethodData <- function(connectionDetails,
 #'                               [DatabaseConnector::createConnectionDetails()] function.
 #' @param cohortDatabaseSchema   The name of the database schema where the data will be written.
 #'                               Requires write permissions to this database. On SQL Server, this
-#'                               should specifiy both the database and the schema, so for example
+#'                               should specify both the database and the schema, so for example
 #'                               'cdm_instance.dbo'.
 #' @param cohortTable            The name of the table in the database schema where the data will be
 #'                               written.
