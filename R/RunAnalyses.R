@@ -429,26 +429,17 @@ runCmAnalyses <- function(connectionDetails,
   invisible(referenceTable)
 }
 
-getCohortMethodData <- function(cohortMethodDataFile, prefilteredCovariatesFile = "") {
+getCohortMethodData <- function(cohortMethodDataFile) {
   if (exists("cohortMethodData", envir = globalenv())) {
     cohortMethodData <- get("cohortMethodData", envir = globalenv())
   }
-  if (!mget("cohortMethodDataFile", envir = globalenv(), ifnotfound = "") == cohortMethodDataFile ||
-      !mget("prefilteredCovariatesFile", envir = globalenv(), ifnotfound = "") == cohortMethodDataFile) {
+  if (!mget("cohortMethodDataFile", envir = globalenv(), ifnotfound = "") == cohortMethodDataFile) {
     if (exists("cohortMethodData", envir = globalenv())) {
       Andromeda::close(cohortMethodData)
     }
     cohortMethodData <- loadCohortMethodData(cohortMethodDataFile)
-    if (prefilteredCovariatesFile != "") {
-      covariateData <- Andromeda::loadAndromeda(prefilteredCovariatesFile)
-      cohortMethodData$covariates <- covariateData$covariates
-      cohortMethodData$covariateRef <- covariateData$covariateRef
-      cohortMethodData$analysisRef <- covariateData$analysisRef
-      Andromeda::close(covariateData)
-    }
     assign("cohortMethodData", cohortMethodData, envir = globalenv())
     assign("cohortMethodDataFile", cohortMethodDataFile, envir = globalenv())
-    assign("prefilteredCovariatesFile", prefilteredCovariatesFile, envir = globalenv())
   }
   return(cohortMethodData)
 }
@@ -574,7 +565,7 @@ doPrefilterCovariates <- function(params) {
       covariatesToInclude <- c()
       covariatesToExclude <- c()
     }
-    covariatesToInclude <- unique(c(covariatesToInclude, params$args$includeCovariateIds))
+    covariatesToInclude <- unique(c(covariatesToInclude, params$args$interactionCovariateIds))
     if (length(covariatesToInclude) != 0) {
       covariates <- covariates %>%
         filter(.data$covariateId %in% covariatesToInclude)
@@ -584,16 +575,24 @@ doPrefilterCovariates <- function(params) {
         filter(!.data$covariateId %in% covariatesToExclude)
     }
   }
-  covariateData <- Andromeda::andromeda(covariates = covariates,
-                                        covariateRef = cohortMethodData$covariateRef,
-                                        analysisRef = cohortMethodData$analysisRef)
-
-  Andromeda::saveAndromeda(covariateData, params$prefilteredCovariatesFile)
+  filteredCohortMethodData <- Andromeda::andromeda(cohorts = cohortMethodData$cohorts,
+                                                   outcomes = cohortMethodData$outcomes,
+                                                   covariates = covariates,
+                                                   covariateRef = cohortMethodData$covariateRef,
+                                                   analysisRef = cohortMethodData$analysisRef)
+  attr(filteredCohortMethodData, "metaData") <- attr(cohortMethodData, "metaData")
+  class(filteredCohortMethodData) <- "CohortMethodData"
+  attr(class(filteredCohortMethodData), "package") <- "CohortMethod"
+  saveCohortMethodData(filteredCohortMethodData, params$prefilteredCovariatesFile)
   return(NULL)
 }
 
 doFitOutcomeModel <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile, params$prefilteredCovariatesFile)
+  if (params$prefilteredCovariatesFile == "") {
+    cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+  } else {
+    cohortMethodData <- getCohortMethodData(params$prefilteredCovariatesFile)
+  }
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
@@ -614,7 +613,11 @@ doFitOutcomeModel <- function(params) {
 }
 
 doFitOutcomeModelPlus <- function(params) {
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile, params$prefilteredCovariatesFile)
+  if (params$prefilteredCovariatesFile == "") {
+    cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+  } else {
+    cohortMethodData <- getCohortMethodData(params$prefilteredCovariatesFile)
+  }
 
   # Create study pop
   args <- params$args$createStudyPopArgs
