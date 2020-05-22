@@ -12,7 +12,7 @@ CohortMethod is an R package for performing new-user cohort studies
     propensity and outcome model, including for example all drugs, diagnoses, procedures, 
     as well as age, comorbidity indexes, etc. Large scale regularized regression is used to 
     fit the propensity and outcome models. Functions are included for trimming, stratifying, 
-    (varibale and fixed ratio) matching and weighting by propensity scores, as well as 
+    (variable and fixed ratio) matching and weighting by propensity scores, as well as 
     diagnostic functions, such as propensity score distribution plots and plots showing 
     covariate balance before and after matching and/or trimming. Supported outcome models 
     are (conditional) logistic regression, (conditional) Poisson regression, and 

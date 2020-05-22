@@ -34,7 +34,7 @@ Returns a date frame with the same columns as the input population plus one extr
 stratumId.
 }
 \description{
-Use the provided propensity scores and covariatesto stratify
+Use the provided propensity scores and covariates to stratify
 persons.
 }
 \details{

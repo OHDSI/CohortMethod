@@ -512,6 +512,9 @@ createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, popu
                                targetOutcomeExposures  = .data$targetExposures,
                                comparatorOutcomeExposures = .data$comparatorExposures),
                         getTimeAtRisk(subgroup, modelType))
+    counts$description <- NULL
+    counts$subgroupCovariateId <- subgroupCovariateId
+    return(counts)
   }
   subgroupCounts <- lapply(interactionCovariateIds, createSubgroupCounts)
   subgroupCounts <- bind_rows(subgroupCounts)
