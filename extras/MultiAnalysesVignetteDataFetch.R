@@ -19,14 +19,14 @@
 #### Fetch data for multiple analyses vignette ####
 library(CohortMethod)
 library(SqlRender)
-options(fftempdir = "s:/fftemp")
+options(andromedaTempFolder = "s:/andromedaTemp")
 
 # PDW
 pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 port <- 17001
 cdmVersion <- "5"
@@ -121,7 +121,7 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    removeDuplicateSubjects = "remove all",
                                                    studyStartDate = "",
                                                    studyEndDate = "",
-                                                   maxCohortSize = 10000,
+                                                   maxCohortSize = 100000,
                                                    excludeDrugsFromCovariates = FALSE,
                                                    covariateSettings = covarSettings)
 
@@ -277,7 +277,21 @@ connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
 DatabaseConnector::disconnect(connection)
 
-# result <- readRDS('s:/temp/cohortMethodVignette2/outcomeModelReference.rds')
+result <- readRDS('s:/temp/cohortMethodVignette2/outcomeModelReference.rds')
+om <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$outcomeModelFile[2]))
+om
+getAttritionTable(om)
+
+
+om2 <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$outcomeModelFile[9]))
+om2
+om2$outcomeCounts
+getAttritionTable(om2)
+
+studyPop <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$studyPopFile[9]))
+head(studyPop)
+getAttritionTable(studyPop)
+om <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$studyPopFile[2]))
 
 # cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
 # summary(cohortMethodData)

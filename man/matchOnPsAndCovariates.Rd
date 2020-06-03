@@ -9,6 +9,7 @@ matchOnPsAndCovariates(
   caliper = 0.2,
   caliperScale = "standardized logit",
   maxRatio = 1,
+  allowReverseMatch = FALSE,
   cohortMethodData,
   covariateIds
 )
@@ -21,44 +22,42 @@ for any match. Observations which are outside of the caliper are dropped.
 A caliper of 0 means no caliper is used.}
 
 \item{caliperScale}{The scale on which the caliper is defined. Three scales are supported:
-\cr\code{caliperScale = 'propensity score'}, \code{caliperScale =
-'standardized'}, or \cr\code{caliperScale = 'standardized logit'}.
+\code{caliperScale = 'propensity score'}, \code{caliperScale = 'standardized'}, or \code{caliperScale = 'standardized logit'}.
 On the standardized scale, the caliper is interpreted in standard
 deviations of the propensity score distribution. 'standardized logit'
 is similar, except that the propensity score is transformed to the logit
 scale because the PS is more likely to be normally distributed on that scale
 (Austin, 2011).}
 
-\item{maxRatio}{The maximum number of persons int the comparator arm to be matched to each
+\item{maxRatio}{The maximum number of persons in the comparator arm to be matched to each
 person in the treatment arm. A maxRatio of 0 means no maximum: all
 comparators will be assigned to a target person.}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{allowReverseMatch}{Allows n-to-1 matching if target arm is larger}
+
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
 \item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
 subjects should be also matched.}
 }
 \value{
-Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
+Returns a tibble with the same columns as the input data plus one extra column: stratumId. Any
 rows that could not be matched are removed
 }
 \description{
-\code{matchOnPsAndCovariates} uses the provided propensity scores and a set of covariates to match
+Use the provided propensity scores and a set of covariates to match
 target to comparator persons.
 }
 \details{
-The data frame should have at least the following three columns: \tabular{lll}{ \verb{rowId}
-\tab(numeric) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-\tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr } This function
-implements the greedy variable-ratio matching algorithm described in Rassen et al (2012).
+The data frame should have the following three columns:
+\itemize{
+\item rowId (numeric): A unique identifier for each row (e.g. the person ID).
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
+}
 
 The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
-}
-\examples{
-# todo
-
 }
 \references{
 Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity

@@ -186,7 +186,7 @@ loadCmAnalysisList <- function(file) {
 #' @details
 #' Create a set of hypotheses of interest, to be used with the \code{\link{runCmAnalyses}} function.
 #'
-#' @param targetId                      A concept ID indentifying the target drug in the exposure
+#' @param targetId                      A concept ID identifying the target drug in the exposure
 #'                                      table. If multiple strategies for picking the target will be
 #'                                      tested in the analysis, a named list of numbers can be provided
 #'                                      instead. In the analysis, the name of the number to be used can

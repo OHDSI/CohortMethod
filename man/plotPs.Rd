@@ -28,13 +28,11 @@ plotPs(
 have already been removed, e.g. through trimming and/or matching. This data
 frame should have the same structure as \code{data}.}
 
-\item{scale}{The scale of the graph. Two scales are supported: \code{ scale =
-'propensity'} or \code{scale = 'preference'}. The preference score scale is
+\item{scale}{The scale of the graph. Two scales are supported: \code{scale = 'propensity'} or \code{scale = 'preference'}. The preference score scale is
 defined by Walker et al (2013).}
 
-\item{type}{Type of plot. Four possible values: \code{type = 'density'} or \code{type =
-'histogram'} or \code{type = 'histogramCount'}
-or \code{type = 'histogramProportion'}. 'histogram' defaults to 'histogramCount'.}
+\item{type}{Type of plot. Four possible values: \code{type = 'density'}  \code{type = 'histogram'}, \code{type = 'histogramCount'},
+or \code{type = 'histogramProportion'}. \code{'histogram'} defaults to \code{'histogramCount'}.}
 
 \item{binWidth}{For histograms, the width of the bins}
 
@@ -56,20 +54,21 @@ equipoise.}
 \item{title}{Optional: the main title for the plot.}
 
 \item{fileName}{Name of the file where the plot should be saved, for example 'plot.png'.
-See the function \code{ggsave} in the ggplot2 package for supported file
-formats.}
+See the function \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} for supported file formats.}
 }
 \value{
-A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+A ggplot object. Use the \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} function to save to file in a different
 format.
 }
 \description{
-\code{plotPs} shows the propensity (or preference) score distribution
+Plots the propensity (or preference) score distribution.
 }
 \details{
-The data frame should have a least the following two columns: \tabular{lll}{ \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator\cr \tab
-\tab (0) group \cr \verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+The data frame should have a least the following two columns:
+\itemize{
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group
+\item propensityScore (numeric): Propensity score
+}
 }
 \examples{
 treatment <- rep(0:1, each = 100)

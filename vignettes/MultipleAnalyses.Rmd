@@ -18,13 +18,6 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)
-if (file.exists("S:/temp"))
-  setwd("s:/temp")
-knitr::opts_chunk$set(
-  cache = FALSE,
-  comment = "#>",
-  error = FALSE,
-  tidy = FALSE)
 ```
 # Introduction
 
@@ -60,7 +53,7 @@ There are a two arguments (`excludedCovariateConceptIds`, and `includedCovariate
 
 We need to tell R how to connect to the server where the data are. `CohortMethod` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 connectionDetails <- createConnectionDetails(dbms = "postgresql", 
                                              server = "localhost/ohdsi", 
                                              user = "joe", 
@@ -102,7 +95,7 @@ WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099
 ```
 This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 library(SqlRender)
 sql <- readSql("VignetteOutcomes.sql")
 sql <- render(sql,
@@ -120,7 +113,7 @@ In this code, we first read the SQL from the file into memory. In the next line,
 
 The first group of arguments define the target, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 tcos <- createTargetComparatorOutcomes(targetId = 1118084,
                                        comparatorId = 1124300,
                                        outcomeIds = c(192671, 29735, 140673, 197494, 
@@ -144,7 +137,7 @@ A convenient way to save `targetComparatorOutcomesList` to file is by using the 
 
 The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion function is available that has (almost) the same arguments. For example, for the `trimByPs()` function there is the `createTrimByPsArgs()` function. These companion functions can be used to create the arguments to be used during execution:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 nsaids <- 21603933
 
 covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
@@ -171,7 +164,7 @@ fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 
 Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "No matching, simple outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
@@ -184,7 +177,7 @@ Note that we have assigned an analysis ID (1) to this set of arguments. We can u
 
 We can easily create more analyses, for example by using matching, stratification, inverse probability of treatment weighting, or by using more sophisticated outcome models:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 createPsArgs <- createCreatePsArgs() # Use default settings only
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
@@ -263,7 +256,7 @@ cmAnalysis6 <- createCmAnalysis(analysisId = 6,
 
 These analyses can be combined in a list:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 cmAnalysisList <- list(cmAnalysis1, 
                        cmAnalysis2, 
                        cmAnalysis3, 
@@ -280,7 +273,7 @@ Often a new-user cohort design is used for comparative effectiveness studies, wh
 
 In the situation where the comparator choice becomes part of the analyses, we can specify multiple comparators per hypothesis of interest by using a list:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 comparatorIds = list(drugInSameClass = 1124300,
                      drugWithSameIndication = 1125315)
 
@@ -293,7 +286,7 @@ targetComparatorOutcomesList2 <- list(tcos)
 
 When we specify an analysis, we can then refer to one comparator or another:
 
-```{r tidy=FALSE,eval=TRUE}
+```{r eval=TRUE}
 cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "Analysis using drug in same class",
                                 comparatorType = "drugInSameClass",
@@ -329,7 +322,7 @@ The same mechanism can be used to specify types for the targetId.
 
 We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()` function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
                         exposureDatabaseSchema = cdmDatabaseSchema,
@@ -359,7 +352,7 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 
 The result of the `runCmAnalyses()` is a data frame with one row per target-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our target, comparator, outcome of interest, and last analysis:
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 psFile <- result$psFile[result$targetId == 1118084 & 
                         result$comparatorId == 1124300 & 
                         result$outcomeId == 192671 &
@@ -383,7 +376,7 @@ if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")) {
 Note that some of the file names will appear several times in the table. For example, analysis 3 and 5 only differ in terms of the outcome model, and will share the same propensity score and stratification files.
 
 We can create a summary of the results using `summarizeAnalyses()`:
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 analysisSum <- summarizeAnalyses(result, outputFolder)
 head(analysisSum)
 ```
@@ -400,7 +393,7 @@ This tells us, per target-comparator-outcome-analysis combination, the estimated
 
 Now that we have produced estimates for all outcomes including our negative controls, we can perform empirical calibration to estimate the bias of the various analyses included in our study. We will create the calibration effect plots for every analysis ID. In each plot, the blue dots represent our negative control outcomes, and the yellow diamond represents our health outcome of interest: GI bleed. An unbiased, well-calibrated analysis should have 95% of the negative controls between the dashed lines (ie. 95% should have p > .05).
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 install.packages("EmpiricalCalibration")
 library(EmpiricalCalibration)
 
@@ -410,7 +403,7 @@ hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 19267
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   library(EmpiricalCalibration)
   negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 192671, ]
@@ -420,14 +413,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 }
 ```
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 # Analysis 2: Matching
 negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
@@ -436,14 +429,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 }
 ```
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 # Analysis 3: Stratification
 negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
@@ -452,14 +445,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 }
 ```
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 # Analysis 4: Inverse probability of treatment weighting
 negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
@@ -468,14 +461,14 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 }
 ```
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 # Analysis 5: Stratification plus full outcome model
 negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE}
+```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
   negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
   hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
@@ -487,7 +480,7 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are also stored in the analysis summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with 'gender = female' (covariate ID 8532001): 
 
 
-```{r tidy=FALSE,eval=FALSE}
+```{r eval=FALSE}
 # Analysis 6: Stratification plus interaction terms
 negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
 hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
@@ -513,13 +506,13 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 
 Considerable work has been dedicated to provide the `CohortMethod` package.
 
-```{r tidy=TRUE,eval=TRUE}
+```{r eval=TRUE}
 citation("CohortMethod")
 ```
 
 Further, `CohortMethod` makes extensive use of the `Cyclops` package.
 
-```{r tidy=TRUE,eval=TRUE}
+```{r eval=TRUE}
 citation("Cyclops")
 ```
 

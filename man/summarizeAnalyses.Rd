@@ -7,24 +7,12 @@
 summarizeAnalyses(referenceTable, outputFolder)
 }
 \arguments{
-\item{referenceTable}{A data.frame as created by the \code{\link{runCmAnalyses}} function.}
+\item{referenceTable}{A \link[tibble:tibble]{tibble::tibble} as created by the \link{runCmAnalyses} function.}
 
 \item{outputFolder}{Name of the folder where all the outputs have been written to.}
 }
 \value{
-A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target drug.\cr
-\verb{comparatorId} \tab The ID of the comparator group.\cr \verb{indicationConceptIds} \tab The
-ID(s) of indications in which to nest to study. \cr \verb{outcomeId} \tab The ID of the outcome.\cr
-\verb{rr} \tab The estimated effect size.\cr \verb{ci95lb} \tab The lower bound of the 95 percent
-confidence interval.\cr \verb{ci95ub} \tab The upper bound of the 95 percent confidence
-interval.\cr \verb{target} \tab The number of subjects in the target group (after any trimming
-and matching).\cr \verb{comparator} \tab The number of subjects in the comparator group (after any
-trimming and matching).\cr \verb{eventsTarget} \tab The number of outcomes in the target group
-(after any trimming and matching).\cr \verb{eventsComparator} \tab The number of outcomes in the
-comparator group (after any trimming and \cr \tab matching).\cr \verb{logRr} \tab The log of the
-estimated relative risk.\cr \verb{seLogRr} \tab The standard error of the log of the estimated
-relative risk.\cr }
+A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
 }
 \description{
 Create a summary report of the analyses

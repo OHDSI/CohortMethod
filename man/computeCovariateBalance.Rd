@@ -14,15 +14,15 @@ computeCovariateBalance(
 \item{population}{A data frame containing the people that are remaining after matching
 and/or trimming.}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
 \item{subgroupCovariateId}{Optional: a covariate ID of a binary covariate that indicates a subgroup of
 interest. Both the before and after populations will be restricted to this
 subgroup before computing covariate balance.}
 }
 \value{
-Returns a date frame describing the covariate balance before and after matching/trimming.
+Returns a tibble describing the covariate balance before and after matching/trimming.
 }
 \description{
 For every covariate, prevalence in treatment and comparator groups before and after
@@ -30,10 +30,12 @@ matching/trimming are computed. When variable ratio matching was used the balanc
 corrected according the method described in Austin et al (2008).
 }
 \details{
-The population data frame should have at least the following columns: \tabular{lll}{ \verb{rowId}
-\tab(integer) \tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment}
-\tab(integer) \tab Column indicating whether the person is in the target (1) or comparator (0)\cr
-\tab \tab group \cr }
+The population data frame should have the following three columns:
+\itemize{
+\item rowId (numeric): A unique identifier for each row (e.g. the person ID).
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
+}
 }
 \references{
 Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one

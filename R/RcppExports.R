@@ -13,10 +13,6 @@ aucWithoutCi <- function(propensityScores, treatment) {
     .Call('_CohortMethod_aucWithoutCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
-bySumFf <- function(ffValues, ffBins) {
-    .Call('_CohortMethod_bySumFf', PACKAGE = 'CohortMethod', ffValues, ffBins)
-}
-
 adjustedKm <- function(weight, time, y) {
     .Call('_CohortMethod_adjustedKm', PACKAGE = 'CohortMethod', weight, time, y)
 }

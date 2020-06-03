@@ -13,7 +13,7 @@ createTargetComparatorOutcomes(
 )
 }
 \arguments{
-\item{targetId}{A concept ID indentifying the target drug in the exposure
+\item{targetId}{A concept ID identifying the target drug in the exposure
 table. If multiple strategies for picking the target will be
 tested in the analysis, a named list of numbers can be provided
 instead. In the analysis, the name of the number to be used can

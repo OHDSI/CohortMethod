@@ -23,8 +23,8 @@ numbers of target persons.}
 to be determined? Strata are defined as equally-sized strata inside
 this selection. Possible values are "all", "target", and "comparator".}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
 \item{covariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
 subjects should also be stratified.}
@@ -34,16 +34,14 @@ Returns a date frame with the same columns as the input population plus one extr
 stratumId.
 }
 \description{
-\code{stratifyByPsAndCovariates} uses the provided propensity scores and covariatesto stratify
+Use the provided propensity scores and covariates to stratify
 persons.
 }
 \details{
-The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(integer)
-\tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-\verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+The data frame should have the following three columns:
+\itemize{
+\item rowId (numeric): A unique identifier for each row (e.g. the person ID).
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
 }
-\examples{
-# todo
-
 }

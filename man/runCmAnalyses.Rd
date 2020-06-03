@@ -27,8 +27,7 @@ runCmAnalyses(
   prefilterCovariatesThreads = 1,
   fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1,
-  outcomeIdsOfInterest,
-  compressCohortMethodData = FALSE
+  outcomeIdsOfInterest
 )
 }
 \arguments{
@@ -38,7 +37,7 @@ function \code{createConnectionDetails} in the
 
 \item{cdmDatabaseSchema}{The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
-Server, this should specifiy both the database and the schema,
+Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.}
 
 \item{oracleTempSchema}{For Oracle only: the name of the database schema where you
@@ -73,10 +72,10 @@ SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 \item{outputFolder}{Name of the folder where all the outputs will written to.}
 
 \item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
-the \code{\link{createCmAnalysis}} function.}
+the `\link{createCmAnalysis} function.}
 
 \item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
-created using the \code{\link{createTargetComparatorOutcomes}}
+created using the \link{createTargetComparatorOutcomes}
 function.}
 
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
@@ -104,7 +103,7 @@ propensity models.}
 \item{psCvThreads}{The number of parallel threads to use for the cross-
 validation when estimating the hyperparameter for the
 propensity model. Note that the total number of CV threads at
-one time could be `createPsThreads * psCvThreads`.}
+one time could be \code{createPsThreads * psCvThreads}.}
 
 \item{createStudyPopThreads}{The number of parallel threads to use for creating the study
 population.}
@@ -120,30 +119,15 @@ models.}
 \item{outcomeCvThreads}{The number of parallel threads to use for the cross-
 validation when estimating the hyperparameter for the outcome
 model. Note that the total number of CV threads at one time
-could be `fitOutcomeModelThreads * outcomeCvThreads`.}
+could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
 
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
 for all other outcome IDs. This could be helpful to speed up
 analyses with many controls.}
-
-\item{compressCohortMethodData}{Compress CohortMethodData objects?}
 }
 \value{
-A data frame with the following columns: \tabular{ll}{ \verb{analysisId} \tab The unique identifier
-for a set of analysis choices.\cr \verb{targetId} \tab The ID of the target exposure.\cr
-\verb{comparatorId} \tab The ID of the comparator group.\cr \verb{excludedCovariateConceptIds} \tab
-The ID(s) of concepts that cannot be used to construct covariates. \cr
-\verb{includedCovariateConceptIds} \tab The ID(s) of concepts that should be used to construct
-covariates. \cr \verb{outcomeId} \tab The ID of the outcome \cr \verb{cohortMethodDataFolder} \tab
-The ID of the outcome.\cr \verb{sharedPsFile} \tab The name of the file containing the propensity
-scores of the shared \cr \tab propensity model. This model is used to create the outcome-specific
-\cr \tab propensity scores by removing people with prior outcomes.\cr \verb{studyPopFile} \tab The
-name of the file containing the study population (prior\cr \tab and trimming, matching, or
-stratification on the PS.\cr \verb{psFile} \tab The name of file containing the propensity scores
-for a specific \cr \tab outcomes (ie after people with prior outcomes have been removed).\cr
-\verb{strataFile} \tab The name of the file containing the identifiers of the population \cr \tab
-after any trimming, matching or stratifying, including their strata.\cr \verb{outcomeModelFile} \tab The name of the file
-containing the outcome model.\cr }
+A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
+outcome model files can be found, relative to the \code{outputFolder}.
 }
 \description{
 Run a list of analyses
@@ -151,7 +135,7 @@ Run a list of analyses
 \details{
 Run a list of analyses for the target-comparator-outcomes of interest. This function will run all
 specified analyses against all hypotheses of interest, meaning that the total number of outcome
-models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an
+models is \code{length(cmAnalysisList) * length(targetComparatorOutcomesList)} (if all analyses specify an
 outcome model should be fitted). When you provide several analyses it will determine whether any of
 the analyses have anything in common, and will take advantage of this fact. For example, if we
 specify several analyses that only differ in the way the outcome model is fitted, then this

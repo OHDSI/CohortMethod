@@ -1,5 +1,3 @@
-# @file SingleStudyVignetteDataFetch.R
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -20,7 +18,6 @@
 library(SqlRender)
 library(DatabaseConnector)
 library(CohortMethod)
-options(fftempdir = "s:/fftemp")
 
 # Synpuf on Postgres
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
@@ -49,7 +46,7 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
                                                                 user = NULL,
                                                                 password = NULL,
                                                                 port = Sys.getenv("PDW_PORT"))
-cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 cdmVersion <- "5"
 extraSettings <- NULL
@@ -99,19 +96,23 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           outcomeDatabaseSchema = resultsDatabaseSchema,
                                           outcomeTable = "coxibVsNonselVsGiBleed",
                                           cdmVersion = cdmVersion,
-                                          excludeDrugsFromCovariates = FALSE,
                                           firstExposureOnly = TRUE,
                                           removeDuplicateSubjects = "remove all",
                                           restrictToCommonPeriod = FALSE,
                                           washoutPeriod = 180,
-                                          covariateSettings = covSettings)
+                                          covariateSettings = covSettings,
+                                          maxCohortSize = 50000)
+attr(cohortMethodData, "metaData")
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataSynpuf")
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataComp", compress = TRUE)
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData.zip")
 
-# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
-# cohortMethodDataComp <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodDataComp')
-# summary(cohortMethodData) getAttritionTable(cohortMethodData)
+# cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData.zip')
+
+cohortMethodData
+
+summary(cohortMethodData)
+
+getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 3,
@@ -126,15 +127,15 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   endAnchor = "cohort end")
 
 plotTimeToEvent(cohortMethodData = cohortMethodData,
-                                  outcomeId = 3,
-                                  firstExposureOnly = FALSE,
-                                  washoutPeriod = 0,
-                                  removeDuplicateSubjects = FALSE,
-                                  minDaysAtRisk = 1,
-                                  riskWindowStart = 0,
-                                  addExposureDaysToStart = FALSE,
-                                  riskWindowEnd = 30,
-                                  addExposureDaysToEnd = TRUE)
+                outcomeId = 3,
+                firstExposureOnly = FALSE,
+                washoutPeriod = 0,
+                removeDuplicateSubjects = FALSE,
+                minDaysAtRisk = 1,
+                riskWindowStart = 0,
+                startAnchor = "cohort start",
+                riskWindowEnd = 30,
+                endAnchor = "cohort end")
 
 
 
@@ -144,6 +145,9 @@ saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
 
 # studyPop <- readRDS('s:/temp/cohortMethodVignette/studyPop.rds')
 
+
+# options(floatingPoint = 32)
+
 ps <- createPs(cohortMethodData = cohortMethodData,
                population = studyPop,
                prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
@@ -154,36 +158,14 @@ ps <- createPs(cohortMethodData = cohortMethodData,
                                        cvRepetitions = 1,
                                        threads = 10))
 
-options(floatingPoint = 32)
-ps <- createPs(cohortMethodData = cohortMethodData,
-               population = studyPop,
-               prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-               control = createControl(cvType = "auto",
-                                       startingVariance = 0.01,
-                                       noiseLevel = "quiet",
-                                       tolerance = 2e-07,
-                                       cvRepetitions = 1,
-                                       threads = 10,
-                                       seed = 123))
-
-ps <- createPs(cohortMethodData = cohortMethodData,
-               population = studyPop,
-               prior = createPrior("laplace", exclude = c(0), useCrossValidation = FALSE, variance = 0.01),
-               control = createControl(cvType = "auto",
-                                       startingVariance = 0.01,
-                                       noiseLevel = "quiet",
-                                       tolerance = 2e-07,
-                                       cvRepetitions = 1,
-                                       threads = 10))
-plotPs(ps)
-
-# computePsAuc(ps) plotPs(ps)
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/psSynpuf.rds")
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps32.rds")
-ps32 <- ps
-ps64 <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
 
 # ps <- readRDS('s:/temp/cohortMethodVignette/ps.rds')
+
+plotPs(ps)
+
+computePsAuc(ps)
+
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
 model[model$id %% 1000 == 902, ]
@@ -203,9 +185,13 @@ plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, sho
 # resultsDatabaseSchema)$sql sql <- SqlRender::translateSql(sql, targetDialect =
 # connectionDetails$dbms)$sql DatabaseConnector::querySql(connection, sql) dbDisconnect(connection)
 
-# trimmed <- trimByPs(ps) trimmed <- trimByPsToEquipoise(ps) plotPs(trimmed, ps)
+trimmed <- trimByPs(ps)
 
-matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+trimmed <- trimByPsToEquipoise(ps)
+
+plotPs(trimmed, ps)
+
+matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 100)
 
 
 # getAttritionTable(matchedPop) plotPs(matchedPop, ps)
@@ -216,6 +202,7 @@ saveRDS(balance, file = "s:/temp/cohortMethodVignette/balance.rds")
 
 # balance <- readRDS('s:/temp/cohortMethodVignette/balance.rds')
 
+
 table1 <- createCmTable1(balance)
 print(table1, row.names = FALSE, right = FALSE)
 plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE, fileName = "extras/balanceScatterplot.png")
@@ -225,7 +212,10 @@ outcomeModel <- fitOutcomeModel(population = studyPop,
                                 modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE)
-# getAttritionTable(outcomeModel) outcomeModel summary(outcomeModel) coef(outcomeModel)
+getAttritionTable(outcomeModel)
+outcomeModel
+summary(outcomeModel)
+coef(outcomeModel)
 # confint(outcomeModel)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel1.rds")
 
@@ -234,9 +224,6 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 stratified = TRUE,
                                 useCovariates = FALSE)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
-weights <- ps$treatment / ps$propensityScore + (1-ps$treatment) / (1-ps$propensityScore)
-max(weights)
-min(weights)
 
 outcomeModel <- fitOutcomeModel(population = ps,
                                 modelType = "cox",
@@ -280,7 +267,7 @@ saveRDS(balanceFemale, file = "s:/temp/cohortMethodVignette/balanceFemale.rds")
 dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")
 
 
-balanceOverall <- computeCovariateBalance(population, cohortMethodData)
+balanceOverall <- computeCovariateBalance(matchedPop, cohortMethodData)
 dummy <- plotCovariateBalanceScatterPlot(balanceOverall, fileName = "s:/temp/balance.png")
 balanceFemale <- computeCovariateBalance(population, cohortMethodData, subgroupCovariateId = 8532001)
 dummy <- plotCovariateBalanceScatterPlot(balanceFemale, fileName = "s:/temp/balanceFemales.png")

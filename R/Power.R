@@ -158,7 +158,7 @@ plotFollowUpDistribution <- function(population,
   d <- rbind(target, comparator)
   d$label <- factor(d$label, levels = c(targetLabel, comparatorLabel))
   plot <- ggplot2::ggplot(d,
-                          ggplot2::aes(x = followUp, y = sumCount, group = label, color = label)) +
+                          ggplot2::aes(x = .data$followUp, y = .data$sumCount, group = .data$label, color = .data$label)) +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::geom_step(size = 1) +
     ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),

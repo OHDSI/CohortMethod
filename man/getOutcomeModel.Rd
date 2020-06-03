@@ -7,20 +7,16 @@
 getOutcomeModel(outcomeModel, cohortMethodData)
 }
 \arguments{
-\item{outcomeModel}{An object of type \code{outcomeModel} as generated using he
-\code{createOutcomeMode} function.}
+\item{outcomeModel}{An object of type \code{OutcomeModel} as generated using he
+\code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function.}
 
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
+}
+\value{
+A tibble.
 }
 \description{
-\code{getOutcomeModel} shows the full outcome model, so showing the betas of all variables included
+Get the full outcome model, so showing the betas of all variables included
 in the outcome model, not just the treatment variable.
-}
-\details{
-Shows the coefficients and names of the covariates with non-zero coefficients.
-}
-\examples{
-# todo
-
 }

@@ -19,7 +19,7 @@
 #' Draw the attrition diagram
 #'
 #' @description
-#' \code{drawAttritionDiagram} draws the attition diagram, showing how many people were excluded from
+#' \code{drawAttritionDiagram} draws the attrition diagram, showing how many people were excluded from
 #' the study population, and for what reasons.
 #'
 #' @param object            Either an object of type \code{cohortMethodData}, a population object

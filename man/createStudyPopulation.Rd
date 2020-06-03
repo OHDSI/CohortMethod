@@ -25,23 +25,20 @@ createStudyPopulation(
 )
 }
 \arguments{
-\item{cohortMethodData}{An object of type \code{cohortMethodData} as generated using
-\code{getDbCohortMethodData}.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
 \item{population}{If specified, this population will be used as the starting
-point instead of the cohorts in the \code{cohortMethodData}
-object.}
+point instead of the cohorts in the \code{cohortMethodData} object.}
 
 \item{outcomeId}{The ID of the outcome. If not specified, no outcome-specific
 transformations will be performed.}
 
-\item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-that this is typically done in the
-\code{createStudyPopulation} function,}
+\item{firstExposureOnly}{Should only the first exposure per subject be included?}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
 
-\item{washoutPeriod}{The mininum required continuous observation time prior to
+\item{washoutPeriod}{The minimum required continuous observation time prior to
 index date for a person to be included in the cohort.}
 
 \item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
@@ -60,26 +57,30 @@ outcomes?}
 \item{addExposureDaysToStart}{DEPRECATED: Add the length of exposure the start of the risk window?
 Use \code{startAnchor} instead.}
 
-\item{startAnchor}{The anchor point for the start of the risk window. Can be "cohort start"
-or "cohort end".}
+\item{startAnchor}{The anchor point for the start of the risk window. Can be \code{"cohort start"}
+or \code{"cohort end"}.}
 
 \item{riskWindowEnd}{The end of the risk window (in days) relative to the \code{endAnchor}.}
 
 \item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window?
 Use \code{endAnchor} instead.}
 
-\item{endAnchor}{The anchor point for the end of the risk window. Can be "cohort start"
-or "cohort end".}
+\item{endAnchor}{The anchor point for the end of the risk window. Can be \code{"cohort start"}
+or \code{"cohort end"}.}
 
 \item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be censored
 when the new time-at-risk starts to prevent overlap?}
 }
 \value{
-A data frame specifying the study population. This data frame will have the following columns:
-\describe{ \item{rowId}{A unique identifier for an exposure} \item{subjectId}{The person ID of the
-subject} \item{cohortStartdate}{The index date} \item{outcomeCount}{The number of outcomes observed
-during the risk window} \item{timeAtRisk}{The number of days in the risk window}
-\item{survivalTime}{The number of days until either the outcome or the end of the risk window} }
+A \code{tibble} specifying the study population. This \code{tibble} will have the following columns:
+\itemize{
+\item \code{rowId}: A unique identifier for an exposure.
+\item \code{subjectId}: The person ID of the subject.
+\item \code{cohortStartdate}: The index date.
+\item \code{outcomeCount} The number of outcomes observed during the risk window.
+\item \code{timeAtRisk}: The number of days in the risk window.
+\item \code{survivalTime}: The number of days until either the outcome or the end of the risk window.
+}
 }
 \description{
 Create a study population
@@ -89,10 +90,9 @@ Create a study population by enforcing certain inclusion and exclusion criteria,
 window, and determining which outcomes fall inside the risk window.
 
 The \code{removeduplicateSubjects} argument can have one of the following values:
-\describe{
-  \item{"keep all"}{Do not remove subjects that appear in both target and comparator cohort}
-  \item{"keep first"}{When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
-  If both cohorts start simultaneous, the person is removed from the analysis.}
-  \item{"remove all"}{Remove subjects that appear in both target and comparator cohort completely from the analysis."}
+\itemize{
+\item \code{"keep all"}: Do not remove subjects that appear in both target and comparator cohort
+\item \code{"keep first"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
+\item \code{"remove all"}: Remove subjects that appear in both target and comparator cohort completely from the analysis."
 }
 }

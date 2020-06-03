@@ -1,5 +1,3 @@
-# @file PackageMaintenance
-#
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -20,6 +18,8 @@
 OhdsiRTools::formatRFolder()
 OhdsiRTools::checkUsagePackage("CohortMethod")
 OhdsiRTools::updateCopyrightYearFolder()
+OhdsiRTools::findNonAsciiStringsInFolder()
+devtools::spell_check()
 
 # Create manual and vignettes:
 shell("rm extras/CohortMethod.pdf")
@@ -30,12 +30,14 @@ rmarkdown::render("vignettes/SingleStudies.Rmd",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",
                                           toc = TRUE,
                                           number_sections = TRUE))
+unlink("inst/doc/SingleStudies.tex")
 
 rmarkdown::render("vignettes/MultipleAnalyses.Rmd",
                   output_file = "../inst/doc/MultipleAnalyses.pdf",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",
                                           toc = TRUE,
                                           number_sections = TRUE))
+unlink("inst/doc/MultipleAnalyses.tex")
 
 pkgdown::build_site()
 

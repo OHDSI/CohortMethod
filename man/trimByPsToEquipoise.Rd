@@ -7,22 +7,23 @@
 trimByPsToEquipoise(population, bounds = c(0.3, 0.7))
 }
 \arguments{
-\item{population}{A data frame with at least the three columns described below}
+\item{population}{A data frame with at least the three columns described below.}
 
-\item{bounds}{The upper and lower bound on the preference score for keeping persons}
+\item{bounds}{The upper and lower bound on the preference score for keeping persons.}
 }
 \value{
-Returns a date frame with the same three columns as the input.
+Returns a tibble with the same three columns as the input.
 }
 \description{
-\code{trimByPsToEquipoise} uses the preference score to trim subjects that are not in clinical
-equipoise
+Use the preference score to trim subjects that are not in clinical equipoise
 }
 \details{
-The data frame should have the following three columns: \tabular{lll}{ \verb{rowId} \tab(numeric)
-\tab A unique identifier for each row (e.g. the person ID) \cr \verb{treatment} \tab(integer) \tab
-Column indicating whether the person is in the target (1) or comparator\cr \tab \tab (0) group \cr
-\verb{propensityScore} \tab(numeric) \tab Propensity score \cr }
+The data frame should have the following three columns:
+\itemize{
+\item rowId (numeric): A unique identifier for each row (e.g. the person ID).
+\item treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+\item propensityScore (numeric): Propensity score.
+}
 }
 \examples{
 rowId <- 1:2000

@@ -17,7 +17,7 @@ plotCovariateBalanceOfTopVariables(
 \arguments{
 \item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
 
-\item{n}{(Maximum) count of variates to plot.}
+\item{n}{(Maximum) count of covariates to plot.}
 
 \item{maxNameWidth}{Covariate names longer than this number of characters are truncated to create
 a nicer plot.}
@@ -32,7 +32,7 @@ the function \code{ggsave} in the ggplot2 package for supported file formats.}
 \item{afterLabel}{Label for identifying data after matching / stratification / trimming.}
 }
 \value{
-A ggplot object. Use the \code{\link[ggplot2]{ggsave}} function to save to file in a different
+A ggplot object. Use the \link[ggplot2:ggsave]{ggplot2::ggsave} function to save to file in a different
 format.
 }
 \description{

@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-user cohort method with large scale propensity and outcome models
-Version: 3.1.2
-Date: 2020-03-19
+Version: 4.0.0
+Date: 2020-05-20
 Authors@R: c(
     person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
     person("Marc", "Suchard", role = c("aut")),
@@ -15,7 +15,7 @@ Description: CohortMethod is an R package for performing new-user cohort studies
     propensity and outcome model, including for example all drugs, diagnoses, procedures, 
     as well as age, comorbidity indexes, etc. Large scale regularized regression is used to 
     fit the propensity and outcome models. Functions are included for trimming, stratifying, 
-    (varibale and fixed ratio) matching and weighting by propensity scores, as well as 
+    (variable and fixed ratio) matching and weighting by propensity scores, as well as 
     diagnostic functions, such as propensity score distribution plots and plots showing 
     covariate balance before and after matching and/or trimming. Supported outcome models 
     are (conditional) logistic regression, (conditional) Poisson regression, and 
@@ -26,19 +26,22 @@ VignetteBuilder: knitr
 URL: https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod
 BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
-    R (>= 3.2.2),
+    R (>= 3.5.0),
     DatabaseConnector (>= 2.2.0),
     Cyclops (>= 2.0.3),
-    FeatureExtraction  (>= 2.2.3)
+    FeatureExtraction  (>= 2.2.3),
+    Andromeda (>= 0.2.0)
 Imports:
     methods,
     ggplot2,
     gridExtra,
     grid,
-    bit,
-    ff,
-    ffbase (>= 0.12.3),
+    tibble,
     plyr,
+    dplyr,
+    rlang,
+    cli,
+    pillar,
     Rcpp (>= 0.11.2),
     SqlRender (>= 1.5.2),
     survival,
@@ -53,5 +56,6 @@ Remotes:
     ohdsi/FeatureExtraction
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
+Roxygen: list(markdown = TRUE)
 Encoding: UTF-8
