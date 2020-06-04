@@ -1,9 +1,14 @@
-CohortMethod 3.1.2
+CohortMethod 4.0.0
 ==================
+
+Changes: 
+
+1. Switching from ff to Andromeda for storing large data objects.
 
 Bugfixes:
 
 1. Fixed bug in IPTW.
+
 
 CohortMethod 3.1.1
 ==================

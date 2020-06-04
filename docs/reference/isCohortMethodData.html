@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Create a parameter object for the function getDbCohortMethodData — createGetDbCohortMethodDataArgs • CohortMethod</title>
+<title>Check whether an object is a CohortMethodData object — isCohortMethodData • CohortMethod</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Create a parameter object for the function getDbCohortMethodData — createGetDbCohortMethodDataArgs" />
-<meta property="og:description" content="Create a parameter object for the function getDbCohortMethodData" />
+<meta property="og:title" content="Check whether an object is a CohortMethodData object — isCohortMethodData" />
+<meta property="og:description" content="Check whether an object is a CohortMethodData object" />
 
 
 
@@ -129,90 +129,29 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Create a parameter object for the function getDbCohortMethodData</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/CreateArgFunctions.R'><code>R/CreateArgFunctions.R</code></a></small>
-    <div class="hidden name"><code>createGetDbCohortMethodDataArgs.Rd</code></div>
+    <h1>Check whether an object is a CohortMethodData object</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/CohortMethodData.R'><code>R/CohortMethodData.R</code></a></small>
+    <div class="hidden name"><code>isCohortMethodData.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Create a parameter object for the function getDbCohortMethodData</p>
+    <p>Check whether an object is a CohortMethodData object</p>
     </div>
 
-    <pre class="usage"><span class='fu'>createGetDbCohortMethodDataArgs</span>(
-  <span class='kw'>studyStartDate</span> <span class='kw'>=</span> <span class='st'>""</span>,
-  <span class='kw'>studyEndDate</span> <span class='kw'>=</span> <span class='st'>""</span>,
-  <span class='no'>excludeDrugsFromCovariates</span>,
-  <span class='kw'>firstExposureOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>removeDuplicateSubjects</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>restrictToCommonPeriod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>washoutPeriod</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>maxCohortSize</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='no'>covariateSettings</span>
-)</pre>
+    <pre class="usage"><span class='fu'>isCohortMethodData</span>(<span class='no'>x</span>)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>studyStartDate</th>
-      <td><p>A calendar date specifying the minimum date that a cohort index
-date can appear. Date format is 'yyyymmdd'.</p></td>
-    </tr>
-    <tr>
-      <th>studyEndDate</th>
-      <td><p>A calendar date specifying the maximum date that a cohort index
-date can appear. Date format is 'yyyymmdd'. Important: the study
-end data is also used to truncate risk windows, meaning no
-outcomes beyond the study end date will be considered.</p></td>
-    </tr>
-    <tr>
-      <th>excludeDrugsFromCovariates</th>
-      <td><p>DEPRECATED: Should the target and comparator drugs (and their
-descendant concepts) be excluded from the covariates? Note that
-this will work if the drugs are actually drug concept IDs (and
-not cohort IDs).</p></td>
-    </tr>
-    <tr>
-      <th>firstExposureOnly</th>
-      <td><p>Should only the first exposure per subject be included? Note
-that this is typically done in the createStudyPopulation()
-function, but can already be done here for efficiency reasons.</p></td>
-    </tr>
-    <tr>
-      <th>removeDuplicateSubjects</th>
-      <td><p>Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.Note that this is
-typically done in the createStudyPopulation function, but can
-already be done here for efficiency reasons.</p></td>
-    </tr>
-    <tr>
-      <th>restrictToCommonPeriod</th>
-      <td><p>Restrict the analysis to the period when both treatments are
-observed?</p></td>
-    </tr>
-    <tr>
-      <th>washoutPeriod</th>
-      <td><p>The minimum required continuous observation time prior to index
-date for a person to be included in the cohort. Note that this
-is typically done in the createStudyPopulation function, but can
-already be done here for efficiency reasons.</p></td>
-    </tr>
-    <tr>
-      <th>maxCohortSize</th>
-      <td><p>If either the target or the comparator cohort is larger than
-this number it will be sampled to this size. maxCohortSize = 0
-indicates no maximum size.</p></td>
-    </tr>
-    <tr>
-      <th>covariateSettings</th>
-      <td><p>An object of type covariateSettings as created using the
-FeatureExtraction::createCovariateSettings() function.</p></td>
+      <th>x</th>
+      <td><p>The object to check.</p></td>
     </tr>
     </table>
 
-    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>Create an object defining the parameter values.</p>
+    <p>A logical value.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

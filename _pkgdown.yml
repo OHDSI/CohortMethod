@@ -13,6 +13,8 @@ reference:
       Functions for getting the necessary data from the database in Common Data Model, and creating a study population.
     contents:
       - getDbCohortMethodData
+      - CohortMethodData-class
+      - isCohortMethodData
       - saveCohortMethodData
       - loadCohortMethodData
       - createStudyPopulation
@@ -78,9 +80,13 @@ reference:
     contents:
       - checkCmInstallation
       - insertDbPopulation
-      - constructEras
-      - grepCovariateNames
       - checkCmInstallation
 
-
+navbar:
+  structure:
+    right: [hades, github]
+  components:
+    hades:
+      text: hadesLogo
+      href: https://ohdsi.github.io/Hades
 

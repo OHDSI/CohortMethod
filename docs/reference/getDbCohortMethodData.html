@@ -10,23 +10,27 @@
 
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -38,7 +42,6 @@
 <meta property="og:title" content="Get the cohort data from the server — getDbCohortMethodData" />
 <meta property="og:description" content="This function executes a large set of SQL statements against the database in OMOP CDM format to
 extract the data needed to perform the analysis." />
-<meta name="twitter:card" content="summary" />
 
 
 
@@ -56,7 +59,7 @@ extract the data needed to perform the analysis." />
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -70,7 +73,7 @@ extract the data needed to perform the analysis." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.0</span>
       </span>
     </div>
 
@@ -84,6 +87,9 @@ extract the data needed to perform the analysis." />
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -100,13 +106,13 @@ extract the data needed to perform the analysis." />
     </li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li>
-  <a href="https://github.com/OHDSI/CohortMethod">
+  <a href="https://ohdsi.github.io/Hades"><img src='https://ohdsi.github.io/Hades/images/hadesMini.png' width=80 height=17 style='vertical-align: top;'></a>
+</li>
+<li>
+  <a href="https://github.com/OHDSI/CohortMethod/">
     <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
@@ -148,7 +154,7 @@ extract the data needed to perform the analysis.</p>
   <span class='kw'>outcomeDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
   <span class='kw'>outcomeTable</span> <span class='kw'>=</span> <span class='st'>"condition_occurrence"</span>,
   <span class='kw'>cdmVersion</span> <span class='kw'>=</span> <span class='st'>"5"</span>,
-  <span class='kw'>excludeDrugsFromCovariates</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='no'>excludeDrugsFromCovariates</span>,
   <span class='kw'>firstExposureOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>removeDuplicateSubjects</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>restrictToCommonPeriod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
@@ -162,15 +168,14 @@ extract the data needed to perform the analysis.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>connectionDetails</th>
-      <td><p>An R object of type<br /><code>connectionDetails</code> created using the
-function <code>createConnectionDetails</code> in the
-<code>DatabaseConnector</code> package.</p></td>
+      <td><p>An R object of type <code>connectionDetails</code> created using the
+<code><a href='https://rdrr.io/pkg/DatabaseConnector/man/createConnectionDetails.html'>DatabaseConnector::createConnectionDetails()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>cdmDatabaseSchema</th>
       <td><p>The name of the database schema that contains the OMOP CDM
-instance.  Requires read permissions to this database. On SQL
-Server, this should specifiy both the database and the schema,
+instance. Requires read permissions to this database. On SQL
+Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.</p></td>
     </tr>
     <tr>
@@ -182,23 +187,23 @@ permissions to this database.</p></td>
     <tr>
       <th>targetId</th>
       <td><p>A unique identifier to define the target cohort.  If
-exposureTable = DRUG_ERA, targetId is a CONCEPT_ID and all
-descendant concepts within that CONCEPT_ID will be used to
+exposureTable = DRUG_ERA, targetId is a concept ID and all
+descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable &lt;&gt; DRUG_ERA, targetId is
-used to select the cohort_concept_id in the cohort-like table.</p></td>
+used to select the COHORT_DEFINITION_ID in the cohort-like table.</p></td>
     </tr>
     <tr>
       <th>comparatorId</th>
       <td><p>A unique identifier to define the comparator cohort.  If
-exposureTable = DRUG_ERA, comparatorId is a CONCEPT_ID and all
-descendant concepts within that CONCEPT_ID will be used to
+exposureTable = DRUG_ERA, comparatorId is a concept ID and all
+descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable &lt;&gt; DRUG_ERA, comparatorId
-is used to select the cohort_concept_id in the cohort-like
+is used to select the COHORT_DEFINITION_ID in the cohort-like
 table.</p></td>
     </tr>
     <tr>
       <th>outcomeIds</th>
-      <td><p>A list of cohort_definition_ids used to define outcomes.</p></td>
+      <td><p>A list of cohort IDs used to define outcomes.</p></td>
     </tr>
     <tr>
       <th>studyStartDate</th>
@@ -215,25 +220,19 @@ outcomes beyond the study end date will be considered.</p></td>
     <tr>
       <th>exposureDatabaseSchema</th>
       <td><p>The name of the database schema that is the location where the
-exposure data used to define the exposure cohorts is available.
-If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used
-by assumed to be cdmSchema.  Requires read permissions to this
-database.</p></td>
+exposure data used to define the exposure cohorts is available.</p></td>
     </tr>
     <tr>
       <th>exposureTable</th>
-      <td><p>The tablename that contains the exposure cohorts.  If
-exposureTable &lt;&gt; DRUG_ERA, then expectation is exposureTable has
-format of COHORT table: cohort_concept_id, SUBJECT_ID,
+      <td><p>The tablename that contains the exposure cohorts. If
+exposureTable &lt;&gt; DRUG_ERA, then expectation is <code>exposureTable</code> has
+format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.</p></td>
     </tr>
     <tr>
       <th>outcomeDatabaseSchema</th>
       <td><p>The name of the database schema that is the location where the
-data used to define the outcome cohorts is available. If
-exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
-used by assumed to be cdmSchema.  Requires read permissions to
-this database.</p></td>
+data used to define the outcome cohorts is available.</p></td>
     </tr>
     <tr>
       <th>outcomeTable</th>
@@ -244,25 +243,25 @@ SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.</p></td>
     </tr>
     <tr>
       <th>cdmVersion</th>
-      <td><p>Define the OMOP CDM version used: currently support "4" and "5".</p></td>
+      <td><p>Define the OMOP CDM version used: currently supports "5".</p></td>
     </tr>
     <tr>
       <th>excludeDrugsFromCovariates</th>
-      <td><p>Should the target and comparator drugs (and their descendant
+      <td><p>DEPRECATED: Should the target and comparator drugs (and their descendant
 concepts) be excluded from the covariates? Note that this will
-work if the drugs are actualy drug concept IDs (and not cohort
+work if the drugs are actually drug concept IDs (and not cohort
 IDs).</p></td>
     </tr>
     <tr>
       <th>firstExposureOnly</th>
       <td><p>Should only the first exposure per subject be included? Note
-that this is typically done in the <code>createStudyPopulation</code>
+that this is typically done in the <code><a href='createStudyPopulation.html'>createStudyPopulation()</a></code>
 function, but can already be done here for efficiency reasons.</p></td>
     </tr>
     <tr>
       <th>removeDuplicateSubjects</th>
       <td><p>Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.N ote that this is typically done in the
+cohort? See details for allowed values.Note that this is typically done in the
 <code>createStudyPopulation</code> function, but can already be done
 here for efficiency reasons.</p></td>
     </tr>
@@ -272,7 +271,7 @@ here for efficiency reasons.</p></td>
     </tr>
     <tr>
       <th>washoutPeriod</th>
-      <td><p>The mininum required continuous observation time prior to index
+      <td><p>The minimum required continuous observation time prior to index
 date for a person to be included in the cohort. Note that this
 is typically done in the <code>createStudyPopulation</code> function,
 but can already be done here for efficiency reasons.</p></td>
@@ -286,58 +285,36 @@ indicates no maximum size.</p></td>
     <tr>
       <th>covariateSettings</th>
       <td><p>An object of type <code>covariateSettings</code> as created using the
-<code>createCovariateSettings</code> function in the
-<code>FeatureExtraction</code> package.</p></td>
+<code><a href='https://rdrr.io/pkg/FeatureExtraction/man/createCovariateSettings.html'>FeatureExtraction::createCovariateSettings()</a></code> function.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>Returns an object of type <code>cohortMethodData</code>, containing information on the cohorts, their
-outcomes, and baseline covariates. Information about multiple outcomes can be captured at once for
-efficiency reasons. This object is a list with the following components:</p><dl class='dl-horizontal'>
-<dt>outcomes</dt><dd><p>A data frame listing the outcomes per person, including the time to event, and the
-outcome id. Outcomes are not yet filtered based on risk window, since this is done at a later
-stage.</p></dd> <dt>cohorts</dt><dd><p>A data frame listing the persons in each cohort, listing their exposure
-status as well as the time to the end of the observation period and time to the end of the cohort
-(usually the end of the exposure era).</p></dd> <dt>covariates</dt><dd><p>An ffdf object listing the baseline
-covariates per person in the two cohorts. This is done using a sparse representation: covariates
-with a value of 0 are omitted to save space.</p></dd> <dt>covariateRef</dt><dd><p>An ffdf object describing the
-covariates that have been extracted.</p></dd> <dt>metaData</dt><dd><p>A list of objects with information on how the
-cohortMethodData object was constructed.</p></dd> 
-</dl><p>The generic <code><a href='https://rdrr.io/r/base/print.html'>print()</a></code> and <code><a href='https://rdrr.io/r/base/summary.html'>summary()</a></code>
-functions have been implemented for this object.</p>
+    <p>A <a href='CohortMethodData-class.html'>CohortMethodData</a> object.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>Based on the arguments, the treatment and comparator cohorts are retrieved, as well as outcomes
 occurring in exposed subjects. The treatment and comparator cohorts can be identified using the
-drug_era table, or through user-defined cohorts in a cohort table either inside the CDM instance or
-in a separate schema. Similarly, outcomes are identified using the condition_era table or through
-user-defined cohorts in a cohort table either inside the CDM instance or in a separate schema.
-Covariates are automatically extracted from the appropriate tables within the CDM. Important: The
-target and comparator drug must not be included in the covariates, including any descendant
-concepts. If the <code>targetId</code> and <code>comparatorId</code> arguments represent real concept IDs, you
-can set the <code>excludeDrugsFromCovariates</code> argument to TRUE and automatically the drugs and
-their descendants will be excluded from the covariates. However, if the <code>targetId</code> and
-<code>comparatorId</code> arguments do not represent concept IDs, you will need to manually add the drugs
-and descendants to the <code>excludedCovariateConceptIds</code> of the <code>covariateSettings</code> argument.</p>
-<p>The <code>removeduplicateSubjects</code> argument can have one of the following values:</p><dl class='dl-horizontal'>
-  <dt>"keep all"</dt><dd><p>Do not remove subjects that appear in both target and comparator cohort</p></dd>
-  <dt>"keep first"</dt><dd><p>When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.</p></dd>
-  <dt>"remove all"</dt><dd><p>Remove subjects that appear in both target and comparator cohort completely from the analysis."</p></dd>
-
-</dl>
+DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
+in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
+user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
+Covariates are automatically extracted from the appropriate tables within the CDM.</p>
+<p><strong>Important</strong>: The target and comparator drug must not be included in the covariates, including any descendant
+concepts. You will need to manually add the drugs and descendants to the <code>excludedCovariateConceptIds</code>
+of the <code>covariateSettings</code> argument.</p>
+<p>The <code>removeduplicateSubjects</code> argument can have one of the following values:</p><ul>
+<li><p><code>"keep all"</code>: Do not remove subjects that appear in both target and comparator cohort</p></li>
+<li><p><code>"keep first"</code>: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.</p></li>
+<li><p><code>"remove all"</code>: Remove subjects that appear in both target and comparator cohort completely from the analysis."</p></li>
+</ul>
 
 
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#details">Details</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -348,7 +325,7 @@ and descendants to the <code>excludedCovariateConceptIds</code> of the <code>cov
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

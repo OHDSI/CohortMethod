@@ -10,23 +10,27 @@
 
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -36,8 +40,7 @@
 
 
 <meta property="og:title" content="Create an outcome model, and compute the relative risk — fitOutcomeModel" />
-<meta property="og:description" content="fitOutcomeModel creates an outcome model, and computes the relative risk" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:description" content="Create an outcome model, and computes the relative risk" />
 
 
 
@@ -55,7 +58,7 @@
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -69,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.0</span>
       </span>
     </div>
 
@@ -83,6 +86,9 @@
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -99,13 +105,13 @@
     </li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li>
-  <a href="https://github.com/OHDSI/CohortMethod">
+  <a href="https://ohdsi.github.io/Hades"><img src='https://ohdsi.github.io/Hades/images/hadesMini.png' width=80 height=17 style='vertical-align: top;'></a>
+</li>
+<li>
+  <a href="https://github.com/OHDSI/CohortMethod/">
     <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
@@ -129,7 +135,7 @@
     </div>
 
     <div class="ref-description">
-    <p><code>fitOutcomeModel</code> creates an outcome model, and computes the relative risk</p>
+    <p>Create an outcome model, and computes the relative risk</p>
     </div>
 
     <pre class="usage"><span class='fu'>fitOutcomeModel</span>(
@@ -152,13 +158,14 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>population</th>
-      <td><p>A population object generated by <code>createStudyPopulation</code>,
+      <td><p>A population object generated by <code><a href='createStudyPopulation.html'>createStudyPopulation()</a></code>,
 potentially filtered by other functions.</p></td>
     </tr>
     <tr>
       <th>cohortMethodData</th>
-      <td><p>An object of type <code>cohortMethodData</code> as generated using
-<code>getDbCohortMethodData</code>.</p></td>
+      <td><p>An object of type <a href='CohortMethodData-class.html'>CohortMethodData</a> as generated using
+<code><a href='getDbCohortMethodData.html'>getDbCohortMethodData()</a></code>. Can be omitted if not using covariates and
+not using interaction terms.</p></td>
     </tr>
     <tr>
       <th>modelType</th>
@@ -173,12 +180,12 @@ scores)?</p></td>
     </tr>
     <tr>
       <th>useCovariates</th>
-      <td><p>Whether to use the covariate matrix in the <code>cohortMethodData</code>
+      <td><p>Whether to use the covariates in the <code>cohortMethodData</code>
 object in the outcome model.</p></td>
     </tr>
     <tr>
       <th>inversePtWeighting</th>
-      <td><p>Use inverse probability of treatment weigting (IPTW)? See details.</p></td>
+      <td><p>Use inverse probability of treatment weighting (IPTW)? See details.</p></td>
     </tr>
     <tr>
       <th>interactionCovariateIds</th>
@@ -195,40 +202,35 @@ with the main treatment effect.</p></td>
     </tr>
     <tr>
       <th>prior</th>
-      <td><p>The prior used to fit the model. See <code><a href='https://rdrr.io/pkg/Cyclops/man/createPrior.html'>createPrior</a></code>
+      <td><p>The prior used to fit the model. See <code><a href='https://rdrr.io/pkg/Cyclops/man/createPrior.html'>Cyclops::createPrior()</a></code>
 for details.</p></td>
     </tr>
     <tr>
       <th>control</th>
       <td><p>The control object used to control the cross-validation used to
 determine the hyperparameters of the prior (if applicable). See
-<code><a href='https://rdrr.io/pkg/Cyclops/man/createControl.html'>createControl</a></code> for details.</p></td>
+<code><a href='https://rdrr.io/pkg/Cyclops/man/createControl.html'>Cyclops::createControl()</a></code> for details.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>An object of class <code>outcomeModel</code>. Generic function <code>summary</code>, <code>coef</code>, and
+    <p>An object of class <code>OutcomeModel</code>. Generic function <code>print</code>, <code>coef</code>, and
 <code>confint</code> are available.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010)</p>
+    <p>IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010).</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
 as weights to directly estimate relative risk and its confidence intervals. Value Health.
-2010;13(2):273–277. doi:10.1111/j.1524-4733.2009.00671.x</p>
+2010;13(2):273-277. doi:10.1111/j.1524-4733.2009.00671.x</p>
 
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      <li><a href="#value">Value</a></li>
-      <li><a href="#details">Details</a></li>
-      <li><a href="#references">References</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -239,7 +241,7 @@ as weights to directly estimate relative risk and its confidence intervals. Valu
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
 
       </footer>

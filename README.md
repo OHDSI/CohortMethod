@@ -4,7 +4,7 @@ CohortMethod
 [![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
 [![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
 
-CohortMethod is part of the [OHDSI Methods Library](https://ohdsi.github.io/MethodsLibrary).
+CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
 
 Introduction
 ============
@@ -48,10 +48,9 @@ Requires R (version 3.1.0 or higher). Installation on Windows requires [RTools](
 
 Installation
 =============
-1. On Windows, make sure [RTools](http://cran.r-project.org/bin/windows/Rtools/) is installed.
-2. The DatabaseConnector and SqlRender packages require Java. Java can be downloaded from
-<a href="http://www.java.com" target="_blank">http://www.java.com</a>. Once Java is installed, ensure that Java is being pathed correctly. Under environment variables in the control panel, ensure that the jvm.dll file is added correctly to the path.
-3. In R, use the following commands to download and install CohortMethod:
+1. See the instructions [here](https://ohdsi.github.io/Hades/rSetup.html) for configuring your R environment, including RTools and Java.
+
+2. In R, use the following commands to download and install CohortMethod:
 
   ```r
   install.packages("drat")
@@ -59,7 +58,7 @@ Installation
   install.packages("CohortMethod")
   ```
   
-4. Optionally, run this to check if CohortMethod was correctly installed:
+3. Optionally, run this to check if CohortMethod was correctly installed:
 
   ```r
   connectionDetails <- createConnectionDetails(dbms="postgresql",
@@ -80,6 +79,9 @@ Installation
 
 User Documentation
 ==================
+Documentation can be found on the [package website](https://ohdsi.github.io/CohortMethod).
+
+PDF versions of the documentation are also available:
 * Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/SingleStudies.pdf)
 * Vignette: [Running multiple analyses at once using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/MultipleAnalyses.pdf)
 * Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/extras/CohortMethod.pdf)
@@ -88,6 +90,10 @@ Support
 =======
 * Developer questions/comments/feedback: <a href="http://forums.ohdsi.org/c/developers">OHDSI Forum</a>
 * We use the <a href="https://github.com/OHDSI/CohortMethod/issues">GitHub issue tracker</a> for all bugs/issues/enhancements
+
+Contributing
+============
+Read [here](https://ohdsi.github.io/Hades/contribute.html) how you can contribute to this package.
 
 License
 =======
@@ -100,7 +106,6 @@ CohortMethod is being developed in R Studio.
 ### Development status
 
 CohortMethod is actively being used in several studies and is ready for use.
-
 
 # Acknowledgements
 - This project is supported in part through the National Science Foundation grant IIS 1251151.
