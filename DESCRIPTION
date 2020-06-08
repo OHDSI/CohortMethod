@@ -28,7 +28,7 @@ BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
 	R (>= 3.5.0),
 	DatabaseConnector (>= 2.2.0),
-	Cyclops (>= 2.0.3),
+	Cyclops (>= 3.0.0),
 	FeatureExtraction  (>= 3.0.0),
 	Andromeda (>= 0.3.0)
 Imports:
@@ -53,9 +53,7 @@ Suggests:
 	rmarkdown,
 	EmpiricalCalibration
 Remotes:
-	ohdsi/DatabaseConnector@develop,
-	ohdsi/FeatureExtraction@develop,
-  ohdsi/ParallelLogger@develop
+	ohdsi/FeatureExtraction
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.1.0

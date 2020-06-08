@@ -1,10 +1,7 @@
 ### Test code ###
-
-
 library(CohortMethod)
-options(fftempdir = "s:/temp")
 
-cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
 resultsDatabaseSchema <- "Scratch.dbo"
 cdmVersion <- "5"
 
@@ -31,7 +28,6 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           firstExposureOnly = TRUE,
                                           removeDuplicateSubjects = TRUE,
                                           restrictToCommonPeriod = TRUE,
-                                          excludeDrugsFromCovariates = TRUE,
                                           maxCohortSize = 100000,
                                           covariateSettings = covariateSettings)
 
@@ -75,45 +71,7 @@ saveTargetComparatorOutcomesList(targetComparatorOutcomesList,
 
 
 
-covariateSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
-                                             useCovariateConditionOccurrence = TRUE,
-                                             useCovariateConditionOccurrence365d = TRUE,
-                                             useCovariateConditionOccurrence30d = TRUE,
-                                             useCovariateConditionOccurrenceInpt180d = TRUE,
-                                             useCovariateConditionEra = TRUE,
-                                             useCovariateConditionEraEver = TRUE,
-                                             useCovariateConditionEraOverlap = TRUE,
-                                             useCovariateConditionGroup = TRUE,
-                                             useCovariateDrugExposure = TRUE,
-                                             useCovariateDrugExposure365d = TRUE,
-                                             useCovariateDrugExposure30d = TRUE,
-                                             useCovariateDrugEra = TRUE,
-                                             useCovariateDrugEra365d = TRUE,
-                                             useCovariateDrugEra30d = TRUE,
-                                             useCovariateDrugEraEver = TRUE,
-                                             useCovariateDrugEraOverlap = TRUE,
-                                             useCovariateDrugGroup = TRUE,
-                                             useCovariateProcedureOccurrence = TRUE,
-                                             useCovariateProcedureOccurrence365d = TRUE,
-                                             useCovariateProcedureOccurrence30d = TRUE,
-                                             useCovariateProcedureGroup = TRUE,
-                                             useCovariateObservation = TRUE,
-                                             useCovariateObservation365d = TRUE,
-                                             useCovariateObservation30d = TRUE,
-                                             useCovariateObservationCount365d = TRUE,
-                                             useCovariateMeasurement365d = TRUE,
-                                             useCovariateMeasurement30d = TRUE,
-                                             useCovariateMeasurementCount365d = TRUE,
-                                             useCovariateMeasurementBelow = TRUE,
-                                             useCovariateMeasurementAbove = TRUE,
-                                             useCovariateConceptCounts = TRUE,
-                                             useCovariateRiskScores = TRUE,
-                                             useCovariateRiskScoresCharlson = TRUE,
-                                             useCovariateRiskScoresDCSI = TRUE,
-                                             useCovariateRiskScoresCHADS2 = TRUE,
-                                             useCovariateInteractionYear = FALSE,
-                                             useCovariateInteractionMonth = FALSE,
-                                             deleteCovariatesSmallCount = 100)
+covariateSettings <- createCovariateSettings()
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(excludeDrugsFromCovariates = TRUE,
                                                    covariateSettings = covariateSettings)
 
