@@ -97,6 +97,7 @@ setMethod("show", "CohortMethodData", function(object) {
   cli::cat_line("")
   cli::cat_line(pillar::style_subtle("Inherits from CovariateData:"))
   class(object) <- "CovariateData"
+  attr(class(object), "package") <- "FeatureExtraction"
   show(object)
 })
 
