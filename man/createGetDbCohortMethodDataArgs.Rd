@@ -7,7 +7,7 @@
 createGetDbCohortMethodDataArgs(
   studyStartDate = "",
   studyEndDate = "",
-  excludeDrugsFromCovariates,
+  excludeDrugsFromCovariates = NULL,
   firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE,
   restrictToCommonPeriod = FALSE,

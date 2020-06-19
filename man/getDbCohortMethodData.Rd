@@ -18,7 +18,7 @@ getDbCohortMethodData(
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
   cdmVersion = "5",
-  excludeDrugsFromCovariates,
+  excludeDrugsFromCovariates = NULL,
   firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE,
   restrictToCommonPeriod = FALSE,

@@ -117,14 +117,14 @@ getDbCohortMethodData <- function(connectionDetails,
                                   outcomeDatabaseSchema = cdmDatabaseSchema,
                                   outcomeTable = "condition_occurrence",
                                   cdmVersion = "5",
-                                  excludeDrugsFromCovariates,
+                                  excludeDrugsFromCovariates = NULL,
                                   firstExposureOnly = FALSE,
                                   removeDuplicateSubjects = FALSE,
                                   restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
                                   maxCohortSize = 0,
                                   covariateSettings) {
-  if (!missing(excludeDrugsFromCovariates)) {
+  if (!is.null(excludeDrugsFromCovariates)) {
     warning("The excludeDrugsFromCovariates argument has been deprecated. Please explicitly exclude the drug concepts in the covariate settings")
   } else {
     excludeDrugsFromCovariates = FALSE

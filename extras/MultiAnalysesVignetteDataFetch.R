@@ -122,7 +122,6 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    studyStartDate = "",
                                                    studyEndDate = "",
                                                    maxCohortSize = 100000,
-                                                   excludeDrugsFromCovariates = FALSE,
                                                    covariateSettings = covarSettings)
 
 createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
