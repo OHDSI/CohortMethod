@@ -332,6 +332,7 @@ getDbCohortMethodData <- function(connectionDetails,
   } else {
     cohortTable <- "#cohort_person"
   }
+  ParallelLogger::logInfo("FeatureExtraction::getDbCovariateData() is about to be called.")
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = oracleTempSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
@@ -340,6 +341,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                          cohortTableIsTemp = TRUE,
                                                          rowIdField = "row_id",
                                                          covariateSettings = covariateSettings)
+  ParallelLogger::logInfo("Finished a call to FeatureExtraction::getDbCovariateData().")
   ParallelLogger::logDebug("Fetched covariates total count is ", covariateData$covariates %>% count() %>% pull())
   ParallelLogger::logInfo("Fetching outcomes from server")
   start <- Sys.time()
