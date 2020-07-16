@@ -51,9 +51,11 @@ Suggests:
 	pROC,
 	knitr,
 	rmarkdown,
-	EmpiricalCalibration
+	EmpiricalCalibration,
+	Eunomia
 Remotes:
-	ohdsi/FeatureExtraction
+	ohdsi/FeatureExtraction,
+	ohdsi/Eunomia
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.1.0
