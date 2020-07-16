@@ -81,16 +81,11 @@ createPs <- function(cohortMethodData,
 
   start <- Sys.time()
   population <- population[order(population$rowId), ]
-  if (is.null(cohortMethodData$covariates)) {
-    n_covariate <- 0
-  } else {
-    n_covariate <- cohortMethodData$covariates %>% count() %>% pull()
-  }
   if (cohortMethodData$cohorts %>% count() %>% pull() == 0) {
     error <- "No subjects in population, so cannot fit model"
     sampled <- FALSE
     ref <- NULL
-  } else if (n_covariate == 0) {
+  } else if (cohortMethodData$covariates %>% count() %>% pull() == 0) {
     error <- "No covariate data, so cannot fit model"
     sampled <- FALSE
     ref <- NULL
