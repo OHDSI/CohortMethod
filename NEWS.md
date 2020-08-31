@@ -5,6 +5,8 @@ Bug fixes:
 
 1. Fixing "argument 'excludeDrugsFromCovariates' is missing" error when calling `createGetDbCohortMethodDataArgs()` without deprecated argument `excludeDrugsFromCovariates`.
 
+2. More testing and handling of empty exposure cohorts.
+
 
 CohortMethod 4.0.0
 ==================

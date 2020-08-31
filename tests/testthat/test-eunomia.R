@@ -25,7 +25,13 @@ test_that("Multiple analyses", {
                                                      removeDuplicateSubjects = "remove all",
                                                      covariateSettings = covarSettings)
 
+  # Duplicating some operations from createGetDbCohortMethodDataArgs just so we test them:
   createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
+                                                        firstExposureOnly = TRUE,
+                                                        restrictToCommonPeriod = TRUE,
+                                                        removeDuplicateSubjects = "remove all",
+                                                        washoutPeriod = 183,
+                                                        censorAtNewRiskWindow = TRUE,
                                                         minDaysAtRisk = 1,
                                                         riskWindowStart = 0,
                                                         startAnchor = "cohort start",
@@ -78,6 +84,7 @@ test_that("Multiple analyses", {
 
   unlink(outputFolder, recursive = TRUE)
 })
+
 
 # Remove the Eunomia database:
 unlink(connectionDetails$server)

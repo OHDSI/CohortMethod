@@ -16,7 +16,7 @@
 
 fastDuplicated <- function(data, columns) {
   if (nrow(data) == 0) {
-    return(c())
+    return(vector())
   } else if (nrow(data) == 1) {
     return(c(FALSE))
   } else {
@@ -156,10 +156,16 @@ createStudyPopulation <- function(cohortMethodData,
   }
   if (restrictToCommonPeriod) {
     ParallelLogger::logInfo("Restrict to common period")
-    cohortStartDate <- population$cohortStartDate
-    periodStart <- max(aggregate(cohortStartDate ~ population$treatment, FUN = min)$cohortStartDate)
-    periodEnd <- min(aggregate(cohortStartDate ~ population$treatment, FUN = max)$cohortStartDate)
-    population <- population[cohortStartDate >= periodStart & cohortStartDate <= periodEnd, ]
+    if (nrow(population) > 0) {
+      population <- population %>%
+        group_by(.data$treatment) %>%
+        summarise(treatmentStart = min(.data$cohortStartDate), treatmentEnd = max(.data$cohortStartDate)) %>%
+        ungroup() %>%
+        summarise(periodStart = max(.data$treatmentStart), periodEnd = min(.data$treatmentEnd)) %>%
+        full_join(population, by = character()) %>%
+        filter(population$cohortStartDate >= .data$periodStart & population$cohortStartDate <= .data$periodEnd) %>%
+        select(-.data$periodStart, -.data$periodEnd)
+    }
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
   if (removeDuplicateSubjects == "remove all") {
@@ -230,25 +236,26 @@ createStudyPopulation <- function(cohortMethodData,
                                                                                                 population$daysToObsEnd]
   if (censorAtNewRiskWindow) {
     ParallelLogger::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
-    population$startDate <- population$cohortStartDate + population$riskStart
-    population$endDate <- population$cohortStartDate + population$riskEnd
-    population <- population[order(population$subjectId, population$riskStart), ]
-    idx <- 1:(nrow(population) - 1)
-    idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
-                   population$subjectId[idx] == population$subjectId[idx + 1])
-    if (length(idx) > 0) {
-      population$endDate[idx] <- population$startDate[idx + 1] - 1
-      population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
-      idx <- population$riskEnd < population$riskStart
-      if (any(idx)) {
-        population <- population[!idx, ]
-        metaData$attrition <- rbind(metaData$attrition,
-                                    getCounts(population, paste("Censoring at start of new time-at-risk")))
-
+    if (nrow(population) > 0) {
+      population$startDate <- population$cohortStartDate + population$riskStart
+      population$endDate <- population$cohortStartDate + population$riskEnd
+      population <- population[order(population$subjectId, population$riskStart), ]
+      idx <- 1:(nrow(population) - 1)
+      idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
+                     population$subjectId[idx] == population$subjectId[idx + 1])
+      if (length(idx) > 0) {
+        population$endDate[idx] <- population$startDate[idx + 1] - 1
+        population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
+        idx <- population$riskEnd < population$riskStart
+        if (any(idx)) {
+          population <- population[!idx, ]
+        }
       }
+      population$startDate <- NULL
+      population$endDate <- NULL
+      metaData$attrition <- rbind(metaData$attrition,
+                                  getCounts(population, paste("Censoring at start of new time-at-risk")))
     }
-    population$startDate <- NULL
-    population$endDate <- NULL
   }
   if (minDaysAtRisk != 0) {
     ParallelLogger::logInfo(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
