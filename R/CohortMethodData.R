@@ -57,6 +57,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
     stop("Data not of class CohortMethodData")
 
   Andromeda::saveAndromeda(cohortMethodData, file)
+  writeLines("To use this CohortMethodData object, you will have to load it from file (using loadCohortMethodData).")
 }
 
 #' Load the cohort method data from a file

@@ -302,6 +302,11 @@ fitOutcomeModel <- function(population,
                                             seLogRr = seLogRr)
         priorVariance <- fit$variance[1]
 
+        # Retrieve likelihood profile
+        x <- log(seq(0.1, 10, by = 0.01))
+        logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit, parm = treatmentVarId, x, includePenalty = TRUE)$value
+        names(logLikelihoodProfile) <- x
+
         if (!is.null(mainEffectTerms)) {
           logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
           if (prior$priorType == "none") {
@@ -340,21 +345,13 @@ fitOutcomeModel <- function(population,
                                              logUb95 = ci[ ,3],
                                              seLogRr = seLogRr)
         }
-
-        if (!is.null(control$profileLogLikelihood) && control$profileLogLikelihood) {
-          x <- seq(log(0.1), log(10), length.out = 100) # TODO Evil magic numbers
-          y <- Cyclops::getCyclopsProfileLogLikelihood(fit, parm = treatmentVarId, x)$value
-          logLikelihoodProfile <- tibble::tibble(covariateId = treatmentVarId,
-                                                 value = x,
-                                                 logLikelihood = y
-          )
-        }
       }
     }
   }
   outcomeModel <- metaData
   outcomeModel$outcomeModelTreatmentVarId <- treatmentVarId
   outcomeModel$outcomeModelCoefficients <- coefficients
+  outcomeModel$logLikelihoodProfile <- logLikelihoodProfile
   outcomeModel$outcomeModelPriorVariance <- priorVariance
   outcomeModel$outcomeModelType <- modelType
   outcomeModel$outcomeModelStratified <- stratified
@@ -370,12 +367,8 @@ fitOutcomeModel <- function(population,
   if (modelType == "poisson" || modelType == "cox") {
     outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
   }
-
   if (!is.null(subgroupCounts)) {
     outcomeModel$subgroupCounts <- subgroupCounts
-  }
-  if (!is.null(logLikelihoodProfile)) {
-    outcomeModel$logLikelihoodProfile <- logLikelihoodProfile
   }
   class(outcomeModel) <- "OutcomeModel"
   delta <- Sys.time() - start

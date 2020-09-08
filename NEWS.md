@@ -1,6 +1,10 @@
 CohortMethod 4.0.1
 ==================
 
+Changes:
+
+1. Always including the likelihood profile in the outcome model objects.
+
 Bug fixes:
 
 1. Fixing "argument 'excludeDrugsFromCovariates' is missing" error when calling `createGetDbCohortMethodDataArgs()` without deprecated argument `excludeDrugsFromCovariates`.
