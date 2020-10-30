@@ -6,6 +6,8 @@ connectionDetails <- getEunomiaConnectionDetails()
 
 Eunomia::createCohorts(connectionDetails)
 
+set.seed(123)
+
 createSillyCompetingRisk <- function(studyPopulation,
                                      populationProportion = 0.5) {
 
@@ -58,12 +60,17 @@ test_that("Competing risks single analysis", {
 
   fitRisk1 <- fitOutcomeModel(studyPop3,
                               modelType = "fgr")
-  #
-  # fitRisk2 <- fitOutcomeModel(studyPopCombined,
-  #                             modelType = "fgr") # TODO modelType not yet implemented
 
-  fitNoRisk2 <- fitOutcomeModel(studyPopCombined,
-                                modelType = "cox") # TODO Cyclops should throw an error (2 %in% outcome type)
+  expect_equal(coef(fitNoRisk1), coef(fitRisk1))
+
+#   fitNoRisk2 <- fitOutcomeModel(studyPop4,          # TODO: currently getInformativePopulation takes 2 -- > 1, is this the behavior that we want?
+#                                 modelType = "cox")
+
+  fitRisk2 <- fitOutcomeModel(studyPop4,
+                              modelType = "fgr")
+
+  expect_false(coef(fitRisk1) == coef(fitRisk2))
+
 
   #outputFolder <- tempfile(pattern = "cmData")
   #unlink(outputFolder, recursive = TRUE)
