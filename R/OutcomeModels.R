@@ -84,8 +84,8 @@ fitOutcomeModel <- function(population,
     stop("Can't exclude covariates that are to be used for interaction terms")
   if (inversePtWeighting && is.null(population$propensityScore))
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
-  if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
-    stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', or 'cox'")
+  if (modelType != "logistic" && modelType != "poisson" && modelType != "cox" && modelType != "fgr")
+    stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', 'cox' or 'fgr")
   ParallelLogger::logTrace("Fitting outcome model")
 
   start <- Sys.time()
@@ -140,7 +140,7 @@ fitOutcomeModel <- function(population,
 
         appendToTable(covariateData$covariates, treatmentCovariate)
 
-        if (stratified || modelType == "cox") {
+        if (stratified || modelType == "cox" || modelType == "fgr") {
           prior$exclude <- treatmentVarId  # Exclude treatment variable from regularization
         } else {
           prior$exclude <- c(0, treatmentVarId)  # Exclude treatment variable and intercept from regularization
@@ -224,7 +224,7 @@ fitOutcomeModel <- function(population,
       }
       cyclopsData <- Cyclops::convertToCyclopsData(outcomes = outcomes,
                                                    covariates = covariates,
-                                                   addIntercept = (!stratified && !modelType == "cox"),
+                                                   addIntercept = (!stratified && !modelType == "cox" &&!modelType == "fgr"),
                                                    modelType = modelTypeToCyclopsModelType(modelType,
                                                                                            stratified),
                                                    checkRowIds = FALSE,
@@ -364,7 +364,8 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- getCounts(population, "Population count")
   outcomeModel$outcomeCounts <- getOutcomeCounts(population, modelType)
-  if (modelType == "poisson" || modelType == "cox") {
+  outcomeModel$competingOutcomeCounts <- getCompetingOutcomeCounts(population, modelType)
+  if (modelType == "poisson" || modelType == "cox" || modelType == "fgr") {
     outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
   }
   if (!is.null(subgroupCounts)) {
@@ -386,6 +387,11 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   if (modelType == "cox") {
     population$y[population$y != 0] <- 1
     population$time <- population$survivalTime
+  } else if (modelType == "fgr") {
+    if (any(!unique(population$y) %in% c(0,1,2))) {
+      stop("Invalid value in population outcome variable")
+    }
+    population$time <- population$survivalTime
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
@@ -406,7 +412,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   if (stratified) {
     columns <- c(columns, "stratumId")
   }
-  if (modelType == "poisson" || modelType == "cox") {
+  if (modelType == "poisson" || modelType == "cox" || modelType == "fgr") {
     columns <- c(columns, "time")
   }
   if (inversePtWeighting) {
@@ -425,6 +431,8 @@ modelTypeToCyclopsModelType <- function(modelType, stratified) {
       return("cpr") else return("pr")
   } else if (modelType == "cox") {
     return("cox")
+  } else if (modelType == "fgr") {
+    return("fgr")
   } else stop(paste("Unknown model type:", modelType))
 }
 
@@ -477,6 +485,8 @@ getOutcomeCounts <- function(population, modelType) {
   population <- rename(population, y = .data$outcomeCount)
   if (modelType == "cox") {
     population$y[population$y != 0] <- 1
+  } else if (modelType == "fgr") {
+    population$y[population$y != 1] <- 0 # Zero out competing events.  TODO: how to report competing events?
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
@@ -486,6 +496,17 @@ getOutcomeCounts <- function(population, modelType) {
                         comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
                         targetOutcomes = sum(population$y[population$treatment == 1]),
                         comparatorOutcomes = sum(population$y[population$treatment == 0])))
+}
+
+getCompetingOutcomeCounts <- function(population, modelType) {
+  population <- rename(population, y = .data$outcomeCount)
+  if (modelType == "fgr") {
+    return(tibble::tibble(targetCompetingOutcomes = sum(population$y[population$treatment == 1] == 2),
+                          comparatorCompetingOutcomes = sum(population$y[population$treatment == 0] == 2)))
+  } else {
+    return(tibble::tibble(targetCompetingOutcomes = 0,
+                          comparatorCompetingOutcomes = 0))
+  }
 }
 
 createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, population, modelType) {
@@ -516,7 +537,7 @@ createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, popu
 
 getTimeAtRisk <- function(population, modelType) {
   population$time <- population$timeAtRisk
-  if (modelType == "cox") {
+  if (modelType == "cox" || modelType == "fgr") {
     population$time <- population$survivalTime
   }
   return(tibble::tibble(targetDays = sum(population$time[population$treatment == 1]),

@@ -46,9 +46,9 @@ combineCompetingStudyPopulations <- function(mainPopulation,
               competingRiskPopulation %>% select(subjectId, outcomeCount, survivalTime),
               by = "subjectId") %>%
     mutate(survivalTime = pmin(survivalTime.x, survivalTime.y, na.rm = TRUE)) %>%
-    mutate(outcomeCount =
-             1 * (outcomeCount.x > 0) * (survivalTime.x == survivalTime) +
-             ifelse(!is.na(outcomeCount.y), 2 * (outcomeCount.y > 0) * (survivalTime.y == survivalTime), 0)) %>%
+    mutate(outcomeCount = 1 * (outcomeCount.x > 0) * (survivalTime.x == survivalTime) +
+             ifelse(!is.na(outcomeCount.y),
+                    2 * (outcomeCount.y > 0) * (survivalTime.y == survivalTime), 0)) %>%
     select(rowId, subjectId, treatment, timeAtRisk, outcomeCount, survivalTime,
            outcomeCount.x, survivalTime.x, outcomeCount.y, survivalTime.y) # Leaving for debugging purposes
 

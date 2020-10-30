@@ -56,14 +56,14 @@ test_that("Competing risks single analysis", {
   fitNoRisk1 <- fitOutcomeModel(studyPop3,
                                modelType = "cox")
 
-  # fitNoRisk2 <- fitOutcomeModel(studyPopCombined,
-  #                               modelType = "cox") # TODO Cyclops should throw an error (2 %in% outcome type)
-  #
-  # fitRisk1 <- fitOutcomeModel(studyPop3,
-  #                             modelType = "finegray") # TODO Cyclops should throw an error (2 !%in% outcome type)
+  fitRisk1 <- fitOutcomeModel(studyPop3,
+                              modelType = "fgr")
   #
   # fitRisk2 <- fitOutcomeModel(studyPopCombined,
-  #                             modelType = "finegray") # TODO modelType not yet implemented
+  #                             modelType = "fgr") # TODO modelType not yet implemented
+
+  fitNoRisk2 <- fitOutcomeModel(studyPopCombined,
+                                modelType = "cox") # TODO Cyclops should throw an error (2 %in% outcome type)
 
   #outputFolder <- tempfile(pattern = "cmData")
   #unlink(outputFolder, recursive = TRUE)
