@@ -55,9 +55,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
     result <- cohortMethodData$covariates %>%
       inner_join(cohortMethodData$w, by = c("rowId")) %>%
       group_by(.data$covariateId, .data$treatment) %>%
-      summarise(sum = sum(.data$covariateValue, na.rm = TRUE),
-                mean = sum(.data$weight * .data$covariateValue, na.rm = TRUE),
-                sumSqr = sum(.data$weight * .data$covariateValue^2, na.rm = TRUE),
+      summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+                mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
+                sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
                 sumWSqr = sum(.data$weight^2, na.rm = TRUE)) %>%
       mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW/(sumW^2 - .data$sumWSqr))) %>%
       ungroup() %>%
@@ -73,8 +73,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
     result <- cohortMethodData$covariates %>%
       inner_join(select(cohorts, .data$rowId, .data$treatment), by = "rowId") %>%
       group_by(.data$covariateId, .data$treatment) %>%
-      summarise(sum = sum(.data$covariateValue, na.rm = TRUE),
-                sumSqr = sum(.data$covariateValue^2, na.rm = TRUE)) %>%
+      summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+                sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE)) %>%
       inner_join(cohortCounts, by = "treatment") %>%
       mutate(sd = sqrt((.data$sumSqr - (.data$sum^2/.data$n))/.data$n),
              mean = .data$sum/.data$n) %>%
