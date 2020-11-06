@@ -236,7 +236,7 @@ createStudyPopulation <- function(cohortMethodData,
                                                                                                 population$daysToObsEnd]
   if (censorAtNewRiskWindow) {
     ParallelLogger::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
-    if (nrow(population) > 0) {
+    if (nrow(population) > 1) {
       population$startDate <- population$cohortStartDate + population$riskStart
       population$endDate <- population$cohortStartDate + population$riskEnd
       population <- population[order(population$subjectId, population$riskStart), ]
