@@ -303,7 +303,7 @@ fitOutcomeModel <- function(population,
         priorVariance <- fit$variance[1]
 
         # Retrieve likelihood profile
-        x <- log(seq(0.1, 10, by = 0.01))
+        x <- seq(log(0.1), log(10), length.out = 100) # TODO Evil magic numbers, pass in control
         logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit, parm = treatmentVarId, x, includePenalty = TRUE)$value
         names(logLikelihoodProfile) <- x
 

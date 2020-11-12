@@ -44,6 +44,8 @@ cdmVersion <- "5"
 
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 
+
+# Create cohorts --------------------------------------------------------
 connection <- DatabaseConnector::connect(connectionDetails)
 
 sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
@@ -263,7 +265,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         fitOutcomeModelThreads = 5,
                         outcomeCvThreads = 10,
                         outcomeIdsOfInterest = c(192671))
-# result <- readRDS("s:/temp/cohortMethodVignette/outcomeModelReference.rds")
+# result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
 
 analysisSum <- summarizeAnalyses(result, outputFolder = "s:/temp/cohortMethodVignette2")
 
@@ -292,15 +294,14 @@ head(studyPop)
 getAttritionTable(studyPop)
 om <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$studyPopFile[2]))
 
-# cohortMethodData <- loadCohortMethodData(result$cohortMethodDataFolder[1])
+# cohortMethodData <- loadCohortMethodData(file.path("s:/temp/cohortMethodVignette2", result$cohortMethodDataFile[1]))
 # summary(cohortMethodData)
-# analysisSummary <- summarizeAnalyses(result)
-# saveRDS(analysisSummary, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
+saveRDS(analysisSum, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
 
 library(EmpiricalCalibration)
 for (i in 1:5) {
-  negControls <- analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId != 192671, ]
-  hoi <- analysisSummary[analysisSummary$analysisId == i & analysisSummary$outcomeId == 192671, ]
+  negControls <- analysisSum[analysisSum$analysisId == i & analysisSum$outcomeId != 192671, ]
+  hoi <- analysisSum[analysisSum$analysisId == i & analysisSum$outcomeId == 192671, ]
   fileName <- paste("s:/temp/cohortMethodVignette2/CaliPlot_", i, ".png", sep = "")
   plotCalibrationEffect(negControls$logRr,
                         negControls$seLogRr,
@@ -308,3 +309,15 @@ for (i in 1:5) {
                         hoi$seLogRr,
                         fileName = fileName)
 }
+
+
+cmData <- loadCohortMethodData(file.path("s:/temp/cohortMethodVignette2", result$cohortMethodDataFile[1]))
+strataPop <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$strataFile[result$strataFile != ""][1]))
+balance <- computeCovariateBalance(strataPop, cmData)
+plotCovariateBalanceScatterPlot(balance)
+system.time(
+  Andromeda::createIndex(cmData$covariates, "covariateId")
+)
+system.time(
+  Andromeda::createIndex(cmData$covariates, "rowId")
+)
