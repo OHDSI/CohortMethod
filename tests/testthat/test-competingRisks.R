@@ -80,22 +80,16 @@ test_that("Competing risks single analysis", {
                                      outcomeId = 5,
                                      riskWindowEnd = 99999)
 
-  set.seed(123)
-  studyPop4 <- createSillyCompetingRisk(studyPop3, populationProportion = 0.2)
-
   expect_error(combineCompetingStudyPopulations(mainPopulation = studyPop3[-1,],
                                                 competingRiskPopulation = studyPop4))
 
   #expect_no_error
   invisible(combineCompetingStudyPopulations(mainPopulation = studyPop3,
-                                   competingRiskPopulation = studyPop4[-1,]))
+                                   competingRiskPopulation = studyPop5[-1,]))
 
 
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
-                                                       competingRiskPopulation = studyPop4)
-
-  studyPopCombined2 <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
-                                                        competingRiskPopulation = studyPop5)
+                                                       competingRiskPopulation = studyPop5)
 
   fitNoRisk1 <- fitOutcomeModel(studyPop3,
                                modelType = "cox")
@@ -109,11 +103,6 @@ test_that("Competing risks single analysis", {
                               modelType = "fgr")
 
   expect_false(coef(fitRisk1) == coef(fitRisk2))
-
-  fitRisk3 <- fitOutcomeModel(studyPopCombined2,
-                              modelType = "fgr")
-
-  expect_equal(coef(fitRisk2), coef(fitRisk3))
 
   #outputFolder <- tempfile(pattern = "cmData")
   #unlink(outputFolder, recursive = TRUE)
