@@ -6,11 +6,8 @@ connectionDetails <- getEunomiaConnectionDetails()
 
 Eunomia::createCohorts(connectionDetails)
 
-set.seed(123)
-
 createSillyCompetingRisk <- function(studyPopulation,
                                      populationProportion = 0.5) {
-
   len <- nrow(studyPopulation)
   riskPopulation <- studyPopulation
   hasEvent <- rbinom(len, size = 1, prob = populationProportion)
@@ -25,6 +22,38 @@ createSillyCompetingRisk <- function(studyPopulation,
   return(riskPopulation)
 }
 
+cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                          cdmDatabaseSchema = "main",
+                                          targetId = 1,
+                                          comparatorId = 2,
+                                          outcomeIds = 3,
+                                          exposureDatabaseSchema = "main",
+                                          outcomeDatabaseSchema = "main",
+                                          exposureTable = "cohort",
+                                          outcomeTable = "cohort",
+                                          covariateSettings = createDefaultCovariateSettings())
+
+
+studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                  outcomeId = 1,
+                                  riskWindowEnd = 99999)
+
+set.seed(123)
+riskPop <- createSillyCompetingRisk(studyPop, populationProportion = 0.2)
+riskTable <- riskPop %>% filter(outcomeCount == 1) %>%
+  mutate(cohortStartDate = as.character(as.Date(cohortStartDate + daysToEvent, origin = "1970-01-01"))) %>%
+  mutate(cohortEndDate = cohortStartDate) %>%
+  mutate(cohortDefinitionId = 5) %>%
+  select(cohortDefinitionId, subjectId, cohortStartDate, cohortEndDate)
+names(riskTable) <- toupper(SqlRender::camelCaseToSnakeCase(names(riskTable)))
+
+connect <- DatabaseConnector::connect(connectionDetails)
+oT <- querySql(connect, "SELECT * FROM cohort")
+insertTable(connect, "cohort",
+            rbind(oT, riskTable),
+            dropTableIfExists = TRUE, createTable = TRUE)
+dbDisconnect(connect)
+
 test_that("Competing risks single analysis", {
 
   nsaids <- c(1118084, 1124300) # celecoxib, diclofenac
@@ -36,7 +65,7 @@ test_that("Competing risks single analysis", {
                                             cdmDatabaseSchema = "main",
                                             targetId = 1,
                                             comparatorId = 2,
-                                            outcomeIds = c(3,4),
+                                            outcomeIds = c(3,5),
                                             exposureDatabaseSchema = "main",
                                             outcomeDatabaseSchema = "main",
                                             exposureTable = "cohort",
@@ -47,13 +76,26 @@ test_that("Competing risks single analysis", {
                                      outcomeId = 3,
                                      riskWindowEnd = 99999)
 
+  studyPop5 <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                     outcomeId = 5,
+                                     riskWindowEnd = 99999)
+
+  set.seed(123)
   studyPop4 <- createSillyCompetingRisk(studyPop3, populationProportion = 0.2)
 
   expect_error(combineCompetingStudyPopulations(mainPopulation = studyPop3[-1,],
                                                 competingRiskPopulation = studyPop4))
 
+  #expect_no_error
+  invisible(combineCompetingStudyPopulations(mainPopulation = studyPop3,
+                                   competingRiskPopulation = studyPop4[-1,]))
+
+
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
-                                                       competingRiskPopulation = studyPop4[-1,])
+                                                       competingRiskPopulation = studyPop4)
+
+  studyPopCombined2 <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
+                                                        competingRiskPopulation = studyPop5)
 
   fitNoRisk1 <- fitOutcomeModel(studyPop3,
                                modelType = "cox")
@@ -63,17 +105,36 @@ test_that("Competing risks single analysis", {
 
   expect_equal(coef(fitNoRisk1), coef(fitRisk1))
 
-#   fitNoRisk2 <- fitOutcomeModel(studyPop4,          # TODO: currently getInformativePopulation takes 2 -- > 1, is this the behavior that we want?
-#                                 modelType = "cox")
-
-  fitRisk2 <- fitOutcomeModel(studyPop4,
+  fitRisk2 <- fitOutcomeModel(studyPopCombined,
                               modelType = "fgr")
 
   expect_false(coef(fitRisk1) == coef(fitRisk2))
 
+  fitRisk3 <- fitOutcomeModel(studyPopCombined2,
+                              modelType = "fgr")
+
+  expect_equal(coef(fitRisk2), coef(fitRisk3))
 
   #outputFolder <- tempfile(pattern = "cmData")
   #unlink(outputFolder, recursive = TRUE)
+})
+
+test_that("Competing risks multiple analyses", {
+  expect_false("riskIds" %in% names(
+      createTargetComparatorOutcomes(targetId = 1,
+                                         comparatorId = 2,
+                                         outcomeIds = 3))
+  )
+
+  tcos <- createTargetComparatorOutcomes(targetId = 1,
+                                         comparatorId = 2,
+                                         outcomeIds = 3,
+                                         riskIds = 4)
+  expect_true("riskIds" %in% names(tcos))
+
+  targetComparatorOutcomesList <- list(tcos)
+
+
 })
 
 unlink(connectionDetails$server)
