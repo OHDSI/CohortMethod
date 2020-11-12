@@ -118,11 +118,17 @@ test_that("Competing risks multiple analyses", {
   tcos <- createTargetComparatorOutcomes(targetId = 1,
                                          comparatorId = 2,
                                          outcomeIds = 3,
-                                         riskIds = 4)
+                                         riskIds = 5)
   expect_true("riskIds" %in% names(tcos))
 
   targetComparatorOutcomesList <- list(tcos)
 
+  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+
+  getDbCmDataArgs <- createGetDbCohortMethodDataArgs(covariateSettings = covSettings)
+
+  spArgsRisk <- createCreateStudyPopulationArgs(riskWindowEnd = 99999)
 
 })
 
