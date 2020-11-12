@@ -99,7 +99,7 @@ createPs <- function(cohortMethodData,
     }
     if (length(excludeCovariateIds) != 0) {
       covariates <- covariates %>%
-        filter(!.data$covariateId %in% includeCovariateIds)
+        filter(!.data$covariateId %in% excludeCovariateIds)
     }
     filteredCovariateData <- Andromeda::andromeda(covariates = covariates,
                                                   covariateRef = cohortMethodData$covariateRef,

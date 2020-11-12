@@ -11,6 +11,10 @@ Bug fixes:
 
 2. More testing and handling of empty exposure cohorts.
 
+3. Fixing exclusion of covariate IDs when fitting propensity models.
+
+4. Correct covariate balance computation when covariate values are integers.
+
 
 CohortMethod 4.0.0
 ==================
