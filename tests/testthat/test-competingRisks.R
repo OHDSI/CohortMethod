@@ -149,13 +149,14 @@ test_that("Competing risks multiple analyses", {
                                   fitOutcomeModelArgs = coxArgs)
 
   outputFolder <- "./CohortMethodOutput"
+  unlink(outputFolder)
   result <- runCmAnalyses(connectionDetails = connectionDetails,
                           targetComparatorOutcomesList = targetComparatorOutcomesList,
                           cdmDatabaseSchema = "main",
                           exposureTable = "cohort",
                           outcomeTable = "cohort",
                           outputFolder = outputFolder,
-                          cmAnalysisList = list(coxAnalysis, fgrAnalysis)
+                          cmAnalysisList = list(fgrAnalysis) # add coxFit$outcomeModelCoefficients back
                           )
 
   fgrFit <- readRDS(file.path(outputFolder, "Analysis_1/om_t1_c2_o3.rds"))

@@ -699,7 +699,8 @@ createReferenceTable <- function(cmAnalysisList,
                                                                collapse = ","),
                            excludedCovariateConceptIds = paste(dco$excludedCovariateConceptIds,
                                                                collapse = ","),
-                           outcomeId = dco$outcomeIds)
+                           outcomeId = dco$outcomeIds,
+                           riskId = dco$riskIds)
 
     if (cmAnalysis$fitOutcomeModel) {
       rows$outcomeModelFile <- .createOutcomeModelFileName(folder = folder,
@@ -939,6 +940,7 @@ createReferenceTable <- function(cmAnalysisList,
                                        "targetId",
                                        "comparatorId",
                                        "outcomeId",
+                                       "riskId",
                                        "includedCovariateConceptIds",
                                        "excludedCovariateConceptIds",
                                        "outcomeOfInterest",
