@@ -123,12 +123,45 @@ test_that("Competing risks multiple analyses", {
 
   targetComparatorOutcomesList <- list(tcos)
 
-  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = c(1118084, 1124300),
                                                 addDescendantsToExclude = TRUE)
 
   getDbCmDataArgs <- createGetDbCohortMethodDataArgs(covariateSettings = covSettings)
 
   spArgsRisk <- createCreateStudyPopulationArgs(riskWindowEnd = 99999)
+
+  fgrArgs <- createFitOutcomeModelArgs(modelType = "fgr")
+
+  coxArgs <- createFitOutcomeModelArgs(modelType = "cox")
+
+  fgrAnalysis <- createCmAnalysis(analysisId = 1,
+                               description = "whatever",
+                               createStudyPopArgs = spArgsRisk,
+                               getDbCohortMethodDataArgs = getDbCmDataArgs,
+                               fitOutcomeModel = TRUE,
+                               fitOutcomeModelArgs = fgrArgs)
+
+  coxAnalysis <- createCmAnalysis(analysisId = 2,
+                                  description = "whatever",
+                                  createStudyPopArgs = spArgsRisk,
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = coxArgs)
+
+  outputFolder <- "./CohortMethodOutput"
+  result <- runCmAnalyses(connectionDetails = connectionDetails,
+                          targetComparatorOutcomesList = targetComparatorOutcomesList,
+                          cdmDatabaseSchema = "main",
+                          exposureTable = "cohort",
+                          outcomeTable = "cohort",
+                          outputFolder = outputFolder,
+                          cmAnalysisList = list(coxAnalysis, fgrAnalysis)
+                          )
+
+  fgrFit <- readRDS(file.path(outputFolder, "Analysis_1/om_t1_c2_o3.rds"))
+  coxFit <- readRDS(file.path(outputFolder, "Analysis_2/om_t1_c2_o3.rds"))
+
+  expect_false(fgrFit$outcomeModelCoefficients == coxFit$outcomeModelCoefficients)
 
 })
 
