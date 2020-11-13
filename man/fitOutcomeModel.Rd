@@ -14,6 +14,7 @@ fitOutcomeModel(
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
+  profileGrid = seq(log(0.1), log(10), length.out = 1000),
   prior = createPrior("laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
     = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
@@ -45,6 +46,9 @@ with the main treatment effect.}
 \item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
 
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
+
+\item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale where
+the likelihood for the treatment variable coefficient is sampled.}
 
 \item{prior}{The prior used to fit the model. See \code{\link[Cyclops:createPrior]{Cyclops::createPrior()}}
 for details.}

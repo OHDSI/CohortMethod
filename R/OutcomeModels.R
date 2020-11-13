@@ -40,6 +40,8 @@
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
+#' @param profileGrid           A one-dimensional grid of points on the log(relative risk) scale where
+#'                              the likelihood for the treatment variable coefficient is sampled.
 #' @param prior                 The prior used to fit the model. See [Cyclops::createPrior()]
 #'                              for details.
 #' @param control               The control object used to control the cross-validation used to
@@ -65,6 +67,7 @@ fitOutcomeModel <- function(population,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
+                            profileGrid = seq(log(0.1), log(10), length.out = 1000),
                             prior = createPrior("laplace", useCrossValidation = TRUE),
                             control = createControl(cvType = "auto",
                                                     seed = 1,
@@ -303,9 +306,11 @@ fitOutcomeModel <- function(population,
         priorVariance <- fit$variance[1]
 
         # Retrieve likelihood profile
-        x <- seq(log(0.1), log(10), length.out = 100) # TODO Evil magic numbers, pass in control
-        logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit, parm = treatmentVarId, x, includePenalty = TRUE)$value
-        names(logLikelihoodProfile) <- x
+        logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
+                                                                        parm = treatmentVarId,
+                                                                        x = profileGrid,
+                                                                        includePenalty = TRUE)$value
+        names(logLikelihoodProfile) <- profileGrid
 
         if (!is.null(mainEffectTerms)) {
           logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
