@@ -48,7 +48,8 @@ with the main treatment effect.}
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
 
 \item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale where
-the likelihood for the treatment variable coefficient is sampled.}
+the likelihood for the treatment variable coefficient is sampled. Set to
+NULL to skip profiling.}
 
 \item{prior}{The prior used to fit the model. See \code{\link[Cyclops:createPrior]{Cyclops::createPrior()}}
 for details.}

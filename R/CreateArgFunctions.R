@@ -335,6 +335,9 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #'                                  with the main treatment effect.
 #' @param excludeCovariateIds       Exclude these covariates from the outcome model.
 #' @param includeCovariateIds       Include only these covariates in the outcome model.
+#' @param profileGrid               A one-dimensional grid of points on the log(relative risk) scale
+#'                                  where the likelihood for the treatment variable coefficient is
+#'                                  sampled.
 #' @param prior                     The prior used to fit the model. See Cyclops::createPrior() for
 #'                                  details.
 #' @param control                   The control object used to control the cross-validation used to
@@ -349,6 +352,7 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),
+                                      profileGrid = seq(log(0.1), log(10), length.out = 1000),
                                       prior = createPrior("laplace", useCrossValidation = TRUE),
                                       control = createControl(cvType = "auto",
                                                               seed = 1,

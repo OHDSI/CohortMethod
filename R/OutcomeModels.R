@@ -41,7 +41,8 @@
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
 #' @param profileGrid           A one-dimensional grid of points on the log(relative risk) scale where
-#'                              the likelihood for the treatment variable coefficient is sampled.
+#'                              the likelihood for the treatment variable coefficient is sampled. Set to
+#'                              NULL to skip profiling.
 #' @param prior                 The prior used to fit the model. See [Cyclops::createPrior()]
 #'                              for details.
 #' @param control               The control object used to control the cross-validation used to
@@ -306,11 +307,13 @@ fitOutcomeModel <- function(population,
         priorVariance <- fit$variance[1]
 
         # Retrieve likelihood profile
-        logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
-                                                                        parm = treatmentVarId,
-                                                                        x = profileGrid,
-                                                                        includePenalty = TRUE)$value
-        names(logLikelihoodProfile) <- profileGrid
+        if (!is.null(profileGrid)) {
+          logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
+                                                                          parm = treatmentVarId,
+                                                                          x = profileGrid,
+                                                                          includePenalty = TRUE)$value
+          names(logLikelihoodProfile) <- profileGrid
+        }
 
         if (!is.null(mainEffectTerms)) {
           logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
@@ -369,9 +372,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- getCounts(population, "Population count")
   outcomeModel$outcomeCounts <- getOutcomeCounts(population, modelType)
-  if (modelType == "poisson" || modelType == "cox") {
-    outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
-  }
+  outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
   if (!is.null(subgroupCounts)) {
     outcomeModel$subgroupCounts <- subgroupCounts
   }
@@ -520,9 +521,10 @@ createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, popu
 }
 
 getTimeAtRisk <- function(population, modelType) {
-  population$time <- population$timeAtRisk
   if (modelType == "cox") {
     population$time <- population$survivalTime
+  } else {
+    population$time <- population$timeAtRisk
   }
   return(tibble::tibble(targetDays = sum(population$time[population$treatment == 1]),
                         comparatorDays = sum(population$time[population$treatment == 0])))
