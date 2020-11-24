@@ -178,19 +178,19 @@ createStudyPopulation <- function(cohortMethodData,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
   } else if (removeDuplicateSubjects == "keep first") {
     ParallelLogger::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
-    population <- population[order(population$subjectId, population$cohortStartDate), ]
-    # Remove ties:
-    # idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
-    idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
-    idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
-    if (all(idx)) {
-      stop("All cohort entries are ties, with same subject ID and cohort start date")
+    if (nrow(population) > 0) {
+      population <- population[order(population$subjectId, population$cohortStartDate), ]
+      # Remove ties:
+      idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
+      idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
+      if (all(idx)) {
+        warning("All cohort entries are ties, with same subject ID and cohort start date")
+      }
+      population <- population[!idx, ]
+      # Keeping first:
+      idx <- fastDuplicated(population, "subjectId")
+      population <- population[!idx, ]
     }
-    population <- population[!idx, ]
-    # Keeping first:
-    # idx <- duplicated(population[, c("subjectId")])
-    idx <- fastDuplicated(population, "subjectId")
-    population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Restricting duplicate subjects to first cohort")))
   }

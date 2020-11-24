@@ -26,10 +26,22 @@ test_that("Multiple analyses", {
                                                      covariateSettings = covarSettings)
 
   # Duplicating some operations from createGetDbCohortMethodDataArgs just so we test them:
-  createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
+  createStudyPopArgs1 <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
                                                         firstExposureOnly = TRUE,
                                                         restrictToCommonPeriod = TRUE,
                                                         removeDuplicateSubjects = "remove all",
+                                                        washoutPeriod = 183,
+                                                        censorAtNewRiskWindow = TRUE,
+                                                        minDaysAtRisk = 1,
+                                                        riskWindowStart = 0,
+                                                        startAnchor = "cohort start",
+                                                        riskWindowEnd = 30,
+                                                        endAnchor = "cohort end")
+
+  createStudyPopArgs2 <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
+                                                        firstExposureOnly = TRUE,
+                                                        restrictToCommonPeriod = TRUE,
+                                                        removeDuplicateSubjects = "keep first",
                                                         washoutPeriod = 183,
                                                         censorAtNewRiskWindow = TRUE,
                                                         minDaysAtRisk = 1,
@@ -43,7 +55,7 @@ test_that("Multiple analyses", {
   cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                   description = "No matching, simple outcome model",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                  createStudyPopArgs = createStudyPopArgs,
+                                  createStudyPopArgs = createStudyPopArgs1,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
@@ -58,7 +70,7 @@ test_that("Multiple analyses", {
   cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                   description = "Matching",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                  createStudyPopArgs = createStudyPopArgs,
+                                  createStudyPopArgs = createStudyPopArgs2,
                                   createPs = TRUE,
                                   createPsArgs = createPsArgs,
                                   matchOnPs = TRUE,
