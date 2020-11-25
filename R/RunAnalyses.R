@@ -1073,10 +1073,8 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
       }
       result$target <- outcomeModel$populationCounts$targetPersons
       result$comparator <- outcomeModel$populationCounts$comparatorPersons
-      if (outcomeModel$outcomeModelType %in% c("cox", "poisson")) {
-        result$targetDays <- outcomeModel$timeAtRisk$targetDays
-        result$comparatorDays <- outcomeModel$timeAtRisk$comparatorDays
-      }
+      result$targetDays <- outcomeModel$timeAtRisk$targetDays
+      result$comparatorDays <- outcomeModel$timeAtRisk$comparatorDays
       result$eventsTarget <- outcomeModel$outcomeCounts$targetOutcomes
       result$eventsComparator <- outcomeModel$outcomeCounts$comparatorOutcomes
       result$logRr <- if (is.null(coef(outcomeModel)))
