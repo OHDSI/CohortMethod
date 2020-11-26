@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
       </span>
     </div>
 
@@ -138,30 +138,30 @@
     <p>Plot time-to-event</p>
     </div>
 
-    <pre class="usage"><span class='fu'>plotTimeToEvent</span>(
-  <span class='no'>cohortMethodData</span>,
-  <span class='kw'>population</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>outcomeId</span>,
-  <span class='kw'>firstExposureOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>restrictToCommonPeriod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>washoutPeriod</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>removeDuplicateSubjects</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>minDaysAtRisk</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>riskWindowStart</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>addExposureDaysToStart</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>startAnchor</span> <span class='kw'>=</span> <span class='st'>"cohort start"</span>,
-  <span class='kw'>riskWindowEnd</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>addExposureDaysToEnd</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>endAnchor</span> <span class='kw'>=</span> <span class='st'>"cohort end"</span>,
-  <span class='kw'>censorAtNewRiskWindow</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>periodLength</span> <span class='kw'>=</span> <span class='fl'>7</span>,
-  <span class='kw'>numberOfPeriods</span> <span class='kw'>=</span> <span class='fl'>52</span>,
-  <span class='kw'>showFittedLines</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>targetLabel</span> <span class='kw'>=</span> <span class='st'>"Target"</span>,
-  <span class='kw'>comparatorLabel</span> <span class='kw'>=</span> <span class='st'>"Comparator"</span>,
-  <span class='kw'>title</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>fileName</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
-)</pre>
+    <pre class="usage"><span class='fu'>plotTimeToEvent</span><span class='op'>(</span>
+  <span class='va'>cohortMethodData</span>,
+  population <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>outcomeId</span>,
+  firstExposureOnly <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  restrictToCommonPeriod <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  washoutPeriod <span class='op'>=</span> <span class='fl'>0</span>,
+  removeDuplicateSubjects <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  minDaysAtRisk <span class='op'>=</span> <span class='fl'>1</span>,
+  riskWindowStart <span class='op'>=</span> <span class='fl'>0</span>,
+  addExposureDaysToStart <span class='op'>=</span> <span class='cn'>NULL</span>,
+  startAnchor <span class='op'>=</span> <span class='st'>"cohort start"</span>,
+  riskWindowEnd <span class='op'>=</span> <span class='fl'>0</span>,
+  addExposureDaysToEnd <span class='op'>=</span> <span class='cn'>NULL</span>,
+  endAnchor <span class='op'>=</span> <span class='st'>"cohort end"</span>,
+  censorAtNewRiskWindow <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  periodLength <span class='op'>=</span> <span class='fl'>7</span>,
+  numberOfPeriods <span class='op'>=</span> <span class='fl'>52</span>,
+  showFittedLines <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  targetLabel <span class='op'>=</span> <span class='st'>"Target"</span>,
+  comparatorLabel <span class='op'>=</span> <span class='st'>"Comparator"</span>,
+  title <span class='op'>=</span> <span class='cn'>NULL</span>,
+  fileName <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -264,13 +264,13 @@ equally divided before and after the index date.</p></td>
     <tr>
       <th>fileName</th>
       <td><p>Name of the file where the plot should be saved, for example
-'plot.png'. See <code><a href='https://ggplot2.tidyverse.org/reference/ggsave.html'>ggplot2::ggsave()</a></code> for supported file formats.</p></td>
+'plot.png'. See <code><a href='https://rdrr.io/pkg/ggplot2/man/ggsave.html'>ggplot2::ggsave()</a></code> for supported file formats.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A ggplot object. Use the <code><a href='https://ggplot2.tidyverse.org/reference/ggsave.html'>ggplot2::ggsave()</a></code> function to save to file in a different
+    <p>A ggplot object. Use the <code><a href='https://rdrr.io/pkg/ggplot2/man/ggsave.html'>ggplot2::ggsave()</a></code> function to save to file in a different
 format.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
@@ -295,7 +295,7 @@ show these prior events.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

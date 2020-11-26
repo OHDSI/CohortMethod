@@ -42,7 +42,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
       </span>
     </div>
 
@@ -152,7 +152,7 @@ Covariate balance plot
 <div id="system-requirements" class="section level1">
 <h1 class="hasAnchor">
 <a href="#system-requirements" class="anchor"></a>System Requirements</h1>
-<p>Requires R (version 3.1.0 or higher). Installation on Windows requires <a href="http://cran.r-project.org/bin/windows/Rtools/">RTools</a>. Libraries used in CohortMethod require Java.</p>
+<p>Requires R (version 3.6.0 or higher). Installation on Windows requires <a href="http://cran.r-project.org/bin/windows/Rtools/">RTools</a>. Libraries used in CohortMethod require Java.</p>
 </div>
 <div id="installation" class="section level1">
 <h1 class="hasAnchor">
@@ -161,20 +161,22 @@ Covariate balance plot
 <li><p>See the instructions <a href="https://ohdsi.github.io/Hades/rSetup.html">here</a> for configuring your R environment, including RTools and Java.</p></li>
 <li><p>In R, use the following commands to download and install CohortMethod:</p></li>
 </ol>
-<div class="sourceCode" id="cb1"><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"drat"</span>)
-<span class="kw pkg">drat</span><span class="kw ns">::</span><span class="fu">addRepo</span>(<span class="st">"OHDSI"</span>)
-<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"CohortMethod"</span>)</pre></div>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
+<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"ohdsi/CohortMethod"</span><span class="op">)</span></code></pre></div>
 <ol>
 <li>Optionally, run this to check if CohortMethod was correctly installed:</li>
 </ol>
-<div class="sourceCode" id="cb2"><pre class="r"><span class="no">connectionDetails</span> <span class="kw">&lt;-</span> <span class="fu">createConnectionDetails</span>(<span class="kw">dbms</span><span class="kw">=</span><span class="st">"postgresql"</span>,
-                                             <span class="kw">server</span><span class="kw">=</span><span class="st">"my_server.org"</span>,
-                                             <span class="kw">user</span> <span class="kw">=</span> <span class="st">"joe"</span>,
-                                             <span class="kw">password</span> <span class="kw">=</span> <span class="st">"super_secret"</span>)
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms<span class="op">=</span><span class="st">"postgresql"</span>,
+                                             server<span class="op">=</span><span class="st">"my_server.org"</span>,
+                                             user <span class="op">=</span> <span class="st">"joe"</span>,
+                                             password <span class="op">=</span> <span class="st">"super_secret"</span><span class="op">)</span>
 
-<span class="fu"><a href="reference/checkCmInstallation.html">checkCmInstallation</a></span>(<span class="no">connectionDetails</span>)</pre></div>
+<span class="fu"><a href="reference/checkCmInstallation.html">checkCmInstallation</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></code></pre></div>
 <p>Where dbms, server, user, and password need to be changed to the settings for your database environment. Type</p>
-<div class="sourceCode" id="cb3"><pre class="r">?<span class="no">createConnectionDetails</span></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="op">?</span><span class="va">createConnectionDetails</span></code></pre></div>
 <p>for more details on how to configure your database connection.</p>
 </div>
 <div id="user-documentation" class="section level1">
@@ -273,7 +275,7 @@ Covariate balance plot
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

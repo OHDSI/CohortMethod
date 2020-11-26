@@ -44,7 +44,7 @@ CohortMethod is an R package, with some functions implemented in C++.
 
 System Requirements
 ============
-Requires R (version 3.1.0 or higher). Installation on Windows requires [RTools](http://cran.r-project.org/bin/windows/Rtools/). Libraries used in CohortMethod require Java.
+Requires R (version 3.6.0 or higher). Installation on Windows requires [RTools](http://cran.r-project.org/bin/windows/Rtools/). Libraries used in CohortMethod require Java.
 
 Installation
 =============
@@ -53,9 +53,8 @@ Installation
 2. In R, use the following commands to download and install CohortMethod:
 
   ```r
-  install.packages("drat")
-  drat::addRepo("OHDSI")
-  install.packages("CohortMethod")
+  install.packages("remotes")
+  remotes::install_github("ohdsi/CohortMethod")
   ```
   
 3. Optionally, run this to check if CohortMethod was correctly installed:

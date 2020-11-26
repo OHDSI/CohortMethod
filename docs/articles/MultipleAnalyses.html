@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
       </span>
     </div>
 
@@ -85,13 +85,14 @@
 
       
 
-      </header><div class="row">
+      </header><script src="MultipleAnalyses_files/header-attrs-2.5/header-attrs.js"></script><link href="MultipleAnalyses_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
+<script src="MultipleAnalyses_files/anchor-sections-1.0/anchor-sections.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Running multiple analyses at once using the CohortMethod package</h1>
                         <h4 class="author">Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 class="date">2020-06-04</h4>
+            <h4 class="date">2020-11-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/master/vignettes/MultipleAnalyses.Rmd"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -139,67 +140,70 @@
 <h1 class="hasAnchor">
 <a href="#preparation-for-the-example" class="anchor"></a>Preparation for the example</h1>
 <p>We need to tell R how to connect to the server where the data are. <code>CohortMethod</code> uses the <code>DatabaseConnector</code> package, which provides the <code>createConnectionDetails</code> function. Type <code>?createConnectionDetails</code> for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:</p>
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="no">connectionDetails</span> <span class="kw">&lt;-</span> <span class="fu">createConnectionDetails</span>(<span class="kw">dbms</span> <span class="kw">=</span> <span class="st">"postgresql"</span>,
-                                             <span class="kw">server</span> <span class="kw">=</span> <span class="st">"localhost/ohdsi"</span>,
-                                             <span class="kw">user</span> <span class="kw">=</span> <span class="st">"joe"</span>,
-                                             <span class="kw">password</span> <span class="kw">=</span> <span class="st">"supersecret"</span>)
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms <span class="op">=</span> <span class="st">"postgresql"</span>, 
+                                             server <span class="op">=</span> <span class="st">"localhost/ohdsi"</span>, 
+                                             user <span class="op">=</span> <span class="st">"joe"</span>, 
+                                             password <span class="op">=</span> <span class="st">"supersecret"</span><span class="op">)</span>
 
-<span class="no">cdmDatabaseSchema</span> <span class="kw">&lt;-</span> <span class="st">"my_cdm_data"</span>
-<span class="no">resultsDatabaseSchema</span> <span class="kw">&lt;-</span> <span class="st">"my_results"</span>
-<span class="no">outputFolder</span> <span class="kw">&lt;-</span> <span class="st">"./CohortMethodOutput"</span></pre></body></html></div>
+<span class="va">cdmDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_cdm_data"</span>
+<span class="va">resultsDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_results"</span>
+<span class="va">outputFolder</span> <span class="op">&lt;-</span> <span class="st">"./CohortMethodOutput"</span></code></pre></div>
 <p>The last three lines define the <code>cdmDatabaseSchema</code>, <code>resultSchema</code>, and <code>outputFolder</code> variables. We’ll use these later to tell R where the data in CDM format live, where we want to write intermediate tables, and where the intermediate and output files should be stored in the local file system. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example <code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>.</p>
 <p>We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome.</p>
 <p>We create a text file called <em>VignetteOutcomes.sql</em> with the following content:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1"></a><span class="co">/***********************************</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="co">File VignetteOutcomes.sql</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="co">***********************************/</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="cf">IF</span> OBJECT_ID(<span class="st">'@resultsDatabaseSchema.outcomes'</span>, <span class="st">'U'</span>) <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a>  <span class="kw">DROP</span> <span class="kw">TABLE</span> @resultsDatabaseSchema.outcomes;</span>
-<span id="cb2-6"><a href="#cb2-6"></a></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="kw">SELECT</span> ancestor_concept_id <span class="kw">AS</span> cohort_definition_id,</span>
-<span id="cb2-8"><a href="#cb2-8"></a>    condition_start_date <span class="kw">AS</span> cohort_start_date,</span>
-<span id="cb2-9"><a href="#cb2-9"></a>    condition_end_date <span class="kw">AS</span> cohort_end_date,</span>
-<span id="cb2-10"><a href="#cb2-10"></a>    condition_occurrence.person_id <span class="kw">AS</span> subject_id</span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="kw">INTO</span> @resultsDatabaseSchema.outcomes</span>
-<span id="cb2-12"><a href="#cb2-12"></a><span class="kw">FROM</span> @cdmDatabaseSchema.condition_occurrence</span>
-<span id="cb2-13"><a href="#cb2-13"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.visit_occurrence</span>
-<span id="cb2-14"><a href="#cb2-14"></a>    <span class="kw">ON</span> condition_occurrence.visit_occurrence_id <span class="op">=</span> visit_occurrence.visit_occurrence_id</span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.concept_ancestor</span>
-<span id="cb2-16"><a href="#cb2-16"></a>    <span class="kw">ON</span> condition_concept_id <span class="op">=</span> descendant_concept_id</span>
-<span id="cb2-17"><a href="#cb2-17"></a><span class="kw">WHERE</span> ancestor_concept_id <span class="kw">IN</span> (<span class="dv">192671</span>, <span class="dv">24609</span>, <span class="dv">29735</span>, <span class="dv">73754</span>, <span class="dv">80004</span>, <span class="dv">134718</span>, <span class="dv">139099</span>,</span>
-<span id="cb2-18"><a href="#cb2-18"></a><span class="dv">141932</span>, <span class="dv">192367</span>, <span class="dv">193739</span>, <span class="dv">194997</span>, <span class="dv">197236</span>, <span class="dv">199074</span>, <span class="dv">255573</span>, <span class="dv">257007</span>, <span class="dv">313459</span>, <span class="dv">314658</span>,</span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="dv">316084</span>, <span class="dv">319843</span>, <span class="dv">321596</span>, <span class="dv">374366</span>, <span class="dv">375292</span>, <span class="dv">380094</span>, <span class="dv">433753</span>, <span class="dv">433811</span>, <span class="dv">436665</span>, <span class="dv">436676</span>,</span>
-<span id="cb2-20"><a href="#cb2-20"></a><span class="dv">436940</span>, <span class="dv">437784</span>, <span class="dv">438134</span>, <span class="dv">440358</span>, <span class="dv">440374</span>, <span class="dv">443617</span>, <span class="dv">443800</span>, <span class="dv">4084966</span>, <span class="dv">4288310</span>)</span>
-<span id="cb2-21"><a href="#cb2-21"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">/***********************************</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">File VignetteOutcomes.sql</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">***********************************/</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">IF</span> OBJECT_ID(<span class="st">'@resultsDatabaseSchema.outcomes'</span>, <span class="st">'U'</span>) <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">DROP</span> <span class="kw">TABLE</span> @resultsDatabaseSchema.outcomes;</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> ancestor_concept_id <span class="kw">AS</span> cohort_definition_id,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    condition_start_date <span class="kw">AS</span> cohort_start_date,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    condition_end_date <span class="kw">AS</span> cohort_end_date,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    condition_occurrence.person_id <span class="kw">AS</span> subject_id</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">INTO</span> @resultsDatabaseSchema.outcomes</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.condition_occurrence</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.visit_occurrence</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_occurrence.visit_occurrence_id <span class="op">=</span> visit_occurrence.visit_occurrence_id</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.concept_ancestor</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_concept_id <span class="op">=</span> descendant_concept_id</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ancestor_concept_id <span class="kw">IN</span> (<span class="dv">192671</span>, <span class="dv">24609</span>, <span class="dv">29735</span>, <span class="dv">73754</span>, <span class="dv">80004</span>, <span class="dv">134718</span>, <span class="dv">139099</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="dv">141932</span>, <span class="dv">192367</span>, <span class="dv">193739</span>, <span class="dv">194997</span>, <span class="dv">197236</span>, <span class="dv">199074</span>, <span class="dv">255573</span>, <span class="dv">257007</span>, <span class="dv">313459</span>, <span class="dv">314658</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="dv">316084</span>, <span class="dv">319843</span>, <span class="dv">321596</span>, <span class="dv">374366</span>, <span class="dv">375292</span>, <span class="dv">380094</span>, <span class="dv">433753</span>, <span class="dv">433811</span>, <span class="dv">436665</span>, <span class="dv">436676</span>,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="dv">436940</span>, <span class="dv">437784</span>, <span class="dv">438134</span>, <span class="dv">440358</span>, <span class="dv">440374</span>, <span class="dv">443617</span>, <span class="dv">443800</span>, <span class="dv">4084966</span>, <span class="dv">4288310</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
 <p>This is parameterized SQL which can be used by the <code>SqlRender</code> package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in <code>SqlRender</code>, we can make sure the SQL code can be run in many different environments.</p>
-<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">SqlRender</span>)
-<span class="no">sql</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/readSql.html">readSql</a></span>(<span class="st">"VignetteOutcomes.sql"</span>)
-<span class="no">sql</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/render.html">render</a></span>(<span class="no">sql</span>,
-              <span class="kw">cdmDatabaseSchema</span> <span class="kw">=</span> <span class="no">cdmDatabaseSchema</span>,
-              <span class="kw">resultsDatabaseSchema</span> <span class="kw">=</span> <span class="no">resultsDatabaseSchema</span>)
-<span class="no">sql</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/translate.html">translate</a></span>(<span class="no">sql</span>, <span class="kw">targetDialect</span> <span class="kw">=</span> <span class="no">connectionDetails</span>$<span class="no">dbms</span>)
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/SqlRender">SqlRender</a></span><span class="op">)</span>
+<span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/readSql.html">readSql</a></span><span class="op">(</span><span class="st">"VignetteOutcomes.sql"</span><span class="op">)</span>
+<span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/render.html">render</a></span><span class="op">(</span><span class="va">sql</span>,
+              cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>, 
+              resultsDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span><span class="op">)</span>
+<span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/translate.html">translate</a></span><span class="op">(</span><span class="va">sql</span>, targetDialect <span class="op">=</span> <span class="va">connectionDetails</span><span class="op">$</span><span class="va">dbms</span><span class="op">)</span>
 
-<span class="no">connection</span> <span class="kw">&lt;-</span> <span class="fu">connect</span>(<span class="no">connectionDetails</span>)
-<span class="fu">executeSql</span>(<span class="no">connection</span>, <span class="no">sql</span>)</pre></body></html></div>
+<span class="va">connection</span> <span class="op">&lt;-</span> <span class="fu">connect</span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span>
+<span class="fu">executeSql</span><span class="op">(</span><span class="va">connection</span>, <span class="va">sql</span><span class="op">)</span></code></pre></div>
 <p>In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the <code>connectionDetails</code>. Next, we connect to the server, and submit the rendered and translated SQL.</p>
 </div>
 <div id="specifying-hypotheses-of-interest" class="section level1">
 <h1 class="hasAnchor">
 <a href="#specifying-hypotheses-of-interest" class="anchor"></a>Specifying hypotheses of interest</h1>
 <p>The first group of arguments define the target, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:</p>
-<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="no">tcos</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes</a></span>(<span class="kw">targetId</span> <span class="kw">=</span> <span class="fl">1118084</span>,
-                                       <span class="kw">comparatorId</span> <span class="kw">=</span> <span class="fl">1124300</span>,
-                                       <span class="kw">outcomeIds</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">192671</span>, <span class="fl">29735</span>, <span class="fl">140673</span>, <span class="fl">197494</span>,
-                                                      <span class="fl">198185</span>, <span class="fl">198199</span>, <span class="fl">200528</span>, <span class="fl">257315</span>,
-                                                      <span class="fl">314658</span>, <span class="fl">317376</span>, <span class="fl">321319</span>, <span class="fl">380731</span>,
-                                                      <span class="fl">432661</span>, <span class="fl">432867</span>, <span class="fl">433516</span>, <span class="fl">433701</span>,
-                                                      <span class="fl">433753</span>, <span class="fl">435140</span>, <span class="fl">435459</span>, <span class="fl">435524</span>,
-                                                      <span class="fl">435783</span>, <span class="fl">436665</span>, <span class="fl">436676</span>, <span class="fl">442619</span>,
-                                                      <span class="fl">444252</span>, <span class="fl">444429</span>, <span class="fl">4131756</span>, <span class="fl">4134120</span>,
-                                                      <span class="fl">4134454</span>, <span class="fl">4152280</span>, <span class="fl">4165112</span>, <span class="fl">4174262</span>,
-                                                      <span class="fl">4182210</span>, <span class="fl">4270490</span>, <span class="fl">4286201</span>, <span class="fl">4289933</span>))
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">tcos</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes</a></span><span class="op">(</span>targetId <span class="op">=</span> <span class="fl">1118084</span>,
+                                       comparatorId <span class="op">=</span> <span class="fl">1124300</span>,
+                                       outcomeIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">192671</span>, <span class="fl">29735</span>, <span class="fl">140673</span>, <span class="fl">197494</span>, 
+                                                      <span class="fl">198185</span>, <span class="fl">198199</span>, <span class="fl">200528</span>, <span class="fl">257315</span>, 
+                                                      <span class="fl">314658</span>, <span class="fl">317376</span>, <span class="fl">321319</span>, <span class="fl">380731</span>, 
+                                                      <span class="fl">432661</span>, <span class="fl">432867</span>, <span class="fl">433516</span>, <span class="fl">433701</span>, 
+                                                      <span class="fl">433753</span>, <span class="fl">435140</span>, <span class="fl">435459</span>, <span class="fl">435524</span>, 
+                                                      <span class="fl">435783</span>, <span class="fl">436665</span>, <span class="fl">436676</span>, <span class="fl">442619</span>, 
+                                                      <span class="fl">444252</span>, <span class="fl">444429</span>, <span class="fl">4131756</span>, <span class="fl">4134120</span>, 
+                                                      <span class="fl">4134454</span>, <span class="fl">4152280</span>, <span class="fl">4165112</span>, <span class="fl">4174262</span>, 
+                                                      <span class="fl">4182210</span>, <span class="fl">4270490</span>, <span class="fl">4286201</span>, <span class="fl">4289933</span><span class="op">)</span><span class="op">)</span>
 
-<span class="no">targetComparatorOutcomesList</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">tcos</span>)</pre></body></html></div>
+<span class="va">targetComparatorOutcomesList</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">tcos</span><span class="op">)</span></code></pre></div>
 <p>We defined the target to be celecoxib (concept ID 1118084), the comparator to be diclofenac (concept ID 1124300), and the outcomes of interest are GI-bleed (concept ID 192671) and a large number of negative control outcomes.</p>
 <p>A convenient way to save <code>targetComparatorOutcomesList</code> to file is by using the <code>saveTargetComparatorOutcomesList</code> function, and we can load it again using the <code>loadTargetComparatorOutcomesList</code> function.</p>
 </div>
@@ -207,158 +211,164 @@
 <h1 class="hasAnchor">
 <a href="#specifying-analyses" class="anchor"></a>Specifying analyses</h1>
 <p>The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion function is available that has (almost) the same arguments. For example, for the <code><a href="../reference/trimByPs.html">trimByPs()</a></code> function there is the <code><a href="../reference/createTrimByPsArgs.html">createTrimByPsArgs()</a></code> function. These companion functions can be used to create the arguments to be used during execution:</p>
-<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="no">nsaids</span> <span class="kw">&lt;-</span> <span class="fl">21603933</span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">nsaids</span> <span class="op">&lt;-</span> <span class="fl">21603933</span>
 
-<span class="no">covarSettings</span> <span class="kw">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span>(<span class="kw">excludedCovariateConceptIds</span> <span class="kw">=</span> <span class="no">nsaids</span>,
-                                                <span class="kw">addDescendantsToExclude</span> <span class="kw">=</span> <span class="fl">TRUE</span>)
+<span class="va">covarSettings</span> <span class="op">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span><span class="op">(</span>excludedCovariateConceptIds <span class="op">=</span> <span class="va">nsaids</span>,
+                                                addDescendantsToExclude <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 
-<span class="no">getDbCmDataArgs</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs</a></span>(<span class="kw">washoutPeriod</span> <span class="kw">=</span> <span class="fl">183</span>,
-                                                   <span class="kw">restrictToCommonPeriod</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                                                   <span class="kw">firstExposureOnly</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                                   <span class="kw">removeDuplicateSubjects</span> <span class="kw">=</span> <span class="st">"remove all"</span>,
-                                                   <span class="kw">studyStartDate</span> <span class="kw">=</span> <span class="st">""</span>,
-                                                   <span class="kw">studyEndDate</span> <span class="kw">=</span> <span class="st">""</span>,
-                                                   <span class="kw">excludeDrugsFromCovariates</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                                                   <span class="kw">covariateSettings</span> <span class="kw">=</span> <span class="no">covarSettings</span>)
+<span class="va">getDbCmDataArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs</a></span><span class="op">(</span>washoutPeriod <span class="op">=</span> <span class="fl">183</span>,
+                                                   restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,
+                                                   firstExposureOnly <span class="op">=</span> <span class="cn">TRUE</span>,
+                                                   removeDuplicateSubjects <span class="op">=</span> <span class="st">"remove all"</span>,
+                                                   studyStartDate <span class="op">=</span> <span class="st">""</span>,
+                                                   studyEndDate <span class="op">=</span> <span class="st">""</span>,
+                                                   excludeDrugsFromCovariates <span class="op">=</span> <span class="cn">FALSE</span>,
+                                                   covariateSettings <span class="op">=</span> <span class="va">covarSettings</span><span class="op">)</span>
 
-<span class="no">createStudyPopArgs</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCreateStudyPopulationArgs.html">createCreateStudyPopulationArgs</a></span>(<span class="kw">removeSubjectsWithPriorOutcome</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                                      <span class="kw">minDaysAtRisk</span> <span class="kw">=</span> <span class="fl">1</span>,
-                                                      <span class="kw">riskWindowStart</span> <span class="kw">=</span> <span class="fl">0</span>,
-                                                      <span class="kw">startAnchor</span> <span class="kw">=</span> <span class="st">"cohort start"</span>,
-                                                      <span class="kw">riskWindowEnd</span> <span class="kw">=</span> <span class="fl">30</span>,
-                                                      <span class="kw">endAnchor</span> <span class="kw">=</span> <span class="st">"cohort end"</span>)
+<span class="va">createStudyPopArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCreateStudyPopulationArgs.html">createCreateStudyPopulationArgs</a></span><span class="op">(</span>removeSubjectsWithPriorOutcome <span class="op">=</span> <span class="cn">TRUE</span>,
+                                                      minDaysAtRisk <span class="op">=</span> <span class="fl">1</span>,
+                                                      riskWindowStart <span class="op">=</span> <span class="fl">0</span>,
+                                                      startAnchor <span class="op">=</span> <span class="st">"cohort start"</span>,
+                                                      riskWindowEnd <span class="op">=</span> <span class="fl">30</span>,
+                                                      endAnchor <span class="op">=</span> <span class="st">"cohort end"</span><span class="op">)</span>
 
-<span class="no">fitOutcomeModelArgs1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span>(<span class="kw">modelType</span> <span class="kw">=</span> <span class="st">"cox"</span>)</pre></body></html></div>
+<span class="va">fitOutcomeModelArgs1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span>modelType <span class="op">=</span> <span class="st">"cox"</span><span class="op">)</span></code></pre></div>
 <p>Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:</p>
-<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="no">cmAnalysis1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">1</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"No matching, simple outcome model"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs1</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">cmAnalysis1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">1</span>,
+                                description <span class="op">=</span> <span class="st">"No matching, simple outcome model"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs1</span><span class="op">)</span></code></pre></div>
 <p>Note that we have assigned an analysis ID (1) to this set of arguments. We can use this later to link the results back to this specific set of choices. We also include a short description of the analysis.</p>
 <p>We can easily create more analyses, for example by using matching, stratification, inverse probability of treatment weighting, or by using more sophisticated outcome models:</p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">createPsArgs</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCreatePsArgs.html">createCreatePsArgs</a></span>() <span class="co"># Use default settings only</span>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">createPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCreatePsArgs.html">createCreatePsArgs</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Use default settings only</span>
 
-<span class="no">matchOnPsArgs</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createMatchOnPsArgs.html">createMatchOnPsArgs</a></span>(<span class="kw">maxRatio</span> <span class="kw">=</span> <span class="fl">100</span>)
+<span class="va">matchOnPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createMatchOnPsArgs.html">createMatchOnPsArgs</a></span><span class="op">(</span>maxRatio <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>
 
-<span class="no">fitOutcomeModelArgs2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span>(<span class="kw">modelType</span> <span class="kw">=</span> <span class="st">"cox"</span>,
-                                                  <span class="kw">stratified</span> <span class="kw">=</span> <span class="fl">TRUE</span>)
+<span class="va">fitOutcomeModelArgs2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span>modelType <span class="op">=</span> <span class="st">"cox"</span>,
+                                                  stratified <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 
-<span class="no">cmAnalysis2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">2</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Matching"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">matchOnPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">matchOnPsArgs</span> <span class="kw">=</span> <span class="no">matchOnPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs1</span>)
+<span class="va">cmAnalysis2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">2</span>,
+                                description <span class="op">=</span> <span class="st">"Matching"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                matchOnPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                matchOnPsArgs <span class="op">=</span> <span class="va">matchOnPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs1</span><span class="op">)</span>
 
-<span class="no">stratifyByPsArgs</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createStratifyByPsArgs.html">createStratifyByPsArgs</a></span>(<span class="kw">numberOfStrata</span> <span class="kw">=</span> <span class="fl">5</span>)
+<span class="va">stratifyByPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createStratifyByPsArgs.html">createStratifyByPsArgs</a></span><span class="op">(</span>numberOfStrata <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 
-<span class="no">cmAnalysis3</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">3</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Stratification"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">stratifyByPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">stratifyByPsArgs</span> <span class="kw">=</span> <span class="no">stratifyByPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs2</span>)
+<span class="va">cmAnalysis3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">3</span>,
+                                description <span class="op">=</span> <span class="st">"Stratification"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                stratifyByPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                stratifyByPsArgs <span class="op">=</span> <span class="va">stratifyByPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs2</span><span class="op">)</span>
 
-<span class="no">fitOutcomeModelArgs3</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span>(<span class="kw">modelType</span> <span class="kw">=</span> <span class="st">"cox"</span>,
-                                                  <span class="kw">inversePtWeighting</span> <span class="kw">=</span> <span class="fl">TRUE</span>)
+<span class="va">fitOutcomeModelArgs3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span>modelType <span class="op">=</span> <span class="st">"cox"</span>,
+                                                  inversePtWeighting <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 
-<span class="no">cmAnalysis4</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">4</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Inverse probability weighting"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs3</span>)
+<span class="va">cmAnalysis4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">4</span>,
+                                description <span class="op">=</span> <span class="st">"Inverse probability weighting"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs3</span><span class="op">)</span>
 
-<span class="no">fitOutcomeModelArgs4</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span>(<span class="kw">useCovariates</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                                  <span class="kw">modelType</span> <span class="kw">=</span> <span class="st">"cox"</span>,
-                                                  <span class="kw">stratified</span> <span class="kw">=</span> <span class="fl">TRUE</span>)
+<span class="va">fitOutcomeModelArgs4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span>useCovariates <span class="op">=</span> <span class="cn">TRUE</span>,
+                                                  modelType <span class="op">=</span> <span class="st">"cox"</span>,
+                                                  stratified <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 
-<span class="no">cmAnalysis5</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">5</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Matching plus full outcome model"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">matchOnPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">matchOnPsArgs</span> <span class="kw">=</span> <span class="no">matchOnPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs4</span>)
+<span class="va">cmAnalysis5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">5</span>,
+                                description <span class="op">=</span> <span class="st">"Matching plus full outcome model"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                matchOnPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                matchOnPsArgs <span class="op">=</span> <span class="va">matchOnPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs4</span><span class="op">)</span>
 
-<span class="no">interactionCovariateIds</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">8532001</span>, <span class="fl">201826210</span>, <span class="fl">21600960413</span>) <span class="co"># Female, T2DM, concurent use of antithrombotic agents</span>
+<span class="va">interactionCovariateIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">8532001</span>, <span class="fl">201826210</span>, <span class="fl">21600960413</span><span class="op">)</span> <span class="co"># Female, T2DM, concurent use of antithrombotic agents</span>
 
-<span class="no">fitOutcomeModelArgs5</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span>(<span class="kw">modelType</span> <span class="kw">=</span> <span class="st">"cox"</span>,
-                                                  <span class="kw">stratified</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                                  <span class="kw">interactionCovariateIds</span> <span class="kw">=</span> <span class="no">interactionCovariateIds</span>)
+<span class="va">fitOutcomeModelArgs5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span>modelType <span class="op">=</span> <span class="st">"cox"</span>,
+                                                  stratified <span class="op">=</span> <span class="cn">TRUE</span>,
+                                                  interactionCovariateIds <span class="op">=</span> <span class="va">interactionCovariateIds</span><span class="op">)</span>
 
-<span class="no">cmAnalysis6</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">6</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Stratification plus interaction terms"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">stratifyByPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">stratifyByPsArgs</span> <span class="kw">=</span> <span class="no">stratifyByPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs5</span>)</pre></body></html></div>
+<span class="va">cmAnalysis6</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">6</span>,
+                                description <span class="op">=</span> <span class="st">"Stratification plus interaction terms"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                stratifyByPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                stratifyByPsArgs <span class="op">=</span> <span class="va">stratifyByPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs5</span><span class="op">)</span></code></pre></div>
 <p>These analyses can be combined in a list:</p>
-<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="no">cmAnalysisList</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">cmAnalysis1</span>,
-                       <span class="no">cmAnalysis2</span>,
-                       <span class="no">cmAnalysis3</span>,
-                       <span class="no">cmAnalysis4</span>,
-                       <span class="no">cmAnalysis5</span>,
-                       <span class="no">cmAnalysis6</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">cmAnalysisList</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">cmAnalysis1</span>, 
+                       <span class="va">cmAnalysis2</span>, 
+                       <span class="va">cmAnalysis3</span>, 
+                       <span class="va">cmAnalysis4</span>, 
+                       <span class="va">cmAnalysis5</span>, 
+                       <span class="va">cmAnalysis6</span><span class="op">)</span></code></pre></div>
 <p>A convenient way to save <code>cmAnalysisList</code> to file is by using the <code>saveCmAnalysisList</code> function, and we can load it again using the <code>loadCmAnalysisList</code> function.</p>
 <div id="target-and-comparator-selection-strategies" class="section level2">
 <h2 class="hasAnchor">
 <a href="#target-and-comparator-selection-strategies" class="anchor"></a>Target and comparator selection strategies</h2>
 <p>Often a new-user cohort design is used for comparative effectiveness studies, where the selection of the comparator is part of the hypothesis of interest: ‘Does use of drug A lead to an increased risk compared to use of drug B?’, where B is the comparator. But sometimes, the design is used for safety assessment: ‘Does use of drug A lead to an increased risk?’ In this case the comparator is a proxy for the counterfactual of no treatment. For example, we could pick the comparator to be a drug known not to cause the outcome. we can argue that the selection of the comparator then becomes part of the analyses specification, not the hypothesis of interest, and we can have different strategies for selecting a comparator: Do we for instance pick a drug in the same class, or a drug with the same indication?</p>
 <p>In the situation where the comparator choice becomes part of the analyses, we can specify multiple comparators per hypothesis of interest by using a list:</p>
-<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="no">comparatorIds</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="kw">drugInSameClass</span> <span class="kw">=</span> <span class="fl">1124300</span>,
-                     <span class="kw">drugWithSameIndication</span> <span class="kw">=</span> <span class="fl">1125315</span>)
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">comparatorIds</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>drugInSameClass <span class="op">=</span> <span class="fl">1124300</span>,
+                     drugWithSameIndication <span class="op">=</span> <span class="fl">1125315</span><span class="op">)</span>
 
-<span class="no">tcos</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes</a></span>(<span class="kw">targetId</span> <span class="kw">=</span> <span class="fl">1118084</span>,
-                                     <span class="kw">comparatorId</span> <span class="kw">=</span> <span class="no">comparatorIds</span>,
-                                     <span class="kw">outcomeIds</span> <span class="kw">=</span> <span class="fl">192671</span>)
+<span class="va">tcos</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes</a></span><span class="op">(</span>targetId <span class="op">=</span> <span class="fl">1118084</span>,
+                                     comparatorId <span class="op">=</span> <span class="va">comparatorIds</span>,
+                                     outcomeIds <span class="op">=</span> <span class="fl">192671</span><span class="op">)</span>
 
-<span class="no">targetComparatorOutcomesList2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">tcos</span>)</pre></body></html></div>
+<span class="va">targetComparatorOutcomesList2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">tcos</span><span class="op">)</span></code></pre></div>
 <p>When we specify an analysis, we can then refer to one comparator or another:</p>
-<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="no">cmAnalysis1</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">1</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Analysis using drug in same class"</span>,
-                                <span class="kw">comparatorType</span> <span class="kw">=</span> <span class="st">"drugInSameClass"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">matchOnPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">matchOnPsArgs</span> <span class="kw">=</span> <span class="no">matchOnPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs1</span>)
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">cmAnalysis1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">1</span>,
+                                description <span class="op">=</span> <span class="st">"Analysis using drug in same class"</span>,
+                                comparatorType <span class="op">=</span> <span class="st">"drugInSameClass"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                matchOnPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                matchOnPsArgs <span class="op">=</span> <span class="va">matchOnPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs1</span><span class="op">)</span>
 
-<span class="no">cmAnalysis2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">2</span>,
-                                <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Analysis using drug with same indication"</span>,
-                                <span class="kw">comparatorType</span> <span class="kw">=</span> <span class="st">"drugWithSameIndication"</span>,
-                                <span class="kw">getDbCohortMethodDataArgs</span> <span class="kw">=</span> <span class="no">getDbCmDataArgs</span>,
-                                <span class="kw">createStudyPopArgs</span> <span class="kw">=</span> <span class="no">createStudyPopArgs</span>,
-                                <span class="kw">createPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">createPsArgs</span> <span class="kw">=</span> <span class="no">createPsArgs</span>,
-                                <span class="kw">matchOnPs</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">matchOnPsArgs</span> <span class="kw">=</span> <span class="no">matchOnPsArgs</span>,
-                                <span class="kw">fitOutcomeModel</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                <span class="kw">fitOutcomeModelArgs</span> <span class="kw">=</span> <span class="no">fitOutcomeModelArgs1</span>)
+<span class="va">cmAnalysis2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span>analysisId <span class="op">=</span> <span class="fl">2</span>,
+                                description <span class="op">=</span> <span class="st">"Analysis using drug with same indication"</span>,
+                                comparatorType <span class="op">=</span> <span class="st">"drugWithSameIndication"</span>,
+                                getDbCohortMethodDataArgs <span class="op">=</span> <span class="va">getDbCmDataArgs</span>,
+                                createStudyPopArgs <span class="op">=</span> <span class="va">createStudyPopArgs</span>,
+                                createPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                createPsArgs <span class="op">=</span> <span class="va">createPsArgs</span>,
+                                matchOnPs <span class="op">=</span> <span class="cn">TRUE</span>,
+                                matchOnPsArgs <span class="op">=</span> <span class="va">matchOnPsArgs</span>,
+                                fitOutcomeModel <span class="op">=</span> <span class="cn">TRUE</span>,
+                                fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs1</span><span class="op">)</span>
 
-<span class="no">cmAnalysisList2</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">cmAnalysis1</span>, <span class="no">cmAnalysis2</span>)</pre></body></html></div>
+<span class="va">cmAnalysisList2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">cmAnalysis1</span>, <span class="va">cmAnalysis2</span><span class="op">)</span></code></pre></div>
 <p>In this example, the first analysis (analysisID = 1) will use concept 1124300 as comparator, whilst the second analysis analysis (analysisID = 2) will use concept 1125315 as comparator.</p>
 <p>The same mechanism can be used to specify types for the targetId.</p>
 </div>
@@ -367,23 +377,24 @@
 <h1 class="hasAnchor">
 <a href="#executing-multiple-analyses" class="anchor"></a>Executing multiple analyses</h1>
 <p>We can now run the analyses against the hypotheses of interest using the <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code> function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is <code>length(cmAnalysisList) * length(targetComparatorOutcomesList)</code> (if all analyses specify an outcome model should be fitted).</p>
-<div class="sourceCode" id="cb11"><html><body><pre class="r"><span class="no">result</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/runCmAnalyses.html">runCmAnalyses</a></span>(<span class="kw">connectionDetails</span> <span class="kw">=</span> <span class="no">connectionDetails</span>,
-                        <span class="kw">cdmDatabaseSchema</span> <span class="kw">=</span> <span class="no">cdmDatabaseSchema</span>,
-                        <span class="kw">exposureDatabaseSchema</span> <span class="kw">=</span> <span class="no">cdmDatabaseSchema</span>,
-                        <span class="kw">exposureTable</span> <span class="kw">=</span> <span class="st">"drug_era"</span>,
-                        <span class="kw">outcomeDatabaseSchema</span> <span class="kw">=</span> <span class="no">resultsDatabaseSchema</span>,
-                        <span class="kw">outcomeTable</span> <span class="kw">=</span> <span class="st">"outcomes"</span>,
-                        <span class="kw">cdmVersion</span> <span class="kw">=</span> <span class="no">cdmVersion</span>,
-                        <span class="kw">outputFolder</span> <span class="kw">=</span> <span class="no">outputFolder</span>,
-                        <span class="kw">cmAnalysisList</span> <span class="kw">=</span> <span class="no">cmAnalysisList</span>,
-                        <span class="kw">targetComparatorOutcomesList</span> <span class="kw">=</span> <span class="no">targetComparatorOutcomesList</span>,
-                        <span class="kw">getDbCohortMethodDataThreads</span> <span class="kw">=</span> <span class="fl">1</span>,
-                        <span class="kw">createPsThreads</span> <span class="kw">=</span> <span class="fl">1</span>,
-                        <span class="kw">psCvThreads</span> <span class="kw">=</span> <span class="fl">10</span>,
-                        <span class="kw">createStudyPopThreads</span> <span class="kw">=</span> <span class="fl">4</span>,
-                        <span class="kw">trimMatchStratifyThreads</span> <span class="kw">=</span> <span class="fl">10</span>,
-                        <span class="kw">fitOutcomeModelThreads</span> <span class="kw">=</span> <span class="fl">4</span>,
-                        <span class="kw">outcomeCvThreads</span> <span class="kw">=</span> <span class="fl">10</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCmAnalyses.html">runCmAnalyses</a></span><span class="op">(</span>connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,
+                        cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
+                        exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
+                        exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,
+                        outcomeDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span>,
+                        outcomeTable <span class="op">=</span> <span class="st">"outcomes"</span>,
+                        cdmVersion <span class="op">=</span> <span class="va">cdmVersion</span>,
+                        outputFolder <span class="op">=</span> <span class="va">outputFolder</span>,
+                        cmAnalysisList <span class="op">=</span> <span class="va">cmAnalysisList</span>,
+                        targetComparatorOutcomesList <span class="op">=</span> <span class="va">targetComparatorOutcomesList</span>,
+                        getDbCohortMethodDataThreads <span class="op">=</span> <span class="fl">1</span>,
+                        createPsThreads <span class="op">=</span> <span class="fl">1</span>,
+                        psCvThreads <span class="op">=</span> <span class="fl">10</span>,
+                        createStudyPopThreads <span class="op">=</span> <span class="fl">4</span>,
+                        trimMatchStratifyThreads <span class="op">=</span> <span class="fl">10</span>,
+                        fitOutcomeModelThreads <span class="op">=</span> <span class="fl">4</span>,
+                        outcomeCvThreads <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
 <p>In the code above, we provide the arguments for connecting to the database, which schemas and tables to use, as well as the analyses and hypotheses of interest. The <code>outputFolder</code> specifies where the outcome models and intermediate files will be written. We also instruct <code>CohortMethod</code> to use multiple threads for various stages in the analyses, meaning these will be executed in parallel on multiple CPUs in the computer. Multithreading can significantly reduce execution time, but will require more system resources such as memory and temporary disk space.</p>
 <div id="restarting" class="section level2">
 <h2 class="hasAnchor">
@@ -395,26 +406,28 @@
 <h1 class="hasAnchor">
 <a href="#retrieving-the-results" class="anchor"></a>Retrieving the results</h1>
 <p>The result of the <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code> is a data frame with one row per target-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our target, comparator, outcome of interest, and last analysis:</p>
-<div class="sourceCode" id="cb12"><html><body><pre class="r"><span class="no">psFile</span> <span class="kw">&lt;-</span> <span class="no">result</span>$<span class="no">psFile</span>[<span class="no">result</span>$<span class="no">targetId</span> <span class="kw">==</span> <span class="fl">1118084</span> <span class="kw">&amp;</span>
-                        <span class="no">result</span>$<span class="no">comparatorId</span> <span class="kw">==</span> <span class="fl">1124300</span> <span class="kw">&amp;</span>
-                        <span class="no">result</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span> <span class="kw">&amp;</span>
-                        <span class="no">result</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">5</span>]
-<span class="no">ps</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="no">psFile</span>))
-<span class="fu"><a href="../reference/plotPs.html">plotPs</a></span>(<span class="no">ps</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">psFile</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">psFile</span><span class="op">[</span><span class="va">result</span><span class="op">$</span><span class="va">targetId</span> <span class="op">==</span> <span class="fl">1118084</span> <span class="op">&amp;</span> 
+                        <span class="va">result</span><span class="op">$</span><span class="va">comparatorId</span> <span class="op">==</span> <span class="fl">1124300</span> <span class="op">&amp;</span> 
+                        <span class="va">result</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span> <span class="op">&amp;</span>
+                        <span class="va">result</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span><span class="op">]</span>
+<span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">outputFolder</span>, <span class="va">psFile</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></code></pre></div>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
 <p>Note that some of the file names will appear several times in the table. For example, analysis 3 and 5 only differ in terms of the outcome model, and will share the same propensity score and stratification files.</p>
 <p>We can create a summary of the results using <code><a href="../reference/summarizeAnalyses.html">summarizeAnalyses()</a></code>:</p>
-<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="no">analysisSum</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/summarizeAnalyses.html">summarizeAnalyses</a></span>(<span class="no">result</span>, <span class="no">outputFolder</span>)
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">analysisSum</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">analysisSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/summarizeAnalyses.html">summarizeAnalyses</a></span><span class="op">(</span><span class="va">result</span>, <span class="va">outputFolder</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">analysisSum</span><span class="op">)</span></code></pre></div>
 <pre><code>## # A tibble: 6 x 31
 ##   analysisId targetId comparatorId outcomeId    rr ci95lb ci95ub        p target
-##        &lt;int&gt;    &lt;int&gt;        &lt;int&gt;     &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;  &lt;int&gt;
-## 1          1  1118084      1124300     24609 1.33   0.954  1.86  9.63e- 2  62749
-## 2          1  1118084      1124300     29735 1.49   1.05   2.13  2.77e- 2  62905
-## 3          1  1118084      1124300     73754 1.25   0.895  1.75  1.93e- 1  62921
-## 4          1  1118084      1124300     80004 0.548  0.487  0.615 4.89e-24  58760
-## 5          1  1118084      1124300    134718 3.63   0.550 71.2   2.99e- 1  63356
-## 6          1  1118084      1124300    139099 0.715  0.394  1.28  2.66e- 1  63198
+##        &lt;dbl&gt;    &lt;dbl&gt;        &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;  &lt;int&gt;
+## 1          1  1118084      1124300     24609 1.20   0.873  1.65  2.67e- 1  62749
+## 2          1  1118084      1124300     29735 1.29   0.912  1.84  1.53e- 1  62905
+## 3          1  1118084      1124300     73754 1.24   0.886  1.75  2.13e- 1  62921
+## 4          1  1118084      1124300     80004 0.588  0.523  0.662 1.09e-18  58760
+## 5          1  1118084      1124300    134718 1.41   0.325  7.18  6.65e- 1  63356
+## 6          1  1118084      1124300    139099 0.783  0.423  1.44  4.35e- 1  63198
 ## # ... with 22 more variables: comparator &lt;int&gt;, targetDays &lt;dbl&gt;,
 ## #   comparatorDays &lt;dbl&gt;, eventsTarget &lt;dbl&gt;, eventsComparator &lt;dbl&gt;,
 ## #   logRr &lt;dbl&gt;, seLogRr &lt;dbl&gt;, rrI8532001 &lt;dbl&gt;, ci95lbI8532001 &lt;dbl&gt;,
@@ -428,51 +441,57 @@
 <h2 class="hasAnchor">
 <a href="#empirical-calibration" class="anchor"></a>Empirical calibration</h2>
 <p>Now that we have produced estimates for all outcomes including our negative controls, we can perform empirical calibration to estimate the bias of the various analyses included in our study. We will create the calibration effect plots for every analysis ID. In each plot, the blue dots represent our negative control outcomes, and the yellow diamond represents our health outcome of interest: GI bleed. An unbiased, well-calibrated analysis should have 95% of the negative controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
-<div class="sourceCode" id="cb15"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"EmpiricalCalibration"</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">EmpiricalCalibration</span>)
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"EmpiricalCalibration"</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/EmpiricalCalibration">EmpiricalCalibration</a></span><span class="op">)</span>
 
 <span class="co"># Analysis 1: No matching, simple outcome model</span>
-<span class="no">negCons</span> <span class="kw">&lt;-</span> <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">1</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">!=</span> <span class="fl">192671</span>, ]
-<span class="no">hoi</span> <span class="kw">&lt;-</span>  <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">1</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span>, ]
-<span class="no">null</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>)
-<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>, <span class="no">hoi</span>$<span class="no">logRr</span>, <span class="no">hoi</span>$<span class="no">seLogRr</span>, <span class="no">null</span>)</pre></body></html></div>
+<span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></code></pre></div>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-17-1.png" width="700"></p>
-<div class="sourceCode" id="cb16"><html><body><pre class="r"><span class="co"># Analysis 2: Matching</span>
-<span class="no">negCons</span> <span class="kw">&lt;-</span> <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">2</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">!=</span> <span class="fl">192671</span>, ]
-<span class="no">hoi</span> <span class="kw">&lt;-</span>  <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">2</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span>, ]
-<span class="no">null</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>)
-<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>, <span class="no">hoi</span>$<span class="no">logRr</span>, <span class="no">hoi</span>$<span class="no">seLogRr</span>, <span class="no">null</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Analysis 2: Matching</span>
+<span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></code></pre></div>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-19-1.png" width="700"></p>
-<div class="sourceCode" id="cb17"><html><body><pre class="r"><span class="co"># Analysis 3: Stratification</span>
-<span class="no">negCons</span> <span class="kw">&lt;-</span> <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">3</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">!=</span> <span class="fl">192671</span>, ]
-<span class="no">hoi</span> <span class="kw">&lt;-</span>  <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">3</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span>, ]
-<span class="no">null</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>)
-<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>, <span class="no">hoi</span>$<span class="no">logRr</span>, <span class="no">hoi</span>$<span class="no">seLogRr</span>, <span class="no">null</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Analysis 3: Stratification</span>
+<span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></code></pre></div>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
-<div class="sourceCode" id="cb18"><html><body><pre class="r"><span class="co"># Analysis 4: Inverse probability of treatment weighting</span>
-<span class="no">negCons</span> <span class="kw">&lt;-</span> <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">4</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">!=</span> <span class="fl">192671</span>, ]
-<span class="no">hoi</span> <span class="kw">&lt;-</span>  <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">4</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span>, ]
-<span class="no">null</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>)
-<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>, <span class="no">hoi</span>$<span class="no">logRr</span>, <span class="no">hoi</span>$<span class="no">seLogRr</span>, <span class="no">null</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Analysis 4: Inverse probability of treatment weighting</span>
+<span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></code></pre></div>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-23-1.png" width="700"></p>
-<div class="sourceCode" id="cb19"><html><body><pre class="r"><span class="co"># Analysis 5: Stratification plus full outcome model</span>
-<span class="no">negCons</span> <span class="kw">&lt;-</span> <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">5</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">!=</span> <span class="fl">192671</span>, ]
-<span class="no">hoi</span> <span class="kw">&lt;-</span>  <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">5</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span>, ]
-<span class="no">null</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>)
-<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span>(<span class="no">negCons</span>$<span class="no">logRr</span>, <span class="no">negCons</span>$<span class="no">seLogRr</span>, <span class="no">hoi</span>$<span class="no">logRr</span>, <span class="no">hoi</span>$<span class="no">seLogRr</span>, <span class="no">null</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Analysis 5: Stratification plus full outcome model</span>
+<span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></code></pre></div>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-25-1.png" width="700"></p>
 <p>Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are also stored in the analysis summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with ‘gender = female’ (covariate ID 8532001):</p>
-<div class="sourceCode" id="cb20"><html><body><pre class="r"><span class="co"># Analysis 6: Stratification plus interaction terms</span>
-<span class="no">negCons</span> <span class="kw">&lt;-</span> <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">6</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">!=</span> <span class="fl">192671</span>, ]
-<span class="no">hoi</span> <span class="kw">&lt;-</span>  <span class="no">analysisSum</span>[<span class="no">analysisSum</span>$<span class="no">analysisId</span> <span class="kw">==</span> <span class="fl">6</span> <span class="kw">&amp;</span> <span class="no">analysisSum</span>$<span class="no">outcomeId</span> <span class="kw">==</span> <span class="fl">192671</span>, ]
-<span class="no">null</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span>(<span class="no">negCons</span>$<span class="no">logRrI8532001</span>, <span class="no">negCons</span>$<span class="no">seLogRrI8532001</span>)
-<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span>(<span class="kw">logRrNegatives</span> <span class="kw">=</span> <span class="no">negCons</span>$<span class="no">logRrI8532001</span>,
-                      <span class="kw">seLogRrNegatives</span> <span class="kw">=</span> <span class="no">negCons</span>$<span class="no">seLogRrI8532001</span>,
-                      <span class="kw">logRrPositives</span> <span class="kw">=</span> <span class="no">hoi</span>$<span class="no">logRrI8532001</span>,
-                      <span class="kw">seLogRrPositives</span> <span class="kw">=</span> <span class="no">hoi</span>$<span class="no">seLogRrI8532001</span>, <span class="no">null</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Analysis 6: Stratification plus interaction terms</span>
+<span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">6</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">analysisSum</span><span class="op">[</span><span class="va">analysisSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">6</span> <span class="op">&amp;</span> <span class="va">analysisSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span>
+<span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/fitNull.html">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRrI8532001</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRrI8532001</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/EmpiricalCalibration/man/plotCalibrationEffect.html">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">negCons</span><span class="op">$</span><span class="va">logRrI8532001</span>, 
+                      seLogRrNegatives <span class="op">=</span> <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRrI8532001</span>, 
+                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRrI8532001</span>, 
+                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRrI8532001</span>, <span class="va">null</span><span class="op">)</span></code></pre></div>
 <pre><code>## Warning in fitNull(negCons$logRrI8532001, negCons$seLogRrI8532001): Estimate(s)
 ## with NA standard error detected. Removing before fitting null distribution</code></pre>
-<pre><code>## Warning: Removed 9 rows containing missing values (geom_point).</code></pre>
+<pre><code>## Warning: Removed 10 rows containing missing values (geom_point).</code></pre>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-27-1.png" width="700"></p>
 </div>
 </div>
@@ -480,7 +499,8 @@
 <h1 class="hasAnchor">
 <a href="#acknowledgments" class="anchor"></a>Acknowledgments</h1>
 <p>Considerable work has been dedicated to provide the <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb23"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/citation.html">citation</a></span>(<span class="st">"CohortMethod"</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/citation.html">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></code></pre></div>
 <pre><code>## 
 ## To cite package 'CohortMethod' in publications use:
 ## 
@@ -498,14 +518,15 @@
 ##     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},
 ##   }</code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb25"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/utils/citation.html">citation</a></span>(<span class="st">"Cyclops"</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/citation.html">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></code></pre></div>
 <pre><code>## 
 ## To cite Cyclops in publications use:
 ## 
 ## Suchard MA, Simpson SE, Zorych I, Ryan P, Madigan D (2013). "Massive
 ## parallelization of serial inference algorithms for complex generalized
 ## linear models." _ACM Transactions on Modeling and Computer Simulation_,
-## *23*, 10. &lt;URL: http://dl.acm.org/citation.cfm?id=2414791&gt;.
+## *23*, 10. &lt;URL: https://dl.acm.org/doi/10.1145/2414416.2414791&gt;.
 ## 
 ## A BibTeX entry for LaTeX users is
 ## 
@@ -516,7 +537,7 @@
 ##     volume = {23},
 ##     pages = {10},
 ##     year = {2013},
-##     url = {http://dl.acm.org/citation.cfm?id=2414791},
+##     url = {https://dl.acm.org/doi/10.1145/2414416.2414791},
 ##   }</code></pre>
 <p>This work is supported in part through the National Science Foundation grant IIS 1251151.</p>
 </div>
@@ -537,7 +558,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

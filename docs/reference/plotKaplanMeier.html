@@ -76,7 +76,7 @@ as described in Galimberti eta al (2002), using the closed form variance estimat
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
       </span>
     </div>
 
@@ -146,18 +146,18 @@ as described in Galimberti eta al (2002), using the closed form variance estimat
 (2005).</p>
     </div>
 
-    <pre class="usage"><span class='fu'>plotKaplanMeier</span>(
-  <span class='no'>population</span>,
-  <span class='kw'>censorMarks</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>confidenceIntervals</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>includeZero</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>dataTable</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>dataCutoff</span> <span class='kw'>=</span> <span class='fl'>0.9</span>,
-  <span class='kw'>targetLabel</span> <span class='kw'>=</span> <span class='st'>"Treated"</span>,
-  <span class='kw'>comparatorLabel</span> <span class='kw'>=</span> <span class='st'>"Comparator"</span>,
-  <span class='no'>title</span>,
-  <span class='kw'>fileName</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
-)</pre>
+    <pre class="usage"><span class='fu'>plotKaplanMeier</span><span class='op'>(</span>
+  <span class='va'>population</span>,
+  censorMarks <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  confidenceIntervals <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  includeZero <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  dataTable <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  dataCutoff <span class='op'>=</span> <span class='fl'>0.9</span>,
+  targetLabel <span class='op'>=</span> <span class='st'>"Treated"</span>,
+  comparatorLabel <span class='op'>=</span> <span class='st'>"Comparator"</span>,
+  <span class='va'>title</span>,
+  fileName <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -211,7 +211,7 @@ supported file formats.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A ggplot object. Use the <code><a href='https://ggplot2.tidyverse.org/reference/ggsave.html'>ggsave</a></code> function to save to file in a different
+    <p>A ggplot object. Use the <code><a href='https://rdrr.io/pkg/ggplot2/man/ggsave.html'>ggsave</a></code> function to save to file in a different
 format.</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
@@ -238,7 +238,7 @@ weighting for survival data. Statistics in Medicine, 26(10):2276.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
