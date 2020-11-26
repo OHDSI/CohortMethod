@@ -192,7 +192,7 @@ loadCmAnalysisList <- function(file) {
 #'                                      instead. In the analysis, the name of the number to be used can
 #'                                      be specified using the #' \code{targetType} parameter in the
 #'                                      \code{\link{createCmAnalysis}} function.
-#' @param comparatorId                  A concept ID indentifying the comparator drug in the exposure
+#' @param comparatorId                  A concept ID identifying the comparator drug in the exposure
 #'                                      table. If multiple strategies for picking the comparator will
 #'                                      be tested in the analysis, a named list of numbers can be
 #'                                      provided instead. In the analysis, the name of the number to be

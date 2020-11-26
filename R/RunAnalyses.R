@@ -690,7 +690,7 @@ createReferenceTable <- function(cmAnalysisList,
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
   instantiateDco <- function(dco, cmAnalysis, folder) {
-    rows <- tibble::tibble(analysisId = cmAnalysis$analysisId,
+    rows <- dplyr::tibble(analysisId = cmAnalysis$analysisId,
                            targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
                            comparatorId = .selectByType(cmAnalysis$comparatorType,
                                                         dco$comparatorId,
@@ -738,7 +738,7 @@ createReferenceTable <- function(cmAnalysisList,
                        function(cmAnalysis, loadingArgsList) return(which.list(loadingArgsList,
                                                                                cmAnalysis$getDbCohortMethodDataArgs)),
                        loadingArgsList)
-  analysisIdToLoadArgsId <- tibble::tibble(analysisId = analysisIds, loadArgsId = loadArgsId)
+  analysisIdToLoadArgsId <- dplyr::tibble(analysisId = analysisIds, loadArgsId = loadArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToLoadArgsId, by = "analysisId")
   referenceTable$cohortMethodDataFile <- .createCohortMethodDataFileName(loadId = referenceTable$loadArgsId,
                                                                          targetId = referenceTable$targetId,
@@ -751,7 +751,7 @@ createReferenceTable <- function(cmAnalysisList,
                            function(cmAnalysis, studyPopArgsList) return(which.list(studyPopArgsList,
                                                                                     cmAnalysis$createStudyPopArgs)),
                            studyPopArgsList)
-  analysisIdToStudyPopArgsId <- tibble::tibble(analysisId = analysisIds,
+  analysisIdToStudyPopArgsId <- dplyr::tibble(analysisId = analysisIds,
                                                studyPopArgsId = studyPopArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsId, by = "analysisId")
   referenceTable$studyPopFile <- .createStudyPopulationFileName(loadId = referenceTable$loadArgsId,
@@ -769,7 +769,7 @@ createReferenceTable <- function(cmAnalysisList,
                      function(cmAnalysis,
                               psArgsList) return(which.list(psArgsList, cmAnalysis$createPsArgs)),
                      psArgsList)
-  analysisIdToPsArgsId <- tibble::tibble(analysisId = analysisIds, psArgsId = psArgsId)
+  analysisIdToPsArgsId <- dplyr::tibble(analysisId = analysisIds, psArgsId = psArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToPsArgsId, by = "analysisId")
   idx <- !(referenceTable$psArgsId %in% noPsIds)
   referenceTable$psFile <- ""
@@ -810,7 +810,7 @@ createReferenceTable <- function(cmAnalysisList,
                                          function(cmAnalysis, studyPopArgsList) return(findFirstEquivalent(studyPopArgsList,
                                                                                                            cmAnalysis$createStudyPopArgs)),
                                          studyPopArgsList)
-      analysisIdToStudyPopArgsEquivalentId <- tibble::tibble(analysisId = analysisIds,
+      analysisIdToStudyPopArgsEquivalentId <- dplyr::tibble(analysisId = analysisIds,
                                                              studyPopArgsEquivalentId = studyPopArgsEquivalentId)
       referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsEquivalentId, by = "analysisId")
       referenceTable$sharedPsFile[idx] <- .createPsFileName(loadId = referenceTable$loadArgsId[idx],
@@ -859,7 +859,7 @@ createReferenceTable <- function(cmAnalysisList,
         i <- 0
       return(i)
     })
-    analysisIdToStrataArgsId <- tibble::tibble(analysisId = analysisIds, strataArgsId = strataArgsId)
+    analysisIdToStrataArgsId <- dplyr::tibble(analysisId = analysisIds, strataArgsId = strataArgsId)
     referenceTable <- inner_join(referenceTable, analysisIdToStrataArgsId, by = "analysisId")
   }
   idx <- referenceTable$strataArgsId != 0
@@ -923,7 +923,7 @@ createReferenceTable <- function(cmAnalysisList,
                             function(cmAnalysis, matchableArgs) return(which.list(matchableArgs,
                                                                                   cmAnalysis)),
                             matchableArgsList)
-      analysisIdToPrefilterId <- tibble::tibble(analysisId = analysisIds,
+      analysisIdToPrefilterId <- dplyr::tibble(analysisId = analysisIds,
                                                 prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
       referenceTable <- inner_join(referenceTable, analysisIdToPrefilterId, by = "analysisId")
       referenceTable$prefilteredCovariatesFile <- .createPrefilteredCovariatesFileName(loadId = referenceTable$loadArgsId,
@@ -1035,7 +1035,7 @@ createReferenceTable <- function(cmAnalysisList,
 
 #' Create a summary report of the analyses
 #'
-#' @param referenceTable   A [tibble::tibble] as created by the [runCmAnalyses] function.
+#' @param referenceTable   A [dplyr::tibble] as created by the [runCmAnalyses] function.
 #' @param outputFolder     Name of the folder where all the outputs have been written to.
 #'
 #' @return
@@ -1045,7 +1045,7 @@ createReferenceTable <- function(cmAnalysisList,
 summarizeAnalyses <- function(referenceTable, outputFolder) {
 
   summarizeOneAnalysis <- function(outcomeModelFile, outputFolder) {
-    result <- tibble::tibble(rr = 0,
+    result <- dplyr::tibble(rr = 0,
                              ci95lb = 0,
                              ci95ub = 0,
                              p = 1,

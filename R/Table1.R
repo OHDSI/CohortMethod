@@ -30,7 +30,10 @@
 #' @export
 getDefaultCmTable1Specifications <- function() {
   fileName <- system.file("csv", "Table1Specs.csv", package = "CohortMethod")
-  specifications <- read.csv(fileName, stringsAsFactors = FALSE)
+  colTypes <- list(label = readr::col_character(),
+                   analysisId = readr::col_integer(),
+                   covariateIds = readr::col_character())
+  specifications <- readr::read_csv(fileName, col_types = colTypes)
   return(specifications)
 }
 
@@ -39,7 +42,7 @@ getDefaultCmTable1Specifications <- function() {
 #' @description
 #' Creates a formatted table of cohort characteristics, to be included in publications or reports.
 #'
-#' @param balance                 A data frame created by the \code{computeCovariateBalance} funcion.
+#' @param balance                 A data frame created by the \code{computeCovariateBalance} function.
 #' @param specifications          Specifications of which covariates to display, and how.
 #' @param beforeTargetPopSize     The number of people in the target cohort before matching/stratification/trimming,
 #'                                to mention in the table header. If not provide, no number will be included in the header.
@@ -97,13 +100,13 @@ createCmTable1 <- function(balance,
 
   resultsTable <- data.frame()
   for (i in 1:nrow(specifications)) {
-    if (specifications$analysisId[i] == "") {
+    if (is.na(specifications$analysisId[i])) {
       resultsTable <- rbind(resultsTable,
                             data.frame(Characteristic = specifications$label[i], value = ""))
     } else {
       idx <- balance$analysisId == specifications$analysisId[i]
       if (any(idx)) {
-        if (specifications$covariateIds[i] != "") {
+        if (!is.na(specifications$covariateIds[i])) {
           covariateIds <- as.numeric(strsplit(as.character(specifications$covariateIds[i]), ";")[[1]])
           idx <- balance$covariateId %in% covariateIds
         } else {
@@ -122,7 +125,7 @@ createCmTable1 <- function(balance,
           balanceSubset$covariateName <- fixCase(gsub("^.*: ",
                                                       "",
                                                       balanceSubset$covariateName))
-          if (specifications$covariateIds[i] == "" || length(covariateIds) > 1) {
+          if (is.na(specifications$covariateIds[i]) || length(covariateIds) > 1) {
             resultsTable <- rbind(resultsTable, data.frame(Characteristic = specifications$label[i],
                                                            beforeMatchingMeanTarget = NA,
                                                            beforeMatchingMeanComparator = NA,

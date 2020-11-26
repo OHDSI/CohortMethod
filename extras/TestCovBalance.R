@@ -75,7 +75,7 @@ computeMetrics <- function(sampleSize) {
   xRnd <- newXbalance(fmla,	strataColumn, data = dataRnd, report	= c("chisquare.test"))
 
 
-  result <- tibble::tibble(sampleSize = sampleSize,
+  result <- dplyr::tibble(sampleSize = sampleSize,
                            type = c("unadjusted", "stratified", "randomized"),
                            p = c(x$overall$p.value, xRnd$overall$p.value[2]),
                            maxAbsStdDiff = c(max(abs(bal$beforeMatchingStdDiff), na.rm = TRUE),

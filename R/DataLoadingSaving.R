@@ -204,7 +204,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      target_id = targetId)
     counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
     ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-    preSampleCounts <- tibble::tibble(dummy = 0)
+    preSampleCounts <- dplyr::tibble(dummy = 0)
     idx <- which(counts$treatment == 1)
     if (length(idx) == 0) {
       preSampleCounts$targetPersons = 0
@@ -278,13 +278,13 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      study_end_date = studyEndDate)
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql, snakeCaseToCamelCase = TRUE)
     if (nrow(rawCount) == 0) {
-      counts <- tibble::tibble(description = "Original cohorts",
+      counts <- dplyr::tibble(description = "Original cohorts",
                                targetPersons = 0,
                                comparatorPersons = 0,
                                targetExposures = 0,
                                comparatorExposures = 0)
     } else {
-      counts <- tibble::tibble(description = "Original cohorts",
+      counts <- dplyr::tibble(description = "Original cohorts",
                                targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
                                comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
                                targetExposures = rawCount$exposureCount[rawCount$treatment == 1],

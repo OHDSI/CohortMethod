@@ -20,7 +20,7 @@ createCmTable1(
 )
 }
 \arguments{
-\item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
+\item{balance}{A data frame created by the \code{computeCovariateBalance} function.}
 
 \item{specifications}{Specifications of which covariates to display, and how.}
 

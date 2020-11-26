@@ -17,7 +17,7 @@ plotCovariateBalanceScatterPlot(
 )
 }
 \arguments{
-\item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
+\item{balance}{A data frame created by the \code{computeCovariateBalance} function.}
 
 \item{absolute}{Should the absolute value of the difference be used?}
 

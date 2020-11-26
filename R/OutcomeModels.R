@@ -300,7 +300,7 @@ fitOutcomeModel <- function(population,
         if (identical(ci, c(0, -Inf, Inf)))
           status <- "ERROR COMPUTING CI"
         seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
-        treatmentEstimate <- tibble::tibble(logRr = logRr,
+        treatmentEstimate <- dplyr::tibble(logRr = logRr,
                                             logLb95 = ci[2],
                                             logUb95 = ci[3],
                                             seLogRr = seLogRr)
@@ -329,7 +329,7 @@ fitOutcomeModel <- function(population,
             ci <- t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
           }
           seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
-          mainEffectEstimates <- tibble::tibble(covariateId = mainEffectTerms$id,
+          mainEffectEstimates <- dplyr::tibble(covariateId = mainEffectTerms$id,
                                                 coariateName = mainEffectTerms$name,
                                                 logRr = logRr,
                                                 logLb95 = ci[ ,2],
@@ -486,7 +486,7 @@ getOutcomeCounts <- function(population, modelType) {
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
-  return(tibble::tibble(targetPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
+  return(dplyr::tibble(targetPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
                         comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
                         targetExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
                         comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
@@ -526,7 +526,7 @@ getTimeAtRisk <- function(population, modelType) {
   } else {
     population$time <- population$timeAtRisk
   }
-  return(tibble::tibble(targetDays = sum(population$time[population$treatment == 1]),
+  return(dplyr::tibble(targetDays = sum(population$time[population$treatment == 1]),
                         comparatorDays = sum(population$time[population$treatment == 0])))
 }
 
@@ -599,9 +599,9 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
     collect()
 
   ref <- bind_rows(ref,
-                   tibble::tibble(id = outcomeModel$outcomeModelTreatmentVarId,
+                   dplyr::tibble(id = outcomeModel$outcomeModelTreatmentVarId,
                                   name = "Treatment"),
-                   tibble::tibble(id = 0,
+                   dplyr::tibble(id = 0,
                                   name = "(Intercept)"))
 
   cfs <- cfs %>%

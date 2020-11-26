@@ -327,7 +327,7 @@ getCounts <- function(population, description = "") {
   comparatorPersons <- length(unique(population$subjectId[population$treatment == 0]))
   targetExposures <- length(population$subjectId[population$treatment == 1])
   comparatorExposures <- length(population$subjectId[population$treatment == 0])
-  counts <- tibble::tibble(description = description,
+  counts <- dplyr::tibble(description = description,
                            targetPersons = targetPersons,
                            comparatorPersons = comparatorPersons,
                            targetExposures = targetExposures,
@@ -457,7 +457,7 @@ plotTimeToEvent <- function(cohortMethodData,
     end <- number*periodLength + periodLength
     idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
     idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
-    tibble::tibble(number = number,
+    dplyr::tibble(number = number,
                    start = start,
                    end = end,
                    eventsExposed = 0,
@@ -478,22 +478,22 @@ plotTimeToEvent <- function(cohortMethodData,
   periods$rateUnexposedComparator <- periods$eventsUnexposedComparator / periods$observedComparator
   periods$rateTarget <- (periods$eventsExposedTarget + periods$eventsUnexposedTarget) / periods$observedTarget
   periods$rateComparator <- (periods$eventsExposedComparator + periods$eventsUnexposedComparator) / periods$observedComparator
-  vizData <- rbind(tibble::tibble(start = periods$start,
+  vizData <- rbind(dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateExposedTarget,
                                   status = "Exposed events",
                                   type = targetLabel),
-                   tibble::tibble(start = periods$start,
+                   dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateUnexposedTarget,
                                   status = "Unexposed events",
                                   type = targetLabel),
-                   tibble::tibble(start = periods$start,
+                   dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateExposedComparator,
                                   status = "Exposed events",
                                   type = comparatorLabel),
-                   tibble::tibble(start = periods$start,
+                   dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateUnexposedComparator,
                                   status = "Unexposed events",

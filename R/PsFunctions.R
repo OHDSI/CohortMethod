@@ -248,17 +248,17 @@ createPs <- function(cohortMethodData,
 getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
   if (is.null(coefficients)) {
-    return(tibble::tibble(coefficient = NA,
+    return(dplyr::tibble(coefficient = NA,
                           covariateId = NA,
                           covariateName = NA))
   }
-  result <- tibble::tibble(coefficient = coefficients[1],
+  result <- dplyr::tibble(coefficient = coefficients[1],
                            covariateId = NA,
                            covariateName = "(Intercept)")
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
-    coefficients <- tibble::tibble(coefficient = coefficients,
+    coefficients <- dplyr::tibble(coefficient = coefficients,
                                    covariateId = as.numeric(attr(coefficients, "names")))
     covariateRef <- cohortMethodData$covariateRef %>%
       collect()
@@ -513,7 +513,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 
   if (confidenceIntervals) {
     aucCi <- aucWithCi(data$propensityScore, data$treatment)
-    return(tibble::tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
+    return(dplyr::tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
   } else {
     auc <- aucWithoutCi(data$propensityScore, data$treatment)
     return(auc)
@@ -735,7 +735,7 @@ matchOnPs <- function(population,
                               population$treatment,
                               maxRatio,
                               caliper)
-    result <- tibble::as_tibble(result)
+    result <- dplyr::as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
     if (!is.null(attr(population, "metaData"))) {
@@ -755,7 +755,7 @@ matchOnPs <- function(population,
                                    subset$treatment,
                                    maxRatio,
                                    caliper)
-      subResult <- tibble::as_tibble(subResult)
+      subResult <- dplyr::as_tibble(subResult)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
       return(subset)
