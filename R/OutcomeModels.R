@@ -283,29 +283,7 @@ fitOutcomeModel <- function(population,
       }
       if (is.character(fit)) {
         status <- fit
-      } else if (fit$return_flag == "ILLCONDITIONED") {
-        status <- "ILL CONDITIONED, CANNOT FIT"
-      } else if (fit$return_flag == "MAX_ITERATIONS") {
-        status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
       } else {
-        status <- "OK"
-        coefficients <- coef(fit)
-        logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-        ci <- tryCatch({
-          confint(fit, parm = treatmentVarId, includePenalty = TRUE)
-        }, error = function(e) {
-          missing(e)  # suppresses R CMD check note
-          c(0, -Inf, Inf)
-        })
-        if (identical(ci, c(0, -Inf, Inf)))
-          status <- "ERROR COMPUTING CI"
-        seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
-        treatmentEstimate <- dplyr::tibble(logRr = logRr,
-                                            logLb95 = ci[2],
-                                            logUb95 = ci[3],
-                                            seLogRr = seLogRr)
-        priorVariance <- fit$variance[1]
-
         # Retrieve likelihood profile
         if (!is.null(profileGrid)) {
           logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
@@ -315,43 +293,66 @@ fitOutcomeModel <- function(population,
           names(logLikelihoodProfile) <- profileGrid
         }
 
-        if (!is.null(mainEffectTerms)) {
-          logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
-          if (prior$priorType == "none") {
-            ci <- tryCatch({
-              confint(fit, parm = mainEffectTerms$id, includePenalty = TRUE,
-                      overrideNoRegularization = TRUE)
-            }, error = function(e) {
-              missing(e)  # suppresses R CMD check note
-              t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
-            })
-          } else {
-            ci <- t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
-          }
-          seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
-          mainEffectEstimates <- dplyr::tibble(covariateId = mainEffectTerms$id,
-                                                coariateName = mainEffectTerms$name,
-                                                logRr = logRr,
-                                                logLb95 = ci[ ,2],
-                                                logUb95 = ci[ ,3],
-                                                seLogRr = seLogRr)
-        }
-
-        if (!is.null(interactionTerms)) {
-          logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
+        if (fit$return_flag == "ILLCONDITIONED") {
+          status <- "ILL CONDITIONED, CANNOT FIT"
+        } else if (fit$return_flag == "MAX_ITERATIONS") {
+          status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
+        } else {
+          status <- "OK"
+          coefficients <- coef(fit)
+          logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
           ci <- tryCatch({
-            confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+            confint(fit, parm = treatmentVarId, includePenalty = TRUE)
           }, error = function(e) {
             missing(e)  # suppresses R CMD check note
-            t(array(c(0, -Inf, Inf), dim = c(3,nrow(interactionTerms))))
+            c(0, -Inf, Inf)
           })
-          seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
-          interactionEstimates <- data.frame(covariateId = interactionTerms$covariateId,
-                                             interactionName = interactionTerms$interactionName,
-                                             logRr = logRr,
-                                             logLb95 = ci[ ,2],
-                                             logUb95 = ci[ ,3],
+          if (identical(ci, c(0, -Inf, Inf)))
+            status <- "ERROR COMPUTING CI"
+          seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
+          treatmentEstimate <- dplyr::tibble(logRr = logRr,
+                                             logLb95 = ci[2],
+                                             logUb95 = ci[3],
                                              seLogRr = seLogRr)
+          priorVariance <- fit$variance[1]
+          if (!is.null(mainEffectTerms)) {
+            logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
+            if (prior$priorType == "none") {
+              ci <- tryCatch({
+                confint(fit, parm = mainEffectTerms$id, includePenalty = TRUE,
+                        overrideNoRegularization = TRUE)
+              }, error = function(e) {
+                missing(e)  # suppresses R CMD check note
+                t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
+              })
+            } else {
+              ci <- t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
+            }
+            seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
+            mainEffectEstimates <- dplyr::tibble(covariateId = mainEffectTerms$id,
+                                                 coariateName = mainEffectTerms$name,
+                                                 logRr = logRr,
+                                                 logLb95 = ci[ ,2],
+                                                 logUb95 = ci[ ,3],
+                                                 seLogRr = seLogRr)
+          }
+
+          if (!is.null(interactionTerms)) {
+            logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
+            ci <- tryCatch({
+              confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+            }, error = function(e) {
+              missing(e)  # suppresses R CMD check note
+              t(array(c(0, -Inf, Inf), dim = c(3,nrow(interactionTerms))))
+            })
+            seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
+            interactionEstimates <- data.frame(covariateId = interactionTerms$covariateId,
+                                               interactionName = interactionTerms$interactionName,
+                                               logRr = logRr,
+                                               logLb95 = ci[ ,2],
+                                               logUb95 = ci[ ,3],
+                                               seLogRr = seLogRr)
+          }
         }
       }
     }
@@ -487,11 +488,11 @@ getOutcomeCounts <- function(population, modelType) {
     population$y[population$y != 0] <- 1
   }
   return(dplyr::tibble(targetPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
-                        comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
-                        targetExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
-                        comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
-                        targetOutcomes = sum(population$y[population$treatment == 1]),
-                        comparatorOutcomes = sum(population$y[population$treatment == 0])))
+                       comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
+                       targetExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
+                       comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
+                       targetOutcomes = sum(population$y[population$treatment == 1]),
+                       comparatorOutcomes = sum(population$y[population$treatment == 0])))
 }
 
 createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, population, modelType) {
@@ -527,7 +528,7 @@ getTimeAtRisk <- function(population, modelType) {
     population$time <- population$timeAtRisk
   }
   return(dplyr::tibble(targetDays = sum(population$time[population$treatment == 1]),
-                        comparatorDays = sum(population$time[population$treatment == 0])))
+                       comparatorDays = sum(population$time[population$treatment == 0])))
 }
 
 
@@ -600,9 +601,9 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
 
   ref <- bind_rows(ref,
                    dplyr::tibble(id = outcomeModel$outcomeModelTreatmentVarId,
-                                  name = "Treatment"),
+                                 name = "Treatment"),
                    dplyr::tibble(id = 0,
-                                  name = "(Intercept)"))
+                                 name = "(Intercept)"))
 
   cfs <- cfs %>%
     inner_join(ref, by = "id")
