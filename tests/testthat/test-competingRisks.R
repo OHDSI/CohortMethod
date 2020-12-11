@@ -97,6 +97,9 @@ test_that("Competing risks single analysis", {
   fitRisk1 <- fitOutcomeModel(studyPop3,
                               modelType = "fgr")
 
+  fitRisk3 <- fitOutcomeModel(studyPopCombined,
+                              modelType = "cox")
+
   expect_equal(coef(fitNoRisk1), coef(fitRisk1))
 
   fitRisk2 <- fitOutcomeModel(studyPopCombined,
@@ -107,6 +110,7 @@ test_that("Competing risks single analysis", {
   #outputFolder <- tempfile(pattern = "cmData")
   #unlink(outputFolder, recursive = TRUE)
 })
+
 
 test_that("Competing risks multiple analyses", {
   expect_false("riskIds" %in% names(
@@ -126,7 +130,8 @@ test_that("Competing risks multiple analyses", {
   covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = c(1118084, 1124300),
                                                 addDescendantsToExclude = TRUE)
 
-  getDbCmDataArgs <- createGetDbCohortMethodDataArgs(covariateSettings = covSettings)
+  getDbCmDataArgs <- createGetDbCohortMethodDataArgs(excludeDrugsFromCovariates = TRUE,
+                                                    covariateSettings = covSettings)
 
   spArgsRisk <- createCreateStudyPopulationArgs(riskWindowEnd = 99999)
 
@@ -149,14 +154,14 @@ test_that("Competing risks multiple analyses", {
                                   fitOutcomeModelArgs = coxArgs)
 
   outputFolder <- "./CohortMethodOutput"
-  unlink(outputFolder)
+  unlink(outputFolder, recursive=TRUE)
   result <- runCmAnalyses(connectionDetails = connectionDetails,
                           targetComparatorOutcomesList = targetComparatorOutcomesList,
                           cdmDatabaseSchema = "main",
                           exposureTable = "cohort",
                           outcomeTable = "cohort",
                           outputFolder = outputFolder,
-                          cmAnalysisList = list(fgrAnalysis) # add coxFit$outcomeModelCoefficients back
+                          cmAnalysisList = list(fgrAnalysis, coxAnalysis) # add coxFit$outcomeModelCoefficients back
                           )
 
   fgrFit <- readRDS(file.path(outputFolder, "Analysis_1/om_t1_c2_o3.rds"))
@@ -167,3 +172,4 @@ test_that("Competing risks multiple analyses", {
 })
 
 unlink(connectionDetails$server)
+
