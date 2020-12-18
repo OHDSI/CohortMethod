@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'release'}  # Does not appear to have Java 32-bit
+          - {os: windows-latest, r: 'release'}  # Does not appear to have Java 32-bit, hence the --no-multiarch
           - {os: macOS-latest, r: 'release'}
           - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
           - {os: ubuntu-20.04, r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
@@ -68,29 +68,28 @@ jobs:
 
       - name: Install dependencies
         run: |
-          remotes::install_deps(dependencies = TRUE, build_opts = c("--no-resave-data", "--no-manual", "--no-build-vignettes", "--no-multiarch"))
+          remotes::install_deps(dependencies = TRUE, INSTALL_opts=c("--no-multiarch"))
           remotes::install_cran("rcmdcheck")
         shell: Rscript {0}
 
-      - name: Install FeatureExtraction on Windows
-        if: runner.os == 'Windows'
-        run: |
-          remotes::install_github("OHDSI/FeatureExtraction", INSTALL_opts=c("--no-multiarch"))
-        shell: Rscript {0}
+#      - name: Install FeatureExtraction on Windows
+#        if: runner.os == 'Windows'
+#        run: |
+#          remotes::install_github("OHDSI/FeatureExtraction", INSTALL_opts=c("--no-multiarch"))
+#        shell: Rscript {0}
 
-      - name: Check on Windows
-        if: runner.os == 'Windows'
+      - name: Check
         env:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran", "--no-multiarch"), error_on = "warning", check_dir = "check")
         shell: Rscript {0}
 
-      - name: Check on not-Windows
-        if: runner.os != 'Windows'
-        env:
-          _R_CHECK_CRAN_INCOMING_REMOTE_: false
-        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
-        shell: Rscript {0}
+#      - name: Check on not-Windows
+#        if: runner.os != 'Windows'
+#        env:
+#          _R_CHECK_CRAN_INCOMING_REMOTE_: false
+#        run: rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
+#        shell: Rscript {0}
 
       - name: Upload check results
         if: failure()
