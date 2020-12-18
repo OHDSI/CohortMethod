@@ -1,3 +1,11 @@
+CohortMethod 4.0.2
+==================
+
+Bug fixes:
+
+1. Still was not always including the likelihood profile in the outcome model objects.
+
+
 CohortMethod 4.0.1
 ==================
 
