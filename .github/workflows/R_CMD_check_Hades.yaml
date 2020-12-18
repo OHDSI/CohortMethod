@@ -75,7 +75,7 @@ jobs:
       - name: Install FeatureExtraction on Windows
         if: runner.os == 'Windows'
         run: |
-          remotes::install_github("OHDSI/FeatureExtraction", build_opts = c("--no-resave-data", "--no-manual", "--no-build-vignettes", "--no-multiarch"))
+          remotes::install_github("OHDSI/FeatureExtraction", INSTALL_opts=c("--no-multiarch"))
         shell: Rscript {0}
 
       - name: Check on Windows
