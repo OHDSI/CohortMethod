@@ -38,8 +38,8 @@ jobs:
 
       - uses: r-lib/actions/setup-tinytex@v1
 
-      - name: Install latex fonts
-        run: tlmgr --version
+#      - name: Install latex fonts
+#        run: tlmgr --version
 
       - uses: r-lib/actions/setup-pandoc@v1
 
@@ -70,6 +70,12 @@ jobs:
         run: |
           remotes::install_deps(dependencies = TRUE, type = "source")
           remotes::install_cran("rcmdcheck")
+        shell: Rscript {0}
+
+      - name: Install FeatureExtraction on Windows
+        if: runner.os == 'Windows'
+        run: |
+          remotes::install_github("OHDSI/FeatureExtraction")
         shell: Rscript {0}
 
       - name: Check
