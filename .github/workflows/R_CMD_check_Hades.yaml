@@ -36,8 +36,9 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
 
-      - name: Install latex
-        uses: r-lib/actions/setup-tinytex@v1
+      - uses: r-lib/actions/setup-tinytex@v1
+
+      - name: Install latex fonts
         run: tlmgr --version
 
       - uses: r-lib/actions/setup-pandoc@v1
