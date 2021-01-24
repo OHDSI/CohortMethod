@@ -49,8 +49,6 @@ fastDuplicated <- function(data, columns) {
 #'                                         point instead of the cohorts in the `cohortMethodData` object.
 #' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
 #'                                         transformations will be performed.
-#' @param riskId                           The ID of the competing risk outcome. If not specified, no competing-risk-specific
-#'                                         transformations will be performed.
 #' @param firstExposureOnly                Should only the first exposure per subject be included?
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
@@ -88,7 +86,6 @@ fastDuplicated <- function(data, columns) {
 createStudyPopulation <- function(cohortMethodData,
                                   population = NULL,
                                   outcomeId,
-                                  riskId = NULL,
                                   firstExposureOnly = FALSE,
                                   restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
@@ -103,51 +100,6 @@ createStudyPopulation <- function(cohortMethodData,
                                   addExposureDaysToEnd = NULL,
                                   endAnchor = "cohort end",
                                   censorAtNewRiskWindow = FALSE) {
-
-  if (!is.null(riskId)) {
-    outcomeStudyPopulation <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                                    population = population,
-                                                    outcomeId = outcomeId,
-                                                    riskId = NULL,
-                                                    firstExposureOnly = firstExposureOnly,
-                                                    restrictToCommonPeriod = restrictToCommonPeriod,
-                                                    washoutPeriod = washoutPeriod,
-                                                    removeDuplicateSubjects = removeDuplicateSubjects,
-                                                    removeSubjectsWithPriorOutcome = removeSubjectsWithPriorOutcome,
-                                                    priorOutcomeLookback = priorOutcomeLookback,
-                                                    minDaysAtRisk = minDaysAtRisk,
-                                                    riskWindowStart = riskWindowStart,
-                                                    addExposureDaysToStart = addExposureDaysToStart,
-                                                    startAnchor = startAnchor,
-                                                    riskWindowEnd = riskWindowEnd,
-                                                    addExposureDaysToEnd = addExposureDaysToEnd,
-                                                    endAnchor = endAnchor,
-                                                    censorAtNewRiskWindow = censorAtNewRiskWindow)
-
-    riskStudyPopulation <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                                 population = population,
-                                                 outcomeId = riskId,
-                                                 riskId = NULL,
-                                                 firstExposureOnly = firstExposureOnly,
-                                                 restrictToCommonPeriod = restrictToCommonPeriod,
-                                                 washoutPeriod = washoutPeriod,
-                                                 removeDuplicateSubjects = removeDuplicateSubjects,
-                                                 removeSubjectsWithPriorOutcome = removeSubjectsWithPriorOutcome,
-                                                 priorOutcomeLookback = priorOutcomeLookback,
-                                                 minDaysAtRisk = minDaysAtRisk,
-                                                 riskWindowStart = riskWindowStart,
-                                                 addExposureDaysToStart = addExposureDaysToStart,
-                                                 startAnchor = startAnchor,
-                                                 riskWindowEnd = riskWindowEnd,
-                                                 addExposureDaysToEnd = addExposureDaysToEnd,
-                                                 endAnchor = endAnchor,
-                                                 censorAtNewRiskWindow = censorAtNewRiskWindow)
-
-    ParallelLogger::logTrace("Creating competing risk study population for outcome ID ", outcomeId, " and risk ID ", riskId)
-    studyPopulation <- combineCompetingStudyPopulations(outcomeStudyPopulation, riskStudyPopulation)
-    return(studyPopulation)
-  }
-
   if (!missing(addExposureDaysToStart) && !is.null(addExposureDaysToStart)) {
     warning("The addExposureDaysToStart argument is deprecated. Please use the startAnchor argument instead.")
     if (addExposureDaysToStart) {

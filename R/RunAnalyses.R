@@ -186,6 +186,13 @@ runCmAnalyses <- function(connectionDetails,
       }
       getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
       outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFile == refRow$cohortMethodDataFile])
+
+      riskIds <- unique(referenceTable$riskId[referenceTable$cohortMethodDataFile == refRow$cohortMethodDataFile])
+      riskIds <- riskIds[which(!is.na(riskIds))]
+      if (length(riskIds) > 0) {
+        outcomeIds <- c(outcomeIds, riskIds)
+      }
+
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
                    oracleTempSchema = oracleTempSchema,
@@ -220,9 +227,6 @@ runCmAnalyses <- function(connectionDetails,
                                                  list(analysisId = refRow$analysisId))[[1]]
       args <- analysisRow$createStudyPopArgs
       args$outcomeId <- refRow$outcomeId
-      if( !is.na(refRow$riskId)) {
-        args$riskId <- refRow$riskId
-      }
       task <- list(cohortMethodDataFile = file.path(outputFolder,
                                                     refRow$cohortMethodDataFile),
                    args = args,
@@ -231,6 +235,31 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     objectsToCreate <- lapply(1:nrow(subset), createStudyPopTask)
+    cluster <- ParallelLogger::makeCluster(createStudyPopThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, createStudyPopObject)
+    ParallelLogger::stopCluster(cluster)
+  }
+
+  ParallelLogger::logInfo("*** Creating risk populations ***")
+  subset <- referenceTable[!duplicated(referenceTable$riskPopFile), ]
+  subset <- subset[subset$riskPopFile != "", ]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$riskPopFile)), ]
+  if (nrow(subset) != 0) {
+    createRiskPopTask <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
+      args <- analysisRow$createStudyPopArgs
+      args$outcomeId <- refRow$riskId
+      task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                    refRow$cohortMethodDataFile),
+                   args = args,
+                   minimizeFileSizes = getOption("minimizeFileSizes"),
+                   studyPopFile = file.path(outputFolder, refRow$riskPopFile))
+      return(task)
+    }
+    objectsToCreate <- lapply(1:nrow(subset), createRiskPopTask)
     cluster <- ParallelLogger::makeCluster(createStudyPopThreads)
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, createStudyPopObject)
@@ -370,6 +399,12 @@ runCmAnalyses <- function(connectionDetails,
     } else {
       studyPopFile <- refRow$studyPopFile
     }
+
+    riskPopFile <- refRow$riskPopFile
+    if (riskPopFile != "") {
+      riskPopFile <- file.path(outputFolder, riskPopFile)
+    }
+
     prefilteredCovariatesFile <- refRow$prefilteredCovariatesFile
     if (prefilteredCovariatesFile != "") {
       prefilteredCovariatesFile = file.path(outputFolder, refRow$prefilteredCovariatesFile)
@@ -378,6 +413,7 @@ runCmAnalyses <- function(connectionDetails,
                 prefilteredCovariatesFile = prefilteredCovariatesFile,
                 args = args,
                 studyPopFile = file.path(outputFolder, studyPopFile),
+                riskPopFile = riskPopFile,
                 outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile)))
   }
   if (nrow(subset) == 0) {
@@ -468,19 +504,7 @@ createStudyPopObject <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
-  if (!is.null(args$riskId)) {
-    riskId <- args$riskId
-    args$riskId <- NULL
-
-    studyPop1 <- do.call("createStudyPopulation", args)
-    args$outcomeId <- riskId
-    studyPop2 <- do.call("createStudyPopulation", args)
-
-    studyPop <- combineCompetingStudyPopulations(studyPop1, studyPop2)
-
-  } else {
-    studyPop <- do.call("createStudyPopulation", args)
-  }
+  studyPop <- do.call("createStudyPopulation", args)
   if (!is.null(params$minimizeFileSizes) && params$minimizeFileSizes) {
     metaData <- attr(studyPop, "metaData")
     studyPop <- studyPop[, c("rowId", "treatment", "subjectId", "outcomeCount", "timeAtRisk", "survivalTime")]
@@ -602,6 +626,18 @@ doPrefilterCovariates <- function(params) {
   return(NULL)
 }
 
+doCombinePopulations <- function(studyPop, params) {
+  if (params$riskPopFile == "") {
+    ParallelLogger::logWarn(paste("Trying to fit a Fine-Gray model in", # TODO Make this an error?
+                                  params$outcomeModelFile, "without a competing risk population"))
+  } else {
+    riskPop <- readRDS(params$riskPopFile)
+    combinedPop <- combineCompetingStudyPopulations(mainPopulation = studyPop,
+                                                    competingRiskPopulation = riskPop)
+  }
+  return(combinedPop)
+}
+
 doFitOutcomeModel <- function(params) {
   if (params$prefilteredCovariatesFile == "") {
     cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
@@ -609,9 +645,14 @@ doFitOutcomeModel <- function(params) {
     cohortMethodData <- getCohortMethodData(params$prefilteredCovariatesFile)
   }
   studyPop <- readRDS(params$studyPopFile)
+
+  if (params$args$modelType == "fgr") {
+    studyPop <- doCombinePopulations(studyPop = studyPop, params = params)
+  }
+
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
-  # outcomeModel <- do.call('fitOutcomeModel', args)
+
   outcomeModel <- fitOutcomeModel(population = args$population,
                                   cohortMethodData = args$cohortMethodData,
                                   modelType = args$modelType,
@@ -675,9 +716,15 @@ doFitOutcomeModelPlus <- function(params) {
     args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
     ps <- do.call("stratifyByPsAndCovariates", args)
   }
+
+  if (params$args$modelType == "fgr") {
+    ps <- doCombinePopulations(studyPop = ps, params = params)
+  }
+
   args <- params$args$fitOutcomeModelArgs
   args$population <- ps
   args$cohortMethodData <- cohortMethodData
+
   outcomeModel <- do.call('fitOutcomeModel', args)
   saveRDS(outcomeModel, params$outcomeModelFile)
   if (!is.null(outcomeModel)) {
@@ -705,6 +752,7 @@ createReferenceTable <- function(cmAnalysisList,
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
   instantiateDco <- function(dco, cmAnalysis, folder) {
+
     rows <- tibble::tibble(analysisId = cmAnalysis$analysisId,
                            targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
                            comparatorId = .selectByType(cmAnalysis$comparatorType,
@@ -714,16 +762,21 @@ createReferenceTable <- function(cmAnalysisList,
                                                                collapse = ","),
                            excludedCovariateConceptIds = paste(dco$excludedCovariateConceptIds,
                                                                collapse = ","),
-                           outcomeId = dco$outcomeIds,
-                           riskId = dco$riskIds)
+                           outcomeId = dco$outcomeIds)
 
     if (cmAnalysis$fitOutcomeModel) {
       rows$outcomeModelFile <- .createOutcomeModelFileName(folder = folder,
                                                            targetId = rows$targetId,
                                                            comparatorId = rows$comparatorId,
                                                            outcomeId = rows$outcomeId)
+
+      rows$riskId <- ifelse(
+        is.null(cmAnalysis$fitOutcomeModelArgs$riskId),
+        NA, cmAnalysis$fitOutcomeModelArgs$riskId)
+
     } else {
       rows$outcomeModelFile <- ""
+      rows$riskId <- NA
     }
     return(rows)
   }
@@ -775,6 +828,13 @@ createReferenceTable <- function(cmAnalysisList,
                                                                 targetId = referenceTable$targetId,
                                                                 comparatorId = referenceTable$comparatorId,
                                                                 outcomeId = referenceTable$outcomeId)
+
+  # Add riskpop filenames
+  referenceTable$riskPopFile <- .createRiskPopulationFileName(loadId = referenceTable$loadArgsId,
+                                                               studyPopId = referenceTable$studyPopArgsId,
+                                                               targetId = referenceTable$targetId,
+                                                               comparatorId = referenceTable$comparatorId,
+                                                               riskId = referenceTable$riskId)
 
   # Add PS filenames
   psArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createPsArgs"))
@@ -961,6 +1021,7 @@ createReferenceTable <- function(cmAnalysisList,
                                        "outcomeOfInterest",
                                        "cohortMethodDataFile",
                                        "studyPopFile",
+                                       "riskPopFile",
                                        "sharedPsFile",
                                        "psFile",
                                        "strataFile",
@@ -997,6 +1058,18 @@ createReferenceTable <- function(cmAnalysisList,
   name <- sprintf("StudyPop_l%s_s%s_t%s_c%s_o%s.rds", loadId, studyPopId, .f(targetId), .f(comparatorId), .f(outcomeId))
   return(name)
 }
+
+.createRiskPopulationFileName <- function(loadId,
+                                           studyPopId,
+                                           targetId,
+                                           comparatorId,
+                                           riskId) {
+  name <- ifelse(!is.na(riskId),
+                 sprintf("StudyPop_l%s_s%s_t%s_c%s_r%s.rds", loadId, studyPopId, .f(targetId), .f(comparatorId), .f(riskId)),
+                 "")
+  return(name)
+}
+
 
 .createPsFileName <- function(loadId, studyPopId, psId, targetId, comparatorId) {
   if (is.null(studyPopId)) {

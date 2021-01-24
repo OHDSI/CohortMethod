@@ -33,7 +33,6 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           outcomeTable = "cohort",
                                           covariateSettings = createDefaultCovariateSettings())
 
-
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   outcomeId = 1,
                                   riskWindowEnd = 99999)
@@ -61,22 +60,22 @@ test_that("Competing risks single analysis", {
   covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
                                                 addDescendantsToExclude = TRUE)
 
-  cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+  sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                             cdmDatabaseSchema = "main",
                                             targetId = 1,
                                             comparatorId = 2,
-                                            outcomeIds = c(3,5),
+                                            outcomeIds = c(3, 5),
                                             exposureDatabaseSchema = "main",
                                             outcomeDatabaseSchema = "main",
                                             exposureTable = "cohort",
                                             outcomeTable = "cohort",
                                             covariateSettings = covSettings)
 
-  studyPop3 <- createStudyPopulation(cohortMethodData = cohortMethodData,
+  studyPop3 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
                                      outcomeId = 3,
                                      riskWindowEnd = 99999)
 
-  studyPop5 <- createStudyPopulation(cohortMethodData = cohortMethodData,
+  studyPop5 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
                                      outcomeId = 5,
                                      riskWindowEnd = 99999)
 
@@ -90,13 +89,6 @@ test_that("Competing risks single analysis", {
 
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
                                                        competingRiskPopulation = studyPop5)
-
-  studyPopCombined2 <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                             outcomeId = 3,
-                                             riskId = 5,
-                                             riskWindowEnd = 99999)
-
-  expect_equal(studyPopCombined, studyPopCombined2)
 
   fitNoRisk1 <- fitOutcomeModel(studyPop3,
                                modelType = "cox")
@@ -115,12 +107,11 @@ test_that("Competing risks single analysis", {
   expect_false(coef(fitRisk1) == coef(fitRisk2))
 })
 
-
 test_that("Competing risks multiple analyses", {
 
   tco <- createTargetComparatorOutcomes(targetId = 1,
-                                         comparatorId = 2,
-                                         outcomeIds = 3)
+                                        comparatorId = 2,
+                                        outcomeIds = 3)
 
   targetComparatorOutcomesList <- list(tco)
 
@@ -130,25 +121,28 @@ test_that("Competing risks multiple analyses", {
   getDbCmDataArgs <- createGetDbCohortMethodDataArgs(excludeDrugsFromCovariates = TRUE,
                                                     covariateSettings = covSettings)
 
-  spArgsRisk <- createCreateStudyPopulationArgs(riskWindowEnd = 99999)
+  studyPopArgs <- createCreateStudyPopulationArgs(riskWindowEnd = 99999)
 
-  fgrArgs <- createFitOutcomeModelArgs(modelType = "fgr")
+  fgrModelArgs <- createFitOutcomeModelArgs(modelType = "fgr",
+                                            riskId = 5)
 
-  coxArgs <- createFitOutcomeModelArgs(modelType = "cox")
+  expect_warning(createFitOutcomeModelArgs(modelType = "fgr"))
+
+  coxModelArgs <- createFitOutcomeModelArgs(modelType = "cox")
 
   fgrAnalysis <- createCmAnalysis(analysisId = 1,
-                               description = "whatever",
-                               createStudyPopArgs = spArgsRisk,
-                               getDbCohortMethodDataArgs = getDbCmDataArgs,
-                               fitOutcomeModel = TRUE,
-                               fitOutcomeModelArgs = fgrArgs)
-
-  coxAnalysis <- createCmAnalysis(analysisId = 2,
-                                  description = "whatever",
-                                  createStudyPopArgs = spArgsRisk,
+                                  description = "fgr",
+                                  createStudyPopArgs = studyPopArgs,
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
                                   fitOutcomeModel = TRUE,
-                                  fitOutcomeModelArgs = coxArgs)
+                                  fitOutcomeModelArgs = fgrModelArgs)
+
+  coxAnalysis <- createCmAnalysis(analysisId = 2,
+                                  description = "cox",
+                                  createStudyPopArgs = studyPopArgs,
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = coxModelArgs)
 
   outputFolder <- "./CohortMethodOutput"
   unlink(outputFolder, recursive=TRUE)
@@ -158,15 +152,13 @@ test_that("Competing risks multiple analyses", {
                           exposureTable = "cohort",
                           outcomeTable = "cohort",
                           outputFolder = outputFolder,
-                          cmAnalysisList = list(fgrAnalysis, coxAnalysis) # add coxFit$outcomeModelCoefficients back
-                          )
+                          cmAnalysisList = list(fgrAnalysis, coxAnalysis))
 
   fgrFit <- readRDS(file.path(outputFolder, "Analysis_1/om_t1_c2_o3.rds"))
   coxFit <- readRDS(file.path(outputFolder, "Analysis_2/om_t1_c2_o3.rds"))
+  ref <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
   expect_false(fgrFit$outcomeModelCoefficients == coxFit$outcomeModelCoefficients)
-
 })
 
 unlink(connectionDetails$server)
-

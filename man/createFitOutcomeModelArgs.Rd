@@ -12,6 +12,7 @@ createFitOutcomeModelArgs(
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
+  riskId = NULL,
   prior = createPrior("laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
     = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
@@ -36,6 +37,8 @@ with the main treatment effect.}
 \item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
 
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
+
+\item{riskId}{Cohort ID to use for competing risk}
 
 \item{prior}{The prior used to fit the model. See Cyclops::createPrior() for
 details.}
