@@ -8,6 +8,7 @@ createStudyPopulation(
   cohortMethodData,
   population = NULL,
   outcomeId,
+  riskId = NULL,
   firstExposureOnly = FALSE,
   restrictToCommonPeriod = FALSE,
   washoutPeriod = 0,
@@ -32,6 +33,9 @@ createStudyPopulation(
 point instead of the cohorts in the \code{cohortMethodData} object.}
 
 \item{outcomeId}{The ID of the outcome. If not specified, no outcome-specific
+transformations will be performed.}
+
+\item{riskId}{The ID of the competing risk outcome. If not specified, no competing-risk-specific
 transformations will be performed.}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included?}

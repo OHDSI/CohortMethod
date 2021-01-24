@@ -200,8 +200,6 @@ loadCmAnalysisList <- function(file) {
 #'                                      parameter in the \code{\link{createCmAnalysis}} function.
 #' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
 #'                                      outcome table.
-#' @param riskIds                       A vector of concept IDs identifying the competing risk(s) in
-#'                                      the outcome table.
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
 #'                                      concepts that are specific to the drug-comparator combination.
@@ -213,7 +211,6 @@ loadCmAnalysisList <- function(file) {
 createTargetComparatorOutcomes <- function(targetId,
                                            comparatorId,
                                            outcomeIds,
-                                           riskIds = NULL,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
   # First: get the default values:

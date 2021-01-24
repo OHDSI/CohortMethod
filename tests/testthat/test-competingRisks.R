@@ -91,6 +91,13 @@ test_that("Competing risks single analysis", {
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
                                                        competingRiskPopulation = studyPop5)
 
+  studyPopCombined2 <- createStudyPopulation(cohortMethodData = cohortMethodData,
+                                             outcomeId = 3,
+                                             riskId = 5,
+                                             riskWindowEnd = 99999)
+
+  expect_equal(studyPopCombined, studyPopCombined2)
+
   fitNoRisk1 <- fitOutcomeModel(studyPop3,
                                modelType = "cox")
 
@@ -106,26 +113,16 @@ test_that("Competing risks single analysis", {
                               modelType = "fgr")
 
   expect_false(coef(fitRisk1) == coef(fitRisk2))
-
-  #outputFolder <- tempfile(pattern = "cmData")
-  #unlink(outputFolder, recursive = TRUE)
 })
 
 
 test_that("Competing risks multiple analyses", {
-  expect_false("riskIds" %in% names(
-      createTargetComparatorOutcomes(targetId = 1,
-                                         comparatorId = 2,
-                                         outcomeIds = 3))
-  )
 
-  tcos <- createTargetComparatorOutcomes(targetId = 1,
+  tco <- createTargetComparatorOutcomes(targetId = 1,
                                          comparatorId = 2,
-                                         outcomeIds = 3,
-                                         riskIds = 5)
-  expect_true("riskIds" %in% names(tcos))
+                                         outcomeIds = 3)
 
-  targetComparatorOutcomesList <- list(tcos)
+  targetComparatorOutcomesList <- list(tco)
 
   covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = c(1118084, 1124300),
                                                 addDescendantsToExclude = TRUE)
