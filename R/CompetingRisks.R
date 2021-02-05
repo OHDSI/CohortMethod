@@ -42,15 +42,17 @@ combineCompetingStudyPopulations <- function(mainPopulation,
   }
 
   population <-
-    left_join(mainPopulation %>% select(rowId, subjectId, treatment, outcomeCount, timeAtRisk, survivalTime),
-              competingRiskPopulation %>% select(subjectId, outcomeCount, survivalTime),
+    left_join(mainPopulation %>% select(.data$rowId, .data$subjectId, .data$treatment,
+                                        .data$outcomeCount, .data$timeAtRisk, .data$survivalTime),
+              competingRiskPopulation %>% select(.data$subjectId, .data$outcomeCount, .data$survivalTime),
               by = "subjectId") %>%
-    mutate(survivalTime = pmin(survivalTime.x, survivalTime.y, na.rm = TRUE)) %>%
-    mutate(outcomeCount = 1 * (outcomeCount.x > 0) * (survivalTime.x == survivalTime) +
-             ifelse(!is.na(outcomeCount.y),
-                    2 * (outcomeCount.y > 0) * (survivalTime.y == survivalTime), 0)) %>%
-    select(rowId, subjectId, treatment, timeAtRisk, outcomeCount, survivalTime,
-           outcomeCount.x, survivalTime.x, outcomeCount.y, survivalTime.y) # Leaving for debugging purposes
+    mutate(survivalTime = pmin(.data$survivalTime.x, .data$survivalTime.y, na.rm = TRUE)) %>%
+    mutate(outcomeCount = 1 * (.data$outcomeCount.x > 0) * (.data$survivalTime.x == .data$survivalTime) +
+             ifelse(!is.na(.data$outcomeCount.y),
+                    2 * (.data$outcomeCount.y > 0) * (.data$survivalTime.y == .data$survivalTime), 0)) %>%
+    select(.data$rowId, .data$subjectId, .data$treatment, .data$timeAtRisk,
+           .data$outcomeCount, .data$survivalTime,
+           .data$outcomeCount.x, .data$survivalTime.x, .data$outcomeCount.y, .data$survivalTime.y) # Leaving for debugging purposes
 
   return (population)
 }
