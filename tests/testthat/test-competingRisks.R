@@ -1,6 +1,7 @@
 library(CohortMethod)
 library(Eunomia)
 library(testthat)
+library(cmprsk)
 
 connectionDetails <- getEunomiaConnectionDetails()
 
@@ -105,6 +106,18 @@ test_that("Competing risks single analysis", {
                               modelType = "fgr")
 
   expect_false(coef(fitRisk1) == coef(fitRisk2))
+
+  goodFit1 <- crr(ftime = studyPopCombined$survivalTime,
+                  fstatus = studyPopCombined$outcomeCount,
+                  cov1 = studyPopCombined$treatment)
+
+  goodFit2 <- crr(ftime = studyPop3$survivalTime,
+                  fstatus = studyPop3$outcomeCount,
+                  cov1 = studyPop3$treatment)
+
+  expect_equivalent(coef(fitRisk2), goodFit1$coef)
+  expect_equivalent(coef(fitNoRisk1), goodFit2$coef)
+
 })
 
 test_that("Competing risks multiple analyses", {
@@ -144,6 +157,7 @@ test_that("Competing risks multiple analyses", {
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = coxModelArgs)
 
+
   outputFolder <- "./CohortMethodOutput"
   unlink(outputFolder, recursive=TRUE)
   result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -156,9 +170,12 @@ test_that("Competing risks multiple analyses", {
 
   fgrFit <- readRDS(file.path(outputFolder, "Analysis_1/om_t1_c2_o3.rds"))
   coxFit <- readRDS(file.path(outputFolder, "Analysis_2/om_t1_c2_o3.rds"))
-  ref <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
-
   expect_false(fgrFit$outcomeModelCoefficients == coxFit$outcomeModelCoefficients)
+
+  expect_false(is.na(result[result$analysisId == 1, ]$riskId))
+  expect_true(is.na(result[result$analysisId != 1, ]$riskId))
+
 })
 
 unlink(connectionDetails$server)
+
