@@ -258,8 +258,16 @@ getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
-    coefficients <- dplyr::tibble(coefficient = coefficients,
-                                   covariateId = as.numeric(attr(coefficients, "names")))
+    covariateIdIsInteger64 <- cohortMethodData$covariateRef %>%
+      pull(.data$covariateId) %>%
+      is("integer64")
+    if (covariateIdIsInteger64) {
+      coefficients <- dplyr::tibble(coefficient = coefficients,
+                                    covariateId = bit64::as.integer64(attr(coefficients, "names")))
+    } else {
+      coefficients <- dplyr::tibble(coefficient = coefficients,
+                                    covariateId = as.numeric(attr(coefficients, "names")))
+    }
     covariateRef <- cohortMethodData$covariateRef %>%
       collect()
     coefficients <- coefficients %>%
