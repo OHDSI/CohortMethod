@@ -1,7 +1,7 @@
 CohortMethod
 ============
 
-[![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
+[![Build Status](https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check)
 [![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
 
 CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
