@@ -7,3 +7,4 @@ _pkgdown.yml
 deploy.sh
 compare_versions
 .github
+docs

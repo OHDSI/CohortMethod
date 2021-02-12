@@ -45,7 +45,8 @@ Imports:
 	Rcpp (>= 0.11.2),
 	SqlRender (>= 1.5.2),
 	survival,
-	ParallelLogger (>= 2.0.0)
+	ParallelLogger (>= 2.0.0),
+	bit64
 Suggests:
 	testthat,
 	pROC,
