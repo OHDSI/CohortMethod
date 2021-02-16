@@ -5,6 +5,8 @@ Bug fixes:
 
 1. Still was not always including the likelihood profile in the outcome model objects.
 
+2. Fixing issues when IDs are `integer64`.
+
 
 CohortMethod 4.0.1
 ==================
