@@ -468,7 +468,7 @@ createStudyPopObject <- function(params) {
   studyPop <- do.call("createStudyPopulation", args)
   if (!is.null(params$minimizeFileSizes) && params$minimizeFileSizes) {
     metaData <- attr(studyPop, "metaData")
-    studyPop <- studyPop[, c("rowId", "treatment", "subjectId", "outcomeCount", "timeAtRisk", "survivalTime")]
+    studyPop <- studyPop[, c("rowId", "treatment", "personSeqId", "outcomeCount", "timeAtRisk", "survivalTime")]
     attr(studyPop, "metaData") <- metaData
   }
   saveRDS(studyPop, params$studyPopFile)

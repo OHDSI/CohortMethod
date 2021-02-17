@@ -114,8 +114,8 @@ setMethod("summary", "CohortMethodData", function(object) {
   cohorts <- object$cohorts %>%
     collect()
   metaData <- attr(object, "metaData")
-  targetPersons <- length(unique(cohorts$subjectId[cohorts$treatment == 1]))
-  comparatorPersons <- length(unique(cohorts$subjectId[cohorts$treatment == 0]))
+  targetPersons <- length(unique(cohorts$personSeqId[cohorts$treatment == 1]))
+  comparatorPersons <- length(unique(cohorts$personSeqId[cohorts$treatment == 0]))
   outcomeCounts <- data.frame(outcomeId = metaData$outcomeIds,
                               eventCount = 0,
                               personCount = 0)

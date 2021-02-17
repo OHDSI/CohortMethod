@@ -75,7 +75,7 @@ when the new time-at-risk starts to prevent overlap?}
 A \code{tibble} specifying the study population. This \code{tibble} will have the following columns:
 \itemize{
 \item \code{rowId}: A unique identifier for an exposure.
-\item \code{subjectId}: The person ID of the subject.
+\item \code{personSeqId}: The person sequence ID of the subject.
 \item \code{cohortStartdate}: The index date.
 \item \code{outcomeCount} The number of outcomes observed during the risk window.
 \item \code{timeAtRisk}: The number of days in the risk window.

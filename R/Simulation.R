@@ -188,7 +188,8 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   ParallelLogger::logInfo("Generating cohorts")
   cohorts <- dplyr::tibble(rowId = treatmentVar$rowId,
                             treatment = treatmentVar$covariateValue,
-                            subjectId = treatmentVar$rowId,
+                            personId = treatmentVar$rowId,
+							personSeqId = treatmentVar$rowId,
                             cohortStartDate = as.Date("2000-01-01"),
                             daysFromObsStart = profile$minObsTime + round(rexp(n,
                                                                                profile$obsStartRate)) - 1,

@@ -1,5 +1,11 @@
-CohortMethod 4.0.2
+CohortMethod 4.1.0
 ==================
+
+Changes: 
+
+1. Dropped `insertDbPopulation()` function. This didn't seem to be used by anyone, and would have required carying the person ID throughout the pipeline.
+
+2. Introducing new unique person identified called `personSeqId`, generated during data extraction. Person ID is now downloaded as string to avoid issues with 64-bit integers. Person ID is not used by CohortMethod, and is provided for reference only.
 
 Bug fixes:
 

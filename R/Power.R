@@ -25,7 +25,7 @@
 #'
 #' @param population   A data frame describing the study population as created using the
 #'                     \code{\link{createStudyPopulation}} function. This should at least have these
-#'                     columns: subjectId, treatment, outcomeCount, timeAtRisk.
+#'                     columns: personSeqId, treatment, outcomeCount, timeAtRisk.
 #' @param alpha        Type I error.
 #' @param power        1 - beta, where beta is the type II error.
 #' @param twoSided     Consider a two-sided test?
@@ -57,8 +57,8 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
   # denom <- sqrt(pA) * sqrt(pB) * sqrt(totalEvents) mdrr <- exp(zBeta / denom + z1MinAlpha / denom)
   mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2/(totalEvents * pA * pB)))
   se <- 1/sqrt(totalEvents * pA * pB)
-  result <- data.frame(targetPersons = length(unique(population$subjectId[population$treatment == 1])),
-                       comparatorPersons = length(unique(population$subjectId[population$treatment == 0])),
+  result <- data.frame(targetPersons = length(unique(population$personSeqId[population$treatment == 1])),
+                       comparatorPersons = length(unique(population$personSeqId[population$treatment == 0])),
                        targetExposures = sum(population$treatment == 1),
                        comparatorExposures = sum(population$treatment == 0),
                        targetDays = sum(population$timeAtRisk[population$treatment == 1]),

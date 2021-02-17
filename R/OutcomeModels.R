@@ -487,10 +487,10 @@ getOutcomeCounts <- function(population, modelType) {
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
-  return(dplyr::tibble(targetPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
-                       comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
-                       targetExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
-                       comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
+  return(dplyr::tibble(targetPersons = length(unique(population$personSeqId[population$treatment == 1 & population$y != 0])),
+                       comparatorPersons = length(unique(population$personSeqId[population$treatment == 0 & population$y != 0])),
+                       targetExposures = length(population$personSeqId[population$treatment == 1 & population$y != 0]),
+                       comparatorExposures = length(population$personSeqId[population$treatment == 0 & population$y != 0]),
                        targetOutcomes = sum(population$y[population$treatment == 1]),
                        comparatorOutcomes = sum(population$y[population$treatment == 0])))
 }
