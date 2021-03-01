@@ -1081,6 +1081,9 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
         NA else coef(outcomeModel)
       result$seLogRr <- if (is.null(coef(outcomeModel)))
         NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr
+      result$llr <- if (is.null(coef(outcomeModel)))
+        NA else outcomeModel$outcomeModelTreatmentEstimate$llr
+
       if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
         for (i in 1:nrow(outcomeModel$outcomeModelInteractionEstimates)) {
           result[, paste("rr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logRr[i])

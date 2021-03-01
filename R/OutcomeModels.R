@@ -100,6 +100,7 @@ fitOutcomeModel <- function(population,
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
+  logLikelihood <- NA
   treatmentVarId <- NA
   subgroupCounts <- NULL
   logLikelihoodProfile <- NULL
@@ -310,11 +311,18 @@ fitOutcomeModel <- function(population,
           if (identical(ci, c(0, -Inf, Inf)))
             status <- "ERROR COMPUTING CI"
           seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
+          llNull <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
+                                                            parm = treatmentVarId,
+                                                            x = 0,
+                                                            includePenalty = FALSE)$value
+          llr <- fit$log_likelihood - llNull
           treatmentEstimate <- dplyr::tibble(logRr = logRr,
                                              logLb95 = ci[2],
                                              logUb95 = ci[3],
-                                             seLogRr = seLogRr)
+                                             seLogRr = seLogRr,
+                                             llr = llr)
           priorVariance <- fit$variance[1]
+          logLikelihood <- fit$log_likelihood
           if (!is.null(mainEffectTerms)) {
             logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
             if (prior$priorType == "none") {
@@ -362,6 +370,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelCoefficients <- coefficients
   outcomeModel$logLikelihoodProfile <- logLikelihoodProfile
   outcomeModel$outcomeModelPriorVariance <- priorVariance
+  outcomeModel$outcomeModelLogLikelihood <- logLikelihood
   outcomeModel$outcomeModelType <- modelType
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates

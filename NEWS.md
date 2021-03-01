@@ -7,6 +7,8 @@ Changes:
 
 2. Introducing new unique person identified called `personSeqId`, generated during data extraction. Person ID is now downloaded as string to avoid issues with 64-bit integers. Person ID is not used by CohortMethod, and is provided for reference only.
 
+3. Adding log likelihood ratio to outcome model object.
+
 Bug fixes:
 
 1. Still was not always including the likelihood profile in the outcome model objects.
