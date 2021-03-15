@@ -44,9 +44,10 @@
 #'                                     instance. Requires read permissions to this database. On SQL
 #'                                     Server, this should specify both the database and the schema,
 #'                                     so for example 'cdm_instance.dbo'.
-#' @param oracleTempSchema             For Oracle only: the name of the database schema where you want
-#'                                     all temporary tables to be managed. Requires create/insert
-#'                                     permissions to this database.
+#' @param oracleTempSchema    DEPRECATED: use \code{tempEmulationSchema} instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param targetId                     A unique identifier to define the target cohort.  If
 #'                                     exposureTable = DRUG_ERA, targetId is a concept ID and all
 #'                                     descendant concepts within that concept ID will be used to
@@ -106,7 +107,8 @@
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
                                   cdmDatabaseSchema,
-                                  oracleTempSchema = cdmDatabaseSchema,
+                                  oracleTempSchema = NULL,
+                                  tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                   targetId,
                                   comparatorId,
                                   outcomeIds,
@@ -128,6 +130,10 @@ getDbCohortMethodData <- function(connectionDetails,
     warning("The excludeDrugsFromCovariates argument has been deprecated. Please explicitly exclude the drug concepts in the covariate settings")
   } else {
     excludeDrugsFromCovariates = FALSE
+  }
+  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
+    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
+    tempEmulationSchema <- oracleTempSchema
   }
   if (is.null(studyStartDate)) {
     studyStartDate <- ""
@@ -179,7 +185,7 @@ getDbCohortMethodData <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
                                                    exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = exposureTable,
@@ -199,7 +205,7 @@ getDbCohortMethodData <- function(connectionDetails,
     renderedSql <- SqlRender::loadRenderTranslateSql("CountCohorts.sql",
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema,
+                                                     tempEmulationSchema = tempEmulationSchema,
                                                      cdm_version = cdmVersion,
                                                      target_id = targetId)
     counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
@@ -234,7 +240,7 @@ getDbCohortMethodData <- function(connectionDetails,
       renderedSql <- SqlRender::loadRenderTranslateSql("SampleCohorts.sql",
                                                        packageName = "CohortMethod",
                                                        dbms = connectionDetails$dbms,
-                                                       oracleTempSchema = oracleTempSchema,
+                                                       tempEmulationSchema = tempEmulationSchema,
                                                        cdm_version = cdmVersion,
                                                        max_cohort_size = maxCohortSize)
       DatabaseConnector::executeSql(connection, renderedSql)
@@ -246,7 +252,7 @@ getDbCohortMethodData <- function(connectionDetails,
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                  packageName = "CohortMethod",
                                                  dbms = connectionDetails$dbms,
-                                                 oracleTempSchema = oracleTempSchema,
+                                                 tempEmulationSchema = tempEmulationSchema,
                                                  cdm_version = cdmVersion,
                                                  target_id = targetId,
                                                  sampled = sampled)
@@ -267,7 +273,7 @@ getDbCohortMethodData <- function(connectionDetails,
     rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema,
+                                                     tempEmulationSchema = tempEmulationSchema,
                                                      cdm_database_schema = cdmDatabaseSchema,
                                                      exposure_database_schema = exposureDatabaseSchema,
                                                      exposure_table = tolower(exposureTable),
@@ -333,7 +339,7 @@ getDbCohortMethodData <- function(connectionDetails,
     cohortTable <- "#cohort_person"
   }
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
-                                                         oracleTempSchema = oracleTempSchema,
+                                                         oracleTempSchema = tempEmulationSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
                                                          cdmVersion = cdmVersion,
                                                          cohortTable = cohortTable,
@@ -346,7 +352,7 @@ getDbCohortMethodData <- function(connectionDetails,
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                   packageName = "CohortMethod",
                                                   dbms = connectionDetails$dbms,
-                                                  oracleTempSchema = oracleTempSchema,
+                                                  tempEmulationSchema = tempEmulationSchema,
                                                   cdm_database_schema = cdmDatabaseSchema,
                                                   outcome_database_schema = outcomeDatabaseSchema,
                                                   outcome_table = outcomeTable,
@@ -363,7 +369,7 @@ getDbCohortMethodData <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    sampled = sampled)
   DatabaseConnector::executeSql(connection,
                                 renderedSql,

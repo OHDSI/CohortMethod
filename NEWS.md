@@ -9,6 +9,8 @@ Changes:
 
 3. Adding log likelihood ratio to outcome model object.
 
+4. Deprecating `oracleTempSchema` argument in favor of `tempEmulationSchema` in line with new `SqlRender` interface.
+
 Bug fixes:
 
 1. Still was not always including the likelihood profile in the outcome model objects.

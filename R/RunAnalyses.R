@@ -35,9 +35,10 @@
 #'                                       so for example 'cdm_instance.dbo'.
 #' @param cdmVersion                     Define the OMOP CDM version used: currently support "4" and
 #'                                       "5".
-#' @param oracleTempSchema               For Oracle only: the name of the database schema where you
-#'                                       want all temporary tables to be managed. Requires
-#'                                       create/insert permissions to this database.
+#' @param oracleTempSchema    DEPRECATED: use \code{tempEmulationSchema} instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param exposureDatabaseSchema         The name of the database schema that is the location where the
 #'                                       exposure data used to define the exposure cohorts is
 #'                                       available. If exposureTable = DRUG_ERA, exposureDatabaseSchema
@@ -105,7 +106,8 @@
 #' @export
 runCmAnalyses <- function(connectionDetails,
                           cdmDatabaseSchema,
-                          oracleTempSchema = cdmDatabaseSchema,
+                          oracleTempSchema = NULL,
+                          tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                           exposureDatabaseSchema = cdmDatabaseSchema,
                           exposureTable = "drug_era",
                           outcomeDatabaseSchema = cdmDatabaseSchema,
@@ -188,7 +190,7 @@ runCmAnalyses <- function(connectionDetails,
       outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFile == refRow$cohortMethodDataFile])
       args <- list(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
-                   oracleTempSchema = oracleTempSchema,
+                   tempEmulationSchema = tempEmulationSchema,
                    exposureDatabaseSchema = exposureDatabaseSchema,
                    exposureTable = exposureTable,
                    outcomeDatabaseSchema = outcomeDatabaseSchema,

@@ -40,7 +40,7 @@ with the main treatment effect.}
 
 \item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale
 where the likelihood for the treatment variable coefficient is
-sampled.}
+sampled. Set to NULL to skip profiling.}
 
 \item{prior}{The prior used to fit the model. See Cyclops::createPrior() for
 details.}

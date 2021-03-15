@@ -55,7 +55,6 @@ extraSettings <- NULL
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 cdmDatabaseSchema <- "main"
 resultsDatabaseSchema <- "main"
-oracleTempSchema <- NULL
 extraSettings <- NULL
 cdmVersion <- "5"
 
@@ -85,7 +84,6 @@ covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsai
 # Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
-                                          oracleTempSchema = resultsDatabaseSchema,
                                           targetId = 1,
                                           comparatorId = 2,
                                           outcomeIds = 3,

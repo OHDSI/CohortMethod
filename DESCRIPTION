@@ -27,7 +27,7 @@ URL: https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod
 BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
 	R (>= 3.5.0),
-	DatabaseConnector (>= 2.2.0),
+	DatabaseConnector (>= 4.0.0),
 	Cyclops (>= 3.0.0),
 	FeatureExtraction  (>= 3.0.0),
 	Andromeda (>= 0.3.0)
@@ -43,7 +43,7 @@ Imports:
 	cli,
 	pillar,
 	Rcpp (>= 0.11.2),
-	SqlRender (>= 1.5.2),
+	SqlRender (>= 1.7.0),
 	survival,
 	ParallelLogger (>= 2.0.0),
 	bit64
