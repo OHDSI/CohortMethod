@@ -571,7 +571,7 @@ print.OutcomeModel <- function(x, ...) {
     rns <- "treatment"
     i <- x$outcomeModelInteractionEstimates
     if (!is.null(i)) {
-      d <- rbind(d, i[,3:6])
+      d <- rbind(d[, 1:4], i[, 3:6])
       rns <-  c(rns, as.character(i$interactionName))
     }
     output <- data.frame(exp(d$logRr), exp(d$logLb95), exp(d$logUb95), d$logRr, d$seLogRr)

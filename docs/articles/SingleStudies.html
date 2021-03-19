@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
       </span>
     </div>
 
@@ -39,7 +39,7 @@
       <ul class="nav navbar-nav">
 <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -71,7 +71,7 @@
 </li>
 <li>
   <a href="https://github.com/OHDSI/CohortMethod/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -85,14 +85,13 @@
 
       
 
-      </header><script src="SingleStudies_files/header-attrs-2.5/header-attrs.js"></script><link href="SingleStudies_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
-<script src="SingleStudies_files/anchor-sections-1.0/anchor-sections.js"></script><div class="row">
+      </header><script src="SingleStudies_files/header-attrs-2.6/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Single studies using the CohortMethod package</h1>
                         <h4 class="author">Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 class="date">2020-11-26</h4>
+            <h4 class="date">2021-03-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/master/vignettes/SingleStudies.Rmd"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="hidden name"><code>SingleStudies.Rmd</code></div>
@@ -200,7 +199,7 @@
 <span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
 <p>This is parameterized SQL which can be used by the <code>SqlRender</code> package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in <code>SqlRender</code>, we can make sure the SQL code can be run in many different environments.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/SqlRender">SqlRender</a></span><span class="op">)</span>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/SqlRender/">SqlRender</a></span><span class="op">)</span>
 <span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/readSql.html">readSql</a></span><span class="op">(</span><span class="st">"coxibVsNonselVsGiBleed.sql"</span><span class="op">)</span>
 <span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SqlRender/man/render.html">render</a></span><span class="op">(</span><span class="va">sql</span>,
               cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
@@ -269,11 +268,11 @@
 ## 
 ## Inherits from Andromeda:
 ## # Andromeda object
-## # Physical location:  C:\Users\mschuemi\AppData\Local\Temp\RtmpwZvfRb\file1eac76043161.sqlite
+## # Physical location:  C:\Users\mschuemi\AppData\Local\Temp\RtmpuouZ4L\file7b10195d5853.sqlite
 ## 
 ## Tables:
 ## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)
-## $cohorts (rowId, subjectId, treatment, cohortStartDate, daysFromObsStart, daysToCohortEnd, daysToObsEnd)
+## $cohorts (rowId, personSeqId, personId, treatment, cohortStartDate, daysFromObsStart, daysToCohortEnd, daysToObsEnd)
 ## $covariateRef (covariateId, covariateName, analysisId, conceptId)
 ## $covariates (rowId, covariateId, covariateValue)
 ## $outcomes (rowId, outcomeId, daysToEvent)</code></pre>
@@ -292,11 +291,11 @@
 ## 
 ## Outcome counts:
 ##   Event count Person count
-## 3       12427         6710
+## 3       13474         7009
 ## 
 ## Covariates:
-## Number of covariates: 61286
-## Number of non-zero covariate values: 29266905</code></pre>
+## Number of covariates: 64377
+## Number of non-zero covariate values: 43920369</code></pre>
 <div id="saving-the-data-to-file" class="section level3">
 <h3 class="hasAnchor">
 <a href="#saving-the-data-to-file" class="anchor"></a>Saving the data to file</h3>
@@ -341,11 +340,11 @@
 <pre><code>## # A tibble: 5 x 5
 ##   description                     targetPersons comparatorPersons targetExposures comparatorExposures
 ##   &lt;chr&gt;                                   &lt;dbl&gt;             &lt;dbl&gt;           &lt;dbl&gt;               &lt;dbl&gt;
-## 1 Original cohorts                       134735            712316          238173             1193013
-## 2 First exp. only &amp; removed s ...         63705            512283           63705              512283
+## 1 Original cohorts                       150109            814723          263358             1395611
+## 2 First exp. only &amp; removed s ...         69006            582090           69006              582090
 ## 3 Random sample                           50000             50000           50000               50000
-## 4 No prior outcome                        48062             48528           48062               48528
-## 5 Have at least 1 days at ris ...         48026             48479           48026               48479</code></pre>
+## 4 No prior outcome                        48088             48394           48088               48394
+## 5 Have at least 1 days at ris ...         48041             48337           48041               48337</code></pre>
 <p>One additional filtering step that is often used is matching or trimming on propensity scores, as will be discussed next.</p>
 </div>
 <div id="propensity-scores" class="section level1">
@@ -382,12 +381,12 @@
 <pre><code>## # A tibble: 6 x 3
 ##   coefficient covariateId covariateName                              
 ##         &lt;dbl&gt;       &lt;dbl&gt; &lt;chr&gt;                                      
-## 1      -3.18   1150871413 ...gh 0 days relative to index: Misoprostol
-## 2      -1.38  45203876602 ...ays relative to index: GABAPENTIN POWDER
-## 3       1.35      2007006 index year: 2007                           
-## 4      -1.12  45001512604 ...ive to index: PCCA CUSTOM LIPO-MAX CREAM
-## 5      -1.01         3003 age group: 15-19                           
-## 6       0.957     2008006 index year: 2008</code></pre>
+## 1       -1.75 21602430413 ...gh 0 days relative to index: UTEROTONICS
+## 2        1.48     2007006 index year: 2007                           
+## 3        1.25  4253901210 ... to index: Juvenile rheumatoid arthritis
+## 4       -1.15 44967547602 ...ative to index: LIPOPEN ULTRA CREAM BASE
+## 5        1.15     2008006 index year: 2008                           
+## 6       -1.08        3003 age group:  15 -  19</code></pre>
 <p>One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example variations of the drugs of interest that we forgot to exclude.</p>
 </div>
 <div id="using-the-propensity-score" class="section level2">
@@ -415,12 +414,12 @@
 <pre><code>## # A tibble: 6 x 5
 ##   description                     targetPersons comparatorPersons targetExposures comparatorExposures
 ##   &lt;chr&gt;                                   &lt;dbl&gt;             &lt;dbl&gt;           &lt;dbl&gt;               &lt;dbl&gt;
-## 1 Original cohorts                       134735            712316          238173             1193013
-## 2 First exp. only &amp; removed s ...         63705            512283           63705              512283
+## 1 Original cohorts                       150109            814723          263358             1395611
+## 2 First exp. only &amp; removed s ...         69006            582090           69006              582090
 ## 3 Random sample                           50000             50000           50000               50000
-## 4 No prior outcome                        48062             48528           48062               48528
-## 5 Have at least 1 days at ris ...         48026             48479           48026               48479
-## 6 Matched on propensity score             25271             25271           25271               25271</code></pre>
+## 4 No prior outcome                        48088             48394           48088               48394
+## 5 Have at least 1 days at ris ...         48041             48337           48041               48337
+## 6 Matched on propensity score             24609             24609           24609               24609</code></pre>
 <p>Or, if we like, we can plot an attrition diagram:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/drawAttritionDiagram.html">drawAttritionDiagram</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></code></pre></div>
@@ -434,7 +433,7 @@
 <code class="sourceCode R"><span class="va">balance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeCovariateBalance.html">computeCovariateBalance</a></span><span class="op">(</span><span class="va">matchedPop</span>, <span class="va">cohortMethodData</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot</a></span><span class="op">(</span><span class="va">balance</span>, showCovariateCountLabel <span class="op">=</span> <span class="cn">TRUE</span>, showMaxLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<pre><code>## Warning: Removed 23044 rows containing missing values (geom_point).</code></pre>
+<pre><code>## Warning: Removed 24101 rows containing missing values (geom_point).</code></pre>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-37-1.png" width="672"></p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></code></pre></div>
@@ -451,104 +450,104 @@
                                                          Target          Comparator           Target         Comparator          
  Characteristic                                          %               %          Std. diff %              %          Std. diff
  Age group                                                                                                                       
-   00-04                                                  0.1             0.0        0.02      0.1            0.1        0.01    
-   05-09                                                  0.3             0.2        0.03      0.2            0.2        0.00    
-   10-14                                                  0.9             2.0       -0.09      1.2            1.1        0.01    
-   15-19                                                  2.9             9.5       -0.27      4.6            3.9        0.03    
-   20-24                                                  2.3             6.1       -0.19      3.6            3.2        0.02    
-   25-29                                                  4.1             9.5       -0.21      6.3            5.7        0.03    
-   30-34                                                  6.2            11.0       -0.17      8.8            8.4        0.01    
-   35-39                                                  7.7            11.4       -0.13     10.2           10.0        0.01    
-   40-44                                                  9.1             9.9       -0.03     10.7           10.9       -0.01    
-   45-49                                                 11.1             9.7        0.05     11.4           11.9       -0.02    
-   50-54                                                 13.3             9.9        0.11     12.4           13.0       -0.02    
-   55-59                                                 13.9             9.2        0.15     12.3           12.9       -0.02    
-   60-64                                                 12.4             6.5        0.20      9.5            9.8       -0.01    
-   65-69                                                  5.2             1.9        0.18      3.2            3.2        0.00    
-   70-74                                                  3.8             1.2        0.17      2.0            2.0        0.00    
-   75-79                                                  3.1             1.0        0.15      1.6            1.7        0.00    
-   80-84                                                  2.1             0.7        0.12      1.1            1.2       -0.01    
-   85-89                                                  1.4             0.4        0.10      0.7            0.8        0.00    
-   90-94                                                  0.1             0.0        0.03      0.1            0.1        0.01    
- Gender: female                                          68.6            71.0       -0.05     69.9           69.8        0.00    
+     0 -   4                                              0.1             0.0        0.03      0.1            0.0        0.02    
+     5 -   9                                              0.3             0.2        0.03      0.2            0.2        0.00    
+    10 -  14                                              1.0             2.0       -0.08      1.3            1.2        0.01    
+    15 -  19                                              3.1             9.2       -0.26      4.8            4.1        0.04    
+    20 -  24                                              2.4             6.0       -0.18      3.5            3.1        0.02    
+    25 -  29                                              4.2             9.1       -0.20      6.3            5.7        0.03    
+    30 -  34                                              6.2            10.5       -0.15      8.5            8.1        0.01    
+    35 -  39                                              7.8            11.1       -0.11     10.0            9.9        0.00    
+    40 -  44                                              9.1            10.3       -0.04     10.9           10.9        0.00    
+    45 -  49                                             10.8             9.8        0.04     11.4           11.7       -0.01    
+    50 -  54                                             13.1            10.1        0.10     12.1           12.9       -0.02    
+    55 -  59                                             14.1             9.6        0.14     12.4           13.0       -0.02    
+    60 -  64                                             12.5             6.9        0.19      9.7           10.0       -0.01    
+    65 -  69                                              5.2             2.0        0.17      3.1            3.2        0.00    
+    70 -  74                                              3.6             1.2        0.16      1.9            2.1       -0.01    
+    75 -  79                                              2.9             0.9        0.14      1.6            1.6        0.00    
+    80 -  84                                              2.1             0.8        0.11      1.3            1.3        0.00    
+    85 -  89                                              1.2             0.5        0.09      0.7            0.8        0.00    
+    90 -  94                                              0.1             0.1        0.02      0.1            0.1        0.00    
+ Gender: female                                          68.2            70.6       -0.05     69.6           69.3        0.01    
  Race                                                                                                                            
-   race = Black or African American                      18.7            28.0       -0.22     22.8           22.1        0.02    
-   race = White                                          64.4            56.7        0.16     60.1           60.8       -0.02    
+   race = Black or African American                      18.7            28.0       -0.22     22.6           21.9        0.02    
+   race = White                                          63.6            55.7        0.16     59.2           60.0       -0.02    
  Ethnicity                                                                                                                       
-   ethnicity = Hispanic or Latino                         1.5             1.6       -0.01      1.5            1.6       -0.01    
+   ethnicity = Hispanic or Latino                         2.2             2.6       -0.03      2.7            2.7        0.00    
  Medical history: General                                                                                                        
-   Acute respiratory disease                             34.3            38.6       -0.09     35.6           35.1        0.01    
-   Attention deficit hyperactivity disorder               2.8             4.2       -0.08      3.5            3.4        0.01    
-   Chronic liver disease                                  4.5             3.6        0.04      4.0            4.0        0.00    
-   Chronic obstructive lung disease                      17.3            10.4        0.20     13.3           13.7       -0.01    
-   Crohn's disease                                        0.7             0.4        0.04      0.5            0.4        0.01    
-   Dementia                                               2.1             1.1        0.08      1.4            1.4        0.00    
-   Depressive disorder                                   33.3            29.5        0.08     31.7           32.2       -0.01    
-   Diabetes mellitus                                     23.7            17.3        0.16     20.5           20.9       -0.01    
-   Gastroesophageal reflux disease                       25.1            19.3        0.14     22.3           22.7       -0.01    
-   Gastrointestinal hemorrhage                            4.2             3.1        0.06      2.0            2.1       -0.01    
-   Human immunodeficiency virus infection                 0.6             0.7       -0.01      0.6            0.7       -0.01    
-   Hyperlipidemia                                        33.5            24.0        0.21     29.4           30.5       -0.02    
-   Hypertensive disorder                                 48.4            37.0        0.23     42.9           44.1       -0.02    
-   Lesion of liver                                        1.6             1.2        0.04      1.1            1.3       -0.01    
-   Obesity                                               18.4            18.1        0.01     18.9           18.8        0.00    
-   Osteoarthritis                                        46.7            30.4        0.34     39.6           41.1       -0.03    
-   Pneumonia                                              5.8             3.9        0.09      4.4            4.4        0.00    
-   Psoriasis                                              1.2             0.9        0.03      1.1            1.1        0.00    
-   Renal impairment                                       5.4             4.2        0.06      4.5            4.7       -0.01    
-   Rheumatoid arthritis                                   4.0             2.0        0.12      3.0            3.0        0.00    
-   Schizophrenia                                          3.1             2.2        0.05      2.3            2.4        0.00    
-   Ulcerative colitis                                     0.4             0.3        0.03      0.3            0.3        0.00    
-   Urinary tract infectious disease                      13.2            14.6       -0.04     13.0           12.6        0.01    
-   Viral hepatitis C                                      3.6             2.9        0.04      3.3            3.2        0.00    
-   Visual system disorder                                34.2            32.0        0.05     32.7           32.6        0.00    
+   Acute respiratory disease                             33.9            38.1       -0.09     34.9           34.3        0.01    
+   Attention deficit hyperactivity disorder               3.0             4.3       -0.07      3.7            3.6        0.00    
+   Chronic liver disease                                  4.5             3.4        0.05      3.6            3.7       -0.01    
+   Chronic obstructive lung disease                      17.4            11.2        0.18     13.4           14.1       -0.02    
+   Crohn's disease                                        0.7             0.5        0.03      0.5            0.5        0.01    
+   Dementia                                               2.1             1.2        0.07      1.4            1.5        0.00    
+   Depressive disorder                                   33.5            29.8        0.08     31.7           32.1       -0.01    
+   Diabetes mellitus                                     22.9            17.4        0.14     19.6           20.2       -0.01    
+   Gastroesophageal reflux disease                       24.9            19.7        0.12     22.2           22.5       -0.01    
+   Gastrointestinal hemorrhage                            4.1             3.1        0.05      1.9            2.0        0.00    
+   Human immunodeficiency virus infection                 0.7             0.7       -0.01      0.7            0.7        0.00    
+   Hyperlipidemia                                        32.9            25.1        0.17     29.4           30.5       -0.02    
+   Hypertensive disorder                                 47.9            37.8        0.21     42.3           43.8       -0.03    
+   Lesion of liver                                        1.8             1.3        0.04      1.3            1.3        0.00    
+   Obesity                                               19.0            19.0        0.00     19.0           19.2       -0.01    
+   Osteoarthritis                                        48.7            33.1        0.32     41.5           43.3       -0.04    
+   Pneumonia                                              5.8             4.3        0.07      4.6            4.7       -0.01    
+   Psoriasis                                              1.3             0.9        0.04      1.2            1.1        0.01    
+   Renal impairment                                       5.6             4.6        0.05      4.7            4.8       -0.01    
+   Rheumatoid arthritis                                   3.9             2.1        0.11      3.0            3.0        0.00    
+   Schizophrenia                                          3.1             2.2        0.05      2.3            2.3        0.00    
+   Ulcerative colitis                                     0.4             0.2        0.03      0.2            0.3       -0.01    
+   Urinary tract infectious disease                      12.8            14.5       -0.05     12.7           12.3        0.01    
+   Viral hepatitis C                                      3.7             3.0        0.04      3.1            3.2        0.00    
+   Visual system disorder                                34.1            32.7        0.03     32.7           32.8        0.00    
  Medical history: Cardiovascular disease                                                                                         
-   Atrial fibrillation                                    2.7             1.5        0.09      1.8            2.0       -0.01    
-   Cerebrovascular disease                                5.1             3.0        0.11      3.8            3.9        0.00    
-   Coronary arteriosclerosis                              8.9             5.1        0.15      6.5            6.7       -0.01    
-   Heart disease                                         24.0            15.6        0.21     18.7           19.0       -0.01    
-   Heart failure                                          6.3             3.8        0.11      4.7            4.7        0.00    
-   Ischemic heart disease                                 6.3             3.9        0.11      4.6            4.8       -0.01    
-   Peripheral vascular disease                            4.0             2.4        0.09      3.1            3.2       -0.01    
-   Pulmonary embolism                                     1.2             0.6        0.07      0.8            0.8        0.00    
-   Venous thrombosis                                      2.4             1.3        0.08      1.6            1.6        0.00    
+   Atrial fibrillation                                    2.8             1.6        0.09      2.0            2.1       -0.01    
+   Cerebrovascular disease                                5.0             3.1        0.09      3.5            3.8       -0.01    
+   Coronary arteriosclerosis                              8.7             5.3        0.14      6.4            6.6       -0.01    
+   Heart disease                                         23.7            16.1        0.19     18.4           18.8       -0.01    
+   Heart failure                                          6.2             4.1        0.09      4.6            4.7        0.00    
+   Ischemic heart disease                                 6.2             4.0        0.10      4.5            4.7       -0.01    
+   Peripheral vascular disease                            4.7             3.1        0.08      3.6            3.8       -0.01    
+   Pulmonary embolism                                     1.2             0.7        0.06      0.9            0.8        0.01    
+   Venous thrombosis                                      2.3             1.5        0.06      1.6            1.7       -0.01    
  Medical history: Neoplasms                                                                                                      
-   Hematologic neoplasm                                   1.3             0.6        0.08      0.8            0.8        0.00    
-   Malignant lymphoma                                     0.4             0.2        0.04      0.3            0.3        0.00    
-   Malignant neoplasm of anorectum                        0.2             0.1        0.03      0.1            0.1        0.00    
-   Malignant neoplastic disease                           6.6             3.6        0.13      4.6            4.9       -0.01    
-   Malignant tumor of breast                              1.5             0.9        0.06      1.2            1.3       -0.01    
-   Malignant tumor of colon                               0.4             0.2        0.04      0.2            0.3       -0.01    
-   Malignant tumor of lung                                0.5             0.2        0.06      0.2            0.3        0.00    
-   Malignant tumor of urinary bladder                     0.2             0.1        0.03      0.1            0.1        0.01    
-   Primary malignant neoplasm of prostate                 0.4             0.2        0.05      0.3            0.2        0.01    
+   Hematologic neoplasm                                   1.3             0.7        0.06      0.8            0.9       -0.01    
+   Malignant lymphoma                                     0.4             0.2        0.04      0.3            0.2        0.01    
+   Malignant neoplasm of anorectum                        0.2             0.1        0.04      0.1            0.1        0.00    
+   Malignant neoplastic disease                           6.6             3.6        0.13      4.6            4.8       -0.01    
+   Malignant tumor of breast                              1.6             0.9        0.06      1.1            1.2       -0.01    
+   Malignant tumor of colon                               0.4             0.2        0.04      0.2            0.3       -0.02    
+   Malignant tumor of lung                                0.5             0.2        0.05      0.3            0.3       -0.01    
+   Malignant tumor of urinary bladder                     0.2             0.1        0.02      0.1            0.1       -0.01    
+   Primary malignant neoplasm of prostate                 0.4             0.2        0.04      0.3            0.3        0.01    
  Medication use                                                                                                                  
-   Agents acting on the renin-angiotensin system         33.3            23.1        0.23     28.3           29.5       -0.03    
-   Antibacterials for systemic use                       65.0            68.7       -0.08     65.9           65.6        0.01    
-   Antidepressants                                       51.9            43.0        0.18     48.3           49.5       -0.02    
-   Antiepileptics                                        40.0            33.1        0.14     38.0           39.1       -0.02    
-   Antiinflammatory and antirheumatic products           56.2            59.5       -0.07     58.2           58.3        0.00    
-   Antineoplastic agents                                  3.6             2.0        0.10      2.6            2.6        0.00    
-   Antipsoriatics                                         0.5             0.4        0.02      0.5            0.5        0.00    
-   Antithrombotic agents                                 20.0            10.6        0.26     13.5           14.1       -0.02    
-   Beta blocking agents                                  23.6            16.0        0.19     19.3           20.1       -0.02    
-   Calcium channel blockers                              17.3            12.2        0.14     14.6           15.1       -0.01    
-   Diuretics                                             31.0            21.7        0.21     26.3           27.3       -0.02    
-   Drugs for acid related disorders                      46.4            33.4        0.27     39.1           40.1       -0.02    
-   Drugs for obstructive airway diseases                 42.0            37.5        0.09     40.0           40.4       -0.01    
-   Drugs used in diabetes                                19.7            14.2        0.15     17.0           17.6       -0.02    
-   Immunosuppressants                                     3.6             1.8        0.11      2.7            2.7        0.00    
-   Lipid modifying agents                                31.9            20.0        0.28     25.6           26.9       -0.03    
-   Opioids                                               54.6            49.8        0.10     52.0           52.3       -0.01    
-   Psycholeptics                                         49.9            41.7        0.17     46.0           46.9       -0.02    
-   Psychostimulants, agents used for adhd and nootropics  6.7             8.7       -0.07      7.8            7.8        0.00    </code></pre>
+   Agents acting on the renin-angiotensin system         32.6            23.0        0.22     27.7           28.6       -0.02    
+   Antibacterials for systemic use                       66.6            70.4       -0.08     67.9           66.9        0.02    
+   Antidepressants                                       51.7            43.6        0.16     48.1           49.4       -0.03    
+   Antiepileptics                                        40.4            33.9        0.14     38.1           39.0       -0.02    
+   Antiinflammatory and antirheumatic products           58.4            61.2       -0.06     59.9           59.8        0.00    
+   Antineoplastic agents                                  3.9             2.2        0.09      2.8            2.8        0.00    
+   Antipsoriatics                                         0.6             0.4        0.02      0.5            0.5       -0.01    
+   Antithrombotic agents                                 20.1            11.6        0.23     13.9           14.3       -0.01    
+   Beta blocking agents                                  23.3            16.4        0.17     19.0           19.9       -0.02    
+   Calcium channel blockers                              17.1            12.6        0.13     14.3           15.0       -0.02    
+   Diuretics                                             30.1            21.6        0.19     25.4           26.3       -0.02    
+   Drugs for acid related disorders                      46.3            34.4        0.24     39.3           40.4       -0.02    
+   Drugs for obstructive airway diseases                 52.1            47.2        0.10     50.0           50.5       -0.01    
+   Drugs used in diabetes                                19.5            14.6        0.13     16.9           17.5       -0.01    
+   Immunosuppressants                                     3.7             2.1        0.09      2.9            3.0       -0.01    
+   Lipid modifying agents                                31.2            21.1        0.23     26.0           27.1       -0.02    
+   Opioids                                               57.4            53.6        0.08     54.7           55.0       -0.01    
+   Psycholeptics                                         49.9            41.4        0.17     45.1           46.3       -0.02    
+   Psychostimulants, agents used for adhd and nootropics  6.9             8.5       -0.06      7.9            7.8        0.01    </code></pre>
 </div>
 <div id="inserting-the-population-cohort-in-the-database" class="section level2">
 <h2 class="hasAnchor">
 <a href="#inserting-the-population-cohort-in-the-database" class="anchor"></a>Inserting the population cohort in the database</h2>
 <p>For various reasons it might be necessary to insert the study population back into the database, for example because we want to use an external cohort characterization tool. We can use the <code>insertDbPopulation</code> function for this purpose:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/insertDbPopulation.html">insertDbPopulation</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,
+<code class="sourceCode R"><span class="fu">insertDbPopulation</span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,
                    cohortIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">101</span>,<span class="fl">100</span><span class="op">)</span>,
                    connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,
                    cohortDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span>,
@@ -569,7 +568,7 @@
             power <span class="op">=</span> <span class="fl">0.8</span>,
             twoSided <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <pre><code>##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr         se
-## 1         48026             48479           48026               48479    6808507        3493582           450 1.302309 0.09428194</code></pre>
+## 1         48041             48337           48041               48337    6755824        3501931           462 1.297818 0.09304886</code></pre>
 <p>In this example we used the <code>studyPop</code> object, so the population before any matching or trimming. If we want to know the MDRR after matching, we use the <code>matchedPop</code> object we created earlier instead:</p>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/computeMdrr.html">computeMdrr</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,
@@ -577,15 +576,15 @@
             alpha <span class="op">=</span> <span class="fl">0.05</span>,
             power <span class="op">=</span> <span class="fl">0.8</span>,
             twoSided <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<pre><code>##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes   mdrr        se
-## 1         25271             25271           25271               25271    3184896        2076275           211 1.4707 0.1376857</code></pre>
+<pre><code>##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr       se
+## 1         24609             24609           24609               24609    3086104        2001267           208 1.474782 0.138675</code></pre>
 <p>Even thought the MDRR in the matched population is higher, meaning we have less power, we should of course not be fooled: matching most likely eliminates confounding, and is therefore preferred to not matching.</p>
 <p>To gain a better understanding of the amount of follow-up available we can also inspect the distribution of follow-up time. We defined follow-up time as time at risk, so not censored by the occurrence of the outcome. The <code>getFollowUpDistribution</code> can provide a simple overview:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/getFollowUpDistribution.html">getFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></code></pre></div>
 <pre><code>##   100% 75% 50% 25%   0% Treatment
-## 1    2  61  61 120 2994         1
-## 2    2  46  61  66 2406         0</code></pre>
+## 1    2  61  61 119 4671         1
+## 2    2  45  61  66 2534         0</code></pre>
 <p>The output is telling us number of days of follow-up each quantile of the study population has. We can also plot the distribution:</p>
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/plotFollowUpDistribution.html">plotFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></code></pre></div>
@@ -609,8 +608,8 @@
 ## Use inverse probability of treatment weighting: FALSE
 ## Status: OK
 ## 
-##           Estimate lower .95 upper .95   logRr seLogRr
-## treatment  1.16671   0.94875   1.44088 0.15419  0.1066</code></pre>
+##           Estimate lower .95 upper .95    logRr seLogRr
+## treatment 1.012159  0.830005  1.238075 0.012086   0.102</code></pre>
 <p>But of course we want to make use of the matching done on the propensity score:</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,
@@ -623,8 +622,8 @@
 ## Use inverse probability of treatment weighting: FALSE
 ## Status: OK
 ## 
-##            Estimate lower .95 upper .95     logRr seLogRr
-## treatment  0.980456  0.703299  1.360144 -0.019737  0.1683</code></pre>
+##           Estimate lower .95 upper .95    logRr seLogRr
+## treatment  0.84130   0.60336   1.16346 -0.17281  0.1675</code></pre>
 <p>Note that we define the sub-population to be only those in the <code>matchedPop</code> object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.</p>
 <p>Instead of matching or stratifying we can also perform Inverse Probability of Treatment Weighting (IPTW):</p>
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
@@ -639,7 +638,7 @@
 ## Status: OK
 ## 
 ##           Estimate lower .95 upper .95    logRr seLogRr
-## treatment 1.104501  0.894705  1.367859 0.099394  0.1083</code></pre>
+## treatment 1.012159  0.830005  1.238075 0.012086   0.102</code></pre>
 </div>
 <div id="adding-interaction-terms" class="section level2">
 <h2 class="hasAnchor">
@@ -661,11 +660,11 @@
 ## Use inverse probability of treatment weighting: FALSE
 ## Status: OK
 ## 
-##                                                                                                             Estimate lower .95 upper .95     logRr seLogRr
-## treatment                                                                                                   1.163339  0.789382  1.741485  0.151295  0.2019
-## treatment * gender = FEMALE                                                                                 0.803485  0.523281  1.222063 -0.218797  0.2164
-## treatment * drug_era group during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS             1.027597  0.587551  1.877023  0.027223  0.2963
-## treatment * condition_era group during day -365 through 0 days relative to index: Type 2 diabetes mellitus  1.066143  0.610043  1.908857  0.064047  0.2910</code></pre>
+##                                                                                                              Estimate  lower .95  upper .95      logRr seLogRr
+## treatment                                                                                                   0.9513808  0.6584763  1.3866291 -0.0498409  0.1900
+## treatment * gender = FEMALE                                                                                 0.9947390  0.6699980  1.4710118 -0.0052749  0.2006
+## treatment * condition_era group during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.9080372  0.5898748  1.4089712 -0.0964699  0.2221
+## treatment * drug_era group during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS             0.5497861  0.3412299  0.8970444 -0.5982260  0.2466</code></pre>
 <p>Note that you can use the <code>grepCovariateNames</code> to find covariate IDs.</p>
 <p>It is prudent to verify that covariate balance has also been achieved in the subgroups of interest. For example, we can check the covariate balance in the subpopulation of females:</p>
 <div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
@@ -691,10 +690,10 @@
 ## Use covariates: TRUE
 ## Use inverse probability of treatment weighting: FALSE
 ## Status: OK
-## Prior variance: 0.0385994626590833
+## Prior variance: 0.0548363196687061
 ## 
 ##           Estimate lower .95 upper .95    logRr seLogRr
-## treatment 1.044822  0.712538  1.534330 0.043847  0.1957</code></pre>
+## treatment  0.82652   0.53234   1.26979 -0.19053  0.2218</code></pre>
 </div>
 <div id="inspecting-the-outcome-model" class="section level2">
 <h2 class="hasAnchor">
@@ -703,15 +702,15 @@
 <div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coef</a></span><span class="op">(</span><span class="va">outcomeModel</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <pre><code>## 900000010805 
-##     1.044822</code></pre>
+##    0.8265208</code></pre>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html">confint</a></span><span class="op">(</span><span class="va">outcomeModel</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<pre><code>## [1] 0.7125377 1.5343295</code></pre>
+<pre><code>## [1] 0.5323388 1.2697883</code></pre>
 <p>We can also see the covariates that ended up in the outcome model:</p>
 <div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/getOutcomeModel.html">getOutcomeModel</a></span><span class="op">(</span><span class="va">outcomeModel</span>, <span class="va">cohortMethodData</span><span class="op">)</span></code></pre></div>
 <pre><code>##   coefficient    id      name
-## 1  0.04384669 9e+11 Treatment</code></pre>
+## 1  -0.1905302 9e+11 Treatment</code></pre>
 </div>
 <div id="kaplan-meier-plot" class="section level2">
 <h2 class="hasAnchor">
@@ -750,7 +749,7 @@
 <pre><code>## 
 ## To cite package 'CohortMethod' in publications use:
 ## 
-##   Martijn Schuemie, Marc Suchard and Patrick Ryan (2020). CohortMethod: New-user cohort method with large scale propensity and outcome models.
+##   Martijn Schuemie, Marc Suchard and Patrick Ryan (2021). CohortMethod: New-user cohort method with large scale propensity and outcome models.
 ##   https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod.
 ## 
 ## A BibTeX entry for LaTeX users is
@@ -758,7 +757,7 @@
 ##   @Manual{,
 ##     title = {CohortMethod: New-user cohort method with large scale propensity and outcome models},
 ##     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},
-##     year = {2020},
+##     year = {2021},
 ##     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},
 ##   }</code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the <code>Cyclops</code> package.</p>

@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
       </span>
     </div>
 
@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -112,7 +112,7 @@
 </li>
 <li>
   <a href="https://github.com/OHDSI/CohortMethod/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -247,7 +247,7 @@ when the new time-at-risk starts to prevent overlap?</p></td>
 
     <p>A <code>tibble</code> specifying the study population. This <code>tibble</code> will have the following columns:</p><ul>
 <li><p><code>rowId</code>: A unique identifier for an exposure.</p></li>
-<li><p><code>subjectId</code>: The person ID of the subject.</p></li>
+<li><p><code>personSeqId</code>: The person sequence ID of the subject.</p></li>
 <li><p><code>cohortStartdate</code>: The index date.</p></li>
 <li><p><code>outcomeCount</code> The number of outcomes observed during the risk window.</p></li>
 <li><p><code>timeAtRisk</code>: The number of days in the risk window.</p></li>

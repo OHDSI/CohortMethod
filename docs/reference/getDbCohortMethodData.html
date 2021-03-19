@@ -73,7 +73,7 @@ extract the data needed to perform the analysis." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
       </span>
     </div>
 
@@ -81,7 +81,7 @@ extract the data needed to perform the analysis." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -113,7 +113,7 @@ extract the data needed to perform the analysis." />
 </li>
 <li>
   <a href="https://github.com/OHDSI/CohortMethod/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -143,7 +143,8 @@ extract the data needed to perform the analysis.</p>
     <pre class="usage"><span class='fu'>getDbCohortMethodData</span><span class='op'>(</span>
   <span class='va'>connectionDetails</span>,
   <span class='va'>cdmDatabaseSchema</span>,
-  oracleTempSchema <span class='op'>=</span> <span class='va'>cdmDatabaseSchema</span>,
+  oracleTempSchema <span class='op'>=</span> <span class='cn'>NULL</span>,
+  tempEmulationSchema <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/options.html'>getOption</a></span><span class='op'>(</span><span class='st'>"sqlRenderTempEmulationSchema"</span><span class='op'>)</span>,
   <span class='va'>targetId</span>,
   <span class='va'>comparatorId</span>,
   <span class='va'>outcomeIds</span>,
@@ -180,9 +181,13 @@ so for example 'cdm_instance.dbo'.</p></td>
     </tr>
     <tr>
       <th>oracleTempSchema</th>
-      <td><p>For Oracle only: the name of the database schema where you want
-all temporary tables to be managed. Requires create/insert
-permissions to this database.</p></td>
+      <td><p>DEPRECATED: use <code>tempEmulationSchema</code> instead.</p></td>
+    </tr>
+    <tr>
+      <th>tempEmulationSchema</th>
+      <td><p>Some database platforms like Oracle and Impala do not truly support temp tables. To
+emulate temp tables, provide a schema with write privileges where temp tables
+can be created.</p></td>
     </tr>
     <tr>
       <th>targetId</th>

@@ -21,21 +21,14 @@ library(CohortMethod)
 library(SqlRender)
 options(andromedaTempFolder = "s:/andromedaTemp")
 
-# PDW
-pw <- NULL
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-port <- 17001
+# MDCD on RedShift
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
+                                                                connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
+                                                                user = keyring::key_get("redShiftUserName"),
+                                                                password = keyring::key_get("redShiftPassword"))
+cdmDatabaseSchema <- "cdm"
+resultsDatabaseSchema <- "scratch_mschuemi2"
 cdmVersion <- "5"
-
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
-                                                                server = server,
-                                                                user = user,
-                                                                password = pw,
-                                                                port = port)
 
 # Eunomia
 cdmDatabaseSchema <- "main"
@@ -62,13 +55,6 @@ sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSche
 sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
 sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
 DatabaseConnector::querySql(connection, sql)
-
-# Get all NSAIDs:
-# sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-# sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-# nsaids <- DatabaseConnector::querySql(connection, sql)
-# nsaids <- nsaids$CONCEPT_ID
 
 DatabaseConnector::disconnect(connection)
 
@@ -259,7 +245,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 16,
-                        createStudyPopThreads = 1,
+                        createStudyPopThreads = 3,
                         trimMatchStratifyThreads = 5,
                         prefilterCovariatesThreads = 3,
                         fitOutcomeModelThreads = 5,

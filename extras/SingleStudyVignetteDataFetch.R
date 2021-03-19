@@ -19,45 +19,20 @@ library(SqlRender)
 library(DatabaseConnector)
 library(CohortMethod)
 
-# Synpuf on Postgres
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
-                                                                server = "localhost/ohdsi",
-                                                                user = "postgres",
-                                                                password = Sys.getenv("pwPostgres"))
-cdmDatabaseSchema <- "cdm_synpuf"
-resultsDatabaseSchema <- "scratch"
+# MDCD on RedShift
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
+                                                                connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
+                                                                user = keyring::key_get("redShiftUserName"),
+                                                                password = keyring::key_get("redShiftPassword"))
+cdmDatabaseSchema <- "cdm"
+resultsDatabaseSchema <- "scratch_mschuemi2"
 cdmVersion <- "5"
-extraSettings <- NULL
-
-# Synpuf on PDW
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
-                                                                server = Sys.getenv("PDW_SERVER"),
-                                                                user = NULL,
-                                                                password = NULL,
-                                                                port = Sys.getenv("PDW_PORT"))
-cdmDatabaseSchema <- "cdm_synpuf_v667.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-cdmVersion <- "5"
-extraSettings <- NULL
-
-# MDCD on PDW
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
-                                                                server = Sys.getenv("PDW_SERVER"),
-                                                                user = NULL,
-                                                                password = NULL,
-                                                                port = Sys.getenv("PDW_PORT"))
-cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-cdmVersion <- "5"
-extraSettings <- NULL
 
 # Eunomia
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 cdmDatabaseSchema <- "main"
 resultsDatabaseSchema <- "main"
-extraSettings <- NULL
 cdmVersion <- "5"
-
 
 
 connection <- DatabaseConnector::connect(connectionDetails)
@@ -166,7 +141,7 @@ computePsAuc(ps)
 
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("Charlson.*", model$covariateName), ]
-model[model$id %% 1000 == 902, ]
+model[model$covariateId %% 1000 == 902, ]
 
 plotPs(ps, showAucLabel = TRUE, showCountsLabel = TRUE, fileName = "extras/ps.png")
 plotPs(ps)

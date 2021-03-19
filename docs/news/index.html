@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
       </span>
     </div>
 
@@ -79,7 +79,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -111,7 +111,7 @@
 </li>
 <li>
   <a href="https://github.com/OHDSI/CohortMethod/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -132,6 +132,22 @@
       <small>Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
+    <div id="cohortmethod-410" class="section level1">
+<h1 class="page-header" data-toc-text="4.1.0">
+<a href="#cohortmethod-410" class="anchor"></a>CohortMethod 4.1.0</h1>
+<p>Changes:</p>
+<ol>
+<li><p>Dropped <code>insertDbPopulation()</code> function. This didn’t seem to be used by anyone, and would have required carying the person ID throughout the pipeline.</p></li>
+<li><p>Introducing new unique person identified called <code>personSeqId</code>, generated during data extraction. Person ID is now downloaded as string to avoid issues with 64-bit integers. Person ID is not used by CohortMethod, and is provided for reference only.</p></li>
+<li><p>Adding log likelihood ratio to outcome model object.</p></li>
+<li><p>Deprecating <code>oracleTempSchema</code> argument in favor of <code>tempEmulationSchema</code> in line with new <code>SqlRender</code> interface.</p></li>
+</ol>
+<p>Bug fixes:</p>
+<ol>
+<li><p>Still was not always including the likelihood profile in the outcome model objects.</p></li>
+<li><p>Fixing issues when IDs are <code>integer64</code>.</p></li>
+</ol>
+</div>
     <div id="cohortmethod-401" class="section level1">
 <h1 class="page-header" data-toc-text="4.0.1">
 <a href="#cohortmethod-401" class="anchor"></a>CohortMethod 4.0.1</h1>
