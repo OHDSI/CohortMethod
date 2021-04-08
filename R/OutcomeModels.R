@@ -104,7 +104,8 @@ fitOutcomeModel <- function(population,
 
   if (nrow(population) == 0) {
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
-  } else if (sum(population$outcomeCount) == 0) {
+  } else if ((sum(population$outcomeCount) == 0) ||
+             (modelType == "fgr" && sum(population$outcomeCount == 1) == 0)) {
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
   } else {
     # Informative population ---------------------------------------------------------
