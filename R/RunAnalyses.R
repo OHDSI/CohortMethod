@@ -635,8 +635,8 @@ doPrefilterCovariates <- function(params) {
 
 doCombinePopulations <- function(studyPop, params) {
   if (params$riskPopFile == "") {
-    ParallelLogger::logWarn(paste("Trying to fit a Fine-Gray model in", # TODO Make this an error?
-                                  params$outcomeModelFile, "without a competing risk population"))
+    ParallelLogger::logError(paste("Trying to fit a Fine-Gray model in",
+                                   params$outcomeModelFile, "without a competing risk population"))
   } else {
     riskPop <- readRDS(params$riskPopFile)
     unknowns <- setdiff(riskPop$subjectId, studyPop$subjectId)
