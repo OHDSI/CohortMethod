@@ -632,6 +632,8 @@ doCombinePopulations <- function(studyPop, params) {
                                   params$outcomeModelFile, "without a competing risk population"))
   } else {
     riskPop <- readRDS(params$riskPopFile)
+    unknowns <- setdiff(riskPop$subjectId, studyPop$subjectId)
+    riskPop <- riskPop[!(riskPop$subjectId %in% unknowns), ]
     combinedPop <- combineCompetingStudyPopulations(mainPopulation = studyPop,
                                                     competingRiskPopulation = riskPop)
   }
