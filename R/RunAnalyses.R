@@ -445,9 +445,16 @@ runCmAnalyses <- function(connectionDetails,
       if (prefilteredCovariatesFile != "") {
         prefilteredCovariatesFile = file.path(outputFolder, refRow$prefilteredCovariatesFile)
       }
+
+      riskPopFile <- refRow$riskPopFile
+      if (riskPopFile != "") {
+        riskPopFile <- file.path(outputFolder, riskPopFile)
+      }
+
       params <- list(cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
                      prefilteredCovariatesFile = prefilteredCovariatesFile,
                      sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
+                     riskPopFile = riskPopFile,
                      args = analysisRow,
                      outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile))
       return(params)
