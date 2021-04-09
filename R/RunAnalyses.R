@@ -445,9 +445,16 @@ runCmAnalyses <- function(connectionDetails,
       if (prefilteredCovariatesFile != "") {
         prefilteredCovariatesFile = file.path(outputFolder, refRow$prefilteredCovariatesFile)
       }
+
+      riskPopFile <- refRow$riskPopFile
+      if (riskPopFile != "") {
+        riskPopFile <- file.path(outputFolder, riskPopFile)
+      }
+
       params <- list(cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
                      prefilteredCovariatesFile = prefilteredCovariatesFile,
                      sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
+                     riskPopFile = riskPopFile,
                      args = analysisRow,
                      outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile))
       return(params)
@@ -628,10 +635,12 @@ doPrefilterCovariates <- function(params) {
 
 doCombinePopulations <- function(studyPop, params) {
   if (params$riskPopFile == "") {
-    ParallelLogger::logWarn(paste("Trying to fit a Fine-Gray model in", # TODO Make this an error?
-                                  params$outcomeModelFile, "without a competing risk population"))
+    ParallelLogger::logError(paste("Trying to fit a Fine-Gray model in",
+                                   params$outcomeModelFile, "without a competing risk population"))
   } else {
     riskPop <- readRDS(params$riskPopFile)
+    unknowns <- setdiff(riskPop$subjectId, studyPop$subjectId)
+    riskPop <- riskPop[!(riskPop$subjectId %in% unknowns), ]
     combinedPop <- combineCompetingStudyPopulations(mainPopulation = studyPop,
                                                     competingRiskPopulation = riskPop)
   }

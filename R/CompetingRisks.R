@@ -44,8 +44,8 @@ combineCompetingStudyPopulations <- function(mainPopulation,
   population <-
     left_join(mainPopulation %>% select(.data$rowId, .data$subjectId, .data$treatment,
                                         .data$outcomeCount, .data$timeAtRisk, .data$survivalTime),
-              competingRiskPopulation %>% select(.data$subjectId, .data$outcomeCount, .data$survivalTime),
-              by = "subjectId") %>%
+              competingRiskPopulation %>% select(.data$subjectId, .data$treatment, .data$outcomeCount, .data$survivalTime),
+              by = c("subjectId", "treatment")) %>%
     mutate(survivalTime = pmin(.data$survivalTime.x, .data$survivalTime.y, na.rm = TRUE)) %>%
     mutate(outcomeCount = 1 * (.data$outcomeCount.x > 0) * (.data$survivalTime.x == .data$survivalTime) +
              ifelse(!is.na(.data$outcomeCount.y),
@@ -56,6 +56,16 @@ combineCompetingStudyPopulations <- function(mainPopulation,
     filter(.data$outcomeCount != 3)
     # Leaving for debugging purposes
 
+
+  if ("propensityScore" %in% names(mainPopulation)) {
+    population <- population %>% left_join(mainPopulation %>% select(subjectId, treatment, propensityScore),
+                                           by = c("subjectId", "treatment"))
+  }
+
+  if ("stratumId" %in% names(mainPopulation)) {
+    population <- population %>% left_join(mainPopulation %>% select(subjectId, treatment, stratumId),
+                                           by = c("subjectId", "treatment"))
+  }
 
   return (population)
 }
