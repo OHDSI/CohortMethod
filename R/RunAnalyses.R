@@ -730,6 +730,7 @@ doFitOutcomeModelPlus <- function(params) {
 
   if (args$modelType == "fgr") {
     ps <- doCombinePopulations(studyPop = ps, params = params)
+    arg$riskId <- NA
   }
 
   args$population <- ps
