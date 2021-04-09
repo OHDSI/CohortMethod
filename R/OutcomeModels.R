@@ -414,9 +414,9 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     informativePopulation <- population
   }
   if (inversePtWeighting) {
-    informativePopulation$weight <- computeWeights(informativePopulation)
+    informativePopulation$weights <- computeWeights(informativePopulation)
   } else {
-    informativePopulation$weight <- NULL
+    informativePopulation$weights <- NULL
   }
   columns <- c("rowId", "y", "treatment")
   if (stratified) {
@@ -474,7 +474,7 @@ filterAndTidyCovariates <- function(cohortMethodData,
 
 computeWeights <- function(informativePopulation) {
   # ATE:
-  # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+  # informativePopulation$weights <- ifelse(informativePopulation$treatment == 1,
   #                                        1/informativePopulation$propensityScore,
   #                                        1/(1 - informativePopulation$propensityScore))
 
@@ -484,7 +484,7 @@ computeWeights <- function(informativePopulation) {
                 mean(informativePopulation$treatment == 0)/(1 - informativePopulation$propensityScore)))
 
   # ATT:
-  # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+  # informativePopulation$weights <- ifelse(informativePopulation$treatment == 1,
   #                                        1,
   #                                        informativePopulation$propensityScore/(1 - informativePopulation$propensityScore))
 }

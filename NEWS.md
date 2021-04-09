@@ -1,3 +1,11 @@
+CohortMethod 4.1.1
+==================
+
+Bug fixes:
+
+1. Fixing IPTW.
+
+
 CohortMethod 4.1.0
 ==================
 
