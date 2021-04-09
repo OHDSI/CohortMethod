@@ -726,11 +726,12 @@ doFitOutcomeModelPlus <- function(params) {
     ps <- do.call("stratifyByPsAndCovariates", args)
   }
 
-  if (params$args$modelType == "fgr") {
+  args <- params$args$fitOutcomeModelArgs
+
+  if (args$modelType == "fgr") {
     ps <- doCombinePopulations(studyPop = ps, params = params)
   }
 
-  args <- params$args$fitOutcomeModelArgs
   args$population <- ps
   args$cohortMethodData <- cohortMethodData
 
