@@ -52,7 +52,10 @@ combineCompetingStudyPopulations <- function(mainPopulation,
                     2 * (.data$outcomeCount.y > 0) * (.data$survivalTime.y == .data$survivalTime), 0)) %>%
     select(.data$rowId, .data$subjectId, .data$treatment, .data$timeAtRisk,
            .data$outcomeCount, .data$survivalTime,
-           .data$outcomeCount.x, .data$survivalTime.x, .data$outcomeCount.y, .data$survivalTime.y) # Leaving for debugging purposes
+           .data$outcomeCount.x, .data$survivalTime.x, .data$outcomeCount.y, .data$survivalTime.y) %>%
+    filter(.data$outcomeCount != 3)
+    # Leaving for debugging purposes
+
 
   return (population)
 }
