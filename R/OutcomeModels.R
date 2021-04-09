@@ -426,7 +426,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     columns <- c(columns, "time")
   }
   if (inversePtWeighting) {
-    columns <- c(columns, "weight")
+    columns <- c(columns, "weights")
   }
   informativePopulation <- informativePopulation[, columns]
   return(informativePopulation)
