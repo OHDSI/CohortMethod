@@ -86,6 +86,9 @@ fitOutcomeModel <- function(population,
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox" && modelType != "fgr")
     stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', 'cox' or 'fgr")
+  if (modelType == "fgr" && stratified) {
+    stop("Stratified Fine-Gray models are currently not supported.")
+  }
   ParallelLogger::logTrace("Fitting outcome model")
 
   start <- Sys.time()
