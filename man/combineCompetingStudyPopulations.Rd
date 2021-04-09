@@ -4,14 +4,28 @@
 \alias{combineCompetingStudyPopulations}
 \title{Create competing risk study population}
 \usage{
-combineCompetingStudyPopulations(mainPopulation, competingRiskPopulation)
+combineCompetingStudyPopulations(
+  mainPopulation,
+  competingRiskPopulation,
+  removeSubjectsWithSimultaneousEvents = TRUE,
+  codeSimultaneousEventsAs = 1
+)
 }
 \arguments{
 \item{mainPopulation}{A data frame describing the population. This should at least have a
 \code{rowId} column corresponding to the \code{rowId} column in the
-\link{CohortMethodData} covariates object and a \code{treatment} column.}
+\link{CohortMethodData} covariates object and \code{subjectId}, \code{treatment},
+\code{outcomeCount}, \code{timeAtRisk} and \code{survivalTime} columns.}
 
-\item{competingRiskPopulation}{A data frame ....}
+\item{competingRiskPopulation}{A data frame describing the competing risk population. This should
+at least have \code{subjectId} and \code{treatment} columns that uniquely match
+the \code{mainPopulation} and \code{outcomeCount} and \code{survivalTime} columns.}
+
+\item{removeSubjectsWithSimultaneousEvents}{Remove subjects who experience outcomes in both the
+\code{mainPopulation} and \code{competingRiskPopulation} at the same time.}
+
+\item{codeSimultaneousEventsAs}{If subjects with simultaneous events are not removed, the event is labeled
+as \code{1} (outcome of interest) and \code{2} (competing risk)}
 }
 \description{
 Creates competing risk study population from two overlaping study populations
