@@ -1174,7 +1174,7 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
       }
       result$target <- outcomeModel$populationCounts$targetPersons
       result$comparator <- outcomeModel$populationCounts$comparatorPersons
-      if (outcomeModel$outcomeModelType %in% c("cox", "poisson")) {
+      if (outcomeModel$outcomeModelType %in% c("cox", "fgr", "poisson")) {
         result$targetDays <- outcomeModel$timeAtRisk$targetDays
         result$comparatorDays <- outcomeModel$timeAtRisk$comparatorDays
       }
