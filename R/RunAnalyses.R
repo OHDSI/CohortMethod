@@ -1193,6 +1193,10 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
           result[, paste("seLogRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$seLogRr[i]
         }
       }
+      if (!is.null(outcomeModel$competingOutcomeCounts)){
+        result$targetCompetingOutcomes <- outcomeModel$competingOutcomeCounts$targetCompetingOutcomes
+        result$comparatorCompetingOutcomes <- outcomeModel$competingOutcomeCounts$comparatorCompetingOutcomes
+      }
     }
     return(result)
   }
