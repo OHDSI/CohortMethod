@@ -919,8 +919,11 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   } else {
     stop(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
   }
-  psStrata <- unique(quantile(basePop,
-                              (1:(numberOfStrata - 1))/numberOfStrata))
+  if (length(basePop) == 0) {
+    psStrata <- c()
+  } else {
+    psStrata <- unique(quantile(basePop, (1:(numberOfStrata - 1))/numberOfStrata))
+  }
   attr(population, "strata") <- psStrata
   breaks <- unique(c(0, psStrata, 1))
   breaks[1] <- -1 # So 0 is included in the left-most stratum

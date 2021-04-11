@@ -5,6 +5,8 @@ Bug fixes:
 
 1. Fixing IPTW.
 
+2. Fixing error when stratifying and base population is empty (but overall population is not).
+
 
 CohortMethod 4.1.0
 ==================
