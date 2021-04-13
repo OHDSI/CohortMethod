@@ -17,7 +17,8 @@
 #' Create an outcome model, and compute the relative risk
 #'
 #' @details
-#' IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010).
+#' IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
+#' (att) using stabilized inverse propensity scores (Xu et al. 2010).
 #'
 #' @description
 #' Create an outcome model, and computes the relative risk
@@ -36,6 +37,9 @@
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
+#'                              average treatment effect, and `estimator = "att"`for the average treatment
+#'                              effect in the treated.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -65,6 +69,7 @@ fitOutcomeModel <- function(population,
                             stratified = FALSE,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
+                            estimator = "ate",
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
@@ -88,6 +93,8 @@ fitOutcomeModel <- function(population,
     stop("Can't exclude covariates that are to be used for interaction terms")
   if (inversePtWeighting && is.null(population$propensityScore))
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
+  if (!estimator %in% c("ate", "att"))
+    stop("The estimator argument should be either 'ate' or 'att'.")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
     stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', or 'cox'")
   ParallelLogger::logTrace("Fitting outcome model")
@@ -113,7 +120,11 @@ fitOutcomeModel <- function(population,
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
   } else {
     # Informative population ---------------------------------------------------------
-    informativePopulation <- getInformativePopulation(population, stratified, inversePtWeighting, modelType)
+    informativePopulation <- getInformativePopulation(population = population,
+                                                      stratified = stratified,
+                                                      inversePtWeighting = inversePtWeighting,
+                                                      estimator = estimator,
+                                                      modelType = modelType)
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
       status <- "NO STRATA WITH BOTH TARGET, COMPARATOR, AS WELL AS THE OUTCOME. CANNOT FIT"
@@ -393,7 +404,7 @@ fitOutcomeModel <- function(population,
   return(outcomeModel)
 }
 
-getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType) {
+getInformativePopulation <- function(population, stratified, inversePtWeighting, estimator, modelType) {
   population <- rename(population, y = .data$outcomeCount)
   if (!stratified) {
     population$stratumId <- NULL
@@ -414,7 +425,19 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     informativePopulation <- population
   }
   if (inversePtWeighting) {
-    informativePopulation$weights <- computeWeights(informativePopulation)
+    if ("weights" %in% colnames(informativePopulation)) {
+      if (!is.null(attr(population, "metaData"))) {
+        metaData <- attr(population, "metaData")
+        if (metaData$estimator != estimator) {
+          stop(sprintf("Specifying estimator = '%s' when fitting outcome model, but used estimator = '%s' when trimming",
+               estimator,
+               metaData$estimator))
+        }
+      }
+      ParallelLogger::logInfo("Using previously computed weights")
+    } else {
+      informativePopulation$weights <- computeWeights(informativePopulation, estimator = estimator)
+    }
   } else {
     informativePopulation$weights <- NULL
   }
@@ -472,21 +495,27 @@ filterAndTidyCovariates <- function(cohortMethodData,
   return(covariateData)
 }
 
-computeWeights <- function(informativePopulation) {
+computeWeights <- function(population, estimator = "ate") {
+  # Unstabilized:
   # ATE:
-  # informativePopulation$weights <- ifelse(informativePopulation$treatment == 1,
-  #                                        1/informativePopulation$propensityScore,
-  #                                        1/(1 - informativePopulation$propensityScore))
-
-  # 'Stabilized' ATE:
-  return(ifelse(informativePopulation$treatment == 1,
-                mean(informativePopulation$treatment == 1)/informativePopulation$propensityScore,
-                mean(informativePopulation$treatment == 0)/(1 - informativePopulation$propensityScore)))
-
+  # population$weights <- ifelse(population$treatment == 1,
+  #                                        1/population$propensityScore,
+  #                                        1/(1 - population$propensityScore))
   # ATT:
-  # informativePopulation$weights <- ifelse(informativePopulation$treatment == 1,
+  # population$weights <- ifelse(population$treatment == 1,
   #                                        1,
-  #                                        informativePopulation$propensityScore/(1 - informativePopulation$propensityScore))
+  #                                        population$propensityScore/(1 - population$propensityScore))
+  if (estimator == "ate") {
+    # 'Stabilized' ATE:
+    return(ifelse(population$treatment == 1,
+                  mean(population$treatment == 1) / population$propensityScore,
+                  mean(population$treatment == 0) / (1 - population$propensityScore)))
+  } else {
+    # 'Stabilized' ATT:
+    return(ifelse(population$treatment == 1,
+                  mean(population$treatment == 1),
+                  mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)))
+  }
 }
 
 getOutcomeCounts <- function(population, modelType) {

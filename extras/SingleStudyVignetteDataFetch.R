@@ -162,6 +162,9 @@ trimmed <- trimByPs(ps)
 
 trimmed <- trimByPsToEquipoise(ps)
 
+trimmed <- trimByIptw(ps)
+trimmed <- trimByIptw(ps, estimator = "att")
+
 plotPs(trimmed, ps)
 
 matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 100)
@@ -198,11 +201,12 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
                                 useCovariates = FALSE)
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2.rds")
 
-outcomeModel <- fitOutcomeModel(population = ps,
+outcomeModel <- fitOutcomeModel(population = trimmed,
                                 modelType = "cox",
                                 stratified = FALSE,
                                 useCovariates = FALSE,
-                                inversePtWeighting = TRUE)
+                                inversePtWeighting = TRUE,
+                                estimator = "att")
 outcomeModel
 saveRDS(outcomeModel, file = "s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
 

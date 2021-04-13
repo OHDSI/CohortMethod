@@ -78,8 +78,24 @@ test_that("Multiple analyses", {
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
+  trimByIptwArgs <- createTrimByIptwArgs(maxWeight = 10, estimator = "att")
 
-  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
+  fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                    inversePtWeighting = TRUE,
+                                                    estimator = "att")
+  cmAnalysis3 <- createCmAnalysis(analysisId = 3,
+                                  description = "IPTW",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createStudyPopArgs = createStudyPopArgs2,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  trimByIptw = TRUE,
+                                  trimByIptwArgs = trimByIptwArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs3)
+
+
+  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3)
 
   outputFolder <- tempfile(pattern = "cmData")
   result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -88,15 +104,15 @@ test_that("Multiple analyses", {
                           outcomeTable = "cohort",
                           outputFolder = outputFolder,
                           cmAnalysisList = cmAnalysisList,
-                          targetComparatorOutcomesList = targetComparatorOutcomesList)
+                          targetComparatorOutcomesList = targetComparatorOutcomesList,
+                          outcomeIdsOfInterest = 3)
 
   analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
 
-  expect_equal(nrow(analysisSum), 8)
+  expect_equal(nrow(analysisSum), 12)
 
   unlink(outputFolder, recursive = TRUE)
 })
-
 
 # Remove the Eunomia database:
 unlink(connectionDetails$server)

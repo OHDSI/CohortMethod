@@ -1,5 +1,11 @@
-CohortMethod 4.1.1
+CohortMethod 4.2.0
 ==================
+
+Changes:
+
+1. Adding the `trimByIptw()` function.
+
+2. Adding the `estimator` argument to the `fitOutcomeModel()` function to select 'ate' (average treatment effect) or 'att' (average treatement effect in the treated) when performing IPTW.
 
 Bug fixes:
 

@@ -191,6 +191,25 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.3, 0.7)) {
   return(analysis)
 }
 
+#' Create a parameter object for the function trimByIptw
+#'
+#' @details
+#' Create an object defining the parameter values.
+#'
+#' @param maxWeight   The maximum allowed IPTW.
+#' @param estimator   The type of estimator. Options are estimator = "ate" for the average treatment
+#'                    effect, and estimator = "att"for the average treatment effect in the treated.
+#'
+#' @export
+createTrimByIptwArgs <- function(maxWeight = 10, estimator = "ate") {
+  analysis <- list()
+  for (name in names(formals(createTrimByIptwArgs))) {
+    analysis[[name]] <- get(name)
+  }
+  class(analysis) <- "args"
+  return(analysis)
+}
+
 #' Create a parameter object for the function matchOnPs
 #'
 #' @details
@@ -331,6 +350,9 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @param useCovariates             Whether to use the covariates in the cohortMethodData object in the
 #'                                  outcome model.
 #' @param inversePtWeighting        Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param estimator                 for IPTW: the type of estimator. Options are estimator = "ate" for
+#'                                  the average treatment effect, and estimator = "att"for the average
+#'                                  treatment effect in the treated.
 #' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate interactions
 #'                                  with the main treatment effect.
 #' @param excludeCovariateIds       Exclude these covariates from the outcome model.
@@ -349,6 +371,7 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
+                                      estimator = "ate",
                                       interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),

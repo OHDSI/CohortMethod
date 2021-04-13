@@ -27,15 +27,14 @@
 #' analysis.
 #'
 #' @param connectionDetails              An R object of type `connectionDetails` created using the
-#'                                       function `createConnectionDetails` in the
-#'                                       `DatabaseConnector` package.
+#'                                     [DatabaseConnector::createConnectionDetails()] function.
 #' @param cdmDatabaseSchema              The name of the database schema that contains the OMOP CDM
 #'                                       instance. Requires read permissions to this database. On SQL
 #'                                       Server, this should specify both the database and the schema,
 #'                                       so for example 'cdm_instance.dbo'.
 #' @param cdmVersion                     Define the OMOP CDM version used: currently support "4" and
 #'                                       "5".
-#' @param oracleTempSchema    DEPRECATED: use \code{tempEmulationSchema} instead.
+#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
 #' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
 #'                            emulate temp tables, provide a schema with write privileges where temp tables
 #'                            can be created.
@@ -534,6 +533,10 @@ trimMatchStratify <- function(params) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByPsToEquipoiseArgs)
     ps <- do.call("trimByPsToEquipoise", args)
+  } else if (params$args$trimByIptw) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByIptwArgs)
+    ps <- do.call("trimByIptw", args)
   }
   if (params$args$matchOnPs) {
     args <- list(population = ps)
@@ -605,6 +608,7 @@ doFitOutcomeModel <- function(params) {
                                   stratified = args$stratified,
                                   useCovariates = args$useCovariates,
                                   inversePtWeighting = args$inversePtWeighting,
+                                  estimator = args$estimator,
                                   includeCovariateIds = args$includeCovariateIds,
                                   excludeCovariateIds = args$excludeCovariateIds,
                                   interactionCovariateIds = args$interactionCovariateIds,
@@ -644,6 +648,10 @@ doFitOutcomeModelPlus <- function(params) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByPsToEquipoiseArgs)
     ps <- do.call("trimByPsToEquipoise", args)
+  } else if (params$args$trimByIptw) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByIptwArgs)
+    ps <- do.call("trimByIptw", args)
   }
   if (params$args$matchOnPs) {
     args <- list(population = ps)
@@ -835,6 +843,8 @@ createReferenceTable <- function(cmAnalysisList,
             "trimByPsArgs",
             "trimByPsToEquipoise",
             "trimByPsToEquipoiseArgs",
+            "trimByIptw",
+            "trimByIptwArgs",
             "matchOnPs",
             "matchOnPsArgs",
             "matchOnPsAndCovariates",
@@ -849,7 +859,11 @@ createReferenceTable <- function(cmAnalysisList,
   strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
-                                                                        strataArgs$trimByPsToEquipoise | strataArgs$matchOnPs | strataArgs$matchOnPsAndCovariates | strataArgs$stratifyByPs |
+                                                                        strataArgs$trimByPsToEquipoise |
+                                                                        strataArgs$trimByIptw |
+                                                                        strataArgs$matchOnPs |
+                                                                        strataArgs$matchOnPsAndCovariates |
+                                                                        strataArgs$stratifyByPs |
                                                                         strataArgs$stratifyByPsAndCovariates))]
   strataArgsList <- lapply(strataArgsList, normStrataArgs)
   if (length(strataArgsList) == 0) {

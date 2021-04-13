@@ -18,14 +18,14 @@ table. If multiple strategies for picking the target will be
 tested in the analysis, a named list of numbers can be provided
 instead. In the analysis, the name of the number to be used can
 be specified using the #' \code{targetType} parameter in the
-\code{\link{createCmAnalysis}} function.}
+\code{\link[=createCmAnalysis]{createCmAnalysis()}} function.}
 
 \item{comparatorId}{A concept ID identifying the comparator drug in the exposure
 table. If multiple strategies for picking the comparator will
 be tested in the analysis, a named list of numbers can be
 provided instead. In the analysis, the name of the number to be
 used can be specified using the #' \code{comparatorType}
-parameter in the \code{\link{createCmAnalysis}} function.}
+parameter in the \code{\link[=createCmAnalysis]{createCmAnalysis()}} function.}
 
 \item{outcomeIds}{A vector of concept IDs indentifying the outcome(s) in the
 outcome table.}
@@ -42,5 +42,5 @@ concepts that are specific to the drug-comparator combination.}
 Create target-comparator-outcomes combinations.
 }
 \details{
-Create a set of hypotheses of interest, to be used with the \code{\link{runCmAnalyses}} function.
+Create a set of hypotheses of interest, to be used with the \code{\link[=runCmAnalyses]{runCmAnalyses()}} function.
 }

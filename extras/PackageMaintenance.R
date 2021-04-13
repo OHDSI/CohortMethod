@@ -78,6 +78,7 @@ rCode <- ParallelLogger::createArgFunction("trimByPs", excludeArgs = c("populati
 rCode <- ParallelLogger::createArgFunction("trimByPsToEquipoise",
                                            excludeArgs = c("population"),
                                            rCode = rCode)
+rCode <- ParallelLogger::createArgFunction("trimByIptw", excludeArgs = c("population"), rCode = rCode)
 rCode <- ParallelLogger::createArgFunction("matchOnPs", excludeArgs = c("population"), rCode = rCode)
 rCode <- ParallelLogger::createArgFunction("matchOnPsAndCovariates",
                                            excludeArgs = c("population", "cohortMethodData"),

@@ -625,6 +625,68 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
   return(population)
 }
 
+
+#' Remove subjects with a high IPTW
+#'
+#' @description
+#' Compute the inverse probability of treatment weights (IPTW) using the propensity scores, and remove
+#' subjects having a weight higher than the user-specified threshold. By default, the same threshold is
+#' used as by Izurieta et al. (2020).
+#'
+#' @param population   A data frame with at least the three columns described below.
+#' @param maxWeight    The maximum allowed IPTW.
+#' @param estimator    The type of estimator. Options are `estimator = "ate"` for the average treatment
+#'                     effect, and `estimator = "att"`for the average treatment effect in the treated.
+#'
+#' @details
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
+#'
+#' @return
+#' Returns a tibble with the same  columns as the input, as well as a `weights` column containing the
+#' IPTW.
+#'
+#' @examples
+#' rowId <- 1:2000
+#' treatment <- rep(0:1, each = 1000)
+#' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+#' result <- trimByIptw(data)
+#'
+#' @references
+#' Hector S Izurieta, Michael Lu, Jeffrey Kelman, Yun Lu, Arnstein Lindaas, Julie Loc, Douglas Pratt,
+#' Yuqin Wei, Yoganand Chillarige, Michael Wernecke, Thomas E MaCurdy, Richard Forshee, Comparative
+#' effectiveness of influenza vaccines among U.S. Medicare beneficiaries ages 65 years and older during
+#' the 2019-20 season, Clinical Infectious Diseases, 2020
+#'
+#' @export
+trimByIptw <- function(population, maxWeight = 10, estimator = "ate") {
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+  if (!("propensityScore" %in% colnames(population)))
+    stop("Missing column propensityScore in population")
+  if (!estimator %in% c("ate", "att"))
+    stop("The estimator argument should be either 'ate' or 'att'.")
+  ParallelLogger::logTrace("Trimming by IPTW")
+  population <- population %>%
+    mutate(weights = computeWeights(population = .data, estimator = estimator)) %>%
+    filter(.data$weights <= maxWeight)
+  if (!is.null(attr(population, "metaData"))) {
+    metaData <- attr(population, "metaData")
+    metaData$attrition <- bind_rows(metaData$attrition,
+                                    getCounts(population, paste("Trimmed by IPTW")))
+    metaData$estimator <- estimator
+    attr(population, "metaData") <- metaData
+  }
+  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
+  return(population)
+}
+
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
   covariateIds = c(2018006, 8527004)
   covariates <- cohortMethodData$covariates %>%

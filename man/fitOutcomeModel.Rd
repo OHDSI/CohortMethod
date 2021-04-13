@@ -11,6 +11,7 @@ fitOutcomeModel(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
+  estimator = "ate",
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
@@ -40,6 +41,10 @@ object in the outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)? See details.}
 
+\item{estimator}{for IPTW: the type of estimator. Options are \code{estimator = "ate"} for the
+average treatment effect, and \code{estimator = "att"}for the average treatment
+effect in the treated.}
+
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.}
 
@@ -66,7 +71,8 @@ An object of class \code{OutcomeModel}. Generic function \code{print}, \code{coe
 Create an outcome model, and computes the relative risk
 }
 \details{
-IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010).
+IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
+(att) using stabilized inverse propensity scores (Xu et al. 2010).
 }
 \references{
 Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores

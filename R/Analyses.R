@@ -19,7 +19,7 @@
 #' Create a CohortMethod analysis specification
 #'
 #' @details
-#' Create a set of analysis choices, to be used with the \code{\link{runCmAnalyses}} function.
+#' Create a set of analysis choices, to be used with the [runCmAnalyses()] function.
 #'
 #' @param analysisId                      An integer that will be used later to refer to this specific
 #'                                        set of analysis choices.
@@ -31,41 +31,45 @@
 #'                                        drugComparatorOutcome, this field should be used to select
 #'                                        the specific comparator to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
-#'                                        the \code{\link{getDbCohortMethodData}} function.
+#'                                        the [getDbCohortMethodData()] function.
 #' @param createStudyPopArgs              An object representing the arguments to be used when calling
-#'                                        the \code{\link{createStudyPopulation}} function.
-#' @param createPs                        Should the \code{\link{createPs}} function be used in this
+#'                                        the [createStudyPopulation()] function.
+#' @param createPs                        Should the [createPs()] function be used in this
 #'                                        analysis?
 #' @param createPsArgs                    An object representing the arguments to be used when calling
-#'                                        the \code{\link{createPs}} function.
-#' @param trimByPs                        Should the \code{\link{trimByPs}} function be used in this
+#'                                        the [createPs()] function.
+#' @param trimByPs                        Should the [trimByPs()] function be used in this
 #'                                        analysis?
 #' @param trimByPsArgs                    An object representing the arguments to be used when calling
-#'                                        the \code{\link{trimByPs}} function.
-#' @param trimByPsToEquipoise             Should the \code{\link{trimByPsToEquipoise}} function be used
+#'                                        the [trimByPs()] function.
+#' @param trimByPsToEquipoise             Should the [trimByPsToEquipoise()] function be used
 #'                                        in this analysis?
 #' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
-#'                                        the \code{\link{trimByPsToEquipoise}} function.
-#' @param matchOnPs                       Should the \code{\link{matchOnPs}} function be used in this
+#'                                        the [trimByPsToEquipoise()] function.
+#' @param trimByIptw                      Should the [trimByPsToEquipoise()] function be used
+#'                                        in this analysis?
+#' @param trimByIptwArgs                  An object representing the arguments to be used when calling
+#'                                        the [trimByIptw()] function.
+#' @param matchOnPs                       Should the [matchOnPs()] function be used in this
 #'                                        analysis?
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
-#'                                        the \code{\link{matchOnPs}} function.
-#' @param matchOnPsAndCovariates          Should the \code{\link{matchOnPsAndCovariates}} function be
+#'                                        the [matchOnPs()] function.
+#' @param matchOnPsAndCovariates          Should the [matchOnPsAndCovariates()] function be
 #'                                        used in this analysis?
 #' @param matchOnPsAndCovariatesArgs      An object representing the arguments to be used when calling
-#'                                        the \code{\link{matchOnPsAndCovariates}} function.
-#' @param stratifyByPs                    Should the \code{\link{stratifyByPs}} function be used in
+#'                                        the [matchOnPsAndCovariates()] function.
+#' @param stratifyByPs                    Should the [stratifyByPs()] function be used in
 #'                                        this analysis?
 #' @param stratifyByPsArgs                An object representing the arguments to be used when calling
-#'                                        the \code{\link{stratifyByPs}} function.
-#' @param stratifyByPsAndCovariates       Should the \code{\link{stratifyByPsAndCovariates}} function
+#'                                        the [stratifyByPs()] function.
+#' @param stratifyByPsAndCovariates       Should the [stratifyByPsAndCovariates()] function
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
-#'                                        the \code{\link{stratifyByPsAndCovariates}} function.
-#' @param fitOutcomeModel                 Should the \code{\link{fitOutcomeModel}} function be used in
+#'                                        the [stratifyByPsAndCovariates()] function.
+#' @param fitOutcomeModel                 Should the [fitOutcomeModel()] function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
-#'                                        the \code{\link{fitOutcomeModel}} function.
+#'                                        the [fitOutcomeModel()] function.
 #'
 #' @export
 createCmAnalysis <- function(analysisId = 1,
@@ -80,6 +84,8 @@ createCmAnalysis <- function(analysisId = 1,
                              trimByPsArgs = NULL,
                              trimByPsToEquipoise = FALSE,
                              trimByPsToEquipoiseArgs = NULL,
+                             trimByIptw = FALSE,
+                             trimByIptwArgs = NULL,
                              matchOnPs = FALSE,
                              matchOnPsArgs = NULL,
                              matchOnPsAndCovariates = FALSE,
@@ -93,10 +99,10 @@ createCmAnalysis <- function(analysisId = 1,
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
     stop("Need to pick one matching or stratification function")
   }
-  if (trimByPs && trimByPsToEquipoise) {
-    stop("Cannot trim to fraction and equipoise at the same time")
+  if (trimByPs + trimByPsToEquipoise + trimByIptw > 1) {
+    stop("Need to pick one trimming strategy")
   }
-  if (!createPs && (trimByPs | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
+  if (!createPs && (trimByPs | trimByPsToEquipoise | trimByIptw | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
@@ -111,6 +117,9 @@ createCmAnalysis <- function(analysisId = 1,
   }
   if (!trimByPsToEquipoise) {
     trimByPsToEquipoiseArgs <- NULL
+  }
+  if (!trimByIptw) {
+    trimByIptwArgs <- NULL
   }
   if (!matchOnPs) {
     matchOnPsArgs <- NULL
@@ -184,20 +193,20 @@ loadCmAnalysisList <- function(file) {
 #' Create target-comparator-outcomes combinations.
 #'
 #' @details
-#' Create a set of hypotheses of interest, to be used with the \code{\link{runCmAnalyses}} function.
+#' Create a set of hypotheses of interest, to be used with the [runCmAnalyses()] function.
 #'
 #' @param targetId                      A concept ID identifying the target drug in the exposure
 #'                                      table. If multiple strategies for picking the target will be
 #'                                      tested in the analysis, a named list of numbers can be provided
 #'                                      instead. In the analysis, the name of the number to be used can
 #'                                      be specified using the #' \code{targetType} parameter in the
-#'                                      \code{\link{createCmAnalysis}} function.
+#'                                      [createCmAnalysis()] function.
 #' @param comparatorId                  A concept ID identifying the comparator drug in the exposure
 #'                                      table. If multiple strategies for picking the comparator will
 #'                                      be tested in the analysis, a named list of numbers can be
 #'                                      provided instead. In the analysis, the name of the number to be
 #'                                      used can be specified using the #' \code{comparatorType}
-#'                                      parameter in the \code{\link{createCmAnalysis}} function.
+#'                                      parameter in the [createCmAnalysis()] function.
 #' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
 #'                                      outcome table.
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct

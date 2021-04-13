@@ -9,6 +9,7 @@ createFitOutcomeModelArgs(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
+  estimator = "ate",
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
@@ -30,6 +31,10 @@ scores)?}
 outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)? See details.}
+
+\item{estimator}{for IPTW: the type of estimator. Options are estimator = "ate" for
+the average treatment effect, and estimator = "att"for the average
+treatment effect in the treated.}
 
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.}
