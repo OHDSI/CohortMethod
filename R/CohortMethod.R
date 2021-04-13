@@ -43,3 +43,5 @@ NULL
 #' @usage
 #' data(cohortMethodDataSimulationProfile)
 NULL
+
+cache <- new.env()

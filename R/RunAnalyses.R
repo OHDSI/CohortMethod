@@ -431,27 +431,27 @@ runCmAnalyses <- function(connectionDetails,
 }
 
 getCohortMethodData <- function(cohortMethodDataFile) {
-  if (exists("cohortMethodData", envir = globalenv())) {
-    cohortMethodData <- get("cohortMethodData", envir = globalenv())
+  if (exists("cohortMethodData", envir = cache)) {
+    cohortMethodData <- get("cohortMethodData", envir = cache)
   }
-  if (!mget("cohortMethodDataFile", envir = globalenv(), ifnotfound = "") == cohortMethodDataFile) {
-    if (exists("cohortMethodData", envir = globalenv())) {
+  if (!mget("cohortMethodDataFile", envir = cache, ifnotfound = "") == cohortMethodDataFile) {
+    if (exists("cohortMethodData", envir = cache)) {
       Andromeda::close(cohortMethodData)
     }
     cohortMethodData <- loadCohortMethodData(cohortMethodDataFile)
-    assign("cohortMethodData", cohortMethodData, envir = globalenv())
-    assign("cohortMethodDataFile", cohortMethodDataFile, envir = globalenv())
+    assign("cohortMethodData", cohortMethodData, envir = cache)
+    assign("cohortMethodDataFile", cohortMethodDataFile, envir = cache)
   }
   return(cohortMethodData)
 }
 
 getPs <- function(psFile) {
-  if (mget("psFile", envir = globalenv(), ifnotfound = "") == psFile) {
-    ps <- get("ps", envir = globalenv())
+  if (mget("psFile", envir = cache, ifnotfound = "") == psFile) {
+    ps <- get("ps", envir = cache)
   } else {
     ps <- readRDS(psFile)
-    assign("ps", ps, envir = globalenv())
-    assign("psFile", psFile, envir = globalenv())
+    assign("ps", ps, envir = cache)
+    assign("psFile", psFile, envir = cache)
   }
   return(ps)
 }

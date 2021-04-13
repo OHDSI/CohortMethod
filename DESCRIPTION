@@ -1,6 +1,6 @@
 Package: CohortMethod
 Type: Package
-Title: New-user cohort method with large scale propensity and outcome models
+Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
 Version: 4.2.0
 Date: 2021-04-13
 Authors@R: c(
@@ -9,9 +9,9 @@ Authors@R: c(
 	person("Patrick", "Ryan", role = c("aut"))
 	)
 Maintainer: Martijn Schuemie <schuemie@ohdsi.org>
-Description: CohortMethod is an R package for performing new-user cohort studies
-	in an observational database in the OMOP Common Data Model. It extracts the
-	necessary data from a database and uses a large set of covariates for both the 
+Description: Functions for performing new-user cohort studies
+	in an observational database in the OMOP Common Data Model. Can extract the
+	necessary data from a database and use a large set of covariates for both the 
 	propensity and outcome model, including for example all drugs, diagnoses, procedures, 
 	as well as age, comorbidity indexes, etc. Large scale regularized regression is used to 
 	fit the propensity and outcome models. Functions are included for trimming, stratifying, 

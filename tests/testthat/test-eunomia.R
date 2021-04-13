@@ -94,8 +94,22 @@ test_that("Multiple analyses", {
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
+  fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(modelType = "cox",
+                                                    stratified = TRUE,
+                                                    interactionCovariateIds = 8532001)
 
-  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3)
+  cmAnalysis4 <- createCmAnalysis(analysisId = 4,
+                                  description = "Matching with gender interaction",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createStudyPopArgs = createStudyPopArgs2,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs4)
+
+  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
 
   outputFolder <- tempfile(pattern = "cmData")
   result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -105,11 +119,12 @@ test_that("Multiple analyses", {
                           outputFolder = outputFolder,
                           cmAnalysisList = cmAnalysisList,
                           targetComparatorOutcomesList = targetComparatorOutcomesList,
-                          outcomeIdsOfInterest = 3)
+                          outcomeIdsOfInterest = 3,
+                          prefilterCovariates = TRUE)
 
   analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
 
-  expect_equal(nrow(analysisSum), 12)
+  expect_equal(nrow(analysisSum), 16)
 
   unlink(outputFolder, recursive = TRUE)
 })
