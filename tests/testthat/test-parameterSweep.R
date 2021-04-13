@@ -60,6 +60,12 @@ test_that("Create study population functions", {
 
   aTable <- getAttritionTable(studyPop)
   expect_is(aTable, "data.frame")
+
+
+  plot <- plotTimeToEvent(cohortMethodData,
+                          outcomeId = 194133)
+  expect_is(plot, "ggplot")
+
 })
 
 test_that("Propensity score functions", {
