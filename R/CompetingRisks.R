@@ -26,16 +26,23 @@
 #'
 #' @param mainPopulation           A data frame describing the population. This should at least have a
 #'                                 `rowId` column corresponding to the `rowId` column in the
-#'                                 [CohortMethodData] covariates object and a `treatment` column.
-#'
-#' @param competingRiskPopulation  A data frame ....
-#'
+#'                                 [CohortMethodData] covariates object and `subjectId`, `treatment`,
+#'                                 `outcomeCount`, `timeAtRisk` and `survivalTime` columns.
+#' @param competingRiskPopulation  A data frame describing the competing risk population. This should
+#'                                 at least have `subjectId` and `treatment` columns that uniquely match
+#'                                 the `mainPopulation` and `outcomeCount` and `survivalTime` columns.
+#' @param removeSubjectsWithSimultaneousEvents Remove subjects who experience outcomes in both the
+#'                                             `mainPopulation` and `competingRiskPopulation` at the same time.
+#' @param codeSimultaneousEventsAs If subjects with simultaneous events are not removed, the event is labeled
+#'                                 as `1` (outcome of interest) and `2` (competing risk)
 #' @examples
 #' # TODO
 #'
 #' @export
 combineCompetingStudyPopulations <- function(mainPopulation,
-                                             competingRiskPopulation) {
+                                             competingRiskPopulation,
+                                             removeSubjectsWithSimultaneousEvents = TRUE,
+                                             codeSimultaneousEventsAs = 1) {
 
   if (length(setdiff(competingRiskPopulation$subjectId, mainPopulation$subjectId)) > 0) {
     stop("Subjects in competing risk population do not exist in main population")
@@ -56,6 +63,16 @@ combineCompetingStudyPopulations <- function(mainPopulation,
     filter(.data$outcomeCount != 3)
     # Leaving for debugging purposes
 
+
+  if (removeSubjectsWithSimultaneousEvents) {
+    simultaneous <- population %>% filter(.data$outcomeCount == 3)
+    if (nrow(simultaneous) > 0) {
+      population <- population %>% filter(.data$outcomeCount != 3)
+      ParallelLogger::logWarn("Removing ", nrow(simultaneous), " subjects with simultaneous outcomes of interest and competing risks")
+    }
+  } else {
+    stop("Recoding simultaneous events is not yet implemented")
+  }
 
   if ("propensityScore" %in% names(mainPopulation)) {
     population <- population %>% left_join(mainPopulation %>% select(subjectId, treatment, propensityScore),

@@ -86,9 +86,7 @@ fitOutcomeModel <- function(population,
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox" && modelType != "fgr")
     stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', 'cox' or 'fgr")
-  if (modelType == "fgr" && stratified) {
-    stop("Stratified Fine-Gray models are currently not supported.")
-  }
+
   ParallelLogger::logTrace("Fitting outcome model")
 
   start <- Sys.time()
@@ -368,7 +366,9 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStatus <- status
   outcomeModel$populationCounts <- getCounts(population, "Population count")
   outcomeModel$outcomeCounts <- getOutcomeCounts(population, modelType)
-  outcomeModel$competingOutcomeCounts <- getCompetingOutcomeCounts(population, modelType)
+  if (modelType == "fgr") {
+    outcomeModel$competingOutcomeCounts <- getCompetingOutcomeCounts(population, modelType)
+  }
   if (modelType == "poisson" || modelType == "cox" || modelType == "fgr") {
     outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
   }
@@ -490,7 +490,7 @@ getOutcomeCounts <- function(population, modelType) {
   if (modelType == "cox") {
     population$y[population$y != 0] <- 1
   } else if (modelType == "fgr") {
-    population$y[population$y != 1] <- 0 # Zero out competing events.  TODO: how to report competing events?
+    population$y[population$y != 1] <- 0 # Zero out competing events
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
@@ -508,8 +508,8 @@ getCompetingOutcomeCounts <- function(population, modelType) {
     return(tibble::tibble(targetCompetingOutcomes = sum(population$y[population$treatment == 1] == 2),
                           comparatorCompetingOutcomes = sum(population$y[population$treatment == 0] == 2)))
   } else {
-    return(tibble::tibble(targetCompetingOutcomes = 0,
-                          comparatorCompetingOutcomes = 0))
+    return(tibble::tibble(targetCompetingOutcomes = NA,
+                          comparatorCompetingOutcomes = NA))
   }
 }
 

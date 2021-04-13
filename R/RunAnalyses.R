@@ -726,11 +726,13 @@ doFitOutcomeModelPlus <- function(params) {
     ps <- do.call("stratifyByPsAndCovariates", args)
   }
 
-  if (params$args$modelType == "fgr") {
+  args <- params$args$fitOutcomeModelArgs
+
+  if (args$modelType == "fgr") {
     ps <- doCombinePopulations(studyPop = ps, params = params)
+    args$riskId <- NULL
   }
 
-  args <- params$args$fitOutcomeModelArgs
   args$population <- ps
   args$cohortMethodData <- cohortMethodData
 
@@ -1172,7 +1174,7 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
       }
       result$target <- outcomeModel$populationCounts$targetPersons
       result$comparator <- outcomeModel$populationCounts$comparatorPersons
-      if (outcomeModel$outcomeModelType %in% c("cox", "poisson")) {
+      if (outcomeModel$outcomeModelType %in% c("cox", "fgr", "poisson")) {
         result$targetDays <- outcomeModel$timeAtRisk$targetDays
         result$comparatorDays <- outcomeModel$timeAtRisk$comparatorDays
       }
@@ -1190,6 +1192,10 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
           result[, paste("logRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$logRr[i]
           result[, paste("seLogRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$seLogRr[i]
         }
+      }
+      if (!is.null(outcomeModel$competingOutcomeCounts)){
+        result$targetCompetingOutcomes <- outcomeModel$competingOutcomeCounts$targetCompetingOutcomes
+        result$comparatorCompetingOutcomes <- outcomeModel$competingOutcomeCounts$comparatorCompetingOutcomes
       }
     }
     return(result)
