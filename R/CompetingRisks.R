@@ -42,7 +42,7 @@
 combineCompetingStudyPopulations <- function(mainPopulation,
                                              competingRiskPopulation,
                                              removeSubjectsWithSimultaneousEvents = TRUE,
-                                             codeSimultaneousEventsAs = 1) {
+                                             codeSimultaneousEventsAs = NA) {
 
   if (length(setdiff(competingRiskPopulation$subjectId, mainPopulation$subjectId)) > 0) {
     stop("Subjects in competing risk population do not exist in main population")
@@ -63,15 +63,18 @@ combineCompetingStudyPopulations <- function(mainPopulation,
     filter(.data$outcomeCount != 3)
     # Leaving for debugging purposes
 
+  simultaneous <- population %>% filter(.data$outcomeCount == 3)
 
-  if (removeSubjectsWithSimultaneousEvents) {
-    simultaneous <- population %>% filter(.data$outcomeCount == 3)
+  if (removeSubjectsWithSimultaneousEvents && is.na(codeSimultaneousEventsAs)) {
     if (nrow(simultaneous) > 0) {
       population <- population %>% filter(.data$outcomeCount != 3)
       ParallelLogger::logWarn("Removing ", nrow(simultaneous), " subjects with simultaneous outcomes of interest and competing risks")
     }
   } else {
-    stop("Recoding simultaneous events is not yet implemented")
+    if (nrow(simultaneous) > 0) {
+      population <- population %>% mutate(outcomeCount = replace(.data$outcomeCount, .data$outcomeCount == 3, codeSimultaneousEventsAs))
+      ParallelLogger::logWarn("Recoding outcome count for", nrow(simultaneous), " subjects with simultaneous outcomes of interest and competing risks as", codeSimultaneousEventsAs)
+    }
   }
 
   if ("propensityScore" %in% names(mainPopulation)) {
