@@ -353,6 +353,8 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @param estimator                 for IPTW: the type of estimator. Options are estimator = "ate" for
 #'                                  the average treatment effect, and estimator = "att"for the average
 #'                                  treatment effect in the treated.
+#' @param maxWeight                 for IPTW: the maximum weight. Larger values will be truncated to
+#'                                  this value. maxWeight = 0 means no truncation takes place.
 #' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate interactions
 #'                                  with the main treatment effect.
 #' @param excludeCovariateIds       Exclude these covariates from the outcome model.
@@ -372,6 +374,7 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
                                       estimator = "ate",
+                                      maxWeight = 0,
                                       interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),

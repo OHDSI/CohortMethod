@@ -40,6 +40,8 @@
 #' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
 #'                              average treatment effect, and `estimator = "att"`for the average treatment
 #'                              effect in the treated.
+#' @param maxWeight             for IPTW: the maximum weight. Larger values will be truncated to this
+#'                              value. `maxWeight = 0` means no truncation takes place.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -70,6 +72,7 @@ fitOutcomeModel <- function(population,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
                             estimator = "ate",
+                            maxWeight = 0,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
@@ -124,6 +127,7 @@ fitOutcomeModel <- function(population,
                                                       stratified = stratified,
                                                       inversePtWeighting = inversePtWeighting,
                                                       estimator = estimator,
+                                                      maxWeight = maxWeight,
                                                       modelType = modelType)
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
@@ -386,6 +390,12 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePtWeighting <- inversePtWeighting
+  if (inversePtWeighting) {
+    outcomeModel$estimator <- estimator
+    if (maxWeight > 0) {
+      outcomeModel$maxWeight <- maxWeight
+    }
+  }
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelmainEffectEstimates <- mainEffectEstimates
   if (length(interactionCovariateIds) != 0)
@@ -404,7 +414,7 @@ fitOutcomeModel <- function(population,
   return(outcomeModel)
 }
 
-getInformativePopulation <- function(population, stratified, inversePtWeighting, estimator, modelType) {
+getInformativePopulation <- function(population, stratified, inversePtWeighting, estimator, maxWeight, modelType) {
   population <- rename(population, y = .data$outcomeCount)
   if (!stratified) {
     population$stratumId <- NULL
@@ -437,6 +447,10 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
       ParallelLogger::logInfo("Using previously computed weights")
     } else {
       informativePopulation$weights <- computeWeights(informativePopulation, estimator = estimator)
+    }
+    if (maxWeight > 0) {
+      informativePopulation <- informativePopulation %>%
+        mutate(weights = if_else(.data$weights > maxWeight, maxWeight, .data$weights))
     }
   } else {
     informativePopulation$weights <- NULL

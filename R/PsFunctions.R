@@ -630,8 +630,7 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
 #'
 #' @description
 #' Compute the inverse probability of treatment weights (IPTW) using the propensity scores, and remove
-#' subjects having a weight higher than the user-specified threshold. By default, the same threshold is
-#' used as by Izurieta et al. (2020).
+#' subjects having a weight higher than the user-specified threshold.
 #'
 #' @param population   A data frame with at least the three columns described below.
 #' @param maxWeight    The maximum allowed IPTW.
@@ -655,12 +654,6 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
 #' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 #' result <- trimByIptw(data)
-#'
-#' @references
-#' Hector S Izurieta, Michael Lu, Jeffrey Kelman, Yun Lu, Arnstein Lindaas, Julie Loc, Douglas Pratt,
-#' Yuqin Wei, Yoganand Chillarige, Michael Wernecke, Thomas E MaCurdy, Richard Forshee, Comparative
-#' effectiveness of influenza vaccines among U.S. Medicare beneficiaries ages 65 years and older during
-#' the 2019-20 season, Clinical Infectious Diseases, 2020
 #'
 #' @export
 trimByIptw <- function(population, maxWeight = 10, estimator = "ate") {

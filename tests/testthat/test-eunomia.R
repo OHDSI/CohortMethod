@@ -82,7 +82,8 @@ test_that("Multiple analyses", {
 
   fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
                                                     inversePtWeighting = TRUE,
-                                                    estimator = "att")
+                                                    estimator = "att",
+                                                    maxWeight = 9)
   cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                   description = "IPTW",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,

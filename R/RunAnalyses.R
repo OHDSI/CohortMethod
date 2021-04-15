@@ -533,7 +533,7 @@ trimMatchStratify <- function(params) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByPsToEquipoiseArgs)
     ps <- do.call("trimByPsToEquipoise", args)
-  } else if (params$args$trimByIptw) {
+  } else if ("trimByIptw" %in% names(params$args) && params$args$trimByIptw) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByIptwArgs)
     ps <- do.call("trimByIptw", args)
@@ -601,19 +601,7 @@ doFitOutcomeModel <- function(params) {
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
-  # outcomeModel <- do.call('fitOutcomeModel', args)
-  outcomeModel <- fitOutcomeModel(population = args$population,
-                                  cohortMethodData = args$cohortMethodData,
-                                  modelType = args$modelType,
-                                  stratified = args$stratified,
-                                  useCovariates = args$useCovariates,
-                                  inversePtWeighting = args$inversePtWeighting,
-                                  estimator = args$estimator,
-                                  includeCovariateIds = args$includeCovariateIds,
-                                  excludeCovariateIds = args$excludeCovariateIds,
-                                  interactionCovariateIds = args$interactionCovariateIds,
-                                  prior = args$prior,
-                                  control = args$control)
+  outcomeModel <- do.call('fitOutcomeModel', args)
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
 }
@@ -648,7 +636,7 @@ doFitOutcomeModelPlus <- function(params) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByPsToEquipoiseArgs)
     ps <- do.call("trimByPsToEquipoise", args)
-  } else if (params$args$trimByIptw) {
+  } else if ("trimByIptw" %in% names(params$args) && params$args$trimByIptw) {
     args <- list(population = ps)
     args <- append(args, params$args$trimByIptwArgs)
     ps <- do.call("trimByIptw", args)
@@ -860,7 +848,7 @@ createReferenceTable <- function(cmAnalysisList,
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
                                                                         strataArgs$trimByPsToEquipoise |
-                                                                        strataArgs$trimByIptw |
+                                                                        ("trimByIptw" %in% colnames(strataArgs) && strataArgs$trimByIptw) |
                                                                         strataArgs$matchOnPs |
                                                                         strataArgs$matchOnPsAndCovariates |
                                                                         strataArgs$stratifyByPs |

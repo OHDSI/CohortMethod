@@ -7,6 +7,8 @@ Changes:
 
 2. Adding the `estimator` argument to the `fitOutcomeModel()` function to select 'ate' (average treatment effect) or 'att' (average treatement effect in the treated) when performing IPTW.
 
+3. Added the `maxWeight` argument to the `fitOutcomeModel()` function. Weights greater than this value will be set to this value.
+
 Bug fixes:
 
 1. Fixing IPTW.

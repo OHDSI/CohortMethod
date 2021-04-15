@@ -12,6 +12,7 @@ fitOutcomeModel(
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
   estimator = "ate",
+  maxWeight = 0,
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
@@ -44,6 +45,9 @@ object in the outcome model.}
 \item{estimator}{for IPTW: the type of estimator. Options are \code{estimator = "ate"} for the
 average treatment effect, and \code{estimator = "att"}for the average treatment
 effect in the treated.}
+
+\item{maxWeight}{for IPTW: the maximum weight. Larger values will be truncated to this
+value. \code{maxWeight = 0} means no truncation takes place.}
 
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.}
