@@ -42,7 +42,7 @@
 combineCompetingStudyPopulations <- function(mainPopulation,
                                              competingRiskPopulation,
                                              removeSubjectsWithSimultaneousEvents = TRUE,
-                                             codeSimultaneousEventsAs = NA) {
+                                             codeSimultaneousEventsAs = NULL) {
 
   if (length(setdiff(competingRiskPopulation$subjectId, mainPopulation$subjectId)) > 0) {
     stop("Subjects in competing risk population do not exist in main population")
@@ -65,7 +65,7 @@ combineCompetingStudyPopulations <- function(mainPopulation,
 
   simultaneous <- population %>% filter(.data$outcomeCount == 3)
 
-  if (removeSubjectsWithSimultaneousEvents && is.na(codeSimultaneousEventsAs)) {
+  if (removeSubjectsWithSimultaneousEvents && is.null(codeSimultaneousEventsAs)) {
     if (nrow(simultaneous) > 0) {
       population <- population %>% filter(.data$outcomeCount != 3)
       ParallelLogger::logWarn("Removing ", nrow(simultaneous), " subjects with simultaneous outcomes of interest and competing risks")

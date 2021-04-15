@@ -641,8 +641,10 @@ doCombinePopulations <- function(studyPop, params) {
     riskPop <- readRDS(params$riskPopFile)
     unknowns <- setdiff(riskPop$subjectId, studyPop$subjectId)
     riskPop <- riskPop[!(riskPop$subjectId %in% unknowns), ]
+    codeSimultaneousEventsAs <- params$args$codeSimultaneousEventsAs
     combinedPop <- combineCompetingStudyPopulations(mainPopulation = studyPop,
-                                                    competingRiskPopulation = riskPop)
+                                                    competingRiskPopulation = riskPop,
+                                                    codeSimultaneousEventsAs = codeSimultaneousEventsAs)
   }
   return(combinedPop)
 }
