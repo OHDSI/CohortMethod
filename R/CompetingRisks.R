@@ -59,8 +59,7 @@ combineCompetingStudyPopulations <- function(mainPopulation,
                     2 * (.data$outcomeCount.y > 0) * (.data$survivalTime.y == .data$survivalTime), 0)) %>%
     select(.data$rowId, .data$subjectId, .data$treatment, .data$timeAtRisk,
            .data$outcomeCount, .data$survivalTime,
-           .data$outcomeCount.x, .data$survivalTime.x, .data$outcomeCount.y, .data$survivalTime.y) %>%
-    filter(.data$outcomeCount != 3)
+           .data$outcomeCount.x, .data$survivalTime.x, .data$outcomeCount.y, .data$survivalTime.y)
     # Leaving for debugging purposes
 
   simultaneous <- population %>% filter(.data$outcomeCount == 3)
@@ -73,7 +72,7 @@ combineCompetingStudyPopulations <- function(mainPopulation,
   } else {
     if (nrow(simultaneous) > 0) {
       population <- population %>% mutate(outcomeCount = replace(.data$outcomeCount, .data$outcomeCount == 3, codeSimultaneousEventsAs))
-      ParallelLogger::logWarn("Recoding outcome count for", nrow(simultaneous), " subjects with simultaneous outcomes of interest and competing risks as", codeSimultaneousEventsAs)
+      ParallelLogger::logWarn("Recoding outcome count for ", nrow(simultaneous), " subjects with simultaneous outcomes of interest and competing risks as ", codeSimultaneousEventsAs)
     }
   }
 
