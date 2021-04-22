@@ -13,6 +13,8 @@ createFitOutcomeModelArgs(
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
   riskId = NULL,
+  codeSimultaneousEventsAs = 1,
+  removeSubjectsWithSimultaneousEvents = TRUE,
   prior = createPrior("laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
     = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")

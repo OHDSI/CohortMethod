@@ -642,8 +642,10 @@ doCombinePopulations <- function(studyPop, params) {
     unknowns <- setdiff(riskPop$subjectId, studyPop$subjectId)
     riskPop <- riskPop[!(riskPop$subjectId %in% unknowns), ]
     codeSimultaneousEventsAs <- params$args$codeSimultaneousEventsAs
+    removeSubjectsWithSimultaneousEvents <- params$args$removeSubjectsWithSimultaneousEvents
     combinedPop <- combineCompetingStudyPopulations(mainPopulation = studyPop,
                                                     competingRiskPopulation = riskPop,
+                                                    removeSubjectsWithSimultaneousEvents = removeSubjectsWithSimultaneousEvents,
                                                     codeSimultaneousEventsAs = codeSimultaneousEventsAs)
   }
   return(combinedPop)
@@ -734,6 +736,7 @@ doFitOutcomeModelPlus <- function(params) {
     ps <- doCombinePopulations(studyPop = ps, params = params)
     args$riskId <- NULL
     args$codeSimultaneousEventsAs <- NULL
+    args$removeSubjectsWithSimultaneousEvents <- NULL
   }
 
   args$population <- ps
