@@ -23,6 +23,26 @@ createSillyCompetingRisk <- function(studyPopulation,
   return(riskPopulation)
 }
 
+createKnownCompetingRisk <- function(studyPopulation){
+
+  len <- nrow(studyPopulation)
+  hasEvent <- c(rep(1, 30), rep(0, len-30))
+  oldDaysToEvent <- studyPopulation$daysToEvent
+  newDaysToEvent <- oldDaysToEvent %>%
+    replace(c(11:20), oldDaysToEvent[11:20] - 1) %>%
+    replace(c(21:30), oldDaysToEvent[21:30] + 1)
+  newDaysToEvent <- ifelse(hasEvent == 0, NA, newDaysToEvent)
+  newDaysToEvent <- ifelse(is.na(newDaysToEvent) & hasEvent == 1, floor(runif(len, studyPopulation$riskStart, studyPopulation$riskEnd)), newDaysToEvent)
+  newSurvivalTime <- ifelse(hasEvent == 1, newDaysToEvent + 1, studyPopulation$timeAtRisk)
+
+  newPop <- studyPopulation %>%
+    mutate(outcomeCount = hasEvent) %>%
+    mutate(daysToEvent = newDaysToEvent,
+           survivalTime = newSurvivalTime)
+
+  return(newPop)
+}
+
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmDatabaseSchema = "main",
                                           targetId = 1,
@@ -35,9 +55,8 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           covariateSettings = createDefaultCovariateSettings())
 
 studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                  outcomeId = 1,
+                                  outcomeId = 3,
                                   riskWindowEnd = 99999)
-
 set.seed(123)
 riskPop <- createSillyCompetingRisk(studyPop, populationProportion = 0.2)
 riskTable <- riskPop %>% filter(outcomeCount == 1) %>%
@@ -46,6 +65,16 @@ riskTable <- riskPop %>% filter(outcomeCount == 1) %>%
   mutate(cohortDefinitionId = 5) %>%
   select(cohortDefinitionId, subjectId, cohortStartDate, cohortEndDate)
 names(riskTable) <- toupper(SqlRender::camelCaseToSnakeCase(names(riskTable)))
+
+riskPopKnown <- createKnownCompetingRisk(studyPop)
+riskTableKnown <- riskPopKnown %>% filter(outcomeCount == 1) %>%
+  mutate(cohortStartDate = as.character(as.Date(cohortStartDate + daysToEvent, origin = "1970-01-01"))) %>%
+  mutate(cohortEndDate = cohortStartDate) %>%
+  mutate(cohortDefinitionId = 6) %>%
+  select(cohortDefinitionId, subjectId, cohortStartDate, cohortEndDate)
+names(riskTableKnown) <- toupper(SqlRender::camelCaseToSnakeCase(names(riskTableKnown)))
+
+riskTable <- rbind(riskTable, riskTableKnown)
 
 connect <- DatabaseConnector::connect(connectionDetails)
 oT <- querySql(connect, "SELECT * FROM cohort")
@@ -65,7 +94,7 @@ test_that("Competing risks single analysis", {
                                             cdmDatabaseSchema = "main",
                                             targetId = 1,
                                             comparatorId = 2,
-                                            outcomeIds = c(3, 5),
+                                            outcomeIds = c(3, 5, 6),
                                             exposureDatabaseSchema = "main",
                                             outcomeDatabaseSchema = "main",
                                             exposureTable = "cohort",
@@ -79,13 +108,19 @@ test_that("Competing risks single analysis", {
   studyPop5 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
                                      outcomeId = 5,
                                      riskWindowEnd = 99999)
+  studyPop6 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                     outcomeId = 6,
+                                     riskWindowEnd = 99999)
 
   expect_error(combineCompetingStudyPopulations(mainPopulation = studyPop3[-1,],
                                                 competingRiskPopulation = studyPop4))
 
   #expect_no_error
   invisible(combineCompetingStudyPopulations(mainPopulation = studyPop3,
-                                   competingRiskPopulation = studyPop5[-1,]))
+                                             competingRiskPopulation = studyPop5[-1,]))
+
+  studyPopKnown <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
+                                                    competingRiskPopulation = studyPop6)
 
 
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
