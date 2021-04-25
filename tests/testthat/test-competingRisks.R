@@ -26,11 +26,11 @@ createSillyCompetingRisk <- function(studyPopulation,
 createKnownCompetingRisk <- function(studyPopulation){
 
   len <- nrow(studyPopulation)
-  hasEvent <- c(rep(1, 30), rep(0, len-30))
+  hasEvent <- c(rep(1, 150), rep(0, len-150))
   oldDaysToEvent <- studyPopulation$daysToEvent
   newDaysToEvent <- oldDaysToEvent %>%
-    replace(c(11:20), oldDaysToEvent[11:20] - 1) %>%
-    replace(c(21:30), oldDaysToEvent[21:30] + 1)
+    replace(c(51:100), oldDaysToEvent[51:100] - 1) %>%
+    replace(c(101:150), oldDaysToEvent[101:150] + 1)
   newDaysToEvent <- ifelse(hasEvent == 0, NA, newDaysToEvent)
   newDaysToEvent <- ifelse(is.na(newDaysToEvent) & hasEvent == 1, floor(runif(len, studyPopulation$riskStart, studyPopulation$riskEnd)), newDaysToEvent)
   newSurvivalTime <- ifelse(hasEvent == 1, newDaysToEvent + 1, studyPopulation$timeAtRisk)
@@ -119,9 +119,18 @@ test_that("Competing risks single analysis", {
   invisible(combineCompetingStudyPopulations(mainPopulation = studyPop3,
                                              competingRiskPopulation = studyPop5[-1,]))
 
-  studyPopKnown <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
+  studyPopSimul <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
                                                     competingRiskPopulation = studyPop6)
+  studyPopReplace <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
+                                                      competingRiskPopulation = studyPop6,
+                                                      removeSubjectsWithSimultaneousEvents = FALSE,
+                                                      codeSimultaneousEventsAs = 1)
+  simulEvents <- studyPop3 %>%
+    subset(outcomeCount == 1) %>%
+    inner_join(studyPop6, by = c("subjectId", "outcomeCount", "survivalTime"))
 
+  expect_equivalent(nrow(studyPop3) - nrow(simulEvents), nrow(studyPopSimul))
+  expect_equivalent(nrow(studyPop3), nrow(studyPopReplace))
 
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
                                                        competingRiskPopulation = studyPop5)
