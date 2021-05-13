@@ -2,6 +2,7 @@ library(CohortMethod)
 library(Eunomia)
 library(testthat)
 library(cmprsk)
+library(crrSC)
 
 connectionDetails <- getEunomiaConnectionDetails()
 
@@ -83,28 +84,25 @@ insertTable(connect, "cohort",
             dropTableIfExists = TRUE, createTable = TRUE)
 dbDisconnect(connect)
 
-test_that("Competing risks single analysis", {
-
+test_that("Competing risk population creation", {
   nsaids <- c(1118084, 1124300) # celecoxib, diclofenac
 
   covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
                                                 addDescendantsToExclude = TRUE)
 
   sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
-                                            cdmDatabaseSchema = "main",
-                                            targetId = 1,
-                                            comparatorId = 2,
-                                            outcomeIds = c(3, 5, 6),
-                                            exposureDatabaseSchema = "main",
-                                            outcomeDatabaseSchema = "main",
-                                            exposureTable = "cohort",
-                                            outcomeTable = "cohort",
-                                            covariateSettings = covSettings)
-
+                                             cdmDatabaseSchema = "main",
+                                             targetId = 1,
+                                             comparatorId = 2,
+                                             outcomeIds = c(3, 5, 6),
+                                             exposureDatabaseSchema = "main",
+                                             outcomeDatabaseSchema = "main",
+                                             exposureTable = "cohort",
+                                             outcomeTable = "cohort",
+                                             covariateSettings = covSettings)
   studyPop3 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
                                      outcomeId = 3,
                                      riskWindowEnd = 99999)
-
   studyPop5 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
                                      outcomeId = 5,
                                      riskWindowEnd = 99999)
@@ -131,6 +129,34 @@ test_that("Competing risks single analysis", {
 
   expect_equivalent(nrow(studyPop3) - nrow(simulEvents), nrow(studyPopSimul))
   expect_equivalent(nrow(studyPop3), nrow(studyPopReplace))
+
+})
+
+test_that("Competing risks non stratified single analysis", {
+
+  nsaids <- c(1118084, 1124300) # celecoxib, diclofenac
+
+  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+
+  sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                            cdmDatabaseSchema = "main",
+                                            targetId = 1,
+                                            comparatorId = 2,
+                                            outcomeIds = c(3, 5, 6),
+                                            exposureDatabaseSchema = "main",
+                                            outcomeDatabaseSchema = "main",
+                                            exposureTable = "cohort",
+                                            outcomeTable = "cohort",
+                                            covariateSettings = covSettings)
+
+  studyPop3 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                     outcomeId = 3,
+                                     riskWindowEnd = 99999)
+
+  studyPop5 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                     outcomeId = 5,
+                                     riskWindowEnd = 99999)
 
   studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
                                                        competingRiskPopulation = studyPop5)
@@ -161,6 +187,59 @@ test_that("Competing risks single analysis", {
 
   expect_equivalent(coef(fitRisk2), goodFit1$coef)
   expect_equivalent(coef(fitNoRisk1), goodFit2$coef)
+
+})
+
+test_that("Competing risks stratified single analysis", {
+  nsaids <- c(1118084, 1124300) # celecoxib, diclofenac
+
+  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+
+  sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                             cdmDatabaseSchema = "main",
+                                             targetId = 1,
+                                             comparatorId = 2,
+                                             outcomeIds = c(3, 5, 6),
+                                             exposureDatabaseSchema = "main",
+                                             outcomeDatabaseSchema = "main",
+                                             exposureTable = "cohort",
+                                             outcomeTable = "cohort",
+                                             covariateSettings = covSettings)
+
+  studyPop3 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                     outcomeId = 3,
+                                     riskWindowEnd = 99999)
+
+  studyPop5 <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                     outcomeId = 5,
+                                     riskWindowEnd = 99999)
+
+  studyPopCombined <- combineCompetingStudyPopulations(mainPopulation = studyPop3,
+                                                       competingRiskPopulation = studyPop5)
+
+  psCombined <- createPs(cohortMethodData = sCohortMethodData,
+                         population = studyPopCombined)
+  stratPopCombined <- stratifyByPs(psCombined)
+
+  fitRisk <- fitOutcomeModel(studyPopCombined,
+                             modelType = "fgr")
+
+  fitRiskStrat <- fitOutcomeModel(stratPopCombined,
+                                  modelType = "fgr",
+                                  stratified = TRUE)
+
+  goodFitStrat <- crrs(ftime = stratPopCombined$survivalTime,
+                       fstatus = stratPopCombined$outcomeCount,
+                       cov1 = stratPopCombined$treatment,
+                       strata = stratPopCombined$stratumId)
+
+  expect_false(coef(fitRisk2) == coef(fitRiskStrat))
+  expect_equivalent(coef(fitRiskStrat), goodFitStrat$coef)
+
+
+
+
 
 })
 
