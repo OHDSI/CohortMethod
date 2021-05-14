@@ -7,7 +7,7 @@
 summarizeAnalyses(referenceTable, outputFolder)
 }
 \arguments{
-\item{referenceTable}{A \link[tibble:tibble]{tibble::tibble} as created by the \link{runCmAnalyses} function.}
+\item{referenceTable}{A \link[dplyr:reexports]{dplyr::tibble} as created by the \link{runCmAnalyses} function.}
 
 \item{outputFolder}{Name of the folder where all the outputs have been written to.}
 }

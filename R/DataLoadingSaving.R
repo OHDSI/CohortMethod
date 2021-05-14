@@ -1,4 +1,4 @@
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -44,9 +44,10 @@
 #'                                     instance. Requires read permissions to this database. On SQL
 #'                                     Server, this should specify both the database and the schema,
 #'                                     so for example 'cdm_instance.dbo'.
-#' @param oracleTempSchema             For Oracle only: the name of the database schema where you want
-#'                                     all temporary tables to be managed. Requires create/insert
-#'                                     permissions to this database.
+#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param targetId                     A unique identifier to define the target cohort.  If
 #'                                     exposureTable = DRUG_ERA, targetId is a concept ID and all
 #'                                     descendant concepts within that concept ID will be used to
@@ -106,7 +107,8 @@
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
                                   cdmDatabaseSchema,
-                                  oracleTempSchema = cdmDatabaseSchema,
+                                  oracleTempSchema = NULL,
+                                  tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                   targetId,
                                   comparatorId,
                                   outcomeIds,
@@ -128,6 +130,10 @@ getDbCohortMethodData <- function(connectionDetails,
     warning("The excludeDrugsFromCovariates argument has been deprecated. Please explicitly exclude the drug concepts in the covariate settings")
   } else {
     excludeDrugsFromCovariates = FALSE
+  }
+  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
+    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
+    tempEmulationSchema <- oracleTempSchema
   }
   if (is.null(studyStartDate)) {
     studyStartDate <- ""
@@ -179,7 +185,7 @@ getDbCohortMethodData <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
                                                    exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = exposureTable,
@@ -199,12 +205,12 @@ getDbCohortMethodData <- function(connectionDetails,
     renderedSql <- SqlRender::loadRenderTranslateSql("CountCohorts.sql",
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema,
+                                                     tempEmulationSchema = tempEmulationSchema,
                                                      cdm_version = cdmVersion,
                                                      target_id = targetId)
     counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
     ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-    preSampleCounts <- tibble::tibble(dummy = 0)
+    preSampleCounts <- dplyr::tibble(dummy = 0)
     idx <- which(counts$treatment == 1)
     if (length(idx) == 0) {
       preSampleCounts$targetPersons = 0
@@ -234,7 +240,7 @@ getDbCohortMethodData <- function(connectionDetails,
       renderedSql <- SqlRender::loadRenderTranslateSql("SampleCohorts.sql",
                                                        packageName = "CohortMethod",
                                                        dbms = connectionDetails$dbms,
-                                                       oracleTempSchema = oracleTempSchema,
+                                                       tempEmulationSchema = tempEmulationSchema,
                                                        cdm_version = cdmVersion,
                                                        max_cohort_size = maxCohortSize)
       DatabaseConnector::executeSql(connection, renderedSql)
@@ -246,7 +252,7 @@ getDbCohortMethodData <- function(connectionDetails,
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                  packageName = "CohortMethod",
                                                  dbms = connectionDetails$dbms,
-                                                 oracleTempSchema = oracleTempSchema,
+                                                 tempEmulationSchema = tempEmulationSchema,
                                                  cdm_version = cdmVersion,
                                                  target_id = targetId,
                                                  sampled = sampled)
@@ -267,7 +273,7 @@ getDbCohortMethodData <- function(connectionDetails,
     rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
                                                      packageName = "CohortMethod",
                                                      dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema,
+                                                     tempEmulationSchema = tempEmulationSchema,
                                                      cdm_database_schema = cdmDatabaseSchema,
                                                      exposure_database_schema = exposureDatabaseSchema,
                                                      exposure_table = tolower(exposureTable),
@@ -278,13 +284,13 @@ getDbCohortMethodData <- function(connectionDetails,
                                                      study_end_date = studyEndDate)
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql, snakeCaseToCamelCase = TRUE)
     if (nrow(rawCount) == 0) {
-      counts <- tibble::tibble(description = "Original cohorts",
+      counts <- dplyr::tibble(description = "Original cohorts",
                                targetPersons = 0,
                                comparatorPersons = 0,
                                targetExposures = 0,
                                comparatorExposures = 0)
     } else {
-      counts <- tibble::tibble(description = "Original cohorts",
+      counts <- dplyr::tibble(description = "Original cohorts",
                                targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
                                comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
                                targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
@@ -333,7 +339,7 @@ getDbCohortMethodData <- function(connectionDetails,
     cohortTable <- "#cohort_person"
   }
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
-                                                         oracleTempSchema = oracleTempSchema,
+                                                         oracleTempSchema = tempEmulationSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
                                                          cdmVersion = cdmVersion,
                                                          cohortTable = cohortTable,
@@ -346,7 +352,7 @@ getDbCohortMethodData <- function(connectionDetails,
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                   packageName = "CohortMethod",
                                                   dbms = connectionDetails$dbms,
-                                                  oracleTempSchema = oracleTempSchema,
+                                                  tempEmulationSchema = tempEmulationSchema,
                                                   cdm_database_schema = cdmDatabaseSchema,
                                                   outcome_database_schema = outcomeDatabaseSchema,
                                                   outcome_table = outcomeTable,
@@ -363,7 +369,7 @@ getDbCohortMethodData <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    sampled = sampled)
   DatabaseConnector::executeSql(connection,
                                 renderedSql,
@@ -376,82 +382,4 @@ getDbCohortMethodData <- function(connectionDetails,
   class(covariateData) <- "CohortMethodData"
   attr(class(covariateData), "package") <- "CohortMethod"
   return(covariateData)
-}
-
-
-#' Insert a population into a database
-#'
-#' @details
-#' Inserts a population table into a database. The table in the database will have the same structure
-#' as the COHORT table in the Common Data Model.
-#'
-#' @param population             Either an object of type [CohortMethodData] or a population
-#'                               object generated by functions like [createStudyPopulation()].
-#' @param cohortIds              The IDs to be used for the target and comparator cohort,
-#'                               respectively.
-#' @param connectionDetails      An R object of type `connectionDetails` created using the
-#'                               [DatabaseConnector::createConnectionDetails()] function.
-#' @param cohortDatabaseSchema   The name of the database schema where the data will be written.
-#'                               Requires write permissions to this database. On SQL Server, this
-#'                               should specify both the database and the schema, so for example
-#'                               'cdm_instance.dbo'.
-#' @param cohortTable            The name of the table in the database schema where the data will be
-#'                               written.
-#' @param createTable            Should a new table be created? If not, the data will be inserted into
-#'                               an existing table.
-#' @param dropTableIfExists      If `createTable = TRUE` and the table already exists it will be
-#'                               overwritten.
-#' @param cdmVersion             Define the OMOP CDM version used: currently supports "5".
-#'
-#' @export
-insertDbPopulation <- function(population,
-                               cohortIds = c(1, 0),
-                               connectionDetails,
-                               cohortDatabaseSchema,
-                               cohortTable = "cohort",
-                               createTable = FALSE,
-                               dropTableIfExists = TRUE,
-                               cdmVersion = "5") {
-  if (is(population, "cohortMethodData")) {
-    population <- population$cohorts %>%
-      collect()
-  }
-  newCohortIds <- plyr::mapvalues(population$treatment, c(1, 0), cohortIds)
-  population <- population[, c("subjectId", "cohortStartDate")]
-  population$cohortDefinitionId <- newCohortIds
-  population$cohortEndDate <- NA
-  colnames(population) <- SqlRender::camelCaseToSnakeCase(colnames(population))
-  connection <- DatabaseConnector::connect(connectionDetails)
-  ParallelLogger::logInfo("Writing ",
-                          nrow(population),
-                          " rows to ",
-                          cohortDatabaseSchema, ".",
-                          cohortTable)
-  start <- Sys.time()
-  if (!createTable) {
-    if (cdmVersion == "4") {
-      sql <- "DELETE FROM @table WHERE cohort_concept_id IN (@cohort_ids);"
-    } else {
-      sql <- "DELETE FROM @table WHERE cohort_definition_id IN (@cohort_ids);"
-    }
-    sql <- SqlRender::render(sql,
-                                table = paste(cohortDatabaseSchema, cohortTable, sep = "."),
-                                cohort_ids = cohortIds)
-    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
-    DatabaseConnector::executeSql(connection = connection,
-                                  sql = sql,
-                                  progressBar = FALSE,
-                                  reportOverallTime = FALSE)
-  }
-  DatabaseConnector::insertTable(connection = connection,
-                                 tableName = paste(cohortDatabaseSchema, cohortTable, sep = "."),
-                                 data = population,
-                                 dropTableIfExists = dropTableIfExists,
-                                 createTable = createTable,
-                                 tempTable = FALSE,
-                                 oracleTempSchema = NULL)
-  DatabaseConnector::disconnect(connection)
-  delta <- Sys.time() - start
-  ParallelLogger::logInfo(paste("Inserting rows took", signif(delta, 3), attr(delta, "units")))
-  invisible(TRUE)
 }

@@ -15,7 +15,7 @@ computeMdrr(
 \arguments{
 \item{population}{A data frame describing the study population as created using the
 \code{\link{createStudyPopulation}} function. This should at least have these
-columns: subjectId, treatment, outcomeCount, timeAtRisk.}
+columns: personSeqId, treatment, outcomeCount, timeAtRisk.}
 
 \item{alpha}{Type I error.}
 

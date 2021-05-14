@@ -1,6 +1,6 @@
 # @file test-parameterSweep.R
 #
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -60,6 +60,12 @@ test_that("Create study population functions", {
 
   aTable <- getAttritionTable(studyPop)
   expect_is(aTable, "data.frame")
+
+
+  plot <- plotTimeToEvent(cohortMethodData,
+                          outcomeId = 194133)
+  expect_is(plot, "ggplot")
+
 })
 
 test_that("Propensity score functions", {

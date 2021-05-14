@@ -1,6 +1,6 @@
 # @file MultiAnalysesVignetteDataFetch.R
 #
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -21,21 +21,14 @@ library(CohortMethod)
 library(SqlRender)
 options(andromedaTempFolder = "s:/andromedaTemp")
 
-# PDW
-pw <- NULL
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "CDM_IBM_MDCD_V1153.dbo"
-resultsDatabaseSchema <- "scratch.dbo"
-port <- 17001
+# MDCD on RedShift
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
+                                                                connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
+                                                                user = keyring::key_get("redShiftUserName"),
+                                                                password = keyring::key_get("redShiftPassword"))
+cdmDatabaseSchema <- "cdm"
+resultsDatabaseSchema <- "scratch_mschuemi2"
 cdmVersion <- "5"
-
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
-                                                                server = server,
-                                                                user = user,
-                                                                password = pw,
-                                                                port = port)
 
 # Eunomia
 cdmDatabaseSchema <- "main"
@@ -63,55 +56,48 @@ sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
 sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
 DatabaseConnector::querySql(connection, sql)
 
-# Get all NSAIDs:
-# sql <- "SELECT concept_id FROM @cdmDatabaseSchema.concept_ancestor INNER JOIN @cdmDatabaseSchema.concept ON descendant_concept_id = concept_id WHERE ancestor_concept_id = 21603933"
-# sql <- SqlRender::renderSql(sql, cdmDatabaseSchema = cdmDatabaseSchema)$sql
-# sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-# nsaids <- DatabaseConnector::querySql(connection, sql)
-# nsaids <- nsaids$CONCEPT_ID
-
 DatabaseConnector::disconnect(connection)
 
 nsaids <- 21603933
 
 tcos <- createTargetComparatorOutcomes(targetId = 1118084,
-                                     comparatorId = 1124300,
-                                     outcomeIds = c(192671,
-                                                    24609,
-                                                    29735,
-                                                    73754,
-                                                    80004,
-                                                    134718,
-                                                    139099,
-                                                    141932,
-                                                    192367,
-                                                    193739,
-                                                    194997,
-                                                    197236,
-                                                    199074,
-                                                    255573,
-                                                    257007,
-                                                    313459,
-                                                    314658,
-                                                    316084,
-                                                    319843,
-                                                    321596,
-                                                    374366,
-                                                    375292,
-                                                    380094,
-                                                    433753,
-                                                    433811,
-                                                    436665,
-                                                    436676,
-                                                    436940,
-                                                    437784,
-                                                    438134,
-                                                    440358,
-                                                    440374,
-                                                    443617,
-                                                    443800,
-                                                    4084966,
-                                                    4288310))
+                                       comparatorId = 1124300,
+                                       outcomeIds = c(192671,
+                                                      24609,
+                                                      29735,
+                                                      73754,
+                                                      80004,
+                                                      134718,
+                                                      139099,
+                                                      141932,
+                                                      192367,
+                                                      193739,
+                                                      194997,
+                                                      197236,
+                                                      199074,
+                                                      255573,
+                                                      257007,
+                                                      313459,
+                                                      314658,
+                                                      316084,
+                                                      319843,
+                                                      321596,
+                                                      374366,
+                                                      375292,
+                                                      380094,
+                                                      433753,
+                                                      433811,
+                                                      436665,
+                                                      436676,
+                                                      436940,
+                                                      437784,
+                                                      438134,
+                                                      440358,
+                                                      440374,
+                                                      443617,
+                                                      443800,
+                                                      4084966,
+                                                      4288310))
 targetComparatorOutcomesList <- list(tcos)
 
 covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
@@ -239,7 +225,7 @@ cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAna
 
 saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodVignette2/cmAnalysisList.json")
 saveTargetComparatorOutcomesList(targetComparatorOutcomesList,
-                               "s:/temp/cohortMethodVignette2/targetComparatorOutcomesList.json")
+                                 "s:/temp/cohortMethodVignette2/targetComparatorOutcomesList.json")
 
 # cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.json')
 
@@ -259,7 +245,7 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         getDbCohortMethodDataThreads = 1,
                         createPsThreads = 1,
                         psCvThreads = 16,
-                        createStudyPopThreads = 1,
+                        createStudyPopThreads = 3,
                         trimMatchStratifyThreads = 5,
                         prefilterCovariatesThreads = 3,
                         fitOutcomeModelThreads = 5,

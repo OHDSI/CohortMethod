@@ -54,7 +54,7 @@ test_that("createStudyPop: removeDuplicateSubjects = 'keep first'", {
   cohorts <- bind_rows(cohortRow, cohortRow, cohortRow)
   cohorts$rowId <- c(1,2,3)
   cohorts$treatment <- c(1, 0, 1)
-  cohorts$subjectId <- c(1, 1, 2)
+  cohorts$personSeqId <- c(1, 1, 2)
   cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2001-02-01", "2000-01-01"))
   tmpCmd$cohorts <- cohorts
 
@@ -68,7 +68,7 @@ test_that("createStudyPop: removeDuplicateSubjects = 'keep first' removing ties"
   cohorts <- bind_rows(cohortRow, cohortRow, cohortRow, cohortRow)
   cohorts$rowId <- c(1,2,3,4)
   cohorts$treatment <- c(1, 0, 1, 0)
-  cohorts$subjectId <- c(1, 1, 2, 2)
+  cohorts$personSeqId <- c(1, 1, 2, 2)
   cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2001-02-01", "2000-01-01", "2000-01-01"))
   tmpCmd$cohorts <- cohorts
 
@@ -175,7 +175,7 @@ test_that("createStudyPop: censor at new risk window start", {
   cohorts <- bind_rows(cohortRow, cohortRow, cohortRow)
   cohorts$rowId <- c(1,2,3)
   cohorts$treatment <- c(1, 0, 1)
-  cohorts$subjectId <- c(1, 1, 2)
+  cohorts$personSeqId <- c(1, 1, 2)
   cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2000-02-01", "2000-01-01"))
   cohorts$daysToCohortEnd <- c(100, 100, 100)
   cohorts$daysToObsEnd <- c(1000, 1000, 1000)

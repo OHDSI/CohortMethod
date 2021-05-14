@@ -1,4 +1,4 @@
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -17,7 +17,8 @@
 #' Create an outcome model, and compute the relative risk
 #'
 #' @details
-#' IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010).
+#' IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
+#' (att) using stabilized inverse propensity scores (Xu et al. 2010).
 #'
 #' @description
 #' Create an outcome model, and computes the relative risk
@@ -36,10 +37,18 @@
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
+#'                              average treatment effect, and `estimator = "att"`for the average treatment
+#'                              effect in the treated.
+#' @param maxWeight             for IPTW: the maximum weight. Larger values will be truncated to this
+#'                              value. `maxWeight = 0` means no truncation takes place.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
+#' @param profileGrid           A one-dimensional grid of points on the log(relative risk) scale where
+#'                              the likelihood for the treatment variable coefficient is sampled. Set to
+#'                              NULL to skip profiling.
 #' @param prior                 The prior used to fit the model. See [Cyclops::createPrior()]
 #'                              for details.
 #' @param control               The control object used to control the cross-validation used to
@@ -62,9 +71,12 @@ fitOutcomeModel <- function(population,
                             stratified = FALSE,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
+                            estimator = "ate",
+                            maxWeight = 0,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
+                            profileGrid = seq(log(0.1), log(10), length.out = 1000),
                             prior = createPrior("laplace", useCrossValidation = TRUE),
                             control = createControl(cvType = "auto",
                                                     seed = 1,
@@ -84,9 +96,10 @@ fitOutcomeModel <- function(population,
     stop("Can't exclude covariates that are to be used for interaction terms")
   if (inversePtWeighting && is.null(population$propensityScore))
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
+  if (!estimator %in% c("ate", "att"))
+    stop("The estimator argument should be either 'ate' or 'att'.")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox" && modelType != "fgr")
     stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', 'cox' or 'fgr")
-
   ParallelLogger::logTrace("Fitting outcome model")
 
   start <- Sys.time()
@@ -97,6 +110,7 @@ fitOutcomeModel <- function(population,
   coefficients <- NULL
   fit <- NULL
   priorVariance <- NULL
+  logLikelihood <- NA
   treatmentVarId <- NA
   subgroupCounts <- NULL
   logLikelihoodProfile <- NULL
@@ -110,7 +124,12 @@ fitOutcomeModel <- function(population,
     status <- "NO OUTCOMES FOUND FOR POPULATION, CANNOT FIT"
   } else {
     # Informative population ---------------------------------------------------------
-    informativePopulation <- getInformativePopulation(population, stratified, inversePtWeighting, modelType)
+    informativePopulation <- getInformativePopulation(population = population,
+                                                      stratified = stratified,
+                                                      inversePtWeighting = inversePtWeighting,
+                                                      estimator = estimator,
+                                                      maxWeight = maxWeight,
+                                                      modelType = modelType)
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
       status <- "NO STRATA WITH BOTH TARGET, COMPARATOR, AS WELL AS THE OUTCOME. CANNOT FIT"
@@ -281,71 +300,83 @@ fitOutcomeModel <- function(population,
       }
       if (is.character(fit)) {
         status <- fit
-      } else if (fit$return_flag == "ILLCONDITIONED") {
-        status <- "ILL CONDITIONED, CANNOT FIT"
-      } else if (fit$return_flag == "MAX_ITERATIONS") {
-        status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
       } else {
-        status <- "OK"
-        coefficients <- coef(fit)
-        logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-        ci <- tryCatch({
-          confint(fit, parm = treatmentVarId, includePenalty = TRUE)
-        }, error = function(e) {
-          missing(e)  # suppresses R CMD check note
-          c(0, -Inf, Inf)
-        })
-        if (identical(ci, c(0, -Inf, Inf)))
-          status <- "ERROR COMPUTING CI"
-        seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
-        treatmentEstimate <- tibble::tibble(logRr = logRr,
-                                            logLb95 = ci[2],
-                                            logUb95 = ci[3],
-                                            seLogRr = seLogRr)
-        priorVariance <- fit$variance[1]
-
         # Retrieve likelihood profile
-        x <- seq(log(0.1), log(10), length.out = 100) # TODO Evil magic numbers, pass in control
-        logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit, parm = treatmentVarId, x, includePenalty = TRUE)$value
-        names(logLikelihoodProfile) <- x
-
-        if (!is.null(mainEffectTerms)) {
-          logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
-          if (prior$priorType == "none") {
-            ci <- tryCatch({
-              confint(fit, parm = mainEffectTerms$id, includePenalty = TRUE,
-                      overrideNoRegularization = TRUE)
-            }, error = function(e) {
-              missing(e)  # suppresses R CMD check note
-              t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
-            })
-          } else {
-            ci <- t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
-          }
-          seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
-          mainEffectEstimates <- tibble::tibble(covariateId = mainEffectTerms$id,
-                                                coariateName = mainEffectTerms$name,
-                                                logRr = logRr,
-                                                logLb95 = ci[ ,2],
-                                                logUb95 = ci[ ,3],
-                                                seLogRr = seLogRr)
+        if (!is.null(profileGrid)) {
+          logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
+                                                                          parm = treatmentVarId,
+                                                                          x = profileGrid,
+                                                                          includePenalty = TRUE)$value
+          names(logLikelihoodProfile) <- profileGrid
         }
 
-        if (!is.null(interactionTerms)) {
-          logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
+        if (fit$return_flag == "ILLCONDITIONED") {
+          status <- "ILL CONDITIONED, CANNOT FIT"
+        } else if (fit$return_flag == "MAX_ITERATIONS") {
+          status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
+        } else {
+          status <- "OK"
+          coefficients <- coef(fit)
+          logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
           ci <- tryCatch({
-            confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+            confint(fit, parm = treatmentVarId, includePenalty = TRUE)
           }, error = function(e) {
             missing(e)  # suppresses R CMD check note
-            t(array(c(0, -Inf, Inf), dim = c(3,nrow(interactionTerms))))
+            c(0, -Inf, Inf)
           })
-          seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
-          interactionEstimates <- data.frame(covariateId = interactionTerms$covariateId,
-                                             interactionName = interactionTerms$interactionName,
-                                             logRr = logRr,
-                                             logLb95 = ci[ ,2],
-                                             logUb95 = ci[ ,3],
-                                             seLogRr = seLogRr)
+          if (identical(ci, c(0, -Inf, Inf)))
+            status <- "ERROR COMPUTING CI"
+          seLogRr <- (ci[3] - ci[2])/(2 * qnorm(0.975))
+          llNull <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
+                                                            parm = treatmentVarId,
+                                                            x = 0,
+                                                            includePenalty = FALSE)$value
+          llr <- fit$log_likelihood - llNull
+          treatmentEstimate <- dplyr::tibble(logRr = logRr,
+                                             logLb95 = ci[2],
+                                             logUb95 = ci[3],
+                                             seLogRr = seLogRr,
+                                             llr = llr)
+          priorVariance <- fit$variance[1]
+          logLikelihood <- fit$log_likelihood
+          if (!is.null(mainEffectTerms)) {
+            logRr <- coef(fit)[match(as.character(mainEffectTerms$id), names(coef(fit)))]
+            if (prior$priorType == "none") {
+              ci <- tryCatch({
+                confint(fit, parm = mainEffectTerms$id, includePenalty = TRUE,
+                        overrideNoRegularization = TRUE)
+              }, error = function(e) {
+                missing(e)  # suppresses R CMD check note
+                t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
+              })
+            } else {
+              ci <- t(array(c(0, -Inf, Inf), dim = c(3,nrow(mainEffectTerms))))
+            }
+            seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
+            mainEffectEstimates <- dplyr::tibble(covariateId = mainEffectTerms$id,
+                                                 coariateName = mainEffectTerms$name,
+                                                 logRr = logRr,
+                                                 logLb95 = ci[ ,2],
+                                                 logUb95 = ci[ ,3],
+                                                 seLogRr = seLogRr)
+          }
+
+          if (!is.null(interactionTerms)) {
+            logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
+            ci <- tryCatch({
+              confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+            }, error = function(e) {
+              missing(e)  # suppresses R CMD check note
+              t(array(c(0, -Inf, Inf), dim = c(3,nrow(interactionTerms))))
+            })
+            seLogRr <- (ci[ ,3] - ci[ ,2])/(2 * qnorm(0.975))
+            interactionEstimates <- data.frame(covariateId = interactionTerms$covariateId,
+                                               interactionName = interactionTerms$interactionName,
+                                               logRr = logRr,
+                                               logLb95 = ci[ ,2],
+                                               logUb95 = ci[ ,3],
+                                               seLogRr = seLogRr)
+          }
         }
       }
     }
@@ -355,10 +386,17 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelCoefficients <- coefficients
   outcomeModel$logLikelihoodProfile <- logLikelihoodProfile
   outcomeModel$outcomeModelPriorVariance <- priorVariance
+  outcomeModel$outcomeModelLogLikelihood <- logLikelihood
   outcomeModel$outcomeModelType <- modelType
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePtWeighting <- inversePtWeighting
+  if (inversePtWeighting) {
+    outcomeModel$estimator <- estimator
+    if (maxWeight > 0) {
+      outcomeModel$maxWeight <- maxWeight
+    }
+  }
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelmainEffectEstimates <- mainEffectEstimates
   if (length(interactionCovariateIds) != 0)
@@ -369,9 +407,7 @@ fitOutcomeModel <- function(population,
   if (modelType == "fgr") {
     outcomeModel$competingOutcomeCounts <- getCompetingOutcomeCounts(population, modelType)
   }
-  if (modelType == "poisson" || modelType == "cox" || modelType == "fgr") {
-    outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
-  }
+  outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
   if (!is.null(subgroupCounts)) {
     outcomeModel$subgroupCounts <- subgroupCounts
   }
@@ -382,7 +418,7 @@ fitOutcomeModel <- function(population,
   return(outcomeModel)
 }
 
-getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType) {
+getInformativePopulation <- function(population, stratified, inversePtWeighting, estimator, maxWeight, modelType) {
   population <- rename(population, y = .data$outcomeCount)
   if (!stratified) {
     population$stratumId <- NULL
@@ -408,9 +444,25 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     informativePopulation <- population
   }
   if (inversePtWeighting) {
-    informativePopulation$weight <- computeWeights(informativePopulation)
+    if ("weights" %in% colnames(informativePopulation)) {
+      if (!is.null(attr(population, "metaData"))) {
+        metaData <- attr(population, "metaData")
+        if (metaData$estimator != estimator) {
+          stop(sprintf("Specifying estimator = '%s' when fitting outcome model, but used estimator = '%s' when trimming",
+               estimator,
+               metaData$estimator))
+        }
+      }
+      ParallelLogger::logInfo("Using previously computed weights")
+    } else {
+      informativePopulation$weights <- computeWeights(informativePopulation, estimator = estimator)
+    }
+    if (maxWeight > 0) {
+      informativePopulation <- informativePopulation %>%
+        mutate(weights = if_else(.data$weights > maxWeight, maxWeight, .data$weights))
+    }
   } else {
-    informativePopulation$weight <- NULL
+    informativePopulation$weights <- NULL
   }
   columns <- c("rowId", "y", "treatment")
   if (stratified) {
@@ -420,7 +472,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     columns <- c(columns, "time")
   }
   if (inversePtWeighting) {
-    columns <- c(columns, "weight")
+    columns <- c(columns, "weights")
   }
   informativePopulation <- informativePopulation[, columns]
   return(informativePopulation)
@@ -468,21 +520,27 @@ filterAndTidyCovariates <- function(cohortMethodData,
   return(covariateData)
 }
 
-computeWeights <- function(informativePopulation) {
+computeWeights <- function(population, estimator = "ate") {
+  # Unstabilized:
   # ATE:
-  # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
-  #                                        1/informativePopulation$propensityScore,
-  #                                        1/(1 - informativePopulation$propensityScore))
-
-  # 'Stabilized' ATE:
-  return(ifelse(informativePopulation$treatment == 1,
-                mean(informativePopulation$treatment == 1)/informativePopulation$propensityScore,
-                mean(informativePopulation$treatment == 0)/(1 - informativePopulation$propensityScore)))
-
+  # population$weights <- ifelse(population$treatment == 1,
+  #                                        1/population$propensityScore,
+  #                                        1/(1 - population$propensityScore))
   # ATT:
-  # informativePopulation$weight <- ifelse(informativePopulation$treatment == 1,
+  # population$weights <- ifelse(population$treatment == 1,
   #                                        1,
-  #                                        informativePopulation$propensityScore/(1 - informativePopulation$propensityScore))
+  #                                        population$propensityScore/(1 - population$propensityScore))
+  if (estimator == "ate") {
+    # 'Stabilized' ATE:
+    return(ifelse(population$treatment == 1,
+                  mean(population$treatment == 1) / population$propensityScore,
+                  mean(population$treatment == 0) / (1 - population$propensityScore)))
+  } else {
+    # 'Stabilized' ATT:
+    return(ifelse(population$treatment == 1,
+                  mean(population$treatment == 1),
+                  mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)))
+  }
 }
 
 getOutcomeCounts <- function(population, modelType) {
@@ -494,12 +552,12 @@ getOutcomeCounts <- function(population, modelType) {
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
-  return(tibble::tibble(targetPersons = length(unique(population$subjectId[population$treatment == 1 & population$y != 0])),
-                        comparatorPersons = length(unique(population$subjectId[population$treatment == 0 & population$y != 0])),
-                        targetExposures = length(population$subjectId[population$treatment == 1 & population$y != 0]),
-                        comparatorExposures = length(population$subjectId[population$treatment == 0 & population$y != 0]),
-                        targetOutcomes = sum(population$y[population$treatment == 1]),
-                        comparatorOutcomes = sum(population$y[population$treatment == 0])))
+  return(dplyr::tibble(targetPersons = length(unique(population$personSeqId[population$treatment == 1 & population$y != 0])),
+                       comparatorPersons = length(unique(population$personSeqId[population$treatment == 0 & population$y != 0])),
+                       targetExposures = length(population$personSeqId[population$treatment == 1 & population$y != 0]),
+                       comparatorExposures = length(population$personSeqId[population$treatment == 0 & population$y != 0]),
+                       targetOutcomes = sum(population$y[population$treatment == 1]),
+                       comparatorOutcomes = sum(population$y[population$treatment == 0])))
 }
 
 getCompetingOutcomeCounts <- function(population, modelType) {
@@ -540,12 +598,13 @@ createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, popu
 }
 
 getTimeAtRisk <- function(population, modelType) {
-  population$time <- population$timeAtRisk
   if (modelType == "cox" || modelType == "fgr") {
     population$time <- population$survivalTime
+  } else {
+    population$time <- population$timeAtRisk
   }
-  return(tibble::tibble(targetDays = sum(population$time[population$treatment == 1]),
-                        comparatorDays = sum(population$time[population$treatment == 0])))
+  return(dplyr::tibble(targetDays = sum(population$time[population$treatment == 1]),
+                       comparatorDays = sum(population$time[population$treatment == 0])))
 }
 
 
@@ -579,7 +638,7 @@ print.OutcomeModel <- function(x, ...) {
     rns <- "treatment"
     i <- x$outcomeModelInteractionEstimates
     if (!is.null(i)) {
-      d <- rbind(d, i[,3:6])
+      d <- rbind(d[, 1:4], i[, 3:6])
       rns <-  c(rns, as.character(i$interactionName))
     }
     output <- data.frame(exp(d$logRr), exp(d$logLb95), exp(d$logUb95), d$logRr, d$seLogRr)
@@ -617,10 +676,10 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
     collect()
 
   ref <- bind_rows(ref,
-                   tibble::tibble(id = outcomeModel$outcomeModelTreatmentVarId,
-                                  name = "Treatment"),
-                   tibble::tibble(id = 0,
-                                  name = "(Intercept)"))
+                   dplyr::tibble(id = outcomeModel$outcomeModelTreatmentVarId,
+                                 name = "Treatment"),
+                   dplyr::tibble(id = 0,
+                                 name = "(Intercept)"))
 
   cfs <- cfs %>%
     inner_join(ref, by = "id")

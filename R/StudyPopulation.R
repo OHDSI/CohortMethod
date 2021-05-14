@@ -1,4 +1,4 @@
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -76,7 +76,7 @@ fastDuplicated <- function(data, columns) {
 #' A `tibble` specifying the study population. This `tibble` will have the following columns:
 #'
 #' - `rowId`: A unique identifier for an exposure.
-#' - `subjectId`: The person ID of the subject.
+#' - `personSeqId`: The person sequence ID of the subject.
 #' - `cohortStartdate`: The index date.
 #' - `outcomeCount` The number of outcomes observed during the risk window.
 #' - `timeAtRisk`: The number of days in the risk window.
@@ -141,16 +141,17 @@ createStudyPopulation <- function(cohortMethodData,
   if (is.null(population)) {
     metaData <- attr(cohortMethodData, "metaData")
     population <- cohortMethodData$cohorts %>%
-      collect()
+      collect() %>%
+      select(-.data$personId)
   } else {
     metaData <- attr(population, "metaData")
   }
 
   if (firstExposureOnly) {
     ParallelLogger::logInfo("Keeping only first exposure per subject")
-    population <- population[order(population$subjectId, population$treatment, population$cohortStartDate), ]
-    # idx <- duplicated(population[, c("subjectId", "treatment")])
-    idx <- fastDuplicated(population, c("subjectId", "treatment"))
+    population <- population[order(population$personSeqId, population$treatment, population$cohortStartDate), ]
+    # idx <- duplicated(population[, c("personSeqId", "treatment")])
+    idx <- fastDuplicated(population, c("personSeqId", "treatment"))
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
   }
@@ -170,27 +171,27 @@ createStudyPopulation <- function(cohortMethodData,
   }
   if (removeDuplicateSubjects == "remove all") {
     ParallelLogger::logInfo("Removing all subject that are in both cohorts (if any)")
-    targetSubjectIds <- population$subjectId[population$treatment == 1]
-    comparatorSubjectIds <- population$subjectId[population$treatment == 0]
+    targetSubjectIds <- population$personSeqId[population$treatment == 1]
+    comparatorSubjectIds <- population$personSeqId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
-    population <- population[!(population$subjectId %in% duplicateSubjectIds), ]
+    population <- population[!(population$personSeqId %in% duplicateSubjectIds), ]
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
   } else if (removeDuplicateSubjects == "keep first") {
     ParallelLogger::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
-    population <- population[order(population$subjectId, population$cohortStartDate), ]
-    # Remove ties:
-    # idx <- duplicated(population[, c("subjectId", "cohortStartDate")])
-    idx <- fastDuplicated(population, c("subjectId", "cohortStartDate"))
-    idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
-    if (all(idx)) {
-      stop("All cohort entries are ties, with same subject ID and cohort start date")
+    if (nrow(population) > 0) {
+      population <- population[order(population$personSeqId, population$cohortStartDate), ]
+      # Remove ties:
+      idx <- fastDuplicated(population, c("personSeqId", "cohortStartDate"))
+      idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
+      if (all(idx)) {
+        warning("All cohort entries are ties, with same subject ID and cohort start date")
+      }
+      population <- population[!idx, ]
+      # Keeping first:
+      idx <- fastDuplicated(population, "personSeqId")
+      population <- population[!idx, ]
     }
-    population <- population[!idx, ]
-    # Keeping first:
-    # idx <- duplicated(population[, c("subjectId")])
-    idx <- fastDuplicated(population, "subjectId")
-    population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Restricting duplicate subjects to first cohort")))
   }
@@ -239,10 +240,10 @@ createStudyPopulation <- function(cohortMethodData,
     if (nrow(population) > 1) {
       population$startDate <- population$cohortStartDate + population$riskStart
       population$endDate <- population$cohortStartDate + population$riskEnd
-      population <- population[order(population$subjectId, population$riskStart), ]
+      population <- population[order(population$personSeqId, population$riskStart), ]
       idx <- 1:(nrow(population) - 1)
       idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
-                     population$subjectId[idx] == population$subjectId[idx + 1])
+                     population$personSeqId[idx] == population$personSeqId[idx + 1])
       if (length(idx) > 0) {
         population$endDate[idx] <- population$startDate[idx + 1] - 1
         population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
@@ -323,11 +324,11 @@ getAttritionTable <- function(object) {
 }
 
 getCounts <- function(population, description = "") {
-  targetPersons <- length(unique(population$subjectId[population$treatment == 1]))
-  comparatorPersons <- length(unique(population$subjectId[population$treatment == 0]))
-  targetExposures <- length(population$subjectId[population$treatment == 1])
-  comparatorExposures <- length(population$subjectId[population$treatment == 0])
-  counts <- tibble::tibble(description = description,
+  targetPersons <- length(unique(population$personSeqId[population$treatment == 1]))
+  comparatorPersons <- length(unique(population$personSeqId[population$treatment == 0]))
+  targetExposures <- length(population$personSeqId[population$treatment == 1])
+  comparatorExposures <- length(population$personSeqId[population$treatment == 0])
+  counts <- dplyr::tibble(description = description,
                            targetPersons = targetPersons,
                            comparatorPersons = comparatorPersons,
                            targetExposures = targetExposures,
@@ -457,7 +458,7 @@ plotTimeToEvent <- function(cohortMethodData,
     end <- number*periodLength + periodLength
     idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
     idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
-    tibble::tibble(number = number,
+    dplyr::tibble(number = number,
                    start = start,
                    end = end,
                    eventsExposed = 0,
@@ -478,22 +479,22 @@ plotTimeToEvent <- function(cohortMethodData,
   periods$rateUnexposedComparator <- periods$eventsUnexposedComparator / periods$observedComparator
   periods$rateTarget <- (periods$eventsExposedTarget + periods$eventsUnexposedTarget) / periods$observedTarget
   periods$rateComparator <- (periods$eventsExposedComparator + periods$eventsUnexposedComparator) / periods$observedComparator
-  vizData <- rbind(tibble::tibble(start = periods$start,
+  vizData <- rbind(dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateExposedTarget,
                                   status = "Exposed events",
                                   type = targetLabel),
-                   tibble::tibble(start = periods$start,
+                   dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateUnexposedTarget,
                                   status = "Unexposed events",
                                   type = targetLabel),
-                   tibble::tibble(start = periods$start,
+                   dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateExposedComparator,
                                   status = "Exposed events",
                                   type = comparatorLabel),
-                   tibble::tibble(start = periods$start,
+                   dplyr::tibble(start = periods$start,
                                   end = periods$end,
                                   rate = periods$rateUnexposedComparator,
                                   status = "Unexposed events",

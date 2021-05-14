@@ -1,4 +1,4 @@
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -216,7 +216,7 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
 #' A ggplot object. Use the [ggplot2::ggsave] function to save to file in a different
 #' format.
 #'
-#' @param balance     A data frame created by the `computeCovariateBalance` funcion.
+#' @param balance     A data frame created by the `computeCovariateBalance` function.
 #' @param absolute    Should the absolute value of the difference be used?
 #' @param threshold   Show a threshold value for after matching standardized difference.
 #' @param title       The main title for the plot.
@@ -295,7 +295,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
 #' A ggplot object. Use the [ggplot2::ggsave] function to save to file in a different
 #' format.
 #'
-#' @param balance        A data frame created by the `computeCovariateBalance` funcion.
+#' @param balance        A data frame created by the `computeCovariateBalance` function.
 #' @param n              (Maximum) count of covariates to plot.
 #' @param maxNameWidth   Covariate names longer than this number of characters are truncated to create
 #'                       a nicer plot.
@@ -324,7 +324,7 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   topAfter$facet <- paste("Top", n, afterLabel)
   filtered <- rbind(topBefore, topAfter)
 
-  data <- tibble::tibble(covariateId = rep(filtered$covariateId, 2),
+  data <- dplyr::tibble(covariateId = rep(filtered$covariateId, 2),
                          covariate = rep(filtered$covariateName, 2),
                          difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
                          group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),

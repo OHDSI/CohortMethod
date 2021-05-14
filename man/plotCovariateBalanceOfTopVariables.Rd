@@ -15,7 +15,7 @@ plotCovariateBalanceOfTopVariables(
 )
 }
 \arguments{
-\item{balance}{A data frame created by the \code{computeCovariateBalance} funcion.}
+\item{balance}{A data frame created by the \code{computeCovariateBalance} function.}
 
 \item{n}{(Maximum) count of covariates to plot.}
 

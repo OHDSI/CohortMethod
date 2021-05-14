@@ -1,7 +1,7 @@
 CohortMethod
 ============
 
-[![Build Status](https://travis-ci.org/OHDSI/CohortMethod.svg?branch=master)](https://travis-ci.org/OHDSI/CohortMethod)
+[![Build Status](https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check)
 [![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
 
 CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
@@ -44,7 +44,7 @@ CohortMethod is an R package, with some functions implemented in C++.
 
 System Requirements
 ============
-Requires R (version 3.1.0 or higher). Installation on Windows requires [RTools](http://cran.r-project.org/bin/windows/Rtools/). Libraries used in CohortMethod require Java.
+Requires R (version 3.6.0 or higher). Installation on Windows requires [RTools](https://cran.r-project.org/bin/windows/Rtools/). Libraries used in CohortMethod require Java.
 
 Installation
 =============
@@ -53,9 +53,8 @@ Installation
 2. In R, use the following commands to download and install CohortMethod:
 
   ```r
-  install.packages("drat")
-  drat::addRepo("OHDSI")
-  install.packages("CohortMethod")
+  install.packages("remotes")
+  remotes::install_github("ohdsi/CohortMethod")
   ```
   
 3. Optionally, run this to check if CohortMethod was correctly installed:

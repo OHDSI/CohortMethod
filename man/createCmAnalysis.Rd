@@ -17,6 +17,8 @@ createCmAnalysis(
   trimByPsArgs = NULL,
   trimByPsToEquipoise = FALSE,
   trimByPsToEquipoiseArgs = NULL,
+  trimByIptw = FALSE,
+  trimByIptwArgs = NULL,
   matchOnPs = FALSE,
   matchOnPsArgs = NULL,
   matchOnPsAndCovariates = FALSE,
@@ -44,62 +46,68 @@ drugComparatorOutcome, this field should be used to select
 the specific comparator to use in this analysis.}
 
 \item{getDbCohortMethodDataArgs}{An object representing the arguments to be used when calling
-the \code{\link{getDbCohortMethodData}} function.}
+the \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}} function.}
 
 \item{createStudyPopArgs}{An object representing the arguments to be used when calling
-the \code{\link{createStudyPopulation}} function.}
+the \code{\link[=createStudyPopulation]{createStudyPopulation()}} function.}
 
-\item{createPs}{Should the \code{\link{createPs}} function be used in this
+\item{createPs}{Should the \code{\link[=createPs]{createPs()}} function be used in this
 analysis?}
 
 \item{createPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{createPs}} function.}
+the \code{\link[=createPs]{createPs()}} function.}
 
-\item{trimByPs}{Should the \code{\link{trimByPs}} function be used in this
+\item{trimByPs}{Should the \code{\link[=trimByPs]{trimByPs()}} function be used in this
 analysis?}
 
 \item{trimByPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{trimByPs}} function.}
+the \code{\link[=trimByPs]{trimByPs()}} function.}
 
-\item{trimByPsToEquipoise}{Should the \code{\link{trimByPsToEquipoise}} function be used
+\item{trimByPsToEquipoise}{Should the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function be used
 in this analysis?}
 
 \item{trimByPsToEquipoiseArgs}{An object representing the arguments to be used when calling
-the \code{\link{trimByPsToEquipoise}} function.}
+the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function.}
 
-\item{matchOnPs}{Should the \code{\link{matchOnPs}} function be used in this
+\item{trimByIptw}{Should the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function be used
+in this analysis?}
+
+\item{trimByIptwArgs}{An object representing the arguments to be used when calling
+the \code{\link[=trimByIptw]{trimByIptw()}} function.}
+
+\item{matchOnPs}{Should the \code{\link[=matchOnPs]{matchOnPs()}} function be used in this
 analysis?}
 
 \item{matchOnPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{matchOnPs}} function.}
+the \code{\link[=matchOnPs]{matchOnPs()}} function.}
 
-\item{matchOnPsAndCovariates}{Should the \code{\link{matchOnPsAndCovariates}} function be
+\item{matchOnPsAndCovariates}{Should the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function be
 used in this analysis?}
 
 \item{matchOnPsAndCovariatesArgs}{An object representing the arguments to be used when calling
-the \code{\link{matchOnPsAndCovariates}} function.}
+the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function.}
 
-\item{stratifyByPs}{Should the \code{\link{stratifyByPs}} function be used in
+\item{stratifyByPs}{Should the \code{\link[=stratifyByPs]{stratifyByPs()}} function be used in
 this analysis?}
 
 \item{stratifyByPsArgs}{An object representing the arguments to be used when calling
-the \code{\link{stratifyByPs}} function.}
+the \code{\link[=stratifyByPs]{stratifyByPs()}} function.}
 
-\item{stratifyByPsAndCovariates}{Should the \code{\link{stratifyByPsAndCovariates}} function
+\item{stratifyByPsAndCovariates}{Should the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function
 be used in this analysis?}
 
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
-the \code{\link{stratifyByPsAndCovariates}} function.}
+the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function.}
 
-\item{fitOutcomeModel}{Should the \code{\link{fitOutcomeModel}} function be used in
+\item{fitOutcomeModel}{Should the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function be used in
 this analysis?}
 
 \item{fitOutcomeModelArgs}{An object representing the arguments to be used when calling
-the \code{\link{fitOutcomeModel}} function.}
+the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function.}
 }
 \description{
 Create a CohortMethod analysis specification
 }
 \details{
-Create a set of analysis choices, to be used with the \code{\link{runCmAnalyses}} function.
+Create a set of analysis choices, to be used with the \code{\link[=runCmAnalyses]{runCmAnalyses()}} function.
 }

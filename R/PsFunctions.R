@@ -1,4 +1,4 @@
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -248,18 +248,26 @@ createPs <- function(cohortMethodData,
 getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
   if (is.null(coefficients)) {
-    return(tibble::tibble(coefficient = NA,
+    return(dplyr::tibble(coefficient = NA,
                           covariateId = NA,
                           covariateName = NA))
   }
-  result <- tibble::tibble(coefficient = coefficients[1],
+  result <- dplyr::tibble(coefficient = coefficients[1],
                            covariateId = NA,
                            covariateName = "(Intercept)")
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
-    coefficients <- tibble::tibble(coefficient = coefficients,
-                                   covariateId = as.numeric(attr(coefficients, "names")))
+    covariateIdIsInteger64 <- cohortMethodData$covariateRef %>%
+      pull(.data$covariateId) %>%
+      is("integer64")
+    if (covariateIdIsInteger64) {
+      coefficients <- dplyr::tibble(coefficient = coefficients,
+                                    covariateId = bit64::as.integer64(attr(coefficients, "names")))
+    } else {
+      coefficients <- dplyr::tibble(coefficient = coefficients,
+                                    covariateId = as.numeric(attr(coefficients, "names")))
+    }
     covariateRef <- cohortMethodData$covariateRef %>%
       collect()
     coefficients <- coefficients %>%
@@ -513,7 +521,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 
   if (confidenceIntervals) {
     aucCi <- aucWithCi(data$propensityScore, data$treatment)
-    return(tibble::tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
+    return(dplyr::tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
   } else {
     auc <- aucWithoutCi(data$propensityScore, data$treatment)
     return(auc)
@@ -612,6 +620,61 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
   if (!is.null(attr(population, "metaData"))) {
     attr(population,
          "metaData")$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
+  }
+  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
+  return(population)
+}
+
+
+#' Remove subjects with a high IPTW
+#'
+#' @description
+#' Compute the inverse probability of treatment weights (IPTW) using the propensity scores, and remove
+#' subjects having a weight higher than the user-specified threshold.
+#'
+#' @param population   A data frame with at least the three columns described below.
+#' @param maxWeight    The maximum allowed IPTW.
+#' @param estimator    The type of estimator. Options are `estimator = "ate"` for the average treatment
+#'                     effect, and `estimator = "att"`for the average treatment effect in the treated.
+#'
+#' @details
+#' The data frame should have the following three columns:
+#'
+#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - propensityScore (numeric): Propensity score.
+#'
+#' @return
+#' Returns a tibble with the same  columns as the input, as well as a `weights` column containing the
+#' IPTW.
+#'
+#' @examples
+#' rowId <- 1:2000
+#' treatment <- rep(0:1, each = 1000)
+#' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+#' result <- trimByIptw(data)
+#'
+#' @export
+trimByIptw <- function(population, maxWeight = 10, estimator = "ate") {
+  if (!("rowId" %in% colnames(population)))
+    stop("Missing column rowId in population")
+  if (!("treatment" %in% colnames(population)))
+    stop("Missing column treatment in population")
+  if (!("propensityScore" %in% colnames(population)))
+    stop("Missing column propensityScore in population")
+  if (!estimator %in% c("ate", "att"))
+    stop("The estimator argument should be either 'ate' or 'att'.")
+  ParallelLogger::logTrace("Trimming by IPTW")
+  population <- population %>%
+    mutate(weights = computeWeights(population = .data, estimator = estimator)) %>%
+    filter(.data$weights <= maxWeight)
+  if (!is.null(attr(population, "metaData"))) {
+    metaData <- attr(population, "metaData")
+    metaData$attrition <- bind_rows(metaData$attrition,
+                                    getCounts(population, paste("Trimmed by IPTW")))
+    metaData$estimator <- estimator
+    attr(population, "metaData") <- metaData
   }
   ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   return(population)
@@ -735,7 +798,7 @@ matchOnPs <- function(population,
                               population$treatment,
                               maxRatio,
                               caliper)
-    result <- tibble::as_tibble(result)
+    result <- dplyr::as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
     if (!is.null(attr(population, "metaData"))) {
@@ -755,7 +818,7 @@ matchOnPs <- function(population,
                                    subset$treatment,
                                    maxRatio,
                                    caliper)
-      subResult <- tibble::as_tibble(subResult)
+      subResult <- dplyr::as_tibble(subResult)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
       return(subset)
@@ -911,8 +974,11 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   } else {
     stop(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
   }
-  psStrata <- unique(quantile(basePop,
-                              (1:(numberOfStrata - 1))/numberOfStrata))
+  if (length(basePop) == 0) {
+    psStrata <- c()
+  } else {
+    psStrata <- unique(quantile(basePop, (1:(numberOfStrata - 1))/numberOfStrata))
+  }
   attr(population, "strata") <- psStrata
   breaks <- unique(c(0, psStrata, 1))
   breaks[1] <- -1 # So 0 is included in the left-most stratum

@@ -11,9 +11,12 @@ fitOutcomeModel(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
+  estimator = "ate",
+  maxWeight = 0,
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
+  profileGrid = seq(log(0.1), log(10), length.out = 1000),
   prior = createPrior("laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
     = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
@@ -39,12 +42,23 @@ object in the outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)? See details.}
 
+\item{estimator}{for IPTW: the type of estimator. Options are \code{estimator = "ate"} for the
+average treatment effect, and \code{estimator = "att"}for the average treatment
+effect in the treated.}
+
+\item{maxWeight}{for IPTW: the maximum weight. Larger values will be truncated to this
+value. \code{maxWeight = 0} means no truncation takes place.}
+
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.}
 
 \item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
 
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
+
+\item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale where
+the likelihood for the treatment variable coefficient is sampled. Set to
+NULL to skip profiling.}
 
 \item{prior}{The prior used to fit the model. See \code{\link[Cyclops:createPrior]{Cyclops::createPrior()}}
 for details.}
@@ -61,7 +75,8 @@ An object of class \code{OutcomeModel}. Generic function \code{print}, \code{coe
 Create an outcome model, and computes the relative risk
 }
 \details{
-IPTW estimates the average treatment effect using stabilized inverse propensity scores (Xu et al. 2010).
+IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
+(att) using stabilized inverse propensity scores (Xu et al. 2010).
 }
 \references{
 Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores

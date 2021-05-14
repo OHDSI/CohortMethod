@@ -4,11 +4,11 @@
 \name{CohortMethod-package}
 \alias{CohortMethod}
 \alias{CohortMethod-package}
-\title{CohortMethod: New-user cohort method with large scale propensity and outcome models}
+\title{CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome Models}
 \description{
-CohortMethod is an R package for performing new-user cohort studies
-	in an observational database in the OMOP Common Data Model. It extracts the
-	necessary data from a database and uses a large set of covariates for both the 
+Functions for performing new-user cohort studies
+	in an observational database in the OMOP Common Data Model. Can extract the
+	necessary data from a database and use a large set of covariates for both the 
 	propensity and outcome model, including for example all drugs, diagnoses, procedures, 
 	as well as age, comorbidity indexes, etc. Large scale regularized regression is used to 
 	fit the propensity and outcome models. Functions are included for trimming, stratifying, 

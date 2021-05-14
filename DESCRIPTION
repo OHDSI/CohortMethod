@@ -1,17 +1,17 @@
 Package: CohortMethod
 Type: Package
-Title: New-user cohort method with large scale propensity and outcome models
-Version: 4.0.1
-Date: 2020-06-19
+Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
+Version: 4.2.0
+Date: 2021-04-13
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
 	person("Patrick", "Ryan", role = c("aut"))
 	)
 Maintainer: Martijn Schuemie <schuemie@ohdsi.org>
-Description: CohortMethod is an R package for performing new-user cohort studies
-	in an observational database in the OMOP Common Data Model. It extracts the
-	necessary data from a database and uses a large set of covariates for both the 
+Description: Functions for performing new-user cohort studies
+	in an observational database in the OMOP Common Data Model. Can extract the
+	necessary data from a database and use a large set of covariates for both the 
 	propensity and outcome model, including for example all drugs, diagnoses, procedures, 
 	as well as age, comorbidity indexes, etc. Large scale regularized regression is used to 
 	fit the propensity and outcome models. Functions are included for trimming, stratifying, 
@@ -27,7 +27,7 @@ URL: https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod
 BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
 	R (>= 3.5.0),
-	DatabaseConnector (>= 2.2.0),
+	DatabaseConnector (>= 4.0.0),
 	Cyclops (>= 3.0.0),
 	FeatureExtraction  (>= 3.0.0),
 	Andromeda (>= 0.3.0)
@@ -36,16 +36,17 @@ Imports:
 	ggplot2,
 	gridExtra,
 	grid,
-	tibble,
+	readr,
 	plyr,
 	dplyr,
 	rlang,
 	cli,
 	pillar,
 	Rcpp (>= 0.11.2),
-	SqlRender (>= 1.5.2),
+	SqlRender (>= 1.7.0),
 	survival,
-	ParallelLogger (>= 2.0.0)
+	ParallelLogger (>= 2.0.0),
+	bit64
 Suggests:
 	testthat,
 	pROC,
@@ -56,8 +57,7 @@ Suggests:
 	cmprsk,
 	crrSC
 Remotes:
-	ohdsi/FeatureExtraction,
-	ohdsi/Eunomia
+	ohdsi/FeatureExtraction
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.1.1

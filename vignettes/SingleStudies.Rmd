@@ -32,9 +32,8 @@ Before installing the `CohortMethod` package make sure you have Java available. 
 The `CohortMethod` package is currently maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the `drat` package:
 
 ```{r eval=FALSE}
-install.packages("drat")
-drat::addRepo("OHDSI")
-install.packages("CohortMethod")
+install.packages("remotes")
+remotes::install_github("ohdsi/CohortMethod")
 ```
 
 Once installed, you can type `library(CohortMethod)` to load the package.
