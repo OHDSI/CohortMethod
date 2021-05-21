@@ -143,7 +143,7 @@ test_that("Competing risks non stratified single analysis", {
                                             cdmDatabaseSchema = "main",
                                             targetId = 1,
                                             comparatorId = 2,
-                                            outcomeIds = c(3, 5, 6),
+                                            outcomeIds = c(3, 5),
                                             exposureDatabaseSchema = "main",
                                             outcomeDatabaseSchema = "main",
                                             exposureTable = "cohort",

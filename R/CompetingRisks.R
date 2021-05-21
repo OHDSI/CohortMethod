@@ -26,10 +26,10 @@
 #'
 #' @param mainPopulation           A data frame describing the population. This should at least have a
 #'                                 `rowId` column corresponding to the `rowId` column in the
-#'                                 [CohortMethodData] covariates object and `subjectId`, `treatment`,
+#'                                 [CohortMethodData] covariates object and `personSeqId`, `treatment`,
 #'                                 `outcomeCount`, `timeAtRisk` and `survivalTime` columns.
 #' @param competingRiskPopulation  A data frame describing the competing risk population. This should
-#'                                 at least have `subjectId` and `treatment` columns that uniquely match
+#'                                 at least have `personSeqId` and `treatment` columns that uniquely match
 #'                                 the `mainPopulation` and `outcomeCount` and `survivalTime` columns.
 #' @param removeSubjectsWithSimultaneousEvents Remove subjects who experience outcomes in both the
 #'                                             `mainPopulation` and `competingRiskPopulation` at the same time.
@@ -44,20 +44,20 @@ combineCompetingStudyPopulations <- function(mainPopulation,
                                              removeSubjectsWithSimultaneousEvents = TRUE,
                                              codeSimultaneousEventsAs = 1) {
 
-  if (length(setdiff(competingRiskPopulation$subjectId, mainPopulation$subjectId)) > 0) {
+  if (length(setdiff(competingRiskPopulation$personSeqId, mainPopulation$personSeqId)) > 0) {
     stop("Subjects in competing risk population do not exist in main population")
   }
 
   population <-
-    left_join(mainPopulation %>% select(.data$rowId, .data$subjectId, .data$treatment,
+    left_join(mainPopulation %>% select(.data$rowId, .data$personSeqId, .data$treatment,
                                         .data$outcomeCount, .data$timeAtRisk, .data$survivalTime),
-              competingRiskPopulation %>% select(.data$subjectId, .data$treatment, .data$outcomeCount, .data$survivalTime),
-              by = c("subjectId", "treatment")) %>%
+              competingRiskPopulation %>% select(.data$personSeqId, .data$treatment, .data$outcomeCount, .data$survivalTime),
+              by = c("personSeqId", "treatment")) %>%
     mutate(survivalTime = pmin(.data$survivalTime.x, .data$survivalTime.y, na.rm = TRUE)) %>%
     mutate(outcomeCount = 1 * (.data$outcomeCount.x > 0) * (.data$survivalTime.x == .data$survivalTime) +
              ifelse(!is.na(.data$outcomeCount.y),
                     2 * (.data$outcomeCount.y > 0) * (.data$survivalTime.y == .data$survivalTime), 0)) %>%
-    select(.data$rowId, .data$subjectId, .data$treatment, .data$timeAtRisk,
+    select(.data$rowId, .data$personSeqId, .data$treatment, .data$timeAtRisk,
            .data$outcomeCount, .data$survivalTime,
            .data$outcomeCount.x, .data$survivalTime.x, .data$outcomeCount.y, .data$survivalTime.y)
     # Leaving for debugging purposes
@@ -77,13 +77,13 @@ combineCompetingStudyPopulations <- function(mainPopulation,
   }
 
   if ("propensityScore" %in% names(mainPopulation)) {
-    population <- population %>% left_join(mainPopulation %>% select(subjectId, treatment, propensityScore),
-                                           by = c("subjectId", "treatment"))
+    population <- population %>% left_join(mainPopulation %>% select(personSeqId, treatment, propensityScore),
+                                           by = c("personSeqId", "treatment"))
   }
 
   if ("stratumId" %in% names(mainPopulation)) {
-    population <- population %>% left_join(mainPopulation %>% select(subjectId, treatment, stratumId),
-                                           by = c("subjectId", "treatment"))
+    population <- population %>% left_join(mainPopulation %>% select(personSeqId, treatment, stratumId),
+                                           by = c("personSeqId", "treatment"))
   }
 
   return (population)
