@@ -14,7 +14,8 @@ createFitOutcomeModelArgs(
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
-  profileGrid = seq(log(0.1), log(10), length.out = 1000),
+  profileGrid = NULL,
+  profileBounds = c(log(0.1), log(10)),
   prior = createPrior("laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
     = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
@@ -48,8 +49,11 @@ with the main treatment effect.}
 \item{includeCovariateIds}{Include only these covariates in the outcome model.}
 
 \item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale
-where the likelihood for the treatment variable coefficient is
-sampled. Set to NULL to skip profiling.}
+where the likelihood for coefficient of variables is sampled. See
+details.}
+
+\item{profileBounds}{The bounds (on the log relative risk scale) for the adaptive
+sampling of the likelihood function. See details.}
 
 \item{prior}{The prior used to fit the model. See Cyclops::createPrior() for
 details.}

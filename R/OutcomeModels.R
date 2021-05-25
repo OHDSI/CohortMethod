@@ -20,6 +20,10 @@
 #' IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
 #' (att) using stabilized inverse propensity scores (Xu et al. 2010).
 #'
+#' For likelihood profiling, either specify the `profileGrid` for a completely user- defined grid, or
+#' `profileBounds` for an adaptive grid. Both should be defined on the log effect size scale. When both
+#' `profileGrid` and `profileGrid` are `NULL` likelihood profiling is disabled.
+#'
 #' @description
 #' Create an outcome model, and computes the relative risk
 #'
@@ -47,8 +51,9 @@
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
 #' @param includeCovariateIds   Include only these covariates in the outcome model.
 #' @param profileGrid           A one-dimensional grid of points on the log(relative risk) scale where
-#'                              the likelihood for the treatment variable coefficient is sampled. Set to
-#'                              NULL to skip profiling.
+#'                              the likelihood for coefficient of variables is sampled. See details.
+#' @param profileBounds         The bounds (on the log relative risk scale) for the adaptive sampling
+#'                              of the likelihood function. See details.
 #' @param prior                 The prior used to fit the model. See [Cyclops::createPrior()]
 #'                              for details.
 #' @param control               The control object used to control the cross-validation used to
@@ -76,7 +81,8 @@ fitOutcomeModel <- function(population,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
-                            profileGrid = seq(log(0.1), log(10), length.out = 1000),
+                            profileGrid = NULL,
+                            profileBounds = c(log(0.1), log(10)),
                             prior = createPrior("laplace", useCrossValidation = TRUE),
                             control = createControl(cvType = "auto",
                                                     seed = 1,
@@ -301,14 +307,18 @@ fitOutcomeModel <- function(population,
         status <- fit
       } else {
         # Retrieve likelihood profile
-        if (!is.null(profileGrid)) {
+        if (!is.null(profileGrid) || !is.null(profileBounds)) {
           logLikelihoodProfile <- Cyclops::getCyclopsProfileLogLikelihood(object = fit,
                                                                           parm = treatmentVarId,
                                                                           x = profileGrid,
-                                                                          includePenalty = TRUE)$value
-          names(logLikelihoodProfile) <- profileGrid
+                                                                          bounds = profileBounds,
+                                                                          tolerance = 0.1,
+                                                                          includePenalty = FALSE)
+          if (!is.null(logLikelihoodProfile)) {
+            names(logLikelihoodProfile$value) <- logLikelihoodProfile$point
+            logLikelihoodProfile <- logLikelihoodProfile$value
+          }
         }
-
         if (fit$return_flag == "ILLCONDITIONED") {
           status <- "ILL CONDITIONED, CANNOT FIT"
         } else if (fit$return_flag == "MAX_ITERATIONS") {
