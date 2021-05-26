@@ -19,7 +19,8 @@ test_that("Multiple analyses", {
   getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                      firstExposureOnly = TRUE,
                                                      removeDuplicateSubjects = "remove all",
-                                                     covariateSettings = covarSettings)
+                                                     covariateSettings = covarSettings,
+                                                     maxCohortSize = 1500)
 
   createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
                                                         firstExposureOnly = TRUE,

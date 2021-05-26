@@ -61,10 +61,15 @@ test_that("Create study population functions", {
   aTable <- getAttritionTable(studyPop)
   expect_is(aTable, "data.frame")
 
-
   plot <- plotTimeToEvent(cohortMethodData,
                           outcomeId = 194133)
   expect_is(plot, "ggplot")
+
+  plot <- plotFollowUpDistribution(studyPop)
+  expect_is(plot, "ggplot")
+
+  mdrr <- computeMdrr(studyPop)
+  expect_is(mdrr, "data.frame")
 
 })
 
@@ -157,6 +162,9 @@ test_that("Balance functions", {
 
   p <- plotCovariateBalanceOfTopVariables(balance)
   expect_is(p, "ggplot")
+
+  table1 <- createCmTable1(balance)
+  expect_is(table1, "table1")
 })
 
 test_that("Outcome functions", {
