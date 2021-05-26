@@ -52,6 +52,13 @@ with the main treatment effect.}
 
 \item{riskId}{Cohort ID to use for competing risk}
 
+\item{codeSimultaneousEventsAs}{Outcome count to recode to when subjects experience competing risk
+and outcome of interest simultaneously, and will not be removed.
+Possible values are 0, 1, or 2.}
+
+\item{removeSubjectsWithSimultaneousEvents}{Remove subjects who experience competing risk and outcome of
+interest simultaneously?}
+
 \item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale
 where the likelihood for the treatment variable coefficient is
 sampled. Set to NULL to skip profiling.}

@@ -342,32 +342,37 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param modelType                 The type of outcome model that will be used. Possible values are
-#'                                  "logistic", "poisson", or "cox".
-#' @param stratified                Should the regression be conditioned on the strata defined in the
-#'                                  population object (e.g. by matching or stratifying on propensity
-#'                                  scores)?
-#' @param useCovariates             Whether to use the covariates in the cohortMethodData object in the
-#'                                  outcome model.
-#' @param inversePtWeighting        Use inverse probability of treatment weighting (IPTW)? See details.
-#' @param estimator                 for IPTW: the type of estimator. Options are estimator = "ate" for
-#'                                  the average treatment effect, and estimator = "att"for the average
-#'                                  treatment effect in the treated.
-#' @param maxWeight                 for IPTW: the maximum weight. Larger values will be truncated to
-#'                                  this value. maxWeight = 0 means no truncation takes place.
-#' @param interactionCovariateIds   An optional vector of covariate IDs to use to estimate interactions
-#'                                  with the main treatment effect.
-#' @param excludeCovariateIds       Exclude these covariates from the outcome model.
-#' @param includeCovariateIds       Include only these covariates in the outcome model.
-#' @param riskId                    Cohort ID to use for competing risk
-#' @param profileGrid               A one-dimensional grid of points on the log(relative risk) scale
-#'                                  where the likelihood for the treatment variable coefficient is
-#'                                  sampled. Set to NULL to skip profiling.
-#' @param prior                     The prior used to fit the model. See Cyclops::createPrior() for
-#'                                  details.
-#' @param control                   The control object used to control the cross-validation used to
-#'                                  determine the hyperparameters of the prior (if applicable). See
-#'                                  Cyclops::createControl() for details.
+#' @param modelType                             The type of outcome model that will be used. Possible values are
+#'                                              "logistic", "poisson", or "cox".
+#' @param stratified                            Should the regression be conditioned on the strata defined in the
+#'                                              population object (e.g. by matching or stratifying on propensity
+#'                                              scores)?
+#' @param useCovariates                         Whether to use the covariates in the cohortMethodData object in the
+#'                                              outcome model.
+#' @param inversePtWeighting                    Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param estimator                             for IPTW: the type of estimator. Options are estimator = "ate" for
+#'                                              the average treatment effect, and estimator = "att"for the average
+#'                                              treatment effect in the treated.
+#' @param maxWeight                             for IPTW: the maximum weight. Larger values will be truncated to
+#'                                              this value. maxWeight = 0 means no truncation takes place.
+#' @param interactionCovariateIds               An optional vector of covariate IDs to use to estimate interactions
+#'                                              with the main treatment effect.
+#' @param excludeCovariateIds                   Exclude these covariates from the outcome model.
+#' @param includeCovariateIds                   Include only these covariates in the outcome model.
+#' @param riskId                                Cohort ID to use for competing risk
+#' @param codeSimultaneousEventsAs              Outcome count to recode to when subjects experience competing risk
+#'                                              and outcome of interest simultaneously, and will not be removed.
+#'                                              Possible values are 0, 1, or 2.
+#' @param removeSubjectsWithSimultaneousEvents  Remove subjects who experience competing risk and outcome of
+#'                                              interest simultaneously?
+#' @param profileGrid                           A one-dimensional grid of points on the log(relative risk) scale
+#'                                              where the likelihood for the treatment variable coefficient is
+#'                                              sampled. Set to NULL to skip profiling.
+#' @param prior                                 The prior used to fit the model. See Cyclops::createPrior() for
+#'                                              details.
+#' @param control                               The control object used to control the cross-validation used to
+#'                                              determine the hyperparameters of the prior (if applicable). See
+#'                                              Cyclops::createControl() for details.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "logistic",

@@ -14,11 +14,11 @@ combineCompetingStudyPopulations(
 \arguments{
 \item{mainPopulation}{A data frame describing the population. This should at least have a
 \code{rowId} column corresponding to the \code{rowId} column in the
-\link{CohortMethodData} covariates object and \code{subjectId}, \code{treatment},
+\link{CohortMethodData} covariates object and \code{personSeqId}, \code{treatment},
 \code{outcomeCount}, \code{timeAtRisk} and \code{survivalTime} columns.}
 
 \item{competingRiskPopulation}{A data frame describing the competing risk population. This should
-at least have \code{subjectId} and \code{treatment} columns that uniquely match
+at least have \code{personSeqId} and \code{treatment} columns that uniquely match
 the \code{mainPopulation} and \code{outcomeCount} and \code{survivalTime} columns.}
 
 \item{removeSubjectsWithSimultaneousEvents}{Remove subjects who experience outcomes in both the
