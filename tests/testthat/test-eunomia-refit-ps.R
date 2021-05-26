@@ -74,4 +74,4 @@ test_that("Multiple analyses", {
 })
 
 # Remove the Eunomia database:
-unlink(connectionDetails$server)
+unlink(connectionDetails$server())
