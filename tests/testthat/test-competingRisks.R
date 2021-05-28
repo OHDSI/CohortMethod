@@ -64,7 +64,7 @@ riskTable <- riskPop %>% filter(outcomeCount == 1) %>%
   mutate(cohortStartDate = as.character(as.Date(cohortStartDate + daysToEvent, origin = "1970-01-01"))) %>%
   mutate(cohortEndDate = cohortStartDate) %>%
   mutate(cohortDefinitionId = 5) %>%
-  select(cohortDefinitionId, subjectId, cohortStartDate, cohortEndDate)
+  select(cohortDefinitionId, personSeqId, cohortStartDate, cohortEndDate)
 names(riskTable) <- toupper(SqlRender::camelCaseToSnakeCase(names(riskTable)))
 
 riskPopKnown <- createKnownCompetingRisk(studyPop)
@@ -72,15 +72,16 @@ riskTableKnown <- riskPopKnown %>% filter(outcomeCount == 1) %>%
   mutate(cohortStartDate = as.character(as.Date(cohortStartDate + daysToEvent, origin = "1970-01-01"))) %>%
   mutate(cohortEndDate = cohortStartDate) %>%
   mutate(cohortDefinitionId = 6) %>%
-  select(cohortDefinitionId, subjectId, cohortStartDate, cohortEndDate)
+  select(cohortDefinitionId, personSeqId, cohortStartDate, cohortEndDate)
 names(riskTableKnown) <- toupper(SqlRender::camelCaseToSnakeCase(names(riskTableKnown)))
 
 riskTable <- rbind(riskTable, riskTableKnown)
 
 connect <- DatabaseConnector::connect(connectionDetails)
 oT <- querySql(connect, "SELECT * FROM cohort")
-insertTable(connect, "cohort",
-            rbind(oT, riskTable),
+colnames(riskTable)[2] <- "SUBJECT_ID"
+insertTable(connect, tableName = "cohort",
+            data = rbind(oT, riskTable),
             dropTableIfExists = TRUE, createTable = TRUE)
 dbDisconnect(connect)
 
@@ -125,8 +126,9 @@ test_that("Competing risk population creation", {
                                                       codeSimultaneousEventsAs = 1)
   simulEvents <- studyPop3 %>%
     subset(outcomeCount == 1) %>%
-    inner_join(studyPop6, by = c("subjectId", "outcomeCount", "survivalTime"))
+    inner_join(studyPop6, by = c("personSeqId", "outcomeCount", "survivalTime"))
 
+  expect_false(nrow(simulEvents) == 0)
   expect_equivalent(nrow(studyPop3) - nrow(simulEvents), nrow(studyPopSimul))
   expect_equivalent(nrow(studyPop3), nrow(studyPopReplace))
 
@@ -227,7 +229,17 @@ test_that("Competing risks stratified single analysis", {
 
   fitRiskStrat <- fitOutcomeModel(stratPopCombined,
                                   modelType = "fgr",
-                                  stratified = TRUE)
+                                  stratified = TRUE,
+                                  censoredStratWeights = TRUE)
+
+  fitRiskStrat1 <- fitOutcomeModel(stratPopCombined,
+                                   modelType = "fgr",
+                                   stratified = TRUE,
+                                   censoredStratWeights = FALSE)
+
+  fitRiskStrat2 <- fitOutcomeModel(stratPopCombined,
+                                   modelType = "fgr",
+                                   stratified = FALSE)
 
   goodFitStrat <- crrs(ftime = stratPopCombined$survivalTime,
                        fstatus = stratPopCombined$outcomeCount,
@@ -236,10 +248,6 @@ test_that("Competing risks stratified single analysis", {
 
   expect_false(coef(fitRisk2) == coef(fitRiskStrat))
   expect_equivalent(coef(fitRiskStrat), goodFitStrat$coef)
-
-
-
-
 
 })
 

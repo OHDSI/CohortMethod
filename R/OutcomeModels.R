@@ -37,6 +37,7 @@
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param censoredStratWeights                  for stratified population, use censored weights during model fitting?
 #' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
 #'                              average treatment effect, and `estimator = "att"`for the average treatment
 #'                              effect in the treated.
@@ -71,6 +72,7 @@ fitOutcomeModel <- function(population,
                             stratified = FALSE,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
+                            censoredStratWeights = FALSE,
                             estimator = "ate",
                             maxWeight = 0,
                             interactionCovariateIds = c(),
@@ -248,6 +250,7 @@ fitOutcomeModel <- function(population,
                                                    addIntercept = (!stratified && !modelType == "cox" &&!modelType == "fgr"),
                                                    modelType = modelTypeToCyclopsModelType(modelType,
                                                                                            stratified),
+                                                   censoredStratWeights = censoredStratWeights,
                                                    checkRowIds = FALSE,
                                                    normalize = NULL,
                                                    quiet = TRUE)
@@ -271,6 +274,7 @@ fitOutcomeModel <- function(population,
                                                        addIntercept = (!stratified && !modelType == "cox"),
                                                        modelType = modelTypeToCyclopsModelType(modelType,
                                                                                                stratified),
+                                                       censoredStratWeights = censoredStratWeights,
                                                        checkSorting = TRUE,
                                                        checkRowIds = FALSE,
                                                        normalize = NULL,

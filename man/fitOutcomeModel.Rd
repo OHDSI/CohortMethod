@@ -11,6 +11,7 @@ fitOutcomeModel(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
+  censoredStratWeights = FALSE,
   estimator = "ate",
   maxWeight = 0,
   interactionCovariateIds = c(),

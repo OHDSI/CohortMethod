@@ -350,6 +350,7 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @param useCovariates                         Whether to use the covariates in the cohortMethodData object in the
 #'                                              outcome model.
 #' @param inversePtWeighting                    Use inverse probability of treatment weighting (IPTW)? See details.
+#' @param censoredStratWeights                  for stratified population, use censored weights during model fitting?
 #' @param estimator                             for IPTW: the type of estimator. Options are estimator = "ate" for
 #'                                              the average treatment effect, and estimator = "att"for the average
 #'                                              treatment effect in the treated.
@@ -379,6 +380,7 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
+                                      censoredStratWeights = FALSE,
                                       estimator = "ate",
                                       maxWeight = 0,
                                       interactionCovariateIds = c(),
