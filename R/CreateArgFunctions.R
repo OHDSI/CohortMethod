@@ -68,7 +68,11 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #'                                         window start?
 #' @param priorOutcomeLookback             How many days should we look back when identifying prior
 #'                                         outcomes?
-#' @param minDaysAtRisk                    The minimum required number of days at risk.
+#' @param minDaysAtRisk                    The minimum required number of days at risk. Risk windows
+#'                                         with fewer days than this number are removed from the
+#'                                         analysis.
+#' @param maxDaysAtRisk                    The maximum allowed number of days at risk. Risk windows
+#'                                         that are longer will be truncated to this number of days.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the
 #'                                         startAnchor.
 #' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk
@@ -93,6 +97,7 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
                                             removeSubjectsWithPriorOutcome = TRUE,
                                             priorOutcomeLookback = 99999,
                                             minDaysAtRisk = 1,
+                                            maxDaysAtRisk = 99999,
                                             riskWindowStart = 0,
                                             addExposureDaysToStart = NULL,
                                             startAnchor = "cohort start",

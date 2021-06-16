@@ -9,6 +9,11 @@ Changes:
 
 3. Added the `maxWeight` argument to the `fitOutcomeModel()` function. Weights greater than this value will be set to this value.
 
+4. Adding option to use adaptive likelihood profiling, and making this the default.
+
+5. Adding `maxDaysAtRisk` argument to the `createStudyPopulation()` and `createCreateStudyPopulationArgs()` functions.
+
+
 Bug fixes:
 
 1. Fixing IPTW.

@@ -15,6 +15,7 @@ createStudyPopulation(
   removeSubjectsWithPriorOutcome = TRUE,
   priorOutcomeLookback = 99999,
   minDaysAtRisk = 1,
+  maxDaysAtRisk = 99999,
   riskWindowStart = 0,
   addExposureDaysToStart = NULL,
   startAnchor = "cohort start",
@@ -50,7 +51,11 @@ window start?}
 \item{priorOutcomeLookback}{How many days should we look back when identifying prior
 outcomes?}
 
-\item{minDaysAtRisk}{The minimum required number of days at risk.}
+\item{minDaysAtRisk}{The minimum required number of days at risk. Risk windows with fewer
+days than this number are removed from the analysis.}
+
+\item{maxDaysAtRisk}{The maximum allowed number of days at risk. Risk windows that are
+longer will be truncated to this number of days.}
 
 \item{riskWindowStart}{The start of the risk window (in days) relative to the \code{startAnchor}.}
 
