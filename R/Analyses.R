@@ -207,7 +207,7 @@ loadCmAnalysisList <- function(file) {
 #'                                      provided instead. In the analysis, the name of the number to be
 #'                                      used can be specified using the #' \code{comparatorType}
 #'                                      parameter in the [createCmAnalysis()] function.
-#' @param outcomeIds                    A vector of concept IDs indentifying the outcome(s) in the
+#' @param outcomeIds                    A vector of concept IDs identifying the outcome(s) in the
 #'                                      outcome table.
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion

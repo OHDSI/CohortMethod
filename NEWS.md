@@ -5,7 +5,7 @@ Changes:
 
 1. Adding the `trimByIptw()` function.
 
-2. Adding the `estimator` argument to the `fitOutcomeModel()` function to select 'ate' (average treatment effect) or 'att' (average treatement effect in the treated) when performing IPTW.
+2. Adding the `estimator` argument to the `fitOutcomeModel()` function to select 'ate' (average treatment effect) or 'att' (average treatment effect in the treated) when performing IPTW.
 
 3. Added the `maxWeight` argument to the `fitOutcomeModel()` function. Weights greater than this value will be set to this value.
 
@@ -26,7 +26,7 @@ CohortMethod 4.1.0
 
 Changes: 
 
-1. Dropped `insertDbPopulation()` function. This didn't seem to be used by anyone, and would have required carying the person ID throughout the pipeline.
+1. Dropped `insertDbPopulation()` function. This didn't seem to be used by anyone, and would have required carrying the person ID throughout the pipeline.
 
 2. Introducing new unique person identified called `personSeqId`, generated during data extraction. Person ID is now downloaded as string to avoid issues with 64-bit integers. Person ID is not used by CohortMethod, and is provided for reference only.
 

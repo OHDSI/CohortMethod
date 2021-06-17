@@ -240,9 +240,11 @@ createStudyPopulation <- function(cohortMethodData,
   idx <- population$riskEnd > population$daysToObsEnd
   population$riskEnd[idx] <- population$daysToObsEnd[idx]
 
-  idx <- population$riskEnd > population$riskStart + maxDaysAtRisk
-  if (any(idx)) {
-    population$riskEnd[idx] <- population$riskStart[idx] + maxDaysAtRisk
+  if (!missing(maxDaysAtRisk) && !is.null(maxDaysAtRisk)) {
+    idx <- population$riskEnd > population$riskStart + maxDaysAtRisk
+    if (any(idx)) {
+      population$riskEnd[idx] <- population$riskStart[idx] + maxDaysAtRisk
+    }
   }
   if (censorAtNewRiskWindow) {
     ParallelLogger::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
@@ -338,10 +340,10 @@ getCounts <- function(population, description = "") {
   targetExposures <- length(population$personSeqId[population$treatment == 1])
   comparatorExposures <- length(population$personSeqId[population$treatment == 0])
   counts <- dplyr::tibble(description = description,
-                           targetPersons = targetPersons,
-                           comparatorPersons = comparatorPersons,
-                           targetExposures = targetExposures,
-                           comparatorExposures = comparatorExposures)
+                          targetPersons = targetPersons,
+                          comparatorPersons = comparatorPersons,
+                          targetExposures = targetExposures,
+                          comparatorExposures = comparatorExposures)
   return(counts)
 }
 
@@ -468,17 +470,17 @@ plotTimeToEvent <- function(cohortMethodData,
     idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
     idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
     dplyr::tibble(number = number,
-                   start = start,
-                   end = end,
-                   eventsExposed = 0,
-                   eventsUnexposed = 0,
-                   observed = 0,
-                   eventsExposedTarget = sum(idxInPeriod & idxExposed & idxTarget),
-                   eventsExposedComparator = sum(idxInPeriod & idxExposed & !idxTarget),
-                   eventsUnexposedTarget = sum(idxInPeriod & !idxExposed & idxTarget),
-                   eventsUnexposedComparator = sum(idxInPeriod & !idxExposed & !idxTarget),
-                   observedTarget = sum(idxPopInPeriod & population$treatment),
-                   observedComparator = sum(idxPopInPeriod & !population$treatment))
+                  start = start,
+                  end = end,
+                  eventsExposed = 0,
+                  eventsUnexposed = 0,
+                  observed = 0,
+                  eventsExposedTarget = sum(idxInPeriod & idxExposed & idxTarget),
+                  eventsExposedComparator = sum(idxInPeriod & idxExposed & !idxTarget),
+                  eventsUnexposedTarget = sum(idxInPeriod & !idxExposed & idxTarget),
+                  eventsUnexposedComparator = sum(idxInPeriod & !idxExposed & !idxTarget),
+                  observedTarget = sum(idxPopInPeriod & population$treatment),
+                  observedComparator = sum(idxPopInPeriod & !population$treatment))
   }
   periods <- lapply(-floor(numberOfPeriods/2):ceiling(numberOfPeriods/2), createPeriod)
   periods <- do.call("rbind", periods)
@@ -489,25 +491,25 @@ plotTimeToEvent <- function(cohortMethodData,
   periods$rateTarget <- (periods$eventsExposedTarget + periods$eventsUnexposedTarget) / periods$observedTarget
   periods$rateComparator <- (periods$eventsExposedComparator + periods$eventsUnexposedComparator) / periods$observedComparator
   vizData <- rbind(dplyr::tibble(start = periods$start,
-                                  end = periods$end,
-                                  rate = periods$rateExposedTarget,
-                                  status = "Exposed events",
-                                  type = targetLabel),
+                                 end = periods$end,
+                                 rate = periods$rateExposedTarget,
+                                 status = "Exposed events",
+                                 type = targetLabel),
                    dplyr::tibble(start = periods$start,
-                                  end = periods$end,
-                                  rate = periods$rateUnexposedTarget,
-                                  status = "Unexposed events",
-                                  type = targetLabel),
+                                 end = periods$end,
+                                 rate = periods$rateUnexposedTarget,
+                                 status = "Unexposed events",
+                                 type = targetLabel),
                    dplyr::tibble(start = periods$start,
-                                  end = periods$end,
-                                  rate = periods$rateExposedComparator,
-                                  status = "Exposed events",
-                                  type = comparatorLabel),
+                                 end = periods$end,
+                                 rate = periods$rateExposedComparator,
+                                 status = "Exposed events",
+                                 type = comparatorLabel),
                    dplyr::tibble(start = periods$start,
-                                  end = periods$end,
-                                  rate = periods$rateUnexposedComparator,
-                                  status = "Unexposed events",
-                                  type = comparatorLabel))
+                                 end = periods$end,
+                                 rate = periods$rateUnexposedComparator,
+                                 status = "Unexposed events",
+                                 type = comparatorLabel))
   vizData$type <- factor(vizData$type, levels = c(targetLabel, comparatorLabel))
 
   plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,

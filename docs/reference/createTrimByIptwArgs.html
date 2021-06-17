@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Save the cohort method data to file — saveCohortMethodData • CohortMethod</title>
+<title>Create a parameter object for the function trimByIptw — createTrimByIptwArgs • CohortMethod</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Save the cohort method data to file — saveCohortMethodData" />
-<meta property="og:description" content="Saves an object of type CohortMethodData to a file." />
+<meta property="og:title" content="Create a parameter object for the function trimByIptw — createTrimByIptwArgs" />
+<meta property="og:description" content="Create a parameter object for the function trimByIptw" />
 
 
 
@@ -129,35 +129,34 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Save the cohort method data to file</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/CohortMethodData.R'><code>R/CohortMethodData.R</code></a></small>
-    <div class="hidden name"><code>saveCohortMethodData.Rd</code></div>
+    <h1>Create a parameter object for the function trimByIptw</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/CreateArgFunctions.R'><code>R/CreateArgFunctions.R</code></a></small>
+    <div class="hidden name"><code>createTrimByIptwArgs.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Saves an object of type <a href='CohortMethodData-class.html'>CohortMethodData</a> to a file.</p>
+    <p>Create a parameter object for the function trimByIptw</p>
     </div>
 
-    <pre class="usage"><span class='fu'>saveCohortMethodData</span><span class='op'>(</span><span class='va'>cohortMethodData</span>, <span class='va'>file</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>createTrimByIptwArgs</span><span class='op'>(</span>maxWeight <span class='op'>=</span> <span class='fl'>10</span>, estimator <span class='op'>=</span> <span class='st'>"ate"</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>cohortMethodData</th>
-      <td><p>An object of type <a href='CohortMethodData-class.html'>CohortMethodData</a> as generated using
-<code><a href='getDbCohortMethodData.html'>getDbCohortMethodData()</a></code>.</p></td>
+      <th>maxWeight</th>
+      <td><p>The maximum allowed IPTW.</p></td>
     </tr>
     <tr>
-      <th>file</th>
-      <td><p>The name of the file where the data will be written. If the file already
-exists it will be overwritten.</p></td>
+      <th>estimator</th>
+      <td><p>The type of estimator. Options are estimator = "ate" for the average treatment
+effect, and estimator = "att"for the average treatment effect in the treated.</p></td>
     </tr>
     </table>
 
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Returns no output.</p>
+    <p>Create an object defining the parameter values.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

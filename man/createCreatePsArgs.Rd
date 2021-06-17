@@ -31,7 +31,7 @@ the treatment assignment. If any covariate has an unusually high
 correlation (either positive or negative), this will throw and
 error.}
 
-\item{stopOnError}{If an error occurr, should the function stop? Else, the two cohorts
+\item{stopOnError}{If an error occur, should the function stop? Else, the two cohorts
 will be assumed to be perfectly separable.}
 
 \item{prior}{The prior used to fit the model. See Cyclops::createPrior() for

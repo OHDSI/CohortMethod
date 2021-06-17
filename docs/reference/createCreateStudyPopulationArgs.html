@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.0</span>
       </span>
     </div>
 
@@ -146,6 +146,7 @@
   removeSubjectsWithPriorOutcome <span class='op'>=</span> <span class='cn'>TRUE</span>,
   priorOutcomeLookback <span class='op'>=</span> <span class='fl'>99999</span>,
   minDaysAtRisk <span class='op'>=</span> <span class='fl'>1</span>,
+  maxDaysAtRisk <span class='op'>=</span> <span class='fl'>99999</span>,
   riskWindowStart <span class='op'>=</span> <span class='fl'>0</span>,
   addExposureDaysToStart <span class='op'>=</span> <span class='cn'>NULL</span>,
   startAnchor <span class='op'>=</span> <span class='st'>"cohort start"</span>,
@@ -189,7 +190,14 @@ outcomes?</p></td>
     </tr>
     <tr>
       <th>minDaysAtRisk</th>
-      <td><p>The minimum required number of days at risk.</p></td>
+      <td><p>The minimum required number of days at risk. Risk windows
+with fewer days than this number are removed from the
+analysis.</p></td>
+    </tr>
+    <tr>
+      <th>maxDaysAtRisk</th>
+      <td><p>The maximum allowed number of days at risk. Risk windows
+that are longer will be truncated to this number of days.</p></td>
     </tr>
     <tr>
       <th>riskWindowStart</th>
