@@ -106,6 +106,9 @@ fitOutcomeModel <- function(population,
     stop("The estimator argument should be either 'ate' or 'att'.")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
     stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', or 'cox'")
+  if (!is.null(profileGrid) && !is.null(profileBounds))
+    stop("Can't specify both a grid and bounds for likelihood profiling")
+
   ParallelLogger::logTrace("Fitting outcome model")
 
   start <- Sys.time()
