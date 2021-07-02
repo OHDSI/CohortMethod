@@ -164,7 +164,7 @@ test_that("Balance functions", {
   expect_is(p, "ggplot")
 
   table1 <- createCmTable1(balance)
-  expect_is(table1, "table1")
+  expect_is(table1, "data.frame")
 })
 
 test_that("Outcome functions", {
