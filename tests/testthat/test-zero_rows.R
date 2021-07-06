@@ -42,14 +42,14 @@ test_that("Propensity score functions with zero rows", {
   expect_true(nrow(ps) == 0)
 
   propensityModel <- getPsModel(ps, cohortMethodData)
-  expect_is(propensityModel, "data.frame")
+  expect_s3_class(propensityModel, "data.frame")
 
   psTrimmed <- trimByPsToEquipoise(ps)
-  expect_is(psTrimmed, "data.frame")
+  expect_s3_class(psTrimmed, "data.frame")
 
   for (numberOfStrata in c(2, 5, 10, 20)) {
     strata <- stratifyByPs(psTrimmed, numberOfStrata = numberOfStrata)
-    expect_is(strata, "data.frame")
+    expect_s3_class(strata, "data.frame")
   }
 
   for (numberOfStrata in c(2, 5, 10, 20)) {
@@ -57,7 +57,7 @@ test_that("Propensity score functions with zero rows", {
                                         numberOfStrata = numberOfStrata,
                                         cohortMethodData = cohortMethodData,
                                         covariateIds = c(0:27 * 1000 + 3, 8532001))  #age + sex
-    expect_is(strata, "data.frame")
+    expect_s3_class(strata, "data.frame")
   }
 
   for (caliper in c(0, 0.25)) {
@@ -67,7 +67,7 @@ test_that("Propensity score functions with zero rows", {
                             caliper = caliper,
                             caliperScale = caliperScale,
                             maxRatio = maxRatio)
-        expect_is(strata, "data.frame")
+        expect_s3_class(strata, "data.frame")
       }
     }
   }
@@ -81,7 +81,7 @@ test_that("Propensity score functions with zero rows", {
                                          maxRatio = maxRatio,
                                          cohortMethodData = cohortMethodData,
                                          covariateIds = c(11:27, 8507))  #age + sex
-        expect_is(strata, "data.frame")
+        expect_s3_class(strata, "data.frame")
       }
     }
   }
@@ -98,7 +98,7 @@ test_that("Balance functions", {
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
   balance <- computeCovariateBalance(strata, cohortMethodData)
-  expect_is(balance, "data.frame")
+  expect_s3_class(balance, "data.frame")
 })
 
 test_that("Outcome functions", {
@@ -129,7 +129,7 @@ test_that("Outcome functions", {
                                         stratified = stratified,
                                         useCovariates = useCovariates,
                                         prior = createPrior("laplace", 0.1))
-        expect_is(outcomeModel, "OutcomeModel")
+        expect_s3_class(outcomeModel, "OutcomeModel")
       }
     }
   }
@@ -140,5 +140,5 @@ test_that("Outcome functions", {
                                   stratified = FALSE,
                                   useCovariates = FALSE,
                                   inversePtWeighting = TRUE)
-  expect_is(outcomeModel, "OutcomeModel")
+  expect_s3_class(outcomeModel, "OutcomeModel")
 })
