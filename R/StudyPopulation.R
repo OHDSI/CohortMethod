@@ -385,6 +385,7 @@ getCounts <- function(population, description = "") {
 #' @param periodLength                     The length in days of each period shown in the plot.
 #' @param numberOfPeriods                  Number of periods to show in the plot. The periods are
 #'                                         equally divided before and after the index date.
+#' @param highlightExposedEvents           Highlight event counts during exposure in a different color?
 #' @param showFittedLines                  Fit lines to the proportions and show them in the plot?
 #' @param targetLabel                      A label to us for the target cohort.
 #' @param comparatorLabel                  A label to us for the comparator cohort.
@@ -414,6 +415,7 @@ plotTimeToEvent <- function(cohortMethodData,
                             censorAtNewRiskWindow = FALSE,
                             periodLength = 7,
                             numberOfPeriods = 52,
+                            highlightExposedEvents = TRUE,
                             showFittedLines = TRUE,
                             targetLabel = "Target",
                             comparatorLabel = "Comparator",
@@ -455,12 +457,14 @@ plotTimeToEvent <- function(cohortMethodData,
                                       censorAtNewRiskWindow = censorAtNewRiskWindow)
   outcomes <- cohortMethodData$outcomes %>%
     filter(.data$outcomeId == !!outcomeId) %>%
+    select(.data$rowId, .data$daysToEvent) %>%
     collect()
-  outcomes <- merge(population[, c("rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd")],
-                    outcomes[, c("rowId", "daysToEvent")])
-  outcomes <- outcomes[-outcomes$daysFromObsStart <= outcomes$daysToEvent & outcomes$daysToObsEnd >= outcomes$daysToEvent, ]
-  outcomes$exposed <- 0
-  outcomes$exposed[outcomes$daysToEvent >= outcomes$riskStart & outcomes$daysToEvent <= outcomes$riskEnd] <- 1
+
+  outcomes <- outcomes %>%
+    inner_join(select(population, .data$rowId, .data$treatment, .data$daysFromObsStart, .data$daysToObsEnd, .data$riskStart, .data$riskEnd),
+               by = "rowId") %>%
+    filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%
+    mutate(exposed = .data$daysToEvent >= .data$riskStart & .data$daysToEvent <= .data$riskEnd)
 
   idxExposed <- outcomes$exposed == 1
   idxTarget <- outcomes$treatment == 1
@@ -484,12 +488,14 @@ plotTimeToEvent <- function(cohortMethodData,
   }
   periods <- lapply(-floor(numberOfPeriods/2):ceiling(numberOfPeriods/2), createPeriod)
   periods <- do.call("rbind", periods)
-  periods$rateExposedTarget <- periods$eventsExposedTarget / periods$observedTarget
-  periods$rateUnexposedTarget <- periods$eventsUnexposedTarget / periods$observedTarget
-  periods$rateExposedComparator <- periods$eventsExposedComparator / periods$observedComparator
-  periods$rateUnexposedComparator <- periods$eventsUnexposedComparator / periods$observedComparator
-  periods$rateTarget <- (periods$eventsExposedTarget + periods$eventsUnexposedTarget) / periods$observedTarget
-  periods$rateComparator <- (periods$eventsExposedComparator + periods$eventsUnexposedComparator) / periods$observedComparator
+  periods <- periods %>%
+    filter(.data$observedTarget > 0) %>%
+    mutate(rateExposedTarget = .data$eventsExposedTarget / .data$observedTarget,
+            rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
+            rateExposedComparator = .data$eventsExposedComparator / .data$observedComparator,
+            rateUnexposedComparator = .data$eventsUnexposedComparator / .data$observedComparator,
+            rateTarget = (.data$eventsExposedTarget + .data$eventsUnexposedTarget) / .data$observedTarget,
+            rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator)
   vizData <- rbind(dplyr::tibble(start = periods$start,
                                  end = periods$end,
                                  rate = periods$rateExposedTarget,
@@ -512,13 +518,21 @@ plotTimeToEvent <- function(cohortMethodData,
                                  type = comparatorLabel))
   vizData$type <- factor(vizData$type, levels = c(targetLabel, comparatorLabel))
 
-  plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,
-                                                y = .data$rate * 1000,
-                                                fill = .data$status)) +
-    ggplot2::geom_col(width = periodLength, alpha = 0.8) +
+  if (highlightExposedEvents) {
+    plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,
+                                                  y = .data$rate * 1000,
+                                                  fill = .data$status)) +
+      ggplot2::geom_col(width = periodLength, alpha = 0.7)
+
+  } else {
+    plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,
+                                                  y = .data$rate * 1000)) +
+      ggplot2::geom_col(width = periodLength, alpha = 0.7, fill = rgb(0, 0, 0.8))
+  }
+  plot <- plot +
     ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, size = 1) +
-    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                          rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0),
+                                          rgb(0, 0, 0.8))) +
     ggplot2::scale_x_continuous("Days since exposure start") +
     ggplot2::scale_y_continuous("Proportion (per 1,000 persons)") +
     ggplot2::facet_grid(type~., scales = "free_y") +
@@ -547,10 +561,12 @@ plotTimeToEvent <- function(cohortMethodData,
     postComparator <- cbind(postComparator, predict(lm(rateComparator ~ poly(number, 3), data = postComparator), interval = "confidence"))
     postComparator$type <- comparatorLabel
     postComparator$period <- "Post"
-    curve <- rbind(preTarget, postTarget, preComparator, postComparator)
-    curve$rate <- 0
-    curve$status <- "Exposed events"
-    curve$type <- factor(curve$type, levels = c(targetLabel, comparatorLabel))
+    curve <- rbind(preTarget, postTarget, preComparator, postComparator) %>%
+      mutate(rate = 0,
+             status = "Exposed events",
+             type = factor(.data$type, levels = c(targetLabel, comparatorLabel)),
+             lwr = if_else(.data$lwr < 0, 0, .data$lwr))
+
 
     plot <- plot + ggplot2::geom_ribbon(ggplot2::aes(x = start + periodLength/2,
                                                      ymin = .data$lwr * 1000,

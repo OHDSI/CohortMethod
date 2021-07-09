@@ -1,3 +1,15 @@
+CohortMethod 4.2.1
+==================
+
+Changes:
+
+1. Adding `highlightExposedEvents` argument to `plotTimeToEvent()`.
+
+Bug fixes:
+
+1. Fixed error thrown by `plotTimeToEvent()` when there are time periods in plot when nobody is observed.
+
+
 CohortMethod 4.2.0
 ==================
 

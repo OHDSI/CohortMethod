@@ -22,6 +22,7 @@ plotTimeToEvent(
   censorAtNewRiskWindow = FALSE,
   periodLength = 7,
   numberOfPeriods = 52,
+  highlightExposedEvents = TRUE,
   showFittedLines = TRUE,
   targetLabel = "Target",
   comparatorLabel = "Comparator",
@@ -74,6 +75,8 @@ when the new time-at-risk starts to prevent overlap?}
 
 \item{numberOfPeriods}{Number of periods to show in the plot. The periods are
 equally divided before and after the index date.}
+
+\item{highlightExposedEvents}{Highlight event counts during exposure in a different color?}
 
 \item{showFittedLines}{Fit lines to the proportions and show them in the plot?}
 
