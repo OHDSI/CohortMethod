@@ -23,6 +23,7 @@ plotTimeToEvent(
   periodLength = 7,
   numberOfPeriods = 52,
   highlightExposedEvents = TRUE,
+  includePostIndexTime = TRUE,
   showFittedLines = TRUE,
   targetLabel = "Target",
   comparatorLabel = "Comparator",
@@ -40,9 +41,9 @@ point instead of the cohorts in the \code{cohortMethodData} object.}
 \item{outcomeId}{The ID of the outcome. If not specified, no outcome-specific
 transformations will be performed.}
 
-\item{firstExposureOnly}{Should only the first exposure per subject be included?}
+\item{firstExposureOnly}{(logical) Should only the first exposure per subject be included?}
 
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
+\item{restrictToCommonPeriod}{(logical) Restrict the analysis to the period when both exposures are observed?}
 
 \item{washoutPeriod}{The minimum required continuous observation time prior to
 index date for a person to be included in the cohort.}
@@ -76,9 +77,11 @@ when the new time-at-risk starts to prevent overlap?}
 \item{numberOfPeriods}{Number of periods to show in the plot. The periods are
 equally divided before and after the index date.}
 
-\item{highlightExposedEvents}{Highlight event counts during exposure in a different color?}
+\item{highlightExposedEvents}{(logical) Highlight event counts during exposure in a different color?}
 
-\item{showFittedLines}{Fit lines to the proportions and show them in the plot?}
+\item{includePostIndexTime}{(logical) Show time after the index date?}
+
+\item{showFittedLines}{(logical) Fit lines to the proportions and show them in the plot?}
 
 \item{targetLabel}{A label to us for the target cohort.}
 

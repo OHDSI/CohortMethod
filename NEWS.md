@@ -3,7 +3,7 @@ CohortMethod 4.2.1
 
 Changes:
 
-1. Adding `highlightExposedEvents` argument to `plotTimeToEvent()`.
+1. Adding `highlightExposedEvents` and `includePostIndexTime` arguments to `plotTimeToEvent()`.
 
 Bug fixes:
 

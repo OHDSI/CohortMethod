@@ -363,10 +363,10 @@ getCounts <- function(population, description = "") {
 #'                                         point instead of the cohorts in the `cohortMethodData` object.
 #' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
 #'                                         transformations will be performed.
-#' @param firstExposureOnly                Should only the first exposure per subject be included?
+#' @param firstExposureOnly                (logical) Should only the first exposure per subject be included?
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
 #'                                         cohort? See details for allowed values.
-#' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
+#' @param restrictToCommonPeriod           (logical) Restrict the analysis to the period when both exposures are observed?
 #' @param washoutPeriod                    The minimum required continuous observation time prior to
 #'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
@@ -385,13 +385,14 @@ getCounts <- function(population, description = "") {
 #' @param periodLength                     The length in days of each period shown in the plot.
 #' @param numberOfPeriods                  Number of periods to show in the plot. The periods are
 #'                                         equally divided before and after the index date.
-#' @param highlightExposedEvents           Highlight event counts during exposure in a different color?
-#' @param showFittedLines                  Fit lines to the proportions and show them in the plot?
+#' @param highlightExposedEvents           (logical) Highlight event counts during exposure in a different color?
+#' @param includePostIndexTime             (logical) Show time after the index date?
+#' @param showFittedLines                  (logical) Fit lines to the proportions and show them in the plot?
 #' @param targetLabel                      A label to us for the target cohort.
 #' @param comparatorLabel                  A label to us for the comparator cohort.
 #' @param title                            Optional: the main title for the plot.
-#' @param fileName              Name of the file where the plot should be saved, for example
-#'                              'plot.png'. See [ggplot2::ggsave()] for supported file formats.
+#' @param fileName                         Name of the file where the plot should be saved, for example
+#'                                         'plot.png'. See [ggplot2::ggsave()] for supported file formats.
 #'
 #' @return
 #' A ggplot object. Use the [ggplot2::ggsave()] function to save to file in a different
@@ -416,6 +417,7 @@ plotTimeToEvent <- function(cohortMethodData,
                             periodLength = 7,
                             numberOfPeriods = 52,
                             highlightExposedEvents = TRUE,
+                            includePostIndexTime = TRUE,
                             showFittedLines = TRUE,
                             targetLabel = "Target",
                             comparatorLabel = "Comparator",
@@ -496,6 +498,10 @@ plotTimeToEvent <- function(cohortMethodData,
             rateUnexposedComparator = .data$eventsUnexposedComparator / .data$observedComparator,
             rateTarget = (.data$eventsExposedTarget + .data$eventsUnexposedTarget) / .data$observedTarget,
             rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator)
+  if (!includePostIndexTime) {
+    periods <- periods %>%
+      filter(.data$end <= 0)
+  }
   vizData <- rbind(dplyr::tibble(start = periods$start,
                                  end = periods$end,
                                  rate = periods$rateExposedTarget,
@@ -549,19 +555,23 @@ plotTimeToEvent <- function(cohortMethodData,
     preTarget <- cbind(preTarget, predict(lm(rateTarget ~ poly(number, 3), data = preTarget), interval = "confidence"))
     preTarget$type <- targetLabel
     preTarget$period <- "Pre"
-    postTarget <- periods[periods$start >= 0, ]
-    postTarget <- cbind(postTarget, predict(lm(rateTarget ~ poly(number, 3), data = postTarget), interval = "confidence"))
-    postTarget$type <- targetLabel
-    postTarget$period <- "Post"
     preComparator <- periods[periods$start < 0, ]
     preComparator <- cbind(preComparator, predict(lm(rateComparator ~ poly(number, 3), data = preComparator), interval = "confidence"))
     preComparator$type <- comparatorLabel
     preComparator$period <- "Pre"
-    postComparator <- periods[periods$start >= 0, ]
-    postComparator <- cbind(postComparator, predict(lm(rateComparator ~ poly(number, 3), data = postComparator), interval = "confidence"))
-    postComparator$type <- comparatorLabel
-    postComparator$period <- "Post"
-    curve <- rbind(preTarget, postTarget, preComparator, postComparator) %>%
+    curve <- bind_rows(preTarget, preComparator)
+    if (includePostIndexTime) {
+      postTarget <- periods[periods$start >= 0, ]
+      postTarget <- cbind(postTarget, predict(lm(rateTarget ~ poly(number, 3), data = postTarget), interval = "confidence"))
+      postTarget$type <- targetLabel
+      postTarget$period <- "Post"
+      postComparator <- periods[periods$start >= 0, ]
+      postComparator <- cbind(postComparator, predict(lm(rateComparator ~ poly(number, 3), data = postComparator), interval = "confidence"))
+      postComparator$type <- comparatorLabel
+      postComparator$period <- "Post"
+      curve <- bind_rows(curve, postTarget, postComparator)
+    }
+    curve <- curve %>%
       mutate(rate = 0,
              status = "Exposed events",
              type = factor(.data$type, levels = c(targetLabel, comparatorLabel)),
