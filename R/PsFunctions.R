@@ -782,7 +782,8 @@ matchOnPs <- function(population,
 
   population <- population[order(population$propensityScore), ]
   propensityScore <- population$propensityScore
-  if (caliper <= 0 || min(population$propensityScore) == max(population$propensityScore)) {
+
+  if (caliper <= 0 || nrow(population) == 0 || min(population$propensityScore) == max(population$propensityScore)) {
     caliper <- 9999
   } else if (caliperScale == "standardized") {
     caliper <- caliper * sd(population$propensityScore)
