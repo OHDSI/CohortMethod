@@ -1,5 +1,9 @@
 library(CohortMethod)
 library(testthat)
+library(Eunomia)
+
+connectionDetails <- getEunomiaConnectionDetails()
+Eunomia::createCohorts(connectionDetails)
 
 test_that("Check installation", {
   logFile <- tempfile()
@@ -119,6 +123,10 @@ test_that("Multiple analyses", {
 
   outputFolder <- tempfile(pattern = "cmData")
 
+  analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
+
+  expect_equal(nrow(analysisSum), 16)
+
   # cmAnalysis4 includes interaction terms which should throw a warning
   expect_warning({
     result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -132,9 +140,35 @@ test_that("Multiple analyses", {
                             prefilterCovariates = TRUE)
   }, "Separable interaction terms found and removed")
 
-  analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
 
-  expect_equal(nrow(analysisSum), 16)
+  # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
+
+  connect <- DatabaseConnector::connect(connectionDetails)
+  person <- querySql(connect, "SELECT * FROM person;")
+  personNew <- person
+  personNew$GENDER_CONCEPT_ID <- rep(8507, nrow(personNew))
+  insertTable(connect, tableName = "person",
+              data = personNew,
+              dropTableIfExists = TRUE, createTable = TRUE)
+  dbDisconnect(connect)
+
+  runCmAnalyses(connectionDetails = connectionDetails,
+                cdmDatabaseSchema = "main",
+                exposureTable = "cohort",
+                outcomeTable = "cohort",
+                outputFolder = outputFolder,
+                cmAnalysisList = list(cmAnalysis4),
+                targetComparatorOutcomesList = targetComparatorOutcomesList,
+                outcomeIdsOfInterest = 3,
+                prefilterCovariates = TRUE)
+
+  connect <- DatabaseConnector::connect(connectionDetails)
+  personNew$GENDER_CONCEPT_ID <- rep(8507, nrow(personNew))
+  insertTable(connect, tableName = "person",
+              data = person,
+              dropTableIfExists = TRUE, createTable = TRUE)
+  dbDisconnect(connect)
 
   unlink(outputFolder, recursive = TRUE)
+
 })
