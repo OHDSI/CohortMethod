@@ -39,7 +39,7 @@ test_that("Subsampling cohort throws no error", {
       maxCohortSizeForFitting = 10,
       control = cyclops_control
     ),
-    NA
+    NA # "NA" asserts that there should be no errors
   )
 })
 
