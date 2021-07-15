@@ -120,6 +120,7 @@ test_that("Multiple analyses", {
                                   fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
   cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
+  cmAnalysisList <- list(cmAnalysis3)
 
   outputFolder <- tempfile(pattern = "cmData")
 
@@ -140,9 +141,7 @@ test_that("Multiple analyses", {
                             prefilterCovariates = TRUE)
   }, "Separable interaction terms found and removed")
 
-
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
-
   connect <- DatabaseConnector::connect(connectionDetails)
   person <- querySql(connect, "SELECT * FROM person;")
   personNew <- person
@@ -169,6 +168,48 @@ test_that("Multiple analyses", {
               dropTableIfExists = TRUE, createTable = TRUE)
   dbDisconnect(connect)
 
-  unlink(outputFolder, recursive = TRUE)
 
+
+test_that("PsFunctions Warnings", {
+  nsaids <- c(1118084, 1124300)
+  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+  sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                             cdmDatabaseSchema = "main",
+                                             targetId = 1,
+                                             comparatorId = 2,
+                                             outcomeIds = c(3, 4),
+                                             exposureDatabaseSchema = "main",
+                                             outcomeDatabaseSchema = "main",
+                                             exposureTable = "cohort",
+                                             outcomeTable = "cohort",
+                                             covariateSettings = covSettings)
+
+  studyPop <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                    outcomeId = 3,
+                                    riskWindowEnd = 99999)
+
+  studyPop1 <- studyPop %>% subset(select = -c(rowId))
+  expect_error(
+    createPs(cohortMethodData = sCohortMethodData,
+             population = studyPop1),
+    regexp = "Missing column rowId in population"
+  )
+
+  studyPop2 <- studyPop %>% subset(select = -c(treatment))
+  expect_error(
+    createPs(cohortMethodData = sCohortMethodData,
+             population = studyPop2),
+    regexp = "Missing column treatment in population"
+  )
+
+  studyPop3 <- sCohortMethodData$cohorts %>% collect()
+  ps3a <- createPs(cohortMethodData = sCohortMethodData)
+  ps3b <- createPs(cohortMethodData = sCohortMethodData,
+                   population = studyPop3)
+  expect_identical(ps3a, ps3b)
 })
+
+unlink(outputFolder, recursive = TRUE)
+unlink(connectionDetails$server())
+
