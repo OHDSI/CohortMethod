@@ -53,7 +53,8 @@ Suggests:
 	knitr,
 	rmarkdown,
 	EmpiricalCalibration,
-	Eunomia
+	Eunomia,
+	withr
 Remotes:
 	ohdsi/FeatureExtraction
 LinkingTo: Rcpp

@@ -1,12 +1,17 @@
 library(CohortMethod)
-library(Eunomia)
 library(testthat)
 
-connectionDetails <- getEunomiaConnectionDetails()
-
-Eunomia::createCohorts(connectionDetails)
+test_that("Check installation", {
+  logFile <- tempfile()
+  ParallelLogger::addDefaultFileLogger(logFile)
+  checkCmInstallation(connectionDetails)
+  lines <- readLines(logFile)
+  # Log file should write response code
+  expect_true(as.logical(grep("Response code: 387848", lines)))
+})
 
 test_that("Multiple analyses", {
+
   tcos1 <- createTargetComparatorOutcomes(targetId = 1,
                                          comparatorId = 2,
                                          outcomeIds = c(3, 4),
@@ -113,15 +118,19 @@ test_that("Multiple analyses", {
   cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
 
   outputFolder <- tempfile(pattern = "cmData")
-  result <- runCmAnalyses(connectionDetails = connectionDetails,
-                          cdmDatabaseSchema = "main",
-                          exposureTable = "cohort",
-                          outcomeTable = "cohort",
-                          outputFolder = outputFolder,
-                          cmAnalysisList = cmAnalysisList,
-                          targetComparatorOutcomesList = targetComparatorOutcomesList,
-                          outcomeIdsOfInterest = 3,
-                          prefilterCovariates = TRUE)
+
+  # cmAnalysis4 includes interaction terms which should throw a warning
+  expect_warning({
+    result <- runCmAnalyses(connectionDetails = connectionDetails,
+                            cdmDatabaseSchema = "main",
+                            exposureTable = "cohort",
+                            outcomeTable = "cohort",
+                            outputFolder = outputFolder,
+                            cmAnalysisList = cmAnalysisList,
+                            targetComparatorOutcomesList = targetComparatorOutcomesList,
+                            outcomeIdsOfInterest = 3,
+                            prefilterCovariates = TRUE)
+  }, "Separable interaction terms found and removed")
 
   analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
 
@@ -129,6 +138,3 @@ test_that("Multiple analyses", {
 
   unlink(outputFolder, recursive = TRUE)
 })
-
-# Remove the Eunomia database:
-unlink(connectionDetails$server())
