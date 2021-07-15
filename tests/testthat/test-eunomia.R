@@ -2,10 +2,6 @@ library(CohortMethod)
 library(Eunomia)
 library(testthat)
 
-connectionDetails <- getEunomiaConnectionDetails()
-
-Eunomia::createCohorts(connectionDetails)
-
 test_that("Multiple analyses", {
   tcos1 <- createTargetComparatorOutcomes(targetId = 1,
                                          comparatorId = 2,
@@ -129,6 +125,3 @@ test_that("Multiple analyses", {
 
   unlink(outputFolder, recursive = TRUE)
 })
-
-# Remove the Eunomia database:
-unlink(connectionDetails$server())
