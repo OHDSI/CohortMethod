@@ -225,7 +225,7 @@ test_that("Multiple analyses", {
 })
 
 
-test_that("PsFunctions Warnings", {
+test_that("Warnings for createPs", {
   nsaids <- c(1118084, 1124300)
   covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
                                                 addDescendantsToExclude = TRUE)
@@ -263,4 +263,82 @@ test_that("PsFunctions Warnings", {
   ps3b <- createPs(cohortMethodData = sCohortMethodData,
                    population = studyPop3)
   expect_identical(ps3a, ps3b)
+
+  covSettings2 <- createDefaultCovariateSettings()
+  sCohortMethodData2 <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                              cdmDatabaseSchema = "main",
+                                              targetId = 1,
+                                              comparatorId = 2,
+                                              outcomeIds = c(3, 4),
+                                              exposureDatabaseSchema = "main",
+                                              outcomeDatabaseSchema = "main",
+                                              exposureTable = "cohort",
+                                              outcomeTable = "cohort",
+                                              covariateSettings = covSettings2)
+
+  studyPop4 <- createStudyPopulation(cohortMethodData = sCohortMethodData2,
+                                     outcomeId = 3,
+                                     riskWindowEnd = 99999)
+  expect_error(
+    createPs(cohortMethodData = sCohortMethodData2,
+             population = studyPop4),
+    regexp = "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?",
+    fixed = TRUE
+  )
 })
+
+test_that("Warnings for stratifyByPs", {
+  nsaids <- c(1118084, 1124300)
+  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+                                                addDescendantsToExclude = TRUE)
+  sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
+                                             cdmDatabaseSchema = "main",
+                                             targetId = 1,
+                                             comparatorId = 2,
+                                             outcomeIds = c(3, 4),
+                                             exposureDatabaseSchema = "main",
+                                             outcomeDatabaseSchema = "main",
+                                             exposureTable = "cohort",
+                                             outcomeTable = "cohort",
+                                             covariateSettings = covSettings)
+  studyPop <- createStudyPopulation(cohortMethodData = sCohortMethodData,
+                                    outcomeId = 3,
+                                    riskWindowEnd = 99999)
+
+  ps <- createPs(cohortMethodData = sCohortMethodData,
+                 population = studyPop)
+
+  ps1 <- ps %>% subset(select = -c(rowId))
+  expect_error(
+    stratifyByPs(population = ps1),
+    regexp = "Missing column rowId in population"
+  )
+
+  ps2 <- ps %>% subset(select = -c(treatment))
+  expect_error(
+    stratifyByPs(population = ps2),
+    regexp = "Missing column treatment in population"
+  )
+
+  ps3 <- ps %>% subset(select = -c(propensityScore))
+  expect_error(
+    stratifyByPs(population = ps3),
+    regexp = "Missing column propensityScore in population"
+  )
+
+  expect_warning(stratifyByPs(population = ps,
+                              numberOfStrata = 99999),
+                 regexp = "Specified 99999 strata, but only")
+
+  vec1 <- rep(1, nrow(ps)/2)
+  vec0 <- rep(0, nrow(ps)/2)
+  stratCol <- c(vec0, vec1)
+  ps4 <- ps %>% mutate(stratCol = stratCol)
+  expect_warning({stratifyByPs(population = ps4,
+                               numberOfStrata = 4,
+                               stratificationColumns = "stratCol")},
+                 NA)
+
+})
+
+
