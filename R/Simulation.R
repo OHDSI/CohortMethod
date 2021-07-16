@@ -36,10 +36,10 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   if (cohortMethodData$cohorts %>% count() %>% pull() == 0)
     stop("Cohorts are empty")
 
-  if (cohortMethodData$covarites %>% count() %>% pull() == 0)
+  if (cohortMethodData$covariates %>% count() %>% pull() == 0)
     stop("Covariates are empty")
 
-  if (sum(cohortMethodData$cohorts %>% select(daysToCohortEnd) %>% pull()) == 0)
+  if (sum(cohortMethodData$cohorts %>% select(.data$daysToCohortEnd) %>% pull()) == 0)
     warning("Cohort data appears to be limited, check daysToCohortEnd which appears to be all zeros")
 
   ParallelLogger::logInfo("Computing covariate prevalence")
