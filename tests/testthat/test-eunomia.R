@@ -1,9 +1,5 @@
 library(CohortMethod)
 library(testthat)
-library(Eunomia)
-
-connectionDetails <- getEunomiaConnectionDetails()
-Eunomia::createCohorts(connectionDetails)
 
 test_that("Check installation", {
   logFile <- tempfile()
@@ -15,11 +11,15 @@ test_that("Check installation", {
 })
 
 test_that("Multiple analyses", {
+  outputFolder <- tempfile(pattern = "cmData")
+  withr::defer({
+    unlink(outputFolder, recursive = TRUE)
+  }, testthat::teardown_env())
 
   tcos1 <- createTargetComparatorOutcomes(targetId = 1,
-                                         comparatorId = 2,
-                                         outcomeIds = c(3, 4),
-                                         excludedCovariateConceptIds = c(1118084, 1124300))
+                                          comparatorId = 2,
+                                          outcomeIds = c(3, 4),
+                                          excludedCovariateConceptIds = c(1118084, 1124300))
   # Empty cohorts:
   tcos2 <- createTargetComparatorOutcomes(targetId = 998,
                                           comparatorId = 999,
@@ -36,28 +36,28 @@ test_that("Multiple analyses", {
 
   # Duplicating some operations from createGetDbCohortMethodDataArgs just so we test them:
   createStudyPopArgs1 <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
-                                                        firstExposureOnly = TRUE,
-                                                        restrictToCommonPeriod = TRUE,
-                                                        removeDuplicateSubjects = "remove all",
-                                                        washoutPeriod = 183,
-                                                        censorAtNewRiskWindow = TRUE,
-                                                        minDaysAtRisk = 1,
-                                                        riskWindowStart = 0,
-                                                        startAnchor = "cohort start",
-                                                        riskWindowEnd = 30,
-                                                        endAnchor = "cohort end")
+                                                         firstExposureOnly = TRUE,
+                                                         restrictToCommonPeriod = TRUE,
+                                                         removeDuplicateSubjects = "remove all",
+                                                         washoutPeriod = 183,
+                                                         censorAtNewRiskWindow = TRUE,
+                                                         minDaysAtRisk = 1,
+                                                         riskWindowStart = 0,
+                                                         startAnchor = "cohort start",
+                                                         riskWindowEnd = 30,
+                                                         endAnchor = "cohort end")
 
   createStudyPopArgs2 <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
-                                                        firstExposureOnly = TRUE,
-                                                        restrictToCommonPeriod = TRUE,
-                                                        removeDuplicateSubjects = "keep first",
-                                                        washoutPeriod = 183,
-                                                        censorAtNewRiskWindow = TRUE,
-                                                        minDaysAtRisk = 1,
-                                                        riskWindowStart = 0,
-                                                        startAnchor = "cohort start",
-                                                        riskWindowEnd = 30,
-                                                        endAnchor = "cohort end")
+                                                         firstExposureOnly = TRUE,
+                                                         restrictToCommonPeriod = TRUE,
+                                                         removeDuplicateSubjects = "keep first",
+                                                         washoutPeriod = 183,
+                                                         censorAtNewRiskWindow = TRUE,
+                                                         minDaysAtRisk = 1,
+                                                         riskWindowStart = 0,
+                                                         startAnchor = "cohort start",
+                                                         riskWindowEnd = 30,
+                                                         endAnchor = "cohort end")
 
   fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 
@@ -120,14 +120,6 @@ test_that("Multiple analyses", {
                                   fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
   cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
-  cmAnalysisList <- list(cmAnalysis3)
-
-  outputFolder <- tempfile(pattern = "cmData")
-
-  analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
-
-  expect_equal(nrow(analysisSum), 16)
-
   # cmAnalysis4 includes interaction terms which should throw a warning
   expect_warning({
     result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -139,35 +131,98 @@ test_that("Multiple analyses", {
                             targetComparatorOutcomesList = targetComparatorOutcomesList,
                             outcomeIdsOfInterest = 3,
                             prefilterCovariates = TRUE)
+
   }, "Separable interaction terms found and removed")
 
+  refernceTable <- file.path(outputFolder, "outcomeModelReference.rds")
+  expect_true(file.exists(refernceTable))
+  ref <- readRDS(refernceTable)
+  expect_equal(nrow(ref), 16)
+
+  analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
+
+  expect_equal(nrow(analysisSum), 16)
+
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
-  connect <- DatabaseConnector::connect(connectionDetails)
-  person <- querySql(connect, "SELECT * FROM person;")
+  connection <- DatabaseConnector::connect(connectionDetails)
+
+  withr::defer({
+    DatabaseConnector::disconnect(connection)
+  }, testthat::teardown_env())
+
+  person <- DatabaseConnector::querySql(connection, "SELECT * FROM person;")
   personNew <- person
   personNew$GENDER_CONCEPT_ID <- rep(8507, nrow(personNew))
-  insertTable(connect, tableName = "person",
-              data = personNew,
-              dropTableIfExists = TRUE, createTable = TRUE)
-  dbDisconnect(connect)
+  personNew$GENDER_SOURCE_VALUE <- "F"
+  DatabaseConnector::insertTable(connection, tableName = "person",
+                                 data = personNew,
+                                 dropTableIfExists = TRUE, createTable = TRUE)
 
-  runCmAnalyses(connectionDetails = connectionDetails,
-                cdmDatabaseSchema = "main",
-                exposureTable = "cohort",
-                outcomeTable = "cohort",
-                outputFolder = outputFolder,
-                cmAnalysisList = list(cmAnalysis4),
-                targetComparatorOutcomesList = targetComparatorOutcomesList,
-                outcomeIdsOfInterest = 3,
-                prefilterCovariates = TRUE)
+  warningList <- capture_warnings({
+    runRes2 <- runCmAnalyses(connectionDetails = connectionDetails,
+                             cdmDatabaseSchema = "main",
+                             exposureTable = "cohort",
+                             outcomeTable = "cohort",
+                             outputFolder = outputFolder,
+                             cmAnalysisList = list(cmAnalysis4),
+                             targetComparatorOutcomesList = targetComparatorOutcomesList,
+                             outcomeIdsOfInterest = 3,
+                             prefilterCovariates = TRUE)
+  })
+  # Should not throw same warning as previous analysis
+  expect_false("Separable interaction terms found and removed" %in% warningList)
 
-  connect <- DatabaseConnector::connect(connectionDetails)
-  personNew$GENDER_CONCEPT_ID <- rep(8507, nrow(personNew))
-  insertTable(connect, tableName = "person",
-              data = person,
-              dropTableIfExists = TRUE, createTable = TRUE)
-  dbDisconnect(connect)
+  analysisSum <- summarizeAnalyses(runRes2, outputFolder = outputFolder)
+  refernceTable <- file.path(outputFolder, "outcomeModelReference.rds")
+  expect_true(file.exists(refernceTable))
+  ref <- readRDS(refernceTable)
+  expect_equal(nrow(ref), 4)
 
+  # Reset person table
+  DatabaseConnector::insertTable(connection, tableName = "person",
+                                 data = person,
+                                 dropTableIfExists = TRUE, createTable = TRUE)
+
+
+  expect_error({
+    runCmAnalyses(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = "main",
+                  exposureTable = "cohort",
+                  outcomeTable = "cohort",
+                  outputFolder = outputFolder,
+                  cmAnalysisList = list(cmAnalysis4),
+                  targetComparatorOutcomesList = targetComparatorOutcomesList,
+                  outcomeIdsOfInterest = 3,
+                  refitPsForEveryOutcome = TRUE,
+                  prefilterCovariates = TRUE)
+  }, "Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
+
+  expect_error({
+    runCmAnalyses(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = "main",
+                  exposureTable = "cohort",
+                  outcomeTable = "cohort",
+                  outputFolder = outputFolder,
+                  cmAnalysisList = list(cmAnalysis4),
+                  targetComparatorOutcomesList = targetComparatorOutcomesList,
+                  outcomeIdsOfInterest = NULL,
+                  refitPsForEveryOutcome = TRUE,
+                  refitPsForEveryStudyPopulation = FALSE,
+                  prefilterCovariates = TRUE)
+  }, "Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
+
+  expect_error({
+    runCmAnalyses(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = "main",
+                  exposureTable = "cohort",
+                  outcomeTable = "cohort",
+                  outputFolder = outputFolder,
+                  cmAnalysisList = list(cmAnalysis4),
+                  targetComparatorOutcomesList = targetComparatorOutcomesList <- list(tcos1, tcos2, "brokenObject"),
+                  outcomeIdsOfInterest = 3,
+                  prefilterCovariates = TRUE)
+  })
+})
 
 
 test_that("PsFunctions Warnings", {
@@ -209,7 +264,3 @@ test_that("PsFunctions Warnings", {
                    population = studyPop3)
   expect_identical(ps3a, ps3b)
 })
-
-unlink(outputFolder, recursive = TRUE)
-unlink(connectionDetails$server())
-
