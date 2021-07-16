@@ -1,3 +1,5 @@
+^renv$
+^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 extras
@@ -8,3 +10,4 @@ deploy.sh
 compare_versions
 .github
 docs
+.idea
