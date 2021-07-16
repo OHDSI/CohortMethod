@@ -54,7 +54,8 @@ Suggests:
 	rmarkdown,
 	EmpiricalCalibration,
 	Eunomia,
-	withr
+	withr,
+	R.utils
 Remotes:
 	ohdsi/FeatureExtraction
 LinkingTo: Rcpp
