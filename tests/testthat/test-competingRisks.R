@@ -202,7 +202,7 @@ test_that("Competing risks stratified single analysis", {
                                              cdmDatabaseSchema = "main",
                                              targetId = 1,
                                              comparatorId = 2,
-                                             outcomeIds = c(3, 5, 6),
+                                             outcomeIds = c(3, 5),
                                              exposureDatabaseSchema = "main",
                                              outcomeDatabaseSchema = "main",
                                              exposureTable = "cohort",
@@ -227,27 +227,31 @@ test_that("Competing risks stratified single analysis", {
   fitRisk <- fitOutcomeModel(studyPopCombined,
                              modelType = "fgr")
 
+  fitRiskStratWeights <- fitOutcomeModel(stratPopCombined,
+                                         modelType = "fgr",
+                                         stratified = TRUE,
+                                         useStratCensorWeights = TRUE)
+
   fitRiskStrat <- fitOutcomeModel(stratPopCombined,
                                   modelType = "fgr",
                                   stratified = TRUE,
-                                  censoredStratWeights = TRUE)
+                                  useStratCensorWeights = FALSE)
 
-  fitRiskStrat1 <- fitOutcomeModel(stratPopCombined,
-                                   modelType = "fgr",
-                                   stratified = TRUE,
-                                   censoredStratWeights = FALSE)
-
-  fitRiskStrat2 <- fitOutcomeModel(stratPopCombined,
-                                   modelType = "fgr",
-                                   stratified = FALSE)
+  goodFitStratWeights <- crrs(ftime = stratPopCombined$survivalTime,
+                              fstatus = stratPopCombined$outcomeCount,
+                              cov1 = stratPopCombined$treatment,
+                              strata = stratPopCombined$stratumId)
 
   goodFitStrat <- crrs(ftime = stratPopCombined$survivalTime,
                        fstatus = stratPopCombined$outcomeCount,
                        cov1 = stratPopCombined$treatment,
-                       strata = stratPopCombined$stratumId)
+                       strata = stratPopCombined$stratumId,
+                       ctype = 2)
 
-  expect_false(coef(fitRisk2) == coef(fitRiskStrat))
-  expect_equivalent(coef(fitRiskStrat), goodFitStrat$coef)
+  tolerance <- 1E-4
+  expect_false(coef(fitRisk) == coef(fitRiskStrat))
+  expect_equivalent(coef(fitRiskStrat), goodFitStrat$coef, tolerance = tolerance)
+  expect_equivalent(coef(fitRiskStratWeights), goodFitStratWeights$coef, tolerance = tolerance)
 
 })
 
@@ -308,5 +312,4 @@ test_that("Competing risks multiple analyses", {
 
 })
 
-unlink(connectionDetails$server)
-
+unlink(connectionDetails$server())

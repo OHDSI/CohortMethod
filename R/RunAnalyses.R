@@ -644,8 +644,8 @@ doCombinePopulations <- function(studyPop, params) {
                                    params$outcomeModelFile, "without a competing risk population"))
   } else {
     riskPop <- readRDS(params$riskPopFile)
-    unknowns <- setdiff(riskPop$subjectId, studyPop$subjectId)
-    riskPop <- riskPop[!(riskPop$subjectId %in% unknowns), ]
+    unknowns <- setdiff(riskPop$personSeqId, studyPop$personSeqId)
+    riskPop <- riskPop[!(riskPop$personSeqId %in% unknowns), ]
     codeSimultaneousEventsAs <- params$args$codeSimultaneousEventsAs
     removeSubjectsWithSimultaneousEvents <- params$args$removeSubjectsWithSimultaneousEvents
     combinedPop <- combineCompetingStudyPopulations(mainPopulation = studyPop,
@@ -670,6 +670,11 @@ doFitOutcomeModel <- function(params) {
 
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
+
+  args$riskId <- NULL
+  args$codeSimultaneousEventsAs <- NULL
+  args$removeSubjectsWithSimultaneousEvents <- NULL
+
   outcomeModel <- do.call('fitOutcomeModel', args)
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
@@ -730,11 +735,12 @@ doFitOutcomeModelPlus <- function(params) {
 
   args <- params$args$fitOutcomeModelArgs
 
+  args$riskId <- NULL
+  args$codeSimultaneousEventsAs <- NULL
+  args$removeSubjectsWithSimultaneousEvents <- NULL
+
   if (args$modelType == "fgr") {
     ps <- doCombinePopulations(studyPop = ps, params = params)
-    args$riskId <- NULL
-    args$codeSimultaneousEventsAs <- NULL
-    args$removeSubjectsWithSimultaneousEvents <- NULL
   }
 
   args$population <- ps

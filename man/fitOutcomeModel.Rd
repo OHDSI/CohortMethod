@@ -11,7 +11,7 @@ fitOutcomeModel(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
-  censoredStratWeights = FALSE,
+  useStratCensorWeights = FALSE,
   estimator = "ate",
   maxWeight = 0,
   interactionCovariateIds = c(),
@@ -42,6 +42,8 @@ scores)?}
 object in the outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)? See details.}
+
+\item{useStratCensorWeights}{for stratified population, use stratified censored weights during model fitting?}
 
 \item{estimator}{for IPTW: the type of estimator. Options are \code{estimator = "ate"} for the
 average treatment effect, and \code{estimator = "att"}for the average treatment
