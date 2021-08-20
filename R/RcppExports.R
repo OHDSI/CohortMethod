@@ -13,6 +13,14 @@ aucWithoutCi <- function(propensityScores, treatment) {
     .Call('_CohortMethod_aucWithoutCi', PACKAGE = 'CohortMethod', propensityScores, treatment)
 }
 
+#' Compute a weight-adjusted Kaplan-Meier curve
+#'
+#' @param weight      Vector of observation weights
+#' @param time        Vector of event times
+#' @param y           Vector outcomes (0 indicates censoring, 1 indicates event-of-interest)
+#'
+#' @export
+#'
 adjustedKm <- function(weight, time, y) {
     .Call('_CohortMethod_adjustedKm', PACKAGE = 'CohortMethod', weight, time, y)
 }

@@ -84,6 +84,14 @@ double aucWithoutCi(std::vector<double> propensityScores, std::vector<int> treat
 	return 0.0;
 }
 
+//' Compute a weight-adjusted Kaplan-Meier curve
+//'
+//' @param weight      Vector of observation weights
+//' @param time        Vector of event times
+//' @param y           Vector outcomes (0 indicates censoring, 1 indicates event-of-interest)
+//'
+//' @export
+//'
 // [[Rcpp::export]]
 DataFrame adjustedKm(const std::vector<double> &weight, const std::vector<int> &time, const std::vector<int> &y) {
 
