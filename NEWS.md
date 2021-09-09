@@ -5,6 +5,8 @@ Changes:
 
 1. Adding `highlightExposedEvents` and `includePostIndexTime` arguments to `plotTimeToEvent()`.
 
+2. Adding `maxCohortSize` argument to the `computeCovariateBalance()` function. The target and comparator cohorts will be downsampled if they are larger, speeding up computation.
+
 Bug fixes:
 
 1. Fixed error thrown by `plotTimeToEvent()` when there are time periods in plot when nobody is observed.
