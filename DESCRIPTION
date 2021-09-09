@@ -55,7 +55,8 @@ Suggests:
 	EmpiricalCalibration,
 	Eunomia,
 	withr,
-	R.utils
+	R.utils,
+	RISCA
 Remotes:
 	ohdsi/FeatureExtraction
 LinkingTo: Rcpp
