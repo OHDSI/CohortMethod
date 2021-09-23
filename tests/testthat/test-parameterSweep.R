@@ -178,7 +178,7 @@ test_that("Outcome functions", {
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  logRrs <- c()
+  lbs <- c()
   # params <- c()
   for (modelType in c("logistic", "poisson", "cox")) {
     for (stratified in c(TRUE, FALSE)) {
@@ -197,7 +197,7 @@ test_that("Outcome functions", {
                                         useCovariates = useCovariates,
                                         prior = createPrior("laplace", 0.1))
         expect_s3_class(outcomeModel, "OutcomeModel")
-        logRrs <- c(logRrs, coef(outcomeModel))
+        lbs <- c(lbs, confint(outcomeModel)[1])
         # params <-
         # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
       }
@@ -211,14 +211,14 @@ test_that("Outcome functions", {
                                   useCovariates = FALSE,
                                   inversePtWeighting = TRUE)
   expect_s3_class(outcomeModel, "OutcomeModel")
-  logRrs <- c(logRrs, coef(outcomeModel))
+  lbs <- c(lbs, confint(outcomeModel)[1])
 
 
   # results <- data.frame(logRr = logRrs, param = params) results <- results[order(results$logRr),]
   # results
 
   # All analyses are fundamentally different, so should have no duplicate values at full precision:
-  expect_equal(length(unique(logRrs)), length(logRrs))
+  expect_equal(length(unique(lbs)), length(lbs))
 })
 
 
