@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.1</span>
       </span>
     </div>
 
@@ -85,13 +85,13 @@
 
       
 
-      </header><script src="MultipleAnalyses_files/header-attrs-2.6/header-attrs.js"></script><div class="row">
+      </header><script src="MultipleAnalyses_files/header-attrs-2.10/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Running multiple analyses at once using the CohortMethod package</h1>
                         <h4 class="author">Martijn J. Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 class="date">2021-06-17</h4>
+            <h4 class="date">2021-09-29</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/master/vignettes/MultipleAnalyses.Rmd"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -147,6 +147,7 @@
 
 <span class="va">cdmDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_cdm_data"</span>
 <span class="va">resultsDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_results"</span>
+<span class="fu"><a href="https://rdrr.io/r/base/options.html">options</a></span><span class="op">(</span>sqlRenderTempEmulationSchema <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span>
 <span class="va">outputFolder</span> <span class="op">&lt;-</span> <span class="st">"./CohortMethodOutput"</span></code></pre></div>
 <p>The last three lines define the <code>cdmDatabaseSchema</code>, <code>resultSchema</code>, and <code>outputFolder</code> variables. We’ll use these later to tell R where the data in CDM format live, where we want to write intermediate tables, and where the intermediate and output files should be stored in the local file system. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example <code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>.</p>
 <p>We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome.</p>
@@ -433,8 +434,7 @@
 ## #   ci95lbI201826210 &lt;dbl&gt;, ci95ubI201826210 &lt;dbl&gt;, logRrI201826210 &lt;dbl&gt;,
 ## #   seLogRrI201826210 &lt;dbl&gt;, rrI8532001 &lt;dbl&gt;, ci95lbI8532001 &lt;dbl&gt;,
 ## #   ci95ubI8532001 &lt;dbl&gt;, logRrI8532001 &lt;dbl&gt;, seLogRrI8532001 &lt;dbl&gt;,
-## #   rrI21600960413 &lt;dbl&gt;, ci95lbI21600960413 &lt;dbl&gt;, ci95ubI21600960413 &lt;dbl&gt;,
-## #   logRrI21600960413 &lt;dbl&gt;, seLogRrI21600960413 &lt;dbl&gt;</code></pre>
+## #   rrI21600960413 &lt;dbl&gt;, ci95lbI21600960413 &lt;dbl&gt;, ...</code></pre>
 <p>This tells us, per target-comparator-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.</p>
 <div id="empirical-calibration" class="section level2">
 <h2 class="hasAnchor">

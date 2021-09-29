@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Create a summary report of the analyses — summarizeAnalyses • CohortMethod</title>
+<title>Compute a weight-adjusted Kaplan-Meier curve — adjustedKm • CohortMethod</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,8 @@
 
 
 
-<meta property="og:title" content="Create a summary report of the analyses — summarizeAnalyses" />
-<meta property="og:description" content="Create a summary report of the analyses" />
+<meta property="og:title" content="Compute a weight-adjusted Kaplan-Meier curve — adjustedKm" />
+<meta property="og:description" content="Compute a weight-adjusted Kaplan-Meier curve" />
 
 
 
@@ -129,33 +129,34 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Create a summary report of the analyses</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/RunAnalyses.R'><code>R/RunAnalyses.R</code></a></small>
-    <div class="hidden name"><code>summarizeAnalyses.Rd</code></div>
+    <h1>Compute a weight-adjusted Kaplan-Meier curve</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/R/RcppExports.R'><code>R/RcppExports.R</code></a></small>
+    <div class="hidden name"><code>adjustedKm.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Create a summary report of the analyses</p>
+    <p>Compute a weight-adjusted Kaplan-Meier curve</p>
     </div>
 
-    <pre class="usage"><span class='fu'>summarizeAnalyses</span><span class='op'>(</span><span class='va'>referenceTable</span>, <span class='va'>outputFolder</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>adjustedKm</span><span class='op'>(</span><span class='va'>weight</span>, <span class='va'>time</span>, <span class='va'>y</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>referenceTable</th>
-      <td><p>A dplyr::tibble as created by the <a href='runCmAnalyses.html'>runCmAnalyses</a> function.</p></td>
+      <th>weight</th>
+      <td><p>Vector of observation weights</p></td>
     </tr>
     <tr>
-      <th>outputFolder</th>
-      <td><p>Name of the folder where all the outputs have been written to.</p></td>
+      <th>time</th>
+      <td><p>Vector of event times</p></td>
+    </tr>
+    <tr>
+      <th>y</th>
+      <td><p>Vector outcomes (0 indicates censoring, 1 indicates event-of-interest)</p></td>
     </tr>
     </table>
 
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>A tibble containing summary statistics for each target-comparator-outcome-analysis combination.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

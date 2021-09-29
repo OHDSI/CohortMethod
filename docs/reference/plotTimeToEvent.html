@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.1</span>
       </span>
     </div>
 
@@ -156,6 +156,8 @@
   censorAtNewRiskWindow <span class='op'>=</span> <span class='cn'>FALSE</span>,
   periodLength <span class='op'>=</span> <span class='fl'>7</span>,
   numberOfPeriods <span class='op'>=</span> <span class='fl'>52</span>,
+  highlightExposedEvents <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  includePostIndexTime <span class='op'>=</span> <span class='cn'>TRUE</span>,
   showFittedLines <span class='op'>=</span> <span class='cn'>TRUE</span>,
   targetLabel <span class='op'>=</span> <span class='st'>"Target"</span>,
   comparatorLabel <span class='op'>=</span> <span class='st'>"Comparator"</span>,
@@ -183,11 +185,11 @@ transformations will be performed.</p></td>
     </tr>
     <tr>
       <th>firstExposureOnly</th>
-      <td><p>Should only the first exposure per subject be included?</p></td>
+      <td><p>(logical) Should only the first exposure per subject be included?</p></td>
     </tr>
     <tr>
       <th>restrictToCommonPeriod</th>
-      <td><p>Restrict the analysis to the period when both exposures are observed?</p></td>
+      <td><p>(logical) Restrict the analysis to the period when both exposures are observed?</p></td>
     </tr>
     <tr>
       <th>washoutPeriod</th>
@@ -246,8 +248,16 @@ when the new time-at-risk starts to prevent overlap?</p></td>
 equally divided before and after the index date.</p></td>
     </tr>
     <tr>
+      <th>highlightExposedEvents</th>
+      <td><p>(logical) Highlight event counts during exposure in a different color?</p></td>
+    </tr>
+    <tr>
+      <th>includePostIndexTime</th>
+      <td><p>(logical) Show time after the index date?</p></td>
+    </tr>
+    <tr>
       <th>showFittedLines</th>
-      <td><p>Fit lines to the proportions and show them in the plot?</p></td>
+      <td><p>(logical) Fit lines to the proportions and show them in the plot?</p></td>
     </tr>
     <tr>
       <th>targetLabel</th>
