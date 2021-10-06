@@ -1,3 +1,11 @@
+CohortMethod 4.2.2
+==================
+
+Bug fixes:
+
+1. Fixed erroneous sample size reported for comparator cohorts when computing covariate balance. (the actual sample size was fine)
+
+
 CohortMethod 4.2.1
 ==================
 

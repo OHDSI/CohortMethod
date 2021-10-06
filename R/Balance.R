@@ -263,7 +263,7 @@ sampleCohorts <- function(cohorts, maxCohortSize, label) {
                             " from ",
                             comparatorCount,
                             " to ",
-                            length(targetIdx),
+                            length(comparatorIdx),
                             " before computing covariate balance")
     sampled <- TRUE
   }
