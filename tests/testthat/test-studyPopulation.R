@@ -136,6 +136,22 @@ test_that("createStudyPop: minDaysAtRisk", {
   expect_equal(nrow(sp), 0)
 })
 
+test_that("createStudyPop: maxDaysAtRisk", {
+  cohorts <- cohortRow
+  cohorts$rowId[1] <- 1
+  cohorts$daysToCohortEnd[1] <- 10
+  cohorts$daysToObsEnd[1] <- 10
+  tmpCmd$cohorts <- cohorts
+
+  sp <- createStudyPopulation(cohortMethodData = tmpCmd,
+                              endAnchor = "cohort end")
+  expect_equal(sp$riskEnd, 10)
+  sp <- createStudyPopulation(cohortMethodData = tmpCmd,
+                              maxDaysAtRisk = 5,
+                              endAnchor = "cohort end")
+  expect_equal(sp$riskEnd, 5)
+})
+
 test_that("createStudyPop: risk window definition", {
   cohorts <- cohortRow
   cohorts$rowId[1] <- 1

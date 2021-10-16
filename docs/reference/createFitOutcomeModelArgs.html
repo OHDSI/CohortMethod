@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.1</span>
       </span>
     </div>
 
@@ -143,10 +143,13 @@
   stratified <span class='op'>=</span> <span class='cn'>FALSE</span>,
   useCovariates <span class='op'>=</span> <span class='cn'>FALSE</span>,
   inversePtWeighting <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  estimator <span class='op'>=</span> <span class='st'>"ate"</span>,
+  maxWeight <span class='op'>=</span> <span class='fl'>0</span>,
   interactionCovariateIds <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>)</span>,
   excludeCovariateIds <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>)</span>,
   includeCovariateIds <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>)</span>,
-  profileGrid <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/Log.html'>log</a></span><span class='op'>(</span><span class='fl'>0.1</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>log</a></span><span class='op'>(</span><span class='fl'>10</span><span class='op'>)</span>, length.out <span class='op'>=</span> <span class='fl'>1000</span><span class='op'>)</span>,
+  profileGrid <span class='op'>=</span> <span class='cn'>NULL</span>,
+  profileBounds <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/Log.html'>log</a></span><span class='op'>(</span><span class='fl'>0.1</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>log</a></span><span class='op'>(</span><span class='fl'>10</span><span class='op'>)</span><span class='op'>)</span>,
   prior <span class='op'>=</span> <span class='fu'>createPrior</span><span class='op'>(</span><span class='st'>"laplace"</span>, useCrossValidation <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
   control <span class='op'>=</span> <span class='fu'>createControl</span><span class='op'>(</span>cvType <span class='op'>=</span> <span class='st'>"auto"</span>, seed <span class='op'>=</span> <span class='fl'>1</span>, startingVariance <span class='op'>=</span> <span class='fl'>0.01</span>, tolerance
     <span class='op'>=</span> <span class='fl'>2e-07</span>, cvRepetitions <span class='op'>=</span> <span class='fl'>10</span>, noiseLevel <span class='op'>=</span> <span class='st'>"quiet"</span><span class='op'>)</span>
@@ -176,6 +179,17 @@ outcome model.</p></td>
       <td><p>Use inverse probability of treatment weighting (IPTW)? See details.</p></td>
     </tr>
     <tr>
+      <th>estimator</th>
+      <td><p>for IPTW: the type of estimator. Options are estimator = "ate" for
+the average treatment effect, and estimator = "att"for the average
+treatment effect in the treated.</p></td>
+    </tr>
+    <tr>
+      <th>maxWeight</th>
+      <td><p>for IPTW: the maximum weight. Larger values will be truncated to
+this value. maxWeight = 0 means no truncation takes place.</p></td>
+    </tr>
+    <tr>
       <th>interactionCovariateIds</th>
       <td><p>An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.</p></td>
@@ -191,8 +205,13 @@ with the main treatment effect.</p></td>
     <tr>
       <th>profileGrid</th>
       <td><p>A one-dimensional grid of points on the log(relative risk) scale
-where the likelihood for the treatment variable coefficient is
-sampled. Set to NULL to skip profiling.</p></td>
+where the likelihood for coefficient of variables is sampled. See
+details.</p></td>
+    </tr>
+    <tr>
+      <th>profileBounds</th>
+      <td><p>The bounds (on the log relative risk scale) for the adaptive
+sampling of the likelihood function. See details.</p></td>
     </tr>
     <tr>
       <th>prior</th>

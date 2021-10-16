@@ -28,7 +28,7 @@ cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, 
 test_that("cohortMethodData functions", {
   expect_output(print(cohortMethodData), "CohortMethodData object.*")
   s <- summary(cohortMethodData)
-  expect_is(s, "summary.CohortMethodData")
+  expect_s3_class(s, "summary.CohortMethodData")
   expect_equal(s$targetPersons + s$comparatorPersons, sampleSize)
   expect_output(print(s), "CohortMethodData object summary.*")
 
@@ -54,17 +54,21 @@ test_that("Create study population functions", {
                                     removeSubjectsWithPriorOutcome = TRUE,
                                     minDaysAtRisk = 1)
   expect_true(all(studyPop$timeAtRisk > 0))
-  peopleWithPriorOutcomes <- cohortMethodData$outcomes$rowId[cohortMethodData$outcomes$daysToEvent <
-    0]
+  peopleWithPriorOutcomes <- cohortMethodData$outcomes$rowId[cohortMethodData$outcomes$daysToEvent < 0]
   expect_false(any(peopleWithPriorOutcomes %in% studyPop$rowId))
 
   aTable <- getAttritionTable(studyPop)
-  expect_is(aTable, "data.frame")
-
+  expect_s3_class(aTable, "data.frame")
 
   plot <- plotTimeToEvent(cohortMethodData,
                           outcomeId = 194133)
-  expect_is(plot, "ggplot")
+  expect_s3_class(plot, "ggplot")
+
+  plot <- plotFollowUpDistribution(studyPop)
+  expect_s3_class(plot, "ggplot")
+
+  mdrr <- computeMdrr(studyPop)
+  expect_s3_class(mdrr, "data.frame")
 
 })
 
@@ -80,28 +84,28 @@ test_that("Propensity score functions", {
   expect_lt(0.65, computePsAuc(ps)[1])
 
   propensityModel <- getPsModel(ps, cohortMethodData)
-  expect_is(propensityModel, "data.frame")
+  expect_s3_class(propensityModel, "data.frame")
 
   for (scale in c("preference", "propensity")) {
     for (type in c("density", "histogram")) {
       p <- plotPs(ps, scale = scale, type = type)
-      expect_is(p, "ggplot")
+      expect_s3_class(p, "ggplot")
     }
   }
 
   psTrimmed <- trimByPsToEquipoise(ps)
-  expect_is(psTrimmed, "data.frame")
+  expect_s3_class(psTrimmed, "data.frame")
 
   for (scale in c("preference", "propensity")) {
     for (type in c("density", "histogram")) {
       p <- plotPs(psTrimmed, ps, scale = scale, type = type)
-      expect_is(p, "ggplot")
+      expect_s3_class(p, "ggplot")
     }
   }
 
   for (numberOfStrata in c(2, 5, 10, 20)) {
     strata <- stratifyByPs(psTrimmed, numberOfStrata = numberOfStrata)
-    expect_is(strata, "data.frame")
+    expect_s3_class(strata, "data.frame")
   }
 
   for (numberOfStrata in c(2, 5, 10, 20)) {
@@ -109,7 +113,7 @@ test_that("Propensity score functions", {
                                         numberOfStrata = numberOfStrata,
                                         cohortMethodData = cohortMethodData,
                                         covariateIds = c(0:27 * 1000 + 3, 8532001))  #age + sex
-    expect_is(strata, "data.frame")
+    expect_s3_class(strata, "data.frame")
   }
 
   for (caliper in c(0, 0.25)) {
@@ -119,7 +123,7 @@ test_that("Propensity score functions", {
                             caliper = caliper,
                             caliperScale = caliperScale,
                             maxRatio = maxRatio)
-        expect_is(strata, "data.frame")
+        expect_s3_class(strata, "data.frame")
       }
     }
   }
@@ -133,7 +137,7 @@ test_that("Propensity score functions", {
                                          maxRatio = maxRatio,
                                          cohortMethodData = cohortMethodData,
                                          covariateIds = c(11:27, 8507))  #age + sex
-        expect_is(strata, "data.frame")
+        expect_s3_class(strata, "data.frame")
       }
     }
   }
@@ -150,13 +154,16 @@ test_that("Balance functions", {
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
   balance <- computeCovariateBalance(strata, cohortMethodData)
-  expect_is(balance, "data.frame")
+  expect_s3_class(balance, "data.frame")
 
   p <- plotCovariateBalanceScatterPlot(balance)
-  expect_is(p, "ggplot")
+  expect_s3_class(p, "ggplot")
 
   p <- plotCovariateBalanceOfTopVariables(balance)
-  expect_is(p, "ggplot")
+  expect_s3_class(p, "ggplot")
+
+  table1 <- createCmTable1(balance)
+  expect_s3_class(table1, "data.frame")
 })
 
 test_that("Outcome functions", {
@@ -171,7 +178,7 @@ test_that("Outcome functions", {
   psTrimmed <- trimByPsToEquipoise(ps)
   strata <- matchOnPs(psTrimmed, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
 
-  logRrs <- c()
+  lbs <- c()
   # params <- c()
   for (modelType in c("logistic", "poisson", "cox")) {
     for (stratified in c(TRUE, FALSE)) {
@@ -189,8 +196,8 @@ test_that("Outcome functions", {
                                         stratified = stratified,
                                         useCovariates = useCovariates,
                                         prior = createPrior("laplace", 0.1))
-        expect_is(outcomeModel, "OutcomeModel")
-        logRrs <- c(logRrs, coef(outcomeModel))
+        expect_s3_class(outcomeModel, "OutcomeModel")
+        lbs <- c(lbs, confint(outcomeModel)[1])
         # params <-
         # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
       }
@@ -203,15 +210,15 @@ test_that("Outcome functions", {
                                   stratified = FALSE,
                                   useCovariates = FALSE,
                                   inversePtWeighting = TRUE)
-  expect_is(outcomeModel, "OutcomeModel")
-  logRrs <- c(logRrs, coef(outcomeModel))
+  expect_s3_class(outcomeModel, "OutcomeModel")
+  lbs <- c(lbs, confint(outcomeModel)[1])
 
 
   # results <- data.frame(logRr = logRrs, param = params) results <- results[order(results$logRr),]
   # results
 
   # All analyses are fundamentally different, so should have no duplicate values at full precision:
-  expect_equal(length(unique(logRrs)), length(logRrs))
+  expect_equal(length(unique(lbs)), length(lbs))
 })
 
 
@@ -234,11 +241,11 @@ test_that("Functions on outcome model", {
 
   expect_output(print(outcomeModel), "Model type: cox.*")
 
-   p <- plotKaplanMeier(strata)
-  expect_is(p, "grob")
+  p <- plotKaplanMeier(strata)
+  expect_s3_class(p, "grob")
 
   p <- drawAttritionDiagram(outcomeModel)
-  expect_is(p, "ggplot")
+  expect_s3_class(p, "ggplot")
 
   cf <- coef(outcomeModel)
   ci <- confint(outcomeModel)
@@ -246,5 +253,5 @@ test_that("Functions on outcome model", {
   expect_lt(cf, ci[2])
 
   fullOutcomeModel <- getOutcomeModel(outcomeModel, cohortMethodData)
-  expect_is(fullOutcomeModel, "data.frame")
+  expect_s3_class(fullOutcomeModel, "data.frame")
 })

@@ -133,7 +133,7 @@ plotKaplanMeier <- function(population,
     data <- rbind(survTarget, survComparator)
     data$upper <- data$s^exp(qnorm(1 - 0.025)/log(data$s)*sqrt(data$var)/data$s)
     data$lower <- data$s^exp(qnorm(0.025)/log(data$s)*sqrt(data$var)/data$s)
-    data$lower[data$s > 0.9999] <- data$s[data$s > 0.9999]
+    data$lower[data$s > 0.999999] <- data$s[data$s > 0.999999]
   }
   data$strata <- factor(data$strata, levels = c(targetLabel, comparatorLabel))
   cutoff <- quantile(population$survivalTime, dataCutoff)

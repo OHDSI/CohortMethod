@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.1</span>
       </span>
     </div>
 
@@ -151,6 +151,8 @@
   trimByPsArgs <span class='op'>=</span> <span class='cn'>NULL</span>,
   trimByPsToEquipoise <span class='op'>=</span> <span class='cn'>FALSE</span>,
   trimByPsToEquipoiseArgs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  trimByIptw <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  trimByIptwArgs <span class='op'>=</span> <span class='cn'>NULL</span>,
   matchOnPs <span class='op'>=</span> <span class='cn'>FALSE</span>,
   matchOnPsArgs <span class='op'>=</span> <span class='cn'>NULL</span>,
   matchOnPsAndCovariates <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -190,98 +192,108 @@ the specific comparator to use in this analysis.</p></td>
     <tr>
       <th>getDbCohortMethodDataArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='getDbCohortMethodData.html'>getDbCohortMethodData</a></code> function.</p></td>
+the <code><a href='getDbCohortMethodData.html'>getDbCohortMethodData()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>createStudyPopArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='createStudyPopulation.html'>createStudyPopulation</a></code> function.</p></td>
+the <code><a href='createStudyPopulation.html'>createStudyPopulation()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>createPs</th>
-      <td><p>Should the <code><a href='createPs.html'>createPs</a></code> function be used in this
+      <td><p>Should the <code><a href='createPs.html'>createPs()</a></code> function be used in this
 analysis?</p></td>
     </tr>
     <tr>
       <th>createPsArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='createPs.html'>createPs</a></code> function.</p></td>
+the <code><a href='createPs.html'>createPs()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>trimByPs</th>
-      <td><p>Should the <code><a href='trimByPs.html'>trimByPs</a></code> function be used in this
+      <td><p>Should the <code><a href='trimByPs.html'>trimByPs()</a></code> function be used in this
 analysis?</p></td>
     </tr>
     <tr>
       <th>trimByPsArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='trimByPs.html'>trimByPs</a></code> function.</p></td>
+the <code><a href='trimByPs.html'>trimByPs()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>trimByPsToEquipoise</th>
-      <td><p>Should the <code><a href='trimByPsToEquipoise.html'>trimByPsToEquipoise</a></code> function be used
+      <td><p>Should the <code><a href='trimByPsToEquipoise.html'>trimByPsToEquipoise()</a></code> function be used
 in this analysis?</p></td>
     </tr>
     <tr>
       <th>trimByPsToEquipoiseArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='trimByPsToEquipoise.html'>trimByPsToEquipoise</a></code> function.</p></td>
+the <code><a href='trimByPsToEquipoise.html'>trimByPsToEquipoise()</a></code> function.</p></td>
+    </tr>
+    <tr>
+      <th>trimByIptw</th>
+      <td><p>Should the <code><a href='trimByPsToEquipoise.html'>trimByPsToEquipoise()</a></code> function be used
+in this analysis?</p></td>
+    </tr>
+    <tr>
+      <th>trimByIptwArgs</th>
+      <td><p>An object representing the arguments to be used when calling
+the <code><a href='trimByIptw.html'>trimByIptw()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>matchOnPs</th>
-      <td><p>Should the <code><a href='matchOnPs.html'>matchOnPs</a></code> function be used in this
+      <td><p>Should the <code><a href='matchOnPs.html'>matchOnPs()</a></code> function be used in this
 analysis?</p></td>
     </tr>
     <tr>
       <th>matchOnPsArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='matchOnPs.html'>matchOnPs</a></code> function.</p></td>
+the <code><a href='matchOnPs.html'>matchOnPs()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>matchOnPsAndCovariates</th>
-      <td><p>Should the <code><a href='matchOnPsAndCovariates.html'>matchOnPsAndCovariates</a></code> function be
+      <td><p>Should the <code><a href='matchOnPsAndCovariates.html'>matchOnPsAndCovariates()</a></code> function be
 used in this analysis?</p></td>
     </tr>
     <tr>
       <th>matchOnPsAndCovariatesArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='matchOnPsAndCovariates.html'>matchOnPsAndCovariates</a></code> function.</p></td>
+the <code><a href='matchOnPsAndCovariates.html'>matchOnPsAndCovariates()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>stratifyByPs</th>
-      <td><p>Should the <code><a href='stratifyByPs.html'>stratifyByPs</a></code> function be used in
+      <td><p>Should the <code><a href='stratifyByPs.html'>stratifyByPs()</a></code> function be used in
 this analysis?</p></td>
     </tr>
     <tr>
       <th>stratifyByPsArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='stratifyByPs.html'>stratifyByPs</a></code> function.</p></td>
+the <code><a href='stratifyByPs.html'>stratifyByPs()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>stratifyByPsAndCovariates</th>
-      <td><p>Should the <code><a href='stratifyByPsAndCovariates.html'>stratifyByPsAndCovariates</a></code> function
+      <td><p>Should the <code><a href='stratifyByPsAndCovariates.html'>stratifyByPsAndCovariates()</a></code> function
 be used in this analysis?</p></td>
     </tr>
     <tr>
       <th>stratifyByPsAndCovariatesArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='stratifyByPsAndCovariates.html'>stratifyByPsAndCovariates</a></code> function.</p></td>
+the <code><a href='stratifyByPsAndCovariates.html'>stratifyByPsAndCovariates()</a></code> function.</p></td>
     </tr>
     <tr>
       <th>fitOutcomeModel</th>
-      <td><p>Should the <code><a href='fitOutcomeModel.html'>fitOutcomeModel</a></code> function be used in
+      <td><p>Should the <code><a href='fitOutcomeModel.html'>fitOutcomeModel()</a></code> function be used in
 this analysis?</p></td>
     </tr>
     <tr>
       <th>fitOutcomeModelArgs</th>
       <td><p>An object representing the arguments to be used when calling
-the <code><a href='fitOutcomeModel.html'>fitOutcomeModel</a></code> function.</p></td>
+the <code><a href='fitOutcomeModel.html'>fitOutcomeModel()</a></code> function.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Create a set of analysis choices, to be used with the <code><a href='runCmAnalyses.html'>runCmAnalyses</a></code> function.</p>
+    <p>Create a set of analysis choices, to be used with the <code><a href='runCmAnalyses.html'>runCmAnalyses()</a></code> function.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

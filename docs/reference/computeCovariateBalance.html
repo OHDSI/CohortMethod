@@ -74,7 +74,7 @@ corrected according the method described in Austin et al (2008)." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.1</span>
       </span>
     </div>
 
@@ -145,7 +145,8 @@ corrected according the method described in Austin et al (2008).</p>
     <pre class="usage"><span class='fu'>computeCovariateBalance</span><span class='op'>(</span>
   <span class='va'>population</span>,
   <span class='va'>cohortMethodData</span>,
-  subgroupCovariateId <span class='op'>=</span> <span class='cn'>NULL</span>
+  subgroupCovariateId <span class='op'>=</span> <span class='cn'>NULL</span>,
+  maxCohortSize <span class='op'>=</span> <span class='fl'>250000</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -166,6 +167,12 @@ and/or trimming.</p></td>
       <td><p>Optional: a covariate ID of a binary covariate that indicates a subgroup of
 interest. Both the before and after populations will be restricted to this
 subgroup before computing covariate balance.</p></td>
+    </tr>
+    <tr>
+      <th>maxCohortSize</th>
+      <td><p>If the target or comparator cohort are larger than this number, they
+will be downsampled before computing covariate balance to save time.
+Setting this number to 0 means no downsampling will be applied.</p></td>
     </tr>
     </table>
 

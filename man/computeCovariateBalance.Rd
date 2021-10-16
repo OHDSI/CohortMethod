@@ -7,7 +7,8 @@
 computeCovariateBalance(
   population,
   cohortMethodData,
-  subgroupCovariateId = NULL
+  subgroupCovariateId = NULL,
+  maxCohortSize = 250000
 )
 }
 \arguments{
@@ -20,6 +21,10 @@ and/or trimming.}
 \item{subgroupCovariateId}{Optional: a covariate ID of a binary covariate that indicates a subgroup of
 interest. Both the before and after populations will be restricted to this
 subgroup before computing covariate balance.}
+
+\item{maxCohortSize}{If the target or comparator cohort are larger than this number, they
+will be downsampled before computing covariate balance to save time.
+Setting this number to 0 means no downsampling will be applied.}
 }
 \value{
 Returns a tibble describing the covariate balance before and after matching/trimming.

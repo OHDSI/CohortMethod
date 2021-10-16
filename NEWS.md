@@ -1,3 +1,25 @@
+CohortMethod 4.2.2
+==================
+
+Bug fixes:
+
+1. Fixed erroneous sample size reported for comparator cohorts when computing covariate balance. (the actual sample size was fine)
+
+
+CohortMethod 4.2.1
+==================
+
+Changes:
+
+1. Adding `highlightExposedEvents` and `includePostIndexTime` arguments to `plotTimeToEvent()`.
+
+2. Adding `maxCohortSize` argument to the `computeCovariateBalance()` function. The target and comparator cohorts will be downsampled if they are larger, speeding up computation.
+
+Bug fixes:
+
+1. Fixed error thrown by `plotTimeToEvent()` when there are time periods in plot when nobody is observed.
+
+
 CohortMethod 4.2.0
 ==================
 
@@ -5,9 +27,14 @@ Changes:
 
 1. Adding the `trimByIptw()` function.
 
-2. Adding the `estimator` argument to the `fitOutcomeModel()` function to select 'ate' (average treatment effect) or 'att' (average treatement effect in the treated) when performing IPTW.
+2. Adding the `estimator` argument to the `fitOutcomeModel()` function to select 'ate' (average treatment effect) or 'att' (average treatment effect in the treated) when performing IPTW.
 
 3. Added the `maxWeight` argument to the `fitOutcomeModel()` function. Weights greater than this value will be set to this value.
+
+4. Adding option to use adaptive likelihood profiling, and making this the default.
+
+5. Adding `maxDaysAtRisk` argument to the `createStudyPopulation()` and `createCreateStudyPopulationArgs()` functions.
+
 
 Bug fixes:
 
@@ -21,7 +48,7 @@ CohortMethod 4.1.0
 
 Changes: 
 
-1. Dropped `insertDbPopulation()` function. This didn't seem to be used by anyone, and would have required carying the person ID throughout the pipeline.
+1. Dropped `insertDbPopulation()` function. This didn't seem to be used by anyone, and would have required carrying the person ID throughout the pipeline.
 
 2. Introducing new unique person identified called `personSeqId`, generated during data extraction. Person ID is now downloaded as string to avoid issues with 64-bit integers. Person ID is not used by CohortMethod, and is provided for reference only.
 

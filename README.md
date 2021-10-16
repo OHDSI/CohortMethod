@@ -8,7 +8,7 @@ CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
 
 Introduction
 ============
-CohortMethod is an R package for performing new-user cohort studies in an observational database in the OMOP Common Data Model.
+CohortMethod is an R package for performing new-user cohort studies in an observational database in the OMOP Common Data Model. 
 
 Features
 ========

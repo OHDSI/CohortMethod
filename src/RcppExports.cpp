@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // matchPsInternal
 DataFrame matchPsInternal(std::vector<double> propensityScores, std::vector<int> treatment, unsigned int maxRatio, double caliper);
 RcppExport SEXP _CohortMethod_matchPsInternal(SEXP propensityScoresSEXP, SEXP treatmentSEXP, SEXP maxRatioSEXP, SEXP caliperSEXP) {

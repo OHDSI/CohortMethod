@@ -61,6 +61,7 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
+options(sqlRenderTempEmulationSchema = NULL)
 outputFolder <- "./CohortMethodOutput"
 ```
 

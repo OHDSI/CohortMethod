@@ -54,6 +54,7 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
 
 cdmDatabaseSchema <- "my_cdm_data"
 resultsDatabaseSchema <- "my_results"
+options(sqlRenderTempEmulationSchema = NULL)
 ```
 
 The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
@@ -173,7 +174,6 @@ covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsai
 #Load data:
 cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           cdmDatabaseSchema = cdmDatabaseSchema,
-                                          oracleTempSchema = resultsDatabaseSchema,
                                           targetId = 1,
                                           comparatorId = 2,
                                           outcomeIds = 3,

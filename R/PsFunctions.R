@@ -42,7 +42,7 @@
 #'                                 the treatment assignment. If any covariate has an unusually high
 #'                                 correlation (either positive or negative), this will throw and
 #'                                 error.
-#' @param stopOnError              If an error occurr, should the function stop? Else, the two cohorts
+#' @param stopOnError              If an error occur, should the function stop? Else, the two cohorts
 #'                                 will be assumed to be perfectly separable.
 #' @param prior                    The prior used to fit the model. See
 #'                                 [Cyclops::createPrior()] for details.
@@ -782,7 +782,8 @@ matchOnPs <- function(population,
 
   population <- population[order(population$propensityScore), ]
   propensityScore <- population$propensityScore
-  if (caliper <= 0 || min(population$propensityScore) == max(population$propensityScore)) {
+
+  if (caliper <= 0 || nrow(population) == 0 || min(population$propensityScore) == max(population$propensityScore)) {
     caliper <- 9999
   } else if (caliperScale == "standardized") {
     caliper <- caliper * sd(population$propensityScore)

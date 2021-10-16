@@ -28,6 +28,7 @@ reference:
       - matchOnPsAndCovariates
       - trimByPs
       - trimByPsToEquipoise
+      - trimByIptw
       - stratifyByPs
       - stratifyByPsAndCovariates
   - title: "Outcome models"

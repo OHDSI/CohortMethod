@@ -68,7 +68,11 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
 #'                                         window start?
 #' @param priorOutcomeLookback             How many days should we look back when identifying prior
 #'                                         outcomes?
-#' @param minDaysAtRisk                    The minimum required number of days at risk.
+#' @param minDaysAtRisk                    The minimum required number of days at risk. Risk windows
+#'                                         with fewer days than this number are removed from the
+#'                                         analysis.
+#' @param maxDaysAtRisk                    The maximum allowed number of days at risk. Risk windows
+#'                                         that are longer will be truncated to this number of days.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the
 #'                                         startAnchor.
 #' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk
@@ -93,6 +97,7 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
                                             removeSubjectsWithPriorOutcome = TRUE,
                                             priorOutcomeLookback = 99999,
                                             minDaysAtRisk = 1,
+                                            maxDaysAtRisk = 99999,
                                             riskWindowStart = 0,
                                             addExposureDaysToStart = NULL,
                                             startAnchor = "cohort start",
@@ -124,7 +129,7 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #'                                  the treatment assignment. If any covariate has an unusually high
 #'                                  correlation (either positive or negative), this will throw and
 #'                                  error.
-#' @param stopOnError               If an error occurr, should the function stop? Else, the two cohorts
+#' @param stopOnError               If an error occur, should the function stop? Else, the two cohorts
 #'                                  will be assumed to be perfectly separable.
 #' @param prior                     The prior used to fit the model. See Cyclops::createPrior() for
 #'                                  details.
@@ -369,6 +374,8 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #' @param profileGrid                           A one-dimensional grid of points on the log(relative risk) scale
 #'                                              where the likelihood for the treatment variable coefficient is
 #'                                              sampled. Set to NULL to skip profiling.
+#' @param profileBounds                         The bounds (on the log relative risk scale) for the adaptive
+#'                                              sampling of the likelihood function. See details.
 #' @param prior                                 The prior used to fit the model. See Cyclops::createPrior() for
 #'                                              details.
 #' @param control                               The control object used to control the cross-validation used to
@@ -389,7 +396,8 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       riskId = NULL,
                                       codeSimultaneousEventsAs = 1,
                                       removeSubjectsWithSimultaneousEvents = TRUE,
-                                      profileGrid = seq(log(0.1), log(10), length.out = 1000),
+                                      profileGrid = NULL,
+                                      profileBounds = c(log(0.1), log(10)),
                                       prior = createPrior("laplace", useCrossValidation = TRUE),
                                       control = createControl(cvType = "auto",
                                                               seed = 1,

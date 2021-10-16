@@ -112,6 +112,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
 #' @param subgroupCovariateId  Optional: a covariate ID of a binary covariate that indicates a subgroup of
 #'                             interest. Both the before and after populations will be restricted to this
 #'                             subgroup before computing covariate balance.
+#' @param maxCohortSize  If the target or comparator cohort are larger than this number, they
+#'                                 will be downsampled before computing covariate balance to save time.
+#'                                 Setting this number to 0 means no downsampling will be applied.
 #' @details
 #' The population data frame should have the following three columns:
 #'
@@ -127,7 +130,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
 #' matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 #'
 #' @export
-computeCovariateBalance <- function(population, cohortMethodData, subgroupCovariateId = NULL) {
+computeCovariateBalance <- function(population, cohortMethodData, subgroupCovariateId = NULL, maxCohortSize = 250000) {
   ParallelLogger::logTrace("Computing covariate balance")
   start <- Sys.time()
 
@@ -142,7 +145,8 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
 
     tempCohorts <- cohortMethodData$cohorts %>%
       collect() %>%
-      filter(.data$rowId %in% subGroupCovariate$rowId)
+      filter(.data$rowId %in% subGroupCovariate$rowId) %>%
+      sampleCohorts(maxCohortSize = maxCohortSize)
 
     if (nrow(tempCohorts) == 0) {
       stop("Cannot find covariate with ID ", subgroupCovariateId, " in population before matching/trimming")
@@ -154,7 +158,8 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
     }
 
     tempCohortsAfterMatching <- population %>%
-      filter(.data$rowId %in% subGroupCovariate$rowId)
+      filter(.data$rowId %in% subGroupCovariate$rowId) %>%
+      sampleCohorts(maxCohortSize = maxCohortSize)
 
     if (nrow(tempCohortsAfterMatching) == 0) {
       stop("Cannot find covariate with ID ", subgroupCovariateId, " in population after matching/trimming")
@@ -171,10 +176,12 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
       select(.data$rowId, .data$treatment, .data$stratumId)
   } else {
     cohortMethodData$tempCohorts <- cohortMethodData$cohorts %>%
-      select(.data$rowId, .data$treatment)
+      select(.data$rowId, .data$treatment) %>%
+      sampleCohortsAndromeda(maxCohortSize = maxCohortSize, label = "before matching")
 
     cohortMethodData$tempCohortsAfterMatching <- population %>%
-      select(.data$rowId, .data$treatment, .data$stratumId)
+      select(.data$rowId, .data$treatment, .data$stratumId) %>%
+      sampleCohorts(maxCohortSize = maxCohortSize, label = "after matching")
   }
   on.exit(cohortMethodData$tempCohorts <- NULL)
   on.exit(cohortMethodData$tempCohortsAfterMatching <- NULL, add = TRUE)
@@ -204,6 +211,82 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   delta <- Sys.time() - start
   ParallelLogger::logInfo(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
+}
+
+sampleSingleCohort <- function(cohorts, treatment, maxCohortSize) {
+  variableStrata <- FALSE
+  if ("stratumId" %in% colnames(cohorts)) {
+    strataSizes <- cohorts %>%
+      filter(.data$treatment == !!treatment) %>%
+      group_by(.data$stratumId) %>%
+      summarise(count = n())
+    variableStrata <- nrow(strataSizes) > 20 && any(strataSizes$count > 1)
+  }
+  if (variableStrata) {
+    # If there are many small and large strata (variable ratio matching), small strata are more likely
+    # to be completely deleted by row-based sampling than larger strata, causing bias. Hence we're sampling
+    # entire strata to achieve the desired number of rows:
+    strataSizes <- strataSizes[sample.int(nrow(strataSizes), replace = F), ]
+    stratumIdsToKeep <- strataSizes$stratumId[cumsum(strataSizes$count) <= maxCohortSize]
+    idx <- which(cohorts$treatment == !!treatment & cohorts$stratumId %in% stratumIdsToKeep)
+  } else {
+    idx <- which(cohorts$treatment == !!treatment)
+    idx <- sample(idx, maxCohortSize)
+  }
+  return(idx)
+}
+
+sampleCohorts <- function(cohorts, maxCohortSize, label) {
+  if (maxCohortSize <= 0) {
+    return(cohorts)
+  }
+  sampled <- FALSE
+  targetIdx <- which(cohorts$treatment == 1)
+  comparatorIdx <- which(cohorts$treatment == 0)
+  targetCount <- length(targetIdx)
+  comparatorCount <- length(comparatorIdx)
+  if (targetCount > maxCohortSize) {
+    targetIdx <- sampleSingleCohort(cohorts, 1, maxCohortSize)
+    ParallelLogger::logInfo("Downsampling target cohort ",
+                            label,
+                            " from ",
+                            targetCount,
+                            " to ",
+                            length(targetIdx),
+                            " before computing covariate balance")
+    sampled <- TRUE
+  }
+  if (comparatorCount > maxCohortSize) {
+    comparatorIdx <- sampleSingleCohort(cohorts, 0, maxCohortSize)
+    ParallelLogger::logInfo("Downsampling comparator cohort ",
+                            label,
+                            " from ",
+                            comparatorCount,
+                            " to ",
+                            length(comparatorIdx),
+                            " before computing covariate balance")
+    sampled <- TRUE
+  }
+  if (sampled) {
+    return(cohorts[c(targetIdx, comparatorIdx), ])
+  } else {
+    return(cohorts)
+  }
+}
+
+sampleCohortsAndromeda <- function(cohorts, maxCohortSize, label) {
+  if (maxCohortSize <= 0) {
+    return(cohorts)
+  }
+  cohortCounts <- cohorts %>%
+    group_by(.data$treatment) %>%
+    count() %>%
+    collect()
+  if (any(cohortCounts$n > maxCohortSize)) {
+    return(sampleCohorts(collect(cohorts), maxCohortSize, label))
+  } else {
+    return(cohorts)
+  }
 }
 
 #' Create a scatterplot of the covariate balance
@@ -325,11 +408,11 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   filtered <- rbind(topBefore, topAfter)
 
   data <- dplyr::tibble(covariateId = rep(filtered$covariateId, 2),
-                         covariate = rep(filtered$covariateName, 2),
-                         difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
-                         group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
-                         facet = rep(filtered$facet, 2),
-                         rowId = rep(nrow(filtered):1, 2))
+                        covariate = rep(filtered$covariateName, 2),
+                        difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
+                        group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
+                        facet = rep(filtered$facet, 2),
+                        rowId = rep(nrow(filtered):1, 2))
   filtered$covariateName <- .truncRight(as.character(filtered$covariateName), maxNameWidth)
   data$facet <- factor(data$facet, levels = c(paste("Top", n, beforeLabel), paste("Top", n, afterLabel)))
   data$group <- factor(data$group, levels = c(beforeLabel, afterLabel))

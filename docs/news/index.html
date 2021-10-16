@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">4.2.1</span>
       </span>
     </div>
 
@@ -132,12 +132,42 @@
       <small>Source: <a href='https://github.com/OHDSI/CohortMethod/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
+    <div id="cohortmethod-421" class="section level1">
+<h1 class="page-header" data-toc-text="4.2.1">
+<a href="#cohortmethod-421" class="anchor"></a>CohortMethod 4.2.1</h1>
+<p>Changes:</p>
+<ol>
+<li><p>Adding <code>highlightExposedEvents</code> and <code>includePostIndexTime</code> arguments to <code><a href="../reference/plotTimeToEvent.html">plotTimeToEvent()</a></code>.</p></li>
+<li><p>Adding <code>maxCohortSize</code> argument to the <code><a href="../reference/computeCovariateBalance.html">computeCovariateBalance()</a></code> function. The target and comparator cohorts will be downsampled if they are larger, speeding up computation.</p></li>
+</ol>
+<p>Bug fixes:</p>
+<ol>
+<li>Fixed error thrown by <code><a href="../reference/plotTimeToEvent.html">plotTimeToEvent()</a></code> when there are time periods in plot when nobody is observed.</li>
+</ol>
+</div>
+    <div id="cohortmethod-420" class="section level1">
+<h1 class="page-header" data-toc-text="4.2.0">
+<a href="#cohortmethod-420" class="anchor"></a>CohortMethod 4.2.0</h1>
+<p>Changes:</p>
+<ol>
+<li><p>Adding the <code><a href="../reference/trimByIptw.html">trimByIptw()</a></code> function.</p></li>
+<li><p>Adding the <code>estimator</code> argument to the <code><a href="../reference/fitOutcomeModel.html">fitOutcomeModel()</a></code> function to select ‘ate’ (average treatment effect) or ‘att’ (average treatment effect in the treated) when performing IPTW.</p></li>
+<li><p>Added the <code>maxWeight</code> argument to the <code><a href="../reference/fitOutcomeModel.html">fitOutcomeModel()</a></code> function. Weights greater than this value will be set to this value.</p></li>
+<li><p>Adding option to use adaptive likelihood profiling, and making this the default.</p></li>
+<li><p>Adding <code>maxDaysAtRisk</code> argument to the <code><a href="../reference/createStudyPopulation.html">createStudyPopulation()</a></code> and <code><a href="../reference/createCreateStudyPopulationArgs.html">createCreateStudyPopulationArgs()</a></code> functions.</p></li>
+</ol>
+<p>Bug fixes:</p>
+<ol>
+<li><p>Fixing IPTW.</p></li>
+<li><p>Fixing error when stratifying and base population is empty (but overall population is not).</p></li>
+</ol>
+</div>
     <div id="cohortmethod-410" class="section level1">
 <h1 class="page-header" data-toc-text="4.1.0">
 <a href="#cohortmethod-410" class="anchor"></a>CohortMethod 4.1.0</h1>
 <p>Changes:</p>
 <ol>
-<li><p>Dropped <code>insertDbPopulation()</code> function. This didn’t seem to be used by anyone, and would have required carying the person ID throughout the pipeline.</p></li>
+<li><p>Dropped <code>insertDbPopulation()</code> function. This didn’t seem to be used by anyone, and would have required carrying the person ID throughout the pipeline.</p></li>
 <li><p>Introducing new unique person identified called <code>personSeqId</code>, generated during data extraction. Person ID is now downloaded as string to avoid issues with 64-bit integers. Person ID is not used by CohortMethod, and is provided for reference only.</p></li>
 <li><p>Adding log likelihood ratio to outcome model object.</p></li>
 <li><p>Deprecating <code>oracleTempSchema</code> argument in favor of <code>tempEmulationSchema</code> in line with new <code>SqlRender</code> interface.</p></li>

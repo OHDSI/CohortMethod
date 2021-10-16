@@ -27,7 +27,7 @@ provided instead. In the analysis, the name of the number to be
 used can be specified using the #' \code{comparatorType}
 parameter in the \code{\link[=createCmAnalysis]{createCmAnalysis()}} function.}
 
-\item{outcomeIds}{A vector of concept IDs indentifying the outcome(s) in the
+\item{outcomeIds}{A vector of concept IDs identifying the outcome(s) in the
 outcome table.}
 
 \item{excludedCovariateConceptIds}{A list of concept IDs that cannot be used to construct
