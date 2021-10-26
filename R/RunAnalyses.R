@@ -895,6 +895,9 @@ createReferenceTable <- function(cmAnalysisList,
     loadingFittingArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList,
                                                                     c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")))
     needsFilter <- function(loadingFittingArgs) {
+      if (!"fitOutcomeModelArgs" %in% names(loadingFittingArgs)) {
+        return(NULL)
+      }
       keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (length(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
                                                                          length(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
         length(loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds) != 0

@@ -5,6 +5,7 @@ Bug fixes:
 
 1. Fixed erroneous sample size reported for comparator cohorts when computing covariate balance. (the actual sample size was fine)
 
+2. Fixed error when all analyses have `fitOutcomeModel = FALSE`.
 
 CohortMethod 4.2.1
 ==================
