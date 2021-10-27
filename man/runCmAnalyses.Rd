@@ -28,7 +28,8 @@ runCmAnalyses(
   prefilterCovariatesThreads = 1,
   fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1,
-  outcomeIdsOfInterest
+  outcomeIdsOfInterest,
+  analysesToExclude = NULL
 )
 }
 \arguments{
@@ -126,6 +127,8 @@ could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
 for all other outcome IDs. This could be helpful to speed up
 analyses with many controls.}
+
+\item{analysesToExclude}{Analyses to exclude. See the Analyses to Exclude section for details.}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
@@ -143,4 +146,21 @@ the analyses have anything in common, and will take advantage of this fact. For 
 specify several analyses that only differ in the way the outcome model is fitted, then this
 function will extract the data and fit the propensity model only once, and re-use this in all the
 analysis.
+\subsection{Analyses to Exclude}{
+
+Normally, \code{runCmAnalyses} will run all combinations of target-comparator-outcome-analyses settings.
+However, sometimes we may not need all those combinations. Using the \code{analysesToExclude} argument,
+we can remove certain items from the full matrix. This argument should be a data frame with at least
+one of the following columns:
+\itemize{
+\item targetId
+\item comparatorId
+\item outcomeId
+\item analysisId
+}
+
+This data frame will be joined to the outcome model reference table before executing, and matching rows
+will be removed. For example, if one specifies only one target ID and analysis ID, then any analyses with
+that target and that analysis ID will be skipped.
+}
 }

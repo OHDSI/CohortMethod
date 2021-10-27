@@ -26,6 +26,22 @@
 #' function will extract the data and fit the propensity model only once, and re-use this in all the
 #' analysis.
 #'
+#' ## Analyses to Exclude
+#'
+#' Normally, `runCmAnalyses` will run all combinations of target-comparator-outcome-analyses settings.
+#' However, sometimes we may not need all those combinations. Using the `analysesToExclude` argument,
+#' we can remove certain items from the full matrix. This argument should be a data frame with at least
+#' one of the following columns:
+#'
+#' - targetId
+#' - comparatorId
+#' - outcomeId
+#' - analysisId
+#'
+#' This data frame will be joined to the outcome model reference table before executing, and matching rows
+#' will be removed. For example, if one specifies only one target ID and analysis ID, then any analyses with
+#' that target and that analysis ID will be skipped.
+#'
 #' @param connectionDetails              An R object of type `connectionDetails` created using the
 #'                                     [DatabaseConnector::createConnectionDetails()] function.
 #' @param cdmDatabaseSchema              The name of the database schema that contains the OMOP CDM
@@ -97,6 +113,7 @@
 #' @param outcomeIdsOfInterest           If provided, creation of non-essential files will be skipped
 #'                                       for all other outcome IDs. This could be helpful to speed up
 #'                                       analyses with many controls.
+#' @param analysesToExclude              Analyses to exclude. See the Analyses to Exclude section for details.
 #'
 #' @return
 #' A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
@@ -126,7 +143,8 @@ runCmAnalyses <- function(connectionDetails,
                           prefilterCovariatesThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
-                          outcomeIdsOfInterest) {
+                          outcomeIdsOfInterest,
+                          analysesToExclude = NULL) {
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
@@ -160,7 +178,8 @@ runCmAnalyses <- function(connectionDetails,
                                          refitPsForEveryOutcome,
                                          refitPsForEveryStudyPopulation,
                                          prefilterCovariates,
-                                         outcomeIdsOfInterest)
+                                         outcomeIdsOfInterest,
+                                         analysesToExclude)
 
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
@@ -684,7 +703,8 @@ createReferenceTable <- function(cmAnalysisList,
                                  refitPsForEveryOutcome,
                                  refitPsForEveryStudyPopulation,
                                  prefilterCovariates,
-                                 outcomeIdsOfInterest) {
+                                 outcomeIdsOfInterest,
+                                 analysesToExclude) {
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
   instantiateDco <- function(dco, cmAnalysis, folder) {
@@ -960,6 +980,22 @@ createReferenceTable <- function(cmAnalysisList,
                                          referenceTable$targetId,
                                          referenceTable$comparatorId,
                                          referenceTable$outcomeId), ]
+
+  # Remove rows that the user specified to exclude:
+  if (!is.null(analysesToExclude)) {
+    matchingColumns <- colnames(analysesToExclude)[colnames(analysesToExclude) %in% c("targetId", "comparatorId", "outcomeId", "analysisId")]
+    if (length(matchingColumns) == 0) {
+      stop("The 'analysesToExclude' argument should contain columns 'targetId', 'comparatorId', 'outcomeId', or 'analysisId'.")
+    }
+    analysesToExclude <- analysesToExclude[, matchingColumns]
+    countBefore <- nrow(referenceTable)
+    referenceTable <- referenceTable %>%
+      anti_join(analysesToExclude, by = matchingColumns)
+    countAfter <- nrow(referenceTable)
+    ParallelLogger::logInfo(sprintf("Removed %d of the %d target-comparator-outcome-analysis combinations as specified by the user.",
+                                    countBefore,
+                                    countAfter))
+  }
   return(referenceTable)
 }
 

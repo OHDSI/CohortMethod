@@ -120,6 +120,10 @@ test_that("Multiple analyses", {
                                   fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
   cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
+
+  analysesToExclude <- data.frame(targetId = c(998, 998),
+                                  analysisId = c(3,4))
+
   # cmAnalysis4 includes interaction terms which should throw a warning
   expect_warning({
     result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -130,18 +134,23 @@ test_that("Multiple analyses", {
                             cmAnalysisList = cmAnalysisList,
                             targetComparatorOutcomesList = targetComparatorOutcomesList,
                             outcomeIdsOfInterest = 3,
-                            prefilterCovariates = TRUE)
+                            prefilterCovariates = TRUE,
+                            analysesToExclude = analysesToExclude)
 
   }, "Separable interaction terms found and removed")
 
-  refernceTable <- file.path(outputFolder, "outcomeModelReference.rds")
-  expect_true(file.exists(refernceTable))
-  ref <- readRDS(refernceTable)
-  expect_equal(nrow(ref), 16)
+  referenceTable <- file.path(outputFolder, "outcomeModelReference.rds")
+  expect_true(file.exists(referenceTable))
+  ref <- readRDS(referenceTable)
+  expect_equal(nrow(ref), 12)
+
+  # analysesToExclude was enforced:
+  expect_false(any(ref$targetId == 998 & ref$analysisId == 3))
+  expect_false(any(ref$targetId == 998 & ref$analysisId == 4))
 
   analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
 
-  expect_equal(nrow(analysisSum), 16)
+  expect_equal(nrow(analysisSum), 12)
 
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
   connection <- DatabaseConnector::connect(connectionDetails)

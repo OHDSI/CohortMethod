@@ -1,6 +1,11 @@
 CohortMethod 4.2.2
 ==================
 
+Changes:
+
+1. Added the `analysesToExclude` argument to `runCmAnalyses`, allowing the users to specify target-comparator-outcome-analysis combinations to exclude from execution.
+
+
 Bug fixes:
 
 1. Fixed erroneous sample size reported for comparator cohorts when computing covariate balance. (the actual sample size was fine)
