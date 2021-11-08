@@ -202,6 +202,10 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   balance <- beforeMatching %>%
     full_join(afterMatching, by = "covariateId") %>%
     inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") %>%
+    inner_join(cohortMethodData$analysisRef %>%
+                 select(.data$analysisId, .data$domainId, .data$isBinary) %>%
+                 collect() %>%
+                 mutate(domainId = as.factor(.data$domainId)), by = "analysisId") %>%
     mutate(beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator)/.data$beforeMatchingSd,
            afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator)/.data$afterMatchingSd)
 
@@ -444,3 +448,72 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   return(plot)
 }
 
+#' Plot covariate prevalence
+#'
+#' @description
+#' Plot prevalence of binary covariates in the target and comparator cohorts, before and after matching.
+#' Requires running `computeCovariateBalance` first.
+#'
+#' @return
+#' A ggplot object. Use the [ggplot2::ggsave] function to save to file in a different
+#' format.
+#'
+#' @param balance     A data frame created by the `computeCovariateBalance` function.
+#' @param threshold   A threshold value for standardized difference. When exceeding the threshold, covariates will be
+#'                    marked in a different color. If `threshold = 0`, no color coding will be used.
+#' @param title       The main title for the plot.
+#' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
+#'                    function `ggsave` in the ggplot2 package for supported file formats.
+#' @param beforeLabel Label for the before matching / stratification panel.
+#' @param afterLabel  Label for the after matching / stratification panel.
+#' @param targetLabel  Label for the x-axis.
+#' @param comparatorLabel Label for the y-axis.
+#'
+#' @export
+plotCovariatePrevalence <- function(balance,
+                                    threshold = 0,
+                                    title = "Covariate prevalence",
+                                    fileName = NULL,
+                                    beforeLabel = "Before matching",
+                                    afterLabel = "After matching",
+                                    targetLabel = "Target",
+                                    comparatorLabel = "Comparator") {
+  balance <- balance %>%
+    filter(.data$isBinary == "Y")
+
+  prevalence <- bind_rows(balance %>%
+                            select(target = .data$beforeMatchingMeanTarget,
+                                   comparator = .data$beforeMatchingMeanComparator,
+                                   stdDiff = .data$beforeMatchingStdDiff) %>%
+                            mutate(panel = beforeLabel),
+                          balance %>%
+                            select(target = .data$afterMatchingMeanTarget,
+                                   comparator = .data$afterMatchingMeanComparator,
+                                   stdDiff = .data$afterMatchingStdDiff) %>%
+                            mutate(panel = afterLabel)) %>%
+                            mutate(target= .data$target * 100,
+                                   comparator = .data$comparator * 100,
+                                   stdDiff = if_else(!is.na(.data$stdDiff) & abs(.data$stdDiff) > threshold,
+                                                     sprintf("> %0.2f", threshold),
+                                                     sprintf("<= %0.2f", threshold)))
+  prevalence$panel <- factor(prevalence$panel, levels = c(beforeLabel, afterLabel))
+  if (threshold > 0) {
+    plot <- ggplot2::ggplot(prevalence, ggplot2::aes(x = .data$comparator, y = .data$target, color = .data$stdDiff)) +
+      ggplot2::geom_point(alpha = 0.3, shape = 16) +
+      ggplot2::scale_color_manual("Std. diff.", values = c(rgb(0, 0, 0.8), rgb(0.8, 0, 0)))
+  } else {
+  plot <- ggplot2::ggplot(prevalence, ggplot2::aes(x = .data$comparator, y = .data$target)) +
+    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16)
+  }
+  plot <- plot + ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::geom_vline(xintercept = 0) +
+    ggplot2::ggtitle(title) +
+    ggplot2::scale_x_continuous(sprintf("Prevalence in %s (%%)", targetLabel), limits = c(0, 100)) +
+    ggplot2::scale_y_continuous(sprintf("Prevalence in %s (%%)", comparatorLabel), limits = c(0, 100)) +
+    ggplot2::facet_grid(~ .data$panel)
+  if (!is.null(fileName)) {
+    ggplot2::ggsave(filename = fileName, plot = plot, width = 8, height = 4, dpi = 400)
+  }
+  return(plot)
+}

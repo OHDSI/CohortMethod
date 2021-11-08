@@ -162,6 +162,9 @@ test_that("Balance functions", {
   p <- plotCovariateBalanceOfTopVariables(balance)
   expect_s3_class(p, "ggplot")
 
+  p <- plotCovariatePrevalence(balance)
+  expect_s3_class(p, "ggplot")
+
   table1 <- createCmTable1(balance)
   expect_s3_class(table1, "data.frame")
 })

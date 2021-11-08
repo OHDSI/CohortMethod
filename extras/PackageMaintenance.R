@@ -23,7 +23,7 @@ unlink(folder, recursive = TRUE, force = TRUE)
 file.exists(folder)
 
 # Format and check code:
-OhdsiRTools::formatRFolder()
+styler::style_pkg()
 OhdsiRTools::checkUsagePackage("CohortMethod")
 OhdsiRTools::updateCopyrightYearFolder()
 OhdsiRTools::findNonAsciiStringsInFolder()

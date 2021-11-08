@@ -5,6 +5,10 @@ Changes:
 
 1. Added the `analysesToExclude` argument to `runCmAnalyses`, allowing the users to specify target-comparator-outcome-analysis combinations to exclude from execution.
 
+2. Output of `computeCovariateBalance()` now also contains `domainId` and `isBinary` columns.
+
+3. Added `plotCovariatePrevalence()` function.
+
 
 Bug fixes:
 
