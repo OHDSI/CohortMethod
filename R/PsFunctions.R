@@ -802,13 +802,14 @@ matchOnPs <- function(population,
     result <- dplyr::as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
-    if (!is.null(attr(population, "metaData"))) {
-      attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition,
-                                                      getCounts(population, paste("Matched on propensity score")))
-    }
 
     if (reverseTreatment) {
       population$treatment <- 1 - population$treatment
+    }
+
+    if (!is.null(attr(population, "metaData"))) {
+      attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition,
+                                                      getCounts(population, paste("Matched on propensity score")))
     }
 
     ParallelLogger::logDebug("Population size after matching is ", nrow(result))
@@ -839,13 +840,14 @@ matchOnPs <- function(population,
       }
     }
     result <- do.call(rbind, results)
-    if (!is.null(attr(result, "metaData"))) {
-      attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition,
-                                                  getCounts(result, paste("Trimmed to equipoise")))
-    }
 
     if (reverseTreatment) {
       result$treatment <- 1 - result$treatment
+    }
+
+    if (!is.null(attr(result, "metaData"))) {
+      attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition,
+                                                  getCounts(result, paste("Trimmed to equipoise")))
     }
 
     ParallelLogger::logDebug("Population size after matching is ", nrow(result))

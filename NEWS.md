@@ -16,6 +16,8 @@ Bug fixes:
 
 2. Fixed error when all analyses have `fitOutcomeModel = FALSE`.
 
+3. Fixed attrition counts when using `allowReverseMatch = TRUE`
+
 CohortMethod 4.2.1
 ==================
 
@@ -56,7 +58,7 @@ Bug fixes:
 CohortMethod 4.1.0
 ==================
 
-Changes: 
+Changes:
 
 1. Dropped `insertDbPopulation()` function. This didn't seem to be used by anyone, and would have required carrying the person ID throughout the pipeline.
 
@@ -94,7 +96,7 @@ Bug fixes:
 CohortMethod 4.0.0
 ==================
 
-Changes: 
+Changes:
 
 1. Switching from ff to Andromeda for storing large data objects.
 
