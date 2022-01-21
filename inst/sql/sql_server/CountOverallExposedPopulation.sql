@@ -1,7 +1,7 @@
 /************************************************************************
 @file CountOverallExposedPopulation.sql
 
-Copyright 2021 Observational Health Data Sciences and Informatics
+Copyright 2022 Observational Health Data Sciences and Informatics
 
 This file is part of CohortMethod
 

@@ -2,7 +2,7 @@ CohortMethod
 ============
 
 [![Build Status](https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check)
-[![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=master)](https://codecov.io/github/OHDSI/CohortMethod?branch=master)
+[![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main)](https://codecov.io/github/OHDSI/CohortMethod?branch=main)
 
 CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
 
@@ -25,12 +25,12 @@ Screenshots
 <tr valign="bottom">
 <td width = 50%>
 
-<img src="https://github.com/OHDSI/CohortMethod/raw/master/extras/ps.png"/>
+<img src="https://github.com/OHDSI/CohortMethod/raw/main/extras/ps.png"/>
 
 </td>
 <td width = 50%>
   
-<img src="https://github.com/OHDSI/CohortMethod/raw/master/extras/balanceScatterplot.png"/>
+<img src="https://github.com/OHDSI/CohortMethod/raw/main/extras/balanceScatterplot.png"/>
 
 </td>
 </tr><tr>
@@ -81,9 +81,9 @@ User Documentation
 Documentation can be found on the [package website](https://ohdsi.github.io/CohortMethod).
 
 PDF versions of the documentation are also available:
-* Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/SingleStudies.pdf)
-* Vignette: [Running multiple analyses at once using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/inst/doc/MultipleAnalyses.pdf)
-* Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/master/extras/CohortMethod.pdf)
+* Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/inst/doc/SingleStudies.pdf)
+* Vignette: [Running multiple analyses at once using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/inst/doc/MultipleAnalyses.pdf)
+* Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/extras/CohortMethod.pdf)
 
 Support
 =======
