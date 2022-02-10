@@ -1,3 +1,12 @@
+CohortMethod 4.3.0
+==================
+
+Changes:
+
+1. Setting the default Cyclops control object to use `resetCoefficients = TRUE` to ensure we always get the exact same model, irrespective of the number of threads used.
+
+
+
 CohortMethod 4.2.2
 ==================
 

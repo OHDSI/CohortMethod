@@ -1,7 +1,7 @@
 Package: CohortMethod
 Type: Package
 Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
-Version: 4.2.2
+Version: 4.3.0
 Date: 2022-01-21
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
