@@ -141,7 +141,7 @@ runCmAnalyses <- function(connectionDetails,
                           prefilterCovariatesThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
-                          outcomeIdsOfInterest,
+                          outcomeIdsOfInterest = NULL,
                           analysesToExclude = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
@@ -175,7 +175,7 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertDataFrame(analysesToExclude, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
+  if (!is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
   if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
@@ -392,7 +392,7 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
 
-  if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
+  if (is.null(outcomeIdsOfInterest)) {
     message("*** Fitting outcome models ***")
   } else {
     message("*** Fitting outcome models for outcomes of interest ***")
@@ -435,7 +435,7 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::stopCluster(cluster)
   }
 
-  if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
+  if (!is.null(outcomeIdsOfInterest)) {
     message("*** Fitting outcome models for other outcomes ***")
 
     subset <- referenceTable[!referenceTable$outcomeOfInterest &
@@ -923,7 +923,7 @@ createReferenceTable <- function(cmAnalysisList,
 
 
   # Add interest flag
-  if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
+  if (is.null(outcomeIdsOfInterest)) {
     referenceTable$outcomeOfInterest <- TRUE
   } else {
     referenceTable$outcomeOfInterest <- FALSE
@@ -1111,6 +1111,11 @@ createReferenceTable <- function(cmAnalysisList,
 #'
 #' @export
 summarizeAnalyses <- function(referenceTable, outputFolder) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(referenceTable, add = errorMessages)
+  checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+  outputFolder <- normalizePath(outputFolder)
 
   summarizeOneAnalysis <- function(outcomeModelFile, outputFolder) {
     result <- dplyr::tibble(rr = 0,

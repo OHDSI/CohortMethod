@@ -814,7 +814,7 @@ matchOnPs <- function(population,
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNumber(caliper, lower = 0, add = errorMessages)
   checkmate::assertChoice(caliperScale, c("standardized", "propensity score", "standardized logit"), add = errorMessages)
-  checkmate::assertInt(maxRatio, lower = 1, add = errorMessages)
+  checkmate::assertInt(maxRatio, lower = 0, add = errorMessages)
   checkmate::assertLogical(allowReverseMatch, len = 1, add = errorMessages)
   checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)

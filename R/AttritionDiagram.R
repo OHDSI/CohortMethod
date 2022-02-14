@@ -42,7 +42,6 @@ drawAttritionDiagram <- function(object,
                                  comparatorLabel = "Comparator",
                                  fileName = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertDataFrame(object, add = errorMessages)
   checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)

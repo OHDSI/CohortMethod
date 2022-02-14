@@ -119,10 +119,6 @@ getDbCohortMethodData <- function(connectionDetails,
                                   washoutPeriod = 0,
                                   maxCohortSize = 0,
                                   covariateSettings) {
-  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
-    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
-    tempEmulationSchema <- oracleTempSchema
-  }
   if (is.null(studyStartDate)) {
     studyStartDate <- ""
   }

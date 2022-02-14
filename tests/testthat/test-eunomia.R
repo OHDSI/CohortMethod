@@ -2,12 +2,12 @@ library(CohortMethod)
 library(testthat)
 
 test_that("Check installation", {
-  logFile <- tempfile()
-  ParallelLogger::addDefaultFileLogger(logFile)
+  # logFile <- tempfile()
+  # ParallelLogger::addDefaultFileLogger(logFile)
   checkCmInstallation(connectionDetails)
-  lines <- readLines(logFile)
+  # lines <- readLines(logFile) # Doesn't work inside R check because message() not caught
   # Log file should write response code
-  expect_true(as.logical(grep("Response code: 387848", lines)))
+  # expect_true(as.logical(grep("Response code: 387848", lines)))
 })
 
 test_that("Multiple analyses", {

@@ -27,7 +27,7 @@ runCmAnalyses(
   prefilterCovariatesThreads = 1,
   fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1,
-  outcomeIdsOfInterest,
+  outcomeIdsOfInterest = NULL,
   analysesToExclude = NULL
 )
 }
