@@ -7,7 +7,6 @@
 getDbCohortMethodData(
   connectionDetails,
   cdmDatabaseSchema,
-  oracleTempSchema = NULL,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   targetId,
   comparatorId,
@@ -19,7 +18,6 @@ getDbCohortMethodData(
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
   cdmVersion = "5",
-  excludeDrugsFromCovariates = NULL,
   firstExposureOnly = FALSE,
   removeDuplicateSubjects = FALSE,
   restrictToCommonPeriod = FALSE,
@@ -36,8 +34,6 @@ getDbCohortMethodData(
 instance. Requires read permissions to this database. On SQL
 Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.}
-
-\item{oracleTempSchema}{DEPRECATED: use \code{tempEmulationSchema} instead.}
 
 \item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
 emulate temp tables, provide a schema with write privileges where temp tables
@@ -83,11 +79,6 @@ outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{cdmVersion}{Define the OMOP CDM version used: currently supports "5".}
-
-\item{excludeDrugsFromCovariates}{DEPRECATED: Should the target and comparator drugs (and their descendant
-concepts) be excluded from the covariates? Note that this will
-work if the drugs are actually drug concept IDs (and not cohort
-IDs).}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included? Note
 that this is typically done in the \code{\link[=createStudyPopulation]{createStudyPopulation()}}

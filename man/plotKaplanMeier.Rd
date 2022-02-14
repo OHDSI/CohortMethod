@@ -13,7 +13,7 @@ plotKaplanMeier(
   dataCutoff = 0.9,
   targetLabel = "Treated",
   comparatorLabel = "Comparator",
-  title,
+  title = NULL,
   fileName = NULL
 )
 }

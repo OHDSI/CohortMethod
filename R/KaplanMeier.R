@@ -67,8 +67,21 @@ plotKaplanMeier <- function(population,
                             dataCutoff = 0.90,
                             targetLabel = "Treated",
                             comparatorLabel = "Comparator",
-                            title,
+                            title = NULL,
                             fileName = NULL) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertLogical(censorMarks, len = 1, add = errorMessages)
+  checkmate::assertLogical(confidenceIntervals, len = 1, add = errorMessages)
+  checkmate::assertLogical(includeZero, len = 1, add = errorMessages)
+  checkmate::assertLogical(dataTable, len = 1, add = errorMessages)
+  checkmate::assertNumber(dataCutoff, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(title, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   population$y <- 0
   population$y[population$outcomeCount != 0] <- 1
   if (is.null(population$stratumId) || length(unique(population$stratumId)) == nrow(population)/2) {
@@ -172,7 +185,7 @@ plotKaplanMeier <- function(population,
                                        shape = "|",
                                        size = 3)
   }
-  if (!missing(title) && !is.null(title)) {
+  if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
   }
   if (dataTable) {

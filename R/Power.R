@@ -41,8 +41,14 @@
 #'
 #' @export
 computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
-  if (modelType != "cox")
-    stop("Currently only MDRR for Cox is supported")
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNumber(alpha, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertNumber(power, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertLogical(twoSided, len = 1, add = errorMessages)
+  checkmate::assertChoice(modelType, c("cox"), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (twoSided) {
     z1MinAlpha <- qnorm(1 - alpha/2)
   } else {
@@ -86,6 +92,11 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
 #'
 #' @export
 getFollowUpDistribution <- function(population, quantiles = c(0, 0.25, 0.5, 0.75, 1)) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNumeric(quantiles, lower = 0, upper = 1, min.len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   population <- population[order(population$timeAtRisk), ]
   target <- quantile(population$timeAtRisk[population$treatment == 1], quantiles)
   comparator <- quantile(population$timeAtRisk[population$treatment == 0], quantiles)
@@ -128,8 +139,17 @@ plotFollowUpDistribution <- function(population,
                                      dataCutoff = 0.95,
                                      title = NULL,
                                      fileName = NULL) {
-  if (yScale != "percent" && scale != "count")
-    stop("Scale must be either 'percent' or 'count'")
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
+  checkmate::assertChoice(yScale, c("percent", "count"), add = errorMessages)
+  checkmate::assertLogical(logYScale, len = 1, add = errorMessages)
+  checkmate::assertNumber(dataCutoff, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertCharacter(title, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (yScale == "percent") {
     yLabel <- "Percent of subjects (cumulative)"
   } else {

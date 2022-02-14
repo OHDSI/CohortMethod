@@ -44,7 +44,6 @@
 #'                                     instance. Requires read permissions to this database. On SQL
 #'                                     Server, this should specify both the database and the schema,
 #'                                     so for example 'cdm_instance.dbo'.
-#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
 #' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
 #'                            emulate temp tables, provide a schema with write privileges where temp tables
 #'                            can be created.
@@ -79,10 +78,6 @@
 #'                                     outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                     SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param cdmVersion                   Define the OMOP CDM version used: currently supports "5".
-#' @param excludeDrugsFromCovariates   DEPRECATED: Should the target and comparator drugs (and their descendant
-#'                                     concepts) be excluded from the covariates? Note that this will
-#'                                     work if the drugs are actually drug concept IDs (and not cohort
-#'                                     IDs).
 #' @param firstExposureOnly            Should only the first exposure per subject be included? Note
 #'                                     that this is typically done in the [createStudyPopulation()]
 #'                                     function, but can already be done here for efficiency reasons.
@@ -107,7 +102,6 @@
 #' @export
 getDbCohortMethodData <- function(connectionDetails,
                                   cdmDatabaseSchema,
-                                  oracleTempSchema = NULL,
                                   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                   targetId,
                                   comparatorId,
@@ -119,18 +113,12 @@ getDbCohortMethodData <- function(connectionDetails,
                                   outcomeDatabaseSchema = cdmDatabaseSchema,
                                   outcomeTable = "condition_occurrence",
                                   cdmVersion = "5",
-                                  excludeDrugsFromCovariates = NULL,
                                   firstExposureOnly = FALSE,
                                   removeDuplicateSubjects = FALSE,
                                   restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
                                   maxCohortSize = 0,
                                   covariateSettings) {
-  if (!is.null(excludeDrugsFromCovariates)) {
-    warning("The excludeDrugsFromCovariates argument has been deprecated. Please explicitly exclude the drug concepts in the covariate settings")
-  } else {
-    excludeDrugsFromCovariates = FALSE
-  }
   if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
     warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
     tempEmulationSchema <- oracleTempSchema
@@ -141,45 +129,42 @@ getDbCohortMethodData <- function(connectionDetails,
   if (is.null(studyEndDate)) {
     studyEndDate <- ""
   }
-  if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
-    stop("Study start date must have format YYYYMMDD")
-  if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
-    stop("Study end date must have format YYYYMMDD")
   if (is.logical(removeDuplicateSubjects)) {
     if (removeDuplicateSubjects)
       removeDuplicateSubjects <- "remove all"
     else
       removeDuplicateSubjects <- "keep all"
   }
-  if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
-    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(targetId, add = errorMessages)
+  checkmate::assertInt(comparatorId, add = errorMessages)
+  checkmate::assertIntegerish(outcomeIds, add = errorMessages)
+  checkmate::assertCharacter(studyStartDate, len = 1, add = errorMessages)
+  checkmate::assertCharacter(studyEndDate, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
+  checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
+  checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
+  checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
+  checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
+  checkmate::assertList(covariateSettings, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+  if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
+    stop("Study start date must have format YYYYMMDD")
+  if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
+    stop("Study end date must have format YYYYMMDD")
+
   ParallelLogger::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
-
-  if (excludeDrugsFromCovariates) {
-    if (exposureTable != "drug_era")
-      warning("Removing drugs from covariates, but not sure if exposure IDs are valid drug concepts")
-    sql <- "SELECT descendant_concept_id FROM @cdm_database_schema.concept_ancestor WHERE ancestor_concept_id IN (@target_id, @comparator_id)"
-    sql <- SqlRender::render(sql = sql,
-                             cdm_database_schema = cdmDatabaseSchema,
-                             target_id = targetId,
-                             comparator_id = comparatorId)
-    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
-    conceptIds <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE)
-    conceptIds <- conceptIds$descendantConceptId
-    ParallelLogger::logDebug("Excluding concept Ids from covariates: ", paste(conceptIds, collapse = ", "))
-    if (is(covariateSettings, "covariateSettings")) {
-      covariateSettings$excludedCovariateConceptIds <- c(covariateSettings$excludedCovariateConceptIds,
-                                                         conceptIds)
-    } else if (is.list(covariateSettings)) {
-      for (i in 1:length(covariateSettings)) {
-        covariateSettings[[i]]$excludedCovariateConceptIds <- c(covariateSettings[[i]]$excludedCovariateConceptIds,
-                                                                conceptIds)
-      }
-    }
-  }
 
   message("Constructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
@@ -285,16 +270,16 @@ getDbCohortMethodData <- function(connectionDetails,
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql, snakeCaseToCamelCase = TRUE)
     if (nrow(rawCount) == 0) {
       counts <- dplyr::tibble(description = "Original cohorts",
-                               targetPersons = 0,
-                               comparatorPersons = 0,
-                               targetExposures = 0,
-                               comparatorExposures = 0)
+                              targetPersons = 0,
+                              comparatorPersons = 0,
+                              targetExposures = 0,
+                              comparatorExposures = 0)
     } else {
       counts <- dplyr::tibble(description = "Original cohorts",
-                               targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
-                               comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-                               targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
-                               comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
+                              targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
+                              comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
+                              targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
+                              comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
     }
     metaData$attrition <- counts
     label <- c()

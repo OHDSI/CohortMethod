@@ -50,7 +50,6 @@
 #'                                       so for example 'cdm_instance.dbo'.
 #' @param cdmVersion                     Define the OMOP CDM version used: currently support "4" and
 #'                                       "5".
-#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
 #' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
 #'                            emulate temp tables, provide a schema with write privileges where temp tables
 #'                            can be created.
@@ -122,7 +121,6 @@
 #' @export
 runCmAnalyses <- function(connectionDetails,
                           cdmDatabaseSchema,
-                          oracleTempSchema = NULL,
                           tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                           exposureDatabaseSchema = cdmDatabaseSchema,
                           exposureTable = "drug_era",
@@ -145,17 +143,43 @@ runCmAnalyses <- function(connectionDetails,
                           outcomeCvThreads = 1,
                           outcomeIdsOfInterest,
                           analysesToExclude = NULL) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
+  checkmate::assertList(cmAnalysisList, min.len = 1, add = errorMessages)
+  for (i in 1:length(cmAnalysisList)) {
+    checkmate::assertClass(cmAnalysisList[[i]], "cmAnalysis", add = errorMessages)
+  }
+  checkmate::assertList(targetComparatorOutcomesList, min.len = 1, add = errorMessages)
+  for (i in 1:length(targetComparatorOutcomesList)) {
+    checkmate::assertClass(targetComparatorOutcomesList[[i]], "targetComparatorOutcomes", add = errorMessages)
+  }
+  checkmate::assertLogical(refitPsForEveryOutcome, len = 1, add = errorMessages)
+  checkmate::assertLogical(refitPsForEveryStudyPopulation, len = 1, add = errorMessages)
+  checkmate::assertLogical(prefilterCovariates, len = 1, add = errorMessages)
+  checkmate::assertInt(getDbCohortMethodDataThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(createPsThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(psCvThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(createStudyPopThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(trimMatchStratifyThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(prefilterCovariatesThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(fitOutcomeModelThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(outcomeCvThreads, lower = 1, add = errorMessages)
+  checkmate::assertIntegerish(outcomeIdsOfInterest, null.ok = TRUE, add = errorMessages)
+  checkmate::assertDataFrame(analysesToExclude, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest) && refitPsForEveryOutcome) {
     stop("Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
   }
   if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
     stop("Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
-  }
-  for (targetComparatorOutcomes in targetComparatorOutcomesList) {
-    stopifnot(class(targetComparatorOutcomes) == "targetComparatorOutcomes")
-  }
-  for (cmAnalysis in cmAnalysisList) {
-    stopifnot(class(cmAnalysis) == "cmAnalysis")
   }
   uniquetargetComparatorOutcomesList <- unique(ParallelLogger::selectFromList(targetComparatorOutcomesList,
                                                                               c("targetId",
@@ -169,6 +193,7 @@ runCmAnalyses <- function(connectionDetails,
   if (length(uniqueAnalysisIds) != length(analysisIds)) {
     stop("Duplicate analysis IDs are not allowed")
   }
+  outputFolder <- normalizePath(outputFolder)
   if (!file.exists(outputFolder))
     dir.create(outputFolder)
 

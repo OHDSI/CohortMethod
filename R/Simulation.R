@@ -32,6 +32,9 @@
 #'
 #' @export
 createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
 
   if (cohortMethodData$cohorts %>% count() %>% pull() == 0)
     stop("Cohorts are empty")
@@ -154,6 +157,12 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 #'
 #' @export
 simulateCohortMethodData <- function(profile, n = 10000) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(profile, "CohortDataSimulationProfile", add = errorMessages)
+  checkmate::assertInt(n, lower = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+
   message("Generating covariates")
   # Treatment variable is generated elsewhere:
   covariatePrevalence <- profile$covariatePrevalence[names(profile$covariatePrevalence) != "1"]

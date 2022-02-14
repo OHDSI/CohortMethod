@@ -71,6 +71,18 @@ createPs <- function(cohortMethodData,
                                              tolerance = 2e-07,
                                              cvRepetitions = 10,
                                              startingVariance = 0.01)) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
+  checkmate::assertIntegerish(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
+  checkmate::assertIntegerish(includeCovariateIds, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(maxCohortSizeForFitting, lower = 0, add = errorMessages)
+  checkmate::assertLogical(errorOnHighCorrelation, len = 1, add = errorMessages)
+  checkmate::assertLogical(stopOnError, len = 1, add = errorMessages)
+  checkmate::assertClass(prior, "cyclopsPrior", add = errorMessages)
+  checkmate::assertClass(control, "cyclopsControl", add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (is.null(population)) {
     population <- cohortMethodData$cohorts %>%
       collect()
@@ -247,15 +259,20 @@ createPs <- function(cohortMethodData,
 #'
 #' @export
 getPsModel <- function(propensityScore, cohortMethodData) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(propensityScore, null.ok = TRUE, add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
   if (is.null(coefficients)) {
     return(dplyr::tibble(coefficient = NA,
-                          covariateId = NA,
-                          covariateName = NA))
+                         covariateId = NA,
+                         covariateName = NA))
   }
   result <- dplyr::tibble(coefficient = coefficients[1],
-                           covariateId = NA,
-                           covariateName = "(Intercept)")
+                          covariateId = NA,
+                          covariateName = "(Intercept)")
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
@@ -358,6 +375,23 @@ plotPs <- function(data,
                    unitOfAnalysis = "subjects",
                    title = NULL,
                    fileName = NULL) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertDataFrame(unfilteredData, null.ok = TRUE, add = errorMessages)
+  checkmate::assertChoice(scale, c("propensity", "preference"), add = errorMessages)
+  checkmate::assertChoice(type, c("density", "histogram", "histogramCount", "histogramProportion"), add = errorMessages)
+  checkmate::assertNumber(binWidth, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showCountsLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showAucLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showEquiposeLabel, len = 1, add = errorMessages)
+  checkmate::assertNumeric(equipoiseBounds, lower = 0, upper = 1, len = 2, add = errorMessages)
+  checkmate::assertCharacter(unitOfAnalysis, len = 1, add = errorMessages)
+  checkmate::assertCharacter(title, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("treatment" %in% colnames(data)))
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data)))
@@ -368,16 +402,8 @@ plotPs <- function(data,
     if (!("propensityScore" %in% colnames(unfilteredData)))
       stop("Missing column propensityScore in unfilteredData")
   }
-  if (type != "density" && type != "histogram" && type != "histogramCount" && type != "histogramProportion")
-    stop(paste("Unknown type '", type, "', please choose either 'density', 'histogram', 'histogramCount', or 'histogramProportion'"),
-         sep = "")
   if (type == "histogram")
     type <- "histogramCount"
-  if (scale != "propensity" && scale != "preference")
-    stop(paste("Unknown scale '", scale, "', please choose either 'propensity' or 'preference'"),
-         sep = "")
-  targetLabel <- as.character(targetLabel)
-  comparatorLabel <- as.character(comparatorLabel)
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -395,8 +421,8 @@ plotPs <- function(data,
   if (type == "density") {
     d1 <- density(data$score[data$treatment == 1], from = 0, to = 1, n = 200)
     d0 <- density(data$score[data$treatment == 0], from = 0, to = 1, n = 200)
-    d <- data.frame(x = c(d1$x, d0$x), y = c(d1$y, d0$y), treatment = c(rep(as.character(targetLabel), length(d1$x)),
-                                                                        rep(as.character(comparatorLabel), length(d0$x))))
+    d <- data.frame(x = c(d1$x, d0$x), y = c(d1$y, d0$y), treatment = c(rep(targetLabel, length(d1$x)),
+                                                                        rep(comparatorLabel, length(d0$x))))
     d$treatment <- factor(d$treatment, levels = c(targetLabel, comparatorLabel))
     plot <- ggplot2::ggplot(d, ggplot2::aes(x = .data$x, y = .data$y)) +
       ggplot2::geom_density(stat = "identity", ggplot2::aes(color = .data$treatment, group = .data$treatment, fill = .data$treatment)) +
@@ -433,8 +459,8 @@ plotPs <- function(data,
     d0 <- data.frame(xmin = cut(data$score[data$treatment == 0], x, labels = x[1:(length(x) - 1)]), y = 1)
     d0 <- aggregate(y ~   xmin, d0, sum)
     d0$xmin <- as.numeric(as.character(d0$xmin))
-    d <- data.frame(xmin = c(d1$xmin, d0$xmin), y = c(d1$y, d0$y), treatment = c(rep(as.character(targetLabel), nrow(d1)),
-                                                                                 rep(as.character(comparatorLabel), nrow(d0))))
+    d <- data.frame(xmin = c(d1$xmin, d0$xmin), y = c(d1$y, d0$y), treatment = c(rep(targetLabel, nrow(d1)),
+                                                                                 rep(comparatorLabel, nrow(d0))))
     d$xmax <- d$xmin + binWidth
     d$treatment <- factor(d$treatment, levels = c(targetLabel, comparatorLabel))
     yAxisScale <- "Number"
@@ -515,6 +541,11 @@ plotPs <- function(data,
 #'
 #' @export
 computePsAuc <- function(data, confidenceIntervals = FALSE) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertLogical(confidenceIntervals, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("treatment" %in% colnames(data)))
     stop("Missing column treatment in data")
   if (!("propensityScore" %in% colnames(data)))
@@ -558,6 +589,11 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 #'
 #' @export
 trimByPs <- function(population, trimFraction = 0.05) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNumber(trimFraction, lower = 0, upper = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
@@ -609,6 +645,11 @@ trimByPs <- function(population, trimFraction = 0.05) {
 #'
 #' @export
 trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNumeric(bounds, len = 2, lower = 0, upper = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
@@ -658,14 +699,18 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
 #'
 #' @export
 trimByIptw <- function(population, maxWeight = 10, estimator = "ate") {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
+  checkmate::assertChoice(estimator, c("ate", "att"), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
     stop("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
-  if (!estimator %in% c("ate", "att"))
-    stop("The estimator argument should be either 'ate' or 'att'.")
   ParallelLogger::logTrace("Trimming by IPTW")
   population <- population %>%
     mutate(weights = computeWeights(population = .data, estimator = estimator)) %>%
@@ -765,16 +810,21 @@ matchOnPs <- function(population,
                       maxRatio = 1,
                       allowReverseMatch = FALSE,
                       stratificationColumns = c()) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNumber(caliper, lower = 0, add = errorMessages)
+  checkmate::assertChoice(caliperScale, c("standardized", "propensity score", "standardized logit"), add = errorMessages)
+  checkmate::assertInt(maxRatio, lower = 1, add = errorMessages)
+  checkmate::assertLogical(allowReverseMatch, len = 1, add = errorMessages)
+  checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
     stop("Missing column treatment in population")
   if (!("propensityScore" %in% colnames(population)))
     stop("Missing column propensityScore in population")
-  if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
-    stop(paste("Unknown caliperScale '",
-               caliperScale,
-               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
 
   reverseTreatment <- (allowReverseMatch && sum(population$treatment == 1) > sum(population$treatment == 0))
   if (reverseTreatment) {
@@ -911,10 +961,9 @@ matchOnPsAndCovariates <- function(population,
                                    allowReverseMatch = FALSE,
                                    cohortMethodData,
                                    covariateIds) {
-  if (caliperScale != "standardized" && caliperScale != "propensity score" && caliperScale != "standardized logit")
-    stop(paste("Unknown caliperScale '",
-               caliperScale,
-               "', please choose either 'standardized', 'propensity score', or 'standardized logit'"), sep = "")
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertIntegerish(covariateIds, min.len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
@@ -958,6 +1007,13 @@ matchOnPsAndCovariates <- function(population,
 #'
 #' @export
 stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c(), baseSelection = "all") {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertInt(numberOfStrata, lower = 1, add = errorMessages)
+  checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
+  checkmate::assertChoice(baseSelection, c("all", "target", "comparator"), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!("rowId" %in% colnames(population)))
     stop("Missing column rowId in population")
   if (!("treatment" %in% colnames(population)))
@@ -1064,6 +1120,10 @@ stratifyByPsAndCovariates <- function(population,
                                       baseSelection = "all",
                                       cohortMethodData,
                                       covariateIds) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertIntegerish(covariateIds, min.len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
                                                                                 covariateIds,

@@ -47,7 +47,7 @@ fastDuplicated <- function(data, columns) {
 #'
 #' @param population                       If specified, this population will be used as the starting
 #'                                         point instead of the cohorts in the `cohortMethodData` object.
-#' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
+#' @param outcomeId                        The ID of the outcome. If NULL, no outcome-specific
 #'                                         transformations will be performed.
 #' @param firstExposureOnly                Should only the first exposure per subject be included?
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
@@ -64,13 +64,9 @@ fastDuplicated <- function(data, columns) {
 #' @param maxDaysAtRisk                    The maximum allowed number of days at risk. Risk windows that are
 #'                                         longer will be truncated to this number of days.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
-#' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk window?
-#'                                         Use `startAnchor` instead.
 #' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
 #'                                         or `"cohort end"`.
 #' @param riskWindowEnd                    The end of the risk window (in days) relative to the `endAnchor`.
-#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?
-#'                                         Use `endAnchor` instead.
 #' @param endAnchor                        The anchor point for the end of the risk window. Can be `"cohort start"`
 #'                                         or `"cohort end"`.
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
@@ -88,38 +84,42 @@ fastDuplicated <- function(data, columns) {
 #' @export
 createStudyPopulation <- function(cohortMethodData,
                                   population = NULL,
-                                  outcomeId,
+                                  outcomeId = NULL,
                                   firstExposureOnly = FALSE,
                                   restrictToCommonPeriod = FALSE,
                                   washoutPeriod = 0,
-                                  removeDuplicateSubjects = FALSE,
+                                  removeDuplicateSubjects = "keep all",
                                   removeSubjectsWithPriorOutcome = TRUE,
                                   priorOutcomeLookback = 99999,
                                   minDaysAtRisk = 1,
                                   maxDaysAtRisk = 99999,
                                   riskWindowStart = 0,
-                                  addExposureDaysToStart = NULL,
                                   startAnchor = "cohort start",
                                   riskWindowEnd = 0,
-                                  addExposureDaysToEnd = NULL,
                                   endAnchor = "cohort end",
                                   censorAtNewRiskWindow = FALSE) {
-  if (!missing(addExposureDaysToStart) && !is.null(addExposureDaysToStart)) {
-    warning("The addExposureDaysToStart argument is deprecated. Please use the startAnchor argument instead.")
-    if (addExposureDaysToStart) {
-      startAnchor <- "cohort end"
-    } else {
-      startAnchor <- "cohort start"
-    }
+  if (is.logical(removeDuplicateSubjects)) {
+    if (removeDuplicateSubjects)
+      removeDuplicateSubjects <- "remove all"
+    else
+      removeDuplicateSubjects <- "keep all"
   }
-  if (!missing(addExposureDaysToEnd) && !is.null(addExposureDaysToEnd)) {
-    warning("The addExposureDaysToEnd argument is deprecated. Please use the endAnchor argument instead.")
-    if (addExposureDaysToEnd) {
-      endAnchor <- "cohort end"
-    } else {
-      endAnchor <- "cohort start"
-    }
-  }
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(outcomeId, null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
+  checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
+  checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
+  checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
+  checkmate::assertLogical(removeSubjectsWithPriorOutcome, len = 1, add = errorMessages)
+  checkmate::assertInt(priorOutcomeLookback, lower = 0, add = errorMessages)
+  checkmate::assertInt(minDaysAtRisk, lower = 0, add = errorMessages)
+  checkmate::assertInt(maxDaysAtRisk, lower = 0, add = errorMessages)
+  checkmate::assertInt(riskWindowStart, add = errorMessages)
+  checkmate::assertInt(riskWindowEnd, add = errorMessages)
+  checkmate::assertLogical(censorAtNewRiskWindow, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   if (!grepl("start$|end$", startAnchor, ignore.case = TRUE)) {
     stop("startAnchor should have value 'cohort start' or 'cohort end'")
   }
@@ -129,15 +129,7 @@ createStudyPopulation <- function(cohortMethodData,
   isEnd <- function(anchor) {
     return(grepl("end$", anchor, ignore.case = TRUE))
   }
-  if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects)
-      removeDuplicateSubjects <- "remove all"
-    else
-      removeDuplicateSubjects <- "keep all"
-  }
-  if (!(removeDuplicateSubjects %in% c("keep all", "keep first", "remove all")))
-    stop("removeDuplicateSubjects should have value \"keep all\", \"keep first\", or \"remove all\".")
-  if (missing(outcomeId))
+  if (is.null(outcomeId))
     ParallelLogger::logTrace("Creating study population without outcome ID")
   else
     ParallelLogger::logTrace("Creating study population for outcome ID ", outcomeId)
@@ -154,7 +146,6 @@ createStudyPopulation <- function(cohortMethodData,
   if (firstExposureOnly) {
     message("Keeping only first exposure per subject")
     population <- population[order(population$personSeqId, population$treatment, population$cohortStartDate), ]
-    # idx <- duplicated(population[, c("personSeqId", "treatment")])
     idx <- fastDuplicated(population, c("personSeqId", "treatment"))
     population <- population[!idx, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
@@ -208,7 +199,7 @@ createStudyPopulation <- function(cohortMethodData,
                                                                                 "days of observation prior")))
   }
   if (removeSubjectsWithPriorOutcome) {
-    if (missing(outcomeId) || is.null(outcomeId)) {
+    if (is.null(outcomeId)) {
       message("No outcome specified so skipping removing people with prior outcomes")
     } else {
       message("Removing subjects with prior outcomes (if any)")
@@ -276,7 +267,7 @@ createStudyPopulation <- function(cohortMethodData,
                                                                                 minDaysAtRisk,
                                                                                 "days at risk")))
   }
-  if (missing(outcomeId) || is.null(outcomeId)) {
+  if (is.null(outcomeId)) {
     message("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
@@ -361,7 +352,7 @@ getCounts <- function(population, description = "") {
 #'
 #' @param population                       If specified, this population will be used as the starting
 #'                                         point instead of the cohorts in the `cohortMethodData` object.
-#' @param outcomeId                        The ID of the outcome. If not specified, no outcome-specific
+#' @param outcomeId                        The ID of the outcome. If NULL, no outcome-specific
 #'                                         transformations will be performed.
 #' @param firstExposureOnly                (logical) Should only the first exposure per subject be included?
 #' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
@@ -371,13 +362,9 @@ getCounts <- function(population, description = "") {
 #'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
-#' @param addExposureDaysToStart           DEPRECATED: Add the length of exposure the start of the risk window?
-#'                                         Use `startAnchor` instead.
 #' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
 #'                                         or `"cohort end"`.
 #' @param riskWindowEnd                    The end of the risk window (in days) relative to the `endAnchor`.
-#' @param addExposureDaysToEnd             DEPRECATED: Add the length of exposure the risk window?
-#'                                         Use `endAnchor` instead.
 #' @param endAnchor                        The anchor point for the end of the risk window. Can be `"cohort start"`
 #'                                         or `"cohort end"`.
 #' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
@@ -401,17 +388,15 @@ getCounts <- function(population, description = "") {
 #' @export
 plotTimeToEvent <- function(cohortMethodData,
                             population = NULL,
-                            outcomeId,
+                            outcomeId = NULL,
                             firstExposureOnly = FALSE,
                             restrictToCommonPeriod = FALSE,
                             washoutPeriod = 0,
-                            removeDuplicateSubjects = FALSE,
+                            removeDuplicateSubjects = "keep all",
                             minDaysAtRisk = 1,
                             riskWindowStart = 0,
-                            addExposureDaysToStart = NULL,
                             startAnchor = "cohort start",
                             riskWindowEnd = 0,
-                            addExposureDaysToEnd = NULL,
                             endAnchor = "cohort end",
                             censorAtNewRiskWindow = FALSE,
                             periodLength = 7,
@@ -423,22 +408,23 @@ plotTimeToEvent <- function(cohortMethodData,
                             comparatorLabel = "Comparator",
                             title = NULL,
                             fileName = NULL) {
-  if (!missing(addExposureDaysToStart) && !is.null(addExposureDaysToStart)) {
-    warning("The addExposureDaysToStart argument is deprecated. Please use the startAnchor argument instead.")
-    if (addExposureDaysToStart) {
-      startAnchor <- "cohort end"
-    } else {
-      startAnchor <- "cohort start"
-    }
+  if (is.logical(removeDuplicateSubjects)) {
+    if (removeDuplicateSubjects)
+      removeDuplicateSubjects <- "remove all"
+    else
+      removeDuplicateSubjects <- "keep all"
   }
-  if (!missing(addExposureDaysToEnd) && !is.null(addExposureDaysToEnd)) {
-    warning("The addExposureDaysToEnd argument is deprecated. Please use the endAnchor argument instead.")
-    if (addExposureDaysToEnd) {
-      endAnchor <- "cohort end"
-    } else {
-      endAnchor <- "cohort start"
-    }
-  }
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertInt(periodLength, lower = 0, add = errorMessages)
+  checkmate::assertInt(numberOfPeriods, lower = 0, add = errorMessages)
+  checkmate::assertLogical(highlightExposedEvents, len = 1, add = errorMessages)
+  checkmate::assertLogical(includePostIndexTime, len = 1, add = errorMessages)
+  checkmate::assertLogical(showFittedLines, len = 1, add = errorMessages)
+  checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(title, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   if (is.null(population)) {
     population <- cohortMethodData$cohorts %>%
       collect()
@@ -493,11 +479,11 @@ plotTimeToEvent <- function(cohortMethodData,
   periods <- periods %>%
     filter(.data$observedTarget > 0) %>%
     mutate(rateExposedTarget = .data$eventsExposedTarget / .data$observedTarget,
-            rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
-            rateExposedComparator = .data$eventsExposedComparator / .data$observedComparator,
-            rateUnexposedComparator = .data$eventsUnexposedComparator / .data$observedComparator,
-            rateTarget = (.data$eventsExposedTarget + .data$eventsUnexposedTarget) / .data$observedTarget,
-            rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator)
+           rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
+           rateExposedComparator = .data$eventsExposedComparator / .data$observedComparator,
+           rateUnexposedComparator = .data$eventsUnexposedComparator / .data$observedComparator,
+           rateTarget = (.data$eventsExposedTarget + .data$eventsUnexposedTarget) / .data$observedTarget,
+           rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator)
   if (!includePostIndexTime) {
     periods <- periods %>%
       filter(.data$end <= 0)

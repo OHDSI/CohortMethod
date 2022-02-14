@@ -65,16 +65,31 @@ getDefaultCmTable1Specifications <- function() {
 #' @export
 createCmTable1 <- function(balance,
                            specifications = getDefaultCmTable1Specifications(),
-                           beforeTargetPopSize,
-                           beforeComparatorPopSize,
-                           afterTargetPopSize,
-                           afterComparatorPopSize,
+                           beforeTargetPopSize = NULL,
+                           beforeComparatorPopSize = NULL,
+                           afterTargetPopSize = NULL,
+                           afterComparatorPopSize = NULL,
                            beforeLabel = "Before matching",
                            afterLabel = "After matching",
                            targetLabel = "Target",
                            comparatorLabel = "Comparator",
                            percentDigits = 1,
                            stdDiffDigits = 2) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(balance, null.ok = TRUE, add = errorMessages)
+  checkmate::assertDataFrame(specifications, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(beforeTargetPopSize, null.ok = TRUE, lower = 0, add = errorMessages)
+  checkmate::assertInt(beforeComparatorPopSize, null.ok = TRUE, lower = 0, add = errorMessages)
+  checkmate::assertInt(afterTargetPopSize, null.ok = TRUE, lower = 0, add = errorMessages)
+  checkmate::assertInt(afterComparatorPopSize, null.ok = TRUE, lower = 0, add = errorMessages)
+  checkmate::assertCharacter(beforeLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(afterLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
+  checkmate::assertInt(percentDigits, lower = 0, add = errorMessages)
+  checkmate::assertInt(stdDiffDigits, lower = 0, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   fixCase <- function(label) {
     idx <- (toupper(label) == label)
     if (any(idx)) {

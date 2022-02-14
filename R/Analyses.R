@@ -96,6 +96,33 @@ createCmAnalysis <- function(analysisId = 1,
                              stratifyByPsAndCovariatesArgs = NULL,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertInt(analysisId, add = errorMessages)
+  checkmate::assertCharacter(description, len = 1, add = errorMessages)
+  checkmate::assertCharacter(targetType, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(comparatorType, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertClass(getDbCohortMethodDataArgs, "args", add = errorMessages)
+  checkmate::assertClass(createStudyPopArgs, "args", add = errorMessages)
+  checkmate::assertLogical(createPs, len = 1, add = errorMessages)
+  checkmate::assertClass(createPsArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(trimByPs, len = 1, add = errorMessages)
+  checkmate::assertClass(trimByPsArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(trimByPsToEquipoise, len = 1, add = errorMessages)
+  checkmate::assertClass(trimByPsToEquipoiseArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(trimByIptw, len = 1, add = errorMessages)
+  checkmate::assertClass(trimByIptwArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(matchOnPs, len = 1, add = errorMessages)
+  checkmate::assertClass(matchOnPsArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(matchOnPsAndCovariates, len = 1, add = errorMessages)
+  checkmate::assertClass(matchOnPsAndCovariatesArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(stratifyByPs, len = 1, add = errorMessages)
+  checkmate::assertClass(stratifyByPsArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(stratifyByPsAndCovariates, len = 1, add = errorMessages)
+  checkmate::assertClass(stratifyByPsAndCovariatesArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(fitOutcomeModel, len = 1, add = errorMessages)
+  checkmate::assertClass(fitOutcomeModelArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
     stop("Need to pick one matching or stratification function")
   }
@@ -136,19 +163,9 @@ createCmAnalysis <- function(analysisId = 1,
   if (!fitOutcomeModel) {
     fitOutcomeModelArgs <- NULL
   }
-
-  # First: get the default values:
   analysis <- list()
   for (name in names(formals(createCmAnalysis))) {
     analysis[[name]] <- get(name)
-  }
-
-  # Next: overwrite defaults with actual values if specified:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(analysis)) {
-      analysis[[name]] <- values[[name]]
-    }
   }
 
   class(analysis) <- "cmAnalysis"
@@ -165,11 +182,14 @@ createCmAnalysis <- function(analysisId = 1,
 #'
 #' @export
 saveCmAnalysisList <- function(cmAnalysisList, file) {
-  stopifnot(is.list(cmAnalysisList))
-  stopifnot(length(cmAnalysisList) > 0)
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertList(cmAnalysisList, min.len = 1, add = errorMessages)
   for (i in 1:length(cmAnalysisList)) {
-    stopifnot(class(cmAnalysisList[[i]]) == "cmAnalysis")
+    checkmate::assertClass(cmAnalysisList[[i]], "cmAnalysis", add = errorMessages)
   }
+  checkmate::assertCharacter(file, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ParallelLogger::logTrace("Saving cmAnalysisList to ", file)
   ParallelLogger::saveSettingsToJson(cmAnalysisList, file)
 }
@@ -186,6 +206,10 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(file, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ParallelLogger::logTrace("Loading cmAnalysisList from ", file)
   return(ParallelLogger::loadSettingsFromJson(file))
 }
@@ -222,18 +246,19 @@ createTargetComparatorOutcomes <- function(targetId,
                                            outcomeIds,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
-  # First: get the default values:
+  errorMessages <- checkmate::makeAssertCollection()
+  if (!is.list(targetId))
+    checkmate::assertInt(targetId, add = errorMessages)
+  if (!is.list(comparatorId))
+    checkmate::assertInt(comparatorId, add = errorMessages)
+  checkmate::assertIntegerish(outcomeIds, min.len = 1, add = errorMessages)
+  checkmate::assertIntegerish(excludedCovariateConceptIds, null.ok = TRUE, add = errorMessages)
+  checkmate::assertIntegerish(includedCovariateConceptIds, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   targetComparatorOutcomes <- list()
   for (name in names(formals(createTargetComparatorOutcomes))) {
     targetComparatorOutcomes[[name]] <- get(name)
-  }
-
-  # Next: overwrite defaults with actual values if specified:
-  values <- lapply(as.list(match.call())[-1], function(x) eval(x, envir = sys.frame(-3)))
-  for (name in names(values)) {
-    if (name %in% names(targetComparatorOutcomes)) {
-      targetComparatorOutcomes[[name]] <- values[[name]]
-    }
   }
   class(targetComparatorOutcomes) <- "targetComparatorOutcomes"
   return(targetComparatorOutcomes)
@@ -249,11 +274,14 @@ createTargetComparatorOutcomes <- function(targetId,
 #'
 #' @export
 saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file) {
-  stopifnot(is.list(targetComparatorOutcomesList))
-  stopifnot(length(targetComparatorOutcomesList) > 0)
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertList(targetComparatorOutcomesList, min.len = 1, add = errorMessages)
   for (i in 1:length(targetComparatorOutcomesList)) {
-    stopifnot(class(targetComparatorOutcomesList[[i]]) == "targetComparatorOutcomes")
+    checkmate::assertClass(targetComparatorOutcomesList[[i]], "targetComparatorOutcomes", add = errorMessages)
   }
+  checkmate::assertCharacter(file, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ParallelLogger::saveSettingsToJson(targetComparatorOutcomesList, file)
 }
 
@@ -269,5 +297,8 @@ saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file)
 #'
 #' @export
 loadTargetComparatorOutcomesList <- function(file) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(file, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   return(ParallelLogger::loadSettingsFromJson(file))
 }

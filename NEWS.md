@@ -1,10 +1,17 @@
-CohortMethod 4.3.0
+CohortMethod 5.0.0
 ==================
 
 Changes:
 
 1. Setting the default Cyclops control object to use `resetCoefficients = TRUE` to ensure we always get the exact same model, irrespective of the number of threads used.
 
+2. Adding checking of input to all functions.
+
+3. Removing deprecated `excludeDrugsFromCovariates` argument from `getDbCohortMethodData()` function.
+
+4. Removing deprecated `oracleTempSchema` argument from `getDbCohortMethodData()` and `runCmAnalyses()` functions.
+
+5. Removing deprecated `addExposureDaysToStart` and `addExposureDaysToStart` arguments from `createStudyPopulation()` and `plotTimeToEvent()` functions.
 
 
 CohortMethod 4.2.2

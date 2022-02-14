@@ -7,20 +7,18 @@
 createStudyPopulation(
   cohortMethodData,
   population = NULL,
-  outcomeId,
+  outcomeId = NULL,
   firstExposureOnly = FALSE,
   restrictToCommonPeriod = FALSE,
   washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   removeSubjectsWithPriorOutcome = TRUE,
   priorOutcomeLookback = 99999,
   minDaysAtRisk = 1,
   maxDaysAtRisk = 99999,
   riskWindowStart = 0,
-  addExposureDaysToStart = NULL,
   startAnchor = "cohort start",
   riskWindowEnd = 0,
-  addExposureDaysToEnd = NULL,
   endAnchor = "cohort end",
   censorAtNewRiskWindow = FALSE
 )
@@ -32,7 +30,7 @@ createStudyPopulation(
 \item{population}{If specified, this population will be used as the starting
 point instead of the cohorts in the \code{cohortMethodData} object.}
 
-\item{outcomeId}{The ID of the outcome. If not specified, no outcome-specific
+\item{outcomeId}{The ID of the outcome. If NULL, no outcome-specific
 transformations will be performed.}
 
 \item{firstExposureOnly}{Should only the first exposure per subject be included?}
@@ -59,16 +57,10 @@ longer will be truncated to this number of days.}
 
 \item{riskWindowStart}{The start of the risk window (in days) relative to the \code{startAnchor}.}
 
-\item{addExposureDaysToStart}{DEPRECATED: Add the length of exposure the start of the risk window?
-Use \code{startAnchor} instead.}
-
 \item{startAnchor}{The anchor point for the start of the risk window. Can be \code{"cohort start"}
 or \code{"cohort end"}.}
 
 \item{riskWindowEnd}{The end of the risk window (in days) relative to the \code{endAnchor}.}
-
-\item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window?
-Use \code{endAnchor} instead.}
 
 \item{endAnchor}{The anchor point for the end of the risk window. Can be \code{"cohort start"}
 or \code{"cohort end"}.}

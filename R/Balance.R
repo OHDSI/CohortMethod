@@ -131,6 +131,13 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
 #'
 #' @export
 computeCovariateBalance <- function(population, cohortMethodData, subgroupCovariateId = NULL, maxCohortSize = 250000) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertInt(subgroupCovariateId, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ParallelLogger::logTrace("Computing covariate balance")
   start <- Sys.time()
 
@@ -324,8 +331,18 @@ plotCovariateBalanceScatterPlot <- function(balance,
                                             afterLabel = "After matching",
                                             showCovariateCountLabel = FALSE,
                                             showMaxLabel = FALSE) {
-  beforeLabel <- as.character(beforeLabel)
-  afterLabel <- as.character(afterLabel)
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(balance, add = errorMessages)
+  checkmate::assertLogical(absolute, len = 1, add = errorMessages)
+  checkmate::assertNumber(threshold, lower = 0, add = errorMessages)
+  checkmate::assertCharacter(title, len = 1, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(beforeLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(afterLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showCovariateCountLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showMaxLabel, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (absolute) {
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
@@ -400,9 +417,17 @@ plotCovariateBalanceOfTopVariables <- function(balance,
                                                fileName = NULL,
                                                beforeLabel = "before matching",
                                                afterLabel = "after matching") {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(balance, add = errorMessages)
+  checkmate::assertInt(n, lower = 1, add = errorMessages)
+  checkmate::assertInt(maxNameWidth, lower = 1, add = errorMessages)
+  checkmate::assertCharacter(title, null.ok = TRUE, len = 1, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(beforeLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(afterLabel, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   n <- min(n, nrow(balance))
-  beforeLabel <- as.character(beforeLabel)
-  afterLabel <- as.character(afterLabel)
   topBefore <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   topBefore <- topBefore[1:n, ]
   topBefore$facet <- paste("Top", n, beforeLabel)
@@ -478,6 +503,17 @@ plotCovariatePrevalence <- function(balance,
                                     afterLabel = "After matching",
                                     targetLabel = "Target",
                                     comparatorLabel = "Comparator") {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(balance, add = errorMessages)
+  checkmate::assertNumber(threshold, lower = 0, add = errorMessages)
+  checkmate::assertCharacter(title, len = 1, add = errorMessages)
+  checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(beforeLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(afterLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(targetLabel, len = 1, add = errorMessages)
+  checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   balance <- balance %>%
     filter(.data$isBinary == "Y")
 

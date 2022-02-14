@@ -46,7 +46,8 @@ Imports:
 	SqlRender (>= 1.7.0),
 	survival,
 	ParallelLogger (>= 3.0.0),
-	bit64
+	bit64,
+	checkmate
 Suggests:
 	testthat,
 	pROC,

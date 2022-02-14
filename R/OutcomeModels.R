@@ -91,6 +91,23 @@ fitOutcomeModel <- function(population,
                                                     tolerance = 2e-07,
                                                     cvRepetitions = 10,
                                                     noiseLevel = "quiet")) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertChoice(modelType, c("logistic", "poisson", "cox"), add = errorMessages)
+  checkmate::assertLogical(stratified, len = 1, add = errorMessages)
+  checkmate::assertLogical(useCovariates, len = 1, add = errorMessages)
+  checkmate::assertLogical(inversePtWeighting, len = 1, add = errorMessages)
+  checkmate::assertChoice(estimator, c("ate", "att"), add = errorMessages)
+  checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
+  checkmate::assertIntegerish(interactionCovariateIds, null.ok = TRUE, add = errorMessages)
+  checkmate::assertIntegerish(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
+  checkmate::assertIntegerish(includeCovariateIds, null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(profileGrid, null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(profileBounds, null.ok = TRUE, len = 2, add = errorMessages)
+  checkmate::assertClass(prior, "cyclopsPrior", add = errorMessages)
+  checkmate::assertClass(control, "cyclopsControl", add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   if (stratified && nrow(population) > 0 && is.null(population$stratumId))
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
   if (is.null(population$outcomeCount))
@@ -103,10 +120,6 @@ fitOutcomeModel <- function(population,
     stop("Can't exclude covariates that are to be used for interaction terms")
   if (inversePtWeighting && is.null(population$propensityScore))
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
-  if (!estimator %in% c("ate", "att"))
-    stop("The estimator argument should be either 'ate' or 'att'.")
-  if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
-    stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', or 'cox'")
   if (!is.null(profileGrid) && !is.null(profileBounds))
     stop("Can't specify both a grid and bounds for likelihood profiling")
 
@@ -654,6 +667,11 @@ print.OutcomeModel <- function(x, ...) {
 #'
 #' @export
 getOutcomeModel <- function(outcomeModel, cohortMethodData) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(outcomeModel, "OutcomeModel", add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   cfs <- outcomeModel$outcomeModelCoefficients
 
   cfs <- cfs[cfs != 0]

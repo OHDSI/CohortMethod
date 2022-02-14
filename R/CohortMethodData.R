@@ -49,12 +49,10 @@ setClass("CohortMethodData", contains = "CovariateData")
 #'
 #' @export
 saveCohortMethodData <- function(cohortMethodData, file) {
-  if (missing(cohortMethodData))
-    stop("Must specify cohortMethodData")
-  if (missing(file))
-    stop("Must specify file")
-  if (!inherits(cohortMethodData, "CohortMethodData"))
-    stop("Data not of class CohortMethodData")
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertCharacter(file, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
 
   Andromeda::saveAndromeda(cohortMethodData, file)
   writeLines("To use this CohortMethodData object, you will have to load it from file (using loadCohortMethodData).")
@@ -72,10 +70,14 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #'
 #' @export
 loadCohortMethodData <- function(file) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(file, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (!file.exists(file))
-    stop("Cannot find file ", file)
+    stop(sprintf("Cannot find file '%s'", file))
   if (file.info(file)$isdir)
-    stop(file , " is a folder, but should be a file")
+    stop(sprintf("'%s' is a folder, but should be a file", file))
   cohortMethodData <- Andromeda::loadAndromeda(file)
   class(cohortMethodData) <- "CohortMethodData"
   attr(class(cohortMethodData), "package") <- "CohortMethod"
