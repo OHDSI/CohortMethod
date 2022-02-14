@@ -213,7 +213,7 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   delta <- Sys.time() - start
-  ParallelLogger::logInfo(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
+  message(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
 }
 
@@ -251,7 +251,7 @@ sampleCohorts <- function(cohorts, maxCohortSize, label) {
   comparatorCount <- length(comparatorIdx)
   if (targetCount > maxCohortSize) {
     targetIdx <- sampleSingleCohort(cohorts, 1, maxCohortSize)
-    ParallelLogger::logInfo("Downsampling target cohort ",
+    message("Downsampling target cohort ",
                             label,
                             " from ",
                             targetCount,
@@ -262,7 +262,7 @@ sampleCohorts <- function(cohorts, maxCohortSize, label) {
   }
   if (comparatorCount > maxCohortSize) {
     comparatorIdx <- sampleSingleCohort(cohorts, 0, maxCohortSize)
-    ParallelLogger::logInfo("Downsampling comparator cohort ",
+    message("Downsampling comparator cohort ",
                             label,
                             " from ",
                             comparatorCount,

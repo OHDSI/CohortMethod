@@ -28,12 +28,12 @@
 #'
 #' @export
 checkCmInstallation <- function(connectionDetails) {
-  ParallelLogger::logInfo("Checking database connectivity")
+  message("Checking database connectivity")
   conn <- DatabaseConnector::connect(connectionDetails)
   DatabaseConnector::disconnect(conn)
-  ParallelLogger::logInfo("- Ok")
+  message("- Ok")
 
-  ParallelLogger::logInfo("\nChecking large scale regression engine")
+  message("\nChecking large scale regression engine")
   counts <- c(18, 17, 15, 20, 10, 20, 25, 13, 12)
   outcome <- gl(3, 1, 9)
   treatment <- gl(3, 3)
@@ -41,14 +41,14 @@ checkCmInstallation <- function(connectionDetails) {
   cyclopsFit <- fitCyclopsModel(cyclopsData)
   if (length(coef(cyclopsFit)) != 5)
     stop("Error fitting regression model")
-  ParallelLogger::logInfo("- Ok")
+  message("- Ok")
 
-  ParallelLogger::logInfo("\nChecking support for large data objects")
+  message("\nChecking support for large data objects")
   x <- Andromeda::andromeda(test = data.frame(a = 1:100, b = "test"))
   if (x$test %>% count() %>% pull() != 100)
     stop("Error creating large data object")
-  ParallelLogger::logInfo("- Ok")
+  message("- Ok")
 
-  ParallelLogger::logInfo("\nCohortMethod is correctly installed")
-  ParallelLogger::logInfo(paste0("\nResponse code: ", round(pi * 123456)))
+  message("\nCohortMethod is correctly installed")
+  message(paste0("\nResponse code: ", round(pi * 123456)))
 }

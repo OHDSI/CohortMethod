@@ -42,7 +42,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   if (sum(cohortMethodData$cohorts %>% select(.data$daysToCohortEnd) %>% pull()) == 0)
     warning("Cohort data appears to be limited, check daysToCohortEnd which appears to be all zeros")
 
-  ParallelLogger::logInfo("Computing covariate prevalence")
+  message("Computing covariate prevalence")
   # (Note: currently limiting to binary covariates)
   populationSize <- cohortMethodData$cohorts %>%
     count() %>%
@@ -61,13 +61,13 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   # covariatePrevalence <- sums$prevalence
   # names(covariatePrevalence) <- sums$covariateId
 
-  ParallelLogger::logInfo("Computing propensity model")
+  message("Computing propensity model")
   propensityScore <- createPs(cohortMethodData,
                               maxCohortSizeForFitting = 25000,
                               prior = Cyclops::createPrior("laplace", 0.1, exclude = 0))
   propensityModel <- attr(propensityScore, "metaData")$psModelCoef
 
-  ParallelLogger::logInfo("Fitting outcome model(s)")
+  message("Fitting outcome model(s)")
   outcomeIds <- attr(cohortMethodData, "metaData")$outcomeIds
   outcomeModels <- vector("list", length(outcomeIds))
   for (i in 1:length(outcomeIds)) {
@@ -88,7 +88,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     outcomeModels[[i]] <- outcomeModel$outcomeModelCoefficients[outcomeModel$outcomeModelCoefficients != 0]
   }
 
-  ParallelLogger::logInfo("Computing rates of prior outcomes")
+  message("Computing rates of prior outcomes")
   totalTime <- cohortMethodData$cohorts %>%
     summarise(time = sum(.data$daysFromObsStart, na.rm = TRUE)) %>%
     pull()
@@ -101,7 +101,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     select(.data$outcomeId, .data$rate) %>%
     collect()
 
-  ParallelLogger::logInfo("Fitting models for time to observation period start, end and time to cohort end")
+  message("Fitting models for time to observation period start, end and time to cohort end")
   cohorts <- cohortMethodData$cohorts %>%
     collect()
 
@@ -154,7 +154,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 #'
 #' @export
 simulateCohortMethodData <- function(profile, n = 10000) {
-  ParallelLogger::logInfo("Generating covariates")
+  message("Generating covariates")
   # Treatment variable is generated elsewhere:
   covariatePrevalence <- profile$covariatePrevalence[names(profile$covariatePrevalence) != "1"]
 
@@ -174,7 +174,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                                covariateId = covariateId,
                                covariateValue = covariateValue)
 
-  ParallelLogger::logInfo("Generating treatment variable")
+  message("Generating treatment variable")
   betas <- profile$propensityModel
   intercept <- betas[1]
   betas <- betas[2:length(betas)]
@@ -194,7 +194,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   treatmentVar <- treatmentVar[, c("rowId", "covariateValue")]
   treatmentVar$covariateId <- 1
 
-  ParallelLogger::logInfo("Generating cohorts")
+  message("Generating cohorts")
   cohorts <- dplyr::tibble(rowId = treatmentVar$rowId,
                             treatment = treatmentVar$covariateValue,
                             personId = treatmentVar$rowId,
@@ -205,7 +205,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
                             daysToCohortEnd = round(rexp(n, profile$obsEndRate)),
                             daysToObsEnd = round(rexp(n, profile$cohortEndRate)))
 
-  ParallelLogger::logInfo("Generating outcomes after index date")
+  message("Generating outcomes after index date")
   allOutcomes <- dplyr::tibble()
   for (i in 1:length(profile$metaData$outcomeIds)) {
     betas <- profile$outcomeModels[[i]]
@@ -238,7 +238,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     allOutcomes <- rbind(allOutcomes, outcomes)
   }
 
-  ParallelLogger::logInfo("Generating outcomes before index date")
+  message("Generating outcomes before index date")
   for (i in 1:length(profile$metaData$outcomeIds)) {
     outcomeId <- profile$metaData$outcomeIds[i]
     rate <- profile$preIndexOutcomeRates$rate[profile$preIndexOutcomeRates$outcomeId == outcomeId]

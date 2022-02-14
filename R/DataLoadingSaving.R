@@ -181,7 +181,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  ParallelLogger::logInfo("Constructing target and comparator cohorts")
+  message("Constructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
                                                    packageName = "CohortMethod",
                                                    dbms = connectionDetails$dbms,
@@ -229,11 +229,11 @@ getDbCohortMethodData <- function(connectionDetails,
     }
     preSampleCounts$dummy <- NULL
     if (preSampleCounts$targetExposures > maxCohortSize) {
-      ParallelLogger::logInfo("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize)
+      message("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize)
       sampled <- TRUE
     }
     if (preSampleCounts$comparatorExposures > maxCohortSize) {
-      ParallelLogger::logInfo("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize)
+      message("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize)
       sampled <- TRUE
     }
     if (sampled) {
@@ -247,7 +247,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
 
-  ParallelLogger::logInfo("Fetching cohorts from server")
+  message("Fetching cohorts from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
                                                  packageName = "CohortMethod",
@@ -332,7 +332,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
   delta <- Sys.time() - start
-  ParallelLogger::logInfo("Fetching cohorts took ", signif(delta, 3), " ", attr(delta, "units"))
+  message("Fetching cohorts took ", signif(delta, 3), " ", attr(delta, "units"))
   if (sampled) {
     cohortTable <- "#cohort_sample"
   } else {
@@ -347,7 +347,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                                          rowIdField = "row_id",
                                                          covariateSettings = covariateSettings)
   ParallelLogger::logDebug("Fetched covariates total count is ", covariateData$covariates %>% count() %>% pull())
-  ParallelLogger::logInfo("Fetching outcomes from server")
+  message("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                   packageName = "CohortMethod",
@@ -362,7 +362,7 @@ getDbCohortMethodData <- function(connectionDetails,
   outcomes <- DatabaseConnector::querySql(connection, outcomeSql, snakeCaseToCamelCase = TRUE)
   metaData$outcomeIds = outcomeIds
   delta <- Sys.time() - start
-  ParallelLogger::logInfo("Fetching outcomes took ", signif(delta, 3), " ", attr(delta, "units"))
+  message("Fetching outcomes took ", signif(delta, 3), " ", attr(delta, "units"))
   ParallelLogger::logDebug("Fetched outcomes total count is ", nrow(outcomes))
 
   # Remove temp tables:

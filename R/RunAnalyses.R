@@ -183,7 +183,7 @@ runCmAnalyses <- function(connectionDetails,
 
   saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
 
-  ParallelLogger::logInfo("*** Creating cohortMethodData objects ***")
+  message("*** Creating cohortMethodData objects ***")
   subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile), ]
   subset <- subset[subset$cohortMethodDataFile != "", ]
   subset <- subset[!file.exists(file.path(outputFolder, subset$cohortMethodDataFile)), ]
@@ -229,7 +229,7 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::stopCluster(cluster)
   }
 
-  ParallelLogger::logInfo("*** Creating study populations ***")
+  message("*** Creating study populations ***")
   subset <- referenceTable[!duplicated(referenceTable$studyPopFile), ]
   subset <- subset[subset$studyPopFile != "", ]
   subset <- subset[!file.exists(file.path(outputFolder, subset$studyPopFile)), ]
@@ -255,7 +255,7 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (refitPsForEveryOutcome) {
-    ParallelLogger::logInfo("*** Fitting propensity score models ***")
+    message("*** Fitting propensity score models ***")
     subset <- referenceTable[!duplicated(referenceTable$psFile), ]
     subset <- subset[subset$psFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
@@ -281,7 +281,7 @@ runCmAnalyses <- function(connectionDetails,
       ParallelLogger::stopCluster(cluster)
     }
   } else {
-    ParallelLogger::logInfo("*** Fitting shared propensity score models ***")
+    message("*** Fitting shared propensity score models ***")
     subset <- referenceTable[!duplicated(referenceTable$sharedPsFile), ]
     subset <- subset[subset$sharedPsFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$sharedPsFile)), ]
@@ -306,7 +306,7 @@ runCmAnalyses <- function(connectionDetails,
       dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, fitSharedPsModel, refitPsForEveryStudyPopulation)
       ParallelLogger::stopCluster(cluster)
     }
-    ParallelLogger::logInfo("*** Adding propensity scores to study population objects ***")
+    message("*** Adding propensity scores to study population objects ***")
     subset <- referenceTable[!duplicated(referenceTable$psFile), ]
     subset <- subset[subset$psFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
@@ -320,7 +320,7 @@ runCmAnalyses <- function(connectionDetails,
     }
   }
 
-  ParallelLogger::logInfo("*** Trimming/Matching/Stratifying ***")
+  message("*** Trimming/Matching/Stratifying ***")
   subset <- referenceTable[!duplicated(referenceTable$strataFile), ]
   subset <- subset[subset$strataFile != "", ]
   subset <- subset[!file.exists(file.path(outputFolder, subset$strataFile)), ]
@@ -343,7 +343,7 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (prefilterCovariates) {
-    ParallelLogger::logInfo("*** Prefiltering covariates for outcome models ***")
+    message("*** Prefiltering covariates for outcome models ***")
     subset <- referenceTable[!duplicated(referenceTable$prefilteredCovariatesFile), ]
     subset <- subset[subset$prefilteredCovariatesFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$prefilteredCovariatesFile)), ]
@@ -368,9 +368,9 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (missing(outcomeIdsOfInterest) || is.null(outcomeIdsOfInterest)) {
-    ParallelLogger::logInfo("*** Fitting outcome models ***")
+    message("*** Fitting outcome models ***")
   } else {
-    ParallelLogger::logInfo("*** Fitting outcome models for outcomes of interest ***")
+    message("*** Fitting outcome models for outcomes of interest ***")
   }
   subset <- referenceTable[referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "", ]
   subset <- subset[!file.exists(file.path(outputFolder, subset$outcomeModelFile)) , ]
@@ -411,7 +411,7 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   if (!missing(outcomeIdsOfInterest) && !is.null(outcomeIdsOfInterest)) {
-    ParallelLogger::logInfo("*** Fitting outcome models for other outcomes ***")
+    message("*** Fitting outcome models for other outcomes ***")
 
     subset <- referenceTable[!referenceTable$outcomeOfInterest &
                                referenceTable$outcomeModelFile != "" &
@@ -511,7 +511,7 @@ fitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   if (refitPsForEveryStudyPopulation) {
     args <- params$createStudyPopArgs
     args$cohortMethodData <- cohortMethodData
-    ParallelLogger::logInfo("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
+    message("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
     studyPop <- do.call("createStudyPopulation", args)
   } else {
     studyPop <- NULL
@@ -992,7 +992,7 @@ createReferenceTable <- function(cmAnalysisList,
     referenceTable <- referenceTable %>%
       anti_join(analysesToExclude, by = matchingColumns)
     countAfter <- nrow(referenceTable)
-    ParallelLogger::logInfo(sprintf("Removed %d of the %d target-comparator-outcome-analysis combinations as specified by the user.",
+    message(sprintf("Removed %d of the %d target-comparator-outcome-analysis combinations as specified by the user.",
                                     countBefore,
                                     countAfter))
   }

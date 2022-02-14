@@ -121,13 +121,13 @@ createPs <- function(cohortMethodData,
       set.seed(0)
       targetRowIds <- population$rowId[population$treatment == 1]
       if (length(targetRowIds) > maxCohortSizeForFitting) {
-        ParallelLogger::logInfo(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
         targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
       comparatorRowIds <- population$rowId[population$treatment == 0]
       if (length(comparatorRowIds) > maxCohortSizeForFitting) {
-        ParallelLogger::logInfo(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
         comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
@@ -147,7 +147,7 @@ createPs <- function(cohortMethodData,
     if (is.null(floatingPoint)) {
       floatingPoint <- 64
     } else {
-      ParallelLogger::logInfo("Cyclops using precision of ", floatingPoint)
+      message("Cyclops using precision of ", floatingPoint)
     }
     cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
     error <- NULL
@@ -160,10 +160,10 @@ createPs <- function(cohortMethodData,
         ref <- cohortMethodData$covariateRef %>%
           filter(.data$covariateId %in% covariateIds) %>%
           collect()
-        ParallelLogger::logInfo("High correlation between covariate(s) and treatment detected:")
-        ParallelLogger::logInfo(paste(colnames(ref), collapse = "\t"))
+        message("High correlation between covariate(s) and treatment detected:")
+        message(paste(colnames(ref), collapse = "\t"))
         for (i in 1:nrow(ref))
-          ParallelLogger::logInfo(paste(ref[i, ], collapse = "\t"))
+          message(paste(ref[i, ], collapse = "\t"))
         message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
         if (stopOnError) {
           stop(message)
@@ -229,7 +229,7 @@ createPs <- function(cohortMethodData,
   population <- computePreferenceScore(population)
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
-  ParallelLogger::logInfo("Creating propensity scores took ", signif(delta, 3), " ", attr(delta, "units"))
+  message("Creating propensity scores took ", signif(delta, 3), " ", attr(delta, "units"))
   return(population)
 }
 

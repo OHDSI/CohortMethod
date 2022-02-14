@@ -152,7 +152,7 @@ createStudyPopulation <- function(cohortMethodData,
   }
 
   if (firstExposureOnly) {
-    ParallelLogger::logInfo("Keeping only first exposure per subject")
+    message("Keeping only first exposure per subject")
     population <- population[order(population$personSeqId, population$treatment, population$cohortStartDate), ]
     # idx <- duplicated(population[, c("personSeqId", "treatment")])
     idx <- fastDuplicated(population, c("personSeqId", "treatment"))
@@ -160,7 +160,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "First exposure only"))
   }
   if (restrictToCommonPeriod) {
-    ParallelLogger::logInfo("Restrict to common period")
+    message("Restrict to common period")
     if (nrow(population) > 0) {
       population <- population %>%
         group_by(.data$treatment) %>%
@@ -174,7 +174,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
   if (removeDuplicateSubjects == "remove all") {
-    ParallelLogger::logInfo("Removing all subject that are in both cohorts (if any)")
+    message("Removing all subject that are in both cohorts (if any)")
     targetSubjectIds <- population$personSeqId[population$treatment == 1]
     comparatorSubjectIds <- population$personSeqId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
@@ -182,7 +182,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData$attrition <- rbind(metaData$attrition,
                                 getCounts(population, paste("Removed subjects in both cohorts")))
   } else if (removeDuplicateSubjects == "keep first") {
-    ParallelLogger::logInfo("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
+    message("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     if (nrow(population) > 0) {
       population <- population[order(population$personSeqId, population$cohortStartDate), ]
       # Remove ties:
@@ -201,7 +201,7 @@ createStudyPopulation <- function(cohortMethodData,
   }
 
   if (washoutPeriod) {
-    ParallelLogger::logInfo(paste("Requiring", washoutPeriod, "days of observation prior index date"))
+    message(paste("Requiring", washoutPeriod, "days of observation prior index date"))
     population <- population[population$daysFromObsStart >= washoutPeriod, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("At least",
                                                                                 washoutPeriod,
@@ -209,9 +209,9 @@ createStudyPopulation <- function(cohortMethodData,
   }
   if (removeSubjectsWithPriorOutcome) {
     if (missing(outcomeId) || is.null(outcomeId)) {
-      ParallelLogger::logInfo("No outcome specified so skipping removing people with prior outcomes")
+      message("No outcome specified so skipping removing people with prior outcomes")
     } else {
-      ParallelLogger::logInfo("Removing subjects with prior outcomes (if any)")
+      message("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes %>%
         filter(.data$outcomeId == !!outcomeId) %>%
         collect()
@@ -247,7 +247,7 @@ createStudyPopulation <- function(cohortMethodData,
     }
   }
   if (censorAtNewRiskWindow) {
-    ParallelLogger::logInfo("Censoring time at risk of recurrent subjects at start of new time at risk")
+    message("Censoring time at risk of recurrent subjects at start of new time at risk")
     if (nrow(population) > 1) {
       population$startDate <- population$cohortStartDate + population$riskStart
       population$endDate <- population$cohortStartDate + population$riskEnd
@@ -270,14 +270,14 @@ createStudyPopulation <- function(cohortMethodData,
     }
   }
   if (minDaysAtRisk != 0) {
-    ParallelLogger::logInfo(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
+    message(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     population <- population[population$riskEnd - population$riskStart >= minDaysAtRisk, ]
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least",
                                                                                 minDaysAtRisk,
                                                                                 "days at risk")))
   }
   if (missing(outcomeId) || is.null(outcomeId)) {
-    ParallelLogger::logInfo("No outcome specified so not creating outcome and time variables")
+    message("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
     outcomes <- cohortMethodData$outcomes %>%

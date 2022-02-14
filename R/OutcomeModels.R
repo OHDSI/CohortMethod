@@ -286,9 +286,9 @@ fitOutcomeModel <- function(population,
                                                        quiet = TRUE)
           warning("Separable interaction terms found and removed")
           ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
-          ParallelLogger::logInfo("Separable interactions:")
+          message("Separable interactions:")
           for (i in 1:nrow(ref)) {
-            ParallelLogger::logInfo(paste(ref[i, ], collapse = "\t"))
+            message(paste(ref[i, ], collapse = "\t"))
           }
           interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
           if (nrow(interactionTerms) == 0) {
@@ -423,7 +423,7 @@ fitOutcomeModel <- function(population,
   }
   class(outcomeModel) <- "OutcomeModel"
   delta <- Sys.time() - start
-  ParallelLogger::logInfo(paste("Fitting outcome model took", signif(delta, 3), attr(delta, "units")))
+  message(paste("Fitting outcome model took", signif(delta, 3), attr(delta, "units")))
   ParallelLogger::logDebug("Outcome model fitting status is: ", status)
   return(outcomeModel)
 }
@@ -458,7 +458,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
                metaData$estimator))
         }
       }
-      ParallelLogger::logInfo("Using previously computed weights")
+      message("Using previously computed weights")
     } else {
       informativePopulation$weights <- computeWeights(informativePopulation, estimator = estimator)
     }
