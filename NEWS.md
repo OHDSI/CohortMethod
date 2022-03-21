@@ -13,6 +13,8 @@ Changes:
 
 5. Removing deprecated `addExposureDaysToStart` and `addExposureDaysToStart` arguments from `createStudyPopulation()` and `plotTimeToEvent()` functions.
 
+6. Adding `computeEquipoise()` function.
+
 
 CohortMethod 4.2.2
 ==================

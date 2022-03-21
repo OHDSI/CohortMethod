@@ -103,6 +103,9 @@ test_that("Propensity score functions", {
     }
   }
 
+  equipoise <- computeEquipoise(ps)
+  expect_gt(equipoise, 0.5)
+
   for (numberOfStrata in c(2, 5, 10, 20)) {
     strata <- stratifyByPs(psTrimmed, numberOfStrata = numberOfStrata)
     expect_s3_class(strata, "data.frame")

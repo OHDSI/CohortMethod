@@ -310,6 +310,48 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
   return(data)
 }
 
+#' Compute fraction in equipoise
+#'
+#' @param data              A data frame with at least the two columns described below.
+#' @param equipoiseBounds   The bounds on the preference score to determine whether a subject is in
+#'                          equipoise.
+#'
+#' @details
+#' Computes the fraction of the population (the union of the target and comparator cohorts) who are in clinical
+#' equipoise (i.e. who had a reasonable chance of receiving either target or comparator, based on the baseline
+#' characteristics).
+#'
+#' The data frame should have a least the following two columns:
+#'
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group
+#' - propensityScore (numeric): Propensity score
+#'
+#' @return
+#' A numeric value (fraction in equipoise) between 0 and 1.
+#'
+#' @references
+#' Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
+#' Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
+#' Comparative Effective Research, 3, 11-20
+#'
+#' @export
+computeEquipoise <- function(data, equipoiseBounds = c(0.3, 0.7)) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertNumeric(equipoiseBounds, lower = 0, upper = 1, len = 2, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+  if (!("treatment" %in% colnames(data)))
+    stop("Missing column treatment in data")
+  if (!("propensityScore" %in% colnames(data)))
+    stop("Missing column propensityScore in data")
+  if (!"preferenceScore" %in% colnames(data)) {
+    data <- computePreferenceScore(data)
+  }
+  equipoise <- mean(data$preferenceScore >= equipoiseBounds[1] & data$preferenceScore <= equipoiseBounds[2])
+  return(equipoise)
+}
+
 #' Plot the propensity score distribution
 #'
 #' @description
@@ -494,10 +536,9 @@ plotPs <- function(data,
       if (is.null(data$preferenceScore)) {
         data <- computePreferenceScore(data, unfilteredData)
       }
-      equipoise <- mean(data$preferenceScore >= equipoiseBounds[1] & data$preferenceScore <= equipoiseBounds[2])
+      equipoise <- computeEquipoise(data = data, equipoiseBounds = equipoiseBounds)
       labelsRight <- c(labelsRight, sprintf("%2.1f%% is in equipoise", equipoise*100))
     }
-    # maxY <- ggplot2::ggplot_build(plot)$layout$panel_ranges[[1]]$y.range[2]
     if (length(labelsLeft) > 0) {
       dummy <- data.frame(text = paste(labelsLeft, collapse = "\n"))
       plot <- plot + ggplot2::geom_label(x = 0, y = max(d$y) * 1.24, hjust = "left", vjust = "top", alpha = 0.8, ggplot2::aes(label = text), data = dummy, size = 3.5)
