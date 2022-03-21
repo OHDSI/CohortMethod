@@ -15,6 +15,8 @@ Changes:
 
 6. Adding `computeEquipoise()` function.
 
+7. Output likelihood profile as data frame instead of named vector for consistency with other HADES packages.
+
 
 CohortMethod 4.2.2
 ==================

@@ -331,10 +331,6 @@ fitOutcomeModel <- function(population,
                                                                           bounds = profileBounds,
                                                                           tolerance = 0.1,
                                                                           includePenalty = TRUE)
-          if (!is.null(logLikelihoodProfile)) {
-            names(logLikelihoodProfile$value) <- logLikelihoodProfile$point
-            logLikelihoodProfile <- logLikelihoodProfile$value
-          }
         }
         if (fit$return_flag == "ILLCONDITIONED") {
           status <- "ILL CONDITIONED, CANNOT FIT"
