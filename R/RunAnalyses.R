@@ -184,7 +184,7 @@ runCmAnalyses <- function(connectionDetails,
   uniquetargetComparatorOutcomesList <- unique(ParallelLogger::selectFromList(targetComparatorOutcomesList,
                                                                               c("targetId",
                                                                                 "comparatorId",
-                                                                                "outcomeIds")))
+                                                                                "outcomes")))
   if (length(uniquetargetComparatorOutcomesList) != length(targetComparatorOutcomesList)) {
     stop("Duplicate target-comparator-outcomes combinations are not allowed")
   }
@@ -206,7 +206,9 @@ runCmAnalyses <- function(connectionDetails,
                                          outcomeIdsOfInterest,
                                          analysesToExclude)
 
-  saveRDS(referenceTable, file.path(outputFolder, "outcomeModelReference.rds"))
+  referenceTable %>%
+    select(-.data$tcIndex) %>%
+    saveRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
   message("*** Creating cohortMethodData objects ***")
   subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile), ]
@@ -265,6 +267,26 @@ runCmAnalyses <- function(connectionDetails,
                                                  list(analysisId = refRow$analysisId))[[1]]
       args <- analysisRow$createStudyPopArgs
       args$outcomeId <- refRow$outcomeId
+
+      # Override defaults with outcome-specific settings if provided
+      tco <- targetComparatorOutcomesList[[refRow$tcIndex]]
+      outcome <- ParallelLogger::matchInList(tco$outcomes,
+                                             list(outcomeId = as.numeric(refRow$outcomeId)))
+      if (!is.null(outcome$priorOutcomeLookback)) {
+        args$priorOutcomeLookback <- outcome$priorOutcomeLookback
+      }
+      if (!is.null(outcome$riskWindowStart)) {
+        args$riskWindowStart <- outcome$riskWindowStart
+      }
+      if (!is.null(outcome$startAnchor)) {
+        args$startAnchor <- outcome$startAnchor
+      }
+      if (!is.null(outcome$riskWindowStart)) {
+        args$riskWindowStart <- outcome$riskWindowStart
+      }
+      if (!is.null(outcome$endAnchor)) {
+        args$endAnchor <- outcome$endAnchor
+      }
       task <- list(cohortMethodDataFile = file.path(outputFolder,
                                                     refRow$cohortMethodDataFile),
                    args = args,
@@ -732,17 +754,19 @@ createReferenceTable <- function(cmAnalysisList,
                                  analysesToExclude) {
   # Create all rows per target-comparator-outcome-analysis combination:
   analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
-  instantiateDco <- function(dco, cmAnalysis, folder) {
+  instantiateTco <- function(i, cmAnalysis, folder) {
+    tco <- targetComparatorOutcomesList[[i]]
     rows <- dplyr::tibble(analysisId = cmAnalysis$analysisId,
-                           targetId = .selectByType(cmAnalysis$targetType, dco$targetId, "target"),
-                           comparatorId = .selectByType(cmAnalysis$comparatorType,
-                                                        dco$comparatorId,
-                                                        "comparator"),
-                           includedCovariateConceptIds = paste(dco$includedCovariateConceptIds,
-                                                               collapse = ","),
-                           excludedCovariateConceptIds = paste(dco$excludedCovariateConceptIds,
-                                                               collapse = ","),
-                           outcomeId = dco$outcomeIds)
+                          targetId = .selectByType(cmAnalysis$targetType, tco$targetId, "target"),
+                          comparatorId = .selectByType(cmAnalysis$comparatorType,
+                                                       tco$comparatorId,
+                                                       "comparator"),
+                          includedCovariateConceptIds = paste(tco$includedCovariateConceptIds,
+                                                              collapse = ","),
+                          excludedCovariateConceptIds = paste(tco$excludedCovariateConceptIds,
+                                                              collapse = ","),
+                          outcomeId = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeId")),
+                          tcIndex = i)
 
     if (cmAnalysis$fitOutcomeModel) {
       rows$outcomeModelFile <- .createOutcomeModelFileName(folder = folder,
@@ -754,17 +778,17 @@ createReferenceTable <- function(cmAnalysisList,
     }
     return(rows)
   }
-  instantiateDcos <- function(cmAnalysis, dcos, folder) {
+  instantiateTcos <- function(cmAnalysis, targetComparatorOutcomesList, folder) {
     analysisFolder <- paste("Analysis_", cmAnalysis$analysisId, sep = "")
     if (!file.exists(file.path(folder, analysisFolder)))
       dir.create(file.path(folder, analysisFolder))
 
-    return(do.call("rbind", lapply(dcos, instantiateDco, cmAnalysis, analysisFolder)))
+    return(do.call("rbind", lapply(1:length(targetComparatorOutcomesList), instantiateTco, cmAnalysis, analysisFolder)))
   }
 
   referenceTable <- bind_rows(lapply(cmAnalysisList,
-                                     instantiateDcos,
-                                     dcos = targetComparatorOutcomesList,
+                                     instantiateTcos,
+                                     targetComparatorOutcomesList = targetComparatorOutcomesList,
                                      folder = outputFolder))
 
   # Find unique load operations
@@ -795,7 +819,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                                                     cmAnalysis$createStudyPopArgs)),
                            studyPopArgsList)
   analysisIdToStudyPopArgsId <- dplyr::tibble(analysisId = analysisIds,
-                                               studyPopArgsId = studyPopArgsId)
+                                              studyPopArgsId = studyPopArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsId, by = "analysisId")
   referenceTable$studyPopFile <- .createStudyPopulationFileName(loadId = referenceTable$loadArgsId,
                                                                 studyPopId = referenceTable$studyPopArgsId,
@@ -854,7 +878,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                                                                            cmAnalysis$createStudyPopArgs)),
                                          studyPopArgsList)
       analysisIdToStudyPopArgsEquivalentId <- dplyr::tibble(analysisId = analysisIds,
-                                                             studyPopArgsEquivalentId = studyPopArgsEquivalentId)
+                                                            studyPopArgsEquivalentId = studyPopArgsEquivalentId)
       referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsEquivalentId, by = "analysisId")
       referenceTable$sharedPsFile[idx] <- .createPsFileName(loadId = referenceTable$loadArgsId[idx],
                                                             studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
@@ -976,7 +1000,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                                                   cmAnalysis)),
                             matchableArgsList)
       analysisIdToPrefilterId <- dplyr::tibble(analysisId = analysisIds,
-                                                prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
+                                               prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds))
       referenceTable <- inner_join(referenceTable, analysisIdToPrefilterId, by = "analysisId")
       referenceTable$prefilteredCovariatesFile <- .createPrefilteredCovariatesFileName(loadId = referenceTable$loadArgsId,
                                                                                        targetId = referenceTable$targetId,
@@ -1000,7 +1024,8 @@ createReferenceTable <- function(cmAnalysisList,
                                        "psFile",
                                        "strataFile",
                                        "prefilteredCovariatesFile",
-                                       "outcomeModelFile")]
+                                       "outcomeModelFile",
+                                       "tcIndex")]
   referenceTable <- referenceTable[order(referenceTable$analysisId,
                                          referenceTable$targetId,
                                          referenceTable$comparatorId,
@@ -1018,8 +1043,8 @@ createReferenceTable <- function(cmAnalysisList,
       anti_join(analysesToExclude, by = matchingColumns)
     countAfter <- nrow(referenceTable)
     message(sprintf("Removed %d of the %d target-comparator-outcome-analysis combinations as specified by the user.",
-                                    countBefore,
-                                    countAfter))
+                    countBefore - countAfter,
+                    countBefore))
   }
   return(referenceTable)
 }
@@ -1119,17 +1144,17 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
 
   summarizeOneAnalysis <- function(outcomeModelFile, outputFolder) {
     result <- dplyr::tibble(rr = 0,
-                             ci95lb = 0,
-                             ci95ub = 0,
-                             p = 1,
-                             target = 0,
-                             comparator = 0,
-                             targetDays = NA,
-                             comparatorDays = NA,
-                             eventsTarget = 0,
-                             eventsComparator = 0,
-                             logRr = 0,
-                             seLogRr = 0)
+                            ci95lb = 0,
+                            ci95ub = 0,
+                            p = 1,
+                            target = 0,
+                            comparator = 0,
+                            targetDays = NA,
+                            comparatorDays = NA,
+                            eventsTarget = 0,
+                            eventsComparator = 0,
+                            logRr = 0,
+                            seLogRr = 0)
     if (outcomeModelFile != "") {
       outcomeModel <- readRDS(file.path(outputFolder, outcomeModelFile))
       result$rr <- if (is.null(coef(outcomeModel)))

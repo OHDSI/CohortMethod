@@ -18,12 +18,16 @@ test_that("Multiple analyses", {
 
   tcos1 <- createTargetComparatorOutcomes(targetId = 1,
                                           comparatorId = 2,
-                                          outcomeIds = c(3, 4),
+                                          outcomes = list(createOutcome(outcomeId = 3,
+                                                                        priorOutcomeLookback = 30),
+                                                          createOutcome(outcomeId = 4)),
                                           excludedCovariateConceptIds = c(1118084, 1124300))
   # Empty cohorts:
   tcos2 <- createTargetComparatorOutcomes(targetId = 998,
                                           comparatorId = 999,
-                                          outcomeIds = c(3, 4))
+                                          outcomes = list(createOutcome(outcomeId = 3,
+                                                                        priorOutcomeLookback = 30),
+                                                          createOutcome(outcomeId = 4)))
 
   targetComparatorOutcomesList <- list(tcos1, tcos2)
 

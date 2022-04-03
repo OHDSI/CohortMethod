@@ -175,7 +175,7 @@ createCmAnalysis <- function(analysisId = 1,
 #' Save a list of cmAnalysis to file
 #'
 #' @description
-#' Write a list of objects of type \code{cmAnalysis} to file. The file is in JSON format.
+#' Write a list of objects of type `cmAnalysis` to file. The file is in JSON format.
 #'
 #' @param cmAnalysisList   The cmAnalysis list to be written to file
 #' @param file             The name of the file where the results will be written
@@ -197,12 +197,12 @@ saveCmAnalysisList <- function(cmAnalysisList, file) {
 #' Load a list of cmAnalysis from file
 #'
 #' @description
-#' Load a list of objects of type \code{cmAnalysis} from file. The file is in JSON format.
+#' Load a list of objects of type `cmAnalysis` from file. The file is in JSON format.
 #'
 #' @param file   The name of the file
 #'
 #' @return
-#' A list of objects of type \code{cmAnalysis}.
+#' A list of objects of type `cmAnalysis`.
 #'
 #' @export
 loadCmAnalysisList <- function(file) {
@@ -214,6 +214,52 @@ loadCmAnalysisList <- function(file) {
   return(ParallelLogger::loadSettingsFromJson(file))
 }
 
+#' Create outcome definition
+#'
+#' @param outcomeId                        An integer used to identify the outcome in the outcome cohort table.
+#' @param priorOutcomeLookback             How many days should we look back when identifying prior
+#'                                         outcomes?
+#' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
+#' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
+#'                                         or `"cohort end"`.
+#' @param riskWindowEnd                    The end of the risk window (in days) relative to the `endAnchor`.
+#' @param endAnchor                        The anchor point for the end of the risk window. Can be `"cohort start"`
+#'                                         or `"cohort end"`.
+#'
+#' @details
+#' Any settings here that are not `NULL` will override any values set in [createCreateStudyPopulationArgs()].
+#'
+#'
+#' @return
+#' An object of type `outcome`, to be used in [createTargetComparatorOutcomes()].
+#'
+#' @export
+createOutcome <- function(outcomeId,
+                          priorOutcomeLookback = NULL,
+                          riskWindowStart = NULL,
+                          startAnchor = NULL,
+                          riskWindowEnd = NULL,
+                          endAnchor = NULL) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertInt(outcomeId, add = errorMessages)
+  checkmate::assertInt(riskWindowStart, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(riskWindowEnd, null.ok = TRUE, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+  if (!is.null(startAnchor) && !grepl("start$|end$", startAnchor, ignore.case = TRUE)) {
+    stop("startAnchor should have value 'cohort start' or 'cohort end'")
+  }
+  if (!is.null(riskWindowEnd) && !grepl("start$|end$", endAnchor, ignore.case = TRUE)) {
+    stop("endAnchor should have value 'cohort start' or 'cohort end'")
+  }
+
+  outcome <- list()
+  for (name in names(formals(createOutcome))) {
+    outcome[[name]] <- get(name)
+  }
+  class(outcome) <- "outcome"
+  return(outcome)
+}
+
 #' Create target-comparator-outcomes combinations.
 #'
 #' @details
@@ -223,16 +269,16 @@ loadCmAnalysisList <- function(file) {
 #'                                      table. If multiple strategies for picking the target will be
 #'                                      tested in the analysis, a named list of numbers can be provided
 #'                                      instead. In the analysis, the name of the number to be used can
-#'                                      be specified using the #' \code{targetType} parameter in the
+#'                                      be specified using the `targetType` parameter in the
 #'                                      [createCmAnalysis()] function.
 #' @param comparatorId                  A concept ID identifying the comparator drug in the exposure
 #'                                      table. If multiple strategies for picking the comparator will
 #'                                      be tested in the analysis, a named list of numbers can be
 #'                                      provided instead. In the analysis, the name of the number to be
-#'                                      used can be specified using the #' \code{comparatorType}
+#'                                      used can be specified using the #' `comparatorType`
 #'                                      parameter in the [createCmAnalysis()] function.
-#' @param outcomeIds                    A vector of concept IDs identifying the outcome(s) in the
-#'                                      outcome table.
+#' @param outcomes                      A list of object of type `outcome` as created by
+#'                                      [createOutcome()].
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
 #'                                      concepts that are specific to the drug-comparator combination.
@@ -240,10 +286,13 @@ loadCmAnalysisList <- function(file) {
 #'                                      covariates. This argument is to be used only for inclusion
 #'                                      concepts that are specific to the drug-comparator combination.
 #'
+#' @return
+#' An object of type `targetComparatorOutcomes`.
+#'
 #' @export
 createTargetComparatorOutcomes <- function(targetId,
                                            comparatorId,
-                                           outcomeIds,
+                                           outcomes,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
   errorMessages <- checkmate::makeAssertCollection()
@@ -251,7 +300,10 @@ createTargetComparatorOutcomes <- function(targetId,
     checkmate::assertInt(targetId, add = errorMessages)
   if (!is.list(comparatorId))
     checkmate::assertInt(comparatorId, add = errorMessages)
-  checkmate::assertIntegerish(outcomeIds, min.len = 1, add = errorMessages)
+  checkmate::assertList(outcomes, min.len = 1, add = errorMessages)
+  for (i in 1:length(outcomes)) {
+    checkmate::assertClass(outcomes[[i]], "outcome", add = errorMessages)
+  }
   checkmate::assertIntegerish(excludedCovariateConceptIds, null.ok = TRUE, add = errorMessages)
   checkmate::assertIntegerish(includedCovariateConceptIds, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
@@ -267,7 +319,7 @@ createTargetComparatorOutcomes <- function(targetId,
 #' Save a list of targetComparatorOutcomes to file
 #'
 #' @description
-#' Write a list of objects of type \code{targetComparatorOutcomes} to file. The file is in JSON format.
+#' Write a list of objects of type `targetComparatorOutcomes` to file. The file is in JSON format.
 #'
 #' @param targetComparatorOutcomesList   The targetComparatorOutcomes list to be written to file
 #' @param file                         The name of the file where the results will be written
@@ -288,12 +340,12 @@ saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file)
 #' Load a list of targetComparatorOutcomes from file
 #'
 #' @description
-#' Load a list of objects of type \code{targetComparatorOutcomes} from file. The file is in JSON format.
+#' Load a list of objects of type `targetComparatorOutcomes` from file. The file is in JSON format.
 #'
 #' @param file   The name of the file
 #'
 #' @return
-#' A list of objects of type \code{targetComparatorOutcomes}.
+#' A list of objects of type `targetComparatorOutcomes`.
 #'
 #' @export
 loadTargetComparatorOutcomesList <- function(file) {
