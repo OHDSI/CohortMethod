@@ -17,7 +17,9 @@ Changes:
 
 7. Output likelihood profile as data frame instead of named vector for consistency with other HADES packages.
 
-8. Adding `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function.
+8. Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function.
+
+9. Added the `covariateIds` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
 
 
 CohortMethod 4.2.2

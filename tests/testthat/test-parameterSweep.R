@@ -170,6 +170,11 @@ test_that("Balance functions", {
 
   table1 <- createCmTable1(balance)
   expect_s3_class(table1, "data.frame")
+
+  covariateIds <- 0:20 * 1000 + 3
+  balance <- computeCovariateBalance(strata, cohortMethodData, covariateIds = covariateIds)
+  expect_s3_class(balance, "data.frame")
+  expect_true(all(balance$covariateId %in% covariateIds))
 })
 
 test_that("Outcome functions", {

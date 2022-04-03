@@ -19,7 +19,7 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-computeMeansPerGroup <- function(cohorts, cohortMethodData) {
+computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateIds) {
 
   hasStrata <- "stratumId" %in% colnames(cohorts)
 
@@ -28,6 +28,12 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
       group_by(.data$stratumId, .data$treatment) %>%
       count() %>%
       ungroup()
+  }
+
+  covariates <- cohortMethodData$covariates
+  if (!is.null(covariateIds)) {
+    covariates <- covariates %>%
+      filter(.data$covariateId %in% covariateIds)
   }
 
   if (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) {
@@ -52,7 +58,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
     sumW <- 1
 
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
-    result <- cohortMethodData$covariates %>%
+
+
+    result <-covariates %>%
       inner_join(cohortMethodData$w, by = c("rowId")) %>%
       group_by(.data$covariateId, .data$treatment) %>%
       summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
@@ -70,7 +78,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
       group_by(.data$treatment) %>%
       count()
 
-    result <- cohortMethodData$covariates %>%
+    result <-covariates %>%
       inner_join(select(cohorts, .data$rowId, .data$treatment), by = "rowId") %>%
       group_by(.data$covariateId, .data$treatment) %>%
       summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
@@ -115,6 +123,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
 #' @param maxCohortSize  If the target or comparator cohort are larger than this number, they
 #'                                 will be downsampled before computing covariate balance to save time.
 #'                                 Setting this number to 0 means no downsampling will be applied.
+#' @param covariateIds   A vector of covariate IDs for which to compute the balance. If not provided (NULL), balance
+#'                       will be computed for all variables found in the data.
 #' @details
 #' The population data frame should have the following three columns:
 #'
@@ -130,7 +140,11 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
 #' matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
 #'
 #' @export
-computeCovariateBalance <- function(population, cohortMethodData, subgroupCovariateId = NULL, maxCohortSize = 250000) {
+computeCovariateBalance <- function(population,
+                                    cohortMethodData,
+                                    subgroupCovariateId = NULL,
+                                    maxCohortSize = 250000,
+                                    covariateIds = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
@@ -193,8 +207,8 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   on.exit(cohortMethodData$tempCohorts <- NULL)
   on.exit(cohortMethodData$tempCohortsAfterMatching <- NULL, add = TRUE)
 
-  beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData)
-  afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData)
+  beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateIds)
+  afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateIds)
 
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTarget"] <- "beforeMatchingMeanTarget"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
