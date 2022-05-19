@@ -102,6 +102,10 @@
 #'                                       population.
 #' @param trimMatchStratifyThreads       The number of parallel threads to use for trimming, matching
 #'                                       and stratifying.
+#' @param computeSharedBalanceThreads    The number of parallel threads to use for computing shared covariate
+#'                                       balance.
+#' @param computedBalanceThreads         The number of parallel threads to use for computing covariate
+#'                                       balance.
 #' @param fitOutcomeModelThreads         The number of parallel threads to use for fitting the outcome
 #'                                       models.
 #' @param prefilterCovariatesThreads     The number of parallel threads to use for prefiltering covariates.
@@ -110,8 +114,9 @@
 #'                                       model. Note that the total number of CV threads at one time
 #'                                       could be `fitOutcomeModelThreads * outcomeCvThreads`.
 #' @param outcomeIdsOfInterest           If provided, creation of non-essential files will be skipped
-#'                                       for all other outcome IDs. This could be helpful to speed up
-#'                                       analyses with many controls.
+#'                                       for all other outcome IDs. This inclused the creation of covariate
+#'                                       balance files if specified. This could be helpful to speed up analyses
+#'                                       with many controls.
 #' @param analysesToExclude              Analyses to exclude. See the Analyses to Exclude section for details.
 #'
 #' @return
@@ -138,6 +143,8 @@ runCmAnalyses <- function(connectionDetails,
                           psCvThreads = 1,
                           createStudyPopThreads = 1,
                           trimMatchStratifyThreads = 1,
+                          computeSharedBalanceThreads = 1,
+                          computedBalanceThreads = 1,
                           prefilterCovariatesThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
@@ -193,7 +200,7 @@ runCmAnalyses <- function(connectionDetails,
   if (length(uniqueAnalysisIds) != length(analysisIds)) {
     stop("Duplicate analysis IDs are not allowed")
   }
-  outputFolder <- normalizePath(outputFolder)
+  outputFolder <- normalizePath(outputFolder, mustWork = FALSE)
   if (!file.exists(outputFolder))
     dir.create(outputFolder)
 
@@ -388,6 +395,34 @@ runCmAnalyses <- function(connectionDetails,
     dummy <- ParallelLogger::clusterApply(cluster, tasks, trimMatchStratify)
     ParallelLogger::stopCluster(cluster)
   }
+
+  message("*** Computing shared covariate balance ***")
+  subset <- referenceTable[!duplicated(referenceTable$sharedBalanceFile), ]
+  subset <- subset[subset$sharedBalanceFile != "", ]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$sharedBalanceFile)), ]
+  if (nrow(subset) != 0) {
+    createSharedBalanceTask <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
+
+      computeSharedCovariateBalanceArgs <- analysisRow$computeSharedCovariateBalanceArgs
+      task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                    refRow$cohortMethodDataFile),
+                   sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
+                   args = analysisRow,
+                   sharedBalanceFile = file.path(outputFolder, refRow$sharedBalanceFile))
+      return(task)
+    }
+    tasks <- lapply(1:nrow(subset), createSharedBalanceTask)
+    cluster <- ParallelLogger::makeCluster(computeSharedBalanceThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, tasks, doComputeSharedBalance)
+    ParallelLogger::stopCluster(cluster)
+  }
+
+
+
 
   if (prefilterCovariates) {
     message("*** Prefiltering covariates for outcome models ***")
@@ -729,18 +764,62 @@ doFitOutcomeModelPlus <- function(params) {
   args$cohortMethodData <- cohortMethodData
   outcomeModel <- do.call('fitOutcomeModel', args)
   saveRDS(outcomeModel, params$outcomeModelFile)
-  if (!is.null(outcomeModel)) {
-    rm(outcomeModel)
+  return(NULL)
+}
+
+doComputeSharedBalance <- function(params) {
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+
+  # Create study pop
+  args <- params$args$createStudyPopArgs
+  args$cohortMethodData <- cohortMethodData
+  studyPop <- do.call("createStudyPopulation", args)
+
+  if (params$args$createPs) {
+    # Add PS
+    ps <- getPs(params$sharedPsFile)
+    idx <- match(studyPop$rowId, ps$rowId)
+    studyPop$propensityScore <- ps$propensityScore[idx]
+    ps <- studyPop
+  } else {
+    ps <- studyPop
   }
-  if (!is.null(cohortMethodData)) {
-    rm(cohortMethodData)
+  # Trim, match. stratify
+  if (params$args$trimByPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByPsArgs)
+    ps <- do.call("trimByPs", args)
+  } else if (params$args$trimByPsToEquipoise) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByPsToEquipoiseArgs)
+    ps <- do.call("trimByPsToEquipoise", args)
+  } else if ("trimByIptw" %in% names(params$args) && params$args$trimByIptw) {
+    args <- list(population = ps)
+    args <- append(args, params$args$trimByIptwArgs)
+    ps <- do.call("trimByIptw", args)
   }
-  if (!is.null(ps)) {
-    rm(ps)
+  if (params$args$matchOnPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$matchOnPsArgs)
+    ps <- do.call("matchOnPs", args)
+  } else if (params$args$matchOnPsAndCovariates) {
+    args <- list(population = ps)
+    args <- append(args, params$args$matchOnPsAndCovariatesArgs)
+    ps <- do.call("matchOnPsAndCovariates", args)
+  } else if (params$args$stratifyByPs) {
+    args <- list(population = ps)
+    args <- append(args, params$args$stratifyByPsArgs)
+    ps <- do.call("stratifyByPs", args)
+  } else if (params$args$stratifyByPsAndCovariates) {
+    args <- list(population = ps)
+    args <- append(args, params$args$stratifyByPsAndCovariatesArgs)
+    ps <- do.call("stratifyByPsAndCovariates", args)
   }
-  if (!is.null(args)) {
-    rm(args)
-  }
+  args <- params$args$computeSharedCovariateBalanceArgs
+  args$population <- ps
+  args$cohortMethodData <- cohortMethodData
+  balance <- do.call("computeCovariateBalance", args)
+  saveRDS(balance, params$sharedBalanceFile)
   return(NULL)
 }
 
@@ -945,6 +1024,83 @@ createReferenceTable <- function(cmAnalysisList,
                                                                  comparatorId = referenceTable$comparatorId[idx],
                                                                  outcomeId = referenceTable$outcomeId[idx])
 
+  # Add shared covariate balance files (per target-comparator-analysis)
+  args <- c("computeSharedCovariateBalance",
+            "computeSharedCovariateBalanceArgs")
+  normBalanceArgs <- function(balanceArgs) {
+    return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
+  }
+  balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
+  balanceArgsList <- balanceArgsList[sapply(balanceArgsList,
+                                            function(balanceArgs) return(balanceArgs$computeSharedCovariateBalance))]
+  balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
+  if (length(balanceArgsList) == 0) {
+    referenceTable$sharedBalanceId <- 0
+  } else {
+    sharedBalanceId <- sapply(cmAnalysisList, function(cmAnalysis) {
+      i <- which.list(balanceArgsList, normBalanceArgs(cmAnalysis))
+      if (is.null(i))
+        i <- 0
+      return(i)
+    })
+    analysisIdToBalanceArgsId <- dplyr::tibble(analysisId = analysisIds, sharedBalanceId = sharedBalanceId)
+    referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
+  }
+  idx <- referenceTable$sharedBalanceId != 0
+  referenceTable$sharedBalanceFile <- ""
+  referenceTable$sharedBalanceFile[idx] <- .createsharedBalanceFileName(loadId = referenceTable$loadArgsId[idx],
+                                                                        studyPopId = referenceTable$studyPopArgsId[idx],
+                                                                        psId = referenceTable$psArgsId[idx],
+                                                                        strataId = referenceTable$strataArgsId[idx],
+                                                                        sharedBalanceId = referenceTable$sharedBalanceId[idx],
+                                                                        targetId = referenceTable$targetId[idx],
+                                                                        comparatorId = referenceTable$comparatorId[idx])
+
+  # Add covariate balance files (per target-comparator-analysis-outcome)
+  args <- c("computeCovariateBalance",
+            "computeCovariateBalanceArgs")
+  normBalanceArgs <- function(balanceArgs) {
+    return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
+  }
+  balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
+  balanceArgsList <- balanceArgsList[sapply(balanceArgsList,
+                                            function(balanceArgs) return(balanceArgs$computeCovariateBalance))]
+  balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
+  if (length(balanceArgsList) == 0) {
+    referenceTable$balanceId <- 0
+    balanceIdsRequiringFiltering <- c()
+  } else {
+    balanceId <- sapply(cmAnalysisList, function(cmAnalysis) {
+      i <- which.list(balanceArgsList, normBalanceArgs(cmAnalysis))
+      if (is.null(i))
+        i <- 0
+      return(i)
+    })
+    analysisIdToBalanceArgsId <- dplyr::tibble(analysisId = analysisIds, balanceId = balanceId)
+    referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
+
+    balanceIdsRequiringFiltering <- sapply(1:length(balanceArgsList),
+                                           function(i) ifelse(is.null(balanceArgsList[[i]]$computeCovariateBalanceArgs$covariateIds), NA, i))
+  }
+  idx <- referenceTable$balanceId %in% balanceIdsRequiringFiltering & referenceTable$outcomeId %in% outcomeIdsOfInterest
+  referenceTable$filteredForbalanceFile <- ""
+  referenceTable$filteredForbalanceFile[idx] <- .createFilterForBalanceFileName(loadId = referenceTable$loadArgsId[idx],
+                                                                                studyPopId = referenceTable$studyPopArgsId[idx],
+                                                                                psId = referenceTable$psArgsId[idx],
+                                                                                strataId = referenceTable$strataArgsId[idx],
+                                                                                balanceId = referenceTable$balanceId[idx],
+                                                                                targetId = referenceTable$targetId[idx],
+                                                                                comparatorId = referenceTable$comparatorId[idx])
+  idx <- referenceTable$balanceId != 0 & referenceTable$outcomeId %in% outcomeIdsOfInterest
+  referenceTable$balanceFile <- ""
+  referenceTable$balanceFile[idx] <- .createBalanceFileName(loadId = referenceTable$loadArgsId[idx],
+                                                            studyPopId = referenceTable$studyPopArgsId[idx],
+                                                            psId = referenceTable$psArgsId[idx],
+                                                            strataId = referenceTable$strataArgsId[idx],
+                                                            sharedBalanceId = referenceTable$sharedBalanceId[idx],
+                                                            targetId = referenceTable$targetId[idx],
+                                                            comparatorId = referenceTable$comparatorId[idx],
+                                                            outcomeId = referenceTable$outcomeId[idx])
 
   # Add interest flag
   if (is.null(outcomeIdsOfInterest)) {
@@ -1023,6 +1179,9 @@ createReferenceTable <- function(cmAnalysisList,
                                        "sharedPsFile",
                                        "psFile",
                                        "strataFile",
+                                       "sharedBalanceFile",
+                                       "filteredForbalanceFile",
+                                       "balanceFile",
                                        "prefilteredCovariatesFile",
                                        "outcomeModelFile",
                                        "tcIndex")]
@@ -1101,6 +1260,40 @@ createReferenceTable <- function(cmAnalysisList,
                                          comparatorId,
                                          outcomeId) {
   name <- sprintf("StratPop_l%s_s%s_p%s_t%s_c%s_s%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, .f(outcomeId))
+  return(name)
+}
+
+.createsharedBalanceFileName <- function(loadId,
+                                         studyPopId,
+                                         psId,
+                                         strataId,
+                                         sharedBalanceId,
+                                         targetId,
+                                         comparatorId) {
+  name <- sprintf("Balance_l%s_s%s_p%s_t%s_c%s_s%s_b%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, sharedBalanceId)
+  return(name)
+}
+
+.createFilterForBalanceFileName <- function(loadId,
+                                            studyPopId,
+                                            psId,
+                                            strataId,
+                                            balanceId,
+                                            targetId,
+                                            comparatorId) {
+  name <- sprintf("FilterForBalance_l%s_s%s_p%s_t%s_c%s_s%s_b%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, balanceId)
+  return(name)
+}
+
+.createBalanceFileName <- function(loadId,
+                                   studyPopId,
+                                   psId,
+                                   strataId,
+                                   sharedBalanceId,
+                                   targetId,
+                                   comparatorId,
+                                   outcomeId) {
+  name <- sprintf("Balance_l%s_s%s_p%s_t%s_c%s_s%s_b%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, sharedBalanceId, .f(outcomeId))
   return(name)
 }
 

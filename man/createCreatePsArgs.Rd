@@ -21,26 +21,15 @@ createCreatePsArgs(
 
 \item{includeCovariateIds}{Include only these covariates in the propensity model.}
 
-\item{maxCohortSizeForFitting}{If the target or comparator cohort are larger than this number,
-they will be downsampled before fitting the propensity model. The
-model will be used to compute propensity scores for all subjects.
-The purpose of the sampling is to gain speed. Setting this number
-to 0 means no downsampling will be applied.}
+\item{maxCohortSizeForFitting}{If the target or comparator cohort are larger than this number, they will be downsampled before fitting the propensity model. The model will be used to compute propensity scores for all subjects. The purpose of the sampling is to gain speed. Setting this number to 0 means no downsampling will be applied.}
 
-\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with
-the treatment assignment. If any covariate has an unusually high
-correlation (either positive or negative), this will throw and
-error.}
+\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with the treatment assignment. If any covariate has an unusually high correlation (either positive or negative), this will throw and error.}
 
-\item{stopOnError}{If an error occur, should the function stop? Else, the two cohorts
-will be assumed to be perfectly separable.}
+\item{stopOnError}{If an error occur, should the function stop? Else, the two cohorts will be assumed to be perfectly separable.}
 
-\item{prior}{The prior used to fit the model. See Cyclops::createPrior() for
-details.}
+\item{prior}{The prior used to fit the model. See Cyclops::createPrior() for details.}
 
-\item{control}{The control object used to control the cross-validation used to
-determine the hyperparameters of the prior (if applicable). See
-Cyclops::createControl() for details.}
+\item{control}{The control object used to control the cross-validation used to determine the hyperparameters of the prior (if applicable). See Cyclops::createControl() for details.}
 }
 \description{
 Create a parameter object for the function createPs

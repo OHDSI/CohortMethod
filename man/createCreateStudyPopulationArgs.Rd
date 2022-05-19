@@ -8,16 +8,14 @@ createCreateStudyPopulationArgs(
   firstExposureOnly = FALSE,
   restrictToCommonPeriod = FALSE,
   washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   removeSubjectsWithPriorOutcome = TRUE,
   priorOutcomeLookback = 99999,
   minDaysAtRisk = 1,
   maxDaysAtRisk = 99999,
   riskWindowStart = 0,
-  addExposureDaysToStart = NULL,
   startAnchor = "cohort start",
   riskWindowEnd = 0,
-  addExposureDaysToEnd = NULL,
   endAnchor = "cohort end",
   censorAtNewRiskWindow = FALSE
 )
@@ -25,49 +23,29 @@ createCreateStudyPopulationArgs(
 \arguments{
 \item{firstExposureOnly}{Should only the first exposure per subject be included?}
 
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are
-observed?}
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
 
-\item{washoutPeriod}{The minimum required continuous observation time prior to
-index date for a person to be included in the cohort.}
+\item{washoutPeriod}{The minimum required continuous observation time prior to index date for a person to be included in the cohort.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.}
+\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator cohort? See details for allowed values.}
 
-\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk
-window start?}
+\item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk window start?}
 
-\item{priorOutcomeLookback}{How many days should we look back when identifying prior
-outcomes?}
+\item{priorOutcomeLookback}{How many days should we look back when identifying prior outcomes?}
 
-\item{minDaysAtRisk}{The minimum required number of days at risk. Risk windows
-with fewer days than this number are removed from the
-analysis.}
+\item{minDaysAtRisk}{The minimum required number of days at risk. Risk windows with fewer days than this number are removed from the analysis.}
 
-\item{maxDaysAtRisk}{The maximum allowed number of days at risk. Risk windows
-that are longer will be truncated to this number of days.}
+\item{maxDaysAtRisk}{The maximum allowed number of days at risk. Risk windows that are longer will be truncated to this number of days.}
 
-\item{riskWindowStart}{The start of the risk window (in days) relative to the
-startAnchor.}
+\item{riskWindowStart}{The start of the risk window (in days) relative to the startAnchor.}
 
-\item{addExposureDaysToStart}{DEPRECATED: Add the length of exposure the start of the risk
-window? Use startAnchor instead.}
+\item{startAnchor}{The anchor point for the start of the risk window. Can be "cohort start" or "cohort end".}
 
-\item{startAnchor}{The anchor point for the start of the risk window. Can be
-"cohort start" or "cohort end".}
+\item{riskWindowEnd}{The end of the risk window (in days) relative to the endAnchor.}
 
-\item{riskWindowEnd}{The end of the risk window (in days) relative to the
-endAnchor.}
+\item{endAnchor}{The anchor point for the end of the risk window. Can be "cohort start" or "cohort end".}
 
-\item{addExposureDaysToEnd}{DEPRECATED: Add the length of exposure the risk window? Use
-endAnchor instead.}
-
-\item{endAnchor}{The anchor point for the end of the risk window. Can be
-"cohort start" or "cohort end".}
-
-\item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be
-censored when the new time-at-risk starts to prevent
-overlap?}
+\item{censorAtNewRiskWindow}{If a subject is in multiple cohorts, should time-at-risk be censored when the new time-at-risk starts to prevent overlap?}
 }
 \description{
 Create a parameter object for the function createStudyPopulation

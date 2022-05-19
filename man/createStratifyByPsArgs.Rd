@@ -11,16 +11,11 @@ createStratifyByPsArgs(
 )
 }
 \arguments{
-\item{numberOfStrata}{How many strata? The boundaries of the strata are automatically
-defined to contain equal numbers of target persons.}
+\item{numberOfStrata}{How many strata? The boundaries of the strata are automatically defined to contain equal numbers of target persons.}
 
-\item{stratificationColumns}{Names of one or more columns in the data data.frame on which subjects
-should also be stratified in addition to stratification on propensity
-score.}
+\item{stratificationColumns}{Names of one or more columns in the data data.frame on which subjects should also be stratified in addition to stratification on propensity score.}
 
-\item{baseSelection}{What is the base selection of subjects where the strata bounds are to
-be determined? Strata are defined as equally-sized strata inside this
-selection. Possible values are "all", "target", and "comparator".}
+\item{baseSelection}{What is the base selection of subjects where the strata bounds are to be determined? Strata are defined as equally-sized strata inside this selection. Possible values are "all", "target", and "comparator".}
 }
 \description{
 Create a parameter object for the function stratifyByPs

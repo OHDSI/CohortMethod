@@ -76,6 +76,9 @@ test_that("Multiple analyses", {
 
   matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
+  computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
+
+  computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateIds = 0:20 * 1000 + 3)
 
   fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
                                                     stratified = TRUE)
@@ -88,6 +91,10 @@ test_that("Multiple analyses", {
                                   createPsArgs = createPsArgs,
                                   matchOnPs = TRUE,
                                   matchOnPsArgs = matchOnPsArgs,
+                                  computeSharedCovariateBalance = TRUE,
+                                  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+                                  computeCovariateBalance = TRUE,
+                                  computeCovariateBalanceArgs = computeCovBalArgs,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs2)
 

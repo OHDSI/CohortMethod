@@ -27,6 +27,10 @@ createCmAnalysis(
   stratifyByPsArgs = NULL,
   stratifyByPsAndCovariates = FALSE,
   stratifyByPsAndCovariatesArgs = NULL,
+  computeSharedCovariateBalance = FALSE,
+  computeSharedCovariateBalanceArgs = NULL,
+  computeCovariateBalance = FALSE,
+  computeCovariateBalanceArgs = NULL,
   fitOutcomeModel = FALSE,
   fitOutcomeModelArgs = NULL
 )
@@ -98,6 +102,18 @@ be used in this analysis?}
 
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function.}
+
+\item{computeSharedCovariateBalance}{Compute the covariate balance per target-comparator-analysis (using \code{\link[=computeCovariateBalance]{computeCovariateBalance()}})?
+This will compute covariate balance across outcomes, for a study population that is not specific
+to any outcome.}
+
+\item{computeSharedCovariateBalanceArgs}{An object representing the arguments to be used when calling
+the \code{\link[=computeCovariateBalance]{computeCovariateBalance()}} function per target-comparator-analysis.}
+
+\item{computeCovariateBalance}{Compute the covariate balance per target-comparator-outcome-analysis (using \code{\link[=computeCovariateBalance]{computeCovariateBalance()}})?}
+
+\item{computeCovariateBalanceArgs}{An object representing the arguments to be used when calling
+the \code{\link[=computeCovariateBalance]{computeCovariateBalance()}} function per target-comparator-outcome-analysis.}
 
 \item{fitOutcomeModel}{Should the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function be used in
 this analysis?}

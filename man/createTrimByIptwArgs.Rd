@@ -9,8 +9,7 @@ createTrimByIptwArgs(maxWeight = 10, estimator = "ate")
 \arguments{
 \item{maxWeight}{The maximum allowed IPTW.}
 
-\item{estimator}{The type of estimator. Options are estimator = "ate" for the average treatment
-effect, and estimator = "att"for the average treatment effect in the treated.}
+\item{estimator}{The type of estimator. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.}
 }
 \description{
 Create a parameter object for the function trimByIptw

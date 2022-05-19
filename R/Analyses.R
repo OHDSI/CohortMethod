@@ -66,6 +66,14 @@
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the [stratifyByPsAndCovariates()] function.
+#' @param computeSharedCovariateBalance   Compute the covariate balance per target-comparator-analysis (using [computeCovariateBalance()])?
+#'                                        This will compute covariate balance across outcomes, for a study population that is not specific
+#'                                        to any outcome.
+#' @param computeSharedCovariateBalanceArgs  An object representing the arguments to be used when calling
+#'                                          the [computeCovariateBalance()] function per target-comparator-analysis.
+#' @param computeCovariateBalance         Compute the covariate balance per target-comparator-outcome-analysis (using [computeCovariateBalance()])?
+#' @param computeCovariateBalanceArgs     An object representing the arguments to be used when calling
+#'                                        the [computeCovariateBalance()] function per target-comparator-outcome-analysis.
 #' @param fitOutcomeModel                 Should the [fitOutcomeModel()] function be used in
 #'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
@@ -94,6 +102,10 @@ createCmAnalysis <- function(analysisId = 1,
                              stratifyByPsArgs = NULL,
                              stratifyByPsAndCovariates = FALSE,
                              stratifyByPsAndCovariatesArgs = NULL,
+                             computeSharedCovariateBalance = FALSE,
+                             computeSharedCovariateBalanceArgs = NULL,
+                             computeCovariateBalance = FALSE,
+                             computeCovariateBalanceArgs = NULL,
                              fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
@@ -119,6 +131,10 @@ createCmAnalysis <- function(analysisId = 1,
   checkmate::assertClass(stratifyByPsArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(stratifyByPsAndCovariates, len = 1, add = errorMessages)
   checkmate::assertClass(stratifyByPsAndCovariatesArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(computeSharedCovariateBalance, len = 1, add = errorMessages)
+  checkmate::assertClass(computeSharedCovariateBalanceArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(computeCovariateBalance, len = 1, add = errorMessages)
+  checkmate::assertClass(computeCovariateBalanceArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(fitOutcomeModel, len = 1, add = errorMessages)
   checkmate::assertClass(fitOutcomeModelArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
@@ -159,6 +175,12 @@ createCmAnalysis <- function(analysisId = 1,
   }
   if (!stratifyByPsAndCovariates) {
     stratifyByPsAndCovariatesArgs <- NULL
+  }
+  if (!computeSharedCovariateBalance) {
+    computeSharedCovariateBalanceArgs <- NULL
+  }
+  if (!computeCovariateBalance) {
+    computeCovariateBalanceArgs <- NULL
   }
   if (!fitOutcomeModel) {
     fitOutcomeModelArgs <- NULL

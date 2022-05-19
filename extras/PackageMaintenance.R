@@ -89,9 +89,12 @@ rCode <- ParallelLogger::createArgFunction("stratifyByPs",
 rCode <- ParallelLogger::createArgFunction("stratifyByPsAndCovariates",
                                            excludeArgs = c("population", "cohortMethodData"),
                                            rCode = rCode)
+rCode <- ParallelLogger::createArgFunction("computeCovariateBalance",
+                                           excludeArgs = c("population", "cohortMethodData"),
+                                           rCode = rCode)
 rCode <- ParallelLogger::createArgFunction("fitOutcomeModel",
                                            excludeArgs = c("population", "cohortMethodData"),
                                            rCode = rCode)
 writeLines(rCode, "r/CreateArgFunctions.R")
-OhdsiRTools::formatRFile("r/CreateArgFunctions.R")
+styler::style_file("r/CreateArgFunctions.R")
 
