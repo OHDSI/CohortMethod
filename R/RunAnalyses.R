@@ -104,7 +104,7 @@
 #'                                       and stratifying.
 #' @param computeSharedBalanceThreads    The number of parallel threads to use for computing shared covariate
 #'                                       balance.
-#' @param computedBalanceThreads         The number of parallel threads to use for computing covariate
+#' @param computeBalanceThreads          The number of parallel threads to use for computing covariate
 #'                                       balance.
 #' @param fitOutcomeModelThreads         The number of parallel threads to use for fitting the outcome
 #'                                       models.
@@ -144,7 +144,7 @@ runCmAnalyses <- function(connectionDetails,
                           createStudyPopThreads = 1,
                           trimMatchStratifyThreads = 1,
                           computeSharedBalanceThreads = 1,
-                          computedBalanceThreads = 1,
+                          computeBalanceThreads = 1,
                           prefilterCovariatesThreads = 1,
                           fitOutcomeModelThreads = 1,
                           outcomeCvThreads = 1,
@@ -396,9 +396,11 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::stopCluster(cluster)
   }
 
-  message("*** Computing shared covariate balance ***")
   subset <- referenceTable[!duplicated(referenceTable$sharedBalanceFile), ]
   subset <- subset[subset$sharedBalanceFile != "", ]
+  if (nrow(subset) != 0) {
+    message("*** Computing shared covariate balance ***")
+  }
   subset <- subset[!file.exists(file.path(outputFolder, subset$sharedBalanceFile)), ]
   if (nrow(subset) != 0) {
     createSharedBalanceTask <- function(i) {
@@ -406,7 +408,6 @@ runCmAnalyses <- function(connectionDetails,
       analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
                                                  list(analysisId = refRow$analysisId))[[1]]
 
-      computeSharedCovariateBalanceArgs <- analysisRow$computeSharedCovariateBalanceArgs
       task <- list(cohortMethodDataFile = file.path(outputFolder,
                                                     refRow$cohortMethodDataFile),
                    sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
@@ -421,7 +422,57 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::stopCluster(cluster)
   }
 
+  subset <- referenceTable[!duplicated(referenceTable$filteredForbalanceFile), ]
+  subset <- subset[subset$filteredForbalanceFile != "", ]
+  if (nrow(subset) != 0) {
+    message("*** Filtering covariates for computing covariate balance ***")
+  }
+  subset <- subset[!file.exists(file.path(outputFolder, subset$filteredForbalanceFile)), ]
+  if (nrow(subset) != 0) {
+    createFilterForCovariateBalanceTask <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
 
+      computeCovariateBalanceArgs <- analysisRow$computeCovariateBalanceArgs
+      task <- list(cohortMethodDataFile = file.path(outputFolder,
+                                                    refRow$cohortMethodDataFile),
+
+                   computeCovariateBalanceArgs = computeCovariateBalanceArgs,
+                   filteredForbalanceFile = file.path(outputFolder, refRow$filteredForbalanceFile))
+      return(task)
+    }
+    tasks <- lapply(1:nrow(subset), createFilterForCovariateBalanceTask)
+    cluster <- ParallelLogger::makeCluster(prefilterCovariatesThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, tasks, doFilterForCovariateBalance)
+    ParallelLogger::stopCluster(cluster)
+  }
+
+  subset <- referenceTable[!duplicated(referenceTable$balanceFile), ]
+  subset <- subset[subset$balanceFile != "", ]
+  if (nrow(subset) != 0) {
+    message("*** Computing covariate balance (per outcome) ***")
+  }
+  subset <- subset[!file.exists(file.path(outputFolder, subset$balanceFile)), ]
+  if (nrow(subset) != 0) {
+    createBalanceTask <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- ParallelLogger::matchInList(cmAnalysisList,
+                                                 list(analysisId = refRow$analysisId))[[1]]
+      computeCovariateBalanceArgs <- analysisRow$computeCovariateBalanceArgs
+      task <- list(filteredForbalanceFile = file.path(outputFolder, refRow$filteredForbalanceFile),
+                   strataFile = file.path(outputFolder, refRow$strataFile),
+                   computeCovariateBalanceArgs = computeCovariateBalanceArgs,
+                   balanceFile = file.path(outputFolder, refRow$balanceFile))
+      return(task)
+    }
+    tasks <- lapply(1:nrow(subset), createBalanceTask)
+    cluster <- ParallelLogger::makeCluster(computeBalanceThreads)
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, tasks, doComputeBalance)
+    ParallelLogger::stopCluster(cluster)
+  }
 
 
   if (prefilterCovariates) {
@@ -823,6 +874,38 @@ doComputeSharedBalance <- function(params) {
   return(NULL)
 }
 
+doFilterForCovariateBalance <- function(params) {
+  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
+  covariates <- cohortMethodData$covariates
+  covariatesToInclude <- params$computeCovariateBalanceArgs$covariateIds
+  if (length(covariatesToInclude) != 0) {
+    covariates <- covariates %>%
+      filter(.data$covariateId %in% covariatesToInclude)
+  }
+  filteredCohortMethodData <- Andromeda::andromeda(cohorts = cohortMethodData$cohorts,
+                                                   outcomes = cohortMethodData$outcomes,
+                                                   covariates = covariates,
+                                                   covariateRef = cohortMethodData$covariateRef,
+                                                   analysisRef = cohortMethodData$analysisRef)
+  attr(filteredCohortMethodData, "metaData") <- attr(cohortMethodData, "metaData")
+  class(filteredCohortMethodData) <- "CohortMethodData"
+  attr(class(filteredCohortMethodData), "package") <- "CohortMethod"
+  saveCohortMethodData(filteredCohortMethodData, params$filteredForbalanceFile)
+  return(NULL)
+}
+
+doComputeBalance <- function(params) {
+  cohortMethodData <- getCohortMethodData(params$filteredForbalanceFile)
+  strataPop <- readRDS(params$strataFile)
+
+  args <- params$computeCovariateBalanceArgs
+  args$population <- strataPop
+  args$cohortMethodData <- cohortMethodData
+  balance <- do.call("computeCovariateBalance", args)
+  saveRDS(balance, params$balanceFile)
+  return(NULL)
+}
+
 createReferenceTable <- function(cmAnalysisList,
                                  targetComparatorOutcomesList,
                                  outputFolder,
@@ -844,7 +927,7 @@ createReferenceTable <- function(cmAnalysisList,
                                                               collapse = ","),
                           excludedCovariateConceptIds = paste(tco$excludedCovariateConceptIds,
                                                               collapse = ","),
-                          outcomeId = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeId")),
+                          outcomeId = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeId"), use.names = FALSE),
                           tcIndex = i)
 
     if (cmAnalysis$fitOutcomeModel) {

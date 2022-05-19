@@ -21,6 +21,8 @@ Changes:
 
 9. Added the `covariateIds` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
 
+10. Added the `createComputeCovariateBalanceArgs()` function, added the `computeSharedCovariateBalance`, `,computeSharedCovariateBalanceArgs`, `computeCovariateBalance`, and `computeCovariateBalanceArgs` arguments to the `createCmAnalysis()` function, and the `computeSharedBalanceThreads`, `computeBalanceThreads` arguments to the `runCmAnalyses()` function to allow computation of covariate balance across a target-comparator-analysis (shared) or for each target-comparator-analysis-outcome in the `runCmAnalyses()` function.
+
 
 CohortMethod 4.2.2
 ==================

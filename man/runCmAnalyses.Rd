@@ -24,6 +24,8 @@ runCmAnalyses(
   psCvThreads = 1,
   createStudyPopThreads = 1,
   trimMatchStratifyThreads = 1,
+  computeSharedBalanceThreads = 1,
+  computeBalanceThreads = 1,
   prefilterCovariatesThreads = 1,
   fitOutcomeModelThreads = 1,
   outcomeCvThreads = 1,
@@ -111,6 +113,12 @@ population.}
 \item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming, matching
 and stratifying.}
 
+\item{computeSharedBalanceThreads}{The number of parallel threads to use for computing shared covariate
+balance.}
+
+\item{computeBalanceThreads}{The number of parallel threads to use for computing covariate
+balance.}
+
 \item{prefilterCovariatesThreads}{The number of parallel threads to use for prefiltering covariates.}
 
 \item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the outcome
@@ -122,8 +130,9 @@ model. Note that the total number of CV threads at one time
 could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
 
 \item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
-for all other outcome IDs. This could be helpful to speed up
-analyses with many controls.}
+for all other outcome IDs. This inclused the creation of covariate
+balance files if specified. This could be helpful to speed up analyses
+with many controls.}
 
 \item{analysesToExclude}{Analyses to exclude. See the Analyses to Exclude section for details.}
 }

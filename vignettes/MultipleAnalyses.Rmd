@@ -150,7 +150,6 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    removeDuplicateSubjects = "remove all",
                                                    studyStartDate = "",
                                                    studyEndDate = "",
-                                                   excludeDrugsFromCovariates = FALSE,
                                                    covariateSettings = covarSettings)
 
 createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
@@ -183,6 +182,8 @@ createPsArgs <- createCreatePsArgs() # Use default settings only
 
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
+sharedCovariateBalanceArgs <- createComputeCovariateBalanceArgs()
+
 fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
                                                   stratified = TRUE)
 
@@ -194,6 +195,8 @@ cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
+                                computeSharedCovariateBalance = TRUE,
+                                computeSharedCovariateBalanceArgs = sharedCovariateBalanceArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
@@ -207,6 +210,8 @@ cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                 createPsArgs = createPsArgs,
                                 stratifyByPs = TRUE,
                                 stratifyByPsArgs = stratifyByPsArgs,
+                                computeSharedCovariateBalance = TRUE,
+                                computeSharedCovariateBalanceArgs = sharedCovariateBalanceArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
@@ -278,9 +283,11 @@ In the situation where the comparator choice becomes part of the analyses, we ca
 comparatorIds = list(drugInSameClass = 1124300,
                      drugWithSameIndication = 1125315)
 
+outcome <- createOutcome(outcomeId = 192671)
+
 tcos <- createTargetComparatorOutcomes(targetId = 1118084,
-                                     comparatorId = comparatorIds,
-                                     outcomeIds = 192671)
+                                       comparatorId = comparatorIds,
+                                       outcomes = list(outcome))
 
 targetComparatorOutcomesList2 <- list(tcos)
 ```
