@@ -7,7 +7,7 @@
 createComputeCovariateBalanceArgs(
   subgroupCovariateId = NULL,
   maxCohortSize = 250000,
-  covariateIds = NULL
+  covariateFilter = NULL
 )
 }
 \arguments{
@@ -15,7 +15,7 @@ createComputeCovariateBalanceArgs(
 
 \item{maxCohortSize}{If the target or comparator cohort are larger than this number, they will be downsampled before computing covariate balance to save time. Setting this number to 0 means no downsampling will be applied.}
 
-\item{covariateIds}{A vector of covariate IDs for which to compute the balance. If not provided (NULL), balance will be computed for all variables found in the data.}
+\item{covariateFilter}{Determines the covariates for which to compute covariate balance. Either a vector of covariate IDs, or a table 1 specifications object as generated for example using FeatureExtraction::getDefaultTable1Specifications(). If covariateFilter = NULL, balance will be computed for all variables found in the data.}
 }
 \description{
 Create a parameter object for the function computeCovariateBalance

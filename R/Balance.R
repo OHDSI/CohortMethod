@@ -19,7 +19,35 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
-computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateIds) {
+filterCovariates <- function(covariates, covariateRef, covariateFilter) {
+  if (is.null(covariateFilter)) {
+    return(covariates)
+  } else if (is.numeric(covariateFilter)) {
+    covariates %>%
+      filter(.data$covariateId %in% covariateFilter) %>%
+      return()
+  } else if (is.data.frame(covariateFilter) && all(c("analysisId", "covariateIds") %in% colnames(covariateFilter))) {
+    analysisIds <- covariateFilter %>%
+      filter(is.na(.data$covariateIds)) %>%
+      pull(.data$analysisId)
+    covariateIds1 <- covariateRef %>%
+      filter(.data$analysisId %in% analysisIds) %>%
+      pull(.data$covariateId)
+    covariateIds2 <- covariateFilter %>%
+      filter(!is.na(.data$covariateIds)) %>%
+      pull(.data$covariateIds) %>%
+      strsplit(",") %>%
+      unlist() %>%
+      as.numeric()
+    covariates %>%
+      filter(.data$covariateId %in% c(covariateIds1, covariateIds2)) %>%
+      return()
+  } else {
+    stop("Unknown covariateFilter type")
+  }
+}
+
+computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 
   hasStrata <- "stratumId" %in% colnames(cohorts)
 
@@ -30,11 +58,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateIds) {
       ungroup()
   }
 
-  covariates <- cohortMethodData$covariates
-  if (!is.null(covariateIds)) {
-    covariates <- covariates %>%
-      filter(.data$covariateId %in% covariateIds)
-  }
+  covariates <- filterCovariates(cohortMethodData$covariates, cohortMethodData$covariateRef, covariateFilter)
 
   if (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) {
     # Variable strata sizes detected: weigh by size of strata set
@@ -123,8 +147,10 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateIds) {
 #' @param maxCohortSize  If the target or comparator cohort are larger than this number, they
 #'                                 will be downsampled before computing covariate balance to save time.
 #'                                 Setting this number to 0 means no downsampling will be applied.
-#' @param covariateIds   A vector of covariate IDs for which to compute the balance. If not provided (NULL), balance
-#'                       will be computed for all variables found in the data.
+#' @param covariateFilter   Determines the covariates for which to compute covariate balance. Either a vector
+#'                          of covariate IDs, or a table 1 specifications object as generated for example using
+#'                          [FeatureExtraction::getDefaultTable1Specifications()]. If `covariateFilter = NULL`,
+#'                          balance will be computed for all variables found in the data.
 #' @details
 #' The population data frame should have the following three columns:
 #'
@@ -144,12 +170,18 @@ computeCovariateBalance <- function(population,
                                     cohortMethodData,
                                     subgroupCovariateId = NULL,
                                     maxCohortSize = 250000,
-                                    covariateIds = NULL) {
+                                    covariateFilter = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertInt(subgroupCovariateId, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
+  if (is.numeric(covariateFilter)) {
+    checkmate::assertIntegerish(covariateFilter, add = errorMessages)
+  } else if (!is.null(covariateFilter)) {
+    checkmate::assertDataFrame(covariateFilter, add = errorMessages)
+    checkmate::assert_names(colnames(covariateFilter), must.include = c("analysisId", "covariateIds"), add = errorMessages)
+  }
   checkmate::reportAssertions(collection = errorMessages)
 
   ParallelLogger::logTrace("Computing covariate balance")
@@ -207,8 +239,8 @@ computeCovariateBalance <- function(population,
   on.exit(cohortMethodData$tempCohorts <- NULL)
   on.exit(cohortMethodData$tempCohortsAfterMatching <- NULL, add = TRUE)
 
-  beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateIds)
-  afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateIds)
+  beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateFilter)
+  afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateFilter)
 
   colnames(beforeMatching)[colnames(beforeMatching) == "meanTarget"] <- "beforeMatchingMeanTarget"
   colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
@@ -273,23 +305,23 @@ sampleCohorts <- function(cohorts, maxCohortSize, label) {
   if (targetCount > maxCohortSize) {
     targetIdx <- sampleSingleCohort(cohorts, 1, maxCohortSize)
     message("Downsampling target cohort ",
-                            label,
-                            " from ",
-                            targetCount,
-                            " to ",
-                            length(targetIdx),
-                            " before computing covariate balance")
+            label,
+            " from ",
+            targetCount,
+            " to ",
+            length(targetIdx),
+            " before computing covariate balance")
     sampled <- TRUE
   }
   if (comparatorCount > maxCohortSize) {
     comparatorIdx <- sampleSingleCohort(cohorts, 0, maxCohortSize)
     message("Downsampling comparator cohort ",
-                            label,
-                            " from ",
-                            comparatorCount,
-                            " to ",
-                            length(comparatorIdx),
-                            " before computing covariate balance")
+            label,
+            " from ",
+            comparatorCount,
+            " to ",
+            length(comparatorIdx),
+            " before computing covariate balance")
     sampled <- TRUE
   }
   if (sampled) {
@@ -541,19 +573,19 @@ plotCovariatePrevalence <- function(balance,
                                    comparator = .data$afterMatchingMeanComparator,
                                    stdDiff = .data$afterMatchingStdDiff) %>%
                             mutate(panel = afterLabel)) %>%
-                            mutate(target= .data$target * 100,
-                                   comparator = .data$comparator * 100,
-                                   stdDiff = if_else(!is.na(.data$stdDiff) & abs(.data$stdDiff) > threshold,
-                                                     sprintf("> %0.2f", threshold),
-                                                     sprintf("<= %0.2f", threshold)))
+    mutate(target= .data$target * 100,
+           comparator = .data$comparator * 100,
+           stdDiff = if_else(!is.na(.data$stdDiff) & abs(.data$stdDiff) > threshold,
+                             sprintf("> %0.2f", threshold),
+                             sprintf("<= %0.2f", threshold)))
   prevalence$panel <- factor(prevalence$panel, levels = c(beforeLabel, afterLabel))
   if (threshold > 0) {
     plot <- ggplot2::ggplot(prevalence, ggplot2::aes(x = .data$comparator, y = .data$target, color = .data$stdDiff)) +
       ggplot2::geom_point(alpha = 0.3, shape = 16) +
       ggplot2::scale_color_manual("Std. diff.", values = c(rgb(0, 0, 0.8), rgb(0.8, 0, 0)))
   } else {
-  plot <- ggplot2::ggplot(prevalence, ggplot2::aes(x = .data$comparator, y = .data$target)) +
-    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16)
+    plot <- ggplot2::ggplot(prevalence, ggplot2::aes(x = .data$comparator, y = .data$target)) +
+      ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16)
   }
   plot <- plot + ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0) +

@@ -9,7 +9,7 @@ computeCovariateBalance(
   cohortMethodData,
   subgroupCovariateId = NULL,
   maxCohortSize = 250000,
-  covariateIds = NULL
+  covariateFilter = NULL
 )
 }
 \arguments{
@@ -27,8 +27,10 @@ subgroup before computing covariate balance.}
 will be downsampled before computing covariate balance to save time.
 Setting this number to 0 means no downsampling will be applied.}
 
-\item{covariateIds}{A vector of covariate IDs for which to compute the balance. If not provided (NULL), balance
-will be computed for all variables found in the data.}
+\item{covariateFilter}{Determines the covariates for which to compute covariate balance. Either a vector
+of covariate IDs, or a table 1 specifications object as generated for example using
+\code{\link[FeatureExtraction:getDefaultTable1Specifications]{FeatureExtraction::getDefaultTable1Specifications()}}. If \code{covariateFilter = NULL},
+balance will be computed for all variables found in the data.}
 }
 \value{
 Returns a tibble describing the covariate balance before and after matching/trimming.

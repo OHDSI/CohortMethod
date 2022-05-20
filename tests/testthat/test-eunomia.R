@@ -78,7 +78,8 @@ test_that("Multiple analyses", {
 
   computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
 
-  computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateIds = 0:20 * 1000 + 3)
+  # computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateFilter = 0:20 * 1000 + 3)
+  computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateFilter = FeatureExtraction::getDefaultTable1Specifications())
 
   fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
                                                     stratified = TRUE)

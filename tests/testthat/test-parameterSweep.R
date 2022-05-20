@@ -172,7 +172,7 @@ test_that("Balance functions", {
   expect_s3_class(table1, "data.frame")
 
   covariateIds <- 0:20 * 1000 + 3
-  balance <- computeCovariateBalance(strata, cohortMethodData, covariateIds = covariateIds)
+  balance <- computeCovariateBalance(strata, cohortMethodData, covariateFilter = covariateIds)
   expect_s3_class(balance, "data.frame")
   expect_true(all(balance$covariateId %in% covariateIds))
 })

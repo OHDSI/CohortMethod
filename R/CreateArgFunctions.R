@@ -253,12 +253,12 @@ createStratifyByPsAndCovariatesArgs <- function(numberOfStrata = 5,
 #'
 #' @param subgroupCovariateId  Optional: a covariate ID of a binary covariate that indicates a subgroup of interest. Both the before and after populations will be restricted to this subgroup before computing covariate balance.
 #' @param maxCohortSize  If the target or comparator cohort are larger than this number, they will be downsampled before computing covariate balance to save time. Setting this number to 0 means no downsampling will be applied.
-#' @param covariateIds  A vector of covariate IDs for which to compute the balance. If not provided (NULL), balance will be computed for all variables found in the data.
+#' @param covariateFilter  Determines the covariates for which to compute covariate balance. Either a vector of covariate IDs, or a table 1 specifications object as generated for example using FeatureExtraction::getDefaultTable1Specifications(). If covariateFilter = NULL, balance will be computed for all variables found in the data.
 #'
 #' @export
 createComputeCovariateBalanceArgs <- function(subgroupCovariateId = NULL,
                                               maxCohortSize = 250000,
-                                              covariateIds = NULL) {
+                                              covariateFilter = NULL) {
   analysis <- list()
   for (name in names(formals(createComputeCovariateBalanceArgs))) {
     analysis[[name]] <- get(name)
