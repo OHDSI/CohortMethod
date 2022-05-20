@@ -60,8 +60,7 @@ test_that("Multiple analyses", {
                           outputFolder = outputFolder,
                           cmAnalysisList = cmAnalysisList,
                           targetComparatorOutcomesList = targetComparatorOutcomesList,
-                          refitPsForEveryOutcome = TRUE,
-                          prefilterCovariates = TRUE)
+                          refitPsForEveryOutcome = TRUE)
   expect_equal(result$sharedPsFile, c("", ""))
 
   analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)

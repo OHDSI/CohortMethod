@@ -24,12 +24,6 @@
 #' @param analysisId                      An integer that will be used later to refer to this specific
 #'                                        set of analysis choices.
 #' @param description                     A short description of the analysis.
-#' @param targetType                      If more than one target is provided for each
-#'                                        drugComparatorOutcome, this field should be used to select
-#'                                        the specific target to use in this analysis.
-#' @param comparatorType                  If more than one comparator is provided for each
-#'                                        drugComparatorOutcome, this field should be used to select
-#'                                        the specific comparator to use in this analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
 #'                                        the [getDbCohortMethodData()] function.
 #' @param createStudyPopArgs              An object representing the arguments to be used when calling
@@ -82,8 +76,6 @@
 #' @export
 createCmAnalysis <- function(analysisId = 1,
                              description = "",
-                             targetType = NULL,
-                             comparatorType = NULL,
                              getDbCohortMethodDataArgs,
                              createStudyPopArgs,
                              createPs = FALSE,
@@ -111,8 +103,6 @@ createCmAnalysis <- function(analysisId = 1,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(analysisId, add = errorMessages)
   checkmate::assertCharacter(description, len = 1, add = errorMessages)
-  checkmate::assertCharacter(targetType, len = 1, null.ok = TRUE, add = errorMessages)
-  checkmate::assertCharacter(comparatorType, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertClass(getDbCohortMethodDataArgs, "args", add = errorMessages)
   checkmate::assertClass(createStudyPopArgs, "args", add = errorMessages)
   checkmate::assertLogical(createPs, len = 1, add = errorMessages)
@@ -239,6 +229,10 @@ loadCmAnalysisList <- function(file) {
 #' Create outcome definition
 #'
 #' @param outcomeId                        An integer used to identify the outcome in the outcome cohort table.
+#' @param outcomeOfInterest                Is this an outcome of interest? If not, creation of non-essential
+#'                                         files will be skipped, including outcome=specific covariate balance
+#'                                         files. This could be helpful to speed up analyses with many controls,
+#'                                         for which we're only interested in the effect size estimate.
 #' @param priorOutcomeLookback             How many days should we look back when identifying prior
 #'                                         outcomes?
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
@@ -257,6 +251,7 @@ loadCmAnalysisList <- function(file) {
 #'
 #' @export
 createOutcome <- function(outcomeId,
+                          outcomeOfInterest = TRUE,
                           priorOutcomeLookback = NULL,
                           riskWindowStart = NULL,
                           startAnchor = NULL,
@@ -264,6 +259,7 @@ createOutcome <- function(outcomeId,
                           endAnchor = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(outcomeId, add = errorMessages)
+  checkmate::assertLogical(outcomeOfInterest, add = errorMessages)
   checkmate::assertInt(riskWindowStart, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowEnd, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
@@ -287,26 +283,18 @@ createOutcome <- function(outcomeId,
 #' @details
 #' Create a set of hypotheses of interest, to be used with the [runCmAnalyses()] function.
 #'
-#' @param targetId                      A concept ID identifying the target drug in the exposure
-#'                                      table. If multiple strategies for picking the target will be
-#'                                      tested in the analysis, a named list of numbers can be provided
-#'                                      instead. In the analysis, the name of the number to be used can
-#'                                      be specified using the `targetType` parameter in the
-#'                                      [createCmAnalysis()] function.
-#' @param comparatorId                  A concept ID identifying the comparator drug in the exposure
-#'                                      table. If multiple strategies for picking the comparator will
-#'                                      be tested in the analysis, a named list of numbers can be
-#'                                      provided instead. In the analysis, the name of the number to be
-#'                                      used can be specified using the #' `comparatorType`
-#'                                      parameter in the [createCmAnalysis()] function.
+#' @param targetId                      A cohort ID identifying the target exposure in the exposure
+#'                                      table.
+#' @param comparatorId                  A cohort ID identifying the comparator exposure in the exposure
+#'                                      table.
 #' @param outcomes                      A list of object of type `outcome` as created by
 #'                                      [createOutcome()].
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
-#'                                      concepts that are specific to the drug-comparator combination.
+#'                                      concepts that are specific to the target-comparator combination.
 #' @param includedCovariateConceptIds   A list of concept IDs that must be used to construct
 #'                                      covariates. This argument is to be used only for inclusion
-#'                                      concepts that are specific to the drug-comparator combination.
+#'                                      concepts that are specific to the target-comparator combination.
 #'
 #' @return
 #' An object of type `targetComparatorOutcomes`.
@@ -318,10 +306,8 @@ createTargetComparatorOutcomes <- function(targetId,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
   errorMessages <- checkmate::makeAssertCollection()
-  if (!is.list(targetId))
-    checkmate::assertInt(targetId, add = errorMessages)
-  if (!is.list(comparatorId))
-    checkmate::assertInt(comparatorId, add = errorMessages)
+  checkmate::assertInt(targetId, add = errorMessages)
+  checkmate::assertInt(comparatorId, add = errorMessages)
   checkmate::assertList(outcomes, min.len = 1, add = errorMessages)
   for (i in 1:length(outcomes)) {
     checkmate::assertClass(outcomes[[i]], "outcome", add = errorMessages)

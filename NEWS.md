@@ -5,7 +5,7 @@ Changes:
 
 1. Setting the default Cyclops control object to use `resetCoefficients = TRUE` to ensure we always get the exact same model, irrespective of the number of threads used.
 
-2. Adding checking of input to all functions.
+2. Adding checking of user input to all functions.
 
 3. Removing deprecated `excludeDrugsFromCovariates` argument from `getDbCohortMethodData()` function.
 
@@ -17,11 +17,23 @@ Changes:
 
 7. Output likelihood profile as data frame instead of named vector for consistency with other HADES packages.
 
-8. Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function.
+8. Added the `covariateFilter` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
 
-9. Added the `covariateFilter` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
+9. Major overhaul of the multiple-analyses framework:
 
-10. Added the `createComputeCovariateBalanceArgs()` function, added the `computeSharedCovariateBalance`, `,computeSharedCovariateBalanceArgs`, `computeCovariateBalance`, and `computeCovariateBalanceArgs` arguments to the `createCmAnalysis()` function, and the `computeSharedBalanceThreads`, `computeBalanceThreads` arguments to the `runCmAnalyses()` function to allow computation of covariate balance across a target-comparator-analysis (shared) or for each target-comparator-analysis-outcome in the `runCmAnalyses()` function.
+    - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function.
+
+    - Added the `createComputeCovariateBalanceArgs()` function, added the `computeSharedCovariateBalance`, `,computeSharedCovariateBalanceArgs`, `computeCovariateBalance`, and `computeCovariateBalanceArgs` arguments to the `createCmAnalysis()` function, and the `computeSharedBalanceThreads`, `computeBalanceThreads` arguments to the `runCmAnalyses()` function to allow computation of covariate balance across a target-comparator-analysis (shared) or for each target-comparator-analysis-outcome in the `runCmAnalyses()` function.
+
+    - Dropping `targetType` and `comparatorType` options from the `createCmAnalysis()` function, since the notion of analysis-specific target and comparator selection strategies can also be implemented using the `analysesToExclude` argument of `runCmAnalyses()`.
+
+    - Dropping `outcomeIdsOfInterest` argument of the `runCmAnalyses()` function. Instead, the `createOutcome()` function now has a `outcomeOfInterest` argument.
+
+    - Settings related to multi-threading are combined in to a single settings object that be created using the new `createCmMultiThreadingSettings()` function.
+    
+    - Dropping `prefilterCovariates` from `runCmAnalyses()`. Prefiltering is now always done when specific covariates are used in the outcome model.
+
+
 
 
 CohortMethod 4.2.2

@@ -13,30 +13,22 @@ createTargetComparatorOutcomes(
 )
 }
 \arguments{
-\item{targetId}{A concept ID identifying the target drug in the exposure
-table. If multiple strategies for picking the target will be
-tested in the analysis, a named list of numbers can be provided
-instead. In the analysis, the name of the number to be used can
-be specified using the \code{targetType} parameter in the
-\code{\link[=createCmAnalysis]{createCmAnalysis()}} function.}
+\item{targetId}{A cohort ID identifying the target exposure in the exposure
+table.}
 
-\item{comparatorId}{A concept ID identifying the comparator drug in the exposure
-table. If multiple strategies for picking the comparator will
-be tested in the analysis, a named list of numbers can be
-provided instead. In the analysis, the name of the number to be
-used can be specified using the #' \code{comparatorType}
-parameter in the \code{\link[=createCmAnalysis]{createCmAnalysis()}} function.}
+\item{comparatorId}{A cohort ID identifying the comparator exposure in the exposure
+table.}
 
 \item{outcomes}{A list of object of type \code{outcome} as created by
 \code{\link[=createOutcome]{createOutcome()}}.}
 
 \item{excludedCovariateConceptIds}{A list of concept IDs that cannot be used to construct
 covariates. This argument is to be used only for exclusion
-concepts that are specific to the drug-comparator combination.}
+concepts that are specific to the target-comparator combination.}
 
 \item{includedCovariateConceptIds}{A list of concept IDs that must be used to construct
 covariates. This argument is to be used only for inclusion
-concepts that are specific to the drug-comparator combination.}
+concepts that are specific to the target-comparator combination.}
 }
 \value{
 An object of type \code{targetComparatorOutcomes}.

@@ -7,8 +7,6 @@
 createCmAnalysis(
   analysisId = 1,
   description = "",
-  targetType = NULL,
-  comparatorType = NULL,
   getDbCohortMethodDataArgs,
   createStudyPopArgs,
   createPs = FALSE,
@@ -40,14 +38,6 @@ createCmAnalysis(
 set of analysis choices.}
 
 \item{description}{A short description of the analysis.}
-
-\item{targetType}{If more than one target is provided for each
-drugComparatorOutcome, this field should be used to select
-the specific target to use in this analysis.}
-
-\item{comparatorType}{If more than one comparator is provided for each
-drugComparatorOutcome, this field should be used to select
-the specific comparator to use in this analysis.}
 
 \item{getDbCohortMethodDataArgs}{An object representing the arguments to be used when calling
 the \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}} function.}

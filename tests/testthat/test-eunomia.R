@@ -20,14 +20,16 @@ test_that("Multiple analyses", {
                                           comparatorId = 2,
                                           outcomes = list(createOutcome(outcomeId = 3,
                                                                         priorOutcomeLookback = 30),
-                                                          createOutcome(outcomeId = 4)),
+                                                          createOutcome(outcomeId = 4,
+                                                                        outcomeOfInterest = FALSE)),
                                           excludedCovariateConceptIds = c(1118084, 1124300))
   # Empty cohorts:
   tcos2 <- createTargetComparatorOutcomes(targetId = 998,
                                           comparatorId = 999,
                                           outcomes = list(createOutcome(outcomeId = 3,
                                                                         priorOutcomeLookback = 30),
-                                                          createOutcome(outcomeId = 4)))
+                                                          createOutcome(outcomeId = 4,
+                                                                        outcomeOfInterest = FALSE)))
 
   targetComparatorOutcomesList <- list(tcos1, tcos2)
 
@@ -145,8 +147,6 @@ test_that("Multiple analyses", {
                             outputFolder = outputFolder,
                             cmAnalysisList = cmAnalysisList,
                             targetComparatorOutcomesList = targetComparatorOutcomesList,
-                            outcomeIdsOfInterest = 3,
-                            prefilterCovariates = TRUE,
                             analysesToExclude = analysesToExclude)
 
   }, "Separable interaction terms found and removed")
@@ -186,9 +186,7 @@ test_that("Multiple analyses", {
                              outcomeTable = "cohort",
                              outputFolder = outputFolder,
                              cmAnalysisList = list(cmAnalysis4),
-                             targetComparatorOutcomesList = targetComparatorOutcomesList,
-                             outcomeIdsOfInterest = 3,
-                             prefilterCovariates = TRUE)
+                             targetComparatorOutcomesList = targetComparatorOutcomesList)
   })
   # Should not throw same warning as previous analysis
   expect_false("Separable interaction terms found and removed" %in% warningList)
@@ -204,7 +202,6 @@ test_that("Multiple analyses", {
                                  data = person,
                                  dropTableIfExists = TRUE, createTable = TRUE)
 
-
   expect_error({
     runCmAnalyses(connectionDetails = connectionDetails,
                   cdmDatabaseSchema = "main",
@@ -213,23 +210,8 @@ test_that("Multiple analyses", {
                   outputFolder = outputFolder,
                   cmAnalysisList = list(cmAnalysis4),
                   targetComparatorOutcomesList = targetComparatorOutcomesList,
-                  outcomeIdsOfInterest = 3,
                   refitPsForEveryOutcome = TRUE,
-                  prefilterCovariates = TRUE)
-  }, "Cannot have both outcomeIdsOfInterest and refitPsForEveryOutcome set to TRUE")
-
-  expect_error({
-    runCmAnalyses(connectionDetails = connectionDetails,
-                  cdmDatabaseSchema = "main",
-                  exposureTable = "cohort",
-                  outcomeTable = "cohort",
-                  outputFolder = outputFolder,
-                  cmAnalysisList = list(cmAnalysis4),
-                  targetComparatorOutcomesList = targetComparatorOutcomesList,
-                  outcomeIdsOfInterest = NULL,
-                  refitPsForEveryOutcome = TRUE,
-                  refitPsForEveryStudyPopulation = FALSE,
-                  prefilterCovariates = TRUE)
+                  refitPsForEveryStudyPopulation = FALSE)
   }, "Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
 
   expect_error({
@@ -239,9 +221,7 @@ test_that("Multiple analyses", {
                   outcomeTable = "cohort",
                   outputFolder = outputFolder,
                   cmAnalysisList = list(cmAnalysis4),
-                  targetComparatorOutcomesList = targetComparatorOutcomesList <- list(tcos1, tcos2, "brokenObject"),
-                  outcomeIdsOfInterest = 3,
-                  prefilterCovariates = TRUE)
+                  targetComparatorOutcomesList = targetComparatorOutcomesList <- list(tcos1, tcos2, "brokenObject"))
   })
 })
 

@@ -16,21 +16,10 @@ runCmAnalyses(
   outputFolder = "./CohortMethodOutput",
   cmAnalysisList,
   targetComparatorOutcomesList,
+  analysesToExclude = NULL,
   refitPsForEveryOutcome = FALSE,
   refitPsForEveryStudyPopulation = TRUE,
-  prefilterCovariates = TRUE,
-  getDbCohortMethodDataThreads = 1,
-  createPsThreads = 1,
-  psCvThreads = 1,
-  createStudyPopThreads = 1,
-  trimMatchStratifyThreads = 1,
-  computeSharedBalanceThreads = 1,
-  computeBalanceThreads = 1,
-  prefilterCovariatesThreads = 1,
-  fitOutcomeModelThreads = 1,
-  outcomeCvThreads = 1,
-  outcomeIdsOfInterest = NULL,
-  analysesToExclude = NULL
+  multiThreadingSettings = createCmMultiThreadingSettings()
 )
 }
 \arguments{
@@ -80,6 +69,8 @@ the `\link{createCmAnalysis} function.}
 created using the \link{createTargetComparatorOutcomes}
 function.}
 
+\item{analysesToExclude}{Analyses to exclude. See the Analyses to Exclude section for details.}
+
 \item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
 after people who already had the outcome are removed)? If
 false, a single propensity model will be fitted, and people
@@ -89,52 +80,9 @@ who had the outcome previously will be removed afterwards.}
 definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.}
 
-\item{prefilterCovariates}{If TRUE, and some outcome models require filtering covariates
-by concept ID (e.g. because \code{includeCovariateIds} or
-\code{interactionCovariateIds} is specified), this filtering
-will be done once for all outcome models that need it. This
-can greatly speed up the analyses if multiple outcome models
-require the same filtering.}
-
-\item{getDbCohortMethodDataThreads}{The number of parallel threads to use for building the
-cohortMethod data objects.}
-
-\item{createPsThreads}{The number of parallel threads to use for fitting the
-propensity models.}
-
-\item{psCvThreads}{The number of parallel threads to use for the cross-
-validation when estimating the hyperparameter for the
-propensity model. Note that the total number of CV threads at
-one time could be \code{createPsThreads * psCvThreads}.}
-
-\item{createStudyPopThreads}{The number of parallel threads to use for creating the study
-population.}
-
-\item{trimMatchStratifyThreads}{The number of parallel threads to use for trimming, matching
-and stratifying.}
-
-\item{computeSharedBalanceThreads}{The number of parallel threads to use for computing shared covariate
-balance.}
-
-\item{computeBalanceThreads}{The number of parallel threads to use for computing covariate
-balance.}
-
-\item{prefilterCovariatesThreads}{The number of parallel threads to use for prefiltering covariates.}
-
-\item{fitOutcomeModelThreads}{The number of parallel threads to use for fitting the outcome
-models.}
-
-\item{outcomeCvThreads}{The number of parallel threads to use for the cross-
-validation when estimating the hyperparameter for the outcome
-model. Note that the total number of CV threads at one time
-could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
-
-\item{outcomeIdsOfInterest}{If provided, creation of non-essential files will be skipped
-for all other outcome IDs. This inclused the creation of covariate
-balance files if specified. This could be helpful to speed up analyses
-with many controls.}
-
-\item{analysesToExclude}{Analyses to exclude. See the Analyses to Exclude section for details.}
+\item{multiThreadingSettings}{An object of type \code{CmMultiThreadingSettings} as created using
+the \code{\link[=createCmMultiThreadingSettings]{createCmMultiThreadingSettings()}} or
+\code{\link[=createDefaultCmMultiThreadingSettings]{createDefaultCmMultiThreadingSettings()}} functions.}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and

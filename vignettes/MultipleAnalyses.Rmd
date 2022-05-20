@@ -273,59 +273,6 @@ cmAnalysisList <- list(cmAnalysis1,
 
 A convenient way to save `cmAnalysisList` to file is by using the `saveCmAnalysisList` function, and we can load it again using the `loadCmAnalysisList` function.
 
-## Target and comparator selection strategies
-
-Often a new-user cohort design is used for comparative effectiveness studies, where the selection of the comparator is part of the hypothesis of interest: 'Does use of drug A lead to an increased risk compared to use of drug B?', where B is the comparator. But sometimes, the design is used for safety assessment: 'Does use of drug A lead to an increased risk?' In this case the comparator is a proxy for the counterfactual of no treatment. For example, we could pick the comparator to be a drug known not to cause the outcome. we can argue that the selection of the comparator then becomes part of the analyses specification, not the hypothesis of interest, and we can have different strategies for selecting a comparator: Do we for instance pick a drug in the same class, or a drug with the same indication?
-
-In the situation where the comparator choice becomes part of the analyses, we can specify multiple comparators per hypothesis of interest by using a list:
-
-```{r eval=TRUE}
-comparatorIds = list(drugInSameClass = 1124300,
-                     drugWithSameIndication = 1125315)
-
-outcome <- createOutcome(outcomeId = 192671)
-
-tcos <- createTargetComparatorOutcomes(targetId = 1118084,
-                                       comparatorId = comparatorIds,
-                                       outcomes = list(outcome))
-
-targetComparatorOutcomesList2 <- list(tcos)
-```
-
-When we specify an analysis, we can then refer to one comparator or another:
-
-```{r eval=TRUE}
-cmAnalysis1 <- createCmAnalysis(analysisId = 1,
-                                description = "Analysis using drug in same class",
-                                comparatorType = "drugInSameClass",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
-                                matchOnPsArgs = matchOnPsArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
-
-cmAnalysis2 <- createCmAnalysis(analysisId = 2,
-                                description = "Analysis using drug with same indication",
-                                comparatorType = "drugWithSameIndication",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
-                                matchOnPsArgs = matchOnPsArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
-
-cmAnalysisList2 <- list(cmAnalysis1, cmAnalysis2)
-```
-
-In this example, the first analysis (analysisID = 1) will use concept 1124300 as comparator, whilst the second analysis analysis (analysisID = 2) will use concept 1125315 as comparator.
-
-The same mechanism can be used to specify types for the targetId.
-
 # Executing multiple analyses
 
 We can now run the analyses against the hypotheses of interest using the `runCmAnalyses()` function. This function will run all specified analyses against all hypotheses of interest, meaning that the total number of outcome models is `length(cmAnalysisList) * length(targetComparatorOutcomesList)` (if all analyses specify an outcome model should be fitted).

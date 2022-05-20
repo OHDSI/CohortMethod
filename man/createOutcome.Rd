@@ -6,6 +6,7 @@
 \usage{
 createOutcome(
   outcomeId,
+  outcomeOfInterest = TRUE,
   priorOutcomeLookback = NULL,
   riskWindowStart = NULL,
   startAnchor = NULL,
@@ -15,6 +16,11 @@ createOutcome(
 }
 \arguments{
 \item{outcomeId}{An integer used to identify the outcome in the outcome cohort table.}
+
+\item{outcomeOfInterest}{Is this an outcome of interest? If not, creation of non-essential
+files will be skipped, including outcome=specific covariate balance
+files. This could be helpful to speed up analyses with many controls,
+for which we're only interested in the effect size estimate.}
 
 \item{priorOutcomeLookback}{How many days should we look back when identifying prior
 outcomes?}
