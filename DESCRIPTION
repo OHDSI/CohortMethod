@@ -45,7 +45,7 @@ Imports:
 	Rcpp (>= 0.11.2),
 	SqlRender (>= 1.7.0),
 	survival,
-	ParallelLogger (>= 3.0.0),
+	ParallelLogger (>= 3.0.1),
 	bit64,
 	checkmate,
 	EmpiricalCalibration
@@ -60,7 +60,8 @@ Suggests:
 	RISCA
 Remotes:
 	ohdsi/FeatureExtraction,
-	ohdsi/Eunomia
+	ohdsi/Eunomia,
+	ohdsi/ParallelLogger
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.1.2

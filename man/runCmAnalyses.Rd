@@ -19,7 +19,7 @@ runCmAnalyses(
   analysesToExclude = NULL,
   refitPsForEveryOutcome = FALSE,
   refitPsForEveryStudyPopulation = TRUE,
-  multiThreadingSettings = createCmMultiThreadingSettings()
+  multiThreadingSettings = createMultiThreadingSettings()
 )
 }
 \arguments{
@@ -81,8 +81,8 @@ definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.}
 
 \item{multiThreadingSettings}{An object of type \code{CmMultiThreadingSettings} as created using
-the \code{\link[=createCmMultiThreadingSettings]{createCmMultiThreadingSettings()}} or
-\code{\link[=createDefaultCmMultiThreadingSettings]{createDefaultCmMultiThreadingSettings()}} functions.}
+the \code{\link[=createMultiThreadingSettings]{createMultiThreadingSettings()}} or
+\code{\link[=createDefaultMultiThreadingSettings]{createDefaultMultiThreadingSettings()}} functions.}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and

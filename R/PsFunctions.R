@@ -74,8 +74,8 @@ createPs <- function(cohortMethodData,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
-  checkmate::assertIntegerish(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
-  checkmate::assertIntegerish(includeCovariateIds, null.ok = TRUE, add = errorMessages)
+  .assertCovariateId(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
+  .assertCovariateId(includeCovariateIds, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(maxCohortSizeForFitting, lower = 0, add = errorMessages)
   checkmate::assertLogical(errorOnHighCorrelation, len = 1, add = errorMessages)
   checkmate::assertLogical(stopOnError, len = 1, add = errorMessages)
@@ -1004,7 +1004,7 @@ matchOnPsAndCovariates <- function(population,
                                    cohortMethodData,
                                    covariateIds) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertIntegerish(covariateIds, min.len = 1, add = errorMessages)
+  .assertCovariateId(covariateIds, min.len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
@@ -1163,7 +1163,7 @@ stratifyByPsAndCovariates <- function(population,
                                       cohortMethodData,
                                       covariateIds) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertIntegerish(covariateIds, min.len = 1, add = errorMessages)
+  .assertCovariateId(covariateIds, min.len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)

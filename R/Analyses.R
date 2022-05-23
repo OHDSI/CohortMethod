@@ -235,7 +235,7 @@ loadCmAnalysisList <- function(file) {
 #'                                         for which we're only interested in the effect size estimate.
 #' @param trueEffectSize                   For negative and positive controls: the known true effect size. To be used
 #'                                         for empirical calibration. Negative controls have `trueEffectSize = 1`. If
-#'                                         the true effect size is unkown, use `trueEffectSize = NA`
+#'                                         the true effect size is unknown, use `trueEffectSize = NA`
 #' @param priorOutcomeLookback             How many days should we look back when identifying prior.
 #'                                         outcomes?
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.

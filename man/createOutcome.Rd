@@ -25,7 +25,7 @@ for which we're only interested in the effect size estimate.}
 
 \item{trueEffectSize}{For negative and positive controls: the known true effect size. To be used
 for empirical calibration. Negative controls have \code{trueEffectSize = 1}. If
-the true effect size is unkown, use \code{trueEffectSize = NA}}
+the true effect size is unknown, use \code{trueEffectSize = NA}}
 
 \item{priorOutcomeLookback}{How many days should we look back when identifying prior.
 outcomes?}

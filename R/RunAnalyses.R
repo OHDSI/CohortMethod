@@ -43,19 +43,19 @@
 #' @return
 #' An object of type `CmMultiThreadingSettings`.
 #'
-#' @seealso [createDefaultCmMultiThreadingSettings()]
+#' @seealso [createDefaultMultiThreadingSettings()]
 #'
 #' @export
-createCmMultiThreadingSettings <- function(getDbCohortMethodDataThreads = 1,
-                                           createPsThreads = 1,
-                                           psCvThreads = 1,
-                                           createStudyPopThreads = 1,
-                                           trimMatchStratifyThreads = 1,
-                                           computeSharedBalanceThreads = 1,
-                                           computeBalanceThreads = 1,
-                                           prefilterCovariatesThreads = 1,
-                                           fitOutcomeModelThreads = 1,
-                                           outcomeCvThreads = 1) {
+createMultiThreadingSettings <- function(getDbCohortMethodDataThreads = 1,
+                                         createPsThreads = 1,
+                                         psCvThreads = 1,
+                                         createStudyPopThreads = 1,
+                                         trimMatchStratifyThreads = 1,
+                                         computeSharedBalanceThreads = 1,
+                                         computeBalanceThreads = 1,
+                                         prefilterCovariatesThreads = 1,
+                                         fitOutcomeModelThreads = 1,
+                                         outcomeCvThreads = 1) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(getDbCohortMethodDataThreads, lower = 1, add = errorMessages)
   checkmate::assertInt(createPsThreads, lower = 1, add = errorMessages)
@@ -67,7 +67,7 @@ createCmMultiThreadingSettings <- function(getDbCohortMethodDataThreads = 1,
   checkmate::assertInt(outcomeCvThreads, lower = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   settings <- list()
-  for (name in names(formals(createCmMultiThreadingSettings))) {
+  for (name in names(formals(createMultiThreadingSettings))) {
     settings[[name]] <- get(name)
   }
   class(settings) <- "CmMultiThreadingSettings"
@@ -86,26 +86,26 @@ createCmMultiThreadingSettings <- function(getDbCohortMethodDataThreads = 1,
 #' @return
 #' An object of type `CmMultiThreadingSettings`.
 #'
-#' @seealso [createCmMultiThreadingSettings()]
+#' @seealso [createMultiThreadingSettings()]
 #'
 #' @examples
-#' settings <- createDefaultCmMultiThreadingSettings(10)
+#' settings <- createDefaultMultiThreadingSettings(10)
 #'
 #' @export
-createDefaultCmMultiThreadingSettings <- function(maxCores) {
+createDefaultMultiThreadingSettings <- function(maxCores) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(maxCores, lower = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  settings <- createCmMultiThreadingSettings(getDbCohortMethodDataThreads = min(3, maxCores),
-                                             createPsThreads = max(1, round(maxCores / 10)),
-                                             psCvThreads = min(10, maxCores),
-                                             createStudyPopThreads = min(3, maxCores),
-                                             trimMatchStratifyThreads = min(5, maxCores),
-                                             computeSharedBalanceThreads = min(3, maxCores),
-                                             computeBalanceThreads = min(5, maxCores),
-                                             prefilterCovariatesThreads = min(3, maxCores),
-                                             fitOutcomeModelThreads = max(1, round(maxCores / 4)),
-                                             outcomeCvThreads = min(4, maxCores))
+  settings <- createMultiThreadingSettings(getDbCohortMethodDataThreads = min(3, maxCores),
+                                           createPsThreads = max(1, round(maxCores / 10)),
+                                           psCvThreads = min(10, maxCores),
+                                           createStudyPopThreads = min(3, maxCores),
+                                           trimMatchStratifyThreads = min(5, maxCores),
+                                           computeSharedBalanceThreads = min(3, maxCores),
+                                           computeBalanceThreads = min(5, maxCores),
+                                           prefilterCovariatesThreads = min(3, maxCores),
+                                           fitOutcomeModelThreads = max(1, round(maxCores / 4)),
+                                           outcomeCvThreads = min(4, maxCores))
   return(settings)
 }
 
@@ -181,8 +181,8 @@ createDefaultCmMultiThreadingSettings <- function(maxCores) {
 #'                                       definition? If false, a single propensity model will be fitted,
 #'                                       and the study population criteria will be applied afterwards.
 #' @param multiThreadingSettings         An object of type `CmMultiThreadingSettings` as created using
-#'                                       the [createCmMultiThreadingSettings()] or
-#'                                       [createDefaultCmMultiThreadingSettings()] functions.
+#'                                       the [createMultiThreadingSettings()] or
+#'                                       [createDefaultMultiThreadingSettings()] functions.
 #'
 #' @return
 #' A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
@@ -203,7 +203,7 @@ runCmAnalyses <- function(connectionDetails,
                           analysesToExclude = NULL,
                           refitPsForEveryOutcome = FALSE,
                           refitPsForEveryStudyPopulation = TRUE,
-                          multiThreadingSettings = createCmMultiThreadingSettings()) {
+                          multiThreadingSettings = createMultiThreadingSettings()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
@@ -894,6 +894,9 @@ createReferenceTable <- function(cmAnalysisList,
   foldersToCreate <- foldersToCreate[!dir.exists(foldersToCreate)]
   sapply(foldersToCreate, dir.create)
   convertTcosToTable <- function(tco) {
+    trueEffectSize <- ParallelLogger::selectFromList(tco$outcomes, "trueEffectSize")
+    trueEffectSize[sapply(trueEffectSize, function(x) is.null(x$trueEffectSize))] <- NA
+    trueEffectSize <- unlist(trueEffectSize, use.names = FALSE)
     tibble(targetId = tco$targetId,
            comparatorId = tco$comparatorId,
            includedCovariateConceptIds = paste(tco$includedCovariateConceptIds, collapse = ","),
@@ -902,8 +905,7 @@ createReferenceTable <- function(cmAnalysisList,
                               use.names = FALSE),
            outcomeOfInterest = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeOfInterest"),
                                       use.names = FALSE),
-           trueEffectSize = unlist(ParallelLogger::selectFromList(tco$outcomes, "trueEffectSize"),
-                                   use.names = FALSE))
+           trueEffectSize = trueEffectSize)
   }
   tcos <- bind_rows(lapply(targetComparatorOutcomesList, convertTcosToTable))
   referenceTable <- analyses %>%
@@ -1344,9 +1346,10 @@ createReferenceTable <- function(cmAnalysisList,
 
 #' Create a summary report of the analyses
 #'
-#' @param referenceTable   A [dplyr::tibble] as created by the [runCmAnalyses] function.
-#' @param outputFolder     Name of the folder where all the outputs have been written to.
-#' @param calibrate        Perform empirical calibration? See details.
+#' @param referenceTable     A [dplyr::tibble] as created by the [runCmAnalyses] function.
+#' @param outputFolder       Name of the folder where all the outputs have been written to.
+#' @param calibrate          Perform empirical calibration? See details.
+#' @param calibrationThreads The number of parallel threads to use for calibrating estimates.
 #'
 #' @details
 #' When `calibrate = TRUE`, the `trueEffectSize` column in the [createOutcome()] function will be
@@ -1358,7 +1361,7 @@ createReferenceTable <- function(cmAnalysisList,
 #' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
 #'
 #' @export
-summarizeAnalyses <- function(referenceTable, outputFolder, calibrate = TRUE) {
+summarizeAnalyses <- function(referenceTable, outputFolder, calibrate = TRUE, calibrationThreads = 1) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(referenceTable, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
@@ -1422,29 +1425,29 @@ summarizeAnalyses <- function(referenceTable, outputFolder, calibrate = TRUE) {
   results <- bind_rows(results)
   results <- bind_cols(referenceTable[, columns], results)
   if (calibrate && any(!is.na(results$trueEffectSize))) {
-    results <- calibrateEstimates(results, outputFolder)
+    results <- calibrateEstimates(results = results, outputFolder = outputFolder, calibrationThreads = calibrationThreads)
   }
   return(results)
 }
 
-calibrateEstimates <- function(results, outputFolder) {
+calibrateEstimates <- function(results, outputFolder, calibrationThreads) {
   message("Calibrating estimates")
   groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
-  results <- lapply(groups, calibrateGroup, outputFolder = outputFolder)
+
+  cluster <- ParallelLogger::makeCluster(calibrationThreads)
+  results <- ParallelLogger::clusterApply(cluster, groups, calibrateGroup, outputFolder = outputFolder)
+  ParallelLogger::stopCluster(cluster)
   results <- bind_rows(results)
   return(results)
 }
 
 # group = groups[[1]]
 calibrateGroup <- function(group, outputFolder) {
-  ncs <- group %>%
-    filter(.data$trueEffectSize == 1 & !is.na(.data$seLogRr))
-  pcs <- group %>%
-    filter(!is.na(.data$trueEffectSize) & .data$trueEffectSize != 1 & !is.na(.data$seLogRr))
+  ncs <- group[group$trueEffectSize == 1 & !is.na(group$seLogRr), ]
+  pcs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize != 1 & !is.na(group$seLogRr), ]
   if (nrow(ncs) >= 5) {
     null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
     calibratedP <- EmpiricalCalibration::calibrateP(null = null, logRr = group$logRr, seLogRr = group$seLogRr)
-
     if (nrow(pcs) >= 5) {
       model <- EmpiricalCalibration::fitSystematicErrorModel(logRr = c(ncs$logRr, pcs$logRr),
                                                              seLogRr = c(ncs$seLogRr, pcs$seLogRr),
@@ -1453,7 +1456,7 @@ calibrateGroup <- function(group, outputFolder) {
     } else {
       model <- EmpiricalCalibration::convertNullToErrorModel(null)
     }
-    calibratedCi <- EmpiricalCalibration::calibrateConfidenceInterval(model = model, logRr = ncs$logRr, seLogRr = ncs$seLogRr)
+    calibratedCi <- EmpiricalCalibration::calibrateConfidenceInterval(model = model, logRr = group$logRr, seLogRr = group$seLogRr)
     group$calibratedRr <- exp(calibratedCi$logRr)
     group$calibratedCi95Lb <- exp(calibratedCi$logLb95Rr)
     group$calibratedCi95Ub <- exp(calibratedCi$logUb95Rr)

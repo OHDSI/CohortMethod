@@ -174,7 +174,7 @@ computeCovariateBalance <- function(population,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
-  checkmate::assertInt(subgroupCovariateId, null.ok = TRUE, add = errorMessages)
+  .assertCovariateId(subgroupCovariateId, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
   if (is.numeric(covariateFilter)) {
     checkmate::assertIntegerish(covariateFilter, add = errorMessages)

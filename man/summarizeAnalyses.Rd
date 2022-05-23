@@ -4,7 +4,12 @@
 \alias{summarizeAnalyses}
 \title{Create a summary report of the analyses}
 \usage{
-summarizeAnalyses(referenceTable, outputFolder, calibrate = TRUE)
+summarizeAnalyses(
+  referenceTable,
+  outputFolder,
+  calibrate = TRUE,
+  calibrationThreads = 1
+)
 }
 \arguments{
 \item{referenceTable}{A \link[dplyr:reexports]{dplyr::tibble} as created by the \link{runCmAnalyses} function.}
@@ -12,6 +17,8 @@ summarizeAnalyses(referenceTable, outputFolder, calibrate = TRUE)
 \item{outputFolder}{Name of the folder where all the outputs have been written to.}
 
 \item{calibrate}{Perform empirical calibration? See details.}
+
+\item{calibrationThreads}{The number of parallel threads to use for calibrating estimates.}
 }
 \value{
 A tibble containing summary statistics for each target-comparator-outcome-analysis combination.

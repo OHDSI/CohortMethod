@@ -21,6 +21,10 @@ library(CohortMethod)
 library(SqlRender)
 options(andromedaTempFolder = "s:/andromedaTemp")
 
+folder <- "s:/temp/cohortMethodVignette2"
+# unlink(folder, recursive = TRUE)
+
+
 # MDCD on RedShift
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
                                                                 connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
@@ -58,46 +62,33 @@ DatabaseConnector::querySql(connection, sql)
 
 DatabaseConnector::disconnect(connection)
 
+# Create settings ------------------------------------------------------
 nsaids <- 21603933
+
+negativeControlIds <- c(192671, 29735, 140673, 197494,
+                        198185, 198199, 200528, 257315,
+                        314658, 317376, 321319, 380731,
+                        432661, 432867, 433516, 433701,
+                        433753, 435140, 435459, 435524,
+                        435783, 436665, 436676, 442619,
+                        444252, 444429, 4131756, 4134120,
+                        4134454, 4152280, 4165112, 4174262,
+                        4182210, 4270490, 4286201, 4289933)
+
+outcomeOfInterest <- createOutcome(outcomeId = 192671,
+                                   outcomeOfInterest = TRUE)
+
+negativeControlOutcomes <- lapply(negativeControlIds,
+                                  function(outcomeId) createOutcome(outcomeId = outcomeId,
+                                                                    outcomeOfInterest = FALSE,
+                                                                    trueEffectSize = 1))
+
+
 
 tcos <- createTargetComparatorOutcomes(targetId = 1118084,
                                        comparatorId = 1124300,
-                                       outcomeIds = c(192671,
-                                                      24609,
-                                                      29735,
-                                                      73754,
-                                                      80004,
-                                                      134718,
-                                                      139099,
-                                                      141932,
-                                                      192367,
-                                                      193739,
-                                                      194997,
-                                                      197236,
-                                                      199074,
-                                                      255573,
-                                                      257007,
-                                                      313459,
-                                                      314658,
-                                                      316084,
-                                                      319843,
-                                                      321596,
-                                                      374366,
-                                                      375292,
-                                                      380094,
-                                                      433753,
-                                                      433811,
-                                                      436665,
-                                                      436676,
-                                                      436940,
-                                                      437784,
-                                                      438134,
-                                                      440358,
-                                                      440374,
-                                                      443617,
-                                                      443800,
-                                                      4084966,
-                                                      4288310))
+                                       outcomes = append(list(outcomeOfInterest),
+                                                         negativeControlOutcomes))
 targetComparatorOutcomesList <- list(tcos)
 
 covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
@@ -135,11 +126,11 @@ createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
                                                            noiseLevel = "quiet",
                                                            cvRepetitions = 1))
 
-# createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
-#                                    prior = createPrior("laplace", variance = 0.0105))
-
 matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
+computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
+
+computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateFilter = CohortMethod::getDefaultCmTable1Specifications())
 
 fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
                                                   stratified = TRUE)
@@ -152,6 +143,10 @@ cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 createPsArgs = createPsArgs,
                                 matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
+                                computeSharedCovariateBalance = TRUE,
+                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+                                computeCovariateBalance = TRUE,
+                                computeCovariateBalanceArgs = computeCovBalArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
@@ -165,6 +160,10 @@ cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                 createPsArgs = createPsArgs,
                                 stratifyByPs = TRUE,
                                 stratifyByPsArgs = stratifyByPsArgs,
+                                computeSharedCovariateBalance = TRUE,
+                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+                                computeCovariateBalance = TRUE,
+                                computeCovariateBalanceArgs = computeCovBalArgs,
                                 fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
@@ -223,14 +222,15 @@ cmAnalysis6 <- createCmAnalysis(analysisId = 6,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs5)
 cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
 
-saveCmAnalysisList(cmAnalysisList, "s:/temp/cohortMethodVignette2/cmAnalysisList.json")
-saveTargetComparatorOutcomesList(targetComparatorOutcomesList,
-                                 "s:/temp/cohortMethodVignette2/targetComparatorOutcomesList.json")
+saveCmAnalysisList(cmAnalysisList, file.path(folder, "cmAnalysisList.json"))
+saveTargetComparatorOutcomesList(targetComparatorOutcomesList, file.path(folder, "targetComparatorOutcomesList.json"))
 
-# cmAnalysisList <- loadCmAnalysisList('s:/temp/cohortMethodVignette2/cmAnalysisList.json')
+# cmAnalysisList <- loadCmAnalysisList(file.path(folder, 'cmAnalysisList.json'))
 
-# targetComparatorOutcomesList <- loadTargetComparatorOutcomesList('s:/temp/cohortMethodVignette2/targetComparatorOutcomesList.json')
+# targetComparatorOutcomesList <- loadTargetComparatorOutcomesList(file.path(folder, 'targetComparatorOutcomesList.json'))
 
+# Run analyses ------------------------------------------------------------
+multiThreadingSettings <- createDefaultMultiThreadingSettings(parallel::detectCores())
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
@@ -238,24 +238,16 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = resultsDatabaseSchema,
                         outcomeTable = "outcomes",
-                        outputFolder = "s:/temp/cohortMethodVignette2",
+                        outputFolder = folder,
                         cdmVersion = cdmVersion,
                         cmAnalysisList = cmAnalysisList,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
-                        getDbCohortMethodDataThreads = 1,
-                        createPsThreads = 1,
-                        psCvThreads = 16,
-                        createStudyPopThreads = 3,
-                        trimMatchStratifyThreads = 5,
-                        prefilterCovariatesThreads = 3,
-                        fitOutcomeModelThreads = 5,
-                        outcomeCvThreads = 10,
-                        outcomeIdsOfInterest = c(192671))
-# result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
+                        multiThreadingSettings = multiThreadingSettings)
 
-analysisSum <- summarizeAnalyses(result, outputFolder = "s:/temp/cohortMethodVignette2")
+analysisSum <- summarizeAnalyses(referenceTable = result, outputFolder = folder, calibrationThreads = 4)
 
-saveRDS(analysisSum, "s:/temp/cohortMethodVignette2/analysisSummary.rds")
+saveRDS(analysisSum, file.path(folder, "analysisSummary.rds"))
+
 # cleanup:
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
 sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
@@ -264,7 +256,12 @@ connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::executeSql(connection, sql)
 DatabaseConnector::disconnect(connection)
 
-result <- readRDS('s:/temp/cohortMethodVignette2/outcomeModelReference.rds')
+# Create pre-computed results for vignette :
+# result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
+
+
+
+result <- readRDS(file.path(folder, "outcomeModelReference.rds"))
 om <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$outcomeModelFile[2]))
 om
 getAttritionTable(om)
