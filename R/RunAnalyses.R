@@ -602,6 +602,8 @@ runCmAnalyses <- function(connectionDetails,
     dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
     ParallelLogger::stopCluster(cluster)
   }
+  referenceTable <-  referenceTable %>%
+    select(-.data$includedCovariateConceptIds, .data$excludedCovariateConceptIds)
   invisible(referenceTable)
 }
 
@@ -899,7 +901,9 @@ createReferenceTable <- function(cmAnalysisList,
            outcomeId = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeId"),
                               use.names = FALSE),
            outcomeOfInterest = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeOfInterest"),
-                                      use.names = FALSE))
+                                      use.names = FALSE),
+           trueEffectSize = unlist(ParallelLogger::selectFromList(tco$outcomes, "trueEffectSize"),
+                                   use.names = FALSE))
   }
   tcos <- bind_rows(lapply(targetComparatorOutcomesList, convertTcosToTable))
   referenceTable <- analyses %>%
@@ -1202,6 +1206,7 @@ createReferenceTable <- function(cmAnalysisList,
                                        "includedCovariateConceptIds",
                                        "excludedCovariateConceptIds",
                                        "outcomeOfInterest",
+                                       "trueEffectSize",
                                        "cohortMethodDataFile",
                                        "studyPopFile",
                                        "sharedPsFile",
@@ -1341,12 +1346,19 @@ createReferenceTable <- function(cmAnalysisList,
 #'
 #' @param referenceTable   A [dplyr::tibble] as created by the [runCmAnalyses] function.
 #' @param outputFolder     Name of the folder where all the outputs have been written to.
+#' @param calibrate        Perform empirical calibration? See details.
+#'
+#' @details
+#' When `calibrate = TRUE`, the `trueEffectSize` column in the [createOutcome()] function will be
+#' used to identify negative (`trueEffectSize = 1`) and positive controls, These will then be used
+#' to fit a systematic error model, which in turn will be used to calibrate p-values and confidence
+#' intervals. If fewer than 5 controls have effect size estimates, no calibration will be performed.
 #'
 #' @return
 #' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
 #'
 #' @export
-summarizeAnalyses <- function(referenceTable, outputFolder) {
+summarizeAnalyses <- function(referenceTable, outputFolder, calibrate = TRUE) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(referenceTable, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
@@ -1396,8 +1408,8 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
       if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
         for (i in 1:nrow(outcomeModel$outcomeModelInteractionEstimates)) {
           result[, paste("rr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logRr[i])
-          result[, paste("ci95lb", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logLb95[i])
-          result[, paste("ci95ub", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[i])
+          result[, paste("ci95Lb", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logLb95[i])
+          result[, paste("ci95Ub", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[i])
           result[, paste("logRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$logRr[i]
           result[, paste("seLogRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$seLogRr[i]
         }
@@ -1405,9 +1417,56 @@ summarizeAnalyses <- function(referenceTable, outputFolder) {
     }
     return(result)
   }
-  columns <- c("analysisId", "targetId", "comparatorId", "outcomeId")
+  columns <- c("analysisId", "targetId", "comparatorId", "outcomeId", "trueEffectSize")
   results <- plyr::llply(referenceTable$outcomeModelFile, summarizeOneAnalysis, outputFolder = outputFolder, .progress = "text")
   results <- bind_rows(results)
   results <- bind_cols(referenceTable[, columns], results)
+  if (calibrate && any(!is.na(results$trueEffectSize))) {
+    results <- calibrateEstimates(results, outputFolder)
+  }
   return(results)
+}
+
+calibrateEstimates <- function(results, outputFolder) {
+  message("Calibrating estimates")
+  groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
+  results <- lapply(groups, calibrateGroup, outputFolder = outputFolder)
+  results <- bind_rows(results)
+  return(results)
+}
+
+# group = groups[[1]]
+calibrateGroup <- function(group, outputFolder) {
+  ncs <- group %>%
+    filter(.data$trueEffectSize == 1 & !is.na(.data$seLogRr))
+  pcs <- group %>%
+    filter(!is.na(.data$trueEffectSize) & .data$trueEffectSize != 1 & !is.na(.data$seLogRr))
+  if (nrow(ncs) >= 5) {
+    null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
+    calibratedP <- EmpiricalCalibration::calibrateP(null = null, logRr = group$logRr, seLogRr = group$seLogRr)
+
+    if (nrow(pcs) >= 5) {
+      model <- EmpiricalCalibration::fitSystematicErrorModel(logRr = c(ncs$logRr, pcs$logRr),
+                                                             seLogRr = c(ncs$seLogRr, pcs$seLogRr),
+                                                             trueLogRr = log(c(ncs$trueEffectSize, pcs$trueEffectSize)),
+                                                             estimateCovarianceMatrix = FALSE)
+    } else {
+      model <- EmpiricalCalibration::convertNullToErrorModel(null)
+    }
+    calibratedCi <- EmpiricalCalibration::calibrateConfidenceInterval(model = model, logRr = ncs$logRr, seLogRr = ncs$seLogRr)
+    group$calibratedRr <- exp(calibratedCi$logRr)
+    group$calibratedCi95Lb <- exp(calibratedCi$logLb95Rr)
+    group$calibratedCi95Ub <- exp(calibratedCi$logUb95Rr)
+    group$calibratedP <- calibratedP$p
+    group$calibratedLogRr <- calibratedCi$logRr
+    group$calibratedSeLogRr <- calibratedCi$seLogRr
+  } else {
+    group$calibratedRr <- NA
+    group$calibratedCi95Lb <- NA
+    group$calibratedCi95Ub <- NA
+    group$calibratedP <- NA
+    group$calibratedLogRr <- NA
+    group$calibratedSeLogRr <- NA
+  }
+  return(group)
 }

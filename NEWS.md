@@ -21,7 +21,7 @@ Changes:
 
 9. Major overhaul of the multiple-analyses framework:
 
-    - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function.
+    - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function. In addition, the `createOutcome()` function has an `outcomeOfInterest` and `trueEffectSize` argument (see below).
 
     - Added the `createComputeCovariateBalanceArgs()` function, added the `computeSharedCovariateBalance`, `,computeSharedCovariateBalanceArgs`, `computeCovariateBalance`, and `computeCovariateBalanceArgs` arguments to the `createCmAnalysis()` function, and the `computeSharedBalanceThreads`, `computeBalanceThreads` arguments to the `runCmAnalyses()` function to allow computation of covariate balance across a target-comparator-analysis (shared) or for each target-comparator-analysis-outcome in the `runCmAnalyses()` function.
 
@@ -33,7 +33,9 @@ Changes:
     
     - Dropping `prefilterCovariates` from `runCmAnalyses()`. Prefiltering is now always done when specific covariates are used in the outcome model.
 
+    - Changing case in output of `summarizeAnalyses()` from `ci95lb` and `ci95ub` to `ci95Lb` and `ci95Ub`.
 
+    - Added empirical calibration to the `summarizeAnalyses()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
 
 
 CohortMethod 4.2.2

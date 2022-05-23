@@ -7,6 +7,7 @@
 createOutcome(
   outcomeId,
   outcomeOfInterest = TRUE,
+  trueEffectSize = NA,
   priorOutcomeLookback = NULL,
   riskWindowStart = NULL,
   startAnchor = NULL,
@@ -22,7 +23,11 @@ files will be skipped, including outcome=specific covariate balance
 files. This could be helpful to speed up analyses with many controls,
 for which we're only interested in the effect size estimate.}
 
-\item{priorOutcomeLookback}{How many days should we look back when identifying prior
+\item{trueEffectSize}{For negative and positive controls: the known true effect size. To be used
+for empirical calibration. Negative controls have \code{trueEffectSize = 1}. If
+the true effect size is unkown, use \code{trueEffectSize = NA}}
+
+\item{priorOutcomeLookback}{How many days should we look back when identifying prior.
 outcomes?}
 
 \item{riskWindowStart}{The start of the risk window (in days) relative to the \code{startAnchor}.}

@@ -233,7 +233,10 @@ loadCmAnalysisList <- function(file) {
 #'                                         files will be skipped, including outcome=specific covariate balance
 #'                                         files. This could be helpful to speed up analyses with many controls,
 #'                                         for which we're only interested in the effect size estimate.
-#' @param priorOutcomeLookback             How many days should we look back when identifying prior
+#' @param trueEffectSize                   For negative and positive controls: the known true effect size. To be used
+#'                                         for empirical calibration. Negative controls have `trueEffectSize = 1`. If
+#'                                         the true effect size is unkown, use `trueEffectSize = NA`
+#' @param priorOutcomeLookback             How many days should we look back when identifying prior.
 #'                                         outcomes?
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
 #' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
@@ -252,6 +255,7 @@ loadCmAnalysisList <- function(file) {
 #' @export
 createOutcome <- function(outcomeId,
                           outcomeOfInterest = TRUE,
+                          trueEffectSize = NA,
                           priorOutcomeLookback = NULL,
                           riskWindowStart = NULL,
                           startAnchor = NULL,
@@ -260,6 +264,7 @@ createOutcome <- function(outcomeId,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(outcomeId, add = errorMessages)
   checkmate::assertLogical(outcomeOfInterest, add = errorMessages)
+  checkmate::assertNumeric(trueEffectSize, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowStart, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowEnd, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)

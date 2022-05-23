@@ -47,13 +47,13 @@ Imports:
 	survival,
 	ParallelLogger (>= 3.0.0),
 	bit64,
-	checkmate
+	checkmate,
+	EmpiricalCalibration
 Suggests:
 	testthat,
 	pROC,
 	knitr,
 	rmarkdown,
-	EmpiricalCalibration,
 	Eunomia,
 	withr,
 	R.utils,
