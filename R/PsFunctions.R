@@ -238,6 +238,7 @@ createPs <- function(cohortMethodData,
       attr(population, "metaData")$psHighCorrelation <- ref
     }
   }
+  population$propensityScore <- round(population$propensityScore, 10)
   population <- computePreferenceScore(population)
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)

@@ -19,7 +19,9 @@ Changes:
 
 8. Added the `covariateFilter` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
 
-9. Major overhaul of the multiple-analyses framework:
+9. Rounding propensity scores to 10 digits to improve reproducibility across operating systems.
+
+10. Major overhaul of the multiple-analyses framework:
 
     - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function. In addition, the `createOutcome()` function has an `outcomeOfInterest` and `trueEffectSize` argument (see below).
 
