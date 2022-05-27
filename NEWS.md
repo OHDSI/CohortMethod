@@ -38,6 +38,10 @@ Changes:
     - Changing case in output of `summarizeAnalyses()` from `ci95lb` and `ci95ub` to `ci95Lb` and `ci95Ub`.
 
     - Added empirical calibration to the `summarizeAnalyses()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
+    
+Bug fixes:
+
+1. Fixed error when using integer `maxWeight` when performng IPTW.
 
 
 CohortMethod 4.2.2

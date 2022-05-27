@@ -473,7 +473,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     }
     if (maxWeight > 0) {
       informativePopulation <- informativePopulation %>%
-        mutate(weights = if_else(.data$weights > maxWeight, maxWeight, .data$weights))
+        mutate(weights = ifelse(.data$weights > maxWeight, maxWeight, .data$weights))
     }
   } else {
     informativePopulation$weights <- NULL

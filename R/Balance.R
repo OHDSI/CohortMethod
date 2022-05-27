@@ -180,7 +180,7 @@ computeCovariateBalance <- function(population,
     checkmate::assertIntegerish(covariateFilter, add = errorMessages)
   } else if (!is.null(covariateFilter)) {
     checkmate::assertDataFrame(covariateFilter, add = errorMessages)
-    checkmate::assert_names(colnames(covariateFilter), must.include = c("analysisId", "covariateIds"), add = errorMessages)
+    checkmate::assertNames(colnames(covariateFilter), must.include = c("analysisId", "covariateIds"), add = errorMessages)
   }
   checkmate::reportAssertions(collection = errorMessages)
 
