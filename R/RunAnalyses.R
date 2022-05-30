@@ -693,6 +693,7 @@ addPsToStudyPop <- function(subset, outputFolder) {
     newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
     idx <- match(studyPop$rowId, ps$rowId)
     studyPop$propensityScore <- ps$propensityScore[idx]
+    studyPop$iptw <- ps$iptw[idx]
     attr(studyPop, "metaData") <- newMetaData
     saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
     return(NULL)
@@ -709,10 +710,15 @@ applyTrimMatchStratify <- function(ps, arguments) {
     functionArgs <- arguments$trimByPsToEquipoiseArgs
     functionArgs$population <- ps
     ps <- do.call("trimByPsToEquipoise", functionArgs)
-  } else if ("trimByIptw" %in% names(arguments) && arguments$trimByIptw) {
+  } else if (arguments$trimByIptw) {
     functionArgs <- arguments$trimByIptwArgs
     functionArgs$population <- ps
     ps <- do.call("trimByIptw", functionArgs)
+  }
+  if (arguments$truncateIptw) {
+    functionArgs <- arguments$truncateIptwArgs
+    functionArgs$population <- ps
+    ps <- do.call("truncateIptw", functionArgs)
   }
   if (arguments$matchOnPs) {
     functionArgs <- arguments$matchOnPsArgs
@@ -805,6 +811,7 @@ doFitOutcomeModelPlus <- function(params) {
     ps <- getPs(params$sharedPsFile)
     idx <- match(studyPop$rowId, ps$rowId)
     studyPop$propensityScore <- ps$propensityScore[idx]
+    studyPop$iptw <- ps$iptw[idx]
     ps <- studyPop
   } else {
     ps <- studyPop
@@ -832,6 +839,7 @@ doComputeSharedBalance <- function(params) {
     ps <- getPs(params$sharedPsFile)
     idx <- match(studyPop$rowId, ps$rowId)
     studyPop$propensityScore <- ps$propensityScore[idx]
+    studyPop$iptw <- ps$iptw[idx]
     ps <- studyPop
   } else {
     ps <- studyPop
@@ -1021,6 +1029,8 @@ createReferenceTable <- function(cmAnalysisList,
             "trimByPsToEquipoiseArgs",
             "trimByIptw",
             "trimByIptwArgs",
+            "truncateIptw",
+            "truncateIptwArgs",
             "matchOnPs",
             "matchOnPsArgs",
             "matchOnPsAndCovariates",
@@ -1036,7 +1046,8 @@ createReferenceTable <- function(cmAnalysisList,
   strataArgsList <- strataArgsList[sapply(strataArgsList,
                                           function(strataArgs) return(strataArgs$trimByPs |
                                                                         strataArgs$trimByPsToEquipoise |
-                                                                        ("trimByIptw" %in% colnames(strataArgs) && strataArgs$trimByIptw) |
+                                                                        strataArgs$trimByIptw |
+                                                                        strataArgs$truncateIptw |
                                                                         strataArgs$matchOnPs |
                                                                         strataArgs$matchOnPsAndCovariates |
                                                                         strataArgs$stratifyByPs |

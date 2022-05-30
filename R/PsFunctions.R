@@ -22,7 +22,11 @@
 #' Create propensity scores
 #'
 #' @description
-#' Creates propensity scores using a regularized logistic regression.
+#' Creates propensity scores and inverse probability of treatment weights (IPTW) using a regularized logistic regression.
+#'
+#' @details
+#' IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
+#' (att) using stabilized inverse propensity scores (Xu et al. 2010).
 #'
 #' @param cohortMethodData         An object of type [CohortMethodData] as generated using
 #'                                 [getDbCohortMethodData()].
@@ -49,6 +53,14 @@
 #' @param control                  The control object used to control the cross-validation used to
 #'                                 determine the hyperparameters of the prior (if applicable). See
 #'                                 [Cyclops::createControl()] for details.
+#' @param estimator                The type of estimator for the IPTW. Options are `estimator = "ate"`
+#'                                 for the average treatment effect, and `estimator = "att"`for the
+#'                                 average treatment effect in the treated.
+#'
+#' @references
+#' Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
+#' as weights to directly estimate relative risk and its confidence intervals. Value Health.
+#' 2010;13(2):273-277. doi:10.1111/j.1524-4733.2009.00671.x
 #'
 #' @examples
 #' data(cohortMethodDataSimulationProfile)
@@ -70,7 +82,8 @@ createPs <- function(cohortMethodData,
                                              resetCoefficients = TRUE,
                                              tolerance = 2e-07,
                                              cvRepetitions = 10,
-                                             startingVariance = 0.01)) {
+                                             startingVariance = 0.01),
+                     estimator = "att") {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
@@ -81,6 +94,7 @@ createPs <- function(cohortMethodData,
   checkmate::assertLogical(stopOnError, len = 1, add = errorMessages)
   checkmate::assertClass(prior, "cyclopsPrior", add = errorMessages)
   checkmate::assertClass(control, "cyclopsControl", add = errorMessages)
+  checkmate::assertChoice(estimator, c("ate", "att"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (is.null(population)) {
@@ -240,9 +254,35 @@ createPs <- function(cohortMethodData,
   }
   population$propensityScore <- round(population$propensityScore, 10)
   population <- computePreferenceScore(population)
+  population <- computeIptw(population, estimator)
+  attr(population, "metaData")$estimator <- estimator
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
   message("Creating propensity scores took ", signif(delta, 3), " ", attr(delta, "units"))
+  return(population)
+}
+
+computeIptw <- function(population, estimator = "ate") {
+  # Unstabilized:
+  # ATE:
+  # population$iptw <- ifelse(population$treatment == 1,
+  #                                        1/population$propensityScore,
+  #                                        1/(1 - population$propensityScore))
+  # ATT:
+  # population$iptw <- ifelse(population$treatment == 1,
+  #                                        1,
+  #                                        population$propensityScore/(1 - population$propensityScore))
+  if (estimator == "ate") {
+    # 'Stabilized' ATE:
+    population$iptw <- ifelse(population$treatment == 1,
+                              mean(population$treatment == 1) / population$propensityScore,
+                              mean(population$treatment == 0) / (1 - population$propensityScore))
+  } else {
+    # 'Stabilized' ATT:
+    population$iptw <- ifelse(population$treatment == 1,
+                              mean(population$treatment == 1),
+                              mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore))
+  }
   return(population)
 }
 
@@ -339,13 +379,10 @@ computePreferenceScore <- function(data, unfilteredData = NULL) {
 computeEquipoise <- function(data, equipoiseBounds = c(0.3, 0.7)) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertNames(colnames(data), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertNumeric(equipoiseBounds, lower = 0, upper = 1, len = 2, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
   if (!"preferenceScore" %in% colnames(data)) {
     data <- computePreferenceScore(data)
   }
@@ -420,7 +457,11 @@ plotPs <- function(data,
                    fileName = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertNames(colnames(data), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertDataFrame(unfilteredData, null.ok = TRUE, add = errorMessages)
+  if (!is.null(unfilteredData)) {
+    checkmate::assertNames(colnames(unfilteredData), must.include = c("treatment", "propensityScore"), add = errorMessages)
+  }
   checkmate::assertChoice(scale, c("propensity", "preference"), add = errorMessages)
   checkmate::assertChoice(type, c("density", "histogram", "histogramCount", "histogramProportion"), add = errorMessages)
   checkmate::assertNumber(binWidth, lower = 0, upper = 1, add = errorMessages)
@@ -435,16 +476,6 @@ plotPs <- function(data,
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
-  if (!is.null(unfilteredData)) {
-    if (!("treatment" %in% colnames(unfilteredData)))
-      stop("Missing column treatment in unfilteredData")
-    if (!("propensityScore" %in% colnames(unfilteredData)))
-      stop("Missing column propensityScore in unfilteredData")
-  }
   if (type == "histogram")
     type <- "histogramCount"
 
@@ -585,13 +616,9 @@ plotPs <- function(data,
 computePsAuc <- function(data, confidenceIntervals = FALSE) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertNames(colnames(data), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertLogical(confidenceIntervals, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
-  if (!("treatment" %in% colnames(data)))
-    stop("Missing column treatment in data")
-  if (!("propensityScore" %in% colnames(data)))
-    stop("Missing column propensityScore in data")
 
   if (confidenceIntervals) {
     aucCi <- aucWithCi(data$propensityScore, data$treatment)
@@ -633,15 +660,10 @@ computePsAuc <- function(data, confidenceIntervals = FALSE) {
 trimByPs <- function(population, trimFraction = 0.05) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertNumber(trimFraction, lower = 0, upper = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
-  if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
-  if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
   ParallelLogger::logTrace("Trimming based on propensity score")
   cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
@@ -689,15 +711,10 @@ trimByPs <- function(population, trimFraction = 0.05) {
 trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertNumeric(bounds, len = 2, lower = 0, upper = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
-  if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
-  if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
   ParallelLogger::logTrace("Trimming to equipoise")
   temp <- computePreferenceScore(population)
   population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
@@ -713,58 +730,84 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
 #' Remove subjects with a high IPTW
 #'
 #' @description
-#' Compute the inverse probability of treatment weights (IPTW) using the propensity scores, and remove
-#' subjects having a weight higher than the user-specified threshold.
+#' Remove subjects having a weight higher than the user-specified threshold.
 #'
-#' @param population   A data frame with at least the three columns described below.
+#' @param population   A data frame with at least the two columns described in the details
 #' @param maxWeight    The maximum allowed IPTW.
-#' @param estimator    The type of estimator. Options are `estimator = "ate"` for the average treatment
-#'                     effect, and `estimator = "att"`for the average treatment effect in the treated.
 #'
 #' @details
-#' The data frame should have the following three columns:
+#' The data frame should have the following two columns:
 #'
-#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
 #' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
-#' - propensityScore (numeric): Propensity score.
+#' - iptw (numeric): Propensity score.
 #'
 #' @return
-#' Returns a tibble with the same  columns as the input, as well as a `weights` column containing the
-#' IPTW.
+#' Returns a tibble with the same  columns as the input.
 #'
 #' @examples
 #' rowId <- 1:2000
 #' treatment <- rep(0:1, each = 1000)
-#' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+#' iptw <- 1/c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, iptw = iptw)
 #' result <- trimByIptw(data)
 #'
 #' @export
-trimByIptw <- function(population, maxWeight = 10, estimator = "ate") {
+trimByIptw <- function(population, maxWeight = 10) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("treatment", "iptw"), add = errorMessages)
   checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
-  checkmate::assertChoice(estimator, c("ate", "att"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
-  if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
-  if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
   ParallelLogger::logTrace("Trimming by IPTW")
   population <- population %>%
-    mutate(weights = computeWeights(population = .data, estimator = estimator)) %>%
-    filter(.data$weights <= maxWeight)
+    filter(.data$iptw <= maxWeight)
   if (!is.null(attr(population, "metaData"))) {
     metaData <- attr(population, "metaData")
     metaData$attrition <- bind_rows(metaData$attrition,
                                     getCounts(population, paste("Trimmed by IPTW")))
-    metaData$estimator <- estimator
     attr(population, "metaData") <- metaData
   }
   ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
+  return(population)
+}
+
+#' Truncate IPTW values
+#'
+#' @description
+#' Set the inverse probability of treatment weights (IPTW) to the user-specified threshold if it exceeds
+#' said threshold.
+#'
+#' @param population   A data frame with at least the two columns described in the details
+#' @param maxWeight    The maximum allowed IPTW.
+#'
+#' @details
+#' The data frame should have the following two columns:
+#'
+#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
+#' - iptw (numeric): Propensity score.
+#'
+#' @return
+#' Returns a tibble with the same  columns as the input.
+#'
+#' @examples
+#' rowId <- 1:2000
+#' treatment <- rep(0:1, each = 1000)
+#' iptw <- 1/c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+#' data <- data.frame(rowId = rowId, treatment = treatment, iptw = iptw)
+#' result <- truncateIptw(data)
+#'
+#' @export
+truncateIptw <- function(population, maxWeight = 10) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("treatment", "iptw"), add = errorMessages)
+  checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+  ParallelLogger::logTrace("Truncating IPTW")
+  population <- population %>%
+    mutate(iptw = ifelse(.data$iptw > maxWeight, maxWeight, .data$iptw))
   return(population)
 }
 
@@ -854,19 +897,13 @@ matchOnPs <- function(population,
                       stratificationColumns = c()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("rowId", "treatment", "propensityScore"), add = errorMessages)
   checkmate::assertNumber(caliper, lower = 0, add = errorMessages)
   checkmate::assertChoice(caliperScale, c("standardized", "propensity score", "standardized logit"), add = errorMessages)
   checkmate::assertInt(maxRatio, lower = 0, add = errorMessages)
   checkmate::assertLogical(allowReverseMatch, len = 1, add = errorMessages)
   checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
-  if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
-  if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
-  if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
 
   reverseTreatment <- (allowReverseMatch && sum(population$treatment == 1) > sum(population$treatment == 0))
   if (reverseTreatment) {
@@ -1051,17 +1088,12 @@ matchOnPsAndCovariates <- function(population,
 stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c(), baseSelection = "all") {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("treatment", "iptw"), add = errorMessages)
   checkmate::assertInt(numberOfStrata, lower = 1, add = errorMessages)
   checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
   checkmate::assertChoice(baseSelection, c("all", "target", "comparator"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!("rowId" %in% colnames(population)))
-    stop("Missing column rowId in population")
-  if (!("treatment" %in% colnames(population)))
-    stop("Missing column treatment in population")
-  if (!("propensityScore" %in% colnames(population)))
-    stop("Missing column propensityScore in population")
   ParallelLogger::logTrace("Stratifying by propensity score")
   if (nrow(population) == 0) {
     return(population)

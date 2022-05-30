@@ -84,6 +84,7 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #' @param stopOnError  If an error occur, should the function stop? Else, the two cohorts will be assumed to be perfectly separable.
 #' @param prior  The prior used to fit the model. See Cyclops::createPrior() for details.
 #' @param control  The control object used to control the cross-validation used to determine the hyperparameters of the prior (if applicable). See Cyclops::createControl() for details.
+#' @param estimator  The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.
 #'
 #' @export
 createCreatePsArgs <- function(excludeCovariateIds = c(),
@@ -92,7 +93,8 @@ createCreatePsArgs <- function(excludeCovariateIds = c(),
                                errorOnHighCorrelation = TRUE,
                                stopOnError = TRUE,
                                prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-                               control = createControl(noiseLevel = "silent", cvType = "auto", seed = 1, resetCoefficients = TRUE, tolerance = 2e-07, cvRepetitions = 10, startingVariance = 0.01)) {
+                               control = createControl(noiseLevel = "silent", cvType = "auto", seed = 1, resetCoefficients = TRUE, tolerance = 2e-07, cvRepetitions = 10, startingVariance = 0.01),
+                               estimator = "att") {
   analysis <- list()
   for (name in names(formals(createCreatePsArgs))) {
     analysis[[name]] <- get(name)
@@ -141,13 +143,28 @@ createTrimByPsToEquipoiseArgs <- function(bounds = c(0.3, 0.7)) {
 #' Create an object defining the parameter values.
 #'
 #' @param maxWeight  The maximum allowed IPTW.
-#' @param estimator  The type of estimator. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.
 #'
 #' @export
-createTrimByIptwArgs <- function(maxWeight = 10,
-                                 estimator = "ate") {
+createTrimByIptwArgs <- function(maxWeight = 10) {
   analysis <- list()
   for (name in names(formals(createTrimByIptwArgs))) {
+    analysis[[name]] <- get(name)
+  }
+  class(analysis) <- "args"
+  return(analysis)
+}
+
+#' Create a parameter object for the function truncateIptw
+#'
+#' @details
+#' Create an object defining the parameter values.
+#'
+#' @param maxWeight  The maximum allowed IPTW.
+#'
+#' @export
+createTruncateIptwArgs <- function(maxWeight = 10) {
+  analysis <- list()
+  for (name in names(formals(createTruncateIptwArgs))) {
     analysis[[name]] <- get(name)
   }
   class(analysis) <- "args"
@@ -275,9 +292,7 @@ createComputeCovariateBalanceArgs <- function(subgroupCovariateId = NULL,
 #' @param modelType  The type of outcome model that will be used. Possible values are "logistic", "poisson", or "cox".
 #' @param stratified  Should the regression be conditioned on the strata defined in the population object (e.g. by matching or stratifying on propensity scores)?
 #' @param useCovariates  Whether to use the covariates in the cohortMethodData object in the outcome model.
-#' @param inversePtWeighting  Use inverse probability of treatment weighting (IPTW)? See details.
-#' @param estimator  for IPTW: the type of estimator. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.
-#' @param maxWeight  for IPTW: the maximum weight. Larger values will be truncated to this value. maxWeight = 0 means no truncation takes place.
+#' @param inversePtWeighting  Use inverse probability of treatment weighting (IPTW)
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions with the main treatment effect.
 #' @param excludeCovariateIds  Exclude these covariates from the outcome model.
 #' @param includeCovariateIds  Include only these covariates in the outcome model.
@@ -291,8 +306,6 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
-                                      estimator = "ate",
-                                      maxWeight = 0,
                                       interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),

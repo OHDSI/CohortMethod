@@ -76,7 +76,8 @@ test_that("Multiple analyses", {
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
-  createPsArgs <- createCreatePsArgs(prior = createPrior("laplace", variance = 0.01))
+  createPsArgs <- createCreatePsArgs(prior = createPrior("laplace", variance = 0.01),
+                                     estimator = "att")
 
   matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
 
@@ -103,20 +104,20 @@ test_that("Multiple analyses", {
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
-  trimByIptwArgs <- createTrimByIptwArgs(maxWeight = 10, estimator = "att")
+  truncateIptwArgs <- createTruncateIptwArgs(maxWeight = 10)
 
   fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                    inversePtWeighting = TRUE,
-                                                    estimator = "att",
-                                                    maxWeight = 9)
+                                                    inversePtWeighting = TRUE)
   cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                   description = "IPTW",
                                   getDbCohortMethodDataArgs = getDbCmDataArgs,
                                   createStudyPopArgs = createStudyPopArgs2,
                                   createPs = TRUE,
                                   createPsArgs = createPsArgs,
-                                  trimByIptw = TRUE,
-                                  trimByIptwArgs = trimByIptwArgs,
+                                  truncateIptw = TRUE,
+                                  truncateIptwArgs = truncateIptwArgs,
+                                  computeSharedCovariateBalance = TRUE,
+                                  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs3)
 

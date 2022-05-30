@@ -17,9 +17,6 @@
 #' Create an outcome model, and compute the relative risk
 #'
 #' @details
-#' IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
-#' (att) using stabilized inverse propensity scores (Xu et al. 2010).
-#'
 #' For likelihood profiling, either specify the `profileGrid` for a completely user- defined grid, or
 #' `profileBounds` for an adaptive grid. Both should be defined on the log effect size scale. When both
 #' `profileGrid` and `profileGrid` are `NULL` likelihood profiling is disabled.
@@ -40,12 +37,7 @@
 #'                              scores)?
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
-#' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)? See details.
-#' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
-#'                              average treatment effect, and `estimator = "att"`for the average treatment
-#'                              effect in the treated.
-#' @param maxWeight             for IPTW: the maximum weight. Larger values will be truncated to this
-#'                              value. `maxWeight = 0` means no truncation takes place.
+#' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -60,11 +52,6 @@
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              [Cyclops::createControl()] for details.
 #'
-#' @references
-#' Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
-#' as weights to directly estimate relative risk and its confidence intervals. Value Health.
-#' 2010;13(2):273-277. doi:10.1111/j.1524-4733.2009.00671.x
-#'
 #' @return
 #' An object of class `OutcomeModel`. Generic function `print`, `coef`, and
 #' `confint` are available.
@@ -76,8 +63,6 @@ fitOutcomeModel <- function(population,
                             stratified = FALSE,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
-                            estimator = "ate",
-                            maxWeight = 0,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
@@ -98,8 +83,6 @@ fitOutcomeModel <- function(population,
   checkmate::assertLogical(stratified, len = 1, add = errorMessages)
   checkmate::assertLogical(useCovariates, len = 1, add = errorMessages)
   checkmate::assertLogical(inversePtWeighting, len = 1, add = errorMessages)
-  checkmate::assertChoice(estimator, c("ate", "att"), add = errorMessages)
-  checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
   .assertCovariateId(interactionCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(includeCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -118,8 +101,8 @@ fitOutcomeModel <- function(population,
     stop("Requesting interaction terms in model, but no cohortMethodData object specified")
   if (any(excludeCovariateIds %in% interactionCovariateIds))
     stop("Can't exclude covariates that are to be used for interaction terms")
-  if (inversePtWeighting && is.null(population$propensityScore))
-    stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
+  if (inversePtWeighting && is.null(population$iptw))
+    stop("Requested inverse probability weighting, but no IPTW are provided. Use createPs to generate them")
   if (!is.null(profileGrid) && !is.null(profileBounds))
     stop("Can't specify both a grid and bounds for likelihood profiling")
 
@@ -149,8 +132,6 @@ fitOutcomeModel <- function(population,
     informativePopulation <- getInformativePopulation(population = population,
                                                       stratified = stratified,
                                                       inversePtWeighting = inversePtWeighting,
-                                                      estimator = estimator,
-                                                      maxWeight = maxWeight,
                                                       modelType = modelType)
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
@@ -413,12 +394,6 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePtWeighting <- inversePtWeighting
-  if (inversePtWeighting) {
-    outcomeModel$estimator <- estimator
-    if (maxWeight > 0) {
-      outcomeModel$maxWeight <- maxWeight
-    }
-  }
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelmainEffectEstimates <- mainEffectEstimates
   if (length(interactionCovariateIds) != 0)
@@ -437,7 +412,7 @@ fitOutcomeModel <- function(population,
   return(outcomeModel)
 }
 
-getInformativePopulation <- function(population, stratified, inversePtWeighting, estimator, maxWeight, modelType) {
+getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType) {
   population <- rename(population, y = .data$outcomeCount)
   if (!stratified) {
     population$stratumId <- NULL
@@ -458,23 +433,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     informativePopulation <- population
   }
   if (inversePtWeighting) {
-    if ("weights" %in% colnames(informativePopulation)) {
-      if (!is.null(attr(population, "metaData"))) {
-        metaData <- attr(population, "metaData")
-        if (metaData$estimator != estimator) {
-          stop(sprintf("Specifying estimator = '%s' when fitting outcome model, but used estimator = '%s' when trimming",
-               estimator,
-               metaData$estimator))
-        }
-      }
-      message("Using previously computed weights")
-    } else {
-      informativePopulation$weights <- computeWeights(informativePopulation, estimator = estimator)
-    }
-    if (maxWeight > 0) {
-      informativePopulation <- informativePopulation %>%
-        mutate(weights = ifelse(.data$weights > maxWeight, maxWeight, .data$weights))
-    }
+    informativePopulation$weights <- informativePopulation$iptw
   } else {
     informativePopulation$weights <- NULL
   }
@@ -530,29 +489,6 @@ filterAndTidyCovariates <- function(cohortMethodData,
   covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
   close(filteredCovariateData)
   return(covariateData)
-}
-
-computeWeights <- function(population, estimator = "ate") {
-  # Unstabilized:
-  # ATE:
-  # population$weights <- ifelse(population$treatment == 1,
-  #                                        1/population$propensityScore,
-  #                                        1/(1 - population$propensityScore))
-  # ATT:
-  # population$weights <- ifelse(population$treatment == 1,
-  #                                        1,
-  #                                        population$propensityScore/(1 - population$propensityScore))
-  if (estimator == "ate") {
-    # 'Stabilized' ATE:
-    return(ifelse(population$treatment == 1,
-                  mean(population$treatment == 1) / population$propensityScore,
-                  mean(population$treatment == 0) / (1 - population$propensityScore)))
-  } else {
-    # 'Stabilized' ATT:
-    return(ifelse(population$treatment == 1,
-                  mean(population$treatment == 1),
-                  mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)))
-  }
 }
 
 getOutcomeCounts <- function(population, modelType) {

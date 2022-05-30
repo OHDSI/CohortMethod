@@ -40,10 +40,14 @@
 #'                                        in this analysis?
 #' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
 #'                                        the [trimByPsToEquipoise()] function.
-#' @param trimByIptw                      Should the [trimByPsToEquipoise()] function be used
+#' @param trimByIptw                      Should the [trimByIptw()] function be used
 #'                                        in this analysis?
 #' @param trimByIptwArgs                  An object representing the arguments to be used when calling
 #'                                        the [trimByIptw()] function.
+#' @param truncateIptw                    Should the [truncateIptw()] function be used
+#'                                        in this analysis?
+#' @param truncateIptwArgs                An object representing the arguments to be used when calling
+#'                                        the [truncateIptw()] function.
 #' @param matchOnPs                       Should the [matchOnPs()] function be used in this
 #'                                        analysis?
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
@@ -86,6 +90,8 @@ createCmAnalysis <- function(analysisId = 1,
                              trimByPsToEquipoiseArgs = NULL,
                              trimByIptw = FALSE,
                              trimByIptwArgs = NULL,
+                             truncateIptw = FALSE,
+                             truncateIptwArgs = NULL,
                              matchOnPs = FALSE,
                              matchOnPsArgs = NULL,
                              matchOnPsAndCovariates = FALSE,
@@ -113,6 +119,8 @@ createCmAnalysis <- function(analysisId = 1,
   checkmate::assertClass(trimByPsToEquipoiseArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(trimByIptw, len = 1, add = errorMessages)
   checkmate::assertClass(trimByIptwArgs, "args", null.ok = TRUE, add = errorMessages)
+  checkmate::assertLogical(truncateIptw, len = 1, add = errorMessages)
+  checkmate::assertClass(truncateIptwArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(matchOnPs, len = 1, add = errorMessages)
   checkmate::assertClass(matchOnPsArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(matchOnPsAndCovariates, len = 1, add = errorMessages)
@@ -135,7 +143,7 @@ createCmAnalysis <- function(analysisId = 1,
   if (trimByPs + trimByPsToEquipoise + trimByIptw > 1) {
     stop("Need to pick one trimming strategy")
   }
-  if (!createPs && (trimByPs | trimByPsToEquipoise | trimByIptw | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
+  if (!createPs && (trimByPs | trimByPsToEquipoise | trimByIptw | truncateIptw | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
@@ -153,6 +161,9 @@ createCmAnalysis <- function(analysisId = 1,
   }
   if (!trimByIptw) {
     trimByIptwArgs <- NULL
+  }
+  if (!truncateIptw) {
+    truncateIptwArgs <- NULL
   }
   if (!matchOnPs) {
     matchOnPsArgs <- NULL

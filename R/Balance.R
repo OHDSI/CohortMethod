@@ -50,6 +50,7 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
 computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 
   hasStrata <- "stratumId" %in% colnames(cohorts)
+  hasIptw <- "iptw" %in% colnames(cohorts)
 
   if (hasStrata) {
     stratumSize <- cohorts %>%
@@ -58,33 +59,43 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       ungroup()
   }
 
+  useWeighting <- (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) ||
+    (!hasStrata && hasIptw)
+
   covariates <- filterCovariates(cohortMethodData$covariates, cohortMethodData$covariateRef, covariateFilter)
 
-  if (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) {
-    # Variable strata sizes detected: weigh by size of strata set
-    w <- stratumSize %>%
-      mutate(weight = 1/.data$n) %>%
-      inner_join(cohorts, by = c("stratumId", "treatment")) %>%
-      select(.data$rowId, .data$treatment, .data$weight)
+  if (useWeighting) {
+    if (hasStrata) {
+      # Variable strata sizes detected: weigh by size of strata set
+      w <- stratumSize %>%
+        mutate(weight = 1/.data$n) %>%
+        inner_join(cohorts, by = c("stratumId", "treatment")) %>%
+        select(.data$rowId, .data$treatment, .data$weight)
 
-    # Normalize so sum(weight) == 1 per treatment arm:
-    wSum <- w %>%
-      group_by(.data$treatment) %>%
-      summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
-      ungroup()
+      # Normalize so sum(weight) == 1 per treatment arm:
+      wSum <- w %>%
+        group_by(.data$treatment) %>%
+        summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
+        ungroup()
 
-    cohortMethodData$w <- w %>%
-      inner_join(wSum, by = "treatment") %>%
-      mutate(weight = .data$weight / .data$wSum) %>%
-      select(.data$rowId, .data$treatment, .data$weight)
+      cohortMethodData$w <- w %>%
+        inner_join(wSum, by = "treatment") %>%
+        mutate(weight = .data$weight / .data$wSum) %>%
+        select(.data$rowId, .data$treatment, .data$weight)
 
-    # By definition:
-    sumW <- 1
+      # By definition:
+      sumW <- 1
+    } else {
+      cohortMethodData$w <- cohorts %>%
+        mutate(weight = .data$iptw)
+
+      sumW <- cohortMethodData$w %>%
+        summarize(sumW = sum(.data$weight, na.rm = TRUE)) %>%
+        pull(sumW)
+    }
 
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
-
-
-    result <-covariates %>%
+    result <- covariates %>%
       inner_join(cohortMethodData$w, by = c("rowId")) %>%
       group_by(.data$covariateId, .data$treatment) %>%
       summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
@@ -226,14 +237,14 @@ computeCovariateBalance <- function(population,
       select(.data$rowId, .data$treatment)
 
     cohortMethodData$tempCohortsAfterMatching <- tempCohortsAfterMatching %>%
-      select(.data$rowId, .data$treatment, .data$stratumId)
+      select(.data$rowId, .data$treatment, matches("stratumId"), .data$iptw)
   } else {
     cohortMethodData$tempCohorts <- cohortMethodData$cohorts %>%
       select(.data$rowId, .data$treatment) %>%
       sampleCohortsAndromeda(maxCohortSize = maxCohortSize, label = "before matching")
 
     cohortMethodData$tempCohortsAfterMatching <- population %>%
-      select(.data$rowId, .data$treatment, .data$stratumId) %>%
+      select(.data$rowId, .data$treatment, matches("stratumId"), .data$iptw) %>%
       sampleCohorts(maxCohortSize = maxCohortSize, label = "after matching")
   }
   on.exit(cohortMethodData$tempCohorts <- NULL)

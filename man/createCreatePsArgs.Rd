@@ -13,7 +13,8 @@ createCreatePsArgs(
   prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
   control = createControl(noiseLevel = "silent", cvType = "auto", seed = 1,
     resetCoefficients = TRUE, tolerance = 2e-07, cvRepetitions = 10, startingVariance =
-    0.01)
+    0.01),
+  estimator = "att"
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ createCreatePsArgs(
 \item{prior}{The prior used to fit the model. See Cyclops::createPrior() for details.}
 
 \item{control}{The control object used to control the cross-validation used to determine the hyperparameters of the prior (if applicable). See Cyclops::createControl() for details.}
+
+\item{estimator}{The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.}
 }
 \description{
 Create a parameter object for the function createPs

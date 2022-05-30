@@ -21,7 +21,9 @@ Changes:
 
 9. Rounding propensity scores to 10 digits to improve reproducibility across operating systems.
 
-10. Setting `covariateCohortDatabaseSchema` and `covariateCohortTable` of cohort-based covariate builders to `exposureDatabaseSchema` and `exposureTable`, respectively if `covariateCohortTable` is `NULL`.
+11. Setting `covariateCohortDatabaseSchema` and `covariateCohortTable` of cohort-based covariate builders to `exposureDatabaseSchema` and `exposureTable`, respectively if `covariateCohortTable` is `NULL`.
+
+12. Now computing IPTW in `createPs()`, and truncating IPTW can be done in `truncateIptw()`. The `computeCovariateBalance()` function now computes balance using IPTW if no `stratumId` column is found in the `population` argument.
 
 11. Major overhaul of the multiple-analyses framework:
 

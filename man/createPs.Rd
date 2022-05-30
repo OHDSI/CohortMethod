@@ -15,7 +15,8 @@ createPs(
   prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
   control = createControl(noiseLevel = "silent", cvType = "auto", seed = 1,
     resetCoefficients = TRUE, tolerance = 2e-07, cvRepetitions = 10, startingVariance =
-    0.01)
+    0.01),
+  estimator = "att"
 )
 }
 \arguments{
@@ -52,13 +53,26 @@ will be assumed to be perfectly separable.}
 \item{control}{The control object used to control the cross-validation used to
 determine the hyperparameters of the prior (if applicable). See
 \code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
+
+\item{estimator}{The type of estimator for the IPTW. Options are \code{estimator = "ate"}
+for the average treatment effect, and \code{estimator = "att"}for the
+average treatment effect in the treated.}
 }
 \description{
-Creates propensity scores using a regularized logistic regression.
+Creates propensity scores and inverse probability of treatment weights (IPTW) using a regularized logistic regression.
+}
+\details{
+IPTW estimates either the average treatment effect (ate) or average treatment effect in the treated
+(att) using stabilized inverse propensity scores (Xu et al. 2010).
 }
 \examples{
 data(cohortMethodDataSimulationProfile)
 cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
 ps <- createPs(cohortMethodData)
 
+}
+\references{
+Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
+as weights to directly estimate relative risk and its confidence intervals. Value Health.
+2010;13(2):273-277. doi:10.1111/j.1524-4733.2009.00671.x
 }

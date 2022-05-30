@@ -17,6 +17,8 @@ createCmAnalysis(
   trimByPsToEquipoiseArgs = NULL,
   trimByIptw = FALSE,
   trimByIptwArgs = NULL,
+  truncateIptw = FALSE,
+  truncateIptwArgs = NULL,
   matchOnPs = FALSE,
   matchOnPsArgs = NULL,
   matchOnPsAndCovariates = FALSE,
@@ -63,11 +65,17 @@ in this analysis?}
 \item{trimByPsToEquipoiseArgs}{An object representing the arguments to be used when calling
 the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function.}
 
-\item{trimByIptw}{Should the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function be used
+\item{trimByIptw}{Should the \code{\link[=trimByIptw]{trimByIptw()}} function be used
 in this analysis?}
 
 \item{trimByIptwArgs}{An object representing the arguments to be used when calling
 the \code{\link[=trimByIptw]{trimByIptw()}} function.}
+
+\item{truncateIptw}{Should the \code{\link[=truncateIptw]{truncateIptw()}} function be used
+in this analysis?}
+
+\item{truncateIptwArgs}{An object representing the arguments to be used when calling
+the \code{\link[=truncateIptw]{truncateIptw()}} function.}
 
 \item{matchOnPs}{Should the \code{\link[=matchOnPs]{matchOnPs()}} function be used in this
 analysis?}
