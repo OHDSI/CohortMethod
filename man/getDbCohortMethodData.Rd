@@ -128,4 +128,8 @@ The \code{removeduplicateSubjects} argument can have one of the following values
 \item \code{"keep first"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
 \item \code{"remove all"}: Remove subjects that appear in both target and comparator cohort completely from the analysis."
 }
+
+If the \code{covariateSettings} include cohort-based covariates, and the \code{covariateCohortTable} is \code{NULL}, the
+\code{covariateCohortDatabaseSchema} and \code{covariateCohortTable} will be set to the \code{exposureDatabaseSchema} and
+\code{exposureTable}, respectively .
 }

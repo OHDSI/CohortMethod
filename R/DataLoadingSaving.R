@@ -38,6 +38,10 @@
 #' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
 #' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
 #'
+#' If the `covariateSettings` include cohort-based covariates, and the `covariateCohortTable` is `NULL`, the
+#' `covariateCohortDatabaseSchema` and `covariateCohortTable` will be set to the `exposureDatabaseSchema` and
+#' `exposureTable`, respectively .
+#'
 #' @param connectionDetails            An R object of type `connectionDetails` created using the
 #'                                     [DatabaseConnector::createConnectionDetails()] function.
 #' @param cdmDatabaseSchema            The name of the database schema that contains the OMOP CDM
@@ -319,6 +323,7 @@ getDbCohortMethodData <- function(connectionDetails,
   } else {
     cohortTable <- "#cohort_person"
   }
+  covariateSettings <- handleCohortCovariateBuilders(covariateSettings, exposureDatabaseSchema, exposureTable)
   covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
                                                          oracleTempSchema = tempEmulationSchema,
                                                          cdmDatabaseSchema = cdmDatabaseSchema,
@@ -363,4 +368,19 @@ getDbCohortMethodData <- function(connectionDetails,
   class(covariateData) <- "CohortMethodData"
   attr(class(covariateData), "package") <- "CohortMethod"
   return(covariateData)
+}
+
+handleCohortCovariateBuilders <- function(covariateSettings, exposureDatabaseSchema, exposureTable) {
+  if (class(covariateSettings) == "covariateSettings") {
+    covariateSettings <- list(covariateSettings)
+  }
+  for (i in 1:length(covariateSettings)) {
+    object <- covariateSettings[[i]]
+    if ("covariateCohorts" %in% names(object) && is.null(object$covariateCohortTable)) {
+      object$covariateCohortDatabaseSchema <- exposureDatabaseSchema
+      object$covariateCohortTable <- exposureTable
+      covariateSettings[[i]] <- object
+    }
+  }
+  return(covariateSettings)
 }

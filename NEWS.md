@@ -21,7 +21,9 @@ Changes:
 
 9. Rounding propensity scores to 10 digits to improve reproducibility across operating systems.
 
-10. Major overhaul of the multiple-analyses framework:
+10. Setting `covariateCohortDatabaseSchema` and `covariateCohortTable` of cohort-based covariate builders to `exposureDatabaseSchema` and `exposureTable`, respectively if `covariateCohortTable` is `NULL`.
+
+11. Major overhaul of the multiple-analyses framework:
 
     - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function. In addition, the `createOutcome()` function has an `outcomeOfInterest` and `trueEffectSize` argument (see below).
 
@@ -39,6 +41,7 @@ Changes:
 
     - Added empirical calibration to the `summarizeAnalyses()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
     
+
 Bug fixes:
 
 1. Fixed error when using integer `maxWeight` when performng IPTW.
