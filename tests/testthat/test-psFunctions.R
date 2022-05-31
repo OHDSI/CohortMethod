@@ -204,7 +204,7 @@ test_that("IPTW ATT", {
   treatment <- c(1, 0, 1, 0, 1)
   propensityScore <- c(0.1, 0.2, 0.3, 0.4, 0.5)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  w <- computeWeights(data, estimator = "att")
+  w <- computeIptw(data, estimator = "att")$iptw
   wGoldStandard <- mean(treatment == 1)*treatment + mean(treatment == 0) * (1 - treatment) * propensityScore / (1 - propensityScore)
   expect_equal(w, wGoldStandard)
 })

@@ -292,42 +292,22 @@ test_that("Warnings for createPs", {
 })
 
 test_that("Warnings for stratifyByPs", {
-  nsaids <- c(1118084, 1124300)
-  covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
-                                                addDescendantsToExclude = TRUE)
-  sCohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
-                                             cdmDatabaseSchema = "main",
-                                             targetId = 1,
-                                             comparatorId = 2,
-                                             outcomeIds = c(3, 4),
-                                             exposureDatabaseSchema = "main",
-                                             outcomeDatabaseSchema = "main",
-                                             exposureTable = "cohort",
-                                             outcomeTable = "cohort",
-                                             covariateSettings = covSettings)
-  studyPop <- createStudyPopulation(cohortMethodData = sCohortMethodData,
-                                    outcomeId = 3,
-                                    riskWindowEnd = 99999)
+  rowId <- 1:200
+  treatment <- rep(0:1, each = 100)
+  propensityScore <- round(c(runif(100, min = 0, max = 1), runif(100, min = 0, max = 1)), 1)
+  ps <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 
-  ps <- createPs(cohortMethodData = sCohortMethodData,
-                 population = studyPop)
-
-  ps1 <- ps %>% subset(select = -c(rowId))
-  expect_error(
-    stratifyByPs(population = ps1),
-    regexp = "Missing column rowId in population"
-  )
 
   ps2 <- ps %>% subset(select = -c(treatment))
   expect_error(
     stratifyByPs(population = ps2),
-    regexp = "Missing column treatment in population"
+    regexp = "Names must include the elements"
   )
 
   ps3 <- ps %>% subset(select = -c(propensityScore))
   expect_error(
     stratifyByPs(population = ps3),
-    regexp = "Missing column propensityScore in population"
+    regexp = "Names must include the elements"
   )
 
   expect_warning(stratifyByPs(population = ps,

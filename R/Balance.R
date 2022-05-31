@@ -71,28 +71,24 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
         mutate(weight = 1/.data$n) %>%
         inner_join(cohorts, by = c("stratumId", "treatment")) %>%
         select(.data$rowId, .data$treatment, .data$weight)
-
-      # Normalize so sum(weight) == 1 per treatment arm:
-      wSum <- w %>%
-        group_by(.data$treatment) %>%
-        summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
-        ungroup()
-
-      cohortMethodData$w <- w %>%
-        inner_join(wSum, by = "treatment") %>%
-        mutate(weight = .data$weight / .data$wSum) %>%
-        select(.data$rowId, .data$treatment, .data$weight)
-
-      # By definition:
-      sumW <- 1
     } else {
-      cohortMethodData$w <- cohorts %>%
-        mutate(weight = .data$iptw)
-
-      sumW <- cohortMethodData$w %>%
-        summarize(sumW = sum(.data$weight, na.rm = TRUE)) %>%
-        pull(sumW)
+      w <- cohorts %>%
+        mutate(weight = .data$iptw) %>%
+        select(.data$rowId, .data$treatment, .data$weight)
     }
+    # Normalize so sum(weight) == 1 per treatment arm:
+    wSum <- w %>%
+      group_by(.data$treatment) %>%
+      summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
+      ungroup()
+
+    cohortMethodData$w <- w %>%
+      inner_join(wSum, by = "treatment") %>%
+      mutate(weight = .data$weight / .data$wSum) %>%
+      select(.data$rowId, .data$treatment, .data$weight)
+
+    # By definition:
+    sumW <- 1
 
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
     result <- covariates %>%
