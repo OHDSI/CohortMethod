@@ -61,7 +61,7 @@ Suggests:
 Remotes:
 	ohdsi/FeatureExtraction,
 	ohdsi/Eunomia,
-	ohdsi/ParallelLogger
+	ohdsi/ParallelLogger@develop
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.1.2
