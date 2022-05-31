@@ -14,7 +14,8 @@ createMultiThreadingSettings(
   computeBalanceThreads = 1,
   prefilterCovariatesThreads = 1,
   fitOutcomeModelThreads = 1,
-  outcomeCvThreads = 1
+  outcomeCvThreads = 1,
+  calibrationThreads = 1
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ models.}
 validation when estimating the hyperparameter for the outcome
 model. Note that the total number of CV threads at one time
 could be \code{fitOutcomeModelThreads * outcomeCvThreads}.}
+
+\item{calibrationThreads}{The number of parallel threads to use for empirical calibration.}
 }
 \value{
 An object of type \code{CmMultiThreadingSettings}.

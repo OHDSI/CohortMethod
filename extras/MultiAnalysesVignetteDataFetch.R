@@ -244,10 +244,6 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
                         multiThreadingSettings = multiThreadingSettings)
 
-analysisSum <- summarizeAnalyses(referenceTable = result, outputFolder = folder, calibrationThreads = 4)
-
-saveRDS(analysisSum, file.path(folder, "analysisSummary.rds"))
-
 # cleanup:
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
 sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)

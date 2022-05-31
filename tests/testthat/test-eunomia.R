@@ -163,7 +163,7 @@ test_that("Multiple analyses", {
   expect_false(any(ref$targetId == 998 & ref$analysisId == 3))
   expect_false(any(ref$targetId == 998 & ref$analysisId == 4))
 
-  analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
+  analysisSum <- getResultsSummary(outputFolder)
 
   expect_equal(nrow(analysisSum), 12)
 
@@ -194,7 +194,7 @@ test_that("Multiple analyses", {
   # Should not throw same warning as previous analysis
   expect_false("Separable interaction terms found and removed" %in% warningList)
 
-  analysisSum <- summarizeAnalyses(runRes2, outputFolder = outputFolder)
+  analysisSum <- getResultsSummary(outputFolder)
   refernceTable <- file.path(outputFolder, "outcomeModelReference.rds")
   expect_true(file.exists(refernceTable))
   ref <- readRDS(refernceTable)

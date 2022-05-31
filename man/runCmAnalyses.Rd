@@ -100,6 +100,10 @@ the analyses have anything in common, and will take advantage of this fact. For 
 specify several analyses that only differ in the way the outcome model is fitted, then this
 function will extract the data and fit the propensity model only once, and re-use this in all the
 analysis.
+
+After completion, a tibble containing references to all generated files can be obtained using the
+\code{\link[=getFileReference]{getFileReference()}} function. A summary of the analysis results can be obtained using the
+\code{\link[=getResultsSummary]{getResultsSummary()}} function.
 \subsection{Analyses to Exclude}{
 
 Normally, \code{runCmAnalyses} will run all combinations of target-comparator-outcome-analyses settings.

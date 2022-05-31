@@ -358,14 +358,19 @@ if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")) {
 
 Note that some of the file names will appear several times in the table. For example, analysis 3 and 5 only differ in terms of the outcome model, and will share the same propensity score and stratification files.
 
-We can create a summary of the results using `summarizeAnalyses()`:
+We can always retrieve the file reference table again using the `getFileReference()` function:
 ```{r eval=FALSE}
-analysisSum <- summarizeAnalyses(result, outputFolder)
+result <- getFileReference(folder)
+```
+
+We can get a summary of the results using `getResultsSummary()`:
+```{r eval=FALSE}
+analysisSum <- getResultsSummary(outputFolder)
 head(analysisSum)
 ```
 ```{r echo=FALSE,message=FALSE}
 if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  analysisSum <- readRDS("s:/temp/cohortMethodVignette2/analysisSummary.rds")
+  analysisSum <- readRDS("s:/temp/cohortMethodVignette2/resultsSummary.rds")
   head(analysisSum)
 }
 ```

@@ -63,7 +63,7 @@ test_that("Multiple analyses", {
                           refitPsForEveryOutcome = TRUE)
   expect_equal(result$sharedPsFile, c("", ""))
 
-  analysisSum <- summarizeAnalyses(result, outputFolder = outputFolder)
+  analysisSum <- getResultsSummary(outputFolder)
 
   expect_equal(nrow(analysisSum), 2)
 

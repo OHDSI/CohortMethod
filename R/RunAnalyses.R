@@ -39,6 +39,7 @@
 #'                                       validation when estimating the hyperparameter for the outcome
 #'                                       model. Note that the total number of CV threads at one time
 #'                                       could be `fitOutcomeModelThreads * outcomeCvThreads`.
+#' @param calibrationThreads             The number of parallel threads to use for empirical calibration.
 #'
 #' @return
 #' An object of type `CmMultiThreadingSettings`.
@@ -55,7 +56,8 @@ createMultiThreadingSettings <- function(getDbCohortMethodDataThreads = 1,
                                          computeBalanceThreads = 1,
                                          prefilterCovariatesThreads = 1,
                                          fitOutcomeModelThreads = 1,
-                                         outcomeCvThreads = 1) {
+                                         outcomeCvThreads = 1,
+                                         calibrationThreads = 1) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(getDbCohortMethodDataThreads, lower = 1, add = errorMessages)
   checkmate::assertInt(createPsThreads, lower = 1, add = errorMessages)
@@ -65,6 +67,7 @@ createMultiThreadingSettings <- function(getDbCohortMethodDataThreads = 1,
   checkmate::assertInt(prefilterCovariatesThreads, lower = 1, add = errorMessages)
   checkmate::assertInt(fitOutcomeModelThreads, lower = 1, add = errorMessages)
   checkmate::assertInt(outcomeCvThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(calibrationThreads, lower = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   settings <- list()
   for (name in names(formals(createMultiThreadingSettings))) {
@@ -105,7 +108,8 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
                                            computeBalanceThreads = min(5, maxCores),
                                            prefilterCovariatesThreads = min(3, maxCores),
                                            fitOutcomeModelThreads = max(1, round(maxCores / 4)),
-                                           outcomeCvThreads = min(4, maxCores))
+                                           outcomeCvThreads = min(4, maxCores),
+                                           calibrationThreads = min(4, maxCores))
   return(settings)
 }
 
@@ -120,6 +124,10 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
 #' specify several analyses that only differ in the way the outcome model is fitted, then this
 #' function will extract the data and fit the propensity model only once, and re-use this in all the
 #' analysis.
+#'
+#' After completion, a tibble containing references to all generated files can be obtained using the
+#' [getFileReference()] function. A summary of the analysis results can be obtained using the
+#' [getResultsSummary()] function.
 #'
 #' ## Analyses to Exclude
 #'
@@ -601,6 +609,13 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
     ParallelLogger::stopCluster(cluster)
+  }
+  summaryFileName <- file.path(outputFolder, "resultsSummary.rds")
+  if (!file.exists(summaryFileName)) {
+    summarizeResults(referenceTable = referenceTable,
+                     outputFolder = outputFolder,
+                     fileName = summaryFileName,
+                     calibrationThreads = multiThreadingSettings$calibrationThreads)
   }
   referenceTable <-  referenceTable %>%
     select(-.data$includedCovariateConceptIds, .data$excludedCovariateConceptIds)
@@ -1355,29 +1370,41 @@ createReferenceTable <- function(cmAnalysisList,
   return(file.path(folder, name))
 }
 
-#' Create a summary report of the analyses
+#' Get a summary report of the analyses results
 #'
-#' @param referenceTable     A [dplyr::tibble] as created by the [runCmAnalyses] function.
 #' @param outputFolder       Name of the folder where all the outputs have been written to.
-#' @param calibrate          Perform empirical calibration? See details.
-#' @param calibrationThreads The number of parallel threads to use for calibrating estimates.
-#'
-#' @details
-#' When `calibrate = TRUE`, the `trueEffectSize` column in the [createOutcome()] function will be
-#' used to identify negative (`trueEffectSize = 1`) and positive controls, These will then be used
-#' to fit a systematic error model, which in turn will be used to calibrate p-values and confidence
-#' intervals. If fewer than 5 controls have effect size estimates, no calibration will be performed.
 #'
 #' @return
 #' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
 #'
 #' @export
-summarizeAnalyses <- function(referenceTable, outputFolder, calibrate = TRUE, calibrationThreads = 1) {
+getFileReference <- function(outputFolder) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertDataFrame(referenceTable, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   outputFolder <- normalizePath(outputFolder)
+  omr <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
+  return(omr)
+}
+
+#' Get a summary report of the analyses results
+#'
+#' @param outputFolder       Name of the folder where all the outputs have been written to.
+#'
+#' @return
+#' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
+#'
+#' @export
+getResultsSummary <- function(outputFolder) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+  outputFolder <- normalizePath(outputFolder)
+  results <- readRDS(file.path(outputFolder, "resultsSummary.rds"))
+  return(results)
+}
+
+summarizeResults <- function(referenceTable, outputFolder, fileName, calibrationThreads = 1) {
 
   summarizeOneAnalysis <- function(outcomeModelFile, outputFolder) {
     result <- dplyr::tibble(rr = 0,
@@ -1435,10 +1462,8 @@ summarizeAnalyses <- function(referenceTable, outputFolder, calibrate = TRUE, ca
   results <- plyr::llply(referenceTable$outcomeModelFile, summarizeOneAnalysis, outputFolder = outputFolder, .progress = "text")
   results <- bind_rows(results)
   results <- bind_cols(referenceTable[, columns], results)
-  if (calibrate && any(!is.na(results$trueEffectSize))) {
-    results <- calibrateEstimates(results = results, outputFolder = outputFolder, calibrationThreads = calibrationThreads)
-  }
-  return(results)
+  results <- calibrateEstimates(results = results, outputFolder = outputFolder, calibrationThreads = calibrationThreads)
+  saveRDS(results, fileName)
 }
 
 calibrateEstimates <- function(results, outputFolder, calibrationThreads) {

@@ -36,13 +36,16 @@ Changes:
     - Dropping `outcomeIdsOfInterest` argument of the `runCmAnalyses()` function. Instead, the `createOutcome()` function now has a `outcomeOfInterest` argument.
 
     - Settings related to multi-threading are combined in to a single settings object that be created using the new `createCmMultiThreadingSettings()` function.
-    
+
     - Dropping `prefilterCovariates` from `runCmAnalyses()`. Prefiltering is now always done when specific covariates are used in the outcome model.
 
-    - Changing case in output of `summarizeAnalyses()` from `ci95lb` and `ci95ub` to `ci95Lb` and `ci95Ub`.
-
-    - Added empirical calibration to the `summarizeAnalyses()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
+    - Removed the `summarizeAnalyses()` function. Instead, results are automatically summarized in `runCmAnalyses()`. The summary can be retrieved using the new `getResultsSummary()` function. 
     
+    - Changing case in output of `getResultsSummary()` from `ci95lb` and `ci95ub` to `ci95Lb` and `ci95Ub`.
+
+    - Added empirical calibration to the `getResultsSummary()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
+
+  
 
 Bug fixes:
 
