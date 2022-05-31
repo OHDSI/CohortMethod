@@ -1088,7 +1088,7 @@ matchOnPsAndCovariates <- function(population,
 stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c(), baseSelection = "all") {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
-  checkmate::assertNames(colnames(population), must.include = c("treatment", "iptw"), add = errorMessages)
+  checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertInt(numberOfStrata, lower = 1, add = errorMessages)
   checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
   checkmate::assertChoice(baseSelection, c("all", "target", "comparator"), add = errorMessages)

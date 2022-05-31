@@ -371,7 +371,7 @@ getDbCohortMethodData <- function(connectionDetails,
 }
 
 handleCohortCovariateBuilders <- function(covariateSettings, exposureDatabaseSchema, exposureTable) {
-  if (class(covariateSettings) == "covariateSettings") {
+  if (is(covariateSettings, "covariateSettings")) {
     covariateSettings <- list(covariateSettings)
   }
   for (i in 1:length(covariateSettings)) {
