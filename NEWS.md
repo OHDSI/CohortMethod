@@ -25,7 +25,9 @@ Changes:
 
 12. Now computing IPTW in `createPs()`, and truncating IPTW can be done in `truncateIptw()`. The `computeCovariateBalance()` function now computes balance using IPTW if no `stratumId` column is found in the `population` argument.
 
-11. Major overhaul of the multiple-analyses framework:
+13. Removing PS of exactly 0 and exactly 1 when computing the standard deviation of the logit for the matching caliper to allow matching when some subjects have perfectly predictable treatment assignment.
+
+14. Major overhaul of the multiple-analyses framework:
 
     - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function. In addition, the `createOutcome()` function has an `outcomeOfInterest` and `trueEffectSize` argument (see below).
 

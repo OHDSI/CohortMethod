@@ -612,6 +612,7 @@ runCmAnalyses <- function(connectionDetails,
   }
   summaryFileName <- file.path(outputFolder, "resultsSummary.rds")
   if (!file.exists(summaryFileName)) {
+    message("*** Summarizing results ***")
     summarizeResults(referenceTable = referenceTable,
                      outputFolder = outputFolder,
                      fileName = summaryFileName,

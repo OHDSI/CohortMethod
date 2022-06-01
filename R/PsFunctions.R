@@ -919,7 +919,7 @@ matchOnPs <- function(population,
     caliper <- caliper * sd(population$propensityScore)
   } else if (caliperScale == "standardized logit") {
     propensityScore <- logit(propensityScore)
-    caliper <- caliper * sd(propensityScore)
+    caliper <- caliper * sd(propensityScore[is.finite(propensityScore)])
   }
   if (maxRatio == 0) {
     maxRatio <- 999
