@@ -806,6 +806,8 @@ truncateIptw <- function(population, maxWeight = 10) {
   checkmate::reportAssertions(collection = errorMessages)
 
   ParallelLogger::logTrace("Truncating IPTW")
+  nTruncated <- sum(population$iptw > maxWeight)
+  message(sprintf("Truncating %s (%0.1f%%) IPTW values", nTruncated, 100 * nTruncated / nrow(population)))
   population <- population %>%
     mutate(iptw = ifelse(.data$iptw > maxWeight, maxWeight, .data$iptw))
   return(population)
