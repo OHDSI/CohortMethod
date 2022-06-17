@@ -263,6 +263,9 @@ runCmAnalyses <- function(connectionDetails,
     select(-.data$includedCovariateConceptIds, .data$excludedCovariateConceptIds) %>%
     saveRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
+  saveRDS(cmAnalysisList, file.path(outputFolder, "cmAnalysisList.rds"))
+  saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
+
   # Create cohortMethodData objects -----------------------------
   subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile), ]
   subset <- subset[subset$cohortMethodDataFile != "", ]
@@ -411,12 +414,12 @@ runCmAnalyses <- function(connectionDetails,
       dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitSharedPsModel, refitPsForEveryStudyPopulation)
       ParallelLogger::stopCluster(cluster)
     }
-    message("*** Adding propensity scores to study population objects ***")
+
     subset <- referenceTable[!duplicated(referenceTable$psFile), ]
     subset <- subset[subset$psFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
-
     if (nrow(subset) != 0) {
+      message("*** Adding propensity scores to study population objects ***")
       tasks <- split(subset, subset$sharedPsFile)
       cluster <- ParallelLogger::makeCluster(multiThreadingSettings$trimMatchStratifyThreads)
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -610,12 +613,14 @@ runCmAnalyses <- function(connectionDetails,
     dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
     ParallelLogger::stopCluster(cluster)
   }
-  summaryFileName <- file.path(outputFolder, "resultsSummary.rds")
-  if (!file.exists(summaryFileName)) {
+  mainFileName <- file.path(outputFolder, "resultsSummary.rds")
+  interactionsFileName <- file.path(outputFolder, "interactionResultsSummary.rds")
+  if (!file.exists(mainFileName)) {
     message("*** Summarizing results ***")
     summarizeResults(referenceTable = referenceTable,
                      outputFolder = outputFolder,
-                     fileName = summaryFileName,
+                     mainFileName = mainFileName,
+                     interactionsFileName = interactionsFileName,
                      calibrationThreads = multiThreadingSettings$calibrationThreads)
   }
   referenceTable <-  referenceTable %>%
@@ -1405,81 +1410,115 @@ getResultsSummary <- function(outputFolder) {
   return(results)
 }
 
-summarizeResults <- function(referenceTable, outputFolder, fileName, calibrationThreads = 1) {
-
-  summarizeOneAnalysis <- function(outcomeModelFile, outputFolder) {
-    result <- dplyr::tibble(rr = 0,
-                            ci95lb = 0,
-                            ci95ub = 0,
-                            p = 1,
-                            target = 0,
-                            comparator = 0,
-                            targetDays = NA,
-                            comparatorDays = NA,
-                            eventsTarget = 0,
-                            eventsComparator = 0,
-                            logRr = 0,
-                            seLogRr = 0)
-    if (outcomeModelFile != "") {
-      outcomeModel <- readRDS(file.path(outputFolder, outcomeModelFile))
-      result$rr <- if (is.null(coef(outcomeModel)))
-        NA else exp(coef(outcomeModel))
-      result$ci95lb <- if (is.null(coef(outcomeModel)))
-        NA else exp(confint(outcomeModel)[1])
-      result$ci95ub <- if (is.null(coef(outcomeModel)))
-        NA else exp(confint(outcomeModel)[2])
-      if (is.null(coef(outcomeModel))) {
-        result$p <- NA
-      } else {
-        z <- coef(outcomeModel)/outcomeModel$outcomeModelTreatmentEstimate$seLogRr
-        result$p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
-      }
-      result$target <- outcomeModel$populationCounts$targetPersons
-      result$comparator <- outcomeModel$populationCounts$comparatorPersons
-      result$targetDays <- outcomeModel$timeAtRisk$targetDays
-      result$comparatorDays <- outcomeModel$timeAtRisk$comparatorDays
-      result$eventsTarget <- outcomeModel$outcomeCounts$targetOutcomes
-      result$eventsComparator <- outcomeModel$outcomeCounts$comparatorOutcomes
-      result$logRr <- if (is.null(coef(outcomeModel)))
-        NA else coef(outcomeModel)
-      result$seLogRr <- if (is.null(coef(outcomeModel)))
-        NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr
-      result$llr <- if (is.null(coef(outcomeModel)))
-        NA else outcomeModel$outcomeModelTreatmentEstimate$llr
-
-      if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
-        for (i in 1:nrow(outcomeModel$outcomeModelInteractionEstimates)) {
-          result[, paste("rr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logRr[i])
-          result[, paste("ci95Lb", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logLb95[i])
-          result[, paste("ci95Ub", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[i])
-          result[, paste("logRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$logRr[i]
-          result[, paste("seLogRr", outcomeModel$outcomeModelInteractionEstimates$covariateId[i], sep = "I")] <- outcomeModel$outcomeModelInteractionEstimates$seLogRr[i]
-        }
-      }
-    }
-    return(result)
-  }
-  columns <- c("analysisId", "targetId", "comparatorId", "outcomeId", "trueEffectSize")
-  results <- plyr::llply(referenceTable$outcomeModelFile, summarizeOneAnalysis, outputFolder = outputFolder, .progress = "text")
-  results <- bind_rows(results)
-  results <- bind_cols(referenceTable[, columns], results)
-  results <- calibrateEstimates(results = results, outputFolder = outputFolder, calibrationThreads = calibrationThreads)
-  saveRDS(results, fileName)
+#' Get a summary report of the analyses results
+#'
+#' @param outputFolder       Name of the folder where all the outputs have been written to.
+#'
+#' @return
+#' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
+#'
+#' @export
+getInteractionResultsSummary <- function(outputFolder) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+  outputFolder <- normalizePath(outputFolder)
+  results <- readRDS(file.path(outputFolder, "interactionResultsSummary.rds"))
+  return(results)
 }
 
-calibrateEstimates <- function(results, outputFolder, calibrationThreads) {
-  message("Calibrating estimates")
-  groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
+summarizeResults <- function(referenceTable, outputFolder, mainFileName, interactionsFileName, calibrationThreads = 1) {
+  subset <- referenceTable %>%
+    filter(.data$outcomeModelFile != "")
+  mainResults <- vector("list", nrow(subset))
+  interActionResults <- list()
+  pb <- txtProgressBar(style = 3)
+  for (i in seq_len(nrow(subset))) {
+    outcomeModel <- readRDS(file.path(outputFolder, subset$outcomeModelFile[i]))
+    coefficient <- as.vector(coef(outcomeModel))
+    ci <- confint(outcomeModel)
+    if (is.null(coefficient)) {
+      p <- NA
+    } else {
+      z <- coefficient/outcomeModel$outcomeModelTreatmentEstimate$seLogRr
+      p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+    }
 
+    result <- subset[i, ] %>%
+      select(.data$analysisId,
+             .data$targetId,
+             .data$comparatorId,
+             .data$outcomeId,
+             .data$trueEffectSize) %>%
+      bind_cols(outcomeModel$populationCounts %>%
+                  select(targetSubjects = .data$targetPersons,
+                         comparatorSubjects = .data$comparatorPersons)) %>%
+      bind_cols(outcomeModel$timeAtRisk %>%
+                  select(.data$targetDays,
+                         .data$comparatorDays)) %>%
+      bind_cols(outcomeModel$outcomeCounts %>%
+                  select(.data$targetOutcomes, .data$comparatorOutcomes))
+
+    mainResult <- result %>%
+      mutate(rr = if (is.null(coefficient)) NA else exp(coefficient),
+             ci95Lb = if (is.null(coefficient))  NA else exp(ci[1]),
+             ci95Ub = if (is.null(coefficient)) NA else exp(ci[2]),
+             p = !!p,
+             logRr = if (is.null(coefficient)) NA else coefficient,
+             seLogRr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
+             llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr)
+
+    mainResults[[i]] <- mainResult
+
+    if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
+      for (j in seq_len(nrow(outcomeModel$outcomeModelInteractionEstimates))) {
+        z <- outcomeModel$outcomeModelInteractionEstimates$logRr[j]/outcomeModel$outcomeModelInteractionEstimates$seLogRr[j]
+        p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+        interActionResults[[length(interActionResults) + 1]] <- result %>%
+          mutate(interactionCovariateId = outcomeModel$outcomeModelInteractionEstimates$covariateId[j],
+                 rr = exp(outcomeModel$outcomeModelInteractionEstimates$logRr[j]),
+                 ci95Lb = exp(outcomeModel$outcomeModelInteractionEstimates$logLb95[j]),
+                 ci95Ub = exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[j]),
+                 p = !!p,
+                 logRr = outcomeModel$outcomeModelInteractionEstimates$logRr[j],
+                 seLogRr = outcomeModel$outcomeModelInteractionEstimates$seLogRr[j])
+      }
+    }
+    setTxtProgressBar(pb, i/nrow(subset))
+  }
+  close(pb)
+  mainResults <- bind_rows(mainResults)
+  mainResults <- calibrateEstimates(results = mainResults,
+                                    calibrationThreads = calibrationThreads)
+  saveRDS(mainResults, mainFileName)
+
+  interActionResults <- bind_rows(interActionResults)
+  interActionResults <- calibrateEstimates(results = interActionResults,
+                                           calibrationThreads = calibrationThreads,
+                                           interactions = TRUE)
+  saveRDS(interActionResults, interactionsFileName)
+}
+
+calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE) {
+  if (nrow(results) == 0) {
+    return(results)
+  }
+  if (interactions) {
+    message("Calibrating estimates for interactions")
+    groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId, results$interactionCovariateId))
+  } else {
+    message("Calibrating estimates")
+    groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
+  }
   cluster <- ParallelLogger::makeCluster(calibrationThreads)
-  results <- ParallelLogger::clusterApply(cluster, groups, calibrateGroup, outputFolder = outputFolder)
+  results <- ParallelLogger::clusterApply(cluster, groups, calibrateGroup)
   ParallelLogger::stopCluster(cluster)
   results <- bind_rows(results)
   return(results)
 }
 
 # group = groups[[1]]
-calibrateGroup <- function(group, outputFolder) {
+calibrateGroup <- function(group) {
   ncs <- group[group$trueEffectSize == 1 & !is.na(group$seLogRr), ]
   pcs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize != 1 & !is.na(group$seLogRr), ]
   if (nrow(ncs) >= 5) {

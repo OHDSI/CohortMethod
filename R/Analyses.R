@@ -325,12 +325,21 @@ createTargetComparatorOutcomes <- function(targetId,
   checkmate::assertInt(targetId, add = errorMessages)
   checkmate::assertInt(comparatorId, add = errorMessages)
   checkmate::assertList(outcomes, min.len = 1, add = errorMessages)
-  for (i in 1:length(outcomes)) {
+  for (i in seq_along(outcomes)) {
     checkmate::assertClass(outcomes[[i]], "outcome", add = errorMessages)
   }
   checkmate::assertIntegerish(excludedCovariateConceptIds, null.ok = TRUE, add = errorMessages)
   checkmate::assertIntegerish(includedCovariateConceptIds, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
+
+  outcomeIds <- rep(0, length(outcomes))
+  for (i in seq_along(outcomes)) {
+    outcomeIds[i] <- outcomes[[i]]$outcomeId
+  }
+  duplicatedIds <- outcomeIds[duplicated(outcomeIds)]
+  if (length(duplicatedIds) > 0) {
+    stop(sprintf("Found duplicate outcome IDs: %s", paste(duplicatedIds, paste = ", ")))
+  }
 
   targetComparatorOutcomes <- list()
   for (name in names(formals(createTargetComparatorOutcomes))) {

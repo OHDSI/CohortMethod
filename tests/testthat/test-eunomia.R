@@ -154,10 +154,8 @@ test_that("Multiple analyses", {
 
   }, "Separable interaction terms found and removed")
 
-  referenceTable <- file.path(outputFolder, "outcomeModelReference.rds")
-  expect_true(file.exists(referenceTable))
-  ref <- readRDS(referenceTable)
-  expect_equal(nrow(ref), 12)
+  ref <- getFileReference(outputFolder)
+    expect_equal(nrow(ref), 12)
 
   # analysesToExclude was enforced:
   expect_false(any(ref$targetId == 998 & ref$analysisId == 3))
@@ -166,6 +164,10 @@ test_that("Multiple analyses", {
   analysisSum <- getResultsSummary(outputFolder)
 
   expect_equal(nrow(analysisSum), 12)
+
+  CohortMethod::exportToCsv(outputFolder)
+  cohortMethodResultFile <- file.path(outputFolder, "export", "cohort_method_result.csv")
+  expect_true(file.exists(cohortMethodResultFile))
 
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
   connection <- DatabaseConnector::connect(connectionDetails)
@@ -323,6 +325,13 @@ test_that("Warnings for stratifyByPs", {
                                stratificationColumns = "stratCol")},
                  NA)
 
+})
+
+test_that("Error when defining two outcomes with the same outcome ID", {
+  outcome1 <- createOutcome(outcomeId = 123, outcomeOfInterest = TRUE)
+  outcome2 <- createOutcome(outcomeId = 123, outcomeOfInterest = FALSE)
+  expect_error(createTargetComparatorOutcomes(targetId = 1, comparatorId = 2, outcomes = list(outcome1, outcome2)),
+               "Found duplicate outcome IDs")
 })
 
 

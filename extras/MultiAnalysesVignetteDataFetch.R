@@ -23,7 +23,7 @@ options(andromedaTempFolder = "s:/andromedaTemp")
 
 folder <- "s:/temp/cohortMethodVignette2"
 # unlink(folder, recursive = TRUE)
-
+# dir.create(folder)
 
 # MDCD on RedShift
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
@@ -56,16 +56,14 @@ DatabaseConnector::executeSql(connection, sql)
 
 # Check number of subjects per cohort:
 sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_definition_id"
-sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
-sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
-DatabaseConnector::querySql(connection, sql)
+DatabaseConnector::renderTranslateQuerySql(connection, sql, resultsDatabaseSchema = resultsDatabaseSchema)
 
 DatabaseConnector::disconnect(connection)
 
 # Create settings ------------------------------------------------------
 nsaids <- 21603933
 
-negativeControlIds <- c(192671, 29735, 140673, 197494,
+negativeControlIds <- c(29735, 140673, 197494,
                         198185, 198199, 200528, 257315,
                         314658, 317376, 321319, 380731,
                         432661, 432867, 433516, 433701,
@@ -300,3 +298,5 @@ system.time(
 system.time(
   Andromeda::createIndex(cmData$covariates, "rowId")
 )
+folder <- "s:/temp/cohortMethodVignette2"
+exportToCsv(outputFolder = folder, minCellCount = 5, maxCores = 5)
