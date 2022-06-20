@@ -4,13 +4,17 @@
 \alias{computePsAuc}
 \title{Compute the area under the ROC curve}
 \usage{
-computePsAuc(data, confidenceIntervals = FALSE)
+computePsAuc(data, confidenceIntervals = FALSE, maxRows = 1e+05)
 }
 \arguments{
 \item{data}{A data frame with at least the two columns described below}
 
 \item{confidenceIntervals}{Compute 95 percent confidence intervals (computationally expensive for
 large data sets)}
+
+\item{maxRows}{Maximum number of rows to use. If the number of rows is larger, a random sample
+will be taken. This can increase speed, with minor cost to precision. Set to 0
+to use all data.}
 }
 \value{
 A tibble holding the AUC and its 95 percent confidence interval

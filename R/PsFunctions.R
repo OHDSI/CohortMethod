@@ -596,6 +596,10 @@ plotPs <- function(data,
 #' @param data                  A data frame with at least the two columns described below
 #' @param confidenceIntervals   Compute 95 percent confidence intervals (computationally expensive for
 #'                              large data sets)
+#' @param maxRows               Maximum number of rows to use. If the number of rows is larger, a random sample
+#'                              will be taken. This can increase speed, with minor cost to precision. Set to 0
+#'                              to use all data.
+#'
 #' @details
 #' The data frame should have a least the following two columns:
 #'
@@ -613,12 +617,19 @@ plotPs <- function(data,
 #' computePsAuc(data)
 #'
 #' @export
-computePsAuc <- function(data, confidenceIntervals = FALSE) {
+computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(data, add = errorMessages)
   checkmate::assertNames(colnames(data), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertLogical(confidenceIntervals, len = 1, add = errorMessages)
+  checkmate::assertInt(maxRows, lower = 0, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
+
+  if (nrow(data) > maxRows) {
+    message(sprintf("Downsampling study population from %d to %d before computing AUC", nrow(data), maxRows))
+    idx <- sample.int(nrow(data), maxRows, replace = FALSE)
+    data <- data[idx, ]
+  }
 
   if (confidenceIntervals) {
     aucCi <- aucWithCi(data$propensityScore, data$treatment)

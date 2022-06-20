@@ -27,7 +27,9 @@ Changes:
 
 13. Removing PS of exactly 0 and exactly 1 when computing the standard deviation of the logit for the matching caliper to allow matching when some subjects have perfectly predictable treatment assignment.
 
-14. Major overhaul of the multiple-analyses framework:
+14. Adding `maxRows` argument to `computePsAuc()` function to improve speed for very large study populations. 
+
+15. Major overhaul of the multiple-analyses framework:
 
     - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function. In addition, the `createOutcome()` function has an `outcomeOfInterest` and `trueEffectSize` argument (see below).
 

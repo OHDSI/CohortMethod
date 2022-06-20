@@ -1014,9 +1014,9 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
       .data$targetId,
       .data$comparatorId,
       .data$outcomeId,
-      stdDifferenceOfMean,
-      sharedStdDifferenceOfMean,
-      equipoise
+      .data$stdDifferenceOfMean,
+      .data$sharedStdDifferenceOfMean,
+      .data$equipoise
     )
 
   results2 <- getResultsSummary(outputFolder) %>%
