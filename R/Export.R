@@ -706,12 +706,12 @@ prepareKaplanMeier <- function(population) {
   if (is.null(population$stratumId) || length(unique(population$stratumId)) == nrow(population)/2) {
     sv <- survival::survfit(survival::Surv(survivalTime, y) ~ treatment, population, conf.int = TRUE)
     idx <- summary(sv, censored = T)$strata == "treatment=1"
-    survTarget <- tibble::tibble(time = sv$time[idx],
+    survTarget <- tibble(time = sv$time[idx],
                                  targetSurvival = sv$surv[idx],
                                  targetSurvivalLb = sv$lower[idx],
                                  targetSurvivalUb = sv$upper[idx])
     idx <- summary(sv, censored = T)$strata == "treatment=0"
-    survComparator <- tibble::tibble(time = sv$time[idx],
+    survComparator <- tibble(time = sv$time[idx],
                                      comparatorSurvival = sv$surv[idx],
                                      comparatorSurvivalLb = sv$lower[idx],
                                      comparatorSurvivalUb = sv$upper[idx])
@@ -787,7 +787,7 @@ prepareKaplanMeier <- function(population) {
                           sum(population$treatment == 0 & population$survivalTime >=
                                 xBreak))
   }
-  data <- merge(data, tibble::tibble(time = xBreaks,
+  data <- merge(data, tibble(time = xBreaks,
                                      targetAtRisk = targetAtRisk,
                                      comparatorAtRisk = comparatorAtRisk), all = TRUE)
   if (is.na(data$targetSurvival[1])) {
