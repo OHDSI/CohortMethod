@@ -74,10 +74,12 @@ loadCohortMethodData <- function(file) {
   checkmate::assertCharacter(file, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!file.exists(file))
+  if (!file.exists(file)) {
     stop(sprintf("Cannot find file '%s'", file))
-  if (file.info(file)$isdir)
+  }
+  if (file.info(file)$isdir) {
     stop(sprintf("'%s' is a folder, but should be a file", file))
+  }
   cohortMethodData <- Andromeda::loadAndromeda(file)
   class(cohortMethodData) <- "CohortMethodData"
   attr(class(cohortMethodData), "package") <- "CohortMethod"
@@ -95,8 +97,10 @@ setMethod("show", "CohortMethodData", function(object) {
   cli::cat_line("")
   cli::cat_line(paste("Target cohort ID:", metaData$targetId))
   cli::cat_line(paste("Comparator cohort ID:", metaData$comparatorId))
-  cli::cat_line(paste("Outcome cohort ID(s):",
-                   paste(metaData$outcomeIds, collapse = ",")))
+  cli::cat_line(paste(
+    "Outcome cohort ID(s):",
+    paste(metaData$outcomeIds, collapse = ",")
+  ))
   cli::cat_line("")
   cli::cat_line(pillar::style_subtle("Inherits from CovariateData:"))
   class(object) <- "CovariateData"
@@ -111,28 +115,33 @@ setMethod("show", "CohortMethodData", function(object) {
 #' @export
 #' @rdname CohortMethodData-class
 setMethod("summary", "CohortMethodData", function(object) {
-  if (!Andromeda::isValidAndromeda(object))
+  if (!Andromeda::isValidAndromeda(object)) {
     stop("Object is not valid. Probably the Andromeda object was closed.")
+  }
   cohorts <- object$cohorts %>%
     collect()
   metaData <- attr(object, "metaData")
   targetPersons <- length(unique(cohorts$personSeqId[cohorts$treatment == 1]))
   comparatorPersons <- length(unique(cohorts$personSeqId[cohorts$treatment == 0]))
-  outcomeCounts <- data.frame(outcomeId = metaData$outcomeIds,
-                              eventCount = 0,
-                              personCount = 0)
+  outcomeCounts <- data.frame(
+    outcomeId = metaData$outcomeIds,
+    eventCount = 0,
+    personCount = 0
+  )
   outcomes <- object$outcomes %>%
     collect()
   for (i in 1:nrow(outcomeCounts)) {
     outcomeCounts$eventCount[i] <- sum(outcomes$outcomeId == metaData$outcomeIds[i])
     outcomeCounts$personCount[i] <- length(unique(outcomes$rowId[outcomes$outcomeId == metaData$outcomeIds[i]]))
   }
-  result <- list(metaData = metaData,
-                 targetPersons = targetPersons,
-                 comparatorPersons = comparatorPersons,
-                 outcomeCounts = outcomeCounts,
-                 covariateCount = object$covariateRef %>% count() %>% pull(),
-                 covariateValueCount = object$covariates %>% count() %>% pull())
+  result <- list(
+    metaData = metaData,
+    targetPersons = targetPersons,
+    comparatorPersons = comparatorPersons,
+    outcomeCounts = outcomeCounts,
+    covariateCount = object$covariateRef %>% count() %>% pull(),
+    covariateValueCount = object$covariates %>% count() %>% pull()
+  )
   class(result) <- "summary.CohortMethodData"
   return(result)
 })

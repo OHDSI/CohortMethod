@@ -99,10 +99,11 @@ createStudyPopulation <- function(cohortMethodData,
                                   endAnchor = "cohort end",
                                   censorAtNewRiskWindow = FALSE) {
   if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects)
+    if (removeDuplicateSubjects) {
       removeDuplicateSubjects <- "remove all"
-    else
+    } else {
       removeDuplicateSubjects <- "keep all"
+    }
   }
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
@@ -129,10 +130,11 @@ createStudyPopulation <- function(cohortMethodData,
   isEnd <- function(anchor) {
     return(grepl("end$", anchor, ignore.case = TRUE))
   }
-  if (is.null(outcomeId))
+  if (is.null(outcomeId)) {
     ParallelLogger::logTrace("Creating study population without outcome ID")
-  else
+  } else {
     ParallelLogger::logTrace("Creating study population for outcome ID ", outcomeId)
+  }
 
   if (is.null(population)) {
     metaData <- attr(cohortMethodData, "metaData")
@@ -170,8 +172,10 @@ createStudyPopulation <- function(cohortMethodData,
     comparatorSubjectIds <- population$personSeqId[population$treatment == 0]
     duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
     population <- population[!(population$personSeqId %in% duplicateSubjectIds), ]
-    metaData$attrition <- rbind(metaData$attrition,
-                                getCounts(population, paste("Removed subjects in both cohorts")))
+    metaData$attrition <- rbind(
+      metaData$attrition,
+      getCounts(population, paste("Removed subjects in both cohorts"))
+    )
   } else if (removeDuplicateSubjects == "keep first") {
     message("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     if (nrow(population) > 0) {
@@ -187,16 +191,20 @@ createStudyPopulation <- function(cohortMethodData,
       idx <- fastDuplicated(population, "personSeqId")
       population <- population[!idx, ]
     }
-    metaData$attrition <- rbind(metaData$attrition,
-                                getCounts(population, paste("Restricting duplicate subjects to first cohort")))
+    metaData$attrition <- rbind(
+      metaData$attrition,
+      getCounts(population, paste("Restricting duplicate subjects to first cohort"))
+    )
   }
 
   if (washoutPeriod) {
     message(paste("Requiring", washoutPeriod, "days of observation prior index date"))
     population <- population[population$daysFromObsStart >= washoutPeriod, ]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("At least",
-                                                                                washoutPeriod,
-                                                                                "days of observation prior")))
+    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
+      "At least",
+      washoutPeriod,
+      "days of observation prior"
+    )))
   }
   if (removeSubjectsWithPriorOutcome) {
     if (is.null(outcomeId)) {
@@ -209,14 +217,16 @@ createStudyPopulation <- function(cohortMethodData,
       if (isEnd(startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
-                                               outcomes$daysToCohortEnd + riskWindowStart]
+          outcomes$daysToCohortEnd + riskWindowStart]
       } else {
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
-                                               riskWindowStart]
+          riskWindowStart]
       }
       population <- population[!(population$rowId %in% priorOutcomeRowIds), ]
-      metaData$attrition <- rbind(metaData$attrition,
-                                  getCounts(population, paste("No prior outcome")))
+      metaData$attrition <- rbind(
+        metaData$attrition,
+        getCounts(population, paste("No prior outcome"))
+      )
     }
   }
   # Create risk windows:
@@ -245,7 +255,7 @@ createStudyPopulation <- function(cohortMethodData,
       population <- population[order(population$personSeqId, population$riskStart), ]
       idx <- 1:(nrow(population) - 1)
       idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
-                     population$personSeqId[idx] == population$personSeqId[idx + 1])
+        population$personSeqId[idx] == population$personSeqId[idx + 1])
       if (length(idx) > 0) {
         population$endDate[idx] <- population$startDate[idx + 1] - 1
         population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
@@ -256,16 +266,20 @@ createStudyPopulation <- function(cohortMethodData,
       }
       population$startDate <- NULL
       population$endDate <- NULL
-      metaData$attrition <- rbind(metaData$attrition,
-                                  getCounts(population, paste("Censoring at start of new time-at-risk")))
+      metaData$attrition <- rbind(
+        metaData$attrition,
+        getCounts(population, paste("Censoring at start of new time-at-risk"))
+      )
     }
   }
   if (minDaysAtRisk != 0) {
     message(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
     population <- population[population$riskEnd - population$riskStart >= minDaysAtRisk, ]
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste("Have at least",
-                                                                                minDaysAtRisk,
-                                                                                "days at risk")))
+    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
+      "Have at least",
+      minDaysAtRisk,
+      "days at risk"
+    )))
   }
   if (is.null(outcomeId)) {
     message("No outcome specified so not creating outcome and time variables")
@@ -298,7 +312,7 @@ createStudyPopulation <- function(cohortMethodData,
     population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
     population$survivalTime <- population$timeAtRisk
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
-                                                                                      0] - population$riskStart[population$outcomeCount != 0] + 1
+      0] - population$riskStart[population$outcomeCount != 0] + 1
   }
   attr(population, "metaData") <- metaData
   ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
@@ -330,11 +344,13 @@ getCounts <- function(population, description = "") {
   comparatorPersons <- length(unique(population$personSeqId[population$treatment == 0]))
   targetExposures <- length(population$personSeqId[population$treatment == 1])
   comparatorExposures <- length(population$personSeqId[population$treatment == 0])
-  counts <- dplyr::tibble(description = description,
-                          targetPersons = targetPersons,
-                          comparatorPersons = comparatorPersons,
-                          targetExposures = targetExposures,
-                          comparatorExposures = comparatorExposures)
+  counts <- dplyr::tibble(
+    description = description,
+    targetPersons = targetPersons,
+    comparatorPersons = comparatorPersons,
+    targetExposures = targetExposures,
+    comparatorExposures = comparatorExposures
+  )
   return(counts)
 }
 
@@ -409,10 +425,11 @@ plotTimeToEvent <- function(cohortMethodData,
                             title = NULL,
                             fileName = NULL) {
   if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects)
+    if (removeDuplicateSubjects) {
       removeDuplicateSubjects <- "remove all"
-    else
+    } else {
       removeDuplicateSubjects <- "keep all"
+    }
   }
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(periodLength, lower = 0, add = errorMessages)
@@ -429,20 +446,22 @@ plotTimeToEvent <- function(cohortMethodData,
     population <- cohortMethodData$cohorts %>%
       collect()
   }
-  population <- createStudyPopulation(cohortMethodData = cohortMethodData,
-                                      population = population,
-                                      outcomeId = outcomeId,
-                                      firstExposureOnly = firstExposureOnly,
-                                      restrictToCommonPeriod = restrictToCommonPeriod,
-                                      washoutPeriod = washoutPeriod,
-                                      removeDuplicateSubjects = removeDuplicateSubjects,
-                                      removeSubjectsWithPriorOutcome = FALSE,
-                                      minDaysAtRisk = minDaysAtRisk,
-                                      riskWindowStart = riskWindowStart,
-                                      startAnchor = startAnchor,
-                                      riskWindowEnd = riskWindowEnd,
-                                      endAnchor = endAnchor,
-                                      censorAtNewRiskWindow = censorAtNewRiskWindow)
+  population <- createStudyPopulation(
+    cohortMethodData = cohortMethodData,
+    population = population,
+    outcomeId = outcomeId,
+    firstExposureOnly = firstExposureOnly,
+    restrictToCommonPeriod = restrictToCommonPeriod,
+    washoutPeriod = washoutPeriod,
+    removeDuplicateSubjects = removeDuplicateSubjects,
+    removeSubjectsWithPriorOutcome = FALSE,
+    minDaysAtRisk = minDaysAtRisk,
+    riskWindowStart = riskWindowStart,
+    startAnchor = startAnchor,
+    riskWindowEnd = riskWindowEnd,
+    endAnchor = endAnchor,
+    censorAtNewRiskWindow = censorAtNewRiskWindow
+  )
   outcomes <- cohortMethodData$outcomes %>%
     filter(.data$outcomeId == !!outcomeId) %>%
     select(.data$rowId, .data$daysToEvent) %>%
@@ -450,91 +469,113 @@ plotTimeToEvent <- function(cohortMethodData,
 
   outcomes <- outcomes %>%
     inner_join(select(population, .data$rowId, .data$treatment, .data$daysFromObsStart, .data$daysToObsEnd, .data$riskStart, .data$riskEnd),
-               by = "rowId") %>%
+      by = "rowId"
+    ) %>%
     filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%
     mutate(exposed = .data$daysToEvent >= .data$riskStart & .data$daysToEvent <= .data$riskEnd)
 
   idxExposed <- outcomes$exposed == 1
   idxTarget <- outcomes$treatment == 1
   createPeriod <- function(number) {
-    start <- number*periodLength
-    end <- number*periodLength + periodLength
+    start <- number * periodLength
+    end <- number * periodLength + periodLength
     idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
     idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
-    dplyr::tibble(number = number,
-                  start = start,
-                  end = end,
-                  eventsExposed = 0,
-                  eventsUnexposed = 0,
-                  observed = 0,
-                  eventsExposedTarget = sum(idxInPeriod & idxExposed & idxTarget),
-                  eventsExposedComparator = sum(idxInPeriod & idxExposed & !idxTarget),
-                  eventsUnexposedTarget = sum(idxInPeriod & !idxExposed & idxTarget),
-                  eventsUnexposedComparator = sum(idxInPeriod & !idxExposed & !idxTarget),
-                  observedTarget = sum(idxPopInPeriod & population$treatment),
-                  observedComparator = sum(idxPopInPeriod & !population$treatment))
+    dplyr::tibble(
+      number = number,
+      start = start,
+      end = end,
+      eventsExposed = 0,
+      eventsUnexposed = 0,
+      observed = 0,
+      eventsExposedTarget = sum(idxInPeriod & idxExposed & idxTarget),
+      eventsExposedComparator = sum(idxInPeriod & idxExposed & !idxTarget),
+      eventsUnexposedTarget = sum(idxInPeriod & !idxExposed & idxTarget),
+      eventsUnexposedComparator = sum(idxInPeriod & !idxExposed & !idxTarget),
+      observedTarget = sum(idxPopInPeriod & population$treatment),
+      observedComparator = sum(idxPopInPeriod & !population$treatment)
+    )
   }
-  periods <- lapply(-floor(numberOfPeriods/2):ceiling(numberOfPeriods/2), createPeriod)
+  periods <- lapply(-floor(numberOfPeriods / 2):ceiling(numberOfPeriods / 2), createPeriod)
   periods <- do.call("rbind", periods)
   periods <- periods %>%
     filter(.data$observedTarget > 0) %>%
-    mutate(rateExposedTarget = .data$eventsExposedTarget / .data$observedTarget,
-           rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
-           rateExposedComparator = .data$eventsExposedComparator / .data$observedComparator,
-           rateUnexposedComparator = .data$eventsUnexposedComparator / .data$observedComparator,
-           rateTarget = (.data$eventsExposedTarget + .data$eventsUnexposedTarget) / .data$observedTarget,
-           rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator)
+    mutate(
+      rateExposedTarget = .data$eventsExposedTarget / .data$observedTarget,
+      rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
+      rateExposedComparator = .data$eventsExposedComparator / .data$observedComparator,
+      rateUnexposedComparator = .data$eventsUnexposedComparator / .data$observedComparator,
+      rateTarget = (.data$eventsExposedTarget + .data$eventsUnexposedTarget) / .data$observedTarget,
+      rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator
+    )
   if (!includePostIndexTime) {
     periods <- periods %>%
       filter(.data$end <= 0)
   }
-  vizData <- rbind(dplyr::tibble(start = periods$start,
-                                 end = periods$end,
-                                 rate = periods$rateExposedTarget,
-                                 status = "Exposed events",
-                                 type = targetLabel),
-                   dplyr::tibble(start = periods$start,
-                                 end = periods$end,
-                                 rate = periods$rateUnexposedTarget,
-                                 status = "Unexposed events",
-                                 type = targetLabel),
-                   dplyr::tibble(start = periods$start,
-                                 end = periods$end,
-                                 rate = periods$rateExposedComparator,
-                                 status = "Exposed events",
-                                 type = comparatorLabel),
-                   dplyr::tibble(start = periods$start,
-                                 end = periods$end,
-                                 rate = periods$rateUnexposedComparator,
-                                 status = "Unexposed events",
-                                 type = comparatorLabel))
+  vizData <- rbind(
+    dplyr::tibble(
+      start = periods$start,
+      end = periods$end,
+      rate = periods$rateExposedTarget,
+      status = "Exposed events",
+      type = targetLabel
+    ),
+    dplyr::tibble(
+      start = periods$start,
+      end = periods$end,
+      rate = periods$rateUnexposedTarget,
+      status = "Unexposed events",
+      type = targetLabel
+    ),
+    dplyr::tibble(
+      start = periods$start,
+      end = periods$end,
+      rate = periods$rateExposedComparator,
+      status = "Exposed events",
+      type = comparatorLabel
+    ),
+    dplyr::tibble(
+      start = periods$start,
+      end = periods$end,
+      rate = periods$rateUnexposedComparator,
+      status = "Unexposed events",
+      type = comparatorLabel
+    )
+  )
   vizData$type <- factor(vizData$type, levels = c(targetLabel, comparatorLabel))
 
   if (highlightExposedEvents) {
-    plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,
-                                                  y = .data$rate * 1000,
-                                                  fill = .data$status)) +
+    plot <- ggplot2::ggplot(vizData, ggplot2::aes(
+      x = .data$start + periodLength / 2,
+      y = .data$rate * 1000,
+      fill = .data$status
+    )) +
       ggplot2::geom_col(width = periodLength, alpha = 0.7)
-
   } else {
-    plot <- ggplot2::ggplot(vizData, ggplot2::aes(x = .data$start + periodLength / 2,
-                                                  y = .data$rate * 1000)) +
+    plot <- ggplot2::ggplot(vizData, ggplot2::aes(
+      x = .data$start + periodLength / 2,
+      y = .data$rate * 1000
+    )) +
       ggplot2::geom_col(width = periodLength, alpha = 0.7, fill = rgb(0, 0, 0.8))
   }
   plot <- plot +
     ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, size = 1) +
-    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0),
-                                          rgb(0, 0, 0.8))) +
+    ggplot2::scale_fill_manual(values = c(
+      rgb(0.8, 0, 0),
+      rgb(0, 0, 0.8)
+    )) +
     ggplot2::scale_x_continuous("Days since exposure start") +
     ggplot2::scale_y_continuous("Proportion (per 1,000 persons)") +
-    ggplot2::facet_grid(type~., scales = "free_y") +
-    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
-                   panel.background = ggplot2::element_rect(fill = "#FAFAFA", colour = NA),
-                   panel.grid.major = ggplot2::element_line(colour = "#AAAAAA"),
-                   axis.ticks = ggplot2::element_blank(),
-                   strip.background = ggplot2::element_blank(),
-                   legend.title = ggplot2::element_blank(),
-                   legend.position = "top")
+    ggplot2::facet_grid(type ~ ., scales = "free_y") +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.background = ggplot2::element_rect(fill = "#FAFAFA", colour = NA),
+      panel.grid.major = ggplot2::element_line(colour = "#AAAAAA"),
+      axis.ticks = ggplot2::element_blank(),
+      strip.background = ggplot2::element_blank(),
+      legend.title = ggplot2::element_blank(),
+      legend.position = "top"
+    )
 
   if (showFittedLines) {
     preTarget <- periods[periods$start < 0, ]
@@ -558,31 +599,40 @@ plotTimeToEvent <- function(cohortMethodData,
       curve <- bind_rows(curve, postTarget, postComparator)
     }
     curve <- curve %>%
-      mutate(rate = 0,
-             status = "Exposed events",
-             type = factor(.data$type, levels = c(targetLabel, comparatorLabel)),
-             lwr = if_else(.data$lwr < 0, 0, .data$lwr))
+      mutate(
+        rate = 0,
+        status = "Exposed events",
+        type = factor(.data$type, levels = c(targetLabel, comparatorLabel)),
+        lwr = if_else(.data$lwr < 0, 0, .data$lwr)
+      )
 
 
-    plot <- plot + ggplot2::geom_ribbon(ggplot2::aes(x = start + periodLength/2,
-                                                     ymin = .data$lwr * 1000,
-                                                     ymax = .data$upr * 1000,
-                                                     group = .data$period),
-                                        fill = rgb(0,0,0),
-                                        alpha = 0.3,
-                                        data = curve) +
-      ggplot2::geom_line(ggplot2::aes(x = start + periodLength/2,
-                                      y = .data$fit * 1000,
-                                      group = .data$period),
-                         size = 1.5,
-                         alpha = 0.8,
-                         data = curve)
+    plot <- plot + ggplot2::geom_ribbon(ggplot2::aes(
+      x = start + periodLength / 2,
+      ymin = .data$lwr * 1000,
+      ymax = .data$upr * 1000,
+      group = .data$period
+    ),
+    fill = rgb(0, 0, 0),
+    alpha = 0.3,
+    data = curve
+    ) +
+      ggplot2::geom_line(ggplot2::aes(
+        x = start + periodLength / 2,
+        y = .data$fit * 1000,
+        group = .data$period
+      ),
+      size = 1.5,
+      alpha = 0.8,
+      data = curve
+      )
   }
 
   if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
   }
-  if (!is.null(fileName))
+  if (!is.null(fileName)) {
     ggplot2::ggsave(fileName, plot, width = 7, height = 5, dpi = 400)
+  }
   return(plot)
 }

@@ -43,14 +43,16 @@ checkCmInstallation <- function(connectionDetails) {
   treatment <- gl(3, 3)
   cyclopsData <- Cyclops::createCyclopsData(counts ~ outcome + treatment, modelType = "pr")
   cyclopsFit <- fitCyclopsModel(cyclopsData)
-  if (length(coef(cyclopsFit)) != 5)
+  if (length(coef(cyclopsFit)) != 5) {
     stop("Error fitting regression model")
+  }
   message("- Ok")
 
   message("\nChecking support for large data objects")
   x <- Andromeda::andromeda(test = data.frame(a = 1:100, b = "test"))
-  if (x$test %>% count() %>% pull() != 100)
+  if (x$test %>% count() %>% pull() != 100) {
     stop("Error creating large data object")
+  }
   message("- Ok")
 
   message("\nCohortMethod is correctly installed")
@@ -60,8 +62,10 @@ checkCmInstallation <- function(connectionDetails) {
 .assertCovariateId <- function(covariateId, len = NULL, min.len = NULL, null.ok = FALSE, add = NULL) {
   checkmate::assertNumeric(covariateId, null.ok = null.ok, len = len, min.len = 1, add = add)
   if (!is.null(covariateId)) {
-    message <- sprintf("Variable '%s' is a (64-bit) integer",
-                       paste0(deparse(eval.parent(substitute(substitute(covariateId))), width.cutoff = 500L),collapse = "\n"))
+    message <- sprintf(
+      "Variable '%s' is a (64-bit) integer",
+      paste0(deparse(eval.parent(substitute(substitute(covariateId))), width.cutoff = 500L), collapse = "\n")
+    )
     checkmate::assertTRUE(all(covariateId == round(covariateId)), .var.name = message, add = add)
   }
 }

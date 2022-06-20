@@ -147,7 +147,7 @@ createCmAnalysis <- function(analysisId = 1,
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
   if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
-      fitOutcomeModelArgs$stratified) {
+    fitOutcomeModelArgs$stratified) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
   if (!createPs) {

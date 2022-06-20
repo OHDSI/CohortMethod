@@ -48,7 +48,6 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
 }
 
 computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
-
   hasStrata <- "stratumId" %in% colnames(cohorts)
   hasIptw <- "iptw" %in% colnames(cohorts)
 
@@ -68,7 +67,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
     if (hasStrata) {
       # Variable strata sizes detected: weigh by size of strata set
       w <- stratumSize %>%
-        mutate(weight = 1/.data$n) %>%
+        mutate(weight = 1 / .data$n) %>%
         inner_join(cohorts, by = c("stratumId", "treatment")) %>%
         select(.data$rowId, .data$treatment, .data$weight)
     } else {
@@ -94,11 +93,13 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
     result <- covariates %>%
       inner_join(cohortMethodData$w, by = c("rowId")) %>%
       group_by(.data$covariateId, .data$treatment) %>%
-      summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-                mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
-                sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-                sumWSqr = sum(.data$weight^2, na.rm = TRUE)) %>%
-      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW/(sumW^2 - .data$sumWSqr))) %>%
+      summarise(
+        sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+        mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
+        sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        sumWSqr = sum(.data$weight^2, na.rm = TRUE)
+      ) %>%
+      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) %>%
       ungroup() %>%
       select(.data$covariateId, .data$treatment, .data$sum, .data$mean, .data$sd) %>%
       collect()
@@ -109,14 +110,18 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       group_by(.data$treatment) %>%
       count()
 
-    result <-covariates %>%
+    result <- covariates %>%
       inner_join(select(cohorts, .data$rowId, .data$treatment), by = "rowId") %>%
       group_by(.data$covariateId, .data$treatment) %>%
-      summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-                sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE)) %>%
+      summarise(
+        sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+        sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE)
+      ) %>%
       inner_join(cohortCounts, by = "treatment") %>%
-      mutate(sd = sqrt((.data$sumSqr - (.data$sum^2/.data$n))/.data$n),
-             mean = .data$sum/.data$n) %>%
+      mutate(
+        sd = sqrt((.data$sumSqr - (.data$sum^2 / .data$n)) / .data$n),
+        mean = .data$sum / .data$n
+      ) %>%
       ungroup() %>%
       select(.data$covariateId, .data$treatment, .data$sum, .data$mean, .data$sd) %>%
       collect()
@@ -131,7 +136,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 
   result <- target %>%
     full_join(comparator, by = "covariateId") %>%
-    mutate(sd = sqrt((.data$sdTarget^2 + .data$sdComparator^2)/2)) %>%
+    mutate(sd = sqrt((.data$sdTarget^2 + .data$sdComparator^2) / 2)) %>%
     select(!c(.data$sdTarget, .data$sdComparator))
 
   return(result)
@@ -263,11 +268,13 @@ computeCovariateBalance <- function(population,
     full_join(afterMatching, by = "covariateId") %>%
     inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") %>%
     inner_join(cohortMethodData$analysisRef %>%
-                 select(.data$analysisId, .data$domainId, .data$isBinary) %>%
-                 collect() %>%
-                 mutate(domainId = as.factor(.data$domainId)), by = "analysisId") %>%
-    mutate(beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator)/.data$beforeMatchingSd,
-           afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator)/.data$afterMatchingSd)
+      select(.data$analysisId, .data$domainId, .data$isBinary) %>%
+      collect() %>%
+      mutate(domainId = as.factor(.data$domainId)), by = "analysisId") %>%
+    mutate(
+      beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator) / .data$beforeMatchingSd,
+      afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator) / .data$afterMatchingSd
+    )
 
   balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
   balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
@@ -311,24 +318,28 @@ sampleCohorts <- function(cohorts, maxCohortSize, label) {
   comparatorCount <- length(comparatorIdx)
   if (targetCount > maxCohortSize) {
     targetIdx <- sampleSingleCohort(cohorts, 1, maxCohortSize)
-    message("Downsampling target cohort ",
-            label,
-            " from ",
-            targetCount,
-            " to ",
-            length(targetIdx),
-            " before computing covariate balance")
+    message(
+      "Downsampling target cohort ",
+      label,
+      " from ",
+      targetCount,
+      " to ",
+      length(targetIdx),
+      " before computing covariate balance"
+    )
     sampled <- TRUE
   }
   if (comparatorCount > maxCohortSize) {
     comparatorIdx <- sampleSingleCohort(cohorts, 0, maxCohortSize)
-    message("Downsampling comparator cohort ",
-            label,
-            " from ",
-            comparatorCount,
-            " to ",
-            length(comparatorIdx),
-            " before computing covariate balance")
+    message(
+      "Downsampling comparator cohort ",
+      label,
+      " from ",
+      comparatorCount,
+      " to ",
+      length(comparatorIdx),
+      " before computing covariate balance"
+    )
     sampled <- TRUE
   }
   if (sampled) {
@@ -400,10 +411,14 @@ plotCovariateBalanceScatterPlot <- function(balance,
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
   }
-  limits <- c(min(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE),
-              max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE))
-  plot <- ggplot2::ggplot(balance,
-                          ggplot2::aes(x = .data$beforeMatchingStdDiff, y = .data$afterMatchingStdDiff)) +
+  limits <- c(
+    min(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE),
+    max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE)
+  )
+  plot <- ggplot2::ggplot(
+    balance,
+    ggplot2::aes(x = .data$beforeMatchingStdDiff, y = .data$afterMatchingStdDiff)
+  ) +
     ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0) +
@@ -412,8 +427,10 @@ plotCovariateBalanceScatterPlot <- function(balance,
     ggplot2::scale_x_continuous(beforeLabel, limits = limits) +
     ggplot2::scale_y_continuous(afterLabel, limits = limits)
   if (threshold != 0) {
-    plot <- plot + ggplot2::geom_hline(yintercept = c(threshold,
-                                                      -threshold), alpha = 0.5, linetype = "dotted")
+    plot <- plot + ggplot2::geom_hline(yintercept = c(
+      threshold,
+      -threshold
+    ), alpha = 0.5, linetype = "dotted")
   }
   if (showCovariateCountLabel || showMaxLabel) {
     labels <- c()
@@ -425,7 +442,6 @@ plotCovariateBalanceScatterPlot <- function(balance,
     }
     dummy <- data.frame(text = paste(labels, collapse = "\n"))
     plot <- plot + ggplot2::geom_label(x = limits[1] + 0.01, y = limits[2], hjust = "left", vjust = "top", alpha = 0.8, ggplot2::aes(label = text), data = dummy, size = 3.5)
-
   }
   if (!is.null(fileName)) {
     ggplot2::ggsave(fileName, plot, width = 4, height = 4, dpi = 400)
@@ -436,8 +452,9 @@ plotCovariateBalanceScatterPlot <- function(balance,
 .truncRight <- function(x, n) {
   nc <- nchar(x)
   x[nc > (n - 3)] <- paste("...",
-                           substr(x[nc > (n - 3)], nc[nc > (n - 3)] - n + 1, nc[nc > (n - 3)]),
-                           sep = "")
+    substr(x[nc > (n - 3)], nc[nc > (n - 3)] - n + 1, nc[nc > (n - 3)]),
+    sep = ""
+  )
   x
 }
 
@@ -489,40 +506,51 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   topAfter$facet <- paste("Top", n, afterLabel)
   filtered <- rbind(topBefore, topAfter)
 
-  data <- dplyr::tibble(covariateId = rep(filtered$covariateId, 2),
-                        covariate = rep(filtered$covariateName, 2),
-                        difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
-                        group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
-                        facet = rep(filtered$facet, 2),
-                        rowId = rep(nrow(filtered):1, 2))
+  data <- dplyr::tibble(
+    covariateId = rep(filtered$covariateId, 2),
+    covariate = rep(filtered$covariateName, 2),
+    difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),
+    group = rep(c(beforeLabel, afterLabel), each = nrow(filtered)),
+    facet = rep(filtered$facet, 2),
+    rowId = rep(nrow(filtered):1, 2)
+  )
   filtered$covariateName <- .truncRight(as.character(filtered$covariateName), maxNameWidth)
   data$facet <- factor(data$facet, levels = c(paste("Top", n, beforeLabel), paste("Top", n, afterLabel)))
   data$group <- factor(data$group, levels = c(beforeLabel, afterLabel))
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = .data$difference,
-                                             y = .data$rowId,
-                                             color = .data$group,
-                                             group = .data$group,
-                                             fill = .data$group,
-                                             shape = .data$group)) +
+  plot <- ggplot2::ggplot(data, ggplot2::aes(
+    x = .data$difference,
+    y = .data$rowId,
+    color = .data$group,
+    group = .data$group,
+    fill = .data$group,
+    shape = .data$group
+  )) +
     ggplot2::geom_point() +
     ggplot2::geom_vline(xintercept = 0) +
-    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                          rgb(0, 0, 0.8, alpha = 0.5))) +
-    ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                           rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_fill_manual(values = c(
+      rgb(0.8, 0, 0, alpha = 0.5),
+      rgb(0, 0, 0.8, alpha = 0.5)
+    )) +
+    ggplot2::scale_color_manual(values = c(
+      rgb(0.8, 0, 0, alpha = 0.5),
+      rgb(0, 0, 0.8, alpha = 0.5)
+    )) +
     ggplot2::scale_x_continuous("Standardized difference of mean") +
     ggplot2::scale_y_continuous(breaks = nrow(filtered):1, labels = filtered$covariateName) +
     ggplot2::facet_grid(facet ~ ., scales = "free", space = "free") +
-    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
-                   axis.title.y = ggplot2::element_blank(),
-                   legend.position = "top",
-                   legend.direction = "vertical",
-                   legend.title = ggplot2::element_blank())
+    ggplot2::theme(
+      axis.text.y = ggplot2::element_text(size = 7),
+      axis.title.y = ggplot2::element_blank(),
+      legend.position = "top",
+      legend.direction = "vertical",
+      legend.title = ggplot2::element_blank()
+    )
   if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
   }
-  if (!is.null(fileName))
+  if (!is.null(fileName)) {
     ggplot2::ggsave(fileName, plot, width = 10, height = max(2 + n * 0.2, 5), dpi = 400)
+  }
   return(plot)
 }
 
@@ -570,21 +598,30 @@ plotCovariatePrevalence <- function(balance,
   balance <- balance %>%
     filter(.data$isBinary == "Y")
 
-  prevalence <- bind_rows(balance %>%
-                            select(target = .data$beforeMatchingMeanTarget,
-                                   comparator = .data$beforeMatchingMeanComparator,
-                                   stdDiff = .data$beforeMatchingStdDiff) %>%
-                            mutate(panel = beforeLabel),
-                          balance %>%
-                            select(target = .data$afterMatchingMeanTarget,
-                                   comparator = .data$afterMatchingMeanComparator,
-                                   stdDiff = .data$afterMatchingStdDiff) %>%
-                            mutate(panel = afterLabel)) %>%
-    mutate(target= .data$target * 100,
-           comparator = .data$comparator * 100,
-           stdDiff = if_else(!is.na(.data$stdDiff) & abs(.data$stdDiff) > threshold,
-                             sprintf("> %0.2f", threshold),
-                             sprintf("<= %0.2f", threshold)))
+  prevalence <- bind_rows(
+    balance %>%
+      select(
+        target = .data$beforeMatchingMeanTarget,
+        comparator = .data$beforeMatchingMeanComparator,
+        stdDiff = .data$beforeMatchingStdDiff
+      ) %>%
+      mutate(panel = beforeLabel),
+    balance %>%
+      select(
+        target = .data$afterMatchingMeanTarget,
+        comparator = .data$afterMatchingMeanComparator,
+        stdDiff = .data$afterMatchingStdDiff
+      ) %>%
+      mutate(panel = afterLabel)
+  ) %>%
+    mutate(
+      target = .data$target * 100,
+      comparator = .data$comparator * 100,
+      stdDiff = if_else(!is.na(.data$stdDiff) & abs(.data$stdDiff) > threshold,
+        sprintf("> %0.2f", threshold),
+        sprintf("<= %0.2f", threshold)
+      )
+    )
   prevalence$panel <- factor(prevalence$panel, levels = c(beforeLabel, afterLabel))
   if (threshold > 0) {
     plot <- ggplot2::ggplot(prevalence, ggplot2::aes(x = .data$comparator, y = .data$target, color = .data$stdDiff)) +

@@ -5,19 +5,23 @@ test_that("Subsampling cohort throws no error", {
   # Extract arbitrary study population
   connectionDetails <- getEunomiaConnectionDetails()
   Eunomia::createCohorts(connectionDetails)
-  cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
-                                            cdmDatabaseSchema = "main",
-                                            targetId = 1,
-                                            comparatorId = 2,
-                                            outcomeIds = 3,
-                                            exposureDatabaseSchema = "main",
-                                            outcomeDatabaseSchema = "main",
-                                            exposureTable = "cohort",
-                                            outcomeTable = "cohort",
-                                            covariateSettings = createDefaultCovariateSettings())
-  population <- CohortMethod::createStudyPopulation(cohortMethodData = cohortMethodData,
-                                                    outcomeId = 3,
-                                                    riskWindowEnd = 99999)
+  cohortMethodData <- getDbCohortMethodData(
+    connectionDetails = connectionDetails,
+    cdmDatabaseSchema = "main",
+    targetId = 1,
+    comparatorId = 2,
+    outcomeIds = 3,
+    exposureDatabaseSchema = "main",
+    outcomeDatabaseSchema = "main",
+    exposureTable = "cohort",
+    outcomeTable = "cohort",
+    covariateSettings = createDefaultCovariateSettings()
+  )
+  population <- CohortMethod::createStudyPopulation(
+    cohortMethodData = cohortMethodData,
+    outcomeId = 3,
+    riskWindowEnd = 99999
+  )
   # Set Cyclops prior to guarantee all coefficients to be zero.
   prior_var <- 1 / 2^1023
   cyclops_control <- Cyclops::createControl(
@@ -42,4 +46,3 @@ test_that("Subsampling cohort throws no error", {
     "are zero"
   )
 })
-

@@ -130,10 +130,11 @@ getDbCohortMethodData <- function(connectionDetails,
     studyEndDate <- ""
   }
   if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects)
+    if (removeDuplicateSubjects) {
       removeDuplicateSubjects <- "remove all"
-    else
+    } else {
       removeDuplicateSubjects <- "keep all"
+    }
   }
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
@@ -156,10 +157,12 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertList(covariateSettings, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1)
+  if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
     stop("Study start date must have format YYYYMMDD")
-  if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1)
+  }
+  if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
     stop("Study end date must have format YYYYMMDD")
+  }
 
   ParallelLogger::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
 
@@ -168,49 +171,51 @@ getDbCohortMethodData <- function(connectionDetails,
 
   message("Constructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
-                                                   packageName = "CohortMethod",
-                                                   dbms = connectionDetails$dbms,
-                                                   tempEmulationSchema = tempEmulationSchema,
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = exposureTable,
-                                                   cdm_version = cdmVersion,
-                                                   target_id = targetId,
-                                                   comparator_id = comparatorId,
-                                                   study_start_date = studyStartDate,
-                                                   study_end_date = studyEndDate,
-                                                   first_only = firstExposureOnly,
-                                                   remove_duplicate_subjects = removeDuplicateSubjects,
-                                                   washout_period = washoutPeriod,
-                                                   restrict_to_common_period = restrictToCommonPeriod)
+    packageName = "CohortMethod",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    cdm_database_schema = cdmDatabaseSchema,
+    exposure_database_schema = exposureDatabaseSchema,
+    exposure_table = exposureTable,
+    cdm_version = cdmVersion,
+    target_id = targetId,
+    comparator_id = comparatorId,
+    study_start_date = studyStartDate,
+    study_end_date = studyEndDate,
+    first_only = firstExposureOnly,
+    remove_duplicate_subjects = removeDuplicateSubjects,
+    washout_period = washoutPeriod,
+    restrict_to_common_period = restrictToCommonPeriod
+  )
   DatabaseConnector::executeSql(connection, renderedSql)
 
   sampled <- FALSE
   if (maxCohortSize != 0) {
     renderedSql <- SqlRender::loadRenderTranslateSql("CountCohorts.sql",
-                                                     packageName = "CohortMethod",
-                                                     dbms = connectionDetails$dbms,
-                                                     tempEmulationSchema = tempEmulationSchema,
-                                                     cdm_version = cdmVersion,
-                                                     target_id = targetId)
+      packageName = "CohortMethod",
+      dbms = connectionDetails$dbms,
+      tempEmulationSchema = tempEmulationSchema,
+      cdm_version = cdmVersion,
+      target_id = targetId
+    )
     counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
     ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
     preSampleCounts <- dplyr::tibble(dummy = 0)
     idx <- which(counts$treatment == 1)
     if (length(idx) == 0) {
-      preSampleCounts$targetPersons = 0
-      preSampleCounts$targetExposures = 0
+      preSampleCounts$targetPersons <- 0
+      preSampleCounts$targetExposures <- 0
     } else {
-      preSampleCounts$targetPersons = counts$personCount[idx]
-      preSampleCounts$targetExposures = counts$rowCount[idx]
+      preSampleCounts$targetPersons <- counts$personCount[idx]
+      preSampleCounts$targetExposures <- counts$rowCount[idx]
     }
     idx <- which(counts$treatment == 0)
     if (length(idx) == 0) {
-      preSampleCounts$comparatorPersons = 0
-      preSampleCounts$comparatorExposures = 0
+      preSampleCounts$comparatorPersons <- 0
+      preSampleCounts$comparatorExposures <- 0
     } else {
-      preSampleCounts$comparatorPersons = counts$personCount[idx]
-      preSampleCounts$comparatorExposures = counts$rowCount[idx]
+      preSampleCounts$comparatorPersons <- counts$personCount[idx]
+      preSampleCounts$comparatorExposures <- counts$rowCount[idx]
     }
     preSampleCounts$dummy <- NULL
     if (preSampleCounts$targetExposures > maxCohortSize) {
@@ -223,11 +228,12 @@ getDbCohortMethodData <- function(connectionDetails,
     }
     if (sampled) {
       renderedSql <- SqlRender::loadRenderTranslateSql("SampleCohorts.sql",
-                                                       packageName = "CohortMethod",
-                                                       dbms = connectionDetails$dbms,
-                                                       tempEmulationSchema = tempEmulationSchema,
-                                                       cdm_version = cdmVersion,
-                                                       max_cohort_size = maxCohortSize)
+        packageName = "CohortMethod",
+        dbms = connectionDetails$dbms,
+        tempEmulationSchema = tempEmulationSchema,
+        cdm_version = cdmVersion,
+        max_cohort_size = maxCohortSize
+      )
       DatabaseConnector::executeSql(connection, renderedSql)
     }
   }
@@ -235,12 +241,13 @@ getDbCohortMethodData <- function(connectionDetails,
   message("Fetching cohorts from server")
   start <- Sys.time()
   cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
-                                                 packageName = "CohortMethod",
-                                                 dbms = connectionDetails$dbms,
-                                                 tempEmulationSchema = tempEmulationSchema,
-                                                 cdm_version = cdmVersion,
-                                                 target_id = targetId,
-                                                 sampled = sampled)
+    packageName = "CohortMethod",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    cdm_version = cdmVersion,
+    target_id = targetId,
+    sampled = sampled
+  )
   cohorts <- DatabaseConnector::querySql(connection, cohortSql, snakeCaseToCamelCase = TRUE)
   ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
   if (nrow(cohorts) == 0) {
@@ -250,36 +257,43 @@ getDbCohortMethodData <- function(connectionDetails,
   } else if (sum(cohorts$treatment == 0) == 0) {
     warning("Comparator cohort is empty")
   }
-  metaData <- list(targetId = targetId,
-                   comparatorId = comparatorId,
-                   studyStartDate = studyStartDate,
-                   studyEndDate = studyEndDate)
+  metaData <- list(
+    targetId = targetId,
+    comparatorId = comparatorId,
+    studyStartDate = studyStartDate,
+    studyEndDate = studyEndDate
+  )
   if (firstExposureOnly || removeDuplicateSubjects != "keep all" || washoutPeriod != 0) {
     rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
-                                                     packageName = "CohortMethod",
-                                                     dbms = connectionDetails$dbms,
-                                                     tempEmulationSchema = tempEmulationSchema,
-                                                     cdm_database_schema = cdmDatabaseSchema,
-                                                     exposure_database_schema = exposureDatabaseSchema,
-                                                     exposure_table = tolower(exposureTable),
-                                                     cdm_version = cdmVersion,
-                                                     target_id = targetId,
-                                                     comparator_id = comparatorId,
-                                                     study_start_date = studyStartDate,
-                                                     study_end_date = studyEndDate)
+      packageName = "CohortMethod",
+      dbms = connectionDetails$dbms,
+      tempEmulationSchema = tempEmulationSchema,
+      cdm_database_schema = cdmDatabaseSchema,
+      exposure_database_schema = exposureDatabaseSchema,
+      exposure_table = tolower(exposureTable),
+      cdm_version = cdmVersion,
+      target_id = targetId,
+      comparator_id = comparatorId,
+      study_start_date = studyStartDate,
+      study_end_date = studyEndDate
+    )
     rawCount <- DatabaseConnector::querySql(connection, rawCountSql, snakeCaseToCamelCase = TRUE)
     if (nrow(rawCount) == 0) {
-      counts <- dplyr::tibble(description = "Original cohorts",
-                              targetPersons = 0,
-                              comparatorPersons = 0,
-                              targetExposures = 0,
-                              comparatorExposures = 0)
+      counts <- dplyr::tibble(
+        description = "Original cohorts",
+        targetPersons = 0,
+        comparatorPersons = 0,
+        targetExposures = 0,
+        comparatorExposures = 0
+      )
     } else {
-      counts <- dplyr::tibble(description = "Original cohorts",
-                              targetPersons = rawCount$exposedCount[rawCount$treatment ==  1],
-                              comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-                              targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
-                              comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0])
+      counts <- dplyr::tibble(
+        description = "Original cohorts",
+        targetPersons = rawCount$exposedCount[rawCount$treatment == 1],
+        comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
+        targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
+        comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0]
+      )
     }
     metaData$attrition <- counts
     label <- c()
@@ -324,43 +338,48 @@ getDbCohortMethodData <- function(connectionDetails,
     cohortTable <- "#cohort_person"
   }
   covariateSettings <- handleCohortCovariateBuilders(covariateSettings, exposureDatabaseSchema, exposureTable)
-  covariateData <- FeatureExtraction::getDbCovariateData(connection = connection,
-                                                         oracleTempSchema = tempEmulationSchema,
-                                                         cdmDatabaseSchema = cdmDatabaseSchema,
-                                                         cdmVersion = cdmVersion,
-                                                         cohortTable = cohortTable,
-                                                         cohortTableIsTemp = TRUE,
-                                                         rowIdField = "row_id",
-                                                         covariateSettings = covariateSettings)
+  covariateData <- FeatureExtraction::getDbCovariateData(
+    connection = connection,
+    oracleTempSchema = tempEmulationSchema,
+    cdmDatabaseSchema = cdmDatabaseSchema,
+    cdmVersion = cdmVersion,
+    cohortTable = cohortTable,
+    cohortTableIsTemp = TRUE,
+    rowIdField = "row_id",
+    covariateSettings = covariateSettings
+  )
   ParallelLogger::logDebug("Fetched covariates total count is ", covariateData$covariates %>% count() %>% pull())
   message("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
-                                                  packageName = "CohortMethod",
-                                                  dbms = connectionDetails$dbms,
-                                                  tempEmulationSchema = tempEmulationSchema,
-                                                  cdm_database_schema = cdmDatabaseSchema,
-                                                  outcome_database_schema = outcomeDatabaseSchema,
-                                                  outcome_table = outcomeTable,
-                                                  outcome_ids = outcomeIds,
-                                                  cdm_version = cdmVersion,
-                                                  sampled = sampled)
+    packageName = "CohortMethod",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    cdm_database_schema = cdmDatabaseSchema,
+    outcome_database_schema = outcomeDatabaseSchema,
+    outcome_table = outcomeTable,
+    outcome_ids = outcomeIds,
+    cdm_version = cdmVersion,
+    sampled = sampled
+  )
   outcomes <- DatabaseConnector::querySql(connection, outcomeSql, snakeCaseToCamelCase = TRUE)
-  metaData$outcomeIds = outcomeIds
+  metaData$outcomeIds <- outcomeIds
   delta <- Sys.time() - start
   message("Fetching outcomes took ", signif(delta, 3), " ", attr(delta, "units"))
   ParallelLogger::logDebug("Fetched outcomes total count is ", nrow(outcomes))
 
   # Remove temp tables:
   renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
-                                                   packageName = "CohortMethod",
-                                                   dbms = connectionDetails$dbms,
-                                                   tempEmulationSchema = tempEmulationSchema,
-                                                   sampled = sampled)
+    packageName = "CohortMethod",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    sampled = sampled
+  )
   DatabaseConnector::executeSql(connection,
-                                renderedSql,
-                                progressBar = FALSE,
-                                reportOverallTime = FALSE)
+    renderedSql,
+    progressBar = FALSE,
+    reportOverallTime = FALSE
+  )
 
   covariateData$cohorts <- cohorts
   covariateData$outcomes <- outcomes

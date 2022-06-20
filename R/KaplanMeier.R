@@ -84,21 +84,23 @@ plotKaplanMeier <- function(population,
 
   population$y <- 0
   population$y[population$outcomeCount != 0] <- 1
-  if (is.null(population$stratumId) || length(unique(population$stratumId)) == nrow(population)/2) {
+  if (is.null(population$stratumId) || length(unique(population$stratumId)) == nrow(population) / 2) {
     sv <- survival::survfit(survival::Surv(survivalTime, y) ~ treatment, population, conf.int = TRUE)
-    data <- data.frame(time = sv$time,
-                       n.censor = sv$n.censor,
-                       s = sv$surv,
-                       strata = summary(sv, censored = T)$strata,
-                       upper = sv$upper,
-                       lower = sv$lower)
+    data <- data.frame(
+      time = sv$time,
+      n.censor = sv$n.censor,
+      s = sv$surv,
+      strata = summary(sv, censored = T)$strata,
+      upper = sv$upper,
+      lower = sv$lower
+    )
     levels(data$strata)[levels(data$strata) == "treatment=0"] <- comparatorLabel
     levels(data$strata)[levels(data$strata) == "treatment=1"] <- targetLabel
   } else {
     message("Variable size strata detected so using adjusted KM for stratified data")
     population$stratumSizeT <- 1
-    strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1,], sum)
-    strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
+    strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1, ], sum)
+    strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0, ], sum)
     colnames(strataSizesC)[2] <- "stratumSizeC"
     weights <- merge(strataSizesT, strataSizesC)
     weights$weight <- weights$stratumSizeT / weights$stratumSizeC
@@ -106,14 +108,18 @@ plotKaplanMeier <- function(population,
     population$weight[population$treatment == 1] <- 1
 
     idx <- population$treatment == 1
-    survTarget <- adjustedKm(weight = population$weight[idx],
-                             time = population$survivalTime[idx],
-                             y = population$y[idx])
+    survTarget <- adjustedKm(
+      weight = population$weight[idx],
+      time = population$survivalTime[idx],
+      y = population$y[idx]
+    )
     survTarget$strata <- targetLabel
     idx <- population$treatment == 0
-    survComparator <- adjustedKm(weight = population$weight[idx],
-                                 time = population$survivalTime[idx],
-                                 y = population$y[idx])
+    survComparator <- adjustedKm(
+      weight = population$weight[idx],
+      time = population$survivalTime[idx],
+      y = population$y[idx]
+    )
     survComparator$strata <- comparatorLabel
     if (censorMarks) {
       addCensorData <- function(surv, treatment) {
@@ -123,7 +129,7 @@ plotKaplanMeier <- function(population,
         colnames(eventData) <- c("time", "events")
         surv <- merge(surv, censorData)
         surv <- merge(surv, eventData, all.x = TRUE)
-        surv$n.censor = surv$censored - surv$events
+        surv$n.censor <- surv$censored - surv$events
         return(surv)
       }
       survTarget <- addCensorData(survTarget, 1)
@@ -131,15 +137,15 @@ plotKaplanMeier <- function(population,
     }
 
     data <- rbind(survTarget, survComparator)
-    data$upper <- data$s^exp(qnorm(1 - 0.025)/log(data$s)*sqrt(data$var)/data$s)
-    data$lower <- data$s^exp(qnorm(0.025)/log(data$s)*sqrt(data$var)/data$s)
+    data$upper <- data$s^exp(qnorm(1 - 0.025) / log(data$s) * sqrt(data$var) / data$s)
+    data$lower <- data$s^exp(qnorm(0.025) / log(data$s) * sqrt(data$var) / data$s)
     data$lower[data$s > 0.999999] <- data$s[data$s > 0.999999]
   }
   data$strata <- factor(data$strata, levels = c(targetLabel, comparatorLabel))
   cutoff <- quantile(population$survivalTime, dataCutoff)
   xLabel <- "Time in days"
   yLabel <- "Survival probability"
-  xlims <- c(-cutoff/40, cutoff)
+  xlims <- c(-cutoff / 40, cutoff)
 
   if (cutoff <= 300) {
     xBreaks <- seq(0, cutoff, by = 50)
@@ -157,33 +163,44 @@ plotKaplanMeier <- function(population,
   } else {
     ylims <- c(min(data$surv), 1)
   }
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = .data$time,
-                                             y = .data$s,
-                                             color = .data$strata,
-                                             fill = .data$strata,
-                                             ymin = .data$lower,
-                                             ymax = .data$upper))
+  plot <- ggplot2::ggplot(data, ggplot2::aes(
+    x = .data$time,
+    y = .data$s,
+    color = .data$strata,
+    fill = .data$strata,
+    ymin = .data$lower,
+    ymax = .data$upper
+  ))
 
-  if (confidenceIntervals)
+  if (confidenceIntervals) {
     plot <- plot + ggplot2::geom_ribbon(color = rgb(0, 0, 0, alpha = 0))
+  }
 
   plot <- plot +
     ggplot2::geom_step(size = 1) +
-    ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.8),
-                                           rgb(0, 0, 0.8, alpha = 0.8))) +
-    ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.3),
-                                          rgb(0, 0, 0.8, alpha = 0.3))) +
+    ggplot2::scale_color_manual(values = c(
+      rgb(0.8, 0, 0, alpha = 0.8),
+      rgb(0, 0, 0.8, alpha = 0.8)
+    )) +
+    ggplot2::scale_fill_manual(values = c(
+      rgb(0.8, 0, 0, alpha = 0.3),
+      rgb(0, 0, 0.8, alpha = 0.3)
+    )) +
     ggplot2::scale_x_continuous(xLabel, limits = xlims, breaks = xBreaks) +
     ggplot2::scale_y_continuous(yLabel, limits = ylims) +
-    ggplot2::theme(legend.title = ggplot2::element_blank(),
-                   legend.position = "top",
-                   plot.title = ggplot2::element_text(hjust = 0.5))
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      legend.position = "top",
+      plot.title = ggplot2::element_text(hjust = 0.5)
+    )
 
   if (censorMarks == TRUE) {
-    plot <- plot + ggplot2::geom_point(data = subset(data, .data$n.censor >= 1),
-                                       ggplot2::aes(x = .data$time, y = .data$s),
-                                       shape = "|",
-                                       size = 3)
+    plot <- plot + ggplot2::geom_point(
+      data = subset(data, .data$n.censor >= 1),
+      ggplot2::aes(x = .data$time, y = .data$s),
+      shape = "|",
+      size = 3
+    )
   }
   if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
@@ -195,22 +212,26 @@ plotKaplanMeier <- function(population,
       targetAtRisk <- c(targetAtRisk, sum(population$treatment == 1 & population$survivalTime >= xBreak))
       comparatorAtRisk <- c(comparatorAtRisk, sum(population$treatment == 0 & population$survivalTime >= xBreak))
     }
-    labels <- data.frame(x = c(0, xBreaks, xBreaks),
-                         y = as.factor(c("Number at risk", rep(targetLabel, length(xBreaks)), rep(comparatorLabel, length(xBreaks)))),
-                         label = c("", formatC(targetAtRisk, big.mark = ","), formatC(comparatorAtRisk, big.mark = ",")))
+    labels <- data.frame(
+      x = c(0, xBreaks, xBreaks),
+      y = as.factor(c("Number at risk", rep(targetLabel, length(xBreaks)), rep(comparatorLabel, length(xBreaks)))),
+      label = c("", formatC(targetAtRisk, big.mark = ","), formatC(comparatorAtRisk, big.mark = ","))
+    )
     labels$y <- factor(labels$y, levels = c(comparatorLabel, targetLabel, "Number at risk"))
     dataTable <- ggplot2::ggplot(labels, ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)) +
       ggplot2::geom_text(size = 3.5, vjust = 0.5) +
       ggplot2::scale_x_continuous(xLabel, limits = xlims, breaks = xBreaks) +
-      ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
-                     panel.grid.minor = ggplot2::element_blank(),
-                     legend.position = "none",
-                     panel.border = ggplot2::element_blank(),
-                     panel.background = ggplot2::element_blank(),
-                     axis.text.x = ggplot2::element_text(color = "white"),
-                     axis.title.x = ggplot2::element_text(color = "white"),
-                     axis.title.y = ggplot2::element_blank(),
-                     axis.ticks = ggplot2::element_line(color = "white"))
+      ggplot2::theme(
+        panel.grid.major = ggplot2::element_blank(),
+        panel.grid.minor = ggplot2::element_blank(),
+        legend.position = "none",
+        panel.border = ggplot2::element_blank(),
+        panel.background = ggplot2::element_blank(),
+        axis.text.x = ggplot2::element_text(color = "white"),
+        axis.title.x = ggplot2::element_text(color = "white"),
+        axis.title.y = ggplot2::element_blank(),
+        axis.ticks = ggplot2::element_line(color = "white")
+      )
     plots <- list(plot, dataTable)
     grobs <- widths <- list()
     for (i in 1:length(plots)) {
@@ -221,10 +242,11 @@ plotKaplanMeier <- function(population,
     for (i in 1:length(grobs)) {
       grobs[[i]]$widths[2:5] <- as.list(maxwidth)
     }
-    plot <- gridExtra::grid.arrange(grobs[[1]], grobs[[2]], heights = c(400,100))
+    plot <- gridExtra::grid.arrange(grobs[[1]], grobs[[2]], heights = c(400, 100))
   }
 
-  if (!is.null(fileName))
+  if (!is.null(fileName)) {
     ggplot2::ggsave(fileName, plot, width = 7, height = 5, dpi = 400)
+  }
   return(plot)
 }

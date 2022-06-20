@@ -76,13 +76,15 @@ createPs <- function(cohortMethodData,
                      errorOnHighCorrelation = TRUE,
                      stopOnError = TRUE,
                      prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-                     control = createControl(noiseLevel = "silent",
-                                             cvType = "auto",
-                                             seed = 1,
-                                             resetCoefficients = TRUE,
-                                             tolerance = 2e-07,
-                                             cvRepetitions = 10,
-                                             startingVariance = 0.01),
+                     control = createControl(
+                       noiseLevel = "silent",
+                       cvType = "auto",
+                       seed = 1,
+                       resetCoefficients = TRUE,
+                       tolerance = 2e-07,
+                       cvRepetitions = 10,
+                       startingVariance = 0.01
+                     ),
                      estimator = "att") {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
@@ -101,10 +103,12 @@ createPs <- function(cohortMethodData,
     population <- cohortMethodData$cohorts %>%
       collect()
   }
-  if (!("rowId" %in% colnames(population)))
+  if (!("rowId" %in% colnames(population))) {
     stop("Missing column rowId in population")
-  if (!("treatment" %in% colnames(population)))
+  }
+  if (!("treatment" %in% colnames(population))) {
     stop("Missing column treatment in population")
+  }
 
   start <- Sys.time()
   population <- population[order(population$rowId), ]
@@ -128,9 +132,11 @@ createPs <- function(cohortMethodData,
       covariates <- covariates %>%
         filter(!.data$covariateId %in% excludeCovariateIds)
     }
-    filteredCovariateData <- Andromeda::andromeda(covariates = covariates,
-                                                  covariateRef = cohortMethodData$covariateRef,
-                                                  analysisRef = cohortMethodData$analysisRef)
+    filteredCovariateData <- Andromeda::andromeda(
+      covariates = covariates,
+      covariateRef = cohortMethodData$covariateRef,
+      analysisRef = cohortMethodData$analysisRef
+    )
     metaData <- attr(cohortMethodData, "metaData")
     metaData$populationSize <- nrow(population)
     attr(filteredCovariateData, "metaData") <- metaData
@@ -188,8 +194,9 @@ createPs <- function(cohortMethodData,
           collect()
         message("High correlation between covariate(s) and treatment detected:")
         message(paste(colnames(ref), collapse = "\t"))
-        for (i in 1:nrow(ref))
+        for (i in 1:nrow(ref)) {
           message(paste(ref[i, ], collapse = "\t"))
+        }
         message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
         if (stopOnError) {
           stop(message)
@@ -200,11 +207,14 @@ createPs <- function(cohortMethodData,
     }
   }
   if (is.null(error)) {
-    cyclopsFit <- tryCatch({
-      Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-    }, error = function(e) {
-      e$message
-    })
+    cyclopsFit <- tryCatch(
+      {
+        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+      },
+      error = function(e) {
+        e$message
+      }
+    )
     if (is.character(cyclopsFit)) {
       if (stopOnError) {
         stop(cyclopsFit)
@@ -228,11 +238,11 @@ createPs <- function(cohortMethodData,
     if (sampled) {
       # Adjust intercept to non-sampled population:
       y.bar <- mean(population$treatment)
-      y.odds <- y.bar/(1 - y.bar)
+      y.odds <- y.bar / (1 - y.bar)
       y.bar.new <- mean(fullPopulation$treatment)
-      y.odds.new <- y.bar.new/(1 - y.bar.new)
+      y.odds.new <- y.bar.new / (1 - y.bar.new)
       delta <- log(y.odds) - log(y.odds.new)
-      cfs[1] <- cfs[1] - delta  # Equation (7) in King and Zeng (2001)
+      cfs[1] <- cfs[1] - delta # Equation (7) in King and Zeng (2001)
       cyclopsFit$estimation$estimate[1] <- cfs[1]
       covariateData$fullOutcomes <- fullPopulation
       population <- fullPopulation
@@ -275,13 +285,15 @@ computeIptw <- function(population, estimator = "ate") {
   if (estimator == "ate") {
     # 'Stabilized' ATE:
     population$iptw <- ifelse(population$treatment == 1,
-                              mean(population$treatment == 1) / population$propensityScore,
-                              mean(population$treatment == 0) / (1 - population$propensityScore))
+      mean(population$treatment == 1) / population$propensityScore,
+      mean(population$treatment == 0) / (1 - population$propensityScore)
+    )
   } else {
     # 'Stabilized' ATT:
     population$iptw <- ifelse(population$treatment == 1,
-                              mean(population$treatment == 1),
-                              mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore))
+      mean(population$treatment == 1),
+      mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)
+    )
   }
   return(population)
 }
@@ -307,13 +319,17 @@ getPsModel <- function(propensityScore, cohortMethodData) {
 
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
   if (is.null(coefficients)) {
-    return(dplyr::tibble(coefficient = NA,
-                         covariateId = NA,
-                         covariateName = NA))
+    return(dplyr::tibble(
+      coefficient = NA,
+      covariateId = NA,
+      covariateName = NA
+    ))
   }
-  result <- dplyr::tibble(coefficient = coefficients[1],
-                          covariateId = NA,
-                          covariateName = "(Intercept)")
+  result <- dplyr::tibble(
+    coefficient = coefficients[1],
+    covariateId = NA,
+    covariateName = "(Intercept)"
+  )
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
@@ -321,11 +337,15 @@ getPsModel <- function(propensityScore, cohortMethodData) {
       pull(.data$covariateId) %>%
       is("integer64")
     if (covariateIdIsInteger64) {
-      coefficients <- dplyr::tibble(coefficient = coefficients,
-                                    covariateId = bit64::as.integer64(attr(coefficients, "names")))
+      coefficients <- dplyr::tibble(
+        coefficient = coefficients,
+        covariateId = bit64::as.integer64(attr(coefficients, "names"))
+      )
     } else {
-      coefficients <- dplyr::tibble(coefficient = coefficients,
-                                    covariateId = as.numeric(attr(coefficients, "names")))
+      coefficients <- dplyr::tibble(
+        coefficient = coefficients,
+        covariateId = as.numeric(attr(coefficients, "names"))
+      )
     }
     covariateRef <- cohortMethodData$covariateRef %>%
       collect()
@@ -340,14 +360,14 @@ getPsModel <- function(propensityScore, cohortMethodData) {
 
 computePreferenceScore <- function(data, unfilteredData = NULL) {
   if (is.null(unfilteredData)) {
-    proportion <- sum(data$treatment)/nrow(data)
+    proportion <- sum(data$treatment) / nrow(data)
   } else {
-    proportion <- sum(unfilteredData$treatment)/nrow(unfilteredData)
+    proportion <- sum(unfilteredData$treatment) / nrow(unfilteredData)
   }
   propensityScore <- data$propensityScore
   propensityScore[propensityScore > 0.9999999] <- 0.9999999
-  x <- exp(log(propensityScore/(1 - propensityScore)) - log(proportion/(1 - proportion)))
-  data$preferenceScore <- x/(x + 1)
+  x <- exp(log(propensityScore / (1 - propensityScore)) - log(proportion / (1 - proportion)))
+  data$preferenceScore <- x / (x + 1)
   return(data)
 }
 
@@ -476,8 +496,9 @@ plotPs <- function(data,
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (type == "histogram")
+  if (type == "histogram") {
     type <- "histogramCount"
+  }
 
   if (scale == "preference") {
     data <- computePreferenceScore(data, unfilteredData)
@@ -495,20 +516,28 @@ plotPs <- function(data,
   if (type == "density") {
     d1 <- density(data$score[data$treatment == 1], from = 0, to = 1, n = 200)
     d0 <- density(data$score[data$treatment == 0], from = 0, to = 1, n = 200)
-    d <- data.frame(x = c(d1$x, d0$x), y = c(d1$y, d0$y), treatment = c(rep(targetLabel, length(d1$x)),
-                                                                        rep(comparatorLabel, length(d0$x))))
+    d <- data.frame(x = c(d1$x, d0$x), y = c(d1$y, d0$y), treatment = c(
+      rep(targetLabel, length(d1$x)),
+      rep(comparatorLabel, length(d0$x))
+    ))
     d$treatment <- factor(d$treatment, levels = c(targetLabel, comparatorLabel))
     plot <- ggplot2::ggplot(d, ggplot2::aes(x = .data$x, y = .data$y)) +
       ggplot2::geom_density(stat = "identity", ggplot2::aes(color = .data$treatment, group = .data$treatment, fill = .data$treatment)) +
-      ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                            rgb(0, 0, 0.8, alpha = 0.5))) +
-      ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                             rgb(0, 0, 0.8, alpha = 0.5))) +
+      ggplot2::scale_fill_manual(values = c(
+        rgb(0.8, 0, 0, alpha = 0.5),
+        rgb(0, 0, 0.8, alpha = 0.5)
+      )) +
+      ggplot2::scale_color_manual(values = c(
+        rgb(0.8, 0, 0, alpha = 0.5),
+        rgb(0, 0, 0.8, alpha = 0.5)
+      )) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous("Density", limits = c(0, max(d$y)*yMultiplier)) +
-      ggplot2::theme(legend.title = ggplot2::element_blank(),
-                     legend.position = "top",
-                     legend.text = ggplot2::element_text(margin = ggplot2::margin(0, 0.5, 0, 0.1, "cm")))
+      ggplot2::scale_y_continuous("Density", limits = c(0, max(d$y) * yMultiplier)) +
+      ggplot2::theme(
+        legend.title = ggplot2::element_blank(),
+        legend.position = "top",
+        legend.text = ggplot2::element_text(margin = ggplot2::margin(0, 0.5, 0, 0.1, "cm"))
+      )
     if (!is.null(attr(data, "strata"))) {
       strata <- data.frame(propensityScore = attr(data, "strata"))
       if (scale == "preference") {
@@ -524,17 +553,18 @@ plotPs <- function(data,
       plot <- plot +
         ggplot2::geom_vline(xintercept = strata$score, color = rgb(0, 0, 0, alpha = 0.5))
     }
-
   } else {
     x <- seq(from = 0, to = 1, by = binWidth)
     d1 <- data.frame(xmin = cut(data$score[data$treatment == 1], x, labels = x[1:(length(x) - 1)]), y = 1)
-    d1 <- aggregate(y ~   xmin, d1, sum)
+    d1 <- aggregate(y ~ xmin, d1, sum)
     d1$xmin <- as.numeric(as.character(d1$xmin))
     d0 <- data.frame(xmin = cut(data$score[data$treatment == 0], x, labels = x[1:(length(x) - 1)]), y = 1)
-    d0 <- aggregate(y ~   xmin, d0, sum)
+    d0 <- aggregate(y ~ xmin, d0, sum)
     d0$xmin <- as.numeric(as.character(d0$xmin))
-    d <- data.frame(xmin = c(d1$xmin, d0$xmin), y = c(d1$y, d0$y), treatment = c(rep(targetLabel, nrow(d1)),
-                                                                                 rep(comparatorLabel, nrow(d0))))
+    d <- data.frame(xmin = c(d1$xmin, d0$xmin), y = c(d1$y, d0$y), treatment = c(
+      rep(targetLabel, nrow(d1)),
+      rep(comparatorLabel, nrow(d0))
+    ))
     d$xmax <- d$xmin + binWidth
     d$treatment <- factor(d$treatment, levels = c(targetLabel, comparatorLabel))
     yAxisScale <- "Number"
@@ -544,12 +574,16 @@ plotPs <- function(data,
     }
     plot <- ggplot2::ggplot(d, ggplot2::aes(x = .data$xmin)) +
       ggplot2::geom_rect(ggplot2::aes(xmin = .data$xmin, xmax = .data$xmax, ymin = 0, ymax = .data$y, color = .data$treatment, group = .data$treatment, fill = .data$treatment)) +
-      ggplot2::scale_fill_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                            rgb(0, 0, 0.8, alpha = 0.5))) +
-      ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                             rgb(0, 0, 0.8, alpha = 0.5))) +
+      ggplot2::scale_fill_manual(values = c(
+        rgb(0.8, 0, 0, alpha = 0.5),
+        rgb(0, 0, 0.8, alpha = 0.5)
+      )) +
+      ggplot2::scale_color_manual(values = c(
+        rgb(0.8, 0, 0, alpha = 0.5),
+        rgb(0, 0, 0.8, alpha = 0.5)
+      )) +
       ggplot2::scale_x_continuous(label, limits = c(0, 1)) +
-      ggplot2::scale_y_continuous(paste(yAxisScale, "of", unitOfAnalysis), limits = c(0, max(d$y)*1.25)) +
+      ggplot2::scale_y_continuous(paste(yAxisScale, "of", unitOfAnalysis), limits = c(0, max(d$y) * 1.25)) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "top")
   }
   if (showAucLabel || showCountsLabel || showEquiposeLabel) {
@@ -569,7 +603,7 @@ plotPs <- function(data,
         data <- computePreferenceScore(data, unfilteredData)
       }
       equipoise <- computeEquipoise(data = data, equipoiseBounds = equipoiseBounds)
-      labelsRight <- c(labelsRight, sprintf("%2.1f%% is in equipoise", equipoise*100))
+      labelsRight <- c(labelsRight, sprintf("%2.1f%% is in equipoise", equipoise * 100))
     }
     if (length(labelsLeft) > 0) {
       dummy <- data.frame(text = paste(labelsLeft, collapse = "\n"))
@@ -577,14 +611,15 @@ plotPs <- function(data,
     }
     if (length(labelsRight) > 0) {
       dummy <- data.frame(text = paste(labelsRight, collapse = "\n"))
-      plot <- plot + ggplot2::geom_label(x = 1, y =  max(d$y) * 1.24, hjust = "right", vjust = "top", alpha = 0.8, ggplot2::aes(label = text), data = dummy, size = 3.5)
+      plot <- plot + ggplot2::geom_label(x = 1, y = max(d$y) * 1.24, hjust = "right", vjust = "top", alpha = 0.8, ggplot2::aes(label = text), data = dummy, size = 3.5)
     }
   }
   if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
   }
-  if (!is.null(fileName))
+  if (!is.null(fileName)) {
     ggplot2::ggsave(fileName, plot, width = 5, height = 3.5, dpi = 400)
+  }
   return(plot)
 }
 
@@ -679,10 +714,12 @@ trimByPs <- function(population, trimFraction = 0.05) {
   cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
   result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
-                         (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
+    (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
-    attr(result,
-         "metaData")$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
+    attr(
+      result,
+      "metaData"
+    )$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
   }
   ParallelLogger::logDebug("Population size after trimming is ", nrow(result))
   return(result)
@@ -730,8 +767,10 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
   temp <- computePreferenceScore(population)
   population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
   if (!is.null(attr(population, "metaData"))) {
-    attr(population,
-         "metaData")$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
+    attr(
+      population,
+      "metaData"
+    )$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
   }
   ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   return(population)
@@ -758,7 +797,7 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
 #' @examples
 #' rowId <- 1:2000
 #' treatment <- rep(0:1, each = 1000)
-#' iptw <- 1/c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+#' iptw <- 1 / c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, iptw = iptw)
 #' result <- trimByIptw(data)
 #'
@@ -775,8 +814,10 @@ trimByIptw <- function(population, maxWeight = 10) {
     filter(.data$iptw <= maxWeight)
   if (!is.null(attr(population, "metaData"))) {
     metaData <- attr(population, "metaData")
-    metaData$attrition <- bind_rows(metaData$attrition,
-                                    getCounts(population, paste("Trimmed by IPTW")))
+    metaData$attrition <- bind_rows(
+      metaData$attrition,
+      getCounts(population, paste("Trimmed by IPTW"))
+    )
     attr(population, "metaData") <- metaData
   }
   ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
@@ -804,7 +845,7 @@ trimByIptw <- function(population, maxWeight = 10) {
 #' @examples
 #' rowId <- 1:2000
 #' treatment <- rep(0:1, each = 1000)
-#' iptw <- 1/c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+#' iptw <- 1 / c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, iptw = iptw)
 #' result <- truncateIptw(data)
 #'
@@ -825,7 +866,7 @@ truncateIptw <- function(population, maxWeight = 10) {
 }
 
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
-  covariateIds = c(2018006, 8527004)
+  covariateIds <- c(2018006, 8527004)
   covariates <- cohortMethodData$covariates %>%
     filter(.data$covariateId %in% covariateIds) %>%
     collect()
@@ -840,7 +881,7 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
   return(data)
 }
 
-logit <- function(p){
+logit <- function(p) {
   log(p / (1 - p))
 }
 
@@ -888,10 +929,12 @@ logit <- function(p){
 #' treatment <- c(1, 0, 1, 0, 1)
 #' propensityScore <- c(0, 0.1, 0.3, 0.4, 1)
 #' age_group <- c(1, 1, 1, 1, 1)
-#' data <- data.frame(rowId = rowId,
-#'                    treatment = treatment,
-#'                    propensityScore = propensityScore,
-#'                    age_group = age_group)
+#' data <- data.frame(
+#'   rowId = rowId,
+#'   treatment = treatment,
+#'   propensityScore = propensityScore,
+#'   age_group = age_group
+#' )
 #' result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 #'
 #' @references
@@ -938,10 +981,12 @@ matchOnPs <- function(population,
     maxRatio <- 999
   }
   if (length(stratificationColumns) == 0) {
-    result <- matchPsInternal(propensityScore,
-                              population$treatment,
-                              maxRatio,
-                              caliper)
+    result <- matchPsInternal(
+      propensityScore,
+      population$treatment,
+      maxRatio,
+      caliper
+    )
     result <- dplyr::as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
@@ -951,34 +996,41 @@ matchOnPs <- function(population,
     }
 
     if (!is.null(attr(population, "metaData"))) {
-      attr(population, "metaData")$attrition <- rbind(attr(population, "metaData")$attrition,
-                                                      getCounts(population, paste("Matched on propensity score")))
+      attr(population, "metaData")$attrition <- rbind(
+        attr(population, "metaData")$attrition,
+        getCounts(population, paste("Matched on propensity score"))
+      )
     }
 
     ParallelLogger::logDebug("Population size after matching is ", nrow(result))
     return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
-      subResult <- matchPsInternal(subset$propensityScore,
-                                   subset$treatment,
-                                   maxRatio,
-                                   caliper)
+      subResult <- matchPsInternal(
+        subset$propensityScore,
+        subset$treatment,
+        maxRatio,
+        caliper
+      )
       subResult <- dplyr::as_tibble(subResult)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
       return(subset)
     }
-    results <- plyr::dlply(.data = population,
-                           .variables = stratificationColumns,
-                           .drop = TRUE,
-                           .fun = f,
-                           maxRatio = maxRatio,
-                           caliper = caliper)
+    results <- plyr::dlply(
+      .data = population,
+      .variables = stratificationColumns,
+      .drop = TRUE,
+      .fun = f,
+      maxRatio = maxRatio,
+      caliper = caliper
+    )
     maxStratumId <- 0
     for (i in 1:length(results)) {
       if (nrow(results[[i]]) > 0) {
-        if (maxStratumId != 0)
+        if (maxStratumId != 0) {
           results[[i]]$stratumId <- results[[i]]$stratumId + maxStratumId + 1
+        }
         maxStratumId <- max(results[[i]]$stratumId)
       }
     }
@@ -989,8 +1041,10 @@ matchOnPs <- function(population,
     }
 
     if (!is.null(attr(result, "metaData"))) {
-      attr(result, "metaData")$attrition <- rbind(attr(result, "metaData")$attrition,
-                                                  getCounts(result, paste("Trimmed to equipoise")))
+      attr(result, "metaData")$attrition <- rbind(
+        attr(result, "metaData")$attrition,
+        getCounts(result, paste("Trimmed to equipoise"))
+      )
     }
 
     ParallelLogger::logDebug("Population size after matching is ", nrow(result))
@@ -1059,8 +1113,9 @@ matchOnPsAndCovariates <- function(population,
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
-                                                                                covariateIds,
-                                                                                sep = "_")]
+    covariateIds,
+    sep = "_"
+  )]
   return(matchOnPs(population, caliper, caliperScale, maxRatio, allowReverseMatch, stratificationColumns))
 }
 
@@ -1124,7 +1179,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   if (length(basePop) == 0) {
     psStrata <- c()
   } else {
-    psStrata <- unique(quantile(basePop, (1:(numberOfStrata - 1))/numberOfStrata))
+    psStrata <- unique(quantile(basePop, (1:(numberOfStrata - 1)) / numberOfStrata))
   }
   attr(population, "strata") <- psStrata
   breaks <- unique(c(0, psStrata, 1))
@@ -1137,8 +1192,9 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
       population$stratumId <- rep(1, nrow(population))
     } else {
       population$stratumId <- as.integer(as.character(cut(population$propensityScore,
-                                                          breaks = breaks,
-                                                          labels = 1:(length(breaks) - 1))))
+        breaks = breaks,
+        labels = 1:(length(breaks) - 1)
+      )))
     }
     return(population)
   } else {
@@ -1147,23 +1203,27 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
         subset$stratumId <- rep(1, nrow(subset))
       } else {
         subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
-                                                        breaks = breaks,
-                                                        labels = 1:(length(breaks) - 1))))
+          breaks = breaks,
+          labels = 1:(length(breaks) - 1)
+        )))
       }
       return(subset)
     }
 
-    results <- plyr::dlply(.data = population,
-                           .variables = stratificationColumns,
-                           .drop = TRUE,
-                           .fun = f,
-                           psStrata = psStrata,
-                           numberOfStrata = numberOfStrata)
+    results <- plyr::dlply(
+      .data = population,
+      .variables = stratificationColumns,
+      .drop = TRUE,
+      .fun = f,
+      psStrata = psStrata,
+      numberOfStrata = numberOfStrata
+    )
     maxStratumId <- 0
     for (i in 1:length(results)) {
       if (nrow(results[[i]]) > 0) {
-        if (maxStratumId != 0)
+        if (maxStratumId != 0) {
           results[[i]]$stratumId <- results[[i]]$stratumId + maxStratumId + 1
+        }
         maxStratumId <- max(results[[i]]$stratumId)
       }
     }
@@ -1213,10 +1273,13 @@ stratifyByPsAndCovariates <- function(population,
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
-                                                                                covariateIds,
-                                                                                sep = "_")]
-  return(stratifyByPs(population = population,
-                      numberOfStrata = numberOfStrata,
-                      stratificationColumns = stratificationColumns,
-                      baseSelection = baseSelection))
+    covariateIds,
+    sep = "_"
+  )]
+  return(stratifyByPs(
+    population = population,
+    numberOfStrata = numberOfStrata,
+    stratificationColumns = stratificationColumns,
+    baseSelection = baseSelection
+  ))
 }

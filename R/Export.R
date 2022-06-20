@@ -584,12 +584,12 @@ tidyBalance <- function(balance, minCellCount) {
 
   balance %>%
     select(.data$covariateId,
-           targetMeanBefore = .data$beforeMatchingMeanTarget,
-           comparatorMeanBefore = .data$beforeMatchingMeanComparator,
-           stdDiffBefore = .data$beforeMatchingStdDiff,
-           targetMeanAfter = .data$afterMatchingMeanTarget,
-           comparatorMeanAfter = .data$afterMatchingMeanComparator,
-           stdDiffAfter = .data$afterMatchingStdDiff
+      targetMeanBefore = .data$beforeMatchingMeanTarget,
+      comparatorMeanBefore = .data$beforeMatchingMeanComparator,
+      stdDiffBefore = .data$beforeMatchingStdDiff,
+      targetMeanAfter = .data$afterMatchingMeanTarget,
+      comparatorMeanAfter = .data$afterMatchingMeanComparator,
+      stdDiffAfter = .data$afterMatchingStdDiff
     ) %>%
     mutate(
       targetMeanBefore = ifelse(is.na(.data$targetMeanBefore), 0, .data$targetMeanBefore),
@@ -600,26 +600,26 @@ tidyBalance <- function(balance, minCellCount) {
       stdDiffAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$stdDiffAfter)
     ) %>%
     filter(!(round(.data$targetMeanBefore) == 0 &
-               round(.data$comparatorMeanBefore, 3) == 0 &
-               round(.data$stdDiffBefore, 3) == 0 &
-               round(.data$targetMeanAfter, 3) == 0 &
-               round(.data$comparatorMeanAfter, 3) == 0 &
-               round(.data$stdDiffAfter, 3) == 0)) %>%
+      round(.data$comparatorMeanBefore, 3) == 0 &
+      round(.data$stdDiffBefore, 3) == 0 &
+      round(.data$targetMeanAfter, 3) == 0 &
+      round(.data$comparatorMeanAfter, 3) == 0 &
+      round(.data$stdDiffAfter, 3) == 0)) %>%
     enforceMinCellValue("targetMeanBefore",
-                        minCellCount / inferredTargetBeforeSize,
-                        silent = TRUE
+      minCellCount / inferredTargetBeforeSize,
+      silent = TRUE
     ) %>%
     enforceMinCellValue("comparatorMeanBefore",
-                        minCellCount / inferredComparatorBeforeSize,
-                        silent = TRUE
+      minCellCount / inferredComparatorBeforeSize,
+      silent = TRUE
     ) %>%
     enforceMinCellValue("targetMeanAfter",
-                        minCellCount / inferredTargetAfterSize,
-                        silent = TRUE
+      minCellCount / inferredTargetAfterSize,
+      silent = TRUE
     ) %>%
     enforceMinCellValue("comparatorMeanAfter",
-                        minCellCount / inferredComparatorAfterSize,
-                        silent = TRUE
+      minCellCount / inferredComparatorAfterSize,
+      silent = TRUE
     ) %>%
     mutate(
       targetMeanBefore = round(.data$targetMeanBefore),
@@ -734,12 +734,12 @@ exportKaplanMeier <- function(outputFolder,
   cluster <- ParallelLogger::makeCluster(min(4, maxCores))
   tasks <- split(reference, seq_len(nrow(reference)))
   ParallelLogger::clusterApply(cluster,
-                               tasks,
-                               prepareKm,
-                               outputFolder = outputFolder,
-                               tempFolder = tempFolder,
-                               databaseId = databaseId,
-                               minCellCount = minCellCount
+    tasks,
+    prepareKm,
+    outputFolder = outputFolder,
+    tempFolder = tempFolder,
+    databaseId = databaseId,
+    minCellCount = minCellCount
   )
   ParallelLogger::stopCluster(cluster)
 
@@ -879,11 +879,11 @@ prepareKaplanMeier <- function(population) {
       y = population$y[idx]
     )
     survComparator$comparatorSurvivalUb <- survComparator$s^exp(qnorm(0.975) / log(survComparator$s) *
-                                                                  sqrt(survComparator$var) / survComparator$s)
+      sqrt(survComparator$var) / survComparator$s)
     survComparator$comparatorSurvivalLb <- survComparator$s^exp(qnorm(0.025) / log(survComparator$s) *
-                                                                  sqrt(survComparator$var) / survComparator$s)
+      sqrt(survComparator$var) / survComparator$s)
     survComparator$comparatorSurvivalLb[survComparator$s > 0.9999] <- survComparator$s[survComparator$s >
-                                                                                         0.9999]
+      0.9999]
     survComparator$comparatorSurvival <- survComparator$s
     survComparator$s <- NULL
     survComparator$var <- NULL
@@ -910,7 +910,7 @@ prepareKaplanMeier <- function(population) {
     comparatorAtRisk <- c(
       comparatorAtRisk,
       sum(population$treatment == 0 & population$survivalTime >=
-            xBreak)
+        xBreak)
     )
   }
   data <- merge(data, tibble(

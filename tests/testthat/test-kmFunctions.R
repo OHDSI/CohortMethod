@@ -26,10 +26,9 @@ test_that("Weighted Kaplan-Meier", {
     risca <- risca$table.surv
 
     matched <- inner_join(risca, data.frame(times = weightedKm$time, survival = weightedKm$s),
-                          by = "times")
+      by = "times"
+    )
 
     expect_equal(matched$survival.x, matched$survival.y)
   }
 })
-
-
