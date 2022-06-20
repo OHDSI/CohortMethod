@@ -55,7 +55,7 @@ determine the hyperparameters of the prior (if applicable). See
 \code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
 
 \item{estimator}{The type of estimator for the IPTW. Options are \code{estimator = "ate"}
-for the average treatment effect, and \code{estimator = "att"}for the
+for the average treatment effect, and \code{estimator = "att"} for the
 average treatment effect in the treated.}
 }
 \description{

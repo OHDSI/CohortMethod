@@ -54,7 +54,7 @@
 #'                                 determine the hyperparameters of the prior (if applicable). See
 #'                                 [Cyclops::createControl()] for details.
 #' @param estimator                The type of estimator for the IPTW. Options are `estimator = "ate"`
-#'                                 for the average treatment effect, and `estimator = "att"`for the
+#'                                 for the average treatment effect, and `estimator = "att"` for the
 #'                                 average treatment effect in the treated.
 #'
 #' @references

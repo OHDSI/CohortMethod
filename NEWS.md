@@ -43,7 +43,7 @@ Changes:
 
     - Dropping `prefilterCovariates` from `runCmAnalyses()`. Prefiltering is now always done when specific covariates are used in the outcome model.
 
-    - Removed the `summarizeAnalyses()` function. Instead, results are automatically summarized in `runCmAnalyses()`. The summary can be retrieved using the new `getResultsSummary()` and `getInteractionResultsSummary()` functions. Empirical calibrations is automatically applied, and the MDRR is automatically computed.
+    - Removed the `summarizeAnalyses()` function. Instead, results are automatically summarized in `runCmAnalyses()`. The summary can be retrieved using the new `getResultsSummary()` and `getInteractionResultsSummary()` functions. Empirical calibration, MDRR, and attrition fraction are automatically computed.
     
     - Changing case in output of `getResultsSummary()` from `ci95lb` and `ci95ub` to `ci95Lb` and `ci95Ub`.
 

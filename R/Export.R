@@ -60,7 +60,7 @@ exportToCsv <- function(outputFolder,
   if (!file.exists(exportFolder)) {
     dir.create(exportFolder, recursive = TRUE)
   }
-
+  start <- Sys.time()
   message("Exporting results to CSV")
   exportCohortMethodAnalyses(
     outputFolder = outputFolder,
@@ -152,6 +152,9 @@ exportToCsv <- function(outputFolder,
   oldWd <- setwd(exportFolder)
   on.exit(setwd(oldWd))
   DatabaseConnector::createZipFile(zipFile = zipName, files = files)
+
+  delta <- Sys.time() - start
+  message("Exporting to CSV took ", signif(delta, 3), " ", attr(delta, "units"))
   message("Results are ready for sharing at:", zipName)
 }
 
@@ -1026,12 +1029,46 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
       .data$comparatorId,
       .data$outcomeId,
       .data$mdrr,
+      .data$attritionFraction,
       .data$ease
     )
 
   results <- results1 %>%
     inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
-    mutate(database_id = !!databaseId)
+    mutate(database_id = !!databaseId) %>%
+    mutate(balanceDiagnostic = case_when(
+      .data$stdDifferenceOfMean < 0.1 ~ "PASS",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(sharedBalanceDiagnostic = case_when(
+      .data$sharedStdDifferenceOfMean < 0.1 ~ "PASS",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(equipoiseDiagnostic = case_when(
+      .data$equipoise >= 0.5 ~ "PASS",
+      .data$equipoise >= 0.1 ~ "WARNING",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(mdrrDiagnostic = case_when(
+      .data$mdrr < 2 ~ "PASS",
+      .data$mdrr < 10 ~ "WARNING",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(attritionDiagnostic = case_when(
+      .data$attritionFraction < 0.1 ~ "PASS",
+      .data$attritionFraction < 0.5 ~ "WARNING",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(easeDiagnostic = case_when(
+      abs(.data$ease) < 0.1 ~ "PASS",
+      abs(.data$ease) < 0.25 ~ "WARNING",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(unblind = .data$mdrrDiagnostic != "FAIL" &
+      .data$attritionDiagnostic != "FAIL" &
+      .data$easeDiagnostic != "FAIL" &
+      .data$equipoiseDiagnostic != "FAIL" &
+      .data$balanceDiagnostic != "FAIL")
 
   fileName <- file.path(exportFolder, "diagnostics_summary.csv")
   writeToCsv(results, fileName)

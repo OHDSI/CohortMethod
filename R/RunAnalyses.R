@@ -1661,12 +1661,15 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     }
     pTarget <- outcomeModel$populationCounts$targetExposures / outcomeModel$populationCounts$comparatorExposures
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
-    mdrr <- computeMdrrFromAggregateStats(
+    mdrr <- CohortMethod:::computeMdrrFromAggregateStats(
       pTarget = pTarget,
       totalEvents = totalEvents,
       modelType = outcomeModel$outcomeModelType
     )
-
+    attrition <- getAttritionTable(outcomeModel)
+    # Assuming we're interest in the attrition of the target population only. Could change to depend on type
+    # of adjustment (e.g IPTW ATE should use target + comparator):
+    attritionFraction <- 1 - (attrition$targetExposures[nrow(attrition)] / attrition$targetExposures[1])
     result <- subset[i, ] %>%
       select(
         .data$analysisId,
@@ -1697,7 +1700,8 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
         logRr = if (is.null(coefficient)) NA else coefficient,
         seLogRr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
         llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr,
-        mdrr = mdrr
+        mdrr = !!mdrr,
+        attritionFraction = !!attritionFraction
       )
 
     mainResults[[i]] <- mainResult
@@ -1748,7 +1752,7 @@ calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE
     message("Calibrating estimates")
     groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
   }
-  cluster <- ParallelLogger::makeCluster(calibrationThreads)
+  cluster <- ParallelLogger::makeCluster(min(calibrationThreads, length(groups)), singleThreadToMain = FALSE)
   results <- ParallelLogger::clusterApply(cluster, groups, calibrateGroup)
   ParallelLogger::stopCluster(cluster)
   results <- bind_rows(results)

@@ -61,10 +61,12 @@ rowId <- 1:5
 treatment <- c(1, 0, 1, 0, 1)
 propensityScore <- c(0, 0.1, 0.3, 0.4, 1)
 age_group <- c(1, 1, 1, 1, 1)
-data <- data.frame(rowId = rowId,
-                   treatment = treatment,
-                   propensityScore = propensityScore,
-                   age_group = age_group)
+data <- data.frame(
+  rowId = rowId,
+  treatment = treatment,
+  propensityScore = propensityScore,
+  age_group = age_group
+)
 result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
 
 }

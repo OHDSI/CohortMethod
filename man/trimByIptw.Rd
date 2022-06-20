@@ -27,7 +27,7 @@ The data frame should have the following two columns:
 \examples{
 rowId <- 1:2000
 treatment <- rep(0:1, each = 1000)
-iptw <- 1/c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
+iptw <- 1 / c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 data <- data.frame(rowId = rowId, treatment = treatment, iptw = iptw)
 result <- trimByIptw(data)
 
