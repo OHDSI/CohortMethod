@@ -49,30 +49,46 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
   checkmate::assertChoice(modelType, c("cox"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
+  pTarget <- mean(population$treatment)
+  totalEvents <- sum(population$outcomeCount != 0)
+  mdrr <- computeMdrrFromAggregateStats(
+    pTarget = pTarget,
+    totalEvents = totalEvents,
+    alpha = alpha,
+    power = power,
+    twoSided = twoSided,
+    modelType = modelType
+  )
+  se <- 1 / sqrt(totalEvents * pTarget * (1 - pTarget))
+  result <- data.frame(
+    targetPersons = length(unique(population$personSeqId[population$treatment == 1])),
+    comparatorPersons = length(unique(population$personSeqId[population$treatment == 0])),
+    targetExposures = sum(population$treatment == 1),
+    comparatorExposures = sum(population$treatment == 0),
+    targetDays = sum(population$timeAtRisk[population$treatment == 1]),
+    comparatorDays = sum(population$timeAtRisk[population$treatment == 0]),
+    totalOutcomes = totalEvents,
+    mdrr = mdrr,
+    se = se
+  )
+  return(result)
+}
+
+computeMdrrFromAggregateStats <- function(pTarget, totalEvents, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
   if (twoSided) {
-    z1MinAlpha <- qnorm(1 - alpha/2)
+    z1MinAlpha <- qnorm(1 - alpha / 2)
   } else {
     z1MinAlpha <- qnorm(1 - alpha)
   }
   zBeta <- -qnorm(1 - power)
 
-  pA <- mean(population$treatment)
-  pB <- 1 - pA
+  pComparator <- 1 - pTarget
 
-  totalEvents <- sum(population$outcomeCount != 0)
-  # denom <- sqrt(pA) * sqrt(pB) * sqrt(totalEvents) mdrr <- exp(zBeta / denom + z1MinAlpha / denom)
-  mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2/(totalEvents * pA * pB)))
-  se <- 1/sqrt(totalEvents * pA * pB)
-  result <- data.frame(targetPersons = length(unique(population$personSeqId[population$treatment == 1])),
-                       comparatorPersons = length(unique(population$personSeqId[population$treatment == 0])),
-                       targetExposures = sum(population$treatment == 1),
-                       comparatorExposures = sum(population$treatment == 0),
-                       targetDays = sum(population$timeAtRisk[population$treatment == 1]),
-                       comparatorDays = sum(population$timeAtRisk[population$treatment == 0]),
-                       totalOutcomes = totalEvents,
-                       mdrr = mdrr,
-                       se = se)
-  return(result)
+  if (modelType == "cox") {
+    mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2 / (totalEvents * pTarget * pComparator)))
+  } else {
+    return(NA)
+  }
 }
 
 #' Get the distribution of follow-up time
@@ -163,7 +179,7 @@ plotFollowUpDistribution <- function(population,
   target0 <- data.frame(followUp = 0, sumCount = target$sumCount[1])
   target <- rbind(target0, target)
   if (yScale == "percent") {
-    target$sumCount <- 100 * target$sumCount/target$sumCount[1]
+    target$sumCount <- 100 * target$sumCount / target$sumCount[1]
   }
   comparator <- data.frame(followUp = population$timeAtRisk[population$treatment == 0], count = 1)
   comparator$sumCount <- cumsum(comparator$count)
@@ -171,22 +187,28 @@ plotFollowUpDistribution <- function(population,
   comparator0 <- data.frame(followUp = 0, sumCount = comparator$sumCount[1])
   comparator <- rbind(comparator0, comparator)
   if (yScale == "percent") {
-    comparator$sumCount <- 100 * comparator$sumCount/comparator$sumCount[1]
+    comparator$sumCount <- 100 * comparator$sumCount / comparator$sumCount[1]
   }
   target$label <- as.character(targetLabel)
   comparator$label <- as.character(comparatorLabel)
   d <- rbind(target, comparator)
   d$label <- factor(d$label, levels = c(targetLabel, comparatorLabel))
-  plot <- ggplot2::ggplot(d,
-                          ggplot2::aes(x = .data$followUp, y = .data$sumCount, group = .data$label, color = .data$label)) +
+  plot <- ggplot2::ggplot(
+    d,
+    ggplot2::aes(x = .data$followUp, y = .data$sumCount, group = .data$label, color = .data$label)
+  ) +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::geom_step(size = 1) +
-    ggplot2::scale_color_manual(values = c(rgb(0.8, 0, 0, alpha = 0.5),
-                                           rgb(0, 0, 0.8, alpha = 0.5))) +
+    ggplot2::scale_color_manual(values = c(
+      rgb(0.8, 0, 0, alpha = 0.5),
+      rgb(0, 0, 0.8, alpha = 0.5)
+    )) +
     ggplot2::scale_x_continuous("Follow-up (days)") +
     ggplot2::coord_cartesian(xlim = c(0, cutoff)) +
-    ggplot2::theme(legend.title = ggplot2::element_blank(),
-                   legend.position = "top",)
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      legend.position = "top",
+    )
   if (logYScale) {
     plot <- plot + ggplot2::scale_y_log10(yLabel)
   } else {
@@ -195,7 +217,8 @@ plotFollowUpDistribution <- function(population,
   if (!is.null(title)) {
     plot <- plot + ggplot2::ggtitle(title)
   }
-  if (!is.null(fileName))
+  if (!is.null(fileName)) {
     ggplot2::ggsave(fileName, plot, width = 5, height = 3.5, dpi = 400)
+  }
   return(plot)
 }

@@ -155,6 +155,33 @@ exportToCsv <- function(outputFolder,
   message("Results are ready for sharing at:", zipName)
 }
 
+writeToCsv <- function(data, fileName, append = FALSE) {
+  colnames(data) <- SqlRender::camelCaseToSnakeCase(colnames(data))
+  readr::write_csv(x = data, file = fileName, append = append)
+}
+
+enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
+  toCensor <- !is.na(pull(data, fieldName)) & pull(data, fieldName) < minValues & pull(data, fieldName) != 0
+  if (!silent) {
+    percent <- round(100 * sum(toCensor) / nrow(data), 1)
+    message(
+      "   censoring ",
+      sum(toCensor),
+      " values (",
+      percent,
+      "%) from ",
+      fieldName,
+      " because value below minimum"
+    )
+  }
+  if (length(minValues) == 1) {
+    data[toCensor, fieldName] <- -minValues
+  } else {
+    data[toCensor, fieldName] <- -minValues[toCensor]
+  }
+  return(data)
+}
+
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
   message("- cohort_method_analysis table")
 
@@ -928,29 +955,84 @@ prepareKaplanMeier <- function(population) {
   return(data)
 }
 
-writeToCsv <- function(data, fileName, append = FALSE) {
-  colnames(data) <- SqlRender::camelCaseToSnakeCase(colnames(data))
-  readr::write_csv(x = data, file = fileName, append = append)
-}
+exportDiagnosticsSummary <- function(outputFolder = outputFolder,
+                                     exportFolder = exportFolder,
+                                     databaseId = databaseId) {
+  message("- diagnostics_summary table")
+  reference <- getFileReference(outputFolder)
 
-enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
-  toCensor <- !is.na(pull(data, fieldName)) & pull(data, fieldName) < minValues & pull(data, fieldName) != 0
-  if (!silent) {
-    percent <- round(100 * sum(toCensor) / nrow(data), 1)
-    message(
-      "   censoring ",
-      sum(toCensor),
-      " values (",
-      percent,
-      "%) from ",
-      fieldName,
-      " because value below minimum"
+  getMaxSdm <- function(balanceFile) {
+    balance <- readRDS(file.path(outputFolder, balanceFile))
+    return(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE))
+  }
+
+  getEquipoise <- function(sharedPsFile) {
+    ps <- readRDS(file.path(outputFolder, sharedPsFile))
+    return(computeEquipoise(ps))
+  }
+
+  balanceFiles <- reference %>%
+    filter(.data$balanceFile != "") %>%
+    distinct(.data$balanceFile) %>%
+    pull()
+  sdm <- sapply(balanceFiles, getMaxSdm)
+
+  sharedBalanceFiles <- reference %>%
+    filter(.data$sharedBalanceFile != "") %>%
+    distinct(.data$sharedBalanceFile) %>%
+    pull()
+  sharedSdm <- sapply(sharedBalanceFiles, getMaxSdm)
+
+  sharedPsFiles <- reference %>%
+    filter(.data$sharedPsFile != "") %>%
+    distinct(.data$sharedPsFile) %>%
+    pull()
+  equipoise <- sapply(sharedPsFiles, getEquipoise)
+
+  results1 <- reference %>%
+    filter(.data$outcomeOfInterest) %>%
+    inner_join(tibble(
+      balanceFile = balanceFiles,
+      stdDifferenceOfMean = sdm
+    ),
+    by = "balanceFile"
+    ) %>%
+    inner_join(tibble(
+      sharedBalanceFile = sharedBalanceFiles,
+      sharedStdDifferenceOfMean = sharedSdm
+    ),
+    by = "sharedBalanceFile"
+    ) %>%
+    inner_join(tibble(
+      sharedPsFile = sharedPsFiles,
+      equipoise = equipoise
+    ),
+    by = "sharedPsFile"
+    ) %>%
+    select(
+      .data$analysisId,
+      .data$targetId,
+      .data$comparatorId,
+      .data$outcomeId,
+      stdDifferenceOfMean,
+      sharedStdDifferenceOfMean,
+      equipoise
     )
-  }
-  if (length(minValues) == 1) {
-    data[toCensor, fieldName] <- -minValues
-  } else {
-    data[toCensor, fieldName] <- -minValues[toCensor]
-  }
-  return(data)
+
+  results2 <- getResultsSummary(outputFolder) %>%
+    select(
+      .data$analysisId,
+      .data$targetId,
+      .data$comparatorId,
+      .data$outcomeId,
+      .data$mdrr,
+      .data$ease
+    )
+
+  results <- results1 %>%
+    inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
+    mutate(database_id = !!databaseId)
+
+  fileName <- file.path(exportFolder, "diagnostics_summary.csv")
+  writeToCsv(results, fileName)
 }

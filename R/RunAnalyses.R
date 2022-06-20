@@ -1443,6 +1443,11 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
       z <- coefficient/outcomeModel$outcomeModelTreatmentEstimate$seLogRr
       p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
     }
+    pTarget <- outcomeModel$populationCounts$targetExposures / outcomeModel$populationCounts$comparatorExposures
+    totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
+    mdrr <- computeMdrrFromAggregateStats(pTarget = pTarget,
+                                          totalEvents = totalEvents,
+                                          modelType = outcomeModel$outcomeModelType)
 
     result <- subset[i, ] %>%
       select(.data$analysisId,
@@ -1466,7 +1471,8 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
              p = !!p,
              logRr = if (is.null(coefficient)) NA else coefficient,
              seLogRr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
-             llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr)
+             llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr,
+             mdrr = mdrr)
 
     mainResults[[i]] <- mainResult
 
@@ -1523,6 +1529,7 @@ calibrateGroup <- function(group) {
   pcs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize != 1 & !is.na(group$seLogRr), ]
   if (nrow(ncs) >= 5) {
     null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
+    ease <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(null)
     calibratedP <- EmpiricalCalibration::calibrateP(null = null, logRr = group$logRr, seLogRr = group$seLogRr)
     if (nrow(pcs) >= 5) {
       model <- EmpiricalCalibration::fitSystematicErrorModel(logRr = c(ncs$logRr, pcs$logRr),
@@ -1539,6 +1546,7 @@ calibrateGroup <- function(group) {
     group$calibratedP <- calibratedP$p
     group$calibratedLogRr <- calibratedCi$logRr
     group$calibratedSeLogRr <- calibratedCi$seLogRr
+    group$ease <- ease$ease
   } else {
     group$calibratedRr <- NA
     group$calibratedCi95Lb <- NA
@@ -1546,6 +1554,8 @@ calibrateGroup <- function(group) {
     group$calibratedP <- NA
     group$calibratedLogRr <- NA
     group$calibratedSeLogRr <- NA
+    group$ease <- NA
   }
   return(group)
 }
+
