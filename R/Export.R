@@ -192,6 +192,21 @@ enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
   return(data)
 }
 
+createEmptyResult <- function(tableName) {
+  columns <- readr::read_csv(
+    file = system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod"),
+    show_col_types = FALSE) %>%
+    SqlRender::snakeCaseToCamelCaseNames() %>%
+    filter(.data$tableName == !!tableName) %>%
+    pull(.data$columnName) %>%
+    SqlRender::snakeCaseToCamelCase()
+  result <- vector(length = length(columns))
+  names(result) <- columns
+  result <- as_tibble(t(result))
+  result <- result[FALSE, ]
+  return(result)
+}
+
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
   message("- cohort_method_analysis table")
 
@@ -255,10 +270,16 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
   }
 
   covariateAnalysis <- bind_rows(covariateAnalysis)
+  if (nrow(covariateAnalysis) == 0) {
+    covariateAnalysis <- createEmptyResult("covariate_analysis")
+  }
   fileName <- file.path(exportFolder, "covariate_analysis.csv")
   writeToCsv(covariateAnalysis, fileName)
 
   covariates <- bind_rows(covariates)
+  if (nrow(covariates) == 0) {
+    covariates <- createEmptyResult("covariate")
+  }
   fileName <- file.path(exportFolder, "covariate.csv")
   writeToCsv(covariates, fileName)
 }
@@ -321,6 +342,10 @@ exportAttrition <- function(outputFolder,
     if (i %% 100 == 10) {
       setTxtProgressBar(pb, i / nrow(reference))
     }
+  }
+  if (first) {
+    results <- createEmptyResult("attrition")
+    writeToCsv(results, fileName)
   }
   setTxtProgressBar(pb, 1)
   close(pb)
@@ -391,6 +416,9 @@ exportCmFollowUpDist <- function(outputFolder,
   results <- lapply(split(rows, 1:nrow(rows)), getFollowUpDist)
   results <- bind_rows(results)
   results$database_id <- databaseId
+  if (nrow(results == 0)) {
+    results <- createEmptyResult("cm_follow_up_dist")
+  }
 
   fileName <- file.path(exportFolder, "cm_follow_up_dist.csv")
   writeToCsv(results, fileName)
@@ -437,41 +465,46 @@ exportCohortMethodResults <- function(outputFolder,
 }
 
 exportCmInteractionResults <- function(outputFolder,
-                                      exportFolder,
-                                      databaseId,
-                                      minCellCount) {
+                                       exportFolder,
+                                       databaseId,
+                                       minCellCount) {
   message("- cm_interaction_result table")
-  results <- getInteractionResultsSummary(outputFolder) %>%
-    select(
-      .data$analysisId,
-      .data$targetId,
-      .data$comparatorId,
-      .data$outcomeId,
-      .data$interactionCovariateId,
-      .data$rr,
-      .data$ci95Lb,
-      .data$ci95Ub,
-      .data$p,
-      .data$targetSubjects,
-      .data$comparatorSubjects,
-      .data$targetDays,
-      .data$comparatorDays,
-      .data$targetOutcomes,
-      .data$comparatorOutcomes,
-      .data$logRr,
-      .data$seLogRr,
-      .data$calibratedRr,
-      .data$calibratedCi95Lb,
-      .data$calibratedCi95Ub,
-      .data$calibratedP,
-      .data$calibratedLogRr,
-      .data$calibratedSeLogRr
-    ) %>%
-    mutate(databaseId = !!databaseId) %>%
-    enforceMinCellValue("targetSubjects", minCellCount) %>%
-    enforceMinCellValue("comparatorSubjects", minCellCount) %>%
-    enforceMinCellValue("targetOutcomes", minCellCount) %>%
-    enforceMinCellValue("comparatorOutcomes", minCellCount)
+  results <- getInteractionResultsSummary(outputFolder)
+  if (nrow(results) == 0) {
+    results <- createEmptyResult("cm_interaction_result")
+  } else {
+    results %>%
+      select(
+        .data$analysisId,
+        .data$targetId,
+        .data$comparatorId,
+        .data$outcomeId,
+        .data$interactionCovariateId,
+        .data$rr,
+        .data$ci95Lb,
+        .data$ci95Ub,
+        .data$p,
+        .data$targetSubjects,
+        .data$comparatorSubjects,
+        .data$targetDays,
+        .data$comparatorDays,
+        .data$targetOutcomes,
+        .data$comparatorOutcomes,
+        .data$logRr,
+        .data$seLogRr,
+        .data$calibratedRr,
+        .data$calibratedCi95Lb,
+        .data$calibratedCi95Ub,
+        .data$calibratedP,
+        .data$calibratedLogRr,
+        .data$calibratedSeLogRr
+      ) %>%
+      mutate(databaseId = !!databaseId) %>%
+      enforceMinCellValue("targetSubjects", minCellCount) %>%
+      enforceMinCellValue("comparatorSubjects", minCellCount) %>%
+      enforceMinCellValue("targetOutcomes", minCellCount) %>%
+      enforceMinCellValue("comparatorOutcomes", minCellCount)
+  }
   fileName <- file.path(exportFolder, "cm_interaction_result.csv")
   writeToCsv(results, fileName)
 }
@@ -507,6 +540,10 @@ exporLikelihoodProfiles <- function(outputFolder,
         first <- FALSE
       }
     }
+    if (first) {
+      results <- createEmptyResult("likelihood_profile")
+      writeToCsv(results, fileName)
+    }
     setTxtProgressBar(pb, i / nrow(reference))
   }
   setTxtProgressBar(pb, 1)
@@ -530,6 +567,7 @@ exportCovariateBalance <- function(outputFolder,
   }
   first <- TRUE
   pb <- txtProgressBar(style = 3)
+
   for (i in seq_along(balanceFiles)) {
     rows <- reference %>%
       filter(.data$balanceFile == !!balanceFiles[i])
@@ -545,6 +583,11 @@ exportCovariateBalance <- function(outputFolder,
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(balanceFiles))
+
+  }
+  if (first) {
+    results <- createEmptyResult("covariate_balance")
+    writeToCsv(results, fileName)
   }
   setTxtProgressBar(pb, 1)
   close(pb)
@@ -583,6 +626,10 @@ exportSharedCovariateBalance <- function(outputFolder,
     first <- FALSE
     setTxtProgressBar(pb, i / length(sharedBalanceFiles))
   }
+  if (first) {
+    results <- createEmptyResult("shared_covariate_balance")
+    writeToCsv(results, fileName)
+  }
   setTxtProgressBar(pb, 1)
   close(pb)
 }
@@ -595,12 +642,12 @@ tidyBalance <- function(balance, minCellCount) {
 
   balance %>%
     select(.data$covariateId,
-      targetMeanBefore = .data$beforeMatchingMeanTarget,
-      comparatorMeanBefore = .data$beforeMatchingMeanComparator,
-      stdDiffBefore = .data$beforeMatchingStdDiff,
-      targetMeanAfter = .data$afterMatchingMeanTarget,
-      comparatorMeanAfter = .data$afterMatchingMeanComparator,
-      stdDiffAfter = .data$afterMatchingStdDiff
+           targetMeanBefore = .data$beforeMatchingMeanTarget,
+           comparatorMeanBefore = .data$beforeMatchingMeanComparator,
+           stdDiffBefore = .data$beforeMatchingStdDiff,
+           targetMeanAfter = .data$afterMatchingMeanTarget,
+           comparatorMeanAfter = .data$afterMatchingMeanComparator,
+           stdDiffAfter = .data$afterMatchingStdDiff
     ) %>%
     mutate(
       targetMeanBefore = ifelse(is.na(.data$targetMeanBefore), 0, .data$targetMeanBefore),
@@ -611,26 +658,26 @@ tidyBalance <- function(balance, minCellCount) {
       stdDiffAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$stdDiffAfter)
     ) %>%
     filter(!(round(.data$targetMeanBefore) == 0 &
-      round(.data$comparatorMeanBefore, 3) == 0 &
-      round(.data$stdDiffBefore, 3) == 0 &
-      round(.data$targetMeanAfter, 3) == 0 &
-      round(.data$comparatorMeanAfter, 3) == 0 &
-      round(.data$stdDiffAfter, 3) == 0)) %>%
+               round(.data$comparatorMeanBefore, 3) == 0 &
+               round(.data$stdDiffBefore, 3) == 0 &
+               round(.data$targetMeanAfter, 3) == 0 &
+               round(.data$comparatorMeanAfter, 3) == 0 &
+               round(.data$stdDiffAfter, 3) == 0)) %>%
     enforceMinCellValue("targetMeanBefore",
-      minCellCount / inferredTargetBeforeSize,
-      silent = TRUE
+                        minCellCount / inferredTargetBeforeSize,
+                        silent = TRUE
     ) %>%
     enforceMinCellValue("comparatorMeanBefore",
-      minCellCount / inferredComparatorBeforeSize,
-      silent = TRUE
+                        minCellCount / inferredComparatorBeforeSize,
+                        silent = TRUE
     ) %>%
     enforceMinCellValue("targetMeanAfter",
-      minCellCount / inferredTargetAfterSize,
-      silent = TRUE
+                        minCellCount / inferredTargetAfterSize,
+                        silent = TRUE
     ) %>%
     enforceMinCellValue("comparatorMeanAfter",
-      minCellCount / inferredComparatorAfterSize,
-      silent = TRUE
+                        minCellCount / inferredComparatorAfterSize,
+                        silent = TRUE
     ) %>%
     mutate(
       targetMeanBefore = round(.data$targetMeanBefore),
@@ -681,6 +728,9 @@ exportPreferenceScoreDistribution <- function(outputFolder,
   }
   data <- lapply(split(reference, reference$sharedPsFile), preparePlot)
   data <- bind_rows(data)
+  if (nrow(data == 0)) {
+    data <- createEmptyResult("preference_score_dist")
+  }
   fileName <- file.path(exportFolder, "preference_score_dist.csv")
   writeToCsv(data, fileName)
 }
@@ -717,6 +767,9 @@ exportPropensityModel <- function(outputFolder,
   }
   data <- lapply(split(reference, reference$sharedPsFile), prepareData)
   data <- bind_rows(data)
+  if (nrow(data == 0)) {
+    data <- createEmptyResult("propensity_model")
+  }
   fileName <- file.path(exportFolder, "propensity_model.csv")
   writeToCsv(data, fileName)
 }
@@ -743,17 +796,20 @@ exportKaplanMeier <- function(outputFolder,
   if (!file.exists(tempFolder)) {
     dir.create(tempFolder)
   }
-  cluster <- ParallelLogger::makeCluster(min(4, maxCores))
-  tasks <- split(reference, seq_len(nrow(reference)))
-  ParallelLogger::clusterApply(cluster,
-    tasks,
-    prepareKm,
-    outputFolder = outputFolder,
-    tempFolder = tempFolder,
-    databaseId = databaseId,
-    minCellCount = minCellCount
-  )
-  ParallelLogger::stopCluster(cluster)
+
+  if (nrow(reference) > 0) {
+    tasks <- split(reference, seq_len(nrow(reference)))
+    cluster <- ParallelLogger::makeCluster(min(length(tasks), 4, maxCores))
+    ParallelLogger::clusterApply(cluster,
+                                 tasks,
+                                 prepareKm,
+                                 outputFolder = outputFolder,
+                                 tempFolder = tempFolder,
+                                 databaseId = databaseId,
+                                 minCellCount = minCellCount
+    )
+    ParallelLogger::stopCluster(cluster)
+  }
 
   message("  Writing to single csv file")
   outputFile <- file.path(exportFolder, "kaplan_meier_dist.csv")
@@ -767,6 +823,10 @@ exportKaplanMeier <- function(outputFolder,
     if (i %% 100 == 10) {
       setTxtProgressBar(pb, i / length(files))
     }
+  }
+  if (first) {
+    data <- createEmptyResult("kaplan_meier_dist")
+    writeToCsv(data, outputFile)
   }
   setTxtProgressBar(pb, 1)
   close(pb)
@@ -891,11 +951,11 @@ prepareKaplanMeier <- function(population) {
       y = population$y[idx]
     )
     survComparator$comparatorSurvivalUb <- survComparator$s^exp(qnorm(0.975) / log(survComparator$s) *
-      sqrt(survComparator$var) / survComparator$s)
+                                                                  sqrt(survComparator$var) / survComparator$s)
     survComparator$comparatorSurvivalLb <- survComparator$s^exp(qnorm(0.025) / log(survComparator$s) *
-      sqrt(survComparator$var) / survComparator$s)
+                                                                  sqrt(survComparator$var) / survComparator$s)
     survComparator$comparatorSurvivalLb[survComparator$s > 0.9999] <- survComparator$s[survComparator$s >
-      0.9999]
+                                                                                         0.9999]
     survComparator$comparatorSurvival <- survComparator$s
     survComparator$s <- NULL
     survComparator$var <- NULL
@@ -922,7 +982,7 @@ prepareKaplanMeier <- function(population) {
     comparatorAtRisk <- c(
       comparatorAtRisk,
       sum(population$treatment == 0 & population$survivalTime >=
-        xBreak)
+            xBreak)
     )
   }
   data <- merge(data, tibble(
@@ -1074,12 +1134,15 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
       TRUE ~ "FAIL"
     )) %>%
     mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &
-      .data$attritionDiagnostic != "FAIL" &
-      .data$easeDiagnostic != "FAIL" &
-      .data$equipoiseDiagnostic != "FAIL" &
-      .data$balanceDiagnostic != "FAIL", 1, 0),
-      databaseId = !!databaseId)
+                              .data$attritionDiagnostic != "FAIL" &
+                              .data$easeDiagnostic != "FAIL" &
+                              .data$equipoiseDiagnostic != "FAIL" &
+                              .data$balanceDiagnostic != "FAIL", 1, 0),
+           databaseId = !!databaseId)
 
+  if (nrow(results) == 0) {
+    results <- createEmptyResult("diagnostics_summary")
+  }
   fileName <- file.path(exportFolder, "diagnostics_summary.csv")
   writeToCsv(results, fileName)
 }

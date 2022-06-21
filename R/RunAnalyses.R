@@ -331,7 +331,7 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     objectsToCreate <- lapply(1:nrow(subset), createCmDataTask)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$getDbCohortMethodDataThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(objectsToCreate), multiThreadingSettings$getDbCohortMethodDataThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, doCreateCmDataObject)
     ParallelLogger::stopCluster(cluster)
@@ -391,7 +391,7 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     objectsToCreate <- lapply(1:nrow(subset), createStudyPopTask)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$createStudyPopThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(objectsToCreate), multiThreadingSettings$createStudyPopThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, doCreateStudyPopObject)
     ParallelLogger::stopCluster(cluster)
@@ -425,7 +425,7 @@ runCmAnalyses <- function(connectionDetails,
       }
 
       modelsToFit <- lapply(1:nrow(subset), createPsTask)
-      cluster <- ParallelLogger::makeCluster(multiThreadingSettings$createPsThreads)
+      cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$createPsThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
       dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitPsModel)
       ParallelLogger::stopCluster(cluster)
@@ -457,7 +457,7 @@ runCmAnalyses <- function(connectionDetails,
         return(task)
       }
       modelsToFit <- lapply(1:nrow(subset), createSharedPsTask)
-      cluster <- ParallelLogger::makeCluster(multiThreadingSettings$createPsThreads)
+      cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$createPsThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
       dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitSharedPsModel, refitPsForEveryStudyPopulation)
       ParallelLogger::stopCluster(cluster)
@@ -469,7 +469,7 @@ runCmAnalyses <- function(connectionDetails,
     if (nrow(subset) != 0) {
       message("*** Adding propensity scores to study population objects ***")
       tasks <- split(subset, subset$sharedPsFile)
-      cluster <- ParallelLogger::makeCluster(multiThreadingSettings$trimMatchStratifyThreads)
+      cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$trimMatchStratifyThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
       dummy <- ParallelLogger::clusterApply(cluster, tasks, addPsToStudyPop, outputFolder = outputFolder)
       ParallelLogger::stopCluster(cluster)
@@ -497,7 +497,7 @@ runCmAnalyses <- function(connectionDetails,
     }
     tasks <- lapply(1:nrow(subset), createTrimMatchStratTask)
 
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$trimMatchStratifyThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$trimMatchStratifyThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, tasks, doTrimMatchStratify)
     ParallelLogger::stopCluster(cluster)
@@ -528,7 +528,7 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     tasks <- lapply(1:nrow(subset), createSharedBalanceTask)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$computeSharedBalanceThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$computeSharedBalanceThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, tasks, doComputeSharedBalance)
     ParallelLogger::stopCluster(cluster)
@@ -556,7 +556,7 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     tasks <- lapply(1:nrow(subset), createFilterForCovariateBalanceTask)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$prefilterCovariatesThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$prefilterCovariatesThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, tasks, doFilterForCovariateBalance)
     ParallelLogger::stopCluster(cluster)
@@ -585,7 +585,7 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     tasks <- lapply(1:nrow(subset), createBalanceTask)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$computeBalanceThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$computeBalanceThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, tasks, doComputeBalance)
     ParallelLogger::stopCluster(cluster)
@@ -617,7 +617,7 @@ runCmAnalyses <- function(connectionDetails,
       return(task)
     }
     tasks <- lapply(1:nrow(subset), createPrefilterTask)
-    cluster <- ParallelLogger::makeCluster(min(multiThreadingSettings$prefilterCovariatesThreads, length(tasks)))
+    cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$prefilterCovariatesThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, tasks, doPrefilterCovariates)
     ParallelLogger::stopCluster(cluster)
@@ -657,7 +657,7 @@ runCmAnalyses <- function(connectionDetails,
       ))
     }
     modelsToFit <- lapply(1:nrow(subset), createOutcomeModelTask)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$fitOutcomeModelThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$fitOutcomeModelThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModel)
     ParallelLogger::stopCluster(cluster)
@@ -690,7 +690,7 @@ runCmAnalyses <- function(connectionDetails,
       return(params)
     }
     modelsToFit <- lapply(1:nrow(subset), createArgs)
-    cluster <- ParallelLogger::makeCluster(multiThreadingSettings$fitOutcomeModelThreads)
+    cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$fitOutcomeModelThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
     ParallelLogger::stopCluster(cluster)
@@ -1661,7 +1661,7 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     }
     pTarget <- outcomeModel$populationCounts$targetExposures / outcomeModel$populationCounts$comparatorExposures
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
-    mdrr <- CohortMethod:::computeMdrrFromAggregateStats(
+    mdrr <- computeMdrrFromAggregateStats(
       pTarget = pTarget,
       totalEvents = totalEvents,
       modelType = outcomeModel$outcomeModelType
@@ -1752,7 +1752,7 @@ calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE
     message("Calibrating estimates")
     groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
   }
-  cluster <- ParallelLogger::makeCluster(min(calibrationThreads, length(groups)), singleThreadToMain = FALSE)
+  cluster <- ParallelLogger::makeCluster(min(length(groups), calibrationThreads))
   results <- ParallelLogger::clusterApply(cluster, groups, calibrateGroup)
   ParallelLogger::stopCluster(cluster)
   results <- bind_rows(results)
