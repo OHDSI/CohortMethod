@@ -202,7 +202,7 @@ createEmptyResult <- function(tableName) {
     SqlRender::snakeCaseToCamelCase()
   result <- vector(length = length(columns))
   names(result) <- columns
-  result <- as_tibble(t(result))
+  result <- as_tibble(t(result), name_repair = "check_unique")
   result <- result[FALSE, ]
   return(result)
 }
