@@ -18,12 +18,13 @@
 
 #### Fetch data for multiple analyses vignette ####
 library(CohortMethod)
-library(SqlRender)
 options(andromedaTempFolder = "s:/andromedaTemp")
 
 folder <- "s:/temp/cohortMethodVignette2"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
+
+# Set connection details -------------------------------------------------------
 
 # MDCD on RedShift
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
@@ -42,15 +43,14 @@ cdmVersion <- "5"
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 
 
-# Create cohorts --------------------------------------------------------
+# Create cohorts ---------------------------------------------------------------
 connection <- DatabaseConnector::connect(connectionDetails)
 
-sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
+sql <- SqlRender::loadRenderTranslateSql("VignetteOutcomes.sql",
                               packageName = "CohortMethod",
                               dbms = connectionDetails$dbms,
                               cdmDatabaseSchema = cdmDatabaseSchema,
                               resultsDatabaseSchema = resultsDatabaseSchema)
-
 
 DatabaseConnector::executeSql(connection, sql)
 
@@ -60,7 +60,7 @@ DatabaseConnector::renderTranslateQuerySql(connection, sql, resultsDatabaseSchem
 
 DatabaseConnector::disconnect(connection)
 
-# Create settings ------------------------------------------------------
+# Create analysis specifications -----------------------------------------------
 nsaids <- 21603933
 
 negativeControlIds <- c(29735, 140673, 197494,
@@ -223,11 +223,9 @@ cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAna
 saveCmAnalysisList(cmAnalysisList, file.path(folder, "cmAnalysisList.json"))
 saveTargetComparatorOutcomesList(targetComparatorOutcomesList, file.path(folder, "targetComparatorOutcomesList.json"))
 
-# cmAnalysisList <- loadCmAnalysisList(file.path(folder, 'cmAnalysisList.json'))
-
-# targetComparatorOutcomesList <- loadTargetComparatorOutcomesList(file.path(folder, 'targetComparatorOutcomesList.json'))
-
-# Run analyses ------------------------------------------------------------
+# Run analyses -----------------------------------------------------------------
+cmAnalysisList <- loadCmAnalysisList(file.path(folder, 'cmAnalysisList.json'))
+targetComparatorOutcomesList <- loadTargetComparatorOutcomesList(file.path(folder, 'targetComparatorOutcomesList.json'))
 multiThreadingSettings <- createDefaultMultiThreadingSettings(parallel::detectCores())
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
@@ -242,61 +240,10 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
                         multiThreadingSettings = multiThreadingSettings)
 
-# cleanup:
-sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
-sql <- SqlRender::render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
-sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
-connection <- DatabaseConnector::connect(connectionDetails)
-DatabaseConnector::executeSql(connection, sql)
-DatabaseConnector::disconnect(connection)
-
-# Create pre-computed results for vignette :
-# result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
-
-
-
-result <- readRDS(file.path(folder, "outcomeModelReference.rds"))
-om <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$outcomeModelFile[2]))
-om
-getAttritionTable(om)
-
-
-om2 <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$outcomeModelFile[9]))
-om2
-om2$outcomeCounts
-getAttritionTable(om2)
-
-studyPop <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$studyPopFile[9]))
-head(studyPop)
-getAttritionTable(studyPop)
-om <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$studyPopFile[2]))
-
-# cohortMethodData <- loadCohortMethodData(file.path("s:/temp/cohortMethodVignette2", result$cohortMethodDataFile[1]))
-# summary(cohortMethodData)
-saveRDS(analysisSum, file = "s:/temp/cohortMethodVignette2/analysisSummary.rds")
-
-library(EmpiricalCalibration)
-for (i in 1:5) {
-  negControls <- analysisSum[analysisSum$analysisId == i & analysisSum$outcomeId != 192671, ]
-  hoi <- analysisSum[analysisSum$analysisId == i & analysisSum$outcomeId == 192671, ]
-  fileName <- paste("s:/temp/cohortMethodVignette2/CaliPlot_", i, ".png", sep = "")
-  plotCalibrationEffect(negControls$logRr,
-                        negControls$seLogRr,
-                        hoi$logRr,
-                        hoi$seLogRr,
-                        fileName = fileName)
-}
-
-
-cmData <- loadCohortMethodData(file.path("s:/temp/cohortMethodVignette2", result$cohortMethodDataFile[1]))
-strataPop <- readRDS(file.path("s:/temp/cohortMethodVignette2", result$strataFile[result$strataFile != ""][1]))
-balance <- computeCovariateBalance(strataPop, cmData)
-plotCovariateBalanceScatterPlot(balance)
-system.time(
-  Andromeda::createIndex(cmData$covariates, "covariateId")
-)
-system.time(
-  Andromeda::createIndex(cmData$covariates, "rowId")
-)
-folder <- "s:/temp/cohortMethodVignette2"
 exportToCsv(outputFolder = folder, minCellCount = 5, maxCores = 5)
+
+# Cleanup ----------------------------------------------------------------------
+sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
+connection <- DatabaseConnector::connect(connectionDetails)
+DatabaseConnector::renderTranslateExecuteSql(connection, sql, resultsDatabaseSchema = resultsDatabaseSchema)
+DatabaseConnector::disconnect(connection)

@@ -447,6 +447,7 @@ exportCmInteractionResults <- function(outputFolder,
       .data$targetId,
       .data$comparatorId,
       .data$outcomeId,
+      .data$interactionCovariateId,
       .data$rr,
       .data$ci95Lb,
       .data$ci95Ub,
@@ -510,45 +511,6 @@ exporLikelihoodProfiles <- function(outputFolder,
   }
   setTxtProgressBar(pb, 1)
   close(pb)
-}
-
-exporInteractionResults <- function(outputFolder,
-                                    exportFolder,
-                                    databaseId,
-                                    minCellCount) {
-  message("- cm_interaction_result table")
-  results <- getInteractionResultsSummary(outputFolder) %>%
-    select(
-      .data$analysisId,
-      .data$targetId,
-      .data$comparatorId,
-      .data$outcomeId,
-      .data$rr,
-      .data$ci95Lb,
-      .data$ci95Ub,
-      .data$p,
-      .data$targetSubjects,
-      .data$comparatorSubjects,
-      .data$targetDays,
-      .data$comparatorDays,
-      .data$targetOutcomes,
-      .data$comparatorOutcomes,
-      .data$logRr,
-      .data$seLogRr,
-      .data$calibratedRr,
-      .data$calibratedCi95Lb,
-      .data$calibratedCi95Ub,
-      .data$calibratedP,
-      .data$calibratedLogRr,
-      .data$calibratedSeLogRr
-    ) %>%
-    mutate(databaseId = !!databaseId) %>%
-    enforceMinCellValue("targetSubjects", minCellCount) %>%
-    enforceMinCellValue("comparatorSubjects", minCellCount) %>%
-    enforceMinCellValue("targetOutcomes", minCellCount) %>%
-    enforceMinCellValue("comparatorOutcomes", minCellCount)
-  fileName <- file.path(exportFolder, "cm_interaction_result.csv")
-  writeToCsv(results, fileName)
 }
 
 exportCovariateBalance <- function(outputFolder,

@@ -62,6 +62,7 @@ cm_interaction_result,analysis_id,int,Yes,No,No,No,Foreign key referencing the c
 cm_interaction_result,target_id,int,Yes,No,No,No,The identifier for the target cohort.
 cm_interaction_result,comparator_id,int,Yes,No,No,No,The identifier for the comparator cohort.
 cm_interaction_result,outcome_id,int,Yes,No,No,No,The identifier for the outcome cohort.
+cm_interaction_result,interaction_covariate_id,int,Yes,No,No,No,Foreign key referencing the covariate table.
 cm_interaction_result,rr,float,Yes,No,No,No,The estimated relative risk (e.g. the ratio of hazard ratios).
 cm_interaction_result,ci_95_lb,float,Yes,No,No,No,The lower bound of the 95% confidence interval of the relative risk.
 cm_interaction_result,ci_95_ub,float,Yes,No,No,No,The upper bound of the 95% confidence interval of the relative risk.

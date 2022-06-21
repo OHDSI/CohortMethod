@@ -50,7 +50,6 @@ Changes:
     - Added empirical calibration to the `getResultsSummary()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
 
   
-
 Bug fixes:
 
 1. Fixed error when using integer `maxWeight` when performng IPTW.

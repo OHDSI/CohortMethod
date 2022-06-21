@@ -15,7 +15,7 @@ Features
 - Extracts the necessary data from a database in OMOP Common Data Model format.
 - Uses a large set of covariates for both the propensity and outcome model, including for example all drugs, diagnoses, procedures, as well as age, comorbidity indexes, etc.
 - Large scale regularized regression to fit the propensity and outcome models.
-- Includes function for trimming, stratifying and matching on propensity scores.
+- Includes function for trimming, stratifying, matching, and weighting on propensity scores.
 - Includes diagnostic functions, including propensity score distribution plots and plots showing covariate balance before and after matching and/or trimming.
 - Supported outcome models are (conditional) logistic regression, (conditional) Poisson regression, and (conditional) Cox regression.
 

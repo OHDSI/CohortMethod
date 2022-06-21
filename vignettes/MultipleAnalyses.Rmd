@@ -159,23 +159,29 @@ The second group of arguments are not specific to a hypothesis of interest, and 
 ```{r eval=TRUE}
 nsaids <- 21603933
 
-covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
-                                                addDescendantsToExclude = TRUE)
+covarSettings <- createDefaultCovariateSettings(
+  excludedCovariateConceptIds = nsaids,
+  addDescendantsToExclude = TRUE
+)
 
-getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
-                                                   restrictToCommonPeriod = FALSE,
-                                                   firstExposureOnly = TRUE,
-                                                   removeDuplicateSubjects = "remove all",
-                                                   studyStartDate = "",
-                                                   studyEndDate = "",
-                                                   covariateSettings = covarSettings)
+getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
+  washoutPeriod = 183,
+  restrictToCommonPeriod = FALSE,
+  firstExposureOnly = TRUE,
+  removeDuplicateSubjects = "remove all",
+  studyStartDate = "",
+  studyEndDate = "",
+  covariateSettings = covarSettings
+)
 
-createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
-                                                      minDaysAtRisk = 1,
-                                                      riskWindowStart = 0,
-                                                      startAnchor = "cohort start",
-                                                      riskWindowEnd = 30,
-                                                      endAnchor = "cohort end")
+createStudyPopArgs <- createCreateStudyPopulationArgs(
+  removeSubjectsWithPriorOutcome = TRUE,
+  minDaysAtRisk = 1,
+  riskWindowStart = 0,
+  startAnchor = "cohort start",
+  riskWindowEnd = 30,
+  endAnchor = "cohort end"
+)
 
 fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 ```
@@ -183,12 +189,14 @@ fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
 Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:
 
 ```{r eval=TRUE}
-cmAnalysis1 <- createCmAnalysis(analysisId = 1,
-                                description = "No matching, simple outcome model",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
+cmAnalysis1 <- createCmAnalysis(
+  analysisId = 1,
+  description = "No matching, simple outcome model",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs,
+  fitOutcomeModel = TRUE,
+  fitOutcomeModelArgs = fitOutcomeModelArgs1
+)
 ```
 
 Note that we have assigned an analysis ID (1) to this set of arguments. We can use this later to link the results back to this specific set of choices. We also include a short description of the analysis.
@@ -206,84 +214,102 @@ computeCovBalArgs <- createComputeCovariateBalanceArgs(
   covariateFilter = getDefaultCmTable1Specifications()
 )
 
-fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                  stratified = TRUE)
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  stratified = TRUE
+)
 
-cmAnalysis2 <- createCmAnalysis(analysisId = 2,
-                                description = "Matching",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
-                                matchOnPsArgs = matchOnPsArgs,
-                                computeSharedCovariateBalance = TRUE,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalance = TRUE,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
+cmAnalysis2 <- createCmAnalysis(
+  analysisId = 2,
+  description = "Matching",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs,
+  createPs = TRUE,
+  createPsArgs = createPsArgs,
+  matchOnPs = TRUE,
+  matchOnPsArgs = matchOnPsArgs,
+  computeSharedCovariateBalance = TRUE,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalance = TRUE,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModel = TRUE,
+  fitOutcomeModelArgs = fitOutcomeModelArgs2
+)
 
 stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
 
-cmAnalysis3 <- createCmAnalysis(analysisId = 3,
-                                description = "Stratification",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                stratifyByPs = TRUE,
-                                stratifyByPsArgs = stratifyByPsArgs,
-                                computeSharedCovariateBalance = TRUE,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalance = TRUE,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
+cmAnalysis3 <- createCmAnalysis(
+  analysisId = 3,
+  description = "Stratification",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs,
+  createPs = TRUE,
+  createPsArgs = createPsArgs,
+  stratifyByPs = TRUE,
+  stratifyByPsArgs = stratifyByPsArgs,
+  computeSharedCovariateBalance = TRUE,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalance = TRUE,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModel = TRUE,
+  fitOutcomeModelArgs = fitOutcomeModelArgs2
+)
 
-fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                  inversePtWeighting = TRUE)
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  inversePtWeighting = TRUE
+)
 
-cmAnalysis4 <- createCmAnalysis(analysisId = 4,
-                                description = "Inverse probability weighting",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs3)
+cmAnalysis4 <- createCmAnalysis(
+  analysisId = 4,
+  description = "Inverse probability weighting",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs,
+  createPs = TRUE,
+  createPsArgs = createPsArgs,
+  fitOutcomeModel = TRUE,
+  fitOutcomeModelArgs = fitOutcomeModelArgs3
+)
 
-fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
-                                                  modelType = "cox",
-                                                  stratified = TRUE)
+fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(
+  useCovariates = TRUE,
+  modelType = "cox",
+  stratified = TRUE
+)
 
-cmAnalysis5 <- createCmAnalysis(analysisId = 5,
-                                description = "Matching plus full outcome model",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
-                                matchOnPsArgs = matchOnPsArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs4)
+cmAnalysis5 <- createCmAnalysis(
+  analysisId = 5,
+  description = "Matching plus full outcome model",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs,
+  createPs = TRUE,
+  createPsArgs = createPsArgs,
+  matchOnPs = TRUE,
+  matchOnPsArgs = matchOnPsArgs,
+  fitOutcomeModel = TRUE,
+  fitOutcomeModelArgs = fitOutcomeModelArgs4
+)
 
 interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
 
-fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                  stratified = TRUE,
-                                                  interactionCovariateIds = interactionCovariateIds)
+fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  stratified = TRUE,
+  interactionCovariateIds = interactionCovariateIds
+)
 
-cmAnalysis6 <- createCmAnalysis(analysisId = 6,
-                                description = "Stratification plus interaction terms",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
-                                createPsArgs = createPsArgs,
-                                stratifyByPs = TRUE,
-                                stratifyByPsArgs = stratifyByPsArgs,
-                                fitOutcomeModel = TRUE,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs5)
+cmAnalysis6 <- createCmAnalysis(
+  analysisId = 6,
+  description = "Stratification plus interaction terms",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs,
+  createPs = TRUE,
+  createPsArgs = createPsArgs,
+  stratifyByPs = TRUE,
+  stratifyByPsArgs = stratifyByPsArgs,
+  fitOutcomeModel = TRUE,
+  fitOutcomeModelArgs = fitOutcomeModelArgs5
+)
 ```
 
 These analyses can be combined in a list:
@@ -310,17 +336,19 @@ We can now run the analyses against the hypotheses of interest using the `runCmA
 ```{r eval=FALSE}
 multiThreadingSettings <- createDefaultMultiThreadingSettings(parallel::detectCores())
 
-result <- runCmAnalyses(connectionDetails = connectionDetails,
-                        cdmDatabaseSchema = cdmDatabaseSchema,
-                        exposureDatabaseSchema = cdmDatabaseSchema,
-                        exposureTable = "drug_era",
-                        outcomeDatabaseSchema = resultsDatabaseSchema,
-                        outcomeTable = "outcomes",
-                        outputFolder = folder,
-                        cdmVersion = cdmVersion,
-                        cmAnalysisList = cmAnalysisList,
-                        targetComparatorOutcomesList = targetComparatorOutcomesList,
-                        multiThreadingSettings = multiThreadingSettings)
+result <- runCmAnalyses(
+  connectionDetails = connectionDetails,
+  cdmDatabaseSchema = cdmDatabaseSchema,
+  exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era",
+  outcomeDatabaseSchema = resultsDatabaseSchema,
+  outcomeTable = "outcomes",
+  outputFolder = folder,
+  cdmVersion = cdmVersion,
+  cmAnalysisList = cmAnalysisList,
+  targetComparatorOutcomesList = targetComparatorOutcomesList,
+  multiThreadingSettings = multiThreadingSettings
+)
 ```
 
 In the code above, we first specify how many parallel threads `CohortMethod` can use. Many of the computations can be computed in parallel, and providing more than one CPU core can greatly speed up the computation. Here we specify `CohortMethod` can use all the CPU cores detected in the system (using the `parallel::detectCores()` function). 
@@ -365,13 +393,13 @@ result <- getFileReference(folder)
 
 We can get a summary of the results using `getResultsSummary()`:
 ```{r eval=FALSE}
-analysisSum <- getResultsSummary(outputFolder)
-head(analysisSum)
+resultsSum <- getResultsSummary(outputFolder)
+head(resultsSum)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  analysisSum <- readRDS("s:/temp/cohortMethodVignette2/resultsSummary.rds")
-  head(analysisSum)
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+  resultsSum <- readRDS("s:/temp/cohortMethodVignette2/resultsSummary.rds")
+  head(resultsSum)
 }
 ```
 
@@ -386,16 +414,16 @@ install.packages("EmpiricalCalibration")
 library(EmpiricalCalibration)
 
 # Analysis 1: No matching, simple outcome model
-negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 192671, ]
-hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 192671, ]
+negCons <- resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId != 192671, ]
+hoi <-  resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
   library(EmpiricalCalibration)
-  negCons <- analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId != 192671, ]
-  hoi <-  analysisSum[analysisSum$analysisId == 1 & analysisSum$outcomeId == 192671, ]
+  negCons <- resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId != 192671, ]
+  hoi <-  resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
   plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 }
@@ -403,15 +431,15 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 
 ```{r eval=FALSE}
 # Analysis 2: Matching
-negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
-hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
+negCons <- resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId != 192671, ]
+hoi <-  resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  negCons <- analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId != 192671, ]
-  hoi <-  analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 192671, ]
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+  negCons <- resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId != 192671, ]
+  hoi <-  resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
   plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 }
@@ -419,15 +447,15 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 
 ```{r eval=FALSE}
 # Analysis 3: Stratification
-negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
-hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
+negCons <- resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId != 192671, ]
+hoi <-  resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  negCons <- analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId != 192671, ]
-  hoi <-  analysisSum[analysisSum$analysisId == 3 & analysisSum$outcomeId == 192671, ]
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+  negCons <- resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId != 192671, ]
+  hoi <-  resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
   plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 }
@@ -435,15 +463,15 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 
 ```{r eval=FALSE}
 # Analysis 4: Inverse probability of treatment weighting
-negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
-hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
+negCons <- resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId != 192671, ]
+hoi <-  resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  negCons <- analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId != 192671, ]
-  hoi <-  analysisSum[analysisSum$analysisId == 4 & analysisSum$outcomeId == 192671, ]
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+  negCons <- resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId != 192671, ]
+  hoi <-  resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
   plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 }
@@ -451,42 +479,46 @@ if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
 
 ```{r eval=FALSE}
 # Analysis 5: Stratification plus full outcome model
-negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
-hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
+negCons <- resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId != 192671, ]
+hoi <-  resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId == 192671, ]
 null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  negCons <- analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId != 192671, ]
-  hoi <-  analysisSum[analysisSum$analysisId == 5 & analysisSum$outcomeId == 192671, ]
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+  negCons <- resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId != 192671, ]
+  hoi <-  resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
   plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 }
 ```
 
-Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are also stored in the analysis summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with 'gender = female' (covariate ID 8532001): 
+Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are stored in a separate results summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with 'gender = female' (covariate ID 8532001): 
 
 
 ```{r eval=FALSE}
+interactionResultsSum <- getInteractionResultsSummary(outputFolder)
+
+
 # Analysis 6: Stratification plus interaction terms
-negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
-hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRrI8532001, negCons$seLogRrI8532001)
-plotCalibrationEffect(logRrNegatives = negCons$logRrI8532001, 
-                      seLogRrNegatives = negCons$seLogRrI8532001, 
-                      logRrPositives = hoi$logRrI8532001, 
-                      seLogRrPositives = hoi$seLogRrI8532001, null)
+negCons <- interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId != 192671, ]
+hoi <-  interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId == 192671, ]
+null <- fitNull(negCons$logRr, negCons$seLogRr)
+plotCalibrationEffect(logRrNegatives = negCons$logRr, 
+                      seLogRrNegatives = negCons$seLogRr, 
+                      logRrPositives = hoi$logRr, 
+                      seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/analysisSummary.rds")) {
-  negCons <- analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId != 192671, ]
-  hoi <-  analysisSum[analysisSum$analysisId == 6 & analysisSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRrI8532001, negCons$seLogRrI8532001)
-  plotCalibrationEffect(logRrNegatives = negCons$logRrI8532001, 
-                        seLogRrNegatives = negCons$seLogRrI8532001, 
-                        logRrPositives = hoi$logRrI8532001, 
-                        seLogRrPositives = hoi$seLogRrI8532001, null)
+if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+  interactionResultsSum <- getInteractionResultsSummary("s:/temp/cohortMethodVignette2")
+  negCons <- interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId != 192671, ]
+  hoi <-  interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId == 192671, ]
+  null <- fitNull(negCons$logRr, negCons$seLogRr)
+  plotCalibrationEffect(logRrNegatives = negCons$logRr, 
+                        seLogRrNegatives = negCons$seLogRr, 
+                        logRrPositives = hoi$logRr, 
+                        seLogRrPositives = hoi$seLogRr, null)
 }
 ```
 

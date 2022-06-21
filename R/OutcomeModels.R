@@ -80,7 +80,7 @@ fitOutcomeModel <- function(population,
                             )) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
-  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", null.ok = TRUE, add = errorMessages)
   checkmate::assertChoice(modelType, c("logistic", "poisson", "cox"), add = errorMessages)
   checkmate::assertLogical(stratified, len = 1, add = errorMessages)
   checkmate::assertLogical(useCovariates, len = 1, add = errorMessages)
