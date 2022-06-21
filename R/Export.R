@@ -99,6 +99,13 @@ exportToCsv <- function(outputFolder,
     minCellCount = minCellCount
   )
 
+  exportCmInteractionResults(
+    outputFolder = outputFolder,
+    exportFolder = exportFolder,
+    databaseId = databaseId,
+    minCellCount = minCellCount
+  )
+
   exporLikelihoodProfiles(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
@@ -244,7 +251,7 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
       ) %>%
       collect() %>%
       inner_join(analysisIds, by = character()) %>%
-      mutate(databaseId == !!databaseId)
+      mutate(databaseId = !!databaseId)
   }
 
   covariateAnalysis <- bind_rows(covariateAnalysis)
@@ -257,7 +264,7 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
 }
 
 exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
-  message("- exposure_of_interest table")
+  message("- target_comparator_outcome table")
 
   tcosList <- readRDS(file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   convertToTable <- function(tcos) {
@@ -271,7 +278,7 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
   table <- lapply(tcosList, convertToTable)
   table <- bind_rows(table)
 
-  fileName <- file.path(exportFolder, "exposure_comparator_outcome.csv")
+  fileName <- file.path(exportFolder, "target_comparator_outcome.csv")
   writeToCsv(table, fileName)
 }
 
@@ -426,6 +433,45 @@ exportCohortMethodResults <- function(outputFolder,
     enforceMinCellValue("targetOutcomes", minCellCount) %>%
     enforceMinCellValue("comparatorOutcomes", minCellCount)
   fileName <- file.path(exportFolder, "cohort_method_result.csv")
+  writeToCsv(results, fileName)
+}
+
+exportCmInteractionResults <- function(outputFolder,
+                                      exportFolder,
+                                      databaseId,
+                                      minCellCount) {
+  message("- cm_interaction_result table")
+  results <- getInteractionResultsSummary(outputFolder) %>%
+    select(
+      .data$analysisId,
+      .data$targetId,
+      .data$comparatorId,
+      .data$outcomeId,
+      .data$rr,
+      .data$ci95Lb,
+      .data$ci95Ub,
+      .data$p,
+      .data$targetSubjects,
+      .data$comparatorSubjects,
+      .data$targetDays,
+      .data$comparatorDays,
+      .data$targetOutcomes,
+      .data$comparatorOutcomes,
+      .data$logRr,
+      .data$seLogRr,
+      .data$calibratedRr,
+      .data$calibratedCi95Lb,
+      .data$calibratedCi95Ub,
+      .data$calibratedP,
+      .data$calibratedLogRr,
+      .data$calibratedSeLogRr
+    ) %>%
+    mutate(databaseId = !!databaseId) %>%
+    enforceMinCellValue("targetSubjects", minCellCount) %>%
+    enforceMinCellValue("comparatorSubjects", minCellCount) %>%
+    enforceMinCellValue("targetOutcomes", minCellCount) %>%
+    enforceMinCellValue("comparatorOutcomes", minCellCount)
+  fileName <- file.path(exportFolder, "cm_interaction_result.csv")
   writeToCsv(results, fileName)
 }
 
@@ -674,7 +720,7 @@ exportPreferenceScoreDistribution <- function(outputFolder,
   data <- lapply(split(reference, reference$sharedPsFile), preparePlot)
   data <- bind_rows(data)
   fileName <- file.path(exportFolder, "preference_score_dist.csv")
-  readr::write_csv(data, fileName)
+  writeToCsv(data, fileName)
 }
 
 exportPropensityModel <- function(outputFolder,
@@ -696,7 +742,8 @@ exportPropensityModel <- function(outputFolder,
         coefficient = as.vector(metaData$psModelCoef)
       ) %>%
         filter(.data$coefficient != 0) %>%
-        mutate(covariateId = ifelse(is.na(.data$covariateId), 0, .data$covariateId))
+        mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) %>%
+        mutate(covariateId = as.numeric(.data$covariateId))
       rows %>%
         select(.data$targetId, .data$comparatorId, .data$analysisId) %>%
         mutate(databaseId = !!databaseId) %>%
@@ -709,7 +756,7 @@ exportPropensityModel <- function(outputFolder,
   data <- lapply(split(reference, reference$sharedPsFile), prepareData)
   data <- bind_rows(data)
   fileName <- file.path(exportFolder, "propensity_model.csv")
-  readr::write_csv(data, fileName)
+  writeToCsv(data, fileName)
 }
 
 exportKaplanMeier <- function(outputFolder,
@@ -978,13 +1025,13 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
     filter(.data$balanceFile != "") %>%
     distinct(.data$balanceFile) %>%
     pull()
-  sdm <- sapply(balanceFiles, getMaxSdm)
+  maxSdm <- sapply(balanceFiles, getMaxSdm)
 
   sharedBalanceFiles <- reference %>%
     filter(.data$sharedBalanceFile != "") %>%
     distinct(.data$sharedBalanceFile) %>%
     pull()
-  sharedSdm <- sapply(sharedBalanceFiles, getMaxSdm)
+  sharedMaxSdm <- sapply(sharedBalanceFiles, getMaxSdm)
 
   sharedPsFiles <- reference %>%
     filter(.data$sharedPsFile != "") %>%
@@ -996,13 +1043,13 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
     filter(.data$outcomeOfInterest) %>%
     inner_join(tibble(
       balanceFile = balanceFiles,
-      stdDifferenceOfMean = sdm
+      maxSdm = maxSdm
     ),
     by = "balanceFile"
     ) %>%
     inner_join(tibble(
       sharedBalanceFile = sharedBalanceFiles,
-      sharedStdDifferenceOfMean = sharedSdm
+      sharedMaxSdm = sharedMaxSdm
     ),
     by = "sharedBalanceFile"
     ) %>%
@@ -1017,8 +1064,8 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
       .data$targetId,
       .data$comparatorId,
       .data$outcomeId,
-      .data$stdDifferenceOfMean,
-      .data$sharedStdDifferenceOfMean,
+      .data$maxSdm,
+      .data$sharedMaxSdm,
       .data$equipoise
     )
 
@@ -1037,11 +1084,11 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
     inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
     mutate(database_id = !!databaseId) %>%
     mutate(balanceDiagnostic = case_when(
-      .data$stdDifferenceOfMean < 0.1 ~ "PASS",
+      .data$maxSdm < 0.1 ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(sharedBalanceDiagnostic = case_when(
-      .data$sharedStdDifferenceOfMean < 0.1 ~ "PASS",
+      .data$sharedMaxSdm < 0.1 ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(equipoiseDiagnostic = case_when(
@@ -1064,11 +1111,12 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
       abs(.data$ease) < 0.25 ~ "WARNING",
       TRUE ~ "FAIL"
     )) %>%
-    mutate(unblind = .data$mdrrDiagnostic != "FAIL" &
+    mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &
       .data$attritionDiagnostic != "FAIL" &
       .data$easeDiagnostic != "FAIL" &
       .data$equipoiseDiagnostic != "FAIL" &
-      .data$balanceDiagnostic != "FAIL")
+      .data$balanceDiagnostic != "FAIL", 1, 0),
+      databaseId = !!databaseId)
 
   fileName <- file.path(exportFolder, "diagnostics_summary.csv")
   writeToCsv(results, fileName)
