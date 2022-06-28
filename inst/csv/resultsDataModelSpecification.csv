@@ -112,7 +112,6 @@ diagnostics_summary,equipoise,float,Yes,No,No,No,The fraction of the study popul
 diagnostics_summary,mdrr,float,Yes,No,No,No,The minimum detectable relative risk.
 diagnostics_summary,attrition_fraction,float,Yes,No,No,No,The fraction of the target population lost by between initial cohort and outcome model due to various restrictions.
 diagnostics_summary,ease,float,Yes,No,No,No,The expected absolute systematic error.
-diagnostics_summary,database_id,varchar,Yes,No,No,No,Foreign key referencing the database.
 diagnostics_summary,balance_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the balance diagnostic (max_sdm).
 diagnostics_summary,shared_balance_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the shared balance diagnostic (shared_max_sdm).
 diagnostics_summary,equipoise_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the equipoise diagnostic.

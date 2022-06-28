@@ -298,6 +298,10 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
   }
   table <- lapply(tcosList, convertToTable)
   table <- bind_rows(table)
+  if (!"trueEffectSize" %in% colnames(table)) {
+    table <- table %>%
+      mutate(trueEffectSize = as.numeric(NA))
+  }
 
   fileName <- file.path(exportFolder, "target_comparator_outcome.csv")
   writeToCsv(table, fileName)
@@ -1104,7 +1108,6 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
 
   results <- results1 %>%
     inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
-    mutate(database_id = !!databaseId) %>%
     mutate(balanceDiagnostic = case_when(
       .data$maxSdm < 0.1 ~ "PASS",
       TRUE ~ "FAIL"
