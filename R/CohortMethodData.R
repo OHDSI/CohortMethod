@@ -51,7 +51,7 @@ setClass("CohortMethodData", contains = "CovariateData")
 saveCohortMethodData <- function(cohortMethodData, file) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
-  checkmate::assertCharacter(file, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(file, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   Andromeda::saveAndromeda(cohortMethodData, file)
@@ -71,7 +71,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
 #' @export
 loadCohortMethodData <- function(file) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertCharacter(file, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(file, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (!file.exists(file)) {

@@ -228,7 +228,7 @@ exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
     distinct()
   unlink(tempFileName)
 
-  fileName <- file.path(exportFolder, "cohort_method_analysis.csv")
+  fileName <- file.path(exportFolder, "cm_analysis.csv")
   writeToCsv(cohortMethodAnalysis, fileName)
 }
 
@@ -271,16 +271,16 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
 
   covariateAnalysis <- bind_rows(covariateAnalysis)
   if (nrow(covariateAnalysis) == 0) {
-    covariateAnalysis <- createEmptyResult("covariate_analysis")
+    covariateAnalysis <- createEmptyResult("cm_covariate_analysis")
   }
-  fileName <- file.path(exportFolder, "covariate_analysis.csv")
+  fileName <- file.path(exportFolder, "cm_covariate_analysis.csv")
   writeToCsv(covariateAnalysis, fileName)
 
   covariates <- bind_rows(covariates)
   if (nrow(covariates) == 0) {
-    covariates <- createEmptyResult("covariate")
+    covariates <- createEmptyResult("cm_covariate")
   }
-  fileName <- file.path(exportFolder, "covariate.csv")
+  fileName <- file.path(exportFolder, "cm_covariate.csv")
   writeToCsv(covariates, fileName)
 }
 
@@ -303,7 +303,7 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
       mutate(trueEffectSize = as.numeric(NA))
   }
 
-  fileName <- file.path(exportFolder, "target_comparator_outcome.csv")
+  fileName <- file.path(exportFolder, "cm_target_comparator_outcome.csv")
   writeToCsv(table, fileName)
 }
 
@@ -312,7 +312,7 @@ exportAttrition <- function(outputFolder,
                             databaseId,
                             minCellCount) {
   message("- attrition table")
-  fileName <- file.path(exportFolder, "attrition.csv")
+  fileName <- file.path(exportFolder, "cm_attrition.csv")
   if (file.exists(fileName)) {
     unlink(fileName)
   }
@@ -348,7 +348,7 @@ exportAttrition <- function(outputFolder,
     }
   }
   if (first) {
-    results <- createEmptyResult("attrition")
+    results <- createEmptyResult("cm_attrition")
     writeToCsv(results, fileName)
   }
   setTxtProgressBar(pb, 1)
@@ -464,7 +464,7 @@ exportCohortMethodResults <- function(outputFolder,
     enforceMinCellValue("comparatorSubjects", minCellCount) %>%
     enforceMinCellValue("targetOutcomes", minCellCount) %>%
     enforceMinCellValue("comparatorOutcomes", minCellCount)
-  fileName <- file.path(exportFolder, "cohort_method_result.csv")
+  fileName <- file.path(exportFolder, "cm_result.csv")
   writeToCsv(results, fileName)
 }
 
@@ -518,7 +518,7 @@ exporLikelihoodProfiles <- function(outputFolder,
                                     databaseId) {
   message("- likelihood_profile table")
   reference <- getFileReference(outputFolder)
-  fileName <- file.path(exportFolder, "likelihood_profile.csv")
+  fileName <- file.path(exportFolder, "cm_likelihood_profile.csv")
   if (file.exists(fileName)) {
     unlink(fileName)
   }
@@ -545,7 +545,7 @@ exporLikelihoodProfiles <- function(outputFolder,
       }
     }
     if (first) {
-      results <- createEmptyResult("likelihood_profile")
+      results <- createEmptyResult("cm_likelihood_profile")
       writeToCsv(results, fileName)
     }
     setTxtProgressBar(pb, i / nrow(reference))
@@ -565,7 +565,7 @@ exportCovariateBalance <- function(outputFolder,
     distinct(.data$balanceFile) %>%
     pull()
 
-  fileName <- file.path(exportFolder, "covariate_balance.csv")
+  fileName <- file.path(exportFolder, "cm_covariate_balance.csv")
   if (file.exists(fileName)) {
     unlink(fileName)
   }
@@ -590,7 +590,7 @@ exportCovariateBalance <- function(outputFolder,
 
   }
   if (first) {
-    results <- createEmptyResult("covariate_balance")
+    results <- createEmptyResult("cm_covariate_balance")
     writeToCsv(results, fileName)
   }
   setTxtProgressBar(pb, 1)
@@ -609,7 +609,7 @@ exportSharedCovariateBalance <- function(outputFolder,
     distinct(.data$sharedBalanceFile) %>%
     pull()
 
-  fileName <- file.path(exportFolder, "shared_covariate_balance.csv")
+  fileName <- file.path(exportFolder, "cm_shared_covariate_balance.csv")
   if (file.exists(fileName)) {
     unlink(fileName)
   }
@@ -631,7 +631,7 @@ exportSharedCovariateBalance <- function(outputFolder,
     setTxtProgressBar(pb, i / length(sharedBalanceFiles))
   }
   if (first) {
-    results <- createEmptyResult("shared_covariate_balance")
+    results <- createEmptyResult("cm_shared_covariate_balance")
     writeToCsv(results, fileName)
   }
   setTxtProgressBar(pb, 1)
@@ -733,9 +733,9 @@ exportPreferenceScoreDistribution <- function(outputFolder,
   data <- lapply(split(reference, reference$sharedPsFile), preparePlot)
   data <- bind_rows(data)
   if (nrow(data == 0)) {
-    data <- createEmptyResult("preference_score_dist")
+    data <- createEmptyResult("cm_preference_score_dist")
   }
-  fileName <- file.path(exportFolder, "preference_score_dist.csv")
+  fileName <- file.path(exportFolder, "cm_preference_score_dist.csv")
   writeToCsv(data, fileName)
 }
 
@@ -772,9 +772,9 @@ exportPropensityModel <- function(outputFolder,
   data <- lapply(split(reference, reference$sharedPsFile), prepareData)
   data <- bind_rows(data)
   if (nrow(data == 0)) {
-    data <- createEmptyResult("propensity_model")
+    data <- createEmptyResult("cm_propensity_model")
   }
-  fileName <- file.path(exportFolder, "propensity_model.csv")
+  fileName <- file.path(exportFolder, "cm_propensity_model.csv")
   writeToCsv(data, fileName)
 }
 
@@ -816,7 +816,7 @@ exportKaplanMeier <- function(outputFolder,
   }
 
   message("  Writing to single csv file")
-  outputFile <- file.path(exportFolder, "kaplan_meier_dist.csv")
+  outputFile <- file.path(exportFolder, "cm_kaplan_meier_dist.csv")
   files <- list.files(tempFolder, "km_.*.rds", full.names = TRUE)
   first <- TRUE
   pb <- txtProgressBar(style = 3)
@@ -829,7 +829,7 @@ exportKaplanMeier <- function(outputFolder,
     }
   }
   if (first) {
-    data <- createEmptyResult("kaplan_meier_dist")
+    data <- createEmptyResult("cm_kaplan_meier_dist")
     writeToCsv(data, outputFile)
   }
   setTxtProgressBar(pb, 1)
@@ -1144,8 +1144,8 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
            databaseId = !!databaseId)
 
   if (nrow(results) == 0) {
-    results <- createEmptyResult("diagnostics_summary")
+    results <- createEmptyResult("cm_diagnostics_summary")
   }
-  fileName <- file.path(exportFolder, "diagnostics_summary.csv")
+  fileName <- file.path(exportFolder, "cm_diagnostics_summary.csv")
   writeToCsv(results, fileName)
 }
