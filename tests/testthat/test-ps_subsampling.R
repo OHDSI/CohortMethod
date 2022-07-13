@@ -36,13 +36,13 @@ test_that("Subsampling cohort throws no error", {
   comparatorPopSize <- length(population$rowId[population$treatment == 0])
   expect_true(min(targetPopSize, comparatorPopSize) > 10)
 
-  expect_warning(
+  expect_error(
     createPs(
       cohortMethodData, population,
       errorOnHighCorrelation = FALSE,
       maxCohortSizeForFitting = 10,
       control = cyclops_control
     ),
-    "are zero"
+    "ILLCONDITIONED"
   )
 })

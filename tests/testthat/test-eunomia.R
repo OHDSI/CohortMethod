@@ -213,7 +213,7 @@ test_that("Multiple analyses", {
   expect_equal(nrow(analysisSum), 12)
 
   CohortMethod::exportToCsv(outputFolder)
-  cohortMethodResultFile <- file.path(outputFolder, "export", "cohort_method_result.csv")
+  cohortMethodResultFile <- file.path(outputFolder, "export", "cm_result.csv")
   expect_true(file.exists(cohortMethodResultFile))
 
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
