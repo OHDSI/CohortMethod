@@ -1,4 +1,4 @@
-table_name,column_name,data_type,is_required,primary_key,empty_is_na,minCellCount,description
+table_name,column_name,data_type,is_required,primary_key,empty_is_na,min_cell_count,description
 cm_attrition,sequence_number,int,Yes,Yes,No,No,The place in the sequence of steps defining the final analysis cohort. 1 indicates the original exposed population without any inclusion criteria.
 cm_attrition,description,varchar,Yes,No,No,No,"A description of the last restriction, e.g. ""Removing persons with the outcome prior"". "
 cm_attrition,subjects,int,Yes,No,No,Yes,The number of subjects in the cohort.
