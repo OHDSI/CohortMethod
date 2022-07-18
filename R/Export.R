@@ -290,6 +290,9 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
   tcosList <- readRDS(file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   convertToTable <- function(tcos) {
     bind_rows(lapply(tcos$outcomes, unlist)) %>%
+      select(.data$outcomeId,
+             .data$outcomeOfInterest,
+             .data$trueEffectSize) %>%
       mutate(
         targetId = tcos$targetId,
         comparatorId = tcos$comparatorId
