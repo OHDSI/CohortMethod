@@ -288,23 +288,25 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
   message("- target_comparator_outcome table")
 
   tcosList <- readRDS(file.path(outputFolder, "targetComparatorOutcomesList.rds"))
+  # tcos <- tcosList[[1]]
   convertToTable <- function(tcos) {
-    bind_rows(lapply(tcos$outcomes, unlist)) %>%
+    table <- bind_rows(lapply(tcos$outcomes, unlist))
+    if (!"trueEffectSize" %in% colnames(table)) {
+      table <- table %>%
+        mutate(trueEffectSize = as.numeric(NA))
+    }
+    table %>%
       select(.data$outcomeId,
              .data$outcomeOfInterest,
              .data$trueEffectSize) %>%
       mutate(
         targetId = tcos$targetId,
         comparatorId = tcos$comparatorId
-      ) %>%
-      return()
+      )
+    return(table)
   }
   table <- lapply(tcosList, convertToTable)
   table <- bind_rows(table)
-  if (!"trueEffectSize" %in% colnames(table)) {
-    table <- table %>%
-      mutate(trueEffectSize = as.numeric(NA))
-  }
 
   fileName <- file.path(exportFolder, "cm_target_comparator_outcome.csv")
   writeToCsv(table, fileName)
