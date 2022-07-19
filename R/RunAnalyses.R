@@ -1012,23 +1012,24 @@ createReferenceTable <- function(cmAnalysisList,
   foldersToCreate <- file.path(outputFolder, analyses$analysisFolder)
   foldersToCreate <- foldersToCreate[!dir.exists(foldersToCreate)]
   sapply(foldersToCreate, dir.create)
-  convertTcosToTable <- function(tco) {
-    trueEffectSize <- ParallelLogger::selectFromList(tco$outcomes, "trueEffectSize")
-    trueEffectSize[sapply(trueEffectSize, function(x) is.null(x$trueEffectSize))] <- NA
-    trueEffectSize <- unlist(trueEffectSize, use.names = FALSE)
+  convertOutcomeToTable <- function(outcome) {
     tibble(
-      targetId = tco$targetId,
-      comparatorId = tco$comparatorId,
-      includedCovariateConceptIds = paste(tco$includedCovariateConceptIds, collapse = ","),
-      excludedCovariateConceptIds = paste(tco$excludedCovariateConceptIds, collapse = ","),
-      outcomeId = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeId"),
-        use.names = FALSE
-      ),
-      outcomeOfInterest = unlist(ParallelLogger::selectFromList(tco$outcomes, "outcomeOfInterest"),
-        use.names = FALSE
-      ),
-      trueEffectSize = trueEffectSize
-    )
+      outcomeId = outcome$outcomeId,
+      outcomeOfInterest = outcome$outcomeOfInterest,
+      trueEffectSize = if (is.null(outcome$trueEffectSize)) as.numeric(NA) else outcome$trueEffectSize
+    ) %>%
+      return()
+  }
+  convertTcosToTable <- function(tcos) {
+    lapply(tcos$outcomes, convertOutcomeToTable) %>%
+      bind_rows() %>%
+      mutate(
+        targetId = tcos$targetId,
+        comparatorId = tcos$comparatorId,
+        includedCovariateConceptIds = paste(tcos$includedCovariateConceptIds, collapse = ","),
+        excludedCovariateConceptIds = paste(tcos$excludedCovariateConceptIds, collapse = ",")
+      ) %>%
+      return()
   }
   tcos <- bind_rows(lapply(targetComparatorOutcomesList, convertTcosToTable))
   referenceTable <- analyses %>%
@@ -1143,11 +1144,11 @@ createReferenceTable <- function(cmAnalysisList,
           return(TRUE)
         }
         if (studyPopArgs1$firstExposureOnly != studyPopArgs2$firstExposureOnly ||
-          studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
-          studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
-          studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
-          studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
-          studyPopArgs1$minDaysAtRisk != 0) {
+            studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
+            studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
+            studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
+            studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
+            studyPopArgs1$minDaysAtRisk != 0) {
           return(FALSE)
         } else {
           return(TRUE)
@@ -1221,13 +1222,13 @@ createReferenceTable <- function(cmAnalysisList,
     strataArgsList,
     function(strataArgs) {
       return(strataArgs$trimByPs |
-        strataArgs$trimByPsToEquipoise |
-        strataArgs$trimByIptw |
-        strataArgs$truncateIptw |
-        strataArgs$matchOnPs |
-        strataArgs$matchOnPsAndCovariates |
-        strataArgs$stratifyByPs |
-        strataArgs$stratifyByPsAndCovariates)
+               strataArgs$trimByPsToEquipoise |
+               strataArgs$trimByIptw |
+               strataArgs$truncateIptw |
+               strataArgs$matchOnPs |
+               strataArgs$matchOnPsAndCovariates |
+               strataArgs$stratifyByPs |
+               strataArgs$stratifyByPsAndCovariates)
     }
   )]
   strataArgsList <- lapply(strataArgsList, normStrataArgs)
@@ -1366,7 +1367,7 @@ createReferenceTable <- function(cmAnalysisList,
       return(NULL)
     }
     keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (length(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
-      length(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
+                                                                       length(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
       length(loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds) != 0
     if (keep) {
       loadingFittingArgs$relevantFields <- list(
@@ -1433,13 +1434,13 @@ createReferenceTable <- function(cmAnalysisList,
   # Add outcome model file names
   referenceTable <- referenceTable %>%
     mutate(outcomeModelFile = ifelse(.data$fitOutcomeModel,
-      .createOutcomeModelFileName(
-        folder = .data$analysisFolder,
-        targetId = .data$targetId,
-        comparatorId = .data$comparatorId,
-        outcomeId = .data$outcomeId
-      ),
-      ""
+                                     .createOutcomeModelFileName(
+                                       folder = .data$analysisFolder,
+                                       targetId = .data$targetId,
+                                       comparatorId = .data$comparatorId,
+                                       outcomeId = .data$outcomeId
+                                     ),
+                                     ""
     ))
 
   # Some cleanup:
@@ -1679,17 +1680,17 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
         .data$trueEffectSize
       ) %>%
       bind_cols(outcomeModel$populationCounts %>%
-        select(
-          targetSubjects = .data$targetPersons,
-          comparatorSubjects = .data$comparatorPersons
-        )) %>%
+                  select(
+                    targetSubjects = .data$targetPersons,
+                    comparatorSubjects = .data$comparatorPersons
+                  )) %>%
       bind_cols(outcomeModel$timeAtRisk %>%
-        select(
-          .data$targetDays,
-          .data$comparatorDays
-        )) %>%
+                  select(
+                    .data$targetDays,
+                    .data$comparatorDays
+                  )) %>%
       bind_cols(outcomeModel$outcomeCounts %>%
-        select(.data$targetOutcomes, .data$comparatorOutcomes))
+                  select(.data$targetOutcomes, .data$comparatorOutcomes))
 
     mainResult <- result %>%
       mutate(
