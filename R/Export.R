@@ -893,6 +893,9 @@ prepareKm <- function(task,
   data$databaseId <- databaseId
   data <- enforceMinCellValue(data, "targetAtRisk", minCellCount)
   data <- enforceMinCellValue(data, "comparatorAtRisk", minCellCount)
+  # Avoid SQL reserved word 'time':
+  data <- data %>%
+    rename(timeDay = .data$time)
   saveRDS(data, outputFileName)
 }
 

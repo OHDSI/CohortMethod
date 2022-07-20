@@ -124,7 +124,7 @@ cm_target_comparator_outcome,outcome_of_interest,int,Yes,No,No,No,"Is the outcom
 cm_target_comparator_outcome,true_effect_size,int,No,No,No,No,The true effect size for the target-comparator-outcome. For negatitive controls this equals 1.
 cm_target_comparator_outcome,target_id,int,Yes,Yes,No,No,The identifier for the target cohort.
 cm_target_comparator_outcome,comparator_id,int,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_kaplan_meier_dist,time,int,Yes,Yes,No,No,Time in days since cohort start.
+cm_kaplan_meier_dist,time_day,int,Yes,Yes,No,No,Time in days since cohort start.
 cm_kaplan_meier_dist,target_survival,float,Yes,No,No,No,The estimated survival fraction in the target cohort.
 cm_kaplan_meier_dist,target_survival_lb,float,Yes,No,No,No,The lower bound of the 95% confidence interval of the survival fraction in the target cohort.
 cm_kaplan_meier_dist,target_survival_ub,float,Yes,No,No,No,The upper bound of the 95% confidence interval of the survival fraction in the target cohort.
