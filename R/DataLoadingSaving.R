@@ -149,6 +149,7 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
   checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
   checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
   checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)

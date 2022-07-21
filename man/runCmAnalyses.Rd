@@ -12,7 +12,7 @@ runCmAnalyses(
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
-  cdmVersion = 5,
+  cdmVersion = "5",
   outputFolder = "./CohortMethodOutput",
   cmAnalysisList,
   targetComparatorOutcomesList,

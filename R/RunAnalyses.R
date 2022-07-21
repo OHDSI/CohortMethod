@@ -206,7 +206,7 @@ runCmAnalyses <- function(connectionDetails,
                           exposureTable = "drug_era",
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_occurrence",
-                          cdmVersion = 5,
+                          cdmVersion = "5",
                           outputFolder = "./CohortMethodOutput",
                           cmAnalysisList,
                           targetComparatorOutcomesList,
@@ -222,6 +222,7 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::assertList(cmAnalysisList, min.len = 1, add = errorMessages)
   for (i in 1:length(cmAnalysisList)) {
