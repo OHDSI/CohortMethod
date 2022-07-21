@@ -84,7 +84,7 @@ cm_interaction_result,calibrated_se_log_rr,float,Yes,No,No,No,The standard error
 cm_interaction_result,database_id,varchar,Yes,No,No,No,Foreign key referencing the database.
 cm_covariate,covariate_id,bigint,Yes,Yes,No,No,A unique identified for a covariate.
 cm_covariate,covariate_name,varchar,Yes,No,No,No,"A name for a covariate, e.g. 'Age group: 20-25 years'."
-cm_covariate,analysis_id,int,Yes,No,No,No,Foreign key referencing the cohort_method_analysis table.
+cm_covariate,analysis_id,int,Yes,Yes,No,No,Foreign key referencing the cohort_method_analysis table.
 cm_covariate,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_covariate_analysis,covariate_analysis_id,int,Yes,Yes,No,No,A unique identifier for a covariate analysis (only guaranteed to be unique for a given analysis_id and database_id).
 cm_covariate_analysis,covariate_analysis_name,varchar,Yes,No,No,No,"A name for a covariate analysis, e.g. 'Demographics: age group'."
@@ -144,6 +144,7 @@ cm_likelihood_profile,target_id,int,Yes,Yes,No,No,The identifier for the target 
 cm_likelihood_profile,comparator_id,int,Yes,Yes,No,No,The identifier for the comparator cohort.
 cm_likelihood_profile,outcome_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_likelihood_profile,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cohort_method_analysis table.
+cm_likelihood_profile,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_preference_score_dist,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cohort_method_analysis table.
 cm_preference_score_dist,target_id,int,Yes,Yes,No,No,The identifier for the target cohort.
 cm_preference_score_dist,comparator_id,int,Yes,Yes,No,No,The identifier for the comparator cohort.

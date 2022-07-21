@@ -269,14 +269,16 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
       mutate(databaseId = !!databaseId)
   }
 
-  covariateAnalysis <- bind_rows(covariateAnalysis)
+  covariateAnalysis <- bind_rows(covariateAnalysis) %>%
+    distinct(.data$covariateAnalysisId, .data$analysisId, .keep_all = TRUE)
   if (nrow(covariateAnalysis) == 0) {
     covariateAnalysis <- createEmptyResult("cm_covariate_analysis")
   }
   fileName <- file.path(exportFolder, "cm_covariate_analysis.csv")
   writeToCsv(covariateAnalysis, fileName)
 
-  covariates <- bind_rows(covariates)
+  covariates <- bind_rows(covariates) %>%
+    distinct(.data$covariateId, .data$analysisId, .keep_all = TRUE)
   if (nrow(covariates) == 0) {
     covariates <- createEmptyResult("cm_covariate")
   }
@@ -545,7 +547,8 @@ exporLikelihoodProfiles <- function(outputFolder,
             targetId = reference$targetId[i],
             comparatorId = reference$comparatorId[i],
             outcomeId = reference$outcomeId[i],
-            analysisId = reference$analysisId[i]
+            analysisId = reference$analysisId[i],
+            databaseId = !!databaseId
           )
         writeToCsv(profile, fileName, append = !first)
         first <- FALSE
