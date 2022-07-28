@@ -1054,7 +1054,11 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
 
   getMaxSdm <- function(balanceFile) {
     balance <- readRDS(file.path(outputFolder, balanceFile))
-    return(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE))
+    if (nrow(balance) == 0) {
+      return(as.numeric(NA))
+    } else {
+      return(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE))
+    }
   }
 
   getEquipoise <- function(sharedPsFile) {
@@ -1124,29 +1128,35 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
   results <- results1 %>%
     inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
     mutate(balanceDiagnostic = case_when(
+      is.na(.data$maxSdm) ~ "NOT EVALUATED",
       .data$maxSdm < 0.1 ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(sharedBalanceDiagnostic = case_when(
+      is.na(.data$sharedMaxSdm) ~ "NOT EVALUATED",
       .data$sharedMaxSdm < 0.1 ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(equipoiseDiagnostic = case_when(
+      is.na(.data$equipoise) ~ "NOT EVALUATED",
       .data$equipoise >= 0.5 ~ "PASS",
       .data$equipoise >= 0.1 ~ "WARNING",
       TRUE ~ "FAIL"
     )) %>%
     mutate(mdrrDiagnostic = case_when(
+      is.na(.data$mdrr) ~ "NOT EVALUATED",
       .data$mdrr < 2 ~ "PASS",
       .data$mdrr < 10 ~ "WARNING",
       TRUE ~ "FAIL"
     )) %>%
     mutate(attritionDiagnostic = case_when(
+      is.na(.data$attritionFraction) ~ "NOT EVALUATED",
       .data$attritionFraction < 0.1 ~ "PASS",
       .data$attritionFraction < 0.5 ~ "WARNING",
       TRUE ~ "FAIL"
     )) %>%
     mutate(easeDiagnostic = case_when(
+      is.na(.data$ease) ~ "NOT EVALUATED",
       abs(.data$ease) < 0.1 ~ "PASS",
       abs(.data$ease) < 0.25 ~ "WARNING",
       TRUE ~ "FAIL"

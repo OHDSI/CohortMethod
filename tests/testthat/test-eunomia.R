@@ -203,6 +203,9 @@ test_that("Multiple analyses", {
   cohortMethodResultFile <- file.path(outputFolder, "export", "cm_result.csv")
   expect_true(file.exists(cohortMethodResultFile))
 
+  diagnosticsSummary <- readr::read_csv(file.path(outputFolder, "export", "cm_diagnostics_summary.csv"), show_col_types = FALSE)
+  expect_true(all(diagnosticsSummary$ease_diagnostic == "NOT EVALUATED"))
+
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
   connection <- DatabaseConnector::connect(connectionDetails)
 
