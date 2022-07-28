@@ -114,7 +114,6 @@ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
                                 description = "No matching, simple outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
-                                fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs1)
 
 createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
@@ -137,15 +136,10 @@ cmAnalysis2 <- createCmAnalysis(analysisId = 2,
                                 description = "Matching",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
-                                computeSharedCovariateBalance = TRUE,
                                 computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalance = TRUE,
                                 computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
 stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
@@ -154,15 +148,10 @@ cmAnalysis3 <- createCmAnalysis(analysisId = 3,
                                 description = "Stratification",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                stratifyByPs = TRUE,
                                 stratifyByPsArgs = stratifyByPsArgs,
-                                computeSharedCovariateBalance = TRUE,
                                 computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalance = TRUE,
                                 computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs2)
 
 fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
@@ -174,11 +163,8 @@ cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 description = "Inverse probability weighting",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                trimByPs = TRUE,
                                 trimByPsArgs = trimByPsArgs,
-                                fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
 fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
@@ -194,11 +180,8 @@ cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 description = "Matching plus full outcome model",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                matchOnPs = TRUE,
                                 matchOnPsArgs = matchOnPsArgs,
-                                fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
 interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
@@ -212,11 +195,8 @@ cmAnalysis6 <- createCmAnalysis(analysisId = 6,
                                 description = "Stratification plus interaction terms",
                                 getDbCohortMethodDataArgs = getDbCmDataArgs,
                                 createStudyPopArgs = createStudyPopArgs,
-                                createPs = TRUE,
                                 createPsArgs = createPsArgs,
-                                stratifyByPs = TRUE,
                                 stratifyByPsArgs = stratifyByPsArgs,
-                                fitOutcomeModel = TRUE,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs5)
 cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
 

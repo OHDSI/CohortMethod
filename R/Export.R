@@ -369,6 +369,7 @@ exportCmFollowUpDist <- function(outputFolder,
                                  databaseId,
                                  minCellCount) {
   message("- cm_follow_up_dist table")
+  # row = rows[2, ]
   getFollowUpDist <- function(row) {
     if (row$strataFile == "") {
       strataPop <- readRDS(file.path(outputFolder, row$studyPopFile))
@@ -847,6 +848,7 @@ exportKaplanMeier <- function(outputFolder,
   unlink(tempFolder, recursive = TRUE)
 }
 
+# task = tasks[[1]]
 prepareKm <- function(task,
                       outputFolder,
                       tempFolder,
@@ -906,7 +908,7 @@ prepareKaplanMeier <- function(population) {
   dataCutoff <- 0.9
   population$y <- 0
   population$y[population$outcomeCount != 0] <- 1
-  if (is.null(population$stratumId) || length(unique(population$stratumId)) == nrow(population) / 2) {
+  if (!"stratumId" %in% colnames(population) || length(unique(population$stratumId)) == nrow(population) / 2) {
     sv <- survival::survfit(survival::Surv(survivalTime, y) ~ treatment, population, conf.int = TRUE)
     idx <- summary(sv, censored = T)$strata == "treatment=1"
     survTarget <- tibble(

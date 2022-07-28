@@ -9,29 +9,17 @@ createCmAnalysis(
   description = "",
   getDbCohortMethodDataArgs,
   createStudyPopArgs,
-  createPs = FALSE,
   createPsArgs = NULL,
-  trimByPs = FALSE,
   trimByPsArgs = NULL,
-  trimByPsToEquipoise = FALSE,
   trimByPsToEquipoiseArgs = NULL,
-  trimByIptw = FALSE,
   trimByIptwArgs = NULL,
-  truncateIptw = FALSE,
   truncateIptwArgs = NULL,
-  matchOnPs = FALSE,
   matchOnPsArgs = NULL,
-  matchOnPsAndCovariates = FALSE,
   matchOnPsAndCovariatesArgs = NULL,
-  stratifyByPs = FALSE,
   stratifyByPsArgs = NULL,
-  stratifyByPsAndCovariates = FALSE,
   stratifyByPsAndCovariatesArgs = NULL,
-  computeSharedCovariateBalance = FALSE,
   computeSharedCovariateBalanceArgs = NULL,
-  computeCovariateBalance = FALSE,
   computeCovariateBalanceArgs = NULL,
-  fitOutcomeModel = FALSE,
   fitOutcomeModelArgs = NULL
 )
 }
@@ -47,81 +35,57 @@ the \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}} function.}
 \item{createStudyPopArgs}{An object representing the arguments to be used when calling
 the \code{\link[=createStudyPopulation]{createStudyPopulation()}} function.}
 
-\item{createPs}{Should the \code{\link[=createPs]{createPs()}} function be used in this
-analysis?}
-
 \item{createPsArgs}{An object representing the arguments to be used when calling
 the \code{\link[=createPs]{createPs()}} function.}
-
-\item{trimByPs}{Should the \code{\link[=trimByPs]{trimByPs()}} function be used in this
-analysis?}
 
 \item{trimByPsArgs}{An object representing the arguments to be used when calling
 the \code{\link[=trimByPs]{trimByPs()}} function.}
 
-\item{trimByPsToEquipoise}{Should the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function be used
-in this analysis?}
-
 \item{trimByPsToEquipoiseArgs}{An object representing the arguments to be used when calling
 the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function.}
-
-\item{trimByIptw}{Should the \code{\link[=trimByIptw]{trimByIptw()}} function be used
-in this analysis?}
 
 \item{trimByIptwArgs}{An object representing the arguments to be used when calling
 the \code{\link[=trimByIptw]{trimByIptw()}} function.}
 
-\item{truncateIptw}{Should the \code{\link[=truncateIptw]{truncateIptw()}} function be used
-in this analysis?}
-
 \item{truncateIptwArgs}{An object representing the arguments to be used when calling
 the \code{\link[=truncateIptw]{truncateIptw()}} function.}
-
-\item{matchOnPs}{Should the \code{\link[=matchOnPs]{matchOnPs()}} function be used in this
-analysis?}
 
 \item{matchOnPsArgs}{An object representing the arguments to be used when calling
 the \code{\link[=matchOnPs]{matchOnPs()}} function.}
 
-\item{matchOnPsAndCovariates}{Should the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function be
-used in this analysis?}
-
 \item{matchOnPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function.}
-
-\item{stratifyByPs}{Should the \code{\link[=stratifyByPs]{stratifyByPs()}} function be used in
-this analysis?}
 
 \item{stratifyByPsArgs}{An object representing the arguments to be used when calling
 the \code{\link[=stratifyByPs]{stratifyByPs()}} function.}
 
-\item{stratifyByPsAndCovariates}{Should the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function
-be used in this analysis?}
-
 \item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
 the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function.}
-
-\item{computeSharedCovariateBalance}{Compute the covariate balance per target-comparator-analysis (using \code{\link[=computeCovariateBalance]{computeCovariateBalance()}})?
-This will compute covariate balance across outcomes, for a study population that is not specific
-to any outcome.}
 
 \item{computeSharedCovariateBalanceArgs}{An object representing the arguments to be used when calling
 the \code{\link[=computeCovariateBalance]{computeCovariateBalance()}} function per target-comparator-analysis.}
 
-\item{computeCovariateBalance}{Compute the covariate balance per target-comparator-outcome-analysis (using \code{\link[=computeCovariateBalance]{computeCovariateBalance()}})?}
-
 \item{computeCovariateBalanceArgs}{An object representing the arguments to be used when calling
 the \code{\link[=computeCovariateBalance]{computeCovariateBalance()}} function per target-comparator-outcome-analysis.}
 
-\item{fitOutcomeModel}{Should the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function be used in
-this analysis?}
-
 \item{fitOutcomeModelArgs}{An object representing the arguments to be used when calling
 the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function.}
+
+\item{trimByPsToEquipoise}{Should the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function be used
+in this analysis?}
+
+\item{matchOnPsAndCovariates}{Should the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function be
+used in this analysis?}
+
+\item{stratifyByPsAndCovariates}{Should the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function
+be used in this analysis?}
 }
 \description{
 Create a CohortMethod analysis specification
 }
 \details{
 Create a set of analysis choices, to be used with the \code{\link[=runCmAnalyses]{runCmAnalyses()}} function.
+
+Providing a NULL value for any of the argument applies the corresponding step will not be executed.
+For example, if \code{createPsArgs = NULL}, no propensity scores will be computed.
 }

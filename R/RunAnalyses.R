@@ -808,37 +808,37 @@ addPsToStudyPop <- function(subset, outputFolder) {
 }
 
 applyTrimMatchStratify <- function(ps, arguments) {
-  if (arguments$trimByPs) {
+  if (!is.null(arguments$trimByPsArgs)) {
     functionArgs <- arguments$trimByPsArgs
     functionArgs$population <- ps
     ps <- do.call("trimByPs", functionArgs)
-  } else if (arguments$trimByPsToEquipoise) {
+  } else if (!is.null(arguments$trimByPsToEquipoiseArgs)) {
     functionArgs <- arguments$trimByPsToEquipoiseArgs
     functionArgs$population <- ps
     ps <- do.call("trimByPsToEquipoise", functionArgs)
-  } else if (arguments$trimByIptw) {
+  } else if (!is.null(arguments$trimByIptwArgs)) {
     functionArgs <- arguments$trimByIptwArgs
     functionArgs$population <- ps
     ps <- do.call("trimByIptw", functionArgs)
   }
-  if (arguments$truncateIptw) {
+  if (!is.null(arguments$truncateIptwArgs)) {
     functionArgs <- arguments$truncateIptwArgs
     functionArgs$population <- ps
     ps <- do.call("truncateIptw", functionArgs)
   }
-  if (arguments$matchOnPs) {
+  if (!is.null(arguments$matchOnPsArgs)) {
     functionArgs <- arguments$matchOnPsArgs
     functionArgs$population <- ps
     ps <- do.call("matchOnPs", functionArgs)
-  } else if (arguments$matchOnPsAndCovariates) {
+  } else if (!is.null(arguments$matchOnPsAndCovariatesArgs)) {
     functionArgs <- arguments$matchOnPsAndCovariatesArgs
     functionArgs$population <- ps
     ps <- do.call("matchOnPsAndCovariates", functionArgs)
-  } else if (arguments$stratifyByPs) {
+  } else if (!is.null(arguments$stratifyByPsArgs)) {
     functionArgs <- arguments$stratifyByPsArgs
     functionArgs$population <- ps
     ps <- do.call("stratifyByPs", functionArgs)
-  } else if (arguments$stratifyByPsAndCovariates) {
+  } else if (!is.null(arguments$stratifyByPsAndCovariatesArgs)) {
     functionArgs <- arguments$stratifyByPsAndCovariatesArgs
     functionArgs$population <- ps
     ps <- do.call("stratifyByPsAndCovariates", functionArgs)
@@ -914,7 +914,7 @@ doFitOutcomeModelPlus <- function(params) {
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
 
-  if (params$args$createPs) {
+  if (!is.null(params$args$createPsArgs)) {
     # Add PS
     ps <- getPs(params$sharedPsFile)
     idx <- match(studyPop$rowId, ps$rowId)
@@ -942,7 +942,7 @@ doComputeSharedBalance <- function(params) {
   args$cohortMethodData <- cohortMethodData
   studyPop <- do.call("createStudyPopulation", args)
 
-  if (params$args$createPs) {
+  if (!is.null(params$args$createPsArgs)) {
     # Add PS
     ps <- getPs(params$sharedPsFile)
     idx <- match(studyPop$rowId, ps$rowId)
@@ -1005,7 +1005,7 @@ createReferenceTable <- function(cmAnalysisList,
   convertAnalysisToTable <- function(analysis) {
     tibble(
       analysisId = analysis$analysisId,
-      fitOutcomeModel = analysis$fitOutcomeModel,
+      fitOutcomeModel = !is.null(analysis$fitOutcomeModelArgs),
       analysisFolder = sprintf("Analysis_%d", analysis$analysisId)
     )
   }
@@ -1198,21 +1198,13 @@ createReferenceTable <- function(cmAnalysisList,
 
   # Add strata filenames
   args <- c(
-    "trimByPs",
     "trimByPsArgs",
-    "trimByPsToEquipoise",
     "trimByPsToEquipoiseArgs",
-    "trimByIptw",
     "trimByIptwArgs",
-    "truncateIptw",
     "truncateIptwArgs",
-    "matchOnPs",
     "matchOnPsArgs",
-    "matchOnPsAndCovariates",
     "matchOnPsAndCovariatesArgs",
-    "stratifyByPs",
     "stratifyByPsArgs",
-    "stratifyByPsAndCovariates",
     "stratifyByPsAndCovariatesArgs"
   )
   normStrataArgs <- function(strataArgs) {
@@ -1222,14 +1214,14 @@ createReferenceTable <- function(cmAnalysisList,
   strataArgsList <- strataArgsList[sapply(
     strataArgsList,
     function(strataArgs) {
-      return(strataArgs$trimByPs |
-               strataArgs$trimByPsToEquipoise |
-               strataArgs$trimByIptw |
-               strataArgs$truncateIptw |
-               strataArgs$matchOnPs |
-               strataArgs$matchOnPsAndCovariates |
-               strataArgs$stratifyByPs |
-               strataArgs$stratifyByPsAndCovariates)
+      return(!is.null(strataArgs$trimByPsArgs) |
+               !is.null(strataArgs$trimByPsToEquipoiseArgs) |
+               !is.null(strataArgs$trimByIptwArgs) |
+               !is.null(strataArgs$truncateIptwArgs) |
+               !is.null(strataArgs$matchOnPsArgs) |
+               !is.null(strataArgs$matchOnPsAndCovariatesArgs) |
+               !is.null(strataArgs$stratifyByPsArgs) |
+               !is.null(strataArgs$stratifyByPsAndCovariatesArgs))
     }
   )]
   strataArgsList <- lapply(strataArgsList, normStrataArgs)
@@ -1259,10 +1251,7 @@ createReferenceTable <- function(cmAnalysisList,
   )
 
   # Add shared covariate balance files (per target-comparator-analysis)
-  args <- c(
-    "computeSharedCovariateBalance",
-    "computeSharedCovariateBalanceArgs"
-  )
+  args <- "computeSharedCovariateBalanceArgs"
   normBalanceArgs <- function(balanceArgs) {
     return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
   }
@@ -1270,7 +1259,7 @@ createReferenceTable <- function(cmAnalysisList,
   balanceArgsList <- balanceArgsList[sapply(
     balanceArgsList,
     function(balanceArgs) {
-      return(balanceArgs$computeSharedCovariateBalance)
+      return(!is.null(balanceArgs$computeSharedCovariateBalanceArgs))
     }
   )]
   balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
@@ -1300,10 +1289,7 @@ createReferenceTable <- function(cmAnalysisList,
   )
 
   # Add covariate balance files (per target-comparator-analysis-outcome)
-  args <- c(
-    "computeCovariateBalance",
-    "computeCovariateBalanceArgs"
-  )
+  args <- "computeCovariateBalanceArgs"
   normBalanceArgs <- function(balanceArgs) {
     return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
   }
@@ -1311,7 +1297,7 @@ createReferenceTable <- function(cmAnalysisList,
   balanceArgsList <- balanceArgsList[sapply(
     balanceArgsList,
     function(balanceArgs) {
-      return(balanceArgs$computeCovariateBalance)
+      return(!is.null(balanceArgs$computeCovariateBalanceArgs))
     }
   )]
   balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)

@@ -99,7 +99,6 @@ test_that("Multiple analyses", {
     description = "No matching, simple outcome model",
     getDbCohortMethodDataArgs = getDbCmDataArgs,
     createStudyPopArgs = createStudyPopArgs1,
-    fitOutcomeModel = TRUE,
     fitOutcomeModelArgs = fitOutcomeModelArgs1
   )
 
@@ -125,15 +124,10 @@ test_that("Multiple analyses", {
     description = "Matching",
     getDbCohortMethodDataArgs = getDbCmDataArgs,
     createStudyPopArgs = createStudyPopArgs2,
-    createPs = TRUE,
     createPsArgs = createPsArgs,
-    matchOnPs = TRUE,
     matchOnPsArgs = matchOnPsArgs,
-    computeSharedCovariateBalance = TRUE,
     computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-    computeCovariateBalance = TRUE,
     computeCovariateBalanceArgs = computeCovBalArgs,
-    fitOutcomeModel = TRUE,
     fitOutcomeModelArgs = fitOutcomeModelArgs2
   )
 
@@ -148,13 +142,9 @@ test_that("Multiple analyses", {
     description = "IPTW",
     getDbCohortMethodDataArgs = getDbCmDataArgs,
     createStudyPopArgs = createStudyPopArgs2,
-    createPs = TRUE,
     createPsArgs = createPsArgs,
-    truncateIptw = TRUE,
     truncateIptwArgs = truncateIptwArgs,
-    computeSharedCovariateBalance = TRUE,
     computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-    fitOutcomeModel = TRUE,
     fitOutcomeModelArgs = fitOutcomeModelArgs3
   )
 
@@ -169,11 +159,8 @@ test_that("Multiple analyses", {
     description = "Matching with gender interaction",
     getDbCohortMethodDataArgs = getDbCmDataArgs,
     createStudyPopArgs = createStudyPopArgs2,
-    createPs = TRUE,
     createPsArgs = createPsArgs,
-    matchOnPs = TRUE,
     matchOnPsArgs = matchOnPsArgs,
-    fitOutcomeModel = TRUE,
     fitOutcomeModelArgs = fitOutcomeModelArgs4
   )
 
@@ -424,3 +411,5 @@ test_that("Error when defining two outcomes with the same outcome ID", {
     "Found duplicate outcome IDs"
   )
 })
+
+

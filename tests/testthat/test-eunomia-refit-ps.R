@@ -58,11 +58,8 @@ test_that("Multiple analyses", {
     description = "Matching",
     getDbCohortMethodDataArgs = getDbCmDataArgs,
     createStudyPopArgs = createStudyPopArgs,
-    createPs = TRUE,
     createPsArgs = createPsArgs,
-    matchOnPs = TRUE,
     matchOnPsArgs = matchOnPsArgs,
-    fitOutcomeModel = TRUE,
     fitOutcomeModelArgs = fitOutcomeModelArgs
   )
 

@@ -48,6 +48,8 @@ Changes:
     - Changing case in output of `getResultsSummary()` from `ci95lb` and `ci95ub` to `ci95Lb` and `ci95Ub`.
 
     - Added empirical calibration to the `getResultsSummary()` function. Controls can be identified by the `trueEffectSize` argument in the `createOutcome()` function.
+    
+    - Dropping arguments like `createPs` and `fitOutcomeModel` from the `createCmAnalysis()` function. Instead, not providing `createPsArgs` or `fitOutcomeModelArgs` is assumed to mean skipping propensity score creation or outcome model fitting, respectively.
 
   
 Bug fixes:

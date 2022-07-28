@@ -21,6 +21,9 @@
 #' @details
 #' Create a set of analysis choices, to be used with the [runCmAnalyses()] function.
 #'
+#' Providing a NULL value for any of the argument applies the corresponding step will not be executed.
+#' For example, if `createPsArgs = NULL`, no propensity scores will be computed.
+#'
 #' @param analysisId                      An integer that will be used later to refer to this specific
 #'                                        set of analysis choices.
 #' @param description                     A short description of the analysis.
@@ -28,52 +31,34 @@
 #'                                        the [getDbCohortMethodData()] function.
 #' @param createStudyPopArgs              An object representing the arguments to be used when calling
 #'                                        the [createStudyPopulation()] function.
-#' @param createPs                        Should the [createPs()] function be used in this
-#'                                        analysis?
 #' @param createPsArgs                    An object representing the arguments to be used when calling
 #'                                        the [createPs()] function.
-#' @param trimByPs                        Should the [trimByPs()] function be used in this
-#'                                        analysis?
 #' @param trimByPsArgs                    An object representing the arguments to be used when calling
 #'                                        the [trimByPs()] function.
 #' @param trimByPsToEquipoise             Should the [trimByPsToEquipoise()] function be used
 #'                                        in this analysis?
 #' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
 #'                                        the [trimByPsToEquipoise()] function.
-#' @param trimByIptw                      Should the [trimByIptw()] function be used
-#'                                        in this analysis?
 #' @param trimByIptwArgs                  An object representing the arguments to be used when calling
 #'                                        the [trimByIptw()] function.
-#' @param truncateIptw                    Should the [truncateIptw()] function be used
-#'                                        in this analysis?
 #' @param truncateIptwArgs                An object representing the arguments to be used when calling
 #'                                        the [truncateIptw()] function.
-#' @param matchOnPs                       Should the [matchOnPs()] function be used in this
-#'                                        analysis?
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
 #'                                        the [matchOnPs()] function.
 #' @param matchOnPsAndCovariates          Should the [matchOnPsAndCovariates()] function be
 #'                                        used in this analysis?
 #' @param matchOnPsAndCovariatesArgs      An object representing the arguments to be used when calling
 #'                                        the [matchOnPsAndCovariates()] function.
-#' @param stratifyByPs                    Should the [stratifyByPs()] function be used in
-#'                                        this analysis?
 #' @param stratifyByPsArgs                An object representing the arguments to be used when calling
 #'                                        the [stratifyByPs()] function.
 #' @param stratifyByPsAndCovariates       Should the [stratifyByPsAndCovariates()] function
 #'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the [stratifyByPsAndCovariates()] function.
-#' @param computeSharedCovariateBalance   Compute the covariate balance per target-comparator-analysis (using [computeCovariateBalance()])?
-#'                                        This will compute covariate balance across outcomes, for a study population that is not specific
-#'                                        to any outcome.
 #' @param computeSharedCovariateBalanceArgs  An object representing the arguments to be used when calling
 #'                                          the [computeCovariateBalance()] function per target-comparator-analysis.
-#' @param computeCovariateBalance         Compute the covariate balance per target-comparator-outcome-analysis (using [computeCovariateBalance()])?
 #' @param computeCovariateBalanceArgs     An object representing the arguments to be used when calling
 #'                                        the [computeCovariateBalance()] function per target-comparator-outcome-analysis.
-#' @param fitOutcomeModel                 Should the [fitOutcomeModel()] function be used in
-#'                                        this analysis?
 #' @param fitOutcomeModelArgs             An object representing the arguments to be used when calling
 #'                                        the [fitOutcomeModel()] function.
 #'
@@ -82,109 +67,63 @@ createCmAnalysis <- function(analysisId = 1,
                              description = "",
                              getDbCohortMethodDataArgs,
                              createStudyPopArgs,
-                             createPs = FALSE,
                              createPsArgs = NULL,
-                             trimByPs = FALSE,
                              trimByPsArgs = NULL,
-                             trimByPsToEquipoise = FALSE,
                              trimByPsToEquipoiseArgs = NULL,
-                             trimByIptw = FALSE,
                              trimByIptwArgs = NULL,
-                             truncateIptw = FALSE,
                              truncateIptwArgs = NULL,
-                             matchOnPs = FALSE,
                              matchOnPsArgs = NULL,
-                             matchOnPsAndCovariates = FALSE,
                              matchOnPsAndCovariatesArgs = NULL,
-                             stratifyByPs = FALSE,
                              stratifyByPsArgs = NULL,
-                             stratifyByPsAndCovariates = FALSE,
                              stratifyByPsAndCovariatesArgs = NULL,
-                             computeSharedCovariateBalance = FALSE,
                              computeSharedCovariateBalanceArgs = NULL,
-                             computeCovariateBalance = FALSE,
                              computeCovariateBalanceArgs = NULL,
-                             fitOutcomeModel = FALSE,
                              fitOutcomeModelArgs = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(analysisId, add = errorMessages)
   checkmate::assertCharacter(description, len = 1, add = errorMessages)
   checkmate::assertClass(getDbCohortMethodDataArgs, "args", add = errorMessages)
   checkmate::assertClass(createStudyPopArgs, "args", add = errorMessages)
-  checkmate::assertLogical(createPs, len = 1, add = errorMessages)
   checkmate::assertClass(createPsArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(trimByPs, len = 1, add = errorMessages)
   checkmate::assertClass(trimByPsArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(trimByPsToEquipoise, len = 1, add = errorMessages)
   checkmate::assertClass(trimByPsToEquipoiseArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(trimByIptw, len = 1, add = errorMessages)
   checkmate::assertClass(trimByIptwArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(truncateIptw, len = 1, add = errorMessages)
   checkmate::assertClass(truncateIptwArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(matchOnPs, len = 1, add = errorMessages)
   checkmate::assertClass(matchOnPsArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(matchOnPsAndCovariates, len = 1, add = errorMessages)
   checkmate::assertClass(matchOnPsAndCovariatesArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(stratifyByPs, len = 1, add = errorMessages)
   checkmate::assertClass(stratifyByPsArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(stratifyByPsAndCovariates, len = 1, add = errorMessages)
   checkmate::assertClass(stratifyByPsAndCovariatesArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(computeSharedCovariateBalance, len = 1, add = errorMessages)
   checkmate::assertClass(computeSharedCovariateBalanceArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(computeCovariateBalance, len = 1, add = errorMessages)
   checkmate::assertClass(computeCovariateBalanceArgs, "args", null.ok = TRUE, add = errorMessages)
-  checkmate::assertLogical(fitOutcomeModel, len = 1, add = errorMessages)
   checkmate::assertClass(fitOutcomeModelArgs, "args", null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (matchOnPs + matchOnPsAndCovariates + stratifyByPs + stratifyByPsAndCovariates > 1) {
+  if ((!is.null(matchOnPsArgs)) +
+      (!is.null(matchOnPsAndCovariatesArgs)) +
+      (!is.null(stratifyByPsArgs)) +
+      (!is.null(stratifyByPsAndCovariatesArgs)) > 1) {
     stop("Need to pick one matching or stratification function")
   }
-  if (trimByPs + trimByPsToEquipoise + trimByIptw > 1) {
+  if ((!is.null(trimByPsArgs)) +
+      (!is.null(trimByPsToEquipoiseArgs)) +
+      (!is.null(trimByIptwArgs)) > 1) {
     stop("Need to pick one trimming strategy")
   }
-  if (!createPs && (trimByPs | trimByPsToEquipoise | trimByIptw | truncateIptw | matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates)) {
+  if (is.null(createPsArgs) && (!is.null(trimByPsArgs) |
+                                !is.null(trimByPsToEquipoiseArgs) |
+                                !is.null(trimByIptwArgs) |
+                                !is.null(truncateIptwArgs) |
+                                !is.null(matchOnPsArgs) |
+                                !is.null(matchOnPsAndCovariatesArgs) |
+                                !is.null(stratifyByPsArgs) |
+                                !is.null(stratifyByPsAndCovariatesArgs))) {
     stop("Must create propensity score model to use it for trimming, matching, or stratification")
   }
-  if (!(matchOnPs | matchOnPsAndCovariates | stratifyByPs | stratifyByPsAndCovariates) && !is.null(fitOutcomeModelArgs) &&
-    fitOutcomeModelArgs$stratified) {
+  if (!is.null(fitOutcomeModelArgs) && fitOutcomeModelArgs$stratified && (is.null(matchOnPsArgs) &
+                                                                          is.null(matchOnPsAndCovariatesArgs) &
+                                                                          is.null(stratifyByPsArgs) &
+                                                                          is.null(stratifyByPsAndCovariatesArgs))) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
-  }
-  if (!createPs) {
-    createPsArgs <- NULL
-  }
-  if (!trimByPs) {
-    trimByPsArgs <- NULL
-  }
-  if (!trimByPsToEquipoise) {
-    trimByPsToEquipoiseArgs <- NULL
-  }
-  if (!trimByIptw) {
-    trimByIptwArgs <- NULL
-  }
-  if (!truncateIptw) {
-    truncateIptwArgs <- NULL
-  }
-  if (!matchOnPs) {
-    matchOnPsArgs <- NULL
-  }
-  if (!matchOnPsAndCovariates) {
-    matchOnPsAndCovariatesArgs <- NULL
-  }
-  if (!stratifyByPs) {
-    stratifyByPsArgs <- NULL
-  }
-  if (!stratifyByPsAndCovariates) {
-    stratifyByPsAndCovariatesArgs <- NULL
-  }
-  if (!computeSharedCovariateBalance) {
-    computeSharedCovariateBalanceArgs <- NULL
-  }
-  if (!computeCovariateBalance) {
-    computeCovariateBalanceArgs <- NULL
-  }
-  if (!fitOutcomeModel) {
-    fitOutcomeModelArgs <- NULL
   }
   analysis <- list()
   for (name in names(formals(createCmAnalysis))) {
