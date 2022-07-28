@@ -70,15 +70,6 @@ the \code{\link[=computeCovariateBalance]{computeCovariateBalance()}} function p
 
 \item{fitOutcomeModelArgs}{An object representing the arguments to be used when calling
 the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function.}
-
-\item{trimByPsToEquipoise}{Should the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function be used
-in this analysis?}
-
-\item{matchOnPsAndCovariates}{Should the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function be
-used in this analysis?}
-
-\item{stratifyByPsAndCovariates}{Should the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function
-be used in this analysis?}
 }
 \description{
 Create a CohortMethod analysis specification

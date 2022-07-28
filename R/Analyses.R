@@ -35,8 +35,6 @@
 #'                                        the [createPs()] function.
 #' @param trimByPsArgs                    An object representing the arguments to be used when calling
 #'                                        the [trimByPs()] function.
-#' @param trimByPsToEquipoise             Should the [trimByPsToEquipoise()] function be used
-#'                                        in this analysis?
 #' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
 #'                                        the [trimByPsToEquipoise()] function.
 #' @param trimByIptwArgs                  An object representing the arguments to be used when calling
@@ -45,14 +43,10 @@
 #'                                        the [truncateIptw()] function.
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
 #'                                        the [matchOnPs()] function.
-#' @param matchOnPsAndCovariates          Should the [matchOnPsAndCovariates()] function be
-#'                                        used in this analysis?
 #' @param matchOnPsAndCovariatesArgs      An object representing the arguments to be used when calling
 #'                                        the [matchOnPsAndCovariates()] function.
 #' @param stratifyByPsArgs                An object representing the arguments to be used when calling
 #'                                        the [stratifyByPs()] function.
-#' @param stratifyByPsAndCovariates       Should the [stratifyByPsAndCovariates()] function
-#'                                        be used in this analysis?
 #' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
 #'                                        the [stratifyByPsAndCovariates()] function.
 #' @param computeSharedCovariateBalanceArgs  An object representing the arguments to be used when calling
