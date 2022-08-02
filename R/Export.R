@@ -369,7 +369,7 @@ exportCmFollowUpDist <- function(outputFolder,
                                  databaseId,
                                  minCellCount) {
   message("- cm_follow_up_dist table")
-  # row = rows[2, ]
+  # row = rows[1, ]
   getFollowUpDist <- function(row) {
     if (row$strataFile == "") {
       strataPop <- readRDS(file.path(outputFolder, row$studyPopFile))
@@ -384,19 +384,27 @@ exportCmFollowUpDist <- function(outputFolder,
       strataPop$survivalTime[strataPop$treatment == 0],
       c(0, 0.1, 0.25, 0.5, 0.85, 0.9, 1)
     )
-    targetMinMaxDates <- strataPop %>%
-      filter(.data$treatment == 1) %>%
-      summarise(
-        minDate = min(.data$cohortStartDate),
-        maxDate = max(.data$cohortStartDate)
+    if (nrow(strataPop) == 0) {
+      targetMinMaxDates <- tibble(
+        minDate = as.Date(NA),
+        maxDate = as.Date(NA)
       )
+      comparatorMinMaxDates <- targetMinMaxDates
+    } else {
+      targetMinMaxDates <- strataPop %>%
+        filter(.data$treatment == 1) %>%
+        summarise(
+          minDate = min(.data$cohortStartDate),
+          maxDate = max(.data$cohortStartDate)
+        )
 
-    comparatorMinMaxDates <- strataPop %>%
-      filter(.data$treatment == 0) %>%
-      summarise(
-        minDate = min(.data$cohortStartDate),
-        maxDate = max(.data$cohortStartDate)
-      )
+      comparatorMinMaxDates <- strataPop %>%
+        filter(.data$treatment == 0) %>%
+        summarise(
+          minDate = min(.data$cohortStartDate),
+          maxDate = max(.data$cohortStartDate)
+        )
+    }
 
     tibble(
       target_id = row$targetId,
@@ -430,7 +438,7 @@ exportCmFollowUpDist <- function(outputFolder,
   results <- lapply(split(rows, 1:nrow(rows)), getFollowUpDist)
   results <- bind_rows(results)
   results$database_id <- databaseId
-  if (nrow(results == 0)) {
+  if (nrow(results) == 0) {
     results <- createEmptyResult("cm_follow_up_dist")
   }
 
@@ -695,7 +703,7 @@ tidyBalance <- function(balance, minCellCount) {
                         silent = TRUE
     ) %>%
     mutate(
-      targetMeanBefore = round(.data$targetMeanBefore),
+      targetMeanBefore = round(.data$targetMeanBefore, 3),
       comparatorMeanBefore = round(.data$comparatorMeanBefore, 3),
       stdDiffBefore = round(.data$stdDiffBefore, 3),
       targetMeanAfter = round(.data$targetMeanAfter, 3),
@@ -714,10 +722,10 @@ exportPreferenceScoreDistribution <- function(outputFolder,
     filter(.data$sharedPsFile != "") %>%
     distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId)
 
-  # rows <- split(reference, reference$sharedPsFile)[[1]]
+  # rows <- split(reference, reference$sharedPsFile)[[2]]
   preparePlot <- function(rows) {
     ps <- readRDS(file.path(outputFolder, rows$sharedPsFile[1]))
-    if (min(ps$propensityScore) < max(ps$propensityScore)) {
+    if (nrow(ps) > 0 && min(ps$propensityScore) < max(ps$propensityScore)) {
       ps <- computePreferenceScore(ps)
       d1 <- density(ps$preferenceScore[ps$treatment == 1], from = 0, to = 1, n = 100)
       d0 <- density(ps$preferenceScore[ps$treatment == 0], from = 0, to = 1, n = 100)
@@ -743,7 +751,7 @@ exportPreferenceScoreDistribution <- function(outputFolder,
   }
   data <- lapply(split(reference, reference$sharedPsFile), preparePlot)
   data <- bind_rows(data)
-  if (nrow(data == 0)) {
+  if (nrow(data) == 0) {
     data <- createEmptyResult("cm_preference_score_dist")
   }
   fileName <- file.path(exportFolder, "cm_preference_score_dist.csv")
@@ -782,7 +790,7 @@ exportPropensityModel <- function(outputFolder,
   }
   data <- lapply(split(reference, reference$sharedPsFile), prepareData)
   data <- bind_rows(data)
-  if (nrow(data == 0)) {
+  if (nrow(data) == 0) {
     data <- createEmptyResult("cm_propensity_model")
   }
   fileName <- file.path(exportFolder, "cm_propensity_model.csv")
@@ -1070,35 +1078,35 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
     filter(.data$balanceFile != "") %>%
     distinct(.data$balanceFile) %>%
     pull()
-  maxSdm <- sapply(balanceFiles, getMaxSdm)
+  maxSdm <- as.numeric(sapply(balanceFiles, getMaxSdm))
 
   sharedBalanceFiles <- reference %>%
     filter(.data$sharedBalanceFile != "") %>%
     distinct(.data$sharedBalanceFile) %>%
     pull()
-  sharedMaxSdm <- sapply(sharedBalanceFiles, getMaxSdm)
+  sharedMaxSdm <- as.numeric(sapply(sharedBalanceFiles, getMaxSdm))
 
   sharedPsFiles <- reference %>%
     filter(.data$sharedPsFile != "") %>%
     distinct(.data$sharedPsFile) %>%
     pull()
-  equipoise <- sapply(sharedPsFiles, getEquipoise)
+  equipoise <- as.numeric(sapply(sharedPsFiles, getEquipoise))
 
   results1 <- reference %>%
     filter(.data$outcomeOfInterest) %>%
-    inner_join(tibble(
+    left_join(tibble(
       balanceFile = balanceFiles,
       maxSdm = maxSdm
     ),
     by = "balanceFile"
     ) %>%
-    inner_join(tibble(
+    left_join(tibble(
       sharedBalanceFile = sharedBalanceFiles,
       sharedMaxSdm = sharedMaxSdm
     ),
     by = "sharedBalanceFile"
     ) %>%
-    inner_join(tibble(
+    left_join(tibble(
       sharedPsFile = sharedPsFiles,
       equipoise = equipoise
     ),
@@ -1151,8 +1159,8 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
     )) %>%
     mutate(attritionDiagnostic = case_when(
       is.na(.data$attritionFraction) ~ "NOT EVALUATED",
-      .data$attritionFraction < 0.1 ~ "PASS",
-      .data$attritionFraction < 0.5 ~ "WARNING",
+      .data$attritionFraction < 0.5 ~ "PASS",
+      .data$attritionFraction < 0.9 ~ "WARNING",
       TRUE ~ "FAIL"
     )) %>%
     mutate(easeDiagnostic = case_when(

@@ -1647,7 +1647,8 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
       z <- coefficient / outcomeModel$outcomeModelTreatmentEstimate$seLogRr
       p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
     }
-    pTarget <- outcomeModel$populationCounts$targetExposures / outcomeModel$populationCounts$comparatorExposures
+    pTarget <- outcomeModel$populationCounts$targetExposures /
+      (outcomeModel$populationCounts$targetExposures + outcomeModel$populationCounts$comparatorExposures)
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
     mdrr <- computeMdrrFromAggregateStats(
       pTarget = pTarget,

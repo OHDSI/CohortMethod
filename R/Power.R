@@ -75,6 +75,9 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
 }
 
 computeMdrrFromAggregateStats <- function(pTarget, totalEvents, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
+  if (totalEvents == 0) {
+    return(Inf)
+  }
   if (twoSided) {
     z1MinAlpha <- qnorm(1 - alpha / 2)
   } else {

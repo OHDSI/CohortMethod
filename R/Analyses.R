@@ -119,6 +119,10 @@ createCmAnalysis <- function(analysisId = 1,
                                                                           is.null(stratifyByPsAndCovariatesArgs))) {
     stop("Must create strata by using matching or stratification to fit a stratified outcome model")
   }
+  if (!is.null(createPsArgs) && (is.null(computeSharedCovariateBalanceArgs) && is.null(computeCovariateBalanceArgs))) {
+    message("Note: Using propensity scores but not computing covariate balance")
+  }
+
   analysis <- list()
   for (name in names(formals(createCmAnalysis))) {
     analysis[[name]] <- get(name)
