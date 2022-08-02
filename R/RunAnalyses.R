@@ -576,10 +576,15 @@ runCmAnalyses <- function(connectionDetails,
         list(analysisId = refRow$analysisId)
       )[[1]]
       computeCovariateBalanceArgs <- analysisRow$computeCovariateBalanceArgs
+      if (refRow$strataFile == "") {
+        strataFile = file.path(outputFolder, refRow$studyPopFile)
+      } else {
+        strataFile = file.path(outputFolder, refRow$strataFile)
+      }
       task <- list(
         filteredForbalanceFile = file.path(outputFolder, refRow$filteredForbalanceFile),
         cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
-        strataFile = file.path(outputFolder, refRow$strataFile),
+        strataFile = strataFile,
         computeCovariateBalanceArgs = computeCovariateBalanceArgs,
         balanceFile = file.path(outputFolder, refRow$balanceFile)
       )

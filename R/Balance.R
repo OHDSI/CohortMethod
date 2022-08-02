@@ -245,7 +245,7 @@ computeCovariateBalance <- function(population,
       sampleCohortsAndromeda(maxCohortSize = maxCohortSize, label = "before matching")
 
     cohortMethodData$tempCohortsAfterMatching <- population %>%
-      select(.data$rowId, .data$treatment, matches("stratumId"), .data$iptw) %>%
+      select(.data$rowId, .data$treatment, matches("stratumId"), matches("iptw")) %>%
       sampleCohorts(maxCohortSize = maxCohortSize, label = "after matching")
   }
   on.exit(cohortMethodData$tempCohorts <- NULL)
