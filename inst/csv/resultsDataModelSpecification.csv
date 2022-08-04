@@ -13,19 +13,19 @@ cm_follow_up_dist,comparator_id,int,Yes,Yes,No,No,The identifier for the compara
 cm_follow_up_dist,outcome_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_follow_up_dist,analysis_id,int,Yes,Yes,No,No,Foreign key referencing the cohort_method_analysis table.
 cm_follow_up_dist,target_min_days,int,Yes,No,No,No,The minimum number of observation days for a person.
-cm_follow_up_dist,target_p_10_days,int,Yes,No,No,No,The 10^th^ percentile of number of observation days for a person in the target group. 
+cm_follow_up_dist,target_p_10_days,int,Yes,No,No,No,The 10^th^ percentile of number of observation days for a person in the target group.
 cm_follow_up_dist,target_p_25_days,int,Yes,No,No,No,The 25^th^ percentile of number of observation days for a person in the target group.
 cm_follow_up_dist,target_median_days,int,Yes,No,No,No,The median number of observation days for a person in the target group.
 cm_follow_up_dist,target_p_75_days,int,Yes,No,No,No,The 75^th^ percentile of number of observation days for a person in the target group.
-cm_follow_up_dist,target_p_90_days,int,Yes,No,No,No,The 90^th^ percentile of number of observation days for a person in the target group. 
+cm_follow_up_dist,target_p_90_days,int,Yes,No,No,No,The 90^th^ percentile of number of observation days for a person in the target group.
 cm_follow_up_dist,target_max_days,int,Yes,No,No,No,The maximum number of observation days for a person in the target group.
 cm_follow_up_dist,comparator_min_days,int,Yes,No,No,No,The minimum number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_p_10_days,int,Yes,No,No,No,The 10^th^ percentile of number of observation days for a person in the comparator group. 
+cm_follow_up_dist,comparator_p_10_days,int,Yes,No,No,No,The 10^th^ percentile of number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_p_25_days,int,Yes,No,No,No,The 25^th^ percentile of number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_median_days,int,Yes,No,No,No,The median number of observation days for a person in the comparator group. 
+cm_follow_up_dist,comparator_median_days,int,Yes,No,No,No,The median number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_p_75_days,float,Yes,No,No,No,The 75^th^ percentile of number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_p_90_days,int,Yes,No,No,No,The 90^th^ percentile of number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_max_days,int,Yes,No,No,No,The maximum number of observation days for a person in the comparator group. 
+cm_follow_up_dist,comparator_max_days,int,Yes,No,No,No,The maximum number of observation days for a person in the comparator group.
 cm_follow_up_dist,target_min_date,Date,Yes,No,No,No,The first start date of the target cohort observed in the data (after applying all restrictions).
 cm_follow_up_dist,target_max_date,Date,Yes,No,No,No,The last start date of the target cohort observed in the data (after applying all restrictions).
 cm_follow_up_dist,comparator_min_date,Date,Yes,No,No,No,The first start date of the comparator cohort observed in the data (after applying all restrictions).
@@ -112,12 +112,12 @@ cm_diagnostics_summary,equipoise,float,Yes,No,No,No,The fraction of the study po
 cm_diagnostics_summary,mdrr,float,Yes,No,No,No,The minimum detectable relative risk.
 cm_diagnostics_summary,attrition_fraction,float,Yes,No,No,No,The fraction of the target population lost by between initial cohort and outcome model due to various restrictions.
 cm_diagnostics_summary,ease,float,Yes,No,No,No,The expected absolute systematic error.
-cm_diagnostics_summary,balance_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the balance diagnostic (max_sdm).
-cm_diagnostics_summary,shared_balance_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the shared balance diagnostic (shared_max_sdm).
-cm_diagnostics_summary,equipoise_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the equipoise diagnostic.
-cm_diagnostics_summary,mdrr_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the MDRR diagnostic.
-cm_diagnostics_summary,attrition_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the attrition fraction diagnostic.
-cm_diagnostics_summary,ease_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the EASE diagnostic.
+cm_diagnostics_summary,balance_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the balance diagnostic (max_sdm).
+cm_diagnostics_summary,shared_balance_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the shared balance diagnostic (shared_max_sdm).
+cm_diagnostics_summary,equipoise_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the equipoise diagnostic.
+cm_diagnostics_summary,mdrr_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the MDRR diagnostic.
+cm_diagnostics_summary,attrition_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the attrition fraction diagnostic.
+cm_diagnostics_summary,ease_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the EASE diagnostic.
 cm_diagnostics_summary,unblind,int,Yes,No,No,No,"Is unblinding the result recommended? (1 = yes, 0 = no)"
 cm_target_comparator_outcome,outcome_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_target_comparator_outcome,outcome_of_interest,int,Yes,No,No,No,"Is the outcome of interest (1 = yes, 0 = no)"
