@@ -262,7 +262,8 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
     covariates[[length(covariates) + 1]] <- cmData$covariateRef %>%
       select(
         .data$covariateId,
-        .data$covariateName
+        .data$covariateName,
+        covariateAnalysisId = .data$analysisId
       ) %>%
       collect() %>%
       inner_join(analysisIds, by = character()) %>%
