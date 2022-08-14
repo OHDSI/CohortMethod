@@ -44,7 +44,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -54,7 +54,7 @@
   <a href="reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -158,21 +158,21 @@ Covariate balance plot
 <li><p>In R, use the following commands to download and install CohortMethod:</p></li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
-<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"ohdsi/CohortMethod"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"ohdsi/CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <ol start="3" style="list-style-type: decimal">
 <li>Optionally, run this to check if CohortMethod was correctly installed:</li>
 </ol>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms<span class="op">=</span><span class="st">"postgresql"</span>,
-                                             server<span class="op">=</span><span class="st">"my_server.org"</span>,
-                                             user <span class="op">=</span> <span class="st">"joe"</span>,
-                                             password <span class="op">=</span> <span class="st">"super_secret"</span><span class="op">)</span>
-
-<span class="fu"><a href="reference/checkCmInstallation.html">checkCmInstallation</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms<span class="op">=</span><span class="st">"postgresql"</span>,</span>
+<span>                                             server<span class="op">=</span><span class="st">"my_server.org"</span>,</span>
+<span>                                             user <span class="op">=</span> <span class="st">"joe"</span>,</span>
+<span>                                             password <span class="op">=</span> <span class="st">"super_secret"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/checkCmInstallation.html">checkCmInstallation</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></span></code></pre></div>
 <p>Where dbms, server, user, and password need to be changed to the settings for your database environment. Type</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">?</span><span class="va">createConnectionDetails</span></code></pre></div>
+<code class="sourceCode R"><span><span class="op">?</span><span class="va">createConnectionDetails</span></span></code></pre></div>
 <p>for more details on how to configure your database connection.</p>
 </div>
 <div class="section level1">
@@ -273,7 +273,7 @@ Covariate balance plot
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>

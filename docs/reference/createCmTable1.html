@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,56 +69,81 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createCmTable1</span><span class="op">(</span>
-  <span class="va">balance</span>,
-  specifications <span class="op">=</span> <span class="fu"><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications</a></span><span class="op">(</span><span class="op">)</span>,
-  <span class="va">beforeTargetPopSize</span>,
-  <span class="va">beforeComparatorPopSize</span>,
-  <span class="va">afterTargetPopSize</span>,
-  <span class="va">afterComparatorPopSize</span>,
-  beforeLabel <span class="op">=</span> <span class="st">"Before matching"</span>,
-  afterLabel <span class="op">=</span> <span class="st">"After matching"</span>,
-  targetLabel <span class="op">=</span> <span class="st">"Target"</span>,
-  comparatorLabel <span class="op">=</span> <span class="st">"Comparator"</span>,
-  percentDigits <span class="op">=</span> <span class="fl">1</span>,
-  stdDiffDigits <span class="op">=</span> <span class="fl">2</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createCmTable1</span><span class="op">(</span></span>
+<span>  <span class="va">balance</span>,</span>
+<span>  specifications <span class="op">=</span> <span class="fu"><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">beforeTargetPopSize</span>,</span>
+<span>  <span class="va">beforeComparatorPopSize</span>,</span>
+<span>  <span class="va">afterTargetPopSize</span>,</span>
+<span>  <span class="va">afterComparatorPopSize</span>,</span>
+<span>  beforeLabel <span class="op">=</span> <span class="st">"Before matching"</span>,</span>
+<span>  afterLabel <span class="op">=</span> <span class="st">"After matching"</span>,</span>
+<span>  targetLabel <span class="op">=</span> <span class="st">"Target"</span>,</span>
+<span>  comparatorLabel <span class="op">=</span> <span class="st">"Comparator"</span>,</span>
+<span>  percentDigits <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  stdDiffDigits <span class="op">=</span> <span class="fl">2</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>balance</dt>
 <dd><p>A data frame created by the <code>computeCovariateBalance</code> function.</p></dd>
+
+
 <dt>specifications</dt>
 <dd><p>Specifications of which covariates to display, and how.</p></dd>
+
+
 <dt>beforeTargetPopSize</dt>
 <dd><p>The number of people in the target cohort before matching/stratification/trimming,
 to mention in the table header. If not provide, no number will be included in the header.</p></dd>
+
+
 <dt>beforeComparatorPopSize</dt>
 <dd><p>The number of people in the comparator cohort before matching/stratification/trimming,
 to mention in the table header. If not provide, no number will be included in the header.</p></dd>
+
+
 <dt>afterTargetPopSize</dt>
 <dd><p>The number of people in the target cohort after matching/stratification/trimming,
 to mention in the table header. If not provide, no number will be included in the header.</p></dd>
+
+
 <dt>afterComparatorPopSize</dt>
 <dd><p>The number of people in the comparator cohort after matching/stratification/trimming,
 to mention in the table header. If not provide, no number will be included in the header.</p></dd>
+
+
 <dt>beforeLabel</dt>
 <dd><p>Label for identifying columns before matching / stratification / trimming.</p></dd>
+
+
 <dt>afterLabel</dt>
 <dd><p>Label for identifying columns after matching / stratification / trimming.</p></dd>
+
+
 <dt>targetLabel</dt>
 <dd><p>Label for identifying columns of the target cohort.</p></dd>
+
+
 <dt>comparatorLabel</dt>
 <dd><p>Label for identifying columns of the comparator cohort.</p></dd>
+
+
 <dt>percentDigits</dt>
 <dd><p>Number of digits to be used for percentages.</p></dd>
+
+
 <dt>stdDiffDigits</dt>
 <dd><p>Number of digits to be used for the standardized differences.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A data frame with the formatted table 1.</p>
+    
+
+<p>A data frame with the formatted table 1.</p>
     </div>
 
   </div>
@@ -133,7 +158,7 @@ to mention in the table header. If not provide, no number will be included in th
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

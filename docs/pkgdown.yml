@@ -1,8 +1,8 @@
-pandoc: 2.16.2
-pkgdown: 2.0.2
+pandoc: 2.17.1.1
+pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
   MultipleAnalyses: MultipleAnalyses.html
   SingleStudies: SingleStudies.html
-last_built: 2022-01-21T05:15Z
+last_built: 2022-08-14T08:16Z
 

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,24 +69,24 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">fitOutcomeModel</span><span class="op">(</span>
-  <span class="va">population</span>,
-  cohortMethodData <span class="op">=</span> <span class="cn">NULL</span>,
-  modelType <span class="op">=</span> <span class="st">"logistic"</span>,
-  stratified <span class="op">=</span> <span class="cn">FALSE</span>,
-  useCovariates <span class="op">=</span> <span class="cn">FALSE</span>,
-  inversePtWeighting <span class="op">=</span> <span class="cn">FALSE</span>,
-  estimator <span class="op">=</span> <span class="st">"ate"</span>,
-  maxWeight <span class="op">=</span> <span class="fl">0</span>,
-  interactionCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  excludeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  includeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  profileGrid <span class="op">=</span> <span class="cn">NULL</span>,
-  profileBounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">0.1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span>,
-  prior <span class="op">=</span> <span class="fu">createPrior</span><span class="op">(</span><span class="st">"laplace"</span>, useCrossValidation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
-  control <span class="op">=</span> <span class="fu">createControl</span><span class="op">(</span>cvType <span class="op">=</span> <span class="st">"auto"</span>, seed <span class="op">=</span> <span class="fl">1</span>, startingVariance <span class="op">=</span> <span class="fl">0.01</span>, tolerance
-    <span class="op">=</span> <span class="fl">2e-07</span>, cvRepetitions <span class="op">=</span> <span class="fl">10</span>, noiseLevel <span class="op">=</span> <span class="st">"quiet"</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fitOutcomeModel</span><span class="op">(</span></span>
+<span>  <span class="va">population</span>,</span>
+<span>  cohortMethodData <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  modelType <span class="op">=</span> <span class="st">"logistic"</span>,</span>
+<span>  stratified <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  useCovariates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  inversePtWeighting <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="st">"ate"</span>,</span>
+<span>  maxWeight <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  interactionCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  excludeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  includeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  profileGrid <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  profileBounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">0.1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu">createPrior</span><span class="op">(</span><span class="st">"laplace"</span>, useCrossValidation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu">createControl</span><span class="op">(</span>cvType <span class="op">=</span> <span class="st">"auto"</span>, seed <span class="op">=</span> <span class="fl">1</span>, startingVariance <span class="op">=</span> <span class="fl">0.01</span>, tolerance <span class="op">=</span></span>
+<span>    <span class="fl">2e-07</span>, cvRepetitions <span class="op">=</span> <span class="fl">10</span>, noiseLevel <span class="op">=</span> <span class="st">"quiet"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -94,53 +94,84 @@
     <dl><dt>population</dt>
 <dd><p>A population object generated by <code><a href="createStudyPopulation.html">createStudyPopulation()</a></code>,
 potentially filtered by other functions.</p></dd>
+
+
 <dt>cohortMethodData</dt>
 <dd><p>An object of type <a href="CohortMethodData-class.html">CohortMethodData</a> as generated using
 <code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code>. Can be omitted if not using covariates and
 not using interaction terms.</p></dd>
+
+
 <dt>modelType</dt>
 <dd><p>The type of outcome model that will be used. Possible values are
 "logistic", "poisson", or "cox".</p></dd>
+
+
 <dt>stratified</dt>
 <dd><p>Should the regression be conditioned on the strata defined in the
 population object (e.g. by matching or stratifying on propensity
 scores)?</p></dd>
+
+
 <dt>useCovariates</dt>
 <dd><p>Whether to use the covariates in the <code>cohortMethodData</code>
 object in the outcome model.</p></dd>
+
+
 <dt>inversePtWeighting</dt>
 <dd><p>Use inverse probability of treatment weighting (IPTW)? See details.</p></dd>
+
+
 <dt>estimator</dt>
 <dd><p>for IPTW: the type of estimator. Options are <code>estimator = "ate"</code> for the
 average treatment effect, and <code>estimator = "att"</code>for the average treatment
 effect in the treated.</p></dd>
+
+
 <dt>maxWeight</dt>
 <dd><p>for IPTW: the maximum weight. Larger values will be truncated to this
 value. <code>maxWeight = 0</code> means no truncation takes place.</p></dd>
+
+
 <dt>interactionCovariateIds</dt>
 <dd><p>An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.</p></dd>
+
+
 <dt>excludeCovariateIds</dt>
 <dd><p>Exclude these covariates from the outcome model.</p></dd>
+
+
 <dt>includeCovariateIds</dt>
 <dd><p>Include only these covariates in the outcome model.</p></dd>
+
+
 <dt>profileGrid</dt>
 <dd><p>A one-dimensional grid of points on the log(relative risk) scale where
 the likelihood for coefficient of variables is sampled. See details.</p></dd>
+
+
 <dt>profileBounds</dt>
 <dd><p>The bounds (on the log relative risk scale) for the adaptive sampling
 of the likelihood function. See details.</p></dd>
+
+
 <dt>prior</dt>
 <dd><p>The prior used to fit the model. See <code><a href="https://rdrr.io/pkg/Cyclops/man/createPrior.html" class="external-link">Cyclops::createPrior()</a></code>
 for details.</p></dd>
+
+
 <dt>control</dt>
 <dd><p>The control object used to control the cross-validation used to
 determine the hyperparameters of the prior (if applicable). See
 <code><a href="https://rdrr.io/pkg/Cyclops/man/createControl.html" class="external-link">Cyclops::createControl()</a></code> for details.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>An object of class <code>OutcomeModel</code>. Generic function <code>print</code>, <code>coef</code>, and
+    
+
+<p>An object of class <code>OutcomeModel</code>. Generic function <code>print</code>, <code>coef</code>, and
 <code>confint</code> are available.</p>
     </div>
     <div id="details">
@@ -170,7 +201,7 @@ as weights to directly estimate relative risk and its confidence intervals. Valu
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

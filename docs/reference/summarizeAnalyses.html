@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,19 +69,24 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">summarizeAnalyses</span><span class="op">(</span><span class="va">referenceTable</span>, <span class="va">outputFolder</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">summarizeAnalyses</span><span class="op">(</span><span class="va">referenceTable</span>, <span class="va">outputFolder</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>referenceTable</dt>
-<dd><p>A dplyr::tibble as created by the <a href="runCmAnalyses.html">runCmAnalyses</a> function.</p></dd>
+<dd><p>A <a href="https://dplyr.tidyverse.org/reference/reexports.html" class="external-link">dplyr::tibble</a> as created by the <a href="runCmAnalyses.html">runCmAnalyses</a> function.</p></dd>
+
+
 <dt>outputFolder</dt>
 <dd><p>Name of the folder where all the outputs have been written to.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A tibble containing summary statistics for each target-comparator-outcome-analysis combination.</p>
+    
+
+<p>A tibble containing summary statistics for each target-comparator-outcome-analysis combination.</p>
     </div>
 
   </div>
@@ -96,7 +101,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

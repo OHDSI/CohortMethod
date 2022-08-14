@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,13 +69,13 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createTargetComparatorOutcomes</span><span class="op">(</span>
-  <span class="va">targetId</span>,
-  <span class="va">comparatorId</span>,
-  <span class="va">outcomeIds</span>,
-  excludedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  includedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createTargetComparatorOutcomes</span><span class="op">(</span></span>
+<span>  <span class="va">targetId</span>,</span>
+<span>  <span class="va">comparatorId</span>,</span>
+<span>  <span class="va">outcomeIds</span>,</span>
+<span>  excludedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  includedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -87,6 +87,8 @@ tested in the analysis, a named list of numbers can be provided
 instead. In the analysis, the name of the number to be used can
 be specified using the #' <code>targetType</code> parameter in the
 <code><a href="createCmAnalysis.html">createCmAnalysis()</a></code> function.</p></dd>
+
+
 <dt>comparatorId</dt>
 <dd><p>A concept ID identifying the comparator drug in the exposure
 table. If multiple strategies for picking the comparator will
@@ -94,17 +96,24 @@ be tested in the analysis, a named list of numbers can be
 provided instead. In the analysis, the name of the number to be
 used can be specified using the #' <code>comparatorType</code>
 parameter in the <code><a href="createCmAnalysis.html">createCmAnalysis()</a></code> function.</p></dd>
+
+
 <dt>outcomeIds</dt>
 <dd><p>A vector of concept IDs identifying the outcome(s) in the
 outcome table.</p></dd>
+
+
 <dt>excludedCovariateConceptIds</dt>
 <dd><p>A list of concept IDs that cannot be used to construct
 covariates. This argument is to be used only for exclusion
 concepts that are specific to the drug-comparator combination.</p></dd>
+
+
 <dt>includedCovariateConceptIds</dt>
 <dd><p>A list of concept IDs that must be used to construct
 covariates. This argument is to be used only for inclusion
 concepts that are specific to the drug-comparator combination.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -123,7 +132,7 @@ concepts that are specific to the drug-comparator combination.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,26 +69,26 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createStudyPopulation</span><span class="op">(</span>
-  <span class="va">cohortMethodData</span>,
-  population <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">outcomeId</span>,
-  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,
-  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,
-  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,
-  removeDuplicateSubjects <span class="op">=</span> <span class="cn">FALSE</span>,
-  removeSubjectsWithPriorOutcome <span class="op">=</span> <span class="cn">TRUE</span>,
-  priorOutcomeLookback <span class="op">=</span> <span class="fl">99999</span>,
-  minDaysAtRisk <span class="op">=</span> <span class="fl">1</span>,
-  maxDaysAtRisk <span class="op">=</span> <span class="fl">99999</span>,
-  riskWindowStart <span class="op">=</span> <span class="fl">0</span>,
-  addExposureDaysToStart <span class="op">=</span> <span class="cn">NULL</span>,
-  startAnchor <span class="op">=</span> <span class="st">"cohort start"</span>,
-  riskWindowEnd <span class="op">=</span> <span class="fl">0</span>,
-  addExposureDaysToEnd <span class="op">=</span> <span class="cn">NULL</span>,
-  endAnchor <span class="op">=</span> <span class="st">"cohort end"</span>,
-  censorAtNewRiskWindow <span class="op">=</span> <span class="cn">FALSE</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createStudyPopulation</span><span class="op">(</span></span>
+<span>  <span class="va">cohortMethodData</span>,</span>
+<span>  population <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">outcomeId</span>,</span>
+<span>  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  removeDuplicateSubjects <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  removeSubjectsWithPriorOutcome <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  priorOutcomeLookback <span class="op">=</span> <span class="fl">99999</span>,</span>
+<span>  minDaysAtRisk <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  maxDaysAtRisk <span class="op">=</span> <span class="fl">99999</span>,</span>
+<span>  riskWindowStart <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  addExposureDaysToStart <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  startAnchor <span class="op">=</span> <span class="st">"cohort start"</span>,</span>
+<span>  riskWindowEnd <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  addExposureDaysToEnd <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  endAnchor <span class="op">=</span> <span class="st">"cohort end"</span>,</span>
+<span>  censorAtNewRiskWindow <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -96,57 +96,94 @@
     <dl><dt>cohortMethodData</dt>
 <dd><p>An object of type <a href="CohortMethodData-class.html">CohortMethodData</a> as generated using
 <code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code>.</p></dd>
+
+
 <dt>population</dt>
 <dd><p>If specified, this population will be used as the starting
 point instead of the cohorts in the <code>cohortMethodData</code> object.</p></dd>
+
+
 <dt>outcomeId</dt>
 <dd><p>The ID of the outcome. If not specified, no outcome-specific
 transformations will be performed.</p></dd>
+
+
 <dt>firstExposureOnly</dt>
 <dd><p>Should only the first exposure per subject be included?</p></dd>
+
+
 <dt>restrictToCommonPeriod</dt>
 <dd><p>Restrict the analysis to the period when both exposures are observed?</p></dd>
+
+
 <dt>washoutPeriod</dt>
 <dd><p>The minimum required continuous observation time prior to
 index date for a person to be included in the cohort.</p></dd>
+
+
 <dt>removeDuplicateSubjects</dt>
 <dd><p>Remove subjects that are in both the target and comparator
 cohort? See details for allowed values.</p></dd>
+
+
 <dt>removeSubjectsWithPriorOutcome</dt>
 <dd><p>Remove subjects that have the outcome prior to the risk
 window start?</p></dd>
+
+
 <dt>priorOutcomeLookback</dt>
 <dd><p>How many days should we look back when identifying prior
 outcomes?</p></dd>
+
+
 <dt>minDaysAtRisk</dt>
 <dd><p>The minimum required number of days at risk. Risk windows with fewer
 days than this number are removed from the analysis.</p></dd>
+
+
 <dt>maxDaysAtRisk</dt>
 <dd><p>The maximum allowed number of days at risk. Risk windows that are
 longer will be truncated to this number of days.</p></dd>
+
+
 <dt>riskWindowStart</dt>
 <dd><p>The start of the risk window (in days) relative to the <code>startAnchor</code>.</p></dd>
+
+
 <dt>addExposureDaysToStart</dt>
 <dd><p>DEPRECATED: Add the length of exposure the start of the risk window?
 Use <code>startAnchor</code> instead.</p></dd>
+
+
 <dt>startAnchor</dt>
 <dd><p>The anchor point for the start of the risk window. Can be <code>"cohort start"</code>
 or <code>"cohort end"</code>.</p></dd>
+
+
 <dt>riskWindowEnd</dt>
 <dd><p>The end of the risk window (in days) relative to the <code>endAnchor</code>.</p></dd>
+
+
 <dt>addExposureDaysToEnd</dt>
 <dd><p>DEPRECATED: Add the length of exposure the risk window?
 Use <code>endAnchor</code> instead.</p></dd>
+
+
 <dt>endAnchor</dt>
 <dd><p>The anchor point for the end of the risk window. Can be <code>"cohort start"</code>
 or <code>"cohort end"</code>.</p></dd>
+
+
 <dt>censorAtNewRiskWindow</dt>
 <dd><p>If a subject is in multiple cohorts, should time-at-risk be censored
 when the new time-at-risk starts to prevent overlap?</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A <code>tibble</code> specifying the study population. This <code>tibble</code> will have the following columns:</p><ul><li><p><code>rowId</code>: A unique identifier for an exposure.</p></li>
+    
+
+<p>A <code>tibble</code> specifying the study population. This <code>tibble</code> will have the following columns:</p><ul><li><p><code>rowId</code>: A unique identifier for an exposure.</p></li>
 <li><p><code>personSeqId</code>: The person sequence ID of the subject.</p></li>
 <li><p><code>cohortStartdate</code>: The index date.</p></li>
 <li><p><code>outcomeCount</code> The number of outcomes observed during the risk window.</p></li>
@@ -174,7 +211,7 @@ window, and determining which outcomes fall inside the risk window.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

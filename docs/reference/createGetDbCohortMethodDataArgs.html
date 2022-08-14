@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,17 +69,17 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createGetDbCohortMethodDataArgs</span><span class="op">(</span>
-  studyStartDate <span class="op">=</span> <span class="st">""</span>,
-  studyEndDate <span class="op">=</span> <span class="st">""</span>,
-  excludeDrugsFromCovariates <span class="op">=</span> <span class="cn">NULL</span>,
-  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,
-  removeDuplicateSubjects <span class="op">=</span> <span class="cn">FALSE</span>,
-  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,
-  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,
-  maxCohortSize <span class="op">=</span> <span class="fl">0</span>,
-  <span class="va">covariateSettings</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createGetDbCohortMethodDataArgs</span><span class="op">(</span></span>
+<span>  studyStartDate <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  studyEndDate <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  excludeDrugsFromCovariates <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  removeDuplicateSubjects <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  maxCohortSize <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  <span class="va">covariateSettings</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -87,40 +87,57 @@
     <dl><dt>studyStartDate</dt>
 <dd><p>A calendar date specifying the minimum date that a cohort index
 date can appear. Date format is 'yyyymmdd'.</p></dd>
+
+
 <dt>studyEndDate</dt>
 <dd><p>A calendar date specifying the maximum date that a cohort index
 date can appear. Date format is 'yyyymmdd'. Important: the study
 end data is also used to truncate risk windows, meaning no
 outcomes beyond the study end date will be considered.</p></dd>
+
+
 <dt>excludeDrugsFromCovariates</dt>
 <dd><p>DEPRECATED: Should the target and comparator drugs (and their
 descendant concepts) be excluded from the covariates? Note that
 this will work if the drugs are actually drug concept IDs (and
 not cohort IDs).</p></dd>
+
+
 <dt>firstExposureOnly</dt>
 <dd><p>Should only the first exposure per subject be included? Note
 that this is typically done in the createStudyPopulation()
 function, but can already be done here for efficiency reasons.</p></dd>
+
+
 <dt>removeDuplicateSubjects</dt>
 <dd><p>Remove subjects that are in both the target and comparator
 cohort? See details for allowed values.Note that this is
 typically done in the createStudyPopulation function, but can
 already be done here for efficiency reasons.</p></dd>
+
+
 <dt>restrictToCommonPeriod</dt>
 <dd><p>Restrict the analysis to the period when both treatments are
 observed?</p></dd>
+
+
 <dt>washoutPeriod</dt>
 <dd><p>The minimum required continuous observation time prior to index
 date for a person to be included in the cohort. Note that this
 is typically done in the createStudyPopulation function, but can
 already be done here for efficiency reasons.</p></dd>
+
+
 <dt>maxCohortSize</dt>
 <dd><p>If either the target or the comparator cohort is larger than
 this number it will be sampled to this size. maxCohortSize = 0
 indicates no maximum size.</p></dd>
+
+
 <dt>covariateSettings</dt>
 <dd><p>An object of type covariateSettings as created using the
 FeatureExtraction::createCovariateSettings() function.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -139,7 +156,7 @@ FeatureExtraction::createCovariateSettings() function.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

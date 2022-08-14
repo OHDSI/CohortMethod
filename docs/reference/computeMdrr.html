@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,13 +69,13 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">computeMdrr</span><span class="op">(</span>
-  <span class="va">population</span>,
-  alpha <span class="op">=</span> <span class="fl">0.05</span>,
-  power <span class="op">=</span> <span class="fl">0.8</span>,
-  twoSided <span class="op">=</span> <span class="cn">TRUE</span>,
-  modelType <span class="op">=</span> <span class="st">"cox"</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">computeMdrr</span><span class="op">(</span></span>
+<span>  <span class="va">population</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  power <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  twoSided <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  modelType <span class="op">=</span> <span class="st">"cox"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -84,19 +84,30 @@
 <dd><p>A data frame describing the study population as created using the
 <code><a href="createStudyPopulation.html">createStudyPopulation</a></code> function. This should at least have these
 columns: personSeqId, treatment, outcomeCount, timeAtRisk.</p></dd>
+
+
 <dt>alpha</dt>
 <dd><p>Type I error.</p></dd>
+
+
 <dt>power</dt>
 <dd><p>1 - beta, where beta is the type II error.</p></dd>
+
+
 <dt>twoSided</dt>
 <dd><p>Consider a two-sided test?</p></dd>
+
+
 <dt>modelType</dt>
 <dd><p>The type of outcome model that will be used. Possible values are
 "logistic", "poisson", or "cox". Currently only "cox" is supported.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A data frame with the MDRR and some counts.</p>
+    
+
+<p>A data frame with the MDRR and some counts.</p>
     </div>
     <div id="details">
     <h2>Details</h2>
@@ -122,7 +133,7 @@ computations for Cox models are implemented. For Cox model, the computations by 
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

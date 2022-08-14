@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,11 +69,11 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createStratifyByPsArgs</span><span class="op">(</span>
-  numberOfStrata <span class="op">=</span> <span class="fl">5</span>,
-  stratificationColumns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  baseSelection <span class="op">=</span> <span class="st">"all"</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createStratifyByPsArgs</span><span class="op">(</span></span>
+<span>  numberOfStrata <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  stratificationColumns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  baseSelection <span class="op">=</span> <span class="st">"all"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -81,14 +81,19 @@
     <dl><dt>numberOfStrata</dt>
 <dd><p>How many strata? The boundaries of the strata are automatically
 defined to contain equal numbers of target persons.</p></dd>
+
+
 <dt>stratificationColumns</dt>
 <dd><p>Names of one or more columns in the data data.frame on which subjects
 should also be stratified in addition to stratification on propensity
 score.</p></dd>
+
+
 <dt>baseSelection</dt>
 <dd><p>What is the base selection of subjects where the strata bounds are to
 be determined? Strata are defined as equally-sized strata inside this
 selection. Possible values are "all", "target", and "comparator".</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -107,7 +112,7 @@ selection. Possible values are "all", "target", and "comparator".</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

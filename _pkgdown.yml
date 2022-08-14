@@ -54,7 +54,9 @@ reference:
       - computeCovariateBalance
       - plotCovariateBalanceOfTopVariables
       - plotCovariateBalanceScatterPlot
+      - plotCovariatePrevalence
       - plotTimeToEvent
+      - adjustedKm
   - title: "Running multiple analyses"
     desc: >
       Functions for running multiple analyses in an efficient way.
@@ -80,7 +82,6 @@ reference:
       Various helper functions
     contents:
       - checkCmInstallation
-      - insertDbPopulation
       - checkCmInstallation
 
 navbar:

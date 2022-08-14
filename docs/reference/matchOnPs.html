@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.3</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,24 +69,28 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">matchOnPs</span><span class="op">(</span>
-  <span class="va">population</span>,
-  caliper <span class="op">=</span> <span class="fl">0.2</span>,
-  caliperScale <span class="op">=</span> <span class="st">"standardized logit"</span>,
-  maxRatio <span class="op">=</span> <span class="fl">1</span>,
-  allowReverseMatch <span class="op">=</span> <span class="cn">FALSE</span>,
-  stratificationColumns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">matchOnPs</span><span class="op">(</span></span>
+<span>  <span class="va">population</span>,</span>
+<span>  caliper <span class="op">=</span> <span class="fl">0.2</span>,</span>
+<span>  caliperScale <span class="op">=</span> <span class="st">"standardized logit"</span>,</span>
+<span>  maxRatio <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  allowReverseMatch <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  stratificationColumns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>population</dt>
 <dd><p>A data frame with the three columns described below.</p></dd>
+
+
 <dt>caliper</dt>
 <dd><p>The caliper for matching. A caliper is the distance which is
 acceptable for any match. Observations which are outside of the
 caliper are dropped. A caliper of 0 means no caliper is used.</p></dd>
+
+
 <dt>caliperScale</dt>
 <dd><p>The scale on which the caliper is defined. Three scales are supported:
 <code>caliperScale = 'propensity score'</code>, <code>caliperScale = 'standardized'</code>, or <code>caliperScale = 'standardized logit'</code>.
@@ -95,21 +99,30 @@ deviations of the propensity score distribution. 'standardized logit'
 is similar, except that the propensity score is transformed to the logit
 scale because the PS is more likely to be normally distributed on that scale
 (Austin, 2011).</p></dd>
+
+
 <dt>maxRatio</dt>
 <dd><p>The maximum number of persons in the comparator arm to be matched to
 each person in the treatment arm. A maxRatio of 0 means no maximum:
 all comparators will be assigned to a target person.</p></dd>
+
+
 <dt>allowReverseMatch</dt>
 <dd><p>Allows n-to-1 matching if target arm is larger</p></dd>
+
+
 <dt>stratificationColumns</dt>
 <dd><p>Names or numbers of one or more columns in the <code>data</code> data.frame
 on which subjects should be stratified prior to matching. No persons
 will be matched with persons outside of the strata identified by the
 values in these columns.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
+    
+
+<p>Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
 rows that could not be matched are removed</p>
     </div>
     <div id="details">
@@ -129,16 +142,17 @@ means and differences in proportions in observational studies, Pharmaceutical st
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="va">rowId</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span></span>
-<span class="r-in"><span class="va">treatment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">propensityScore</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">age_group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>rowId <span class="op">=</span> <span class="va">rowId</span>,</span>
-<span class="r-in">                   treatment <span class="op">=</span> <span class="va">treatment</span>,</span>
-<span class="r-in">                   propensityScore <span class="op">=</span> <span class="va">propensityScore</span>,</span>
-<span class="r-in">                   age_group <span class="op">=</span> <span class="va">age_group</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">matchOnPs</span><span class="op">(</span><span class="va">data</span>, caliper <span class="op">=</span> <span class="fl">0</span>, maxRatio <span class="op">=</span> <span class="fl">1</span>, stratificationColumns <span class="op">=</span> <span class="st">"age_group"</span><span class="op">)</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">rowId</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span></span></span>
+<span class="r-in"><span><span class="va">treatment</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">propensityScore</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.4</span>, <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">age_group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>rowId <span class="op">=</span> <span class="va">rowId</span>,</span></span>
+<span class="r-in"><span>                   treatment <span class="op">=</span> <span class="va">treatment</span>,</span></span>
+<span class="r-in"><span>                   propensityScore <span class="op">=</span> <span class="va">propensityScore</span>,</span></span>
+<span class="r-in"><span>                   age_group <span class="op">=</span> <span class="va">age_group</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">matchOnPs</span><span class="op">(</span><span class="va">data</span>, caliper <span class="op">=</span> <span class="fl">0</span>, maxRatio <span class="op">=</span> <span class="fl">1</span>, stratificationColumns <span class="op">=</span> <span class="st">"age_group"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Currently in a tryCatch or withCallingHandlers block, so unable to add global calling handlers. ParallelLogger will not capture R messages, errors, and warnings, only explicit calls to ParallelLogger.</span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -153,7 +167,7 @@ means and differences in proportions in observational studies, Pharmaceutical st
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>
