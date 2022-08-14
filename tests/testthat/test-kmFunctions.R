@@ -21,15 +21,15 @@ test_that("Weighted Kaplan-Meier", {
 
   expect_equal(sum(weightedKm$s == unweightedKm$s), 0) # None of the values are equal
 
-  if (require("RISCA")) {
-    risca <- RISCA::ipw.survival(lung$time, lung$status - 1, variable = rep(1, length(lung$status)), weights = weight)
-    risca <- risca$table.surv
-
-    matched <- inner_join(risca, data.frame(times = weightedKm$time, survival = weightedKm$s),
-                          by = "times")
-
-    expect_equal(matched$survival.x, matched$survival.y)
-  }
+  # if (require("RISCA")) {
+  #   risca <- RISCA::ipw.survival(lung$time, lung$status - 1, variable = rep(1, length(lung$status)), weights = weight)
+  #   risca <- risca$table.surv
+  #
+  #   matched <- inner_join(risca, data.frame(times = weightedKm$time, survival = weightedKm$s),
+  #                         by = "times")
+  #
+  #   expect_equal(matched$survival.x, matched$survival.y)
+  # }
 })
 
 

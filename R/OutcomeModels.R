@@ -322,10 +322,8 @@ fitOutcomeModel <- function(population,
             logLikelihoodProfile <- logLikelihoodProfile$value
           }
         }
-        if (fit$return_flag == "ILLCONDITIONED") {
-          status <- "ILL CONDITIONED, CANNOT FIT"
-        } else if (fit$return_flag == "MAX_ITERATIONS") {
-          status <- "REACHED MAXIMUM NUMBER OF ITERATIONS, CANNOT FIT"
+        if (fit$return_flag != "SUCCESS") {
+          status <- fit$return_flag
         } else {
           status <- "OK"
           coefficients <- coef(fit)

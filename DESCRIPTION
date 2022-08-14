@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
-Version: 4.2.2
-Date: 2022-01-21
+Version: 4.2.3
+Date: 2022-08-12
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
@@ -55,8 +55,7 @@ Suggests:
 	EmpiricalCalibration,
 	Eunomia,
 	withr,
-	R.utils,
-	RISCA
+	R.utils
 Remotes:
 	ohdsi/FeatureExtraction,
 	ohdsi/Eunomia
