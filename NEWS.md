@@ -57,6 +57,18 @@ Bug fixes:
 1. Fixed error when using integer `maxWeight` when performng IPTW.
 
 
+CohortMethod 4.2.3
+==================
+
+Changes;
+
+1. Removed `RISCA` from the Suggests list. This package was used for a single unit test, but has a large amount of difficult-to-install dependencies.
+
+Bug fixes:
+
+1. Fixed error when failing model fitting caused by new `Cyclops` version.
+
+
 CohortMethod 4.2.2
 ==================
 

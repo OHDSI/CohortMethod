@@ -56,8 +56,7 @@ Suggests:
 	rmarkdown,
 	Eunomia,
 	withr,
-	R.utils,
-	RISCA
+	R.utils
 Remotes:
 	ohdsi/FeatureExtraction,
 	ohdsi/Eunomia,
