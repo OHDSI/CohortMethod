@@ -23,13 +23,13 @@ cm_follow_up_dist,comparator_min_days,int,Yes,No,No,No,The minimum number of obs
 cm_follow_up_dist,comparator_p_10_days,int,Yes,No,No,No,The 10^th^ percentile of number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_p_25_days,int,Yes,No,No,No,The 25^th^ percentile of number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_median_days,int,Yes,No,No,No,The median number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_p_75_days,float,Yes,No,No,No,The 75^th^ percentile of number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_p_75_days,int,Yes,No,No,No,The 75^th^ percentile of number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_p_90_days,int,Yes,No,No,No,The 90^th^ percentile of number of observation days for a person in the comparator group.
 cm_follow_up_dist,comparator_max_days,int,Yes,No,No,No,The maximum number of observation days for a person in the comparator group.
-cm_follow_up_dist,target_min_date,Date,Yes,No,No,No,The first start date of the target cohort observed in the data (after applying all restrictions).
-cm_follow_up_dist,target_max_date,Date,Yes,No,No,No,The last start date of the target cohort observed in the data (after applying all restrictions).
-cm_follow_up_dist,comparator_min_date,Date,Yes,No,No,No,The first start date of the comparator cohort observed in the data (after applying all restrictions).
-cm_follow_up_dist,comparator_max_date,Date,Yes,No,No,No,The last start date of the comparator cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,target_min_date,Date,No,No,No,No,The first start date of the target cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,target_max_date,Date,No,No,No,No,The last start date of the target cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,comparator_min_date,Date,No,No,No,No,The first start date of the comparator cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,comparator_max_date,Date,No,No,No,No,The last start date of the comparator cohort observed in the data (after applying all restrictions).
 cm_follow_up_dist,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_analysis,analysis_id,int,Yes,Yes,No,No,A unique identifier for an analysis.
 cm_analysis,description,varchar,Yes,No,No,No,"A description for an analysis, e.g. 'On-treatment'."
@@ -107,10 +107,10 @@ cm_diagnostics_summary,target_id,int,Yes,Yes,No,No,The identifier for the target
 cm_diagnostics_summary,comparator_id,int,Yes,Yes,No,No,The identifier for the comparator cohort.
 cm_diagnostics_summary,outcome_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_diagnostics_summary,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
-cm_diagnostics_summary,max_sdm,float,Yes,No,No,No,The maximum absolute standardized difference of mean.
-cm_diagnostics_summary,shared_max_sdm,float,Yes,No,No,No,The maximum absolute standardized difference of mean of the shared balance (shared across outcomes).
+cm_diagnostics_summary,max_sdm,float,No,No,No,No,The maximum absolute standardized difference of mean.
+cm_diagnostics_summary,shared_max_sdm,float,No,No,No,No,The maximum absolute standardized difference of mean of the shared balance (shared across outcomes).
 cm_diagnostics_summary,equipoise,float,Yes,No,No,No,The fraction of the study population with a preference score between 0.3 and 0.7.
-cm_diagnostics_summary,mdrr,float,Yes,No,No,No,The minimum detectable relative risk.
+cm_diagnostics_summary,mdrr,float,No,No,No,No,The minimum detectable relative risk.
 cm_diagnostics_summary,attrition_fraction,float,Yes,No,No,No,The fraction of the target population lost by between initial cohort and outcome model due to various restrictions.
 cm_diagnostics_summary,ease,float,Yes,No,No,No,The expected absolute systematic error.
 cm_diagnostics_summary,balance_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the balance diagnostic (max_sdm).
