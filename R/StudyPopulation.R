@@ -130,11 +130,6 @@ createStudyPopulation <- function(cohortMethodData,
   isEnd <- function(anchor) {
     return(grepl("end$", anchor, ignore.case = TRUE))
   }
-  if (is.null(outcomeId)) {
-    ParallelLogger::logTrace("Creating study population without outcome ID")
-  } else {
-    ParallelLogger::logTrace("Creating study population for outcome ID ", outcomeId)
-  }
 
   if (is.null(population)) {
     metaData <- attr(cohortMethodData, "metaData")

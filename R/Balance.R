@@ -196,7 +196,6 @@ computeCovariateBalance <- function(population,
   }
   checkmate::reportAssertions(collection = errorMessages)
 
-  ParallelLogger::logTrace("Computing covariate balance")
   start <- Sys.time()
 
   if (!is.null(subgroupCovariateId)) {

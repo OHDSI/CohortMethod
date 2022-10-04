@@ -710,7 +710,6 @@ trimByPs <- function(population, trimFraction = 0.05) {
   checkmate::assertNumber(trimFraction, lower = 0, upper = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  ParallelLogger::logTrace("Trimming based on propensity score")
   cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
   result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
@@ -763,7 +762,6 @@ trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
   checkmate::assertNumeric(bounds, len = 2, lower = 0, upper = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  ParallelLogger::logTrace("Trimming to equipoise")
   temp <- computePreferenceScore(population)
   population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
   if (!is.null(attr(population, "metaData"))) {
@@ -809,7 +807,6 @@ trimByIptw <- function(population, maxWeight = 10) {
   checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  ParallelLogger::logTrace("Trimming by IPTW")
   population <- population %>%
     filter(.data$iptw <= maxWeight)
   if (!is.null(attr(population, "metaData"))) {
@@ -857,7 +854,6 @@ truncateIptw <- function(population, maxWeight = 10) {
   checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  ParallelLogger::logTrace("Truncating IPTW")
   nTruncated <- sum(population$iptw > maxWeight)
   message(sprintf("Truncating %s (%0.1f%%) IPTW values", nTruncated, 100 * nTruncated / nrow(population)))
   population <- population %>%
@@ -1162,7 +1158,6 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   checkmate::assertChoice(baseSelection, c("all", "target", "comparator"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  ParallelLogger::logTrace("Stratifying by propensity score")
   if (nrow(population) == 0) {
     return(population)
   }

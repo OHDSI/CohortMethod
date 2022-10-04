@@ -165,8 +165,6 @@ getDbCohortMethodData <- function(connectionDetails,
     stop("Study end date must have format YYYYMMDD")
   }
 
-  ParallelLogger::logTrace("Getting cohort method data for target ID ", targetId, " and comparator ID ", comparatorId)
-
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 

@@ -1,6 +1,13 @@
 library(CohortMethod)
 library(testthat)
 
+# logFile <- tempfile(fileext = ".txt")
+# ParallelLogger::addDefaultFileLogger(logFile, name = "TEST_LOGGER")
+# # Run runCmAnalyses
+# ParallelLogger::launchLogViewer(logFile)
+# ParallelLogger::unregisterLogger("TEST_LOGGER")
+# unlink(logFile)
+
 test_that("Check installation", {
   # logFile <- tempfile()
   # ParallelLogger::addDefaultFileLogger(logFile)

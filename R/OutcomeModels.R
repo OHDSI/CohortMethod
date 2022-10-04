@@ -115,8 +115,6 @@ fitOutcomeModel <- function(population,
     stop("Can't specify both a grid and bounds for likelihood profiling")
   }
 
-  ParallelLogger::logTrace("Fitting outcome model")
-
   start <- Sys.time()
   treatmentEstimate <- NULL
   interactionEstimates <- NULL

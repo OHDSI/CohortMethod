@@ -745,6 +745,9 @@ getPs <- function(psFile) {
 }
 
 doCreateCmDataObject <- function(params) {
+  ParallelLogger::logDebug(sprintf("Calling getDbCohortMethodData() for targetId %d, comparatorId %d",
+                                   params$args$targetId,
+                                   params$args$comparatorId))
   cohortMethodData <- do.call("getDbCohortMethodData", params$args)
   saveCohortMethodData(cohortMethodData, params$cohortMethodDataFile)
   return(NULL)
@@ -754,6 +757,9 @@ doCreateStudyPopObject <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
+  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId %d",
+                                   params$cohortMethodDataFile,
+                                   args$outcomeId))
   studyPop <- do.call("createStudyPopulation", args)
   if (!is.null(params$minimizeFileSizes) && params$minimizeFileSizes) {
     metaData <- attr(studyPop, "metaData")
@@ -770,6 +776,9 @@ doFitPsModel <- function(params) {
   args <- params$args
   args$cohortMethodData <- cohortMethodData
   args$population <- studyPop
+  ParallelLogger::logDebug(sprintf("Calling createPs() using %s and %s",
+                                   params$cohortMethodDataFile,
+                                   params$studyPopFile))
   ps <- do.call("createPs", args)
   saveRDS(ps, params$psFile)
   return(NULL)
@@ -781,6 +790,8 @@ doFitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
     args <- params$createStudyPopArgs
     args$cohortMethodData <- cohortMethodData
     message("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
+    ParallelLogger::logDebug(sprintf("Calling createPs() for shared PS using %s",
+                                     params$cohortMethodDataFile))
     studyPop <- do.call("createStudyPopulation", args)
   } else {
     studyPop <- NULL
@@ -853,6 +864,8 @@ applyTrimMatchStratify <- function(ps, arguments) {
 
 doTrimMatchStratify <- function(params) {
   ps <- getPs(params$psFile)
+  ParallelLogger::logDebug(sprintf("Performing matching etc., using %s",
+                                   params$psFile))
   ps <- applyTrimMatchStratify(ps, params$args)
   saveRDS(ps, params$strataFile)
   return(NULL)
@@ -895,13 +908,17 @@ doPrefilterCovariates <- function(params) {
 
 doFitOutcomeModel <- function(params) {
   if (params$prefilteredCovariatesFile == "") {
-    cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+    cohortMethodDataFile <- params$cohortMethodDataFile
   } else {
-    cohortMethodData <- getCohortMethodData(params$prefilteredCovariatesFile)
+    cohortMethodDataFile <- params$prefilteredCovariatesFile
   }
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
+  ParallelLogger::logDebug(sprintf("Calling fitOutcomeModel() using %s and %s",
+                                   cohortMethodDataFile,
+                                   params$studyPopFile))
   outcomeModel <- do.call("fitOutcomeModel", args)
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
@@ -909,10 +926,15 @@ doFitOutcomeModel <- function(params) {
 
 doFitOutcomeModelPlus <- function(params) {
   if (params$prefilteredCovariatesFile == "") {
-    cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+    cohortMethodDataFile <- params$cohortMethodDataFile
   } else {
-    cohortMethodData <- getCohortMethodData(params$prefilteredCovariatesFile)
+    cohortMethodDataFile <- params$prefilteredCovariatesFile
   }
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+
+  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID %d",
+                                   cohortMethodDataFile,
+                                   params$args$createStudyPopArgs$outcomeId))
 
   # Create study pop
   args <- params$args$createStudyPopArgs
@@ -940,6 +962,9 @@ doFitOutcomeModelPlus <- function(params) {
 
 doComputeSharedBalance <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+
+  ParallelLogger::logDebug(sprintf("Computing shared balance using %s",
+                                   params$cohortMethodDataFile))
 
   # Create study pop
   message("Computing covariate balance across all outcomes (ignore messages about 'no outcome specified')")
@@ -995,6 +1020,9 @@ doComputeBalance <- function(params) {
   args <- params$computeCovariateBalanceArgs
   args$population <- strataPop
   args$cohortMethodData <- cohortMethodData
+  ParallelLogger::logDebug(sprintf("Computing balance balance using %s and %s",
+                                   params$cohortMethodDataFile,
+                                   params$strataFile))
   balance <- do.call("computeCovariateBalance", args)
   saveRDS(balance, params$balanceFile)
   return(NULL)
