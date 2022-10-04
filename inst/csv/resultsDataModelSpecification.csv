@@ -12,24 +12,24 @@ cm_follow_up_dist,target_id,int,Yes,Yes,No,The identifier for the target cohort.
 cm_follow_up_dist,comparator_id,int,Yes,Yes,No,The identifier for the comparator cohort.
 cm_follow_up_dist,outcome_id,int,Yes,Yes,No,The identifier for the outcome cohort.
 cm_follow_up_dist,analysis_id,int,Yes,Yes,No,Foreign key referencing the cm_analysis table.
-cm_follow_up_dist,target_min_days,float,Yes,No,No,The minimum number of observation days for a person.
-cm_follow_up_dist,target_p_10_days,float,Yes,No,No,The 10^th^ percentile of number of observation days for a person in the target group.
-cm_follow_up_dist,target_p_25_days,float,Yes,No,No,The 25^th^ percentile of number of observation days for a person in the target group.
-cm_follow_up_dist,target_median_days,float,Yes,No,No,The median number of observation days for a person in the target group.
-cm_follow_up_dist,target_p_75_days,float,Yes,No,No,The 75^th^ percentile of number of observation days for a person in the target group.
-cm_follow_up_dist,target_p_90_days,float,Yes,No,No,The 90^th^ percentile of number of observation days for a person in the target group.
-cm_follow_up_dist,target_max_days,float,Yes,No,No,The maximum number of observation days for a person in the target group.
-cm_follow_up_dist,comparator_min_days,float,Yes,No,No,The minimum number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_p_10_days,float,Yes,No,No,The 10^th^ percentile of number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_p_25_days,float,Yes,No,No,The 25^th^ percentile of number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_median_days,float,Yes,No,No,The median number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_p_75_days,float,Yes,No,No,The 75^th^ percentile of number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_p_90_days,float,Yes,No,No,The 90^th^ percentile of number of observation days for a person in the comparator group.
-cm_follow_up_dist,comparator_max_days,float,Yes,No,No,The maximum number of observation days for a person in the comparator group.
-cm_follow_up_dist,target_min_date,Date,Yes,No,No,The first start date of the target cohort observed in the data (after applying all restrictions).
-cm_follow_up_dist,target_max_date,Date,Yes,No,No,The last start date of the target cohort observed in the data (after applying all restrictions).
-cm_follow_up_dist,comparator_min_date,Date,Yes,No,No,The first start date of the comparator cohort observed in the data (after applying all restrictions).
-cm_follow_up_dist,comparator_max_date,Date,Yes,No,No,The last start date of the comparator cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,target_min_days,float,No,No,No,The minimum number of observation days for a person.
+cm_follow_up_dist,target_p_10_days,float,No,No,No,The 10^th^ percentile of number of observation days for a person in the target group.
+cm_follow_up_dist,target_p_25_days,float,No,No,No,The 25^th^ percentile of number of observation days for a person in the target group.
+cm_follow_up_dist,target_median_days,float,No,No,No,The median number of observation days for a person in the target group.
+cm_follow_up_dist,target_p_75_days,float,No,No,No,The 75^th^ percentile of number of observation days for a person in the target group.
+cm_follow_up_dist,target_p_90_days,float,No,No,No,The 90^th^ percentile of number of observation days for a person in the target group.
+cm_follow_up_dist,target_max_days,float,No,No,No,The maximum number of observation days for a person in the target group.
+cm_follow_up_dist,comparator_min_days,float,No,No,No,The minimum number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_p_10_days,float,No,No,No,The 10^th^ percentile of number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_p_25_days,float,No,No,No,The 25^th^ percentile of number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_median_days,float,No,No,No,The median number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_p_75_days,float,No,No,No,The 75^th^ percentile of number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_p_90_days,float,No,No,No,The 90^th^ percentile of number of observation days for a person in the comparator group.
+cm_follow_up_dist,comparator_max_days,float,No,No,No,The maximum number of observation days for a person in the comparator group.
+cm_follow_up_dist,target_min_date,Date,No,No,No,The first start date of the target cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,target_max_date,Date,No,No,No,The last start date of the target cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,comparator_min_date,Date,No,No,No,The first start date of the comparator cohort observed in the data (after applying all restrictions).
+cm_follow_up_dist,comparator_max_date,Date,No,No,No,The last start date of the comparator cohort observed in the data (after applying all restrictions).
 cm_follow_up_dist,database_id,varchar,Yes,Yes,No,Foreign key referencing the database.
 cm_analysis,analysis_id,int,Yes,Yes,No,A unique identifier for an analysis.
 cm_analysis,description,varchar,Yes,No,No,"A description for an analysis, e.g. 'On-treatment'."
@@ -73,14 +73,14 @@ cm_interaction_result,target_days,int,Yes,No,No,The number of days observed in t
 cm_interaction_result,comparator_days,int,Yes,No,No,The number of days observed in the comparator cohort.
 cm_interaction_result,target_outcomes,int,Yes,No,Yes,The number of outcomes observed in the target cohort.
 cm_interaction_result,comparator_outcomes,int,Yes,No,Yes,The number of outcomes observed in the comparator cohort.
-cm_interaction_result,log_rr,float,Yes,No,No,The log of the relative risk.
-cm_interaction_result,se_log_rr,float,Yes,No,No,The standard error of the log of the relative risk.
-cm_interaction_result,calibrated_rr,float,Yes,No,No,The calibrated relative risk.
-cm_interaction_result,calibrated_ci_95_lb,float,Yes,No,No,The lower bound of the calibrated 95% confidence interval of the relative risk.
-cm_interaction_result,calibrated_ci_95_ub,float,Yes,No,No,The upper bound of the calibrated 95% confidence interval of the relative risk.
-cm_interaction_result,calibrated_p,float,Yes,No,No,The calibrated two-sided p-value.
-cm_interaction_result,calibrated_log_rr,float,Yes,No,No,The log of the calibrated relative risk.
-cm_interaction_result,calibrated_se_log_rr,float,Yes,No,No,The standard error of the log of the calibrated relative risk.
+cm_interaction_result,log_rr,float,No,No,No,The log of the relative risk.
+cm_interaction_result,se_log_rr,float,No,No,No,The standard error of the log of the relative risk.
+cm_interaction_result,calibrated_rr,float,No,No,No,The calibrated relative risk.
+cm_interaction_result,calibrated_ci_95_lb,float,No,No,No,The lower bound of the calibrated 95% confidence interval of the relative risk.
+cm_interaction_result,calibrated_ci_95_ub,float,No,No,No,The upper bound of the calibrated 95% confidence interval of the relative risk.
+cm_interaction_result,calibrated_p,float,No,No,No,The calibrated two-sided p-value.
+cm_interaction_result,calibrated_log_rr,float,No,No,No,The log of the calibrated relative risk.
+cm_interaction_result,calibrated_se_log_rr,float,No,No,No,The standard error of the log of the calibrated relative risk.
 cm_interaction_result,database_id,varchar,Yes,No,No,Foreign key referencing the database.
 cm_covariate,covariate_id,bigint,Yes,Yes,No,A unique identified for a covariate.
 cm_covariate,covariate_name,varchar,Yes,No,No,"A name for a covariate, e.g. 'Age group: 20-25 years'."
@@ -96,23 +96,23 @@ cm_covariate_balance,comparator_id,int,Yes,Yes,No,The identifier for the compara
 cm_covariate_balance,outcome_id,int,Yes,Yes,No,The identifier for the outcome cohort.
 cm_covariate_balance,analysis_id,int,Yes,Yes,No,A foreign key referencing the cm_analysis table.
 cm_covariate_balance,covariate_id,bigint,Yes,Yes,No,A foreign key referencing the cm_covariate table.
-cm_covariate_balance,target_mean_before,float,Yes,No,Yes,The mean value of the covariate in the target cohort before propensity score adjustment.
-cm_covariate_balance,comparator_mean_before,float,Yes,No,Yes,The mean value of the covariate in the comparator cohort before propensity score adjustment.
-cm_covariate_balance,std_diff_before,float,Yes,No,No,The standardized difference of the means between the target and comparator cohort before propensity score adjustment.
-cm_covariate_balance,target_mean_after,float,Yes,No,Yes,The mean value of the covariate in the target cohort after propensity score adjustment.
-cm_covariate_balance,comparator_mean_after,float,Yes,No,Yes,The mean value of the covariate in the comparator cohort after propensity score adjustment.
-cm_covariate_balance,std_diff_after,float,Yes,No,No,The standardized difference of the means between the target and comparator cohort after propensity score adjustment.
+cm_covariate_balance,target_mean_before,float,No,No,Yes,The mean value of the covariate in the target cohort before propensity score adjustment.
+cm_covariate_balance,comparator_mean_before,float,No,No,Yes,The mean value of the covariate in the comparator cohort before propensity score adjustment.
+cm_covariate_balance,std_diff_before,float,No,No,No,The standardized difference of the means between the target and comparator cohort before propensity score adjustment.
+cm_covariate_balance,target_mean_after,float,No,No,Yes,The mean value of the covariate in the target cohort after propensity score adjustment.
+cm_covariate_balance,comparator_mean_after,float,No,No,Yes,The mean value of the covariate in the comparator cohort after propensity score adjustment.
+cm_covariate_balance,std_diff_after,float,No,No,No,The standardized difference of the means between the target and comparator cohort after propensity score adjustment.
 cm_diagnostics_summary,analysis_id,int,Yes,Yes,No,A foreign key referencing the cm_analysis table.
 cm_diagnostics_summary,target_id,int,Yes,Yes,No,The identifier for the target cohort.
 cm_diagnostics_summary,comparator_id,int,Yes,Yes,No,The identifier for the comparator cohort.
 cm_diagnostics_summary,outcome_id,int,Yes,Yes,No,The identifier for the outcome cohort.
 cm_diagnostics_summary,database_id,varchar,Yes,Yes,No,Foreign key referencing the database.
-cm_diagnostics_summary,max_sdm,float,Yes,No,No,The maximum absolute standardized difference of mean.
-cm_diagnostics_summary,shared_max_sdm,float,Yes,No,No,The maximum absolute standardized difference of mean of the shared balance (shared across outcomes).
-cm_diagnostics_summary,equipoise,float,Yes,No,No,The fraction of the study population with a preference score between 0.3 and 0.7.
-cm_diagnostics_summary,mdrr,float,Yes,No,No,The minimum detectable relative risk.
-cm_diagnostics_summary,attrition_fraction,float,Yes,No,No,The fraction of the target population lost by between initial cohort and outcome model due to various restrictions.
-cm_diagnostics_summary,ease,float,Yes,No,No,The expected absolute systematic error.
+cm_diagnostics_summary,max_sdm,float,No,No,No,The maximum absolute standardized difference of mean.
+cm_diagnostics_summary,shared_max_sdm,float,No,No,No,The maximum absolute standardized difference of mean of the shared balance (shared across outcomes).
+cm_diagnostics_summary,equipoise,float,No,No,No,The fraction of the study population with a preference score between 0.3 and 0.7.
+cm_diagnostics_summary,mdrr,float,No,No,No,The minimum detectable relative risk.
+cm_diagnostics_summary,attrition_fraction,float,No,No,No,The fraction of the target population lost by between initial cohort and outcome model due to various restrictions.
+cm_diagnostics_summary,ease,float,No,No,No,The expected absolute systematic error.
 cm_diagnostics_summary,balance_diagnostic,varchar(20),Yes,No,No,Pass / warning / fail classification of the balance diagnostic (max_sdm).
 cm_diagnostics_summary,shared_balance_diagnostic,varchar(20),Yes,No,No,Pass / warning / fail classification of the shared balance diagnostic (shared_max_sdm).
 cm_diagnostics_summary,equipoise_diagnostic,varchar(20),Yes,No,No,Pass / warning / fail classification of the equipoise diagnostic.
@@ -164,9 +164,9 @@ cm_shared_covariate_balance,target_id,int,Yes,Yes,No,The identifier for the targ
 cm_shared_covariate_balance,comparator_id,int,Yes,Yes,No,The identifier for the comparator cohort.
 cm_shared_covariate_balance,analysis_id,int,Yes,Yes,No,A foreign key referencing the cm_analysis table.
 cm_shared_covariate_balance,covariate_id,bigint,Yes,Yes,No,A foreign key referencing the cm_covariate table.
-cm_shared_covariate_balance,target_mean_before,float,Yes,No,Yes,The mean value of the covariate in the target cohort before propensity score adjustment.
-cm_shared_covariate_balance,comparator_mean_before,float,Yes,No,Yes,The mean value of the covariate in the comparator cohort before propensity score adjustment.
-cm_shared_covariate_balance,std_diff_before,float,Yes,No,No,The standardized difference of the means between the target and comparator cohort before propensity score adjustment.
-cm_shared_covariate_balance,target_mean_after,float,Yes,No,Yes,The mean value of the covariate in the target cohort after propensity score adjustment.
-cm_shared_covariate_balance,comparator_mean_after,float,Yes,No,Yes,The mean value of the covariate in the comparator cohort after propensity score adjustment.
-cm_shared_covariate_balance,std_diff_after,float,Yes,No,No,The standardized difference of the means between the target and comparator cohort after propensity score adjustment.
+cm_shared_covariate_balance,target_mean_before,float,No,No,Yes,The mean value of the covariate in the target cohort before propensity score adjustment.
+cm_shared_covariate_balance,comparator_mean_before,float,No,No,Yes,The mean value of the covariate in the comparator cohort before propensity score adjustment.
+cm_shared_covariate_balance,std_diff_before,float,No,No,No,The standardized difference of the means between the target and comparator cohort before propensity score adjustment.
+cm_shared_covariate_balance,target_mean_after,float,No,No,Yes,The mean value of the covariate in the target cohort after propensity score adjustment.
+cm_shared_covariate_balance,comparator_mean_after,float,No,No,Yes,The mean value of the covariate in the comparator cohort after propensity score adjustment.
+cm_shared_covariate_balance,std_diff_after,float,No,No,No,The standardized difference of the means between the target and comparator cohort after propensity score adjustment.
