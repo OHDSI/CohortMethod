@@ -44,8 +44,9 @@ object in the outcome model.}
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)? See details.}
 
 \item{estimator}{for IPTW: the type of estimator. Options are \code{estimator = "ate"} for the
-average treatment effect, and \code{estimator = "att"}for the average treatment
-effect in the treated.}
+average treatment effect, \code{estimator = "att"}for the average treatment
+effect in the treated, and \code{estimator = "ato"} for average treatment effect
+in the overlap population.}
 
 \item{maxWeight}{for IPTW: the maximum weight. Larger values will be truncated to this
 value. \code{maxWeight = 0} means no truncation takes place.}
