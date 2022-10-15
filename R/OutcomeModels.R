@@ -42,8 +42,9 @@
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)? See details.
 #' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
-#'                              average treatment effect, and `estimator = "att"`for the average treatment
-#'                              effect in the treated.
+#'                              average treatment effect, `estimator = "att"`for the average treatment
+#'                              effect in the treated, and `estimator = "ato"` for average treatment effect
+#'                              in the overlap population.
 #' @param maxWeight             for IPTW: the maximum weight. Larger values will be truncated to this
 #'                              value. `maxWeight = 0` means no truncation takes place.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
@@ -102,8 +103,8 @@ fitOutcomeModel <- function(population,
     stop("Can't exclude covariates that are to be used for interaction terms")
   if (inversePtWeighting && is.null(population$propensityScore))
     stop("Requested inverse probability weighting, but no propensity scores are provided. Use createPs to generate them")
-  if (!estimator %in% c("ate", "att"))
-    stop("The estimator argument should be either 'ate' or 'att'.")
+  if (!estimator %in% c("ate", "att", "ato"))
+    stop("The estimator argument should be either 'ate', 'att', or 'ato'.")
   if (modelType != "logistic" && modelType != "poisson" && modelType != "cox")
     stop("Unknown modelType '", modelType, "', please choose either 'logistic', 'poisson', or 'cox'")
   if (!is.null(profileGrid) && !is.null(profileBounds))
@@ -530,17 +531,29 @@ computeWeights <- function(population, estimator = "ate") {
   # population$weights <- ifelse(population$treatment == 1,
   #                                        1,
   #                                        population$propensityScore/(1 - population$propensityScore))
+  # ATO:
+  # Average treatment effect in the overlap population
+  # https://doi.org/10.1093/aje/kwy201
+  # population$weights <- ifelse(population$treatment == 1,
+  #                                        1 - population$propensityScore,
+  #                                        population$propensityScore)
+
   if (estimator == "ate") {
     # 'Stabilized' ATE:
     return(ifelse(population$treatment == 1,
                   mean(population$treatment == 1) / population$propensityScore,
                   mean(population$treatment == 0) / (1 - population$propensityScore)))
-  } else {
+  } else if (estimator == "att") {
     # 'Stabilized' ATT:
     return(ifelse(population$treatment == 1,
                   mean(population$treatment == 1),
                   mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)))
-  }
+  } else if (estimator == "ato") {
+    # Overlap weights
+    return(ifelse(population$treatment == 1,
+                  1 - population$propensityScore,
+                  population$propensityScore))
+  } else stop("The estimator argument should be either 'ate', 'att', or 'ato'.")
 }
 
 getOutcomeCounts <- function(population, modelType) {
