@@ -84,7 +84,7 @@ createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
 #' @param stopOnError  If an error occur, should the function stop? Else, the two cohorts will be assumed to be perfectly separable.
 #' @param prior  The prior used to fit the model. See Cyclops::createPrior() for details.
 #' @param control  The control object used to control the cross-validation used to determine the hyperparameters of the prior (if applicable). See Cyclops::createControl() for details.
-#' @param estimator  The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.
+#' @param estimator  The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, estimator = "att" for the average treatment effect in the treated, and estimator = "ato" for the average treatment effect in the overlap population.
 #'
 #' @export
 createCreatePsArgs <- function(excludeCovariateIds = c(),
