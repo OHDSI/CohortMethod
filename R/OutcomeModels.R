@@ -45,7 +45,7 @@
 #'                              average treatment effect, and `estimator = "att"`for the average treatment
 #'                              effect in the treated.
 #' @param overlap_weight        If true, use overlap weighting method for balancing weights, else stablized
-#'                              weights will be used. See reference
+#'                              weights will be used. See reference below
 #' @param maxWeight             for IPTW: the maximum weight. Larger values will be truncated to this
 #'                              value. `maxWeight = 0` means no truncation takes place.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
