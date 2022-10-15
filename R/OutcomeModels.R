@@ -44,6 +44,8 @@
 #' @param estimator             for IPTW: the type of estimator. Options are `estimator = "ate"` for the
 #'                              average treatment effect, and `estimator = "att"`for the average treatment
 #'                              effect in the treated.
+#' @param overlap_weight        If true, use overlap weighting method for balancing weights, else stablized
+#'                              weights will be used. See reference
 #' @param maxWeight             for IPTW: the maximum weight. Larger values will be truncated to this
 #'                              value. `maxWeight = 0` means no truncation takes place.
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
@@ -60,10 +62,15 @@
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              [Cyclops::createControl()] for details.
 #'
+#'
 #' @references
 #' Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
 #' as weights to directly estimate relative risk and its confidence intervals. Value Health.
 #' 2010;13(2):273-277. doi:10.1111/j.1524-4733.2009.00671.x
+#'
+#' Li, Fan, Laine E. Thomas, and Fan Li.
+#' “Addressing Extreme Propensity Scores via the Overlap Weights.”
+#' American Journal of Epidemiology 188, no. 1 (01 2019): 250–57
 #'
 #' @return
 #' An object of class `OutcomeModel`. Generic function `print`, `coef`, and
@@ -520,7 +527,22 @@ filterAndTidyCovariates <- function(cohortMethodData,
   return(covariateData)
 }
 
-computeWeights <- function(population, estimator = "ate") {
+computeWeights <- function(population, estimator = "ate", overlap_weight = FALSE) {
+
+  if(overlap_weight == TRUE){
+    if (estimator == "ate") {
+      # 'Overlap-weighted' ATE:
+      return(ifelse(population$treatment == 1,
+                    (1- population$propensityScore),
+                    (population$propensityScore)))
+    } else {
+      # 'Overlap-weighted' ATT:
+      return(ifelse(population$treatment == 1,
+                    1,
+                    population$propensityScore / (1 - population$propensityScore)))
+    }
+  }
+
   # Unstabilized:
   # ATE:
   # population$weights <- ifelse(population$treatment == 1,
