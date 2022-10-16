@@ -32,7 +32,7 @@ createCreatePsArgs(
 
 \item{control}{The control object used to control the cross-validation used to determine the hyperparameters of the prior (if applicable). See Cyclops::createControl() for details.}
 
-\item{estimator}{The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, and estimator = "att"for the average treatment effect in the treated.}
+\item{estimator}{The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, estimator = "att" for the average treatment effect in the treated, and estimator = "ato" for the average treatment effect in the overlap population.}
 }
 \description{
 Create a parameter object for the function createPs

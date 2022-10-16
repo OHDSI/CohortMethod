@@ -54,8 +54,9 @@
 #'                                 determine the hyperparameters of the prior (if applicable). See
 #'                                 [Cyclops::createControl()] for details.
 #' @param estimator                The type of estimator for the IPTW. Options are `estimator = "ate"`
-#'                                 for the average treatment effect, and `estimator = "att"` for the
-#'                                 average treatment effect in the treated.
+#'                                 for the average treatment effect, `estimator = "att"` for the
+#'                                 average treatment effect in the treated, and `estimator = "ato"`
+#'                                 for the average treatment effect in the overlap population.
 #'
 #' @references
 #' Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
@@ -96,7 +97,7 @@ createPs <- function(cohortMethodData,
   checkmate::assertLogical(stopOnError, len = 1, add = errorMessages)
   checkmate::assertClass(prior, "cyclopsPrior", add = errorMessages)
   checkmate::assertClass(control, "cyclopsControl", add = errorMessages)
-  checkmate::assertChoice(estimator, c("ate", "att"), add = errorMessages)
+  checkmate::assertChoice(estimator, c("ate", "att", "ato"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (is.null(population)) {
@@ -282,19 +283,29 @@ computeIptw <- function(population, estimator = "ate") {
   # population$iptw <- ifelse(population$treatment == 1,
   #                                        1,
   #                                        population$propensityScore/(1 - population$propensityScore))
+  # ATO:
+  # Average treatment effect in the overlap population
+  # https://doi.org/10.1093/aje/kwy201
+  # population$iptw <- ifelse(population$treatment == 1,
+  #                                        1 - population$propensityScore,
+  #                                        population$propensityScore)
   if (estimator == "ate") {
     # 'Stabilized' ATE:
     population$iptw <- ifelse(population$treatment == 1,
       mean(population$treatment == 1) / population$propensityScore,
       mean(population$treatment == 0) / (1 - population$propensityScore)
     )
-  } else {
+  } else if (estimator == "att") {
     # 'Stabilized' ATT:
     population$iptw <- ifelse(population$treatment == 1,
       mean(population$treatment == 1),
       mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)
     )
-  }
+  } else if (estimator == "ato") {
+    population$iptw <- ifelse(population$treatment == 1,
+                              1 - population$propensityScore,
+                              population$propensityScore)
+  } else stop("The estimator argument should be either 'ate', 'att', or 'ato'.")
   return(population)
 }
 
