@@ -2,7 +2,7 @@
 % Please edit documentation in R/RunAnalyses.R
 \name{getFileReference}
 \alias{getFileReference}
-\title{Get a summary report of the analyses results}
+\title{Get file reference}
 \usage{
 getFileReference(outputFolder)
 }
@@ -10,8 +10,8 @@ getFileReference(outputFolder)
 \item{outputFolder}{Name of the folder where all the outputs have been written to.}
 }
 \value{
-A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
+A tibble containing file nams of artifacts generated for each target-comparator-outcome-analysis combination.
 }
 \description{
-Get a summary report of the analyses results
+Get file reference
 }

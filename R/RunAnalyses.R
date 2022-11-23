@@ -112,6 +112,7 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
     outcomeCvThreads = min(4, maxCores),
     calibrationThreads = min(4, maxCores)
   )
+  class(settings) <- "multiThreadingSettings"
   return(settings)
 }
 
@@ -235,6 +236,7 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertDataFrame(analysesToExclude, null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(refitPsForEveryOutcome, len = 1, add = errorMessages)
   checkmate::assertLogical(refitPsForEveryStudyPopulation, len = 1, add = errorMessages)
+  checkmate::assertClass(multiThreadingSettings, "multiThreadingSettings", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
@@ -1613,12 +1615,12 @@ createReferenceTable <- function(cmAnalysisList,
   return(file.path(folder, name))
 }
 
-#' Get a summary report of the analyses results
+#' Get file reference
 #'
 #' @param outputFolder       Name of the folder where all the outputs have been written to.
 #'
 #' @return
-#' A tibble containing summary statistics for each target-comparator-outcome-analysis combination.
+#' A tibble containing file nams of artifacts generated for each target-comparator-outcome-analysis combination.
 #'
 #' @export
 getFileReference <- function(outputFolder) {
