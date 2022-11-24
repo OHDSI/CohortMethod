@@ -112,7 +112,6 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
     outcomeCvThreads = min(4, maxCores),
     calibrationThreads = min(4, maxCores)
   )
-  class(settings) <- "multiThreadingSettings"
   return(settings)
 }
 
@@ -236,7 +235,7 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertDataFrame(analysesToExclude, null.ok = TRUE, add = errorMessages)
   checkmate::assertLogical(refitPsForEveryOutcome, len = 1, add = errorMessages)
   checkmate::assertLogical(refitPsForEveryStudyPopulation, len = 1, add = errorMessages)
-  checkmate::assertClass(multiThreadingSettings, "multiThreadingSettings", add = errorMessages)
+  checkmate::assertClass(multiThreadingSettings, "CmMultiThreadingSettings", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
