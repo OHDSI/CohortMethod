@@ -50,7 +50,7 @@ checkCmInstallation <- function(connectionDetails) {
 
   message("\nChecking support for large data objects")
   x <- Andromeda::andromeda(test = data.frame(a = 1:100, b = "test"))
-  if (x$test %>% count() %>% pull() != 100) {
+  if (nrow(x$test) != 100) {
     stop("Error creating large data object")
   }
   message("- Ok")

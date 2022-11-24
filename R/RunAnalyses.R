@@ -875,7 +875,7 @@ doTrimMatchStratify <- function(params) {
 doPrefilterCovariates <- function(params) {
   cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
   covariates <- cohortMethodData$covariates
-  if (covariates %>% count() %>% pull() > 0) {
+  if (nrow(covariates) > 0) {
     if (params$args$useCovariates) {
       covariatesToInclude <- params$args$includeCovariateIds
       covariatesToExclude <- params$args$excludeCovariateIds

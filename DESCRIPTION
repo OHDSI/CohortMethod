@@ -30,7 +30,7 @@ Depends:
 	DatabaseConnector (>= 4.0.0),
 	Cyclops (>= 3.1.2),
 	FeatureExtraction  (>= 3.0.0),
-	Andromeda (>= 0.5.0)
+	Andromeda (>= 1.0.0)
 Imports:
 	methods,
 	ggplot2,
@@ -58,8 +58,10 @@ Suggests:
 	withr,
 	R.utils
 Remotes:
-	ohdsi/FeatureExtraction,
+	ohdsi/FeatureExtraction@arrow_S4,
 	ohdsi/Eunomia,
+	ohdsi/Andromeda@arrow_S4,
+	ohdsi/Cyclops@arrow_S4
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.2.2

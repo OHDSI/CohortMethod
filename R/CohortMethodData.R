@@ -55,7 +55,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
   checkmate::reportAssertions(collection = errorMessages)
 
   Andromeda::saveAndromeda(cohortMethodData, file)
-  writeLines("To use this CohortMethodData object, you will have to load it from file (using loadCohortMethodData).")
+  # writeLines("To use this CohortMethodData object, you will have to load it from file (using loadCohortMethodData).")
 }
 
 #' Load the cohort method data from a file
@@ -139,8 +139,8 @@ setMethod("summary", "CohortMethodData", function(object) {
     targetPersons = targetPersons,
     comparatorPersons = comparatorPersons,
     outcomeCounts = outcomeCounts,
-    covariateCount = object$covariateRef %>% count() %>% pull(),
-    covariateValueCount = object$covariates %>% count() %>% pull()
+    covariateCount = nrow(object$covariateRef),
+    covariateValueCount = nrow(object$covariates)
   )
   class(result) <- "summary.CohortMethodData"
   return(result)

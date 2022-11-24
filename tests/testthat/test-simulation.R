@@ -40,7 +40,7 @@ test_that("createCohortMethodDataSimulationProfile", {
   )
 
 
-  cohorts <- data.frame(cohortMethodData$cohorts)
+  cohorts <- collect(cohortMethodData$cohorts)
   cohorts$daysToCohortEnd <- rexp(nrow(cohorts), rate = 10)
   cohortMethodData$cohorts <- cohorts
 
