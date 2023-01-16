@@ -29,7 +29,11 @@
 #' @export
 checkCmInstallation <- function(connectionDetails) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  if (is(connectionDetails, "connectionDetails")) {
+    checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  } else {
+    checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  }
   checkmate::reportAssertions(collection = errorMessages)
 
   message("Checking database connectivity")

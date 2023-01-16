@@ -137,7 +137,11 @@ getDbCohortMethodData <- function(connectionDetails,
     }
   }
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  if (is(connectionDetails, "connectionDetails")) {
+    checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  } else {
+    checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  }
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(targetId, add = errorMessages)
