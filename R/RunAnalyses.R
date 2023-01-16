@@ -917,7 +917,7 @@ doFitOutcomeModel <- function(params) {
   } else {
     cohortMethodDataFile <- params$prefilteredCovariatesFile
   }
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+  cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
   studyPop <- readRDS(params$studyPopFile)
   args <- list(cohortMethodData = cohortMethodData, population = studyPop)
   args <- append(args, params$args)
@@ -935,7 +935,7 @@ doFitOutcomeModelPlus <- function(params) {
   } else {
     cohortMethodDataFile <- params$prefilteredCovariatesFile
   }
-  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+  cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
 
   ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID %d",
                                    cohortMethodDataFile,

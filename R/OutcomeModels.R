@@ -218,7 +218,7 @@ fitOutcomeModel <- function(population,
           select(.data$covariateId, .data$covariateName) %>%
           collect()
 
-        interactionTerms$interactionId <- treatmentVarId + 1:nrow(interactionTerms)
+        interactionTerms$interactionId <- treatmentVarId + seq_len(nrow(interactionTerms))
         interactionTerms$interactionName <- paste("treatment", interactionTerms$covariateName, sep = " * ")
         interactionTerms$covariateName <- NULL
         covariateData$interactionTerms <- interactionTerms
@@ -304,7 +304,7 @@ fitOutcomeModel <- function(population,
           warning("Separable interaction terms found and removed")
           ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
           message("Separable interactions:")
-          for (i in 1:nrow(ref)) {
+          for (i in seq_len(nrow(ref))) {
             message(paste(ref[i, ], collapse = "\t"))
           }
           interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
