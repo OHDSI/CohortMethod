@@ -294,7 +294,7 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
   convertOutcomeToTable <- function(outcome) {
     tibble(
       outcomeId = outcome$outcomeId,
-      outcomeOfInterest = outcome$outcomeOfInterest,
+      outcomeOfInterest = as.integer(outcome$outcomeOfInterest),
       trueEffectSize = if (is.null(outcome$trueEffectSize)) as.numeric(NA) else outcome$trueEffectSize
     ) %>%
       return()

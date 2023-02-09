@@ -213,6 +213,9 @@ test_that("Multiple analyses", {
   diagnosticsSummary <- readr::read_csv(file.path(outputFolder, "export", "cm_diagnostics_summary.csv"), show_col_types = FALSE)
   expect_true(all(diagnosticsSummary$ease_diagnostic == "NOT EVALUATED"))
 
+  targetComparatorOutcome <- readr::read_csv(file.path(outputFolder, "export", "cm_target_comparator_outcome.csv"), show_col_types = FALSE)
+  expect_true(is.numeric(targetComparatorOutcome$outcome_of_interest))
+
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
   connection <- DatabaseConnector::connect(connectionDetails)
 
