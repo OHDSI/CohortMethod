@@ -18,7 +18,7 @@ extract the data needed to perform the analysis."><!-- mathjax --><script src="h
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -27,7 +27,7 @@ extract the data needed to perform the analysis."><!-- mathjax --><script src="h
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -71,53 +71,57 @@ extract the data needed to perform the analysis.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">getDbCohortMethodData</span><span class="op">(</span>
-  <span class="va">connectionDetails</span>,
-  <span class="va">cdmDatabaseSchema</span>,
-  oracleTempSchema <span class="op">=</span> <span class="cn">NULL</span>,
-  tempEmulationSchema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"sqlRenderTempEmulationSchema"</span><span class="op">)</span>,
-  <span class="va">targetId</span>,
-  <span class="va">comparatorId</span>,
-  <span class="va">outcomeIds</span>,
-  studyStartDate <span class="op">=</span> <span class="st">""</span>,
-  studyEndDate <span class="op">=</span> <span class="st">""</span>,
-  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,
-  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  outcomeTable <span class="op">=</span> <span class="st">"condition_occurrence"</span>,
-  cdmVersion <span class="op">=</span> <span class="st">"5"</span>,
-  excludeDrugsFromCovariates <span class="op">=</span> <span class="cn">NULL</span>,
-  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,
-  removeDuplicateSubjects <span class="op">=</span> <span class="cn">FALSE</span>,
-  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,
-  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,
-  maxCohortSize <span class="op">=</span> <span class="fl">0</span>,
-  <span class="va">covariateSettings</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">getDbCohortMethodData</span><span class="op">(</span></span>
+<span>  <span class="va">connectionDetails</span>,</span>
+<span>  <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  tempEmulationSchema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"sqlRenderTempEmulationSchema"</span><span class="op">)</span>,</span>
+<span>  <span class="va">targetId</span>,</span>
+<span>  <span class="va">comparatorId</span>,</span>
+<span>  <span class="va">outcomeIds</span>,</span>
+<span>  studyStartDate <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  studyEndDate <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
+<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  outcomeTable <span class="op">=</span> <span class="st">"condition_occurrence"</span>,</span>
+<span>  cdmVersion <span class="op">=</span> <span class="st">"5"</span>,</span>
+<span>  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  removeDuplicateSubjects <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  maxCohortSize <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  <span class="va">covariateSettings</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>connectionDetails</dt>
 <dd><p>An R object of type <code>connectionDetails</code> created using the
-<code><a href="https://rdrr.io/pkg/DatabaseConnector/man/createConnectionDetails.html" class="external-link">DatabaseConnector::createConnectionDetails()</a></code> function.</p></dd>
+<code><a href="https://ohdsi.github.io/DatabaseConnector/reference/createConnectionDetails.html" class="external-link">DatabaseConnector::createConnectionDetails()</a></code> function.</p></dd>
+
+
 <dt>cdmDatabaseSchema</dt>
 <dd><p>The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
 Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.</p></dd>
-<dt>oracleTempSchema</dt>
-<dd><p>DEPRECATED: use <code>tempEmulationSchema</code> instead.</p></dd>
+
+
 <dt>tempEmulationSchema</dt>
 <dd><p>Some database platforms like Oracle and Impala do not truly support temp tables. To
 emulate temp tables, provide a schema with write privileges where temp tables
 can be created.</p></dd>
+
+
 <dt>targetId</dt>
 <dd><p>A unique identifier to define the target cohort.  If
 exposureTable = DRUG_ERA, targetId is a concept ID and all
 descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable &lt;&gt; DRUG_ERA, targetId is
 used to select the COHORT_DEFINITION_ID in the cohort-like table.</p></dd>
+
+
 <dt>comparatorId</dt>
 <dd><p>A unique identifier to define the comparator cohort.  If
 exposureTable = DRUG_ERA, comparatorId is a concept ID and all
@@ -125,66 +129,92 @@ descendant concepts within that concept ID will be used to
 define the cohort.  If exposureTable &lt;&gt; DRUG_ERA, comparatorId
 is used to select the COHORT_DEFINITION_ID in the cohort-like
 table.</p></dd>
+
+
 <dt>outcomeIds</dt>
 <dd><p>A list of cohort IDs used to define outcomes.</p></dd>
+
+
 <dt>studyStartDate</dt>
 <dd><p>A calendar date specifying the minimum date that a cohort index
 date can appear. Date format is 'yyyymmdd'.</p></dd>
+
+
 <dt>studyEndDate</dt>
 <dd><p>A calendar date specifying the maximum date that a cohort index
 date can appear. Date format is 'yyyymmdd'. Important: the study
 end data is also used to truncate risk windows, meaning no
 outcomes beyond the study end date will be considered.</p></dd>
+
+
 <dt>exposureDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.</p></dd>
+
+
 <dt>exposureTable</dt>
 <dd><p>The tablename that contains the exposure cohorts. If
 exposureTable &lt;&gt; DRUG_ERA, then expectation is <code>exposureTable</code> has
 format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.</p></dd>
+
+
 <dt>outcomeDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where the
 data used to define the outcome cohorts is available.</p></dd>
+
+
 <dt>outcomeTable</dt>
 <dd><p>The tablename that contains the outcome cohorts.  If
 outcomeTable &lt;&gt; CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.</p></dd>
+
+
 <dt>cdmVersion</dt>
 <dd><p>Define the OMOP CDM version used: currently supports "5".</p></dd>
-<dt>excludeDrugsFromCovariates</dt>
-<dd><p>DEPRECATED: Should the target and comparator drugs (and their descendant
-concepts) be excluded from the covariates? Note that this will
-work if the drugs are actually drug concept IDs (and not cohort
-IDs).</p></dd>
+
+
 <dt>firstExposureOnly</dt>
 <dd><p>Should only the first exposure per subject be included? Note
 that this is typically done in the <code><a href="createStudyPopulation.html">createStudyPopulation()</a></code>
 function, but can already be done here for efficiency reasons.</p></dd>
+
+
 <dt>removeDuplicateSubjects</dt>
 <dd><p>Remove subjects that are in both the target and comparator
 cohort? See details for allowed values.Note that this is typically done in the
 <code>createStudyPopulation</code> function, but can already be done
 here for efficiency reasons.</p></dd>
+
+
 <dt>restrictToCommonPeriod</dt>
 <dd><p>Restrict the analysis to the period when both treatments are observed?</p></dd>
+
+
 <dt>washoutPeriod</dt>
 <dd><p>The minimum required continuous observation time prior to index
 date for a person to be included in the cohort. Note that this
 is typically done in the <code>createStudyPopulation</code> function,
 but can already be done here for efficiency reasons.</p></dd>
+
+
 <dt>maxCohortSize</dt>
 <dd><p>If either the target or the comparator cohort is larger than
 this number it will be sampled to this size. <code>maxCohortSize = 0</code>
 indicates no maximum size.</p></dd>
+
+
 <dt>covariateSettings</dt>
 <dd><p>An object of type <code>covariateSettings</code> as created using the
 <code><a href="https://rdrr.io/pkg/FeatureExtraction/man/createCovariateSettings.html" class="external-link">FeatureExtraction::createCovariateSettings()</a></code> function.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A <a href="CohortMethodData-class.html">CohortMethodData</a> object.</p>
+    
+
+<p>A <a href="CohortMethodData-class.html">CohortMethodData</a> object.</p>
     </div>
     <div id="details">
     <h2>Details</h2>
@@ -200,7 +230,10 @@ of the <code>covariateSettings</code> argument.</p>
 <p>The <code>removeduplicateSubjects</code> argument can have one of the following values:</p><ul><li><p><code>"keep all"</code>: Do not remove subjects that appear in both target and comparator cohort</p></li>
 <li><p><code>"keep first"</code>: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.</p></li>
 <li><p><code>"remove all"</code>: Remove subjects that appear in both target and comparator cohort completely from the analysis."</p></li>
-</ul></div>
+</ul><p>If the <code>covariateSettings</code> include cohort-based covariates, and the <code>covariateCohortTable</code> is <code>NULL</code>, the
+<code>covariateCohortDatabaseSchema</code> and <code>covariateCohortTable</code> will be set to the <code>exposureDatabaseSchema</code> and
+<code>exposureTable</code>, respectively .</p>
+    </div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -214,7 +247,7 @@ of the <code>covariateSettings</code> argument.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,32 +69,24 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createCmAnalysis</span><span class="op">(</span>
-  analysisId <span class="op">=</span> <span class="fl">1</span>,
-  description <span class="op">=</span> <span class="st">""</span>,
-  targetType <span class="op">=</span> <span class="cn">NULL</span>,
-  comparatorType <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">getDbCohortMethodDataArgs</span>,
-  <span class="va">createStudyPopArgs</span>,
-  createPs <span class="op">=</span> <span class="cn">FALSE</span>,
-  createPsArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  trimByPs <span class="op">=</span> <span class="cn">FALSE</span>,
-  trimByPsArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  trimByPsToEquipoise <span class="op">=</span> <span class="cn">FALSE</span>,
-  trimByPsToEquipoiseArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  trimByIptw <span class="op">=</span> <span class="cn">FALSE</span>,
-  trimByIptwArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  matchOnPs <span class="op">=</span> <span class="cn">FALSE</span>,
-  matchOnPsArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  matchOnPsAndCovariates <span class="op">=</span> <span class="cn">FALSE</span>,
-  matchOnPsAndCovariatesArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  stratifyByPs <span class="op">=</span> <span class="cn">FALSE</span>,
-  stratifyByPsArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  stratifyByPsAndCovariates <span class="op">=</span> <span class="cn">FALSE</span>,
-  stratifyByPsAndCovariatesArgs <span class="op">=</span> <span class="cn">NULL</span>,
-  fitOutcomeModel <span class="op">=</span> <span class="cn">FALSE</span>,
-  fitOutcomeModelArgs <span class="op">=</span> <span class="cn">NULL</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createCmAnalysis</span><span class="op">(</span></span>
+<span>  analysisId <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  description <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  <span class="va">getDbCohortMethodDataArgs</span>,</span>
+<span>  <span class="va">createStudyPopArgs</span>,</span>
+<span>  createPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  trimByPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  trimByPsToEquipoiseArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  trimByIptwArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  truncateIptwArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  matchOnPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  matchOnPsAndCovariatesArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  stratifyByPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  stratifyByPsAndCovariatesArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  computeSharedCovariateBalanceArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  computeCovariateBalanceArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  fitOutcomeModelArgs <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -102,80 +94,87 @@
     <dl><dt>analysisId</dt>
 <dd><p>An integer that will be used later to refer to this specific
 set of analysis choices.</p></dd>
+
+
 <dt>description</dt>
 <dd><p>A short description of the analysis.</p></dd>
-<dt>targetType</dt>
-<dd><p>If more than one target is provided for each
-drugComparatorOutcome, this field should be used to select
-the specific target to use in this analysis.</p></dd>
-<dt>comparatorType</dt>
-<dd><p>If more than one comparator is provided for each
-drugComparatorOutcome, this field should be used to select
-the specific comparator to use in this analysis.</p></dd>
+
+
 <dt>getDbCohortMethodDataArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code> function.</p></dd>
+
+
 <dt>createStudyPopArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="createStudyPopulation.html">createStudyPopulation()</a></code> function.</p></dd>
-<dt>createPs</dt>
-<dd><p>Should the <code><a href="createPs.html">createPs()</a></code> function be used in this
-analysis?</p></dd>
+
+
 <dt>createPsArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="createPs.html">createPs()</a></code> function.</p></dd>
-<dt>trimByPs</dt>
-<dd><p>Should the <code><a href="trimByPs.html">trimByPs()</a></code> function be used in this
-analysis?</p></dd>
+
+
 <dt>trimByPsArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="trimByPs.html">trimByPs()</a></code> function.</p></dd>
-<dt>trimByPsToEquipoise</dt>
-<dd><p>Should the <code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> function be used
-in this analysis?</p></dd>
+
+
 <dt>trimByPsToEquipoiseArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> function.</p></dd>
-<dt>trimByIptw</dt>
-<dd><p>Should the <code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> function be used
-in this analysis?</p></dd>
+
+
 <dt>trimByIptwArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="trimByIptw.html">trimByIptw()</a></code> function.</p></dd>
-<dt>matchOnPs</dt>
-<dd><p>Should the <code><a href="matchOnPs.html">matchOnPs()</a></code> function be used in this
-analysis?</p></dd>
+
+
+<dt>truncateIptwArgs</dt>
+<dd><p>An object representing the arguments to be used when calling
+the <code><a href="truncateIptw.html">truncateIptw()</a></code> function.</p></dd>
+
+
 <dt>matchOnPsArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="matchOnPs.html">matchOnPs()</a></code> function.</p></dd>
-<dt>matchOnPsAndCovariates</dt>
-<dd><p>Should the <code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> function be
-used in this analysis?</p></dd>
+
+
 <dt>matchOnPsAndCovariatesArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> function.</p></dd>
-<dt>stratifyByPs</dt>
-<dd><p>Should the <code><a href="stratifyByPs.html">stratifyByPs()</a></code> function be used in
-this analysis?</p></dd>
+
+
 <dt>stratifyByPsArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="stratifyByPs.html">stratifyByPs()</a></code> function.</p></dd>
-<dt>stratifyByPsAndCovariates</dt>
-<dd><p>Should the <code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> function
-be used in this analysis?</p></dd>
+
+
 <dt>stratifyByPsAndCovariatesArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> function.</p></dd>
-<dt>fitOutcomeModel</dt>
-<dd><p>Should the <code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> function be used in
-this analysis?</p></dd>
+
+
+<dt>computeSharedCovariateBalanceArgs</dt>
+<dd><p>An object representing the arguments to be used when calling
+the <code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code> function per target-comparator-analysis.</p></dd>
+
+
+<dt>computeCovariateBalanceArgs</dt>
+<dd><p>An object representing the arguments to be used when calling
+the <code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code> function per target-comparator-outcome-analysis.</p></dd>
+
+
 <dt>fitOutcomeModelArgs</dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> function.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
     <p>Create a set of analysis choices, to be used with the <code><a href="runCmAnalyses.html">runCmAnalyses()</a></code> function.</p>
+<p>Providing a NULL value for any of the argument applies the corresponding step will not be executed.
+For example, if <code>createPsArgs = NULL</code>, no propensity scores will be computed.</p>
     </div>
 
   </div>
@@ -190,7 +189,7 @@ the <code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> function.<
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

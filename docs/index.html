@@ -44,7 +44,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -54,7 +54,7 @@
   <a href="reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -98,7 +98,7 @@
 <div class="section level1">
 <div class="page-header"><h1 id="cohortmethod">CohortMethod<a class="anchor" aria-label="anchor" href="#cohortmethod"></a>
 </h1></div>
-
+<p><a href="https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check" class="external-link"><img src="https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg" alt="Build Status"></a> <a href="https://codecov.io/github/OHDSI/CohortMethod?branch=main" class="external-link"><img src="https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main" alt="codecov.io"></a></p>
 <p>CohortMethod is part of <a href="https://ohdsi.github.io/Hades" class="external-link">HADES</a>.</p>
 </div>
 <div class="section level1">
@@ -113,7 +113,7 @@
 <li>Extracts the necessary data from a database in OMOP Common Data Model format.</li>
 <li>Uses a large set of covariates for both the propensity and outcome model, including for example all drugs, diagnoses, procedures, as well as age, comorbidity indexes, etc.</li>
 <li>Large scale regularized regression to fit the propensity and outcome models.</li>
-<li>Includes function for trimming, stratifying and matching on propensity scores.</li>
+<li>Includes function for trimming, stratifying, matching, and weighting on propensity scores.</li>
 <li>Includes diagnostic functions, including propensity score distribution plots and plots showing covariate balance before and after matching and/or trimming.</li>
 <li>Supported outcome models are (conditional) logistic regression, (conditional) Poisson regression, and (conditional) Cox regression.</li>
 </ul>
@@ -158,21 +158,21 @@ Covariate balance plot
 <li><p>In R, use the following commands to download and install CohortMethod:</p></li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
-<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"ohdsi/CohortMethod"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"ohdsi/CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <ol start="3" style="list-style-type: decimal">
 <li>Optionally, run this to check if CohortMethod was correctly installed:</li>
 </ol>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms<span class="op">=</span><span class="st">"postgresql"</span>,
-                                             server<span class="op">=</span><span class="st">"my_server.org"</span>,
-                                             user <span class="op">=</span> <span class="st">"joe"</span>,
-                                             password <span class="op">=</span> <span class="st">"super_secret"</span><span class="op">)</span>
-
-<span class="fu"><a href="reference/checkCmInstallation.html">checkCmInstallation</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms<span class="op">=</span><span class="st">"postgresql"</span>,</span>
+<span>                                             server<span class="op">=</span><span class="st">"my_server.org"</span>,</span>
+<span>                                             user <span class="op">=</span> <span class="st">"joe"</span>,</span>
+<span>                                             password <span class="op">=</span> <span class="st">"super_secret"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/checkCmInstallation.html">checkCmInstallation</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></span></code></pre></div>
 <p>Where dbms, server, user, and password need to be changed to the settings for your database environment. Type</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">?</span><span class="va">createConnectionDetails</span></code></pre></div>
+<code class="sourceCode R"><span><span class="op">?</span><span class="va">createConnectionDetails</span></span></code></pre></div>
 <p>for more details on how to configure your database connection.</p>
 </div>
 <div class="section level1">
@@ -254,13 +254,7 @@ Covariate balance plot
 </ul>
 </div>
 
-<div class="dev-status">
-<h2 data-toc-skip>Dev status</h2>
-<ul class="list-unstyled">
-<li><a href="https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check" class="external-link"><img src="https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg" alt="Build Status"></a></li>
-<li><a href="https://codecov.io/github/OHDSI/CohortMethod?branch=main" class="external-link"><img src="https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main" alt="codecov.io"></a></li>
-</ul>
-</div>
+
 
   </div>
 </div>
@@ -273,7 +267,7 @@ Covariate balance plot
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

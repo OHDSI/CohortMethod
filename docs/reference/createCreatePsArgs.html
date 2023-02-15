@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,45 +69,53 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">createCreatePsArgs</span><span class="op">(</span>
-  excludeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  includeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
-  maxCohortSizeForFitting <span class="op">=</span> <span class="fl">250000</span>,
-  errorOnHighCorrelation <span class="op">=</span> <span class="cn">TRUE</span>,
-  stopOnError <span class="op">=</span> <span class="cn">TRUE</span>,
-  prior <span class="op">=</span> <span class="fu">createPrior</span><span class="op">(</span><span class="st">"laplace"</span>, exclude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, useCrossValidation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
-  control <span class="op">=</span> <span class="fu">createControl</span><span class="op">(</span>noiseLevel <span class="op">=</span> <span class="st">"silent"</span>, cvType <span class="op">=</span> <span class="st">"auto"</span>, seed <span class="op">=</span> <span class="fl">1</span>, tolerance <span class="op">=</span>
-    <span class="fl">2e-07</span>, cvRepetitions <span class="op">=</span> <span class="fl">10</span>, startingVariance <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createCreatePsArgs</span><span class="op">(</span></span>
+<span>  excludeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  includeCovariateIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  maxCohortSizeForFitting <span class="op">=</span> <span class="fl">250000</span>,</span>
+<span>  errorOnHighCorrelation <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  stopOnError <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu">createPrior</span><span class="op">(</span><span class="st">"laplace"</span>, exclude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, useCrossValidation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu">createControl</span><span class="op">(</span>noiseLevel <span class="op">=</span> <span class="st">"silent"</span>, cvType <span class="op">=</span> <span class="st">"auto"</span>, seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    resetCoefficients <span class="op">=</span> <span class="cn">TRUE</span>, tolerance <span class="op">=</span> <span class="fl">2e-07</span>, cvRepetitions <span class="op">=</span> <span class="fl">10</span>, startingVariance <span class="op">=</span></span>
+<span>    <span class="fl">0.01</span><span class="op">)</span>,</span>
+<span>  estimator <span class="op">=</span> <span class="st">"att"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>excludeCovariateIds</dt>
 <dd><p>Exclude these covariates from the propensity model.</p></dd>
+
+
 <dt>includeCovariateIds</dt>
 <dd><p>Include only these covariates in the propensity model.</p></dd>
+
+
 <dt>maxCohortSizeForFitting</dt>
-<dd><p>If the target or comparator cohort are larger than this number,
-they will be downsampled before fitting the propensity model. The
-model will be used to compute propensity scores for all subjects.
-The purpose of the sampling is to gain speed. Setting this number
-to 0 means no downsampling will be applied.</p></dd>
+<dd><p>If the target or comparator cohort are larger than this number, they will be downsampled before fitting the propensity model. The model will be used to compute propensity scores for all subjects. The purpose of the sampling is to gain speed. Setting this number to 0 means no downsampling will be applied.</p></dd>
+
+
 <dt>errorOnHighCorrelation</dt>
-<dd><p>If true, the function will test each covariate for correlation with
-the treatment assignment. If any covariate has an unusually high
-correlation (either positive or negative), this will throw and
-error.</p></dd>
+<dd><p>If true, the function will test each covariate for correlation with the treatment assignment. If any covariate has an unusually high correlation (either positive or negative), this will throw and error.</p></dd>
+
+
 <dt>stopOnError</dt>
-<dd><p>If an error occur, should the function stop? Else, the two cohorts
-will be assumed to be perfectly separable.</p></dd>
+<dd><p>If an error occur, should the function stop? Else, the two cohorts will be assumed to be perfectly separable.</p></dd>
+
+
 <dt>prior</dt>
-<dd><p>The prior used to fit the model. See Cyclops::createPrior() for
-details.</p></dd>
+<dd><p>The prior used to fit the model. See Cyclops::createPrior() for details.</p></dd>
+
+
 <dt>control</dt>
-<dd><p>The control object used to control the cross-validation used to
-determine the hyperparameters of the prior (if applicable). See
-Cyclops::createControl() for details.</p></dd>
+<dd><p>The control object used to control the cross-validation used to determine the hyperparameters of the prior (if applicable). See Cyclops::createControl() for details.</p></dd>
+
+
+<dt>estimator</dt>
+<dd><p>The type of estimator for the IPTW. Options are estimator = "ate" for the average treatment effect, estimator = "att" for the average treatment effect in the treated, and estimator = "ato" for the average treatment effect in the overlap population.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -126,7 +134,7 @@ Cyclops::createControl() for details.</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

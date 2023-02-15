@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -63,150 +63,58 @@
     </div>
 
     <table class="ref-index"><colgroup><col class="alias"><col class="title"></colgroup><tbody><tr><th colspan="2">
-          <h2 id="getting-data-and-creating-a-study-population">Getting data and creating a study population <a href="#getting-data-and-creating-a-study-population" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Functions for getting the necessary data from the database in Common Data Model, and creating a study population.</p>
+          <h2 id="all-functions">All functions <a href="#all-functions" class="anchor" aria-hidden="true"></a></h2>
+          <p class="section-desc"></p>
         </th>
       </tr></tbody><tbody><tr><td>
-          <p><code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code> </p>
+          <p><code><a href="adjustedKm.html">adjustedKm()</a></code> </p>
         </td>
-        <td><p>Get the cohort data from the server</p></td>
+        <td><p>Compute a weight-adjusted Kaplan-Meier curve</p></td>
+      </tr><tr><td>
+          <p><code><a href="checkCmInstallation.html">checkCmInstallation()</a></code> </p>
+        </td>
+        <td><p>Check is CohortMethod and its dependencies are correctly installed</p></td>
       </tr><tr><td>
           <p><code><a href="CohortMethodData-class.html">show(<i>&lt;CohortMethodData&gt;</i>)</a></code> <code><a href="CohortMethodData-class.html">summary(<i>&lt;CohortMethodData&gt;</i>)</a></code> </p>
         </td>
         <td><p>Cohort Method Data</p></td>
       </tr><tr><td>
-          <p><code><a href="isCohortMethodData.html">isCohortMethodData()</a></code> </p>
+          <p><code><a href="cohortMethodDataSimulationProfile.html">cohortMethodDataSimulationProfile</a></code> </p>
         </td>
-        <td><p>Check whether an object is a CohortMethodData object</p></td>
-      </tr><tr><td>
-          <p><code><a href="saveCohortMethodData.html">saveCohortMethodData()</a></code> </p>
-        </td>
-        <td><p>Save the cohort method data to file</p></td>
-      </tr><tr><td>
-          <p><code><a href="loadCohortMethodData.html">loadCohortMethodData()</a></code> </p>
-        </td>
-        <td><p>Load the cohort method data from a file</p></td>
-      </tr><tr><td>
-          <p><code><a href="createStudyPopulation.html">createStudyPopulation()</a></code> </p>
-        </td>
-        <td><p>Create a study population</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="propensity-scores">Propensity scores <a href="#propensity-scores" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Functions for creating and using propensity scores.</p>
-        </th>
-      </tr></tbody><tbody><tr><td>
-          <p><code><a href="createPs.html">createPs()</a></code> </p>
-        </td>
-        <td><p>Create propensity scores</p></td>
-      </tr><tr><td>
-          <p><code><a href="getPsModel.html">getPsModel()</a></code> </p>
-        </td>
-        <td><p>Get the propensity model</p></td>
-      </tr><tr><td>
-          <p><code><a href="matchOnPs.html">matchOnPs()</a></code> </p>
-        </td>
-        <td><p>Match persons by propensity score</p></td>
-      </tr><tr><td>
-          <p><code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> </p>
-        </td>
-        <td><p>Match by propensity score as well as other covariates</p></td>
-      </tr><tr><td>
-          <p><code><a href="trimByPs.html">trimByPs()</a></code> </p>
-        </td>
-        <td><p>Trim persons by propensity score</p></td>
-      </tr><tr><td>
-          <p><code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> </p>
-        </td>
-        <td><p>Keep only persons in clinical equipoise</p></td>
-      </tr><tr><td>
-          <p><code><a href="trimByIptw.html">trimByIptw()</a></code> </p>
-        </td>
-        <td><p>Remove subjects with a high IPTW</p></td>
-      </tr><tr><td>
-          <p><code><a href="stratifyByPs.html">stratifyByPs()</a></code> </p>
-        </td>
-        <td><p>Stratify persons by propensity score</p></td>
-      </tr><tr><td>
-          <p><code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> </p>
-        </td>
-        <td><p>Stratify persons by propensity score and other covariates</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="outcome-models">Outcome models <a href="#outcome-models" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Functions for creating and viewing outcome models.</p>
-        </th>
-      </tr></tbody><tbody><tr><td>
-          <p><code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> </p>
-        </td>
-        <td><p>Create an outcome model, and compute the relative risk</p></td>
-      </tr><tr><td>
-          <p><code><a href="getOutcomeModel.html">getOutcomeModel()</a></code> </p>
-        </td>
-        <td><p>Get the outcome model</p></td>
-      </tr><tr><td>
-          <p><code><a href="plotKaplanMeier.html">plotKaplanMeier()</a></code> </p>
-        </td>
-        <td><p>Plot the Kaplan-Meier curve</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="diagnostics">Diagnostics <a href="#diagnostics" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Functions for producing various study diagnostics.</p>
-        </th>
-      </tr></tbody><tbody><tr><td>
-          <p><code><a href="computeMdrr.html">computeMdrr()</a></code> </p>
-        </td>
-        <td><p>Compute the minimum detectable relative risk</p></td>
-      </tr><tr><td>
-          <p><code><a href="getAttritionTable.html">getAttritionTable()</a></code> </p>
-        </td>
-        <td><p>Get the attrition table for a population</p></td>
-      </tr><tr><td>
-          <p><code><a href="drawAttritionDiagram.html">drawAttritionDiagram()</a></code> </p>
-        </td>
-        <td><p>Draw the attrition diagram</p></td>
-      </tr><tr><td>
-          <p><code><a href="plotFollowUpDistribution.html">plotFollowUpDistribution()</a></code> </p>
-        </td>
-        <td><p>Plot the distribution of follow-up time</p></td>
-      </tr><tr><td>
-          <p><code><a href="createCmTable1.html">createCmTable1()</a></code> </p>
-        </td>
-        <td><p>Create a table 1</p></td>
-      </tr><tr><td>
-          <p><code><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications()</a></code> </p>
-        </td>
-        <td><p>Get the default table 1 specifications</p></td>
-      </tr><tr><td>
-          <p><code><a href="getFollowUpDistribution.html">getFollowUpDistribution()</a></code> </p>
-        </td>
-        <td><p>Get the distribution of follow-up time</p></td>
-      </tr><tr><td>
-          <p><code><a href="plotPs.html">plotPs()</a></code> </p>
-        </td>
-        <td><p>Plot the propensity score distribution</p></td>
-      </tr><tr><td>
-          <p><code><a href="computePsAuc.html">computePsAuc()</a></code> </p>
-        </td>
-        <td><p>Compute the area under the ROC curve</p></td>
+        <td><p>A simulation profile</p></td>
       </tr><tr><td>
           <p><code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code> </p>
         </td>
         <td><p>Compute covariate balance before and after matching and trimming</p></td>
       </tr><tr><td>
-          <p><code><a href="plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables()</a></code> </p>
+          <p><code><a href="computeEquipoise.html">computeEquipoise()</a></code> </p>
         </td>
-        <td><p>Plot variables with largest imbalance</p></td>
+        <td><p>Compute fraction in equipoise</p></td>
       </tr><tr><td>
-          <p><code><a href="plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot()</a></code> </p>
+          <p><code><a href="computeMdrr.html">computeMdrr()</a></code> </p>
         </td>
-        <td><p>Create a scatterplot of the covariate balance</p></td>
+        <td><p>Compute the minimum detectable relative risk</p></td>
       </tr><tr><td>
-          <p><code><a href="plotTimeToEvent.html">plotTimeToEvent()</a></code> </p>
+          <p><code><a href="computePsAuc.html">computePsAuc()</a></code> </p>
         </td>
-        <td><p>Plot time-to-event</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="running-multiple-analyses">Running multiple analyses <a href="#running-multiple-analyses" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Functions for running multiple analyses in an efficient way.</p>
-        </th>
-      </tr></tbody><tbody><tr><td>
+        <td><p>Compute the area under the ROC curve</p></td>
+      </tr><tr><td>
+          <p><code><a href="createCmAnalysis.html">createCmAnalysis()</a></code> </p>
+        </td>
+        <td><p>Create a CohortMethod analysis specification</p></td>
+      </tr><tr><td>
+          <p><code><a href="createCmTable1.html">createCmTable1()</a></code> </p>
+        </td>
+        <td><p>Create a table 1</p></td>
+      </tr><tr><td>
+          <p><code><a href="createCohortMethodDataSimulationProfile.html">createCohortMethodDataSimulationProfile()</a></code> </p>
+        </td>
+        <td><p>Create simulation profile</p></td>
+      </tr><tr><td>
+          <p><code><a href="createComputeCovariateBalanceArgs.html">createComputeCovariateBalanceArgs()</a></code> </p>
+        </td>
+        <td><p>Create a parameter object for the function computeCovariateBalance</p></td>
+      </tr><tr><td>
           <p><code><a href="createCreatePsArgs.html">createCreatePsArgs()</a></code> </p>
         </td>
         <td><p>Create a parameter object for the function createPs</p></td>
@@ -214,6 +122,10 @@
           <p><code><a href="createCreateStudyPopulationArgs.html">createCreateStudyPopulationArgs()</a></code> </p>
         </td>
         <td><p>Create a parameter object for the function createStudyPopulation</p></td>
+      </tr><tr><td>
+          <p><code><a href="createDefaultMultiThreadingSettings.html">createDefaultMultiThreadingSettings()</a></code> </p>
+        </td>
+        <td><p>Create default CohortMethod multi-threading settings</p></td>
       </tr><tr><td>
           <p><code><a href="createFitOutcomeModelArgs.html">createFitOutcomeModelArgs()</a></code> </p>
         </td>
@@ -231,6 +143,18 @@
         </td>
         <td><p>Create a parameter object for the function matchOnPs</p></td>
       </tr><tr><td>
+          <p><code><a href="createMultiThreadingSettings.html">createMultiThreadingSettings()</a></code> </p>
+        </td>
+        <td><p>Create CohortMethod multi-threading settings</p></td>
+      </tr><tr><td>
+          <p><code><a href="createOutcome.html">createOutcome()</a></code> </p>
+        </td>
+        <td><p>Create outcome definition</p></td>
+      </tr><tr><td>
+          <p><code><a href="createPs.html">createPs()</a></code> </p>
+        </td>
+        <td><p>Create propensity scores</p></td>
+      </tr><tr><td>
           <p><code><a href="createStratifyByPsAndCovariatesArgs.html">createStratifyByPsAndCovariatesArgs()</a></code> </p>
         </td>
         <td><p>Create a parameter object for the function stratifyByPsAndCovariates</p></td>
@@ -238,6 +162,14 @@
           <p><code><a href="createStratifyByPsArgs.html">createStratifyByPsArgs()</a></code> </p>
         </td>
         <td><p>Create a parameter object for the function stratifyByPs</p></td>
+      </tr><tr><td>
+          <p><code><a href="createStudyPopulation.html">createStudyPopulation()</a></code> </p>
+        </td>
+        <td><p>Create a study population</p></td>
+      </tr><tr><td>
+          <p><code><a href="createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code> </p>
+        </td>
+        <td><p>Create target-comparator-outcomes combinations.</p></td>
       </tr><tr><td>
           <p><code><a href="createTrimByIptwArgs.html">createTrimByIptwArgs()</a></code> </p>
         </td>
@@ -251,61 +183,153 @@
         </td>
         <td><p>Create a parameter object for the function trimByPsToEquipoise</p></td>
       </tr><tr><td>
-          <p><code><a href="createCmAnalysis.html">createCmAnalysis()</a></code> </p>
+          <p><code><a href="createTruncateIptwArgs.html">createTruncateIptwArgs()</a></code> </p>
         </td>
-        <td><p>Create a CohortMethod analysis specification</p></td>
+        <td><p>Create a parameter object for the function truncateIptw</p></td>
       </tr><tr><td>
-          <p><code><a href="saveCmAnalysisList.html">saveCmAnalysisList()</a></code> </p>
+          <p><code><a href="drawAttritionDiagram.html">drawAttritionDiagram()</a></code> </p>
         </td>
-        <td><p>Save a list of cmAnalysis to file</p></td>
+        <td><p>Draw the attrition diagram</p></td>
+      </tr><tr><td>
+          <p><code><a href="exportToCsv.html">exportToCsv()</a></code> </p>
+        </td>
+        <td><p>Export cohort method results to CSV files</p></td>
+      </tr><tr><td>
+          <p><code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> </p>
+        </td>
+        <td><p>Create an outcome model, and compute the relative risk</p></td>
+      </tr><tr><td>
+          <p><code><a href="getAttritionTable.html">getAttritionTable()</a></code> </p>
+        </td>
+        <td><p>Get the attrition table for a population</p></td>
+      </tr><tr><td>
+          <p><code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code> </p>
+        </td>
+        <td><p>Get the cohort data from the server</p></td>
+      </tr><tr><td>
+          <p><code><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications()</a></code> </p>
+        </td>
+        <td><p>Get the default table 1 specifications</p></td>
+      </tr><tr><td>
+          <p><code><a href="getFileReference.html">getFileReference()</a></code> </p>
+        </td>
+        <td><p>Get file reference</p></td>
+      </tr><tr><td>
+          <p><code><a href="getFollowUpDistribution.html">getFollowUpDistribution()</a></code> </p>
+        </td>
+        <td><p>Get the distribution of follow-up time</p></td>
+      </tr><tr><td>
+          <p><code><a href="getInteractionResultsSummary.html">getInteractionResultsSummary()</a></code> </p>
+        </td>
+        <td><p>Get a summary report of the analyses results</p></td>
+      </tr><tr><td>
+          <p><code><a href="getOutcomeModel.html">getOutcomeModel()</a></code> </p>
+        </td>
+        <td><p>Get the outcome model</p></td>
+      </tr><tr><td>
+          <p><code><a href="getPsModel.html">getPsModel()</a></code> </p>
+        </td>
+        <td><p>Get the propensity model</p></td>
+      </tr><tr><td>
+          <p><code><a href="getResultsSummary.html">getResultsSummary()</a></code> </p>
+        </td>
+        <td><p>Get a summary report of the analyses results</p></td>
+      </tr><tr><td>
+          <p><code><a href="isCohortMethodData.html">isCohortMethodData()</a></code> </p>
+        </td>
+        <td><p>Check whether an object is a CohortMethodData object</p></td>
       </tr><tr><td>
           <p><code><a href="loadCmAnalysisList.html">loadCmAnalysisList()</a></code> </p>
         </td>
         <td><p>Load a list of cmAnalysis from file</p></td>
       </tr><tr><td>
-          <p><code><a href="createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code> </p>
+          <p><code><a href="loadCohortMethodData.html">loadCohortMethodData()</a></code> </p>
         </td>
-        <td><p>Create target-comparator-outcomes combinations.</p></td>
-      </tr><tr><td>
-          <p><code><a href="saveTargetComparatorOutcomesList.html">saveTargetComparatorOutcomesList()</a></code> </p>
-        </td>
-        <td><p>Save a list of targetComparatorOutcomes to file</p></td>
+        <td><p>Load the cohort method data from a file</p></td>
       </tr><tr><td>
           <p><code><a href="loadTargetComparatorOutcomesList.html">loadTargetComparatorOutcomesList()</a></code> </p>
         </td>
         <td><p>Load a list of targetComparatorOutcomes from file</p></td>
       </tr><tr><td>
+          <p><code><a href="matchOnPs.html">matchOnPs()</a></code> </p>
+        </td>
+        <td><p>Match persons by propensity score</p></td>
+      </tr><tr><td>
+          <p><code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> </p>
+        </td>
+        <td><p>Match by propensity score as well as other covariates</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables()</a></code> </p>
+        </td>
+        <td><p>Plot variables with largest imbalance</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot()</a></code> </p>
+        </td>
+        <td><p>Create a scatterplot of the covariate balance</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotCovariatePrevalence.html">plotCovariatePrevalence()</a></code> </p>
+        </td>
+        <td><p>Plot covariate prevalence</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotFollowUpDistribution.html">plotFollowUpDistribution()</a></code> </p>
+        </td>
+        <td><p>Plot the distribution of follow-up time</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotKaplanMeier.html">plotKaplanMeier()</a></code> </p>
+        </td>
+        <td><p>Plot the Kaplan-Meier curve</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotPs.html">plotPs()</a></code> </p>
+        </td>
+        <td><p>Plot the propensity score distribution</p></td>
+      </tr><tr><td>
+          <p><code><a href="plotTimeToEvent.html">plotTimeToEvent()</a></code> </p>
+        </td>
+        <td><p>Plot time-to-event</p></td>
+      </tr><tr><td>
           <p><code><a href="runCmAnalyses.html">runCmAnalyses()</a></code> </p>
         </td>
         <td><p>Run a list of analyses</p></td>
       </tr><tr><td>
-          <p><code><a href="summarizeAnalyses.html">summarizeAnalyses()</a></code> </p>
+          <p><code><a href="saveCmAnalysisList.html">saveCmAnalysisList()</a></code> </p>
         </td>
-        <td><p>Create a summary report of the analyses</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="simulation">Simulation <a href="#simulation" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Functions for simulating cohort method data objects.</p>
-        </th>
-      </tr></tbody><tbody><tr><td>
-          <p><code><a href="createCohortMethodDataSimulationProfile.html">createCohortMethodDataSimulationProfile()</a></code> </p>
+        <td><p>Save a list of cmAnalysis to file</p></td>
+      </tr><tr><td>
+          <p><code><a href="saveCohortMethodData.html">saveCohortMethodData()</a></code> </p>
         </td>
-        <td><p>Create simulation profile</p></td>
+        <td><p>Save the cohort method data to file</p></td>
+      </tr><tr><td>
+          <p><code><a href="saveTargetComparatorOutcomesList.html">saveTargetComparatorOutcomesList()</a></code> </p>
+        </td>
+        <td><p>Save a list of targetComparatorOutcomes to file</p></td>
       </tr><tr><td>
           <p><code><a href="simulateCohortMethodData.html">simulateCohortMethodData()</a></code> </p>
         </td>
         <td><p>Generate simulated data</p></td>
       </tr><tr><td>
-          <p><code><a href="cohortMethodDataSimulationProfile.html">cohortMethodDataSimulationProfile</a></code> </p>
+          <p><code><a href="stratifyByPs.html">stratifyByPs()</a></code> </p>
         </td>
-        <td><p>A simulation profile</p></td>
-      </tr></tbody><tbody><tr><th colspan="2">
-          <h2 id="helper-functions">Helper functions <a href="#helper-functions" class="anchor" aria-hidden="true"></a></h2>
-          <p class="section-desc"></p><p>Various helper functions</p>
-        </th>
-      </tr></tbody><tbody><tr><td>
-          <p><code><a href="checkCmInstallation.html">checkCmInstallation()</a></code> </p>
+        <td><p>Stratify persons by propensity score</p></td>
+      </tr><tr><td>
+          <p><code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> </p>
         </td>
-        <td><p>Check is CohortMethod and its dependencies are correctly installed</p></td>
+        <td><p>Stratify persons by propensity score and other covariates</p></td>
+      </tr><tr><td>
+          <p><code><a href="trimByIptw.html">trimByIptw()</a></code> </p>
+        </td>
+        <td><p>Remove subjects with a high IPTW</p></td>
+      </tr><tr><td>
+          <p><code><a href="trimByPs.html">trimByPs()</a></code> </p>
+        </td>
+        <td><p>Trim persons by propensity score</p></td>
+      </tr><tr><td>
+          <p><code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> </p>
+        </td>
+        <td><p>Keep only persons in clinical equipoise</p></td>
+      </tr><tr><td>
+          <p><code><a href="truncateIptw.html">truncateIptw()</a></code> </p>
+        </td>
+        <td><p>Truncate IPTW values</p></td>
       </tr></tbody></table></div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -319,7 +343,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

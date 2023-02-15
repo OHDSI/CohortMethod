@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -69,138 +69,123 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">runCmAnalyses</span><span class="op">(</span>
-  <span class="va">connectionDetails</span>,
-  <span class="va">cdmDatabaseSchema</span>,
-  oracleTempSchema <span class="op">=</span> <span class="cn">NULL</span>,
-  tempEmulationSchema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"sqlRenderTempEmulationSchema"</span><span class="op">)</span>,
-  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,
-  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  outcomeTable <span class="op">=</span> <span class="st">"condition_occurrence"</span>,
-  cdmVersion <span class="op">=</span> <span class="fl">5</span>,
-  outputFolder <span class="op">=</span> <span class="st">"./CohortMethodOutput"</span>,
-  <span class="va">cmAnalysisList</span>,
-  <span class="va">targetComparatorOutcomesList</span>,
-  refitPsForEveryOutcome <span class="op">=</span> <span class="cn">FALSE</span>,
-  refitPsForEveryStudyPopulation <span class="op">=</span> <span class="cn">TRUE</span>,
-  prefilterCovariates <span class="op">=</span> <span class="cn">TRUE</span>,
-  getDbCohortMethodDataThreads <span class="op">=</span> <span class="fl">1</span>,
-  createPsThreads <span class="op">=</span> <span class="fl">1</span>,
-  psCvThreads <span class="op">=</span> <span class="fl">1</span>,
-  createStudyPopThreads <span class="op">=</span> <span class="fl">1</span>,
-  trimMatchStratifyThreads <span class="op">=</span> <span class="fl">1</span>,
-  prefilterCovariatesThreads <span class="op">=</span> <span class="fl">1</span>,
-  fitOutcomeModelThreads <span class="op">=</span> <span class="fl">1</span>,
-  outcomeCvThreads <span class="op">=</span> <span class="fl">1</span>,
-  <span class="va">outcomeIdsOfInterest</span>,
-  analysesToExclude <span class="op">=</span> <span class="cn">NULL</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">runCmAnalyses</span><span class="op">(</span></span>
+<span>  <span class="va">connectionDetails</span>,</span>
+<span>  <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  tempEmulationSchema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"sqlRenderTempEmulationSchema"</span><span class="op">)</span>,</span>
+<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
+<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  outcomeTable <span class="op">=</span> <span class="st">"condition_occurrence"</span>,</span>
+<span>  cdmVersion <span class="op">=</span> <span class="st">"5"</span>,</span>
+<span>  outputFolder <span class="op">=</span> <span class="st">"./CohortMethodOutput"</span>,</span>
+<span>  <span class="va">cmAnalysisList</span>,</span>
+<span>  <span class="va">targetComparatorOutcomesList</span>,</span>
+<span>  analysesToExclude <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  refitPsForEveryOutcome <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  refitPsForEveryStudyPopulation <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  multiThreadingSettings <span class="op">=</span> <span class="fu"><a href="createMultiThreadingSettings.html">createMultiThreadingSettings</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>connectionDetails</dt>
 <dd><p>An R object of type <code>connectionDetails</code> created using the
-<code><a href="https://rdrr.io/pkg/DatabaseConnector/man/createConnectionDetails.html" class="external-link">DatabaseConnector::createConnectionDetails()</a></code> function.</p></dd>
+<code><a href="https://ohdsi.github.io/DatabaseConnector/reference/createConnectionDetails.html" class="external-link">DatabaseConnector::createConnectionDetails()</a></code> function.</p></dd>
+
+
 <dt>cdmDatabaseSchema</dt>
 <dd><p>The name of the database schema that contains the OMOP CDM
 instance. Requires read permissions to this database. On SQL
 Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.</p></dd>
-<dt>oracleTempSchema</dt>
-<dd><p>DEPRECATED: use <code>tempEmulationSchema</code> instead.</p></dd>
+
+
 <dt>tempEmulationSchema</dt>
 <dd><p>Some database platforms like Oracle and Impala do not truly support temp tables. To
 emulate temp tables, provide a schema with write privileges where temp tables
 can be created.</p></dd>
+
+
 <dt>exposureDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is
 available. If exposureTable = DRUG_ERA, exposureDatabaseSchema
 is not used by assumed to be cdmSchema.  Requires read
 permissions to this database.</p></dd>
+
+
 <dt>exposureTable</dt>
 <dd><p>The tablename that contains the exposure cohorts.  If
 exposureTable &lt;&gt; DRUG_ERA, then expectation is exposureTable
 has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.</p></dd>
+
+
 <dt>outcomeDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where the
 data used to define the outcome cohorts is available. If
 exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
 used by assumed to be cdmSchema.  Requires read permissions to
 this database.</p></dd>
+
+
 <dt>outcomeTable</dt>
 <dd><p>The tablename that contains the outcome cohorts.  If
 outcomeTable &lt;&gt; CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.</p></dd>
+
+
 <dt>cdmVersion</dt>
 <dd><p>Define the OMOP CDM version used: currently support "4" and
 "5".</p></dd>
+
+
 <dt>outputFolder</dt>
 <dd><p>Name of the folder where all the outputs will written to.</p></dd>
+
+
 <dt>cmAnalysisList</dt>
 <dd><p>A list of objects of type <code>cmAnalysis</code> as created using
 the `<a href="createCmAnalysis.html">createCmAnalysis</a> function.</p></dd>
+
+
 <dt>targetComparatorOutcomesList</dt>
 <dd><p>A list of objects of type <code>targetComparatorOutcomes</code> as
 created using the <a href="createTargetComparatorOutcomes.html">createTargetComparatorOutcomes</a>
 function.</p></dd>
+
+
+<dt>analysesToExclude</dt>
+<dd><p>Analyses to exclude. See the Analyses to Exclude section for details.</p></dd>
+
+
 <dt>refitPsForEveryOutcome</dt>
 <dd><p>Should the propensity model be fitted for every outcome (i.e.
 after people who already had the outcome are removed)? If
 false, a single propensity model will be fitted, and people
 who had the outcome previously will be removed afterwards.</p></dd>
+
+
 <dt>refitPsForEveryStudyPopulation</dt>
 <dd><p>Should the propensity model be fitted for every study population
 definition? If false, a single propensity model will be fitted,
 and the study population criteria will be applied afterwards.</p></dd>
-<dt>prefilterCovariates</dt>
-<dd><p>If TRUE, and some outcome models require filtering covariates
-by concept ID (e.g. because <code>includeCovariateIds</code> or
-<code>interactionCovariateIds</code> is specified), this filtering
-will be done once for all outcome models that need it. This
-can greatly speed up the analyses if multiple outcome models
-require the same filtering.</p></dd>
-<dt>getDbCohortMethodDataThreads</dt>
-<dd><p>The number of parallel threads to use for building the
-cohortMethod data objects.</p></dd>
-<dt>createPsThreads</dt>
-<dd><p>The number of parallel threads to use for fitting the
-propensity models.</p></dd>
-<dt>psCvThreads</dt>
-<dd><p>The number of parallel threads to use for the cross-
-validation when estimating the hyperparameter for the
-propensity model. Note that the total number of CV threads at
-one time could be <code>createPsThreads * psCvThreads</code>.</p></dd>
-<dt>createStudyPopThreads</dt>
-<dd><p>The number of parallel threads to use for creating the study
-population.</p></dd>
-<dt>trimMatchStratifyThreads</dt>
-<dd><p>The number of parallel threads to use for trimming, matching
-and stratifying.</p></dd>
-<dt>prefilterCovariatesThreads</dt>
-<dd><p>The number of parallel threads to use for prefiltering covariates.</p></dd>
-<dt>fitOutcomeModelThreads</dt>
-<dd><p>The number of parallel threads to use for fitting the outcome
-models.</p></dd>
-<dt>outcomeCvThreads</dt>
-<dd><p>The number of parallel threads to use for the cross-
-validation when estimating the hyperparameter for the outcome
-model. Note that the total number of CV threads at one time
-could be <code>fitOutcomeModelThreads * outcomeCvThreads</code>.</p></dd>
-<dt>outcomeIdsOfInterest</dt>
-<dd><p>If provided, creation of non-essential files will be skipped
-for all other outcome IDs. This could be helpful to speed up
-analyses with many controls.</p></dd>
-<dt>analysesToExclude</dt>
-<dd><p>Analyses to exclude. See the Analyses to Exclude section for details.</p></dd>
+
+
+<dt>multiThreadingSettings</dt>
+<dd><p>An object of type <code>CmMultiThreadingSettings</code> as created using
+the <code><a href="createMultiThreadingSettings.html">createMultiThreadingSettings()</a></code> or
+<code><a href="createDefaultMultiThreadingSettings.html">createDefaultMultiThreadingSettings()</a></code> functions.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
+    
+
+<p>A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
 outcome model files can be found, relative to the <code>outputFolder</code>.</p>
     </div>
     <div id="details">
@@ -212,7 +197,10 @@ outcome model should be fitted). When you provide several analyses it will deter
 the analyses have anything in common, and will take advantage of this fact. For example, if we
 specify several analyses that only differ in the way the outcome model is fitted, then this
 function will extract the data and fit the propensity model only once, and re-use this in all the
-analysis.</p><div class="section">
+analysis.</p>
+<p>After completion, a tibble containing references to all generated files can be obtained using the
+<code><a href="getFileReference.html">getFileReference()</a></code> function. A summary of the analysis results can be obtained using the
+<code><a href="getResultsSummary.html">getResultsSummary()</a></code> function.</p><div class="section">
 <h3 id="analyses-to-exclude">Analyses to Exclude<a class="anchor" aria-label="anchor" href="#analyses-to-exclude"></a></h3>
 
 
@@ -242,7 +230,7 @@ that target and that analysis ID will be skipped.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

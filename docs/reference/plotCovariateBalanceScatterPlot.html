@@ -18,7 +18,7 @@ matching on the x and y axis respectively. Requires running computeCovariateBala
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">4.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
       </span>
     </div>
 
@@ -27,7 +27,7 @@ matching on the x and y axis respectively. Requires running computeCovariateBala
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -71,44 +71,63 @@ matching on the x and y axis respectively. Requires running <code>computeCovaria
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">plotCovariateBalanceScatterPlot</span><span class="op">(</span>
-  <span class="va">balance</span>,
-  absolute <span class="op">=</span> <span class="cn">TRUE</span>,
-  threshold <span class="op">=</span> <span class="fl">0</span>,
-  title <span class="op">=</span> <span class="st">"Standardized difference of mean"</span>,
-  fileName <span class="op">=</span> <span class="cn">NULL</span>,
-  beforeLabel <span class="op">=</span> <span class="st">"Before matching"</span>,
-  afterLabel <span class="op">=</span> <span class="st">"After matching"</span>,
-  showCovariateCountLabel <span class="op">=</span> <span class="cn">FALSE</span>,
-  showMaxLabel <span class="op">=</span> <span class="cn">FALSE</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plotCovariateBalanceScatterPlot</span><span class="op">(</span></span>
+<span>  <span class="va">balance</span>,</span>
+<span>  absolute <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  threshold <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Standardized difference of mean"</span>,</span>
+<span>  fileName <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  beforeLabel <span class="op">=</span> <span class="st">"Before matching"</span>,</span>
+<span>  afterLabel <span class="op">=</span> <span class="st">"After matching"</span>,</span>
+<span>  showCovariateCountLabel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  showMaxLabel <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>balance</dt>
 <dd><p>A data frame created by the <code>computeCovariateBalance</code> function.</p></dd>
+
+
 <dt>absolute</dt>
 <dd><p>Should the absolute value of the difference be used?</p></dd>
+
+
 <dt>threshold</dt>
 <dd><p>Show a threshold value for after matching standardized difference.</p></dd>
+
+
 <dt>title</dt>
 <dd><p>The main title for the plot.</p></dd>
+
+
 <dt>fileName</dt>
 <dd><p>Name of the file where the plot should be saved, for example 'plot.png'. See the
 function <code>ggsave</code> in the ggplot2 package for supported file formats.</p></dd>
+
+
 <dt>beforeLabel</dt>
 <dd><p>Label for the x-axis.</p></dd>
+
+
 <dt>afterLabel</dt>
 <dd><p>Label for the y-axis.</p></dd>
+
+
 <dt>showCovariateCountLabel</dt>
 <dd><p>Show a label with the number of covariates included in the plot?</p></dd>
+
+
 <dt>showMaxLabel</dt>
 <dd><p>Show a label with the maximum absolute standardized difference after matching/stratification?</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A ggplot object. Use the <a href="https://rdrr.io/pkg/ggplot2/man/ggsave.html" class="external-link">ggplot2::ggsave</a> function to save to file in a different
+    
+
+<p>A ggplot object. Use the <a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggplot2::ggsave</a> function to save to file in a different
 format.</p>
     </div>
 
@@ -124,7 +143,7 @@ format.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

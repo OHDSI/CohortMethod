@@ -46,6 +46,9 @@
     <loc>/reference/computeCovariateBalance.html</loc>
   </url>
   <url>
+    <loc>/reference/computeEquipoise.html</loc>
+  </url>
+  <url>
     <loc>/reference/computeMdrr.html</loc>
   </url>
   <url>
@@ -64,10 +67,16 @@
     <loc>/reference/createCohortMethodDataSimulationProfile.html</loc>
   </url>
   <url>
+    <loc>/reference/createComputeCovariateBalanceArgs.html</loc>
+  </url>
+  <url>
     <loc>/reference/createCreatePsArgs.html</loc>
   </url>
   <url>
     <loc>/reference/createCreateStudyPopulationArgs.html</loc>
+  </url>
+  <url>
+    <loc>/reference/createDefaultMultiThreadingSettings.html</loc>
   </url>
   <url>
     <loc>/reference/createFitOutcomeModelArgs.html</loc>
@@ -80,6 +89,12 @@
   </url>
   <url>
     <loc>/reference/createMatchOnPsArgs.html</loc>
+  </url>
+  <url>
+    <loc>/reference/createMultiThreadingSettings.html</loc>
+  </url>
+  <url>
+    <loc>/reference/createOutcome.html</loc>
   </url>
   <url>
     <loc>/reference/createPs.html</loc>
@@ -106,7 +121,13 @@
     <loc>/reference/createTrimByPsToEquipoiseArgs.html</loc>
   </url>
   <url>
+    <loc>/reference/createTruncateIptwArgs.html</loc>
+  </url>
+  <url>
     <loc>/reference/drawAttritionDiagram.html</loc>
+  </url>
+  <url>
+    <loc>/reference/exportToCsv.html</loc>
   </url>
   <url>
     <loc>/reference/fitOutcomeModel.html</loc>
@@ -121,13 +142,22 @@
     <loc>/reference/getDefaultCmTable1Specifications.html</loc>
   </url>
   <url>
+    <loc>/reference/getFileReference.html</loc>
+  </url>
+  <url>
     <loc>/reference/getFollowUpDistribution.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getInteractionResultsSummary.html</loc>
   </url>
   <url>
     <loc>/reference/getOutcomeModel.html</loc>
   </url>
   <url>
     <loc>/reference/getPsModel.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getResultsSummary.html</loc>
   </url>
   <url>
     <loc>/reference/grepCovariateNames.html</loc>
@@ -209,5 +239,8 @@
   </url>
   <url>
     <loc>/reference/trimByPsToEquipoise.html</loc>
+  </url>
+  <url>
+    <loc>/reference/truncateIptw.html</loc>
   </url>
 </urlset>
