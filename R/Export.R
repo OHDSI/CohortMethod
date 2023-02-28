@@ -19,6 +19,40 @@
 # maxCores <- 8
 # library(dplyr)
 
+#' Create CohortMethod diagnostics thresholds
+#'
+#' @description
+#' Threshold used when calling [exportToCsv()] to determine if we pass or fail diagnostics.
+#'
+#' @param mdrrThreshold         What is the maximum allowed minimum detectable relative risk
+#'                              (MDRR)?
+#' @param easeThreshold         What is the maximum allowed expected absolute systematic error
+#'                              (EASE).
+#' @param sdmThreshold          What is the maximum allowed standardized difference of mean (SDM)? If
+#'                              any covariate has an SDM exceeding this threshold, the diagnostic will
+#'                              fail.
+#' @param equipoiseThreshold    What is the minimum required equipoise?
+#' @param attritionFractionThreshold What is the maximum allowed attrition fraction? If the attrition
+#'                                   between the input target cohort and the target cohort entering the
+#'                                   outcome model is greater than this fraction, the diagnostic will
+#'                                   fail.
+#'
+#' @return
+#' An object of type `CmDiagnosticThresholds`.
+#'
+#' @export
+createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
+                                         easeThreshold = 0.25,
+                                         sdmThreshold = 0.1,
+                                         equipoiseThreshold = 0.2,
+                                         attritionFractionThreshold = 1) {
+  thresholds <- list()
+  for (name in names(formals(createCmDiagnosticThresholds))) {
+    thresholds[[name]] <- get(name)
+  }
+  class(thresholds) <- "CmDiagnosticThresholds"
+  return(thresholds)
+}
 
 #' Export cohort method results to CSV files
 #'
@@ -35,6 +69,8 @@
 #'                      to a count before it can be included in the results. If the
 #'                      count is below this threshold, it will be set to `-minCellCount`.
 #' @param maxCores      How many parallel cores should be used?
+#' @param cmDiagnosticThresholds An object of type `CmDiagnosticThresholds` as created using
+#'                                 [createCmDiagnosticThresholds()].
 #'
 #' @return
 #' Does not return anything. Is called for the side-effect of populating the `exportFolder`
@@ -45,7 +81,8 @@ exportToCsv <- function(outputFolder,
                         exportFolder = file.path(outputFolder, "export"),
                         databaseId = 1,
                         minCellCount = 5,
-                        maxCores = 1) {
+                        maxCores = 1,
+                        cmDiagnosticThresholds = createCmDiagnosticThresholds()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::assertDirectoryExists(outputFolder, add = errorMessages)
@@ -149,7 +186,8 @@ exportToCsv <- function(outputFolder,
   exportDiagnosticsSummary(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
-    databaseId = databaseId
+    databaseId = databaseId,
+    cmDiagnosticThresholds = cmDiagnosticThresholds
   )
 
   # Add all to zip file -------------------------------------------------------------------------------
@@ -1055,9 +1093,10 @@ prepareKaplanMeier <- function(population) {
   return(data)
 }
 
-exportDiagnosticsSummary <- function(outputFolder = outputFolder,
-                                     exportFolder = exportFolder,
-                                     databaseId = databaseId) {
+exportDiagnosticsSummary <- function(outputFolder,
+                                     exportFolder,
+                                     databaseId,
+                                     cmDiagnosticThresholds) {
   message("- diagnostics_summary table")
   reference <- getFileReference(outputFolder)
 
@@ -1138,36 +1177,32 @@ exportDiagnosticsSummary <- function(outputFolder = outputFolder,
     inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
     mutate(balanceDiagnostic = case_when(
       is.na(.data$maxSdm) ~ "NOT EVALUATED",
-      .data$maxSdm < 0.1 ~ "PASS",
+      .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(sharedBalanceDiagnostic = case_when(
       is.na(.data$sharedMaxSdm) ~ "NOT EVALUATED",
-      .data$sharedMaxSdm < 0.1 ~ "PASS",
+      .data$sharedMaxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(equipoiseDiagnostic = case_when(
       is.na(.data$equipoise) ~ "NOT EVALUATED",
-      .data$equipoise >= 0.5 ~ "PASS",
-      .data$equipoise >= 0.1 ~ "WARNING",
+      .data$equipoise >= cmDiagnosticThresholds$equipoiseThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(mdrrDiagnostic = case_when(
       is.na(.data$mdrr) ~ "NOT EVALUATED",
-      .data$mdrr < 2 ~ "PASS",
-      .data$mdrr < 10 ~ "WARNING",
+      .data$mdrr < cmDiagnosticThresholds$mdrrThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(attritionDiagnostic = case_when(
       is.na(.data$attritionFraction) ~ "NOT EVALUATED",
-      .data$attritionFraction < 0.5 ~ "PASS",
-      .data$attritionFraction < 0.9 ~ "WARNING",
+      .data$attritionFraction < cmDiagnosticThresholds$attritionFractionThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(easeDiagnostic = case_when(
       is.na(.data$ease) ~ "NOT EVALUATED",
-      abs(.data$ease) < 0.1 ~ "PASS",
-      abs(.data$ease) < 0.25 ~ "WARNING",
+      abs(.data$ease) < cmDiagnosticThresholds$easeThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &

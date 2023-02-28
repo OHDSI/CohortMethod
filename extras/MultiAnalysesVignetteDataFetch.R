@@ -18,9 +18,9 @@
 
 #### Fetch data for multiple analyses vignette ####
 library(CohortMethod)
-options(andromedaTempFolder = "s:/andromedaTemp")
+options(andromedaTempFolder = "d:/andromedaTemp")
 
-folder <- "s:/temp/cohortMethodVignette2"
+folder <- "d:/temp/cohortMethodVignette2"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
 
@@ -165,6 +165,8 @@ cmAnalysis4 <- createCmAnalysis(analysisId = 4,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPsArgs = createPsArgs,
                                 trimByPsArgs = trimByPsArgs,
+                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+                                computeCovariateBalanceArgs = computeCovBalArgs,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs3)
 
 fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
