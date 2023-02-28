@@ -18,6 +18,8 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)
+outputFolder <- "d:/temp/cohortMethodVignette2"
+folderExists <- dir.exists(outputFolder)
 ```
 # Introduction
 
@@ -353,9 +355,8 @@ ps <- readRDS(file.path(outputFolder, psFile))
 plotPs(ps)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")) {
-  outputFolder <- "s:/temp/cohortMethodVignette2"
-  result <- readRDS("s:/temp/cohortMethodVignette2/outcomeModelReference.rds")
+if (folderExists) {
+  result <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
   psFile <- result$psFile[result$targetId == 1118084 & 
                             result$comparatorId == 1124300 & 
                             result$outcomeId == 192671 &
@@ -378,8 +379,8 @@ resultsSum <- getResultsSummary(outputFolder)
 head(resultsSum)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
-  resultsSum <- readRDS("s:/temp/cohortMethodVignette2/resultsSummary.rds")
+if (folderExists) {
+  resultsSum <- readRDS(file.path(outputFolder, "resultsSummary.rds"))
   head(resultsSum)
 }
 ```
@@ -401,7 +402,7 @@ null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+if (folderExists) {
   library(EmpiricalCalibration)
   negCons <- resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId != 192671, ]
   hoi <-  resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId == 192671, ]
@@ -418,7 +419,7 @@ null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+if (folderExists) {
   negCons <- resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId != 192671, ]
   hoi <-  resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -434,7 +435,7 @@ null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+if (folderExists) {
   negCons <- resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId != 192671, ]
   hoi <-  resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -450,7 +451,7 @@ null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+if (folderExists) {
   negCons <- resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId != 192671, ]
   hoi <-  resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -466,7 +467,7 @@ null <- fitNull(negCons$logRr, negCons$seLogRr)
 plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
+if (folderExists) {
   negCons <- resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId != 192671, ]
   hoi <-  resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)
@@ -491,8 +492,8 @@ plotCalibrationEffect(logRrNegatives = negCons$logRr,
                       seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette2/resultsSummary.rds")) {
-  interactionResultsSum <- getInteractionResultsSummary("s:/temp/cohortMethodVignette2")
+if (folderExists) {
+  interactionResultsSum <- getInteractionResultsSummary(outputFolder)
   negCons <- interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId != 192671, ]
   hoi <-  interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId == 192671, ]
   null <- fitNull(negCons$logRr, negCons$seLogRr)

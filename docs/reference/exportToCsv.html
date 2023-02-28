@@ -74,7 +74,8 @@
 <span>  exportFolder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outputFolder</span>, <span class="st">"export"</span><span class="op">)</span>,</span>
 <span>  databaseId <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  minCellCount <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  maxCores <span class="op">=</span> <span class="fl">1</span></span>
+<span>  maxCores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  cmDiagnosticThresholds <span class="op">=</span> <span class="fu"><a href="createCmDiagnosticThresholds.html">createCmDiagnosticThresholds</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,6 +102,11 @@ count is below this threshold, it will be set to <code>-minCellCount</code>.</p>
 
 <dt>maxCores</dt>
 <dd><p>How many parallel cores should be used?</p></dd>
+
+
+<dt>cmDiagnosticThresholds</dt>
+<dd><p>An object of type <code>CmDiagnosticThresholds</code> as created using
+<code><a href="createCmDiagnosticThresholds.html">createCmDiagnosticThresholds()</a></code>.</p></dd>
 
 </dl></div>
     <div id="value">

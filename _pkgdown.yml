@@ -31,12 +31,14 @@ reference:
       - trimByIptw
       - stratifyByPs
       - stratifyByPsAndCovariates
+      - truncateIptw
   - title: "Outcome models"
     desc: >
       Functions for creating and viewing outcome models.
     contents:
       - fitOutcomeModel
       - getOutcomeModel
+      - adjustedKm
       - plotKaplanMeier
   - title: "Diagnostics"
     desc: >
@@ -50,13 +52,13 @@ reference:
       - getDefaultCmTable1Specifications
       - getFollowUpDistribution
       - plotPs
+      - computeEquipoise
       - computePsAuc
       - computeCovariateBalance
       - plotCovariateBalanceOfTopVariables
       - plotCovariateBalanceScatterPlot
       - plotCovariatePrevalence
       - plotTimeToEvent
-      - adjustedKm
   - title: "Running multiple analyses"
     desc: >
       Functions for running multiple analyses in an efficient way.
@@ -65,11 +67,18 @@ reference:
       - createCmAnalysis
       - saveCmAnalysisList
       - loadCmAnalysisList
+      - createOutcome
       - createTargetComparatorOutcomes
       - saveTargetComparatorOutcomesList
       - loadTargetComparatorOutcomesList
+      - createMultiThreadingSettings
+      - createDefaultMultiThreadingSettings
       - runCmAnalyses
-      - summarizeAnalyses
+      - getFileReference
+      - getResultsSummary
+      - getInteractionResultsSummary
+      - createCmDiagnosticThresholds
+      - exportToCsv
   - title: "Simulation"
     desc: >
       Functions for simulating cohort method data objects.
@@ -81,7 +90,6 @@ reference:
     desc: >
       Various helper functions
     contents:
-      - checkCmInstallation
       - checkCmInstallation
 
 navbar:

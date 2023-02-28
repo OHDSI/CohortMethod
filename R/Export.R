@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2023 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -246,7 +246,7 @@ createEmptyResult <- function(tableName) {
 }
 
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
-  message("- cohort_method_analysis table")
+  message("- cm__analysis table")
 
   tempFileName <- tempfile()
 
@@ -489,7 +489,7 @@ exportCohortMethodResults <- function(outputFolder,
                                       exportFolder,
                                       databaseId,
                                       minCellCount) {
-  message("- cohort_method_result table")
+  message("- cm__result table")
   results <- getResultsSummary(outputFolder) %>%
     select(
       .data$analysisId,

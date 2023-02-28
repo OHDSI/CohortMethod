@@ -20,6 +20,8 @@ editor_options:
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 options(width = 200)
 library(CohortMethod)
+outputFolder <- "d:/temp/cohortMethodVignette"
+folderExists <- dir.exists(outputFolder)
 ```
 # Introduction
 
@@ -194,14 +196,14 @@ cohortMethodData <- getDbCohortMethodData(
 cohortMethodData
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData.zip")) {
-  cohortMethodData <- loadCohortMethodData("s:/temp/cohortMethodVignette/cohortMethodData.zip")
+if (folderExists) {
+  cohortMethodData <- loadCohortMethodData(file.path(outputFolder, "cohortMethodData.zip"))
 }
 ```
 \fontsize{8}{10}
 \selectfont
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData.zip")) {
+if (folderExists) {
   cohortMethodData
 }
 ```
@@ -216,7 +218,7 @@ All data about the cohorts, outcomes, and covariates are extracted from the serv
 summary(cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData.zip")) {
+if (folderExists) {
   summary(cohortMethodData)
 }
 ```
@@ -270,8 +272,8 @@ getAttritionTable(studyPop)
 \fontsize{8}{10}
 \selectfont
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")) {
-  studyPop <- readRDS("s:/temp/cohortMethodVignette/studyPop.rds")
+if (folderExists) {
+  studyPop <- readRDS(file.path(outputFolder, "studyPop.rds"))
   table <- getAttritionTable(studyPop)
   truncLeft <- function(x, n){
     nc <- nchar(x)
@@ -299,8 +301,8 @@ We can fit a propensity model using the covariates constructed by the `getDbcoho
 ps <- createPs(cohortMethodData = cohortMethodData, population = studyPop)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
-  ps <- readRDS("s:/temp/cohortMethodVignette/ps.rds")
+if (folderExists) {
+  ps <- readRDS(file.path(outputFolder, "ps.rds"))
 }
 ```
 
@@ -316,7 +318,7 @@ We can compute the area under the receiver-operator curve (AUC) for the propensi
 computePsAuc(ps)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   0.81;#computePsAuc(ps)
 }
 ```
@@ -331,7 +333,7 @@ plotPs(ps,
        showEquiposeLabel = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   plotPs(ps, scale = "preference", showCountsLabel = TRUE, showAucLabel = TRUE, showEquiposeLabel = TRUE)
 }
 ```
@@ -342,7 +344,7 @@ It is also possible to inspect the propensity model itself by showing the covari
 getPsModel(ps, cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData.zip")) {
+if (folderExists) {
   propensityModel <- getPsModel(ps, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
@@ -365,7 +367,7 @@ trimmedPop <- trimByPsToEquipoise(ps)
 plotPs(trimmedPop, ps, scale = "preference")
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   trimmedPop <- trimByPsToEquipoise(ps)
   plotPs(trimmedPop, ps, scale = "preference")
 }
@@ -378,7 +380,7 @@ stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
 plotPs(stratifiedPop, ps, scale = "preference")
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
   plotPs(stratifiedPop, ps, scale = "preference")
 }
@@ -391,7 +393,7 @@ We can also match subjects based on propensity scores. In this example, we're us
   plotPs(matchedPop, ps)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   matchedPop <- matchOnPs(ps, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 1)
   plotPs(matchedPop, ps)
 }
@@ -407,7 +409,7 @@ getAttritionTable(matchedPop)
 \fontsize{8}{10}
 \selectfont
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   getAttritionTable(matchedPop)
   table <- getAttritionTable(matchedPop)
   truncLeft <- function(x, n){
@@ -428,7 +430,7 @@ Or, if we like, we can plot an attrition diagram:
 drawAttritionDiagram(matchedPop)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=5,fig.height=6}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+if (folderExists) {
   drawAttritionDiagram(matchedPop)
 }
 ```
@@ -441,15 +443,15 @@ To evaluate whether our use of the propensity score is indeed making the two coh
 balance <- computeCovariateBalance(matchedPop, cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
-  balance <- readRDS("s:/temp/cohortMethodVignette/balance.rds")
+if (folderExists) {
+  balance <- readRDS(file.path(outputFolder, "balance.rds"))
 }
 ```
 ```{r eval=FALSE}
 plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=7,fig.height=4.5}
-if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+if (folderExists) {
   plotCovariateBalanceScatterPlot(balance, 
                                   showCovariateCountLabel = TRUE, 
                                   showMaxLabel = TRUE)
@@ -459,7 +461,7 @@ if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
 plotCovariateBalanceOfTopVariables(balance)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE,fig.width=8,fig.height=5}
-if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+if (folderExists) {
   plotCovariateBalanceOfTopVariables(balance)
 }
 ```
@@ -476,7 +478,7 @@ createCmTable1(balance)
 \fontsize{6.5}{6.5}
 \selectfont
 ```{r comment=NA,echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/balance.rds")) {
+if (folderExists) {
   table1 <- createCmTable1(balance)
   print(table1, row.names = FALSE, right = FALSE)
 }
@@ -521,7 +523,7 @@ computeMdrr(
 \fontsize{6.5}{6.5}
 \selectfont
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")) {
+if (folderExists) {
 computeMdrr(population = studyPop,
             modelType = "cox",
             alpha = 0.05,
@@ -546,7 +548,7 @@ computeMdrr(
 \fontsize{6.5}{6.5}
 \selectfont
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")) {
+if (folderExists) {
 computeMdrr(population = matchedPop,
             modelType = "cox",
             alpha = 0.05,
@@ -565,7 +567,7 @@ To gain a better understanding of the amount of follow-up available we can also 
 getFollowUpDistribution(population = matchedPop)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")) {
+if (folderExists) {
 getFollowUpDistribution(population = matchedPop)
 }
 ```
@@ -576,7 +578,7 @@ The output is telling us number of days of follow-up each quantile of the study 
 plotFollowUpDistribution(population = matchedPop)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=8,fig.height=5}
-if (file.exists("s:/temp/cohortMethodVignette/studyPop.rds")) {
+if (folderExists) {
 plotFollowUpDistribution(population = matchedPop)
 }
 ```
@@ -595,8 +597,8 @@ outcomeModel <- fitOutcomeModel(population = studyPop,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel1.rds")) {
-  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel1.rds")
+if (folderExists) {
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel1.rds"))
   outcomeModel
 }
 ```
@@ -610,8 +612,8 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2.rds")) {
-  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel2.rds")
+if (folderExists) {
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel2.rds"))
   outcomeModel
 }
 ```
@@ -626,8 +628,8 @@ outcomeModel <- fitOutcomeModel(population = ps,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel2w.rds")) {
-  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel2w.rds")
+if (folderExists) {
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel2w.rds"))
   outcomeModel
 }
 ```
@@ -651,8 +653,8 @@ outcomeModel
 \fontsize{5.5}{5.5}
 \selectfont
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel4.rds")) {
-  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel4.rds")
+if (folderExists) {
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel4.rds"))
   outcomeModel
 }
 ```
@@ -670,8 +672,8 @@ balanceFemale <- computeCovariateBalance(population = matchedPop,
 plotCovariateBalanceScatterPlot(balanceFemale)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE,fig.width=8,fig.height=5}
-if (file.exists("s:/temp/cohortMethodVignette/balanceFemale.rds")) {
-  balanceFemale <- readRDS("s:/temp/cohortMethodVignette/balanceFemale.rds")
+if (folderExists) {
+  balanceFemale <- readRDS(file.path(outputFolder, "balanceFemale.rds"))
   plotCovariateBalanceScatterPlot(balanceFemale)
 }
 ```
@@ -689,8 +691,8 @@ outcomeModel <- fitOutcomeModel(population = matchedPop,
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
-  outcomeModel <- readRDS("s:/temp/cohortMethodVignette/OutcomeModel3.rds")
+if (folderExists) {
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel3.rds"))
   outcomeModel
 }
 ```
@@ -703,7 +705,7 @@ We can inspect more details of the outcome model:
 exp(coef(outcomeModel))
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+if (folderExists) {
   exp(coef(outcomeModel))
 }
 ```
@@ -712,7 +714,7 @@ if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
 exp(confint(outcomeModel))
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+if (folderExists) {
   exp(confint(outcomeModel))
 }
 ```
@@ -723,7 +725,7 @@ We can also see the covariates that ended up in the outcome model:
 getOutcomeModel(outcomeModel, cohortMethodData)
 ```
 ```{r echo=FALSE,message=FALSE}
-if (file.exists("s:/temp/cohortMethodVignette/OutcomeModel3.rds")) {
+if (folderExists) {
   outcomeModel <- getOutcomeModel(outcomeModel, cohortMethodData)
   truncRight <- function(x, n){
     nc <- nchar(x)
@@ -743,7 +745,7 @@ We can create the Kaplan-Meier plot:
 plotKaplanMeier(matchedPop, includeZero = FALSE)
 ```
 ```{r echo=FALSE, message=FALSE, results='hide'}
-if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
+if (folderExists) {
   plotKaplanMeier(matchedPop, includeZero = FALSE)
 }
 ```
@@ -768,7 +770,7 @@ plotTimeToEvent(cohortMethodData = cohortMethodData,
 
 ```
 ```{r echo=FALSE, message=FALSE, results='hide'}
-if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData.zip")) {
+if (folderExists) {
   plotTimeToEvent(cohortMethodData = cohortMethodData,
                   outcomeId = 3,
                   firstExposureOnly = FALSE,

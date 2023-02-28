@@ -89,7 +89,7 @@ CohortMethod package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2023-02-15</h4>
+            <h4 data-toc-skip class="date">2023-02-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/MultipleAnalyses.Rmd" class="external-link"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -565,6 +565,7 @@ last analysis:</p>
 <span>                        <span class="va">result</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span><span class="op">]</span></span>
 <span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outputFolder</span>, <span class="va">psFile</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
 <p>Note that some of the file names will appear several times in the
 table. For example, analysis 3 and 5 only differ in terms of the outcome
 model, and will share the same propensity score and stratification
@@ -578,6 +579,22 @@ files.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">resultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getResultsSummary.html">getResultsSummary</a></span><span class="op">(</span><span class="va">outputFolder</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">resultsSum</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 x 27</span></span></span>
+<span><span class="co">##   analysisId targetId comparat~1 outco~2 trueE~3 targe~4 compa~5 targe~6 compa~7</span></span>
+<span><span class="co">##        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300   <span style="text-decoration: underline;">29</span>735       1   <span style="text-decoration: underline;">86</span>294   <span style="text-decoration: underline;">99</span>497  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">116</span>045</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">140</span>673       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">192</span>671      <span style="color: #BB0000;">NA</span>   <span style="text-decoration: underline;">84</span>447   <span style="text-decoration: underline;">97</span>429  1.12<span style="color: #949494;">e</span>7 6<span style="text-decoration: underline;">952</span>965</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">197</span>494       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">198</span>185       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">6</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">198</span>199       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
+<span><span class="co">## <span style="color: #949494;"># ... with 18 more variables: targetOutcomes &lt;dbl&gt;, comparatorOutcomes &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   rr &lt;dbl&gt;, ci95Lb &lt;dbl&gt;, ci95Ub &lt;dbl&gt;, p &lt;dbl&gt;, logRr &lt;dbl&gt;, seLogRr &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   llr &lt;dbl&gt;, mdrr &lt;dbl&gt;, attritionFraction &lt;dbl&gt;, calibratedRr &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   calibratedCi95Lb &lt;dbl&gt;, calibratedCi95Ub &lt;dbl&gt;, calibratedP &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   calibratedLogRr &lt;dbl&gt;, calibratedSeLogRr &lt;dbl&gt;, ease &lt;dbl&gt;, and abbreviated</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   variable names 1: comparatorId, 2: outcomeId, 3: trueEffectSize,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   4: targetSubjects, 5: comparatorSubjects, 6: targetDays, ...</span></span></span></code></pre>
 <p>This tells us, per target-comparator-outcome-analysis combination,
 the estimated relative risk and 95% confidence interval, as well as the
 number of people in the treated and comparator group (after trimming and
@@ -593,7 +610,7 @@ each plot, the blue dots represent our negative control outcomes, and
 the yellow diamond represents our health outcome of interest: GI bleed.
 An unbiased, well-calibrated analysis should have 95% of the negative
 controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"EmpiricalCalibration"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/EmpiricalCalibration/" class="external-link">EmpiricalCalibration</a></span><span class="op">)</span></span>
 <span></span>
@@ -602,36 +619,41 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 2: Matching</span></span>
 <span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-18-1.png" width="700"></p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 3: Stratification</span></span>
 <span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 4: Inverse probability of treatment weighting</span></span>
 <span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-22-1.png" width="700"></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 5: Stratification plus full outcome model</span></span>
 <span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
 <span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-24-1.png" width="700"></p>
 <p>Analysis 6 explored interactions with certain variables. The
 estimates for these interaction terms are stored in a separate results
 summary. We can examine whether these estimates are also consistent with
 the null. In this example we consider the interaction with ‘gender =
 female’ (covariate ID 8532001):</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">interactionResultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getInteractionResultsSummary.html">getInteractionResultsSummary</a></span><span class="op">(</span><span class="va">outputFolder</span><span class="op">)</span></span>
 <span></span>
 <span></span>
@@ -643,6 +665,8 @@ female’ (covariate ID 8532001):</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Warning: Removed 1 rows containing missing values (`geom_vline()`).</span></span></code></pre>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-26-1.png" width="700"></p>
 </div>
 </div>
 <div class="section level2">
@@ -650,7 +674,7 @@ female’ (covariate ID 8532001):</p>
 </h2>
 <p>Considerable work has been dedicated to provide the
 <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
@@ -672,7 +696,7 @@ female’ (covariate ID 8532001):</p>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite Cyclops in publications use:</span></span>

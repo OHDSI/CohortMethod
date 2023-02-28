@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2023 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -16,9 +16,9 @@
 
 # This code should be used to fetch the data that is used in the vignettes.
 library(CohortMethod)
-options(andromedaTempFolder = "s:/andromedaTemp")
+options(andromedaTempFolder = "d:/andromedaTemp")
 
-folder <- "s:/temp/cohortMethodVignette"
+folder <- "d:/temp/cohortMethodVignette"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
 
@@ -150,7 +150,7 @@ plotPs(ps)
 computePsAuc(ps)
 
 model <- getPsModel(ps, cohortMethodData)
-model[grepl("Charlson.*", model$covariateName), ]
+model[grepl("age group*", model$covariateName), ]
 
 plotPs(ps, showAucLabel = TRUE, showCountsLabel = TRUE, fileName = "extras/ps.png")
 plotPs(ps)
