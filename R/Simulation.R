@@ -36,11 +36,11 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (nrow(cohortMethodData$cohorts) == 0) {
+  if (nrow_temp(cohortMethodData$cohorts) == 0) {
     stop("Cohorts are empty")
   }
 
-  if (nrow(cohortMethodData$covariates) == 0) {
+  if (nrow_temp(cohortMethodData$covariates) == 0) {
     stop("Covariates are empty")
   }
 

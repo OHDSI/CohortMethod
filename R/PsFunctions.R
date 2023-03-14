@@ -113,11 +113,11 @@ createPs <- function(cohortMethodData,
 
   start <- Sys.time()
   population <- population[order(population$rowId), ]
-  if (nrow(cohortMethodData$cohorts) == 0) {
+  if (nrow_temp(cohortMethodData$cohorts) == 0) {
     error <- "No subjects in population, so cannot fit model"
     sampled <- FALSE
     ref <- NULL
-  } else if (nrow(cohortMethodData$covariates) == 0) {
+  } else if (nrow_temp(cohortMethodData$covariates) == 0) {
     error <- "No covariate data, so cannot fit model"
     sampled <- FALSE
     ref <- NULL

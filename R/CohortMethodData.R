@@ -139,8 +139,8 @@ setMethod("summary", "CohortMethodData", function(object) {
     targetPersons = targetPersons,
     comparatorPersons = comparatorPersons,
     outcomeCounts = outcomeCounts,
-    covariateCount = nrow(object$covariateRef),
-    covariateValueCount = nrow(object$covariates)
+    covariateCount = nrow_temp(object$covariateRef),
+    covariateValueCount = nrow_temp(object$covariates)
   )
   class(result) <- "summary.CohortMethodData"
   return(result)

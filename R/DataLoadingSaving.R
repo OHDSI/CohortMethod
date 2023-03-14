@@ -352,7 +352,7 @@ getDbCohortMethodData <- function(connectionDetails,
     rowIdField = "row_id",
     covariateSettings = covariateSettings
   )
-  ParallelLogger::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
+  ParallelLogger::logDebug("Fetched covariates total count is ", nrow_temp(covariateData$covariates))
   message("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",

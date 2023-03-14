@@ -54,7 +54,7 @@ checkCmInstallation <- function(connectionDetails) {
 
   message("\nChecking support for large data objects")
   x <- Andromeda::andromeda(test = data.frame(a = 1:100, b = "test"))
-  if (nrow(x$test) != 100) {
+  if (nrow_temp(x$test) != 100) {
     stop("Error creating large data object")
   }
   message("- Ok")
@@ -71,5 +71,13 @@ checkCmInstallation <- function(connectionDetails) {
       paste0(deparse(eval.parent(substitute(substitute(covariateId))), width.cutoff = 500L), collapse = "\n")
     )
     checkmate::assertTRUE(all(covariateId == round(covariateId)), .var.name = message, add = add)
+  }
+}
+
+nrow_temp <- function(x) {
+  if (inherits(x, "tbl_dbi")) {
+    return(x %>% count() %>% pull())
+  } else {
+    return(nrow(x))
   }
 }
