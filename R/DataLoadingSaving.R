@@ -252,6 +252,7 @@ getDbCohortMethodData <- function(connectionDetails,
     sampled = sampled
   )
   cohorts <- DatabaseConnector::querySql(connection, cohortSql, snakeCaseToCamelCase = TRUE)
+  cohorts$rowId <- as.numeric(cohorts$rowId)
   ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
   if (nrow(cohorts) == 0) {
     warning("Target and comparator cohorts are empty")
@@ -351,7 +352,7 @@ getDbCohortMethodData <- function(connectionDetails,
     rowIdField = "row_id",
     covariateSettings = covariateSettings
   )
-  ParallelLogger::logDebug("Fetched covariates total count is ", covariateData$covariates %>% count() %>% pull())
+  ParallelLogger::logDebug("Fetched covariates total count is ", nrow(covariateData$covariates))
   message("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
@@ -366,6 +367,7 @@ getDbCohortMethodData <- function(connectionDetails,
     sampled = sampled
   )
   outcomes <- DatabaseConnector::querySql(connection, outcomeSql, snakeCaseToCamelCase = TRUE)
+  outcomes$rowId <- as.numeric(outcomes$rowId)
   metaData$outcomeIds <- outcomeIds
   delta <- Sys.time() - start
   message("Fetching outcomes took ", signif(delta, 3), " ", attr(delta, "units"))

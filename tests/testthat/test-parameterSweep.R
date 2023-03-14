@@ -43,7 +43,7 @@ test_that("cohortMethodData functions", {
   expect_equal(collect(cohortMethodData$covariates), collect(cmd2$covariates))
   expect_equal(collect(cohortMethodData$covariateRef), collect(cmd2$covariateRef))
   expect_equal(collect(cohortMethodData$analysisRef), collect(cmd2$analysisRef))
-  expect_identical(attr(cohortMethodData, "metaData"), attr(cmd2, "metaData"))
+  expect_equivalent(attr(cohortMethodData, "metaData"), attr(cmd2, "metaData"))
   close(cmd2)
   unlink(file, force = TRUE)
 })

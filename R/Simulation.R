@@ -36,11 +36,11 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (cohortMethodData$cohorts %>% count() %>% pull() == 0) {
+  if (nrow(cohortMethodData$cohorts) == 0) {
     stop("Cohorts are empty")
   }
 
-  if (cohortMethodData$covariates %>% count() %>% pull() == 0) {
+  if (nrow(cohortMethodData$covariates) == 0) {
     stop("Covariates are empty")
   }
 
@@ -50,9 +50,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 
   message("Computing covariate prevalence")
   # (Note: currently limiting to binary covariates)
-  populationSize <- cohortMethodData$cohorts %>%
-    count() %>%
-    pull()
+  populationSize <- nrow(cohortMethodData$cohorts)
   covariatePrevalence <- cohortMethodData$covariates %>%
     group_by(.data$covariateId) %>%
     summarise(sum = sum(.data$covariateValue, na.rm = TRUE)) %>%
