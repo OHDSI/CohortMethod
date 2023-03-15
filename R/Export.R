@@ -291,17 +291,17 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
 
     covariateAnalysis[[length(covariateAnalysis) + 1]] <- cmData$analysisRef %>%
       select(
-        covariateAnalysisId = .data$analysisId,
-        covariateAnalysisName = .data$analysisName
+        covariateAnalysisId = "analysisId",
+        covariateAnalysisName = "analysisName"
       ) %>%
       collect() %>%
       inner_join(analysisIds, by = character())
 
     covariates[[length(covariates) + 1]] <- cmData$covariateRef %>%
       select(
-        .data$covariateId,
-        .data$covariateName,
-        covariateAnalysisId = .data$analysisId
+        "covariateId",
+        "covariateName",
+        covariateAnalysisId = "analysisId"
       ) %>%
       collect() %>%
       inner_join(analysisIds, by = character()) %>%
@@ -371,13 +371,13 @@ exportAttrition <- function(outputFolder,
   for (i in seq_len(nrow(reference))) {
     outcomeModel <- readRDS(file.path(outputFolder, reference$outcomeModelFile[i]))
     attrition <- outcomeModel$attrition %>%
-      select(.data$description, .data$targetPersons, .data$comparatorPersons) %>%
+      select("description", "targetPersons", "comparatorPersons") %>%
       mutate(sequenceNumber = row_number())
     attritionTarget <- attrition %>%
-      select(.data$sequenceNumber, .data$description, subjects = .data$targetPersons) %>%
+      select("sequenceNumber", "description", subjects = "targetPersons") %>%
       mutate(exposureId = reference$targetId[i])
     attritionComparator <- attrition %>%
-      select(.data$sequenceNumber, .data$description, subjects = .data$comparatorPersons) %>%
+      select("sequenceNumber", "description", subjects = "comparatorPersons") %>%
       mutate(exposureId = reference$comparatorId[i])
     attrition <- bind_rows(attritionTarget, attritionComparator) %>%
       mutate(
@@ -492,29 +492,29 @@ exportCohortMethodResults <- function(outputFolder,
   message("- cm__result table")
   results <- getResultsSummary(outputFolder) %>%
     select(
-      .data$analysisId,
-      .data$targetId,
-      .data$comparatorId,
-      .data$outcomeId,
-      .data$rr,
-      .data$ci95Lb,
-      .data$ci95Ub,
-      .data$p,
-      .data$targetSubjects,
-      .data$comparatorSubjects,
-      .data$targetDays,
-      .data$comparatorDays,
-      .data$targetOutcomes,
-      .data$comparatorOutcomes,
-      .data$logRr,
-      .data$seLogRr,
-      .data$llr,
-      .data$calibratedRr,
-      .data$calibratedCi95Lb,
-      .data$calibratedCi95Ub,
-      .data$calibratedP,
-      .data$calibratedLogRr,
-      .data$calibratedSeLogRr
+      "analysisId",
+      "targetId",
+      "comparatorId",
+      "outcomeId",
+      "rr",
+      "ci95Lb",
+      "ci95Ub",
+      "p",
+      "targetSubjects",
+      "comparatorSubjects",
+      "targetDays",
+      "comparatorDays",
+      "targetOutcomes",
+      "comparatorOutcomes",
+      "logRr",
+      "seLogRr",
+      "llr",
+      "calibratedRr",
+      "calibratedCi95Lb",
+      "calibratedCi95Ub",
+      "calibratedP",
+      "calibratedLogRr",
+      "calibratedSeLogRr"
     ) %>%
     mutate(databaseId = !!databaseId) %>%
     enforceMinCellValue("targetSubjects", minCellCount) %>%
@@ -536,29 +536,29 @@ exportCmInteractionResults <- function(outputFolder,
   } else {
     results %>%
       select(
-        .data$analysisId,
-        .data$targetId,
-        .data$comparatorId,
-        .data$outcomeId,
-        .data$interactionCovariateId,
-        .data$rr,
-        .data$ci95Lb,
-        .data$ci95Ub,
-        .data$p,
-        .data$targetSubjects,
-        .data$comparatorSubjects,
-        .data$targetDays,
-        .data$comparatorDays,
-        .data$targetOutcomes,
-        .data$comparatorOutcomes,
-        .data$logRr,
-        .data$seLogRr,
-        .data$calibratedRr,
-        .data$calibratedCi95Lb,
-        .data$calibratedCi95Ub,
-        .data$calibratedP,
-        .data$calibratedLogRr,
-        .data$calibratedSeLogRr
+        "analysisId",
+        "targetId",
+        "comparatorId",
+        "outcomeId",
+        "interactionCovariateId",
+        "rr",
+        "ci95Lb",
+        "ci95Ub",
+        "p",
+        "targetSubjects",
+        "comparatorSubjects",
+        "targetDays",
+        "comparatorDays",
+        "targetOutcomes",
+        "comparatorOutcomes",
+        "logRr",
+        "seLogRr",
+        "calibratedRr",
+        "calibratedCi95Lb",
+        "calibratedCi95Ub",
+        "calibratedP",
+        "calibratedLogRr",
+        "calibratedSeLogRr"
       ) %>%
       mutate(databaseId = !!databaseId) %>%
       enforceMinCellValue("targetSubjects", minCellCount) %>%
@@ -703,13 +703,13 @@ tidyBalance <- function(balance, minCellCount) {
   inferredComparatorAfterSize <- mean(balance$afterMatchingSumComparator / balance$afterMatchingMeanComparator, na.rm = TRUE)
 
   balance %>%
-    select(.data$covariateId,
-           targetMeanBefore = .data$beforeMatchingMeanTarget,
-           comparatorMeanBefore = .data$beforeMatchingMeanComparator,
-           stdDiffBefore = .data$beforeMatchingStdDiff,
-           targetMeanAfter = .data$afterMatchingMeanTarget,
-           comparatorMeanAfter = .data$afterMatchingMeanComparator,
-           stdDiffAfter = .data$afterMatchingStdDiff
+    select("covariateId",
+           targetMeanBefore = "beforeMatchingMeanTarget",
+           comparatorMeanBefore = "beforeMatchingMeanComparator",
+           stdDiffBefore = "beforeMatchingStdDiff",
+           targetMeanAfter = "afterMatchingMeanTarget",
+           comparatorMeanAfter = "afterMatchingMeanComparator",
+           stdDiffAfter = "afterMatchingStdDiff"
     ) %>%
     mutate(
       targetMeanBefore = ifelse(is.na(.data$targetMeanBefore), 0, .data$targetMeanBefore),
@@ -770,9 +770,9 @@ exportPreferenceScoreDistribution <- function(outputFolder,
       d0 <- density(ps$preferenceScore[ps$treatment == 0], from = 0, to = 1, n = 100)
       result <- rows %>%
         select(
-          .data$analysisId,
-          .data$targetId,
-          .data$comparatorId
+          "analysisId",
+          "targetId",
+          "comparatorId"
         ) %>%
         mutate(databaseId = !!databaseId) %>%
         inner_join(
@@ -819,7 +819,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) %>%
         mutate(covariateId = as.numeric(.data$covariateId))
       rows %>%
-        select(.data$targetId, .data$comparatorId, .data$analysisId) %>%
+        select("targetId", "comparatorId", "analysisId") %>%
         mutate(databaseId = !!databaseId) %>%
         inner_join(model, by = character()) %>%
         return()
@@ -846,12 +846,12 @@ exportKaplanMeier <- function(outputFolder,
   reference <- getFileReference(outputFolder) %>%
     filter(.data$outcomeOfInterest) %>%
     select(
-      .data$strataFile,
-      .data$studyPopFile,
-      .data$targetId,
-      .data$comparatorId,
-      .data$outcomeId,
-      .data$analysisId
+      "strataFile",
+      "studyPopFile",
+      "targetId",
+      "comparatorId",
+      "outcomeId",
+      "analysisId"
     )
 
   tempFolder <- file.path(exportFolder, "temp")
@@ -1153,24 +1153,24 @@ exportDiagnosticsSummary <- function(outputFolder,
     by = "sharedPsFile"
     ) %>%
     select(
-      .data$analysisId,
-      .data$targetId,
-      .data$comparatorId,
-      .data$outcomeId,
-      .data$maxSdm,
-      .data$sharedMaxSdm,
-      .data$equipoise
+      "analysisId",
+      "targetId",
+      "comparatorId",
+      "outcomeId",
+      "maxSdm",
+      "sharedMaxSdm",
+      "equipoise"
     )
 
   results2 <- getResultsSummary(outputFolder) %>%
     select(
-      .data$analysisId,
-      .data$targetId,
-      .data$comparatorId,
-      .data$outcomeId,
-      .data$mdrr,
-      .data$attritionFraction,
-      .data$ease
+      "analysisId",
+      "targetId",
+      "comparatorId",
+      "outcomeId",
+      "mdrr",
+      "attritionFraction",
+      "ease"
     )
 
   results <- results1 %>%

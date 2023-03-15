@@ -135,7 +135,7 @@ createStudyPopulation <- function(cohortMethodData,
     metaData <- attr(cohortMethodData, "metaData")
     population <- cohortMethodData$cohorts %>%
       collect() %>%
-      select(-.data$personId)
+      select(-"personId")
   } else {
     metaData <- attr(population, "metaData")
   }
@@ -157,7 +157,7 @@ createStudyPopulation <- function(cohortMethodData,
         summarise(periodStart = max(.data$treatmentStart), periodEnd = min(.data$treatmentEnd)) %>%
         full_join(population, by = character()) %>%
         filter(population$cohortStartDate >= .data$periodStart & population$cohortStartDate <= .data$periodEnd) %>%
-        select(-.data$periodStart, -.data$periodEnd)
+        select(-"periodStart", -"periodEnd")
     }
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, "Restrict to common period"))
   }
@@ -459,11 +459,11 @@ plotTimeToEvent <- function(cohortMethodData,
   )
   outcomes <- cohortMethodData$outcomes %>%
     filter(.data$outcomeId == !!outcomeId) %>%
-    select(.data$rowId, .data$daysToEvent) %>%
+    select("rowId", "daysToEvent") %>%
     collect()
 
   outcomes <- outcomes %>%
-    inner_join(select(population, .data$rowId, .data$treatment, .data$daysFromObsStart, .data$daysToObsEnd, .data$riskStart, .data$riskEnd),
+    inner_join(select(population, "rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd"),
       by = "rowId"
     ) %>%
     filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%

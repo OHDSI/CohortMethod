@@ -24,9 +24,9 @@ system.time(
 # 49.89    4.90   56.78
 
 joined <- balance %>%
-  select(covariateId, old = afterMatchingStdDiff) %>%
+  select("covariateId", old = "afterMatchingStdDiff") %>%
   inner_join(balance2 %>%
-               select(covariateId, new = afterMatchingStdDiff))
+               select("covariateId", new = "afterMatchingStdDiff"))
 plot(joined$old, joined$new)
 
 min(balance$afterMatchingStdDiff, na.rm = TRUE)
@@ -58,7 +58,7 @@ system.time(
 joined <- balance %>%
   select(covariateId, old = afterMatchingStdDiff) %>%
   inner_join(balance2 %>%
-               select(covariateId, new = afterMatchingStdDiff))
+               select("covariateId", new = "afterMatchingStdDiff"))
 plot(joined$old, joined$new)
 
 min(balance$afterMatchingStdDiff, na.rm = TRUE)

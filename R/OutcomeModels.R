@@ -161,7 +161,7 @@ fitOutcomeModel <- function(population,
         mainEffectTerms <- covariateData$covariates %>%
           distinct(.data$covariateId) %>%
           inner_join(covariateData$covariateRef, by = "covariateId") %>%
-          select(id = .data$covariateId, name = .data$covariateName) %>%
+          select(id = "covariateId", name = "covariateName") %>%
           collect()
 
         treatmentVarId <- cohortMethodData$covariates %>%
@@ -169,7 +169,7 @@ fitOutcomeModel <- function(population,
           pull() + 1
 
         treatmentCovariate <- informativePopulation %>%
-          select(.data$rowId, covariateValue = .data$treatment) %>%
+          select("rowId", covariateValue = "treatment") %>%
           mutate(covariateId = treatmentVarId)
 
         appendToTable(covariateData$covariates, treatmentCovariate)
@@ -184,7 +184,7 @@ fitOutcomeModel <- function(population,
         treatmentVarId <- 1
 
         treatmentCovariate <- informativePopulation %>%
-          select(.data$rowId, covariateValue = .data$treatment) %>%
+          select("rowId", covariateValue = "treatment") %>%
           mutate(covariateId = treatmentVarId)
 
         covariateData <- Andromeda::andromeda(
@@ -208,14 +208,14 @@ fitOutcomeModel <- function(population,
           mainEffectTerms <- covariateData$covariatesSubset %>%
             distinct(.data$covariateId) %>%
             inner_join(covariateData$covariateRef, by = "covariateId") %>%
-            select(id = .data$covariateId, name = .data$covariateName) %>%
+            select(id = "covariateId", name = "covariateName") %>%
             collect()
         }
 
         # Create interaction terms
         interactionTerms <- covariateData$covariateRef %>%
           filter(.data$covariateId %in% interactionCovariateIds) %>%
-          select(.data$covariateId, .data$covariateName) %>%
+          select("covariateId", "covariateName") %>%
           collect()
 
         interactionTerms$interactionId <- treatmentVarId + seq_len(nrow(interactionTerms))
@@ -227,7 +227,7 @@ fitOutcomeModel <- function(population,
         interactionCovariates <- covariateData$covariatesSubset %>%
           filter(.data$rowId %in% targetRowIds) %>%
           inner_join(covariateData$interactionTerms, by = "covariateId") %>%
-          select(.data$rowId, .data$interactionId, .data$covariateValue) %>%
+          select("rowId", "interactionId", "covariateValue") %>%
           rename(covariateId = .data$interactionId)
 
         appendToTable(covariateData$covariates, interactionCovariates)
@@ -253,7 +253,7 @@ fitOutcomeModel <- function(population,
       outcomes <- covariateData$outcomes
       if (stratified) {
         covariates <- covariateData$covariates %>%
-          inner_join(select(covariateData$outcomes, .data$rowId, .data$stratumId), by = "rowId")
+          inner_join(select(covariateData$outcomes, "rowId", "stratumId"), by = "rowId")
       } else {
         covariates <- covariateData$covariates
       }
@@ -679,7 +679,7 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
 
   ref <- cohortMethodData$covariateRef %>%
     filter(.data$covariateId %in% local(cfs$covariateId)) %>%
-    select(id = .data$covariateId, name = .data$covariateName) %>%
+    select(id = "covariateId", name = "covariateName") %>%
     collect()
 
   ref <- bind_rows(

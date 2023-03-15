@@ -20,7 +20,7 @@
 library(CohortMethod)
 options(andromedaTempFolder = "d:/andromedaTemp")
 
-folder <- "d:/temp/cohortMethodVignette2"
+folder <- "d:/temp/cohortMethodVignette2_arrow"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
 
@@ -98,7 +98,7 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
                                                    removeDuplicateSubjects = "remove all",
                                                    studyStartDate = "",
                                                    studyEndDate = "",
-                                                   maxCohortSize = 100000,
+                                                   # maxCohortSize = 100000,
                                                    covariateSettings = covarSettings)
 
 createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,

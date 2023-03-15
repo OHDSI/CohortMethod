@@ -44,7 +44,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     stop("Covariates are empty")
   }
 
-  if (sum(cohortMethodData$cohorts %>% select(.data$daysToCohortEnd) %>% pull()) == 0) {
+  if (sum(cohortMethodData$cohorts %>% select("daysToCohortEnd") %>% pull()) == 0) {
     warning("Cohort data appears to be limited, check daysToCohortEnd which appears to be all zeros")
   }
 
@@ -59,7 +59,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     inner_join(cohortMethodData$covariateRef, by = "covariateId") %>%
     inner_join(cohortMethodData$analysisRef, by = "analysisId") %>%
     filter(.data$isBinary == "Y") %>%
-    select(.data$covariateId, .data$prevalence) %>%
+    select("covariateId", "prevalence") %>%
     collect()
 
   # covariatePrevalence <- sums$prevalence
@@ -107,7 +107,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     group_by(.data$outcomeId) %>%
     summarise(n = n_distinct(.data$rowId)) %>%
     mutate(rate = .data$n / totalTime) %>%
-    select(.data$outcomeId, .data$rate) %>%
+    select("outcomeId", "rate") %>%
     collect()
 
   message("Fitting models for time to observation period start, end and time to cohort end")

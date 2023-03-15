@@ -362,7 +362,7 @@ getPsModel <- function(propensityScore, cohortMethodData) {
       collect()
     coefficients <- coefficients %>%
       inner_join(covariateRef, by = "covariateId") %>%
-      select(.data$coefficient, .data$covariateId, .data$covariateName)
+      select("coefficient", "covariateId", "covariateName")
     result <- bind_rows(result, coefficients) %>%
       arrange(-abs(.data$coefficient))
   }

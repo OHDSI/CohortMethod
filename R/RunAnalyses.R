@@ -275,7 +275,7 @@ runCmAnalyses <- function(connectionDetails,
     refitPsForEveryStudyPopulation = refitPsForEveryStudyPopulation
   )
   referenceTable %>%
-    select(-.data$includedCovariateConceptIds, .data$excludedCovariateConceptIds) %>%
+    select(-"includedCovariateConceptIds", "excludedCovariateConceptIds") %>%
     saveRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
   saveRDS(cmAnalysisList, file.path(outputFolder, "cmAnalysisList.rds"))
@@ -719,7 +719,7 @@ runCmAnalyses <- function(connectionDetails,
     )
   }
   referenceTable <- referenceTable %>%
-    select(-.data$includedCovariateConceptIds, .data$excludedCovariateConceptIds)
+    select(-"includedCovariateConceptIds", "excludedCovariateConceptIds")
   invisible(referenceTable)
 }
 
@@ -1699,24 +1699,24 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     attritionFraction <- 1 - (attrition$targetExposures[nrow(attrition)] / attrition$targetExposures[1])
     result <- subset[i, ] %>%
       select(
-        .data$analysisId,
-        .data$targetId,
-        .data$comparatorId,
-        .data$outcomeId,
-        .data$trueEffectSize
+        "analysisId",
+        "targetId",
+        "comparatorId",
+        "outcomeId",
+        "trueEffectSize"
       ) %>%
       bind_cols(outcomeModel$populationCounts %>%
                   select(
-                    targetSubjects = .data$targetPersons,
-                    comparatorSubjects = .data$comparatorPersons
+                    targetSubjects = "targetPersons",
+                    comparatorSubjects = "comparatorPersons"
                   )) %>%
       bind_cols(outcomeModel$timeAtRisk %>%
                   select(
-                    .data$targetDays,
-                    .data$comparatorDays
+                    "targetDays",
+                    "comparatorDays"
                   )) %>%
       bind_cols(outcomeModel$outcomeCounts %>%
-                  select(.data$targetOutcomes, .data$comparatorOutcomes))
+                  select("targetOutcomes", "comparatorOutcomes"))
 
     mainResult <- result %>%
       mutate(
