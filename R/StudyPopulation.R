@@ -155,7 +155,7 @@ createStudyPopulation <- function(cohortMethodData,
         summarise(treatmentStart = min(.data$cohortStartDate), treatmentEnd = max(.data$cohortStartDate)) %>%
         ungroup() %>%
         summarise(periodStart = max(.data$treatmentStart), periodEnd = min(.data$treatmentEnd)) %>%
-        full_join(population, by = character()) %>%
+        cross_join(population) %>%
         filter(population$cohortStartDate >= .data$periodStart & population$cohortStartDate <= .data$periodEnd) %>%
         select(-"periodStart", -"periodEnd")
     }

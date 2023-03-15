@@ -1072,7 +1072,7 @@ createReferenceTable <- function(cmAnalysisList,
   }
   tcos <- bind_rows(lapply(targetComparatorOutcomesList, convertTcosToTable))
   referenceTable <- analyses %>%
-    inner_join(tcos, by = character())
+    cross_join(tcos)
 
   # Add cohort method data file names
   which.list <- function(list, object) {

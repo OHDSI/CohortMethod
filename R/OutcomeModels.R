@@ -460,7 +460,7 @@ fitOutcomeModel <- function(population,
 }
 
 getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType) {
-  population <- rename(population, y = .data$outcomeCount)
+  population <- rename(population, y = "outcomeCount")
   if (!stratified) {
     population$stratumId <- NULL
   }
@@ -549,7 +549,7 @@ filterAndTidyCovariates <- function(cohortMethodData,
 }
 
 getOutcomeCounts <- function(population, modelType) {
-  population <- rename(population, y = .data$outcomeCount)
+  population <- rename(population, y = "outcomeCount")
   if (modelType == "cox") {
     population$y[population$y != 0] <- 1
   } else if (modelType == "logistic") {

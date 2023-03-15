@@ -295,7 +295,7 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
         covariateAnalysisName = "analysisName"
       ) %>%
       collect() %>%
-      inner_join(analysisIds, by = character())
+      cross_join(analysisIds)
 
     covariates[[length(covariates) + 1]] <- cmData$covariateRef %>%
       select(
@@ -304,7 +304,7 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
         covariateAnalysisId = "analysisId"
       ) %>%
       collect() %>%
-      inner_join(analysisIds, by = character()) %>%
+      cross_join(analysisIds) %>%
       mutate(databaseId = !!databaseId)
   }
 
@@ -641,7 +641,7 @@ exportCovariateBalance <- function(outputFolder,
       outcomeId = rows$outcomeId,
       analysisId = unique(rows$analysisId)
     ) %>%
-      inner_join(tidyBalance(balance, minCellCount), by = character())
+      cross_join(tidyBalance(balance, minCellCount))
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(balanceFiles))
@@ -683,7 +683,7 @@ exportSharedCovariateBalance <- function(outputFolder,
       comparatorId = rows$comparatorId[1],
       analysisId = unique(rows$analysisId)
     ) %>%
-      inner_join(tidyBalance(balance, minCellCount), by = character())
+      cross_join(tidyBalance(balance, minCellCount))
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(sharedBalanceFiles))
@@ -775,13 +775,12 @@ exportPreferenceScoreDistribution <- function(outputFolder,
           "comparatorId"
         ) %>%
         mutate(databaseId = !!databaseId) %>%
-        inner_join(
+        cross_join(
           tibble(
             preferenceScore = d1$x,
             targetDensity = d1$y,
             comparatorDensity = d0$y
-          ),
-          by = character()
+          )
         )
       return(result)
     } else {
@@ -821,7 +820,7 @@ exportPropensityModel <- function(outputFolder,
       rows %>%
         select("targetId", "comparatorId", "analysisId") %>%
         mutate(databaseId = !!databaseId) %>%
-        inner_join(model, by = character()) %>%
+        cross_join(model) %>%
         return()
     } else {
       return(NULL)
@@ -947,7 +946,7 @@ prepareKm <- function(task,
   data <- enforceMinCellValue(data, "comparatorAtRisk", minCellCount)
   # Avoid SQL reserved word 'time':
   data <- data %>%
-    rename(timeDay = .data$time)
+    rename(timeDay = "time")
   saveRDS(data, outputFileName)
 }
 
