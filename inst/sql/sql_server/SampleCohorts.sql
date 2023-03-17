@@ -19,10 +19,8 @@ limitations under the License.
 ************************************************************************/
 
 {DEFAULT @max_cohort_size = 2500000}
-{DEFAULT @cdm_version = '5'}
 
-IF OBJECT_ID('tempdb..#cohort_sample', 'U') IS NOT NULL
-	DROP TABLE #cohort_sample;
+DROP TABLE IF EXISTS #cohort_sample;
 
 SELECT row_id,
 	subject_id,
@@ -30,11 +28,7 @@ SELECT row_id,
 	days_from_obs_start,
 	days_to_cohort_end,
 	days_to_obs_end,
-{@cdm_version == "4"} ? {
-	cohort_concept_id
-} : {
 	cohort_definition_id
-}	
 INTO #cohort_sample
 FROM (
 	SELECT row_id,
@@ -43,13 +37,8 @@ FROM (
 		days_from_obs_start,
 		days_to_cohort_end,
 		days_to_obs_end,
-{@cdm_version == "4"} ? {
-		cohort_concept_id,
-		ROW_NUMBER() OVER (PARTITION BY cohort_concept_id ORDER BY NEWID()) AS rn
-} : {
 		cohort_definition_id,
 		ROW_NUMBER() OVER ( PARTITION BY cohort_definition_id ORDER BY NEWID()) AS rn
-}	
 	FROM #cohort_person
 ) random_order	
 WHERE rn <= @max_cohort_size;

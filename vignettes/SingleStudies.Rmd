@@ -72,8 +72,7 @@ For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql
 File coxibVsNonselVsGiBleed.sql
 ***********************************/
 
-IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
-  DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
+DROP TABLE IF EXISTS @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,

@@ -180,7 +180,6 @@ getDbCohortMethodData <- function(connectionDetails,
     cdm_database_schema = cdmDatabaseSchema,
     exposure_database_schema = exposureDatabaseSchema,
     exposure_table = exposureTable,
-    cdm_version = cdmVersion,
     target_id = targetId,
     comparator_id = comparatorId,
     study_start_date = studyStartDate,
@@ -198,7 +197,6 @@ getDbCohortMethodData <- function(connectionDetails,
       packageName = "CohortMethod",
       dbms = connectionDetails$dbms,
       tempEmulationSchema = tempEmulationSchema,
-      cdm_version = cdmVersion,
       target_id = targetId
     )
     counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
@@ -234,7 +232,6 @@ getDbCohortMethodData <- function(connectionDetails,
         packageName = "CohortMethod",
         dbms = connectionDetails$dbms,
         tempEmulationSchema = tempEmulationSchema,
-        cdm_version = cdmVersion,
         max_cohort_size = maxCohortSize
       )
       DatabaseConnector::executeSql(connection, renderedSql)
@@ -247,7 +244,6 @@ getDbCohortMethodData <- function(connectionDetails,
     packageName = "CohortMethod",
     dbms = connectionDetails$dbms,
     tempEmulationSchema = tempEmulationSchema,
-    cdm_version = cdmVersion,
     target_id = targetId,
     sampled = sampled
   )
@@ -275,7 +271,6 @@ getDbCohortMethodData <- function(connectionDetails,
       cdm_database_schema = cdmDatabaseSchema,
       exposure_database_schema = exposureDatabaseSchema,
       exposure_table = tolower(exposureTable),
-      cdm_version = cdmVersion,
       target_id = targetId,
       comparator_id = comparatorId,
       study_start_date = studyStartDate,
@@ -363,7 +358,6 @@ getDbCohortMethodData <- function(connectionDetails,
     outcome_database_schema = outcomeDatabaseSchema,
     outcome_table = outcomeTable,
     outcome_ids = outcomeIds,
-    cdm_version = cdmVersion,
     sampled = sampled
   )
   outcomes <- DatabaseConnector::querySql(connection, outcomeSql, snakeCaseToCamelCase = TRUE)

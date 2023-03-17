@@ -21,7 +21,6 @@ limitations under the License.
 {DEFAULT @cdm_database_schema = 'CDM_SIM' }
 {DEFAULT @exposure_database_schema = 'CDM_SIM' }
 {DEFAULT @exposure_table = 'drug_era' }
-{DEFAULT @cdm_version = '5'}
 {DEFAULT @target_id = '' }
 {DEFAULT @comparator_id = '' }
 {DEFAULT @study_start_date = '' }
@@ -31,16 +30,11 @@ limitations under the License.
 {DEFAULT @remove_duplicate_subjects = 'keep all'}
 {DEFAULT @restrict_to_common_period = FALSE}
 
-IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
-	DROP TABLE #cohort_person;
+DROP TABLE IF EXISTS #cohort_person;
 
 SELECT ROW_NUMBER() OVER (ORDER BY person_id, cohort_start_date) AS row_id,
 	subject_id,
-{@cdm_version == "4"} ? {
-	cohort_definition_id AS cohort_concept_id,
-} : {
 	cohort_definition_id,
-}
 	cohort_start_date,
 	DATEDIFF(DAY, observation_period_start_date, cohort_start_date) AS days_from_obs_start,
 	{@study_end_date != '' } ? {
@@ -119,31 +113,10 @@ FROM (
 		exposure_table.drug_concept_id IN (@target_id, @comparator_id)
 } : {
 	SELECT exposure_table.subject_id,
-{@cdm_version == "4"} ? {
-		cohort_concept_id AS cohort_definition_id,
-} : {
 		cohort_definition_id,
-}
 		cohort_start_date,
 		cohort_end_date
 	FROM @exposure_database_schema.@exposure_table exposure_table
-	{@cdm_version == "4"} ? {
-		{@remove_duplicate_subjects == 'remove all'} ? {
-			INNER JOIN
-			(SELECT subject_id, COUNT(DISTINCT(cohort_concept_id)) cohort_count
-			 FROM @exposure_database_schema.@exposure_table
-			 WHERE cohort_concept_id IN (@target_id, @comparator_id)
-		 	 GROUP BY subject_id) temp
-			ON
-				exposure_table.subject_id = temp.subject_id
-			WHERE
-				temp.cohort_count = 1
-				AND
-		} : {
-			WHERE
-		}
-		  cohort_concept_id IN (@target_id, @comparator_id)
-	} : {
 		{@remove_duplicate_subjects == 'remove all'} ? {
 			INNER JOIN
 			(SELECT subject_id, COUNT(DISTINCT(cohort_definition_id)) cohort_count
@@ -159,7 +132,6 @@ FROM (
 			WHERE
 		}
 		cohort_definition_id IN (@target_id, @comparator_id)
-	}
 }
 {@remove_duplicate_subjects == 'keep first'} ? {
 	) temp1
@@ -184,13 +156,8 @@ FROM (
 } : {
 					SELECT MIN(cohort_start_date) AS start_date
 					FROM @exposure_database_schema.@exposure_table
-{@cdm_version == "4"} ? {
-					WHERE cohort_concept_id IN (@target_id, @comparator_id)
-					GROUP BY cohort_concept_id
-} :{
 					WHERE cohort_definition_id IN (@target_id, @comparator_id)
 					GROUP BY cohort_definition_id
-}
 }
 				) tmp
 				)
@@ -205,13 +172,8 @@ FROM (
 } : {
 					SELECT MAX(cohort_start_date) AS end_date
 					FROM @exposure_database_schema.@exposure_table
-{@cdm_version == "4"} ? {
-					WHERE cohort_concept_id IN (@target_id, @comparator_id)
-					GROUP BY cohort_concept_id
-} :{
 					WHERE cohort_definition_id IN (@target_id, @comparator_id)
 					GROUP BY cohort_definition_id
-}
 }
 				) tmp
 				)

@@ -1,8 +1,7 @@
 /***********************************
 File VignetteOutcomes.sql
 ***********************************/
-IF OBJECT_ID('@resultsDatabaseSchema.outcomes', 'U') IS NOT NULL
-  DROP TABLE @resultsDatabaseSchema.outcomes;
+DROP TABLE IF EXISTS @resultsDatabaseSchema.outcomes;
 
 SELECT ancestor_concept_id AS cohort_definition_id,
 	condition_start_date AS cohort_start_date,

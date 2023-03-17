@@ -2,8 +2,7 @@
 File coxibVsNonselVsGiBleed.sql
 ***********************************/
 
-IF OBJECT_ID('@resultsDatabaseSchema.coxibVsNonselVsGiBleed', 'U') IS NOT NULL
-  DROP TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
+DROP TABLE IF EXIST @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,

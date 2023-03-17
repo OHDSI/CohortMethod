@@ -21,7 +21,6 @@ limitations under the License.
 {DEFAULT @cdm_database_schema = 'CDM_SIM' }
 {DEFAULT @exposure_database_schema = 'CDM_SIM' }
 {DEFAULT @exposure_table = 'drug_era' }
-{DEFAULT @cdm_version = '5'}
 {DEFAULT @target_id = '' }
 {DEFAULT @comparator_id = '' }
 {DEFAULT @study_start_date = '' }
@@ -49,27 +48,16 @@ FROM (
 } : {
 	SELECT subject_id,
 		CASE
-{@cdm_version == "4"} ? {			
-			WHEN cohort_concept_id = @target_id
-				THEN 1
-			WHEN cohort_concept_id = @comparator_id
-				THEN 0
-} : {			
 			WHEN cohort_definition_id = @target_id
 				THEN 1
 			WHEN cohort_definition_id = @comparator_id
 				THEN 0
-}
 			ELSE - 1
 		END AS cohort_definition_id,
 		cohort_start_date,
 		cohort_end_date
 	FROM @exposure_database_schema.@exposure_table
-{@cdm_version == "4"} ? {	
-	WHERE cohort_concept_id IN (@target_id, @comparator_id)
-} : {
 	WHERE cohort_definition_id IN (@target_id, @comparator_id)
-}
 }
 	) raw_cohorts
 INNER JOIN @cdm_database_schema.observation_period

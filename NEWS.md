@@ -29,7 +29,9 @@ Changes:
 
 14. Adding `maxRows` argument to `computePsAuc()` function to improve speed for very large study populations. 
 
-15. Major overhaul of the multiple-analyses framework:
+15. Dropping support for CDM v4.
+
+16. Major overhaul of the multiple-analyses framework:
 
     - Added the `createOutcome()` function, to be used with `createTargetComparatorOutcomes()`. This allow the `priorOutcomeLookback`,  `riskWindowStart`, `startAnchor`, `riskWindowEnd`, and `endAnchor` arguments to be specified per outcome. These settings (if provided) will override the settings created using the `createCreateStudyPopulationArgs()` function. In addition, the `createOutcome()` function has an `outcomeOfInterest` and `trueEffectSize` argument (see below).
 
