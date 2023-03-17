@@ -1,6 +1,8 @@
 {DEFAULT @target_id = ''}
 {DEFAULT @sampled = FALSE}
 
+-- Storing person_id as a VARCHAR because R doesn't support 64-bit integers. Generating 
+-- a proper integer (person_seq_id) on the fly for easy joining, etc.
 SELECT row_id,
 	person_seq_id,
 	CAST(cohort.subject_id AS VARCHAR(30)) AS person_id,

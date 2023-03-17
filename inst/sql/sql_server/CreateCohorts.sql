@@ -32,6 +32,8 @@ limitations under the License.
 
 DROP TABLE IF EXISTS #cohort_person;
 
+-- Generating a unique row_id that can be used instead of the compound key
+-- (subjectId, cohort_definition_id, cohort_start_date) for easier joining etc.
 SELECT ROW_NUMBER() OVER (ORDER BY person_id, cohort_start_date) AS row_id,
 	subject_id,
 	cohort_definition_id,
