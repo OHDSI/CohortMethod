@@ -172,7 +172,33 @@ getDbCohortMethodData <- function(connectionDetails,
     sampled <- sampleCohorts(connectionDetails, tempEmulationSchema, targetId, connection)
   }
 
-  fetchCohorts()
+  message("Fetching cohorts from server")
+  start <- Sys.time()
+  cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
+                                                 packageName = "CohortMethod",
+                                                 dbms = connectionDetails$dbms,
+                                                 tempEmulationSchema = tempEmulationSchema,
+                                                 target_id = targetId,
+                                                 sampled = sampled
+  )
+  cohorts <- DatabaseConnector::querySql(connection, cohortSql, snakeCaseToCamelCase = TRUE)
+  cohorts$rowId <- as.numeric(cohorts$rowId)
+  ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
+  if (nrow(cohorts) == 0) {
+    warning("Target and comparator cohorts are empty")
+  } else if (sum(cohorts$treatment == 1) == 0) {
+    warning("Target cohort is empty")
+  } else if (sum(cohorts$treatment == 0) == 0) {
+    warning("Comparator cohort is empty")
+  }
+
+  metaData <- list(
+    targetId = targetId,
+    comparatorId = comparatorId,
+    studyStartDate = studyStartDate,
+    studyEndDate = studyEndDate
+  )
+
 
   if (firstExposureOnly || removeDuplicateSubjects != "keep all" || washoutPeriod != 0) {
     rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
@@ -384,39 +410,6 @@ sampleCohorts <- function(connectionDetails,
     DatabaseConnector::executeSql(connection, renderedSql)
   }
   return(sampled)
-}
-
-
-fetchCohorts <- function(connectionDetails,
-                         tempEmulationSchema,
-                         targetId,
-                         sampled
-                         ) {
-  message("Fetching cohorts from server")
-  start <- Sys.time()
-  cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
-                                                 packageName = "CohortMethod",
-                                                 dbms = connectionDetails$dbms,
-                                                 tempEmulationSchema = tempEmulationSchema,
-                                                 target_id = targetId,
-                                                 sampled = sampled
-  )
-  cohorts <- DatabaseConnector::querySql(connection, cohortSql, snakeCaseToCamelCase = TRUE)
-  cohorts$rowId <- as.numeric(cohorts$rowId)
-  ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
-  if (nrow(cohorts) == 0) {
-    warning("Target and comparator cohorts are empty")
-  } else if (sum(cohorts$treatment == 1) == 0) {
-    warning("Target cohort is empty")
-  } else if (sum(cohorts$treatment == 0) == 0) {
-    warning("Comparator cohort is empty")
-  }
-  metaData <- list(
-    targetId = targetId,
-    comparatorId = comparatorId,
-    studyStartDate = studyStartDate,
-    studyEndDate = studyEndDate
-  )
 }
 
 handleCohortCovariateBuilders <- function(covariateSettings, exposureDatabaseSchema, exposureTable) {
