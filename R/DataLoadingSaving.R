@@ -362,7 +362,7 @@ getDbCohortMethodData <- function(connectionDetails,
 
 checkParameters <- function(paramEnv) {
   errorMessages <- checkmate::makeAssertCollection()
-  if (is(connectionDetails, "connectionDetails")) {
+  if (is(paramEnv$envconnectionDetails, "connectionDetails")) {
     checkmate::assertClass(paramEnv$connectionDetails, "connectionDetails", add = errorMessages)
   } else {
     checkmate::assertClass(paramEnv$connectionDetails, "ConnectionDetails", add = errorMessages)
