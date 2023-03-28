@@ -30,7 +30,7 @@ Depends:
 	DatabaseConnector (>= 4.0.0),
 	Cyclops (>= 3.1.2),
 	FeatureExtraction  (>= 3.0.0),
-	Andromeda (>= 0.5.0)
+	Andromeda (>= 0.6.3)
 Imports:
 	methods,
 	ggplot2,
