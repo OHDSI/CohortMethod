@@ -177,6 +177,7 @@ createStudyPopulation <- function(cohortMethodData,
       population <- population[order(population$personSeqId, population$cohortStartDate), ]
       # Remove ties:
       idx <- fastDuplicated(population, c("personSeqId", "cohortStartDate"))
+      # If duplicate, then we must remove both things that are a tie:
       idx[1:(length(idx) - 1)] <- idx[1:(length(idx) - 1)] | idx[2:length(idx)]
       if (all(idx)) {
         warning("All cohort entries are ties, with same subject ID and cohort start date")
