@@ -56,10 +56,16 @@ Suggests:
 	rmarkdown,
 	Eunomia,
 	withr,
-	R.utils
+	R.utils,
+	RSQLite,
+	ResultModelManager,
+	ShinyAppBuilder,
+	markdown
 Remotes:
 	ohdsi/FeatureExtraction,
 	ohdsi/Eunomia,
+	ohdsi/ResultModelManager,
+	ohdsi/ShinyAppBuilder
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.2.3

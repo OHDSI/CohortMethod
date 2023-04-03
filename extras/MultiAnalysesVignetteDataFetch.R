@@ -20,7 +20,7 @@
 library(CohortMethod)
 options(andromedaTempFolder = "d:/andromedaTemp")
 
-folder <- "d:/temp/cohortMethodVignette2_arrow"
+folder <- "d:/temp/cohortMethodVignette2"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
 
@@ -229,3 +229,20 @@ sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
 connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::renderTranslateExecuteSql(connection, sql, resultsDatabaseSchema = resultsDatabaseSchema)
 DatabaseConnector::disconnect(connection)
+
+cohorts <- data.frame(
+  cohortId = c(
+    1118084,
+    1124300,
+    192671),
+  cohortName = c(
+    "Celecoxib",
+    "Diclofenac",
+    "GI Bleed"
+  )
+)
+
+insertExportedResultsInSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"),
+                              exportFolder = file.path(folder, "export"),
+                              cohorts = cohorts)
+

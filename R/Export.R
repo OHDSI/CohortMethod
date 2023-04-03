@@ -534,7 +534,7 @@ exportCmInteractionResults <- function(outputFolder,
   if (nrow(results) == 0) {
     results <- createEmptyResult("cm_interaction_result")
   } else {
-    results %>%
+      results <- results %>%
       select(
         "analysisId",
         "targetId",
