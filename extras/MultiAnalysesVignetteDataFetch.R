@@ -47,10 +47,10 @@ connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 connection <- DatabaseConnector::connect(connectionDetails)
 
 sql <- SqlRender::loadRenderTranslateSql("VignetteOutcomes.sql",
-                              packageName = "CohortMethod",
-                              dbms = connectionDetails$dbms,
-                              cdmDatabaseSchema = cdmDatabaseSchema,
-                              resultsDatabaseSchema = resultsDatabaseSchema)
+                                         packageName = "CohortMethod",
+                                         dbms = connectionDetails$dbms,
+                                         cdmDatabaseSchema = cdmDatabaseSchema,
+                                         resultsDatabaseSchema = resultsDatabaseSchema)
 
 DatabaseConnector::executeSql(connection, sql)
 
@@ -222,7 +222,13 @@ result <- runCmAnalyses(connectionDetails = connectionDetails,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
                         multiThreadingSettings = multiThreadingSettings)
 
-exportToCsv(outputFolder = folder, minCellCount = 5, maxCores = 5)
+# Export to CSV ----------------------------------------------------------------
+exportToCsv(
+  outputFolder = folder,
+  minCellCount = 5,
+  maxCores = 5,
+  databaseId = "MDCD"
+)
 
 # Cleanup ----------------------------------------------------------------------
 sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
@@ -230,6 +236,7 @@ connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::renderTranslateExecuteSql(connection, sql, resultsDatabaseSchema = resultsDatabaseSchema)
 DatabaseConnector::disconnect(connection)
 
+# Shiny app --------------------------------------------------------------------
 cohorts <- data.frame(
   cohortId = c(
     1118084,
@@ -245,4 +252,4 @@ cohorts <- data.frame(
 insertExportedResultsInSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"),
                               exportFolder = file.path(folder, "export"),
                               cohorts = cohorts)
-
+launchResultsViewerUsingSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"))

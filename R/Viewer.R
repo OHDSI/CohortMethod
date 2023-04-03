@@ -143,7 +143,7 @@ launchResultsViewerUsingSqlite <- function(sqliteFileName) {
   )
   launchResultsViewer(
     connectionDetails = connectionDetails,
-    databaseSchema = "main",
+    databaseSchema = "main"
   )
 }
 

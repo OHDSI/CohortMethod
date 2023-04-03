@@ -79,7 +79,7 @@ createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
 #' @export
 exportToCsv <- function(outputFolder,
                         exportFolder = file.path(outputFolder, "export"),
-                        databaseId = 1,
+                        databaseId,
                         minCellCount = 5,
                         maxCores = 1,
                         cmDiagnosticThresholds = createCmDiagnosticThresholds()) {
@@ -90,6 +90,7 @@ exportToCsv <- function(outputFolder,
   checkmate::assertFileExists(file.path(outputFolder, "targetComparatorOutcomesList.rds"), add = errorMessages)
   checkmate::assertFileExists(file.path(outputFolder, "resultsSummary.rds"), add = errorMessages)
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
+  checkmate::assertAtomic(databaseId, len = 1, add = errorMessages)
   checkmate::assertInt(minCellCount, lower = 0, add = errorMessages)
   checkmate::assertInt(maxCores, lower = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
