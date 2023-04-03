@@ -238,11 +238,11 @@ createPs <- function(cohortMethodData,
     }
     if (sampled) {
       # Adjust intercept to non-sampled population:
-      y.bar <- mean(population$treatment)
-      y.odds <- y.bar / (1 - y.bar)
-      y.bar.new <- mean(fullPopulation$treatment)
-      y.odds.new <- y.bar.new / (1 - y.bar.new)
-      delta <- log(y.odds) - log(y.odds.new)
+      yBar <- mean(population$treatment)
+      yOdds <- yBar / (1 - yBar)
+      yBarNew <- mean(fullPopulation$treatment)
+      yOddsNew <- yBarNew / (1 - yBarNew)
+      delta <- log(yOdds) - log(yOddsNew)
       cfs[1] <- cfs[1] - delta # Equation (7) in King and Zeng (2001)
       cyclopsFit$estimation$estimate[1] <- cfs[1]
       covariateData$fullOutcomes <- fullPopulation
