@@ -92,8 +92,8 @@ ensureInstalled <- function(pkgs) {
     }
   }
   for (package in notInstalled) {
-    if (package %in% c("CohortGenerator", "ResultModelManager")) {
-      ensure_installed("remotes")
+    if (package %in% c("ShinyAppBuilder", "ResultModelManager")) {
+      ensureInstalled("remotes")
       message("\nInstalling from Github using remotes")
       remotes::install_github(sprintf("OHDSI/%s", package))
     } else {

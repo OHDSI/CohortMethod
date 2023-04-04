@@ -25,7 +25,7 @@
 #' @importFrom grDevices rgb
 #' @importFrom methods is
 #' @importFrom stats aggregate coef confint pnorm predict printCoefmat qnorm quantile rexp rpois runif sd time density lm start
-#' @importFrom utils setTxtProgressBar txtProgressBar read.csv
+#' @importFrom utils setTxtProgressBar txtProgressBar head install.packages installed.packages
 #' @importFrom graphics text
 #' @importFrom rlang .data
 #' @import Cyclops

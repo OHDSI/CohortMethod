@@ -36,9 +36,14 @@ insertExportedResultsInSqlite <- function(sqliteFileName, exportFolder, cohorts)
     dbms = "sqlite",
     server = sqliteFileName
   )
+  append <- file.exists(sqliteFileName)
+  if (append) {
+    message("File `", sqliteFileName, "` already exists, so appending results instead of creating new tables")
+  }
   uploadExportedResults(
     connectionDetails = connectionDetails,
     databaseSchema = "main",
+    append = append,
     exportFolder = exportFolder,
     cohorts = cohorts
   )
@@ -50,6 +55,9 @@ insertExportedResultsInSqlite <- function(sqliteFileName, exportFolder, cohorts)
 #'                          [DatabaseConnector::createConnectionDetails()] function.
 #' @param databaseSchema    The name of the database schema where the results will be
 #'                          written.
+#' @param append            Append the results to existing tables? Can be used for
+#'                          uploading results from multiple databases into a single
+#'                          results schema.
 #' @param exportFolder      The folder containing the CSV files to upload, as generated
 #'                          using the [exportToCsv()] function.
 #' @template Cohorts
@@ -62,6 +70,7 @@ insertExportedResultsInSqlite <- function(sqliteFileName, exportFolder, cohorts)
 #' @export
 uploadExportedResults <- function(connectionDetails,
                                   databaseSchema,
+                                  append = FALSE,
                                   exportFolder,
                                   cohorts) {
   # ensureInstalled("CohortGenerator")
@@ -69,26 +78,40 @@ uploadExportedResults <- function(connectionDetails,
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
-  # Create tables
-  rdmsFile <- system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod")
-  # specification <- CohortGenerator::readCsv(file = rdmsFile)
-  specification <- readr::read_csv(file = rdmsFile, show_col_types = FALSE) %>%
-    SqlRender::snakeCaseToCamelCaseNames()
-  sql <- ResultModelManager::generateSqlSchema(csvFilepath = rdmsFile)
-  sql <- SqlRender::render(
-    sql = sql,
-    database_schema = databaseSchema
-  )
-  DatabaseConnector::executeSql(connection = connection, sql = sql)
+  if (!append) {
+    # Create tables
+    rdmsFile <- system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod")
+    # specification <- CohortGenerator::readCsv(file = rdmsFile)
+    specification <- readr::read_csv(file = rdmsFile, show_col_types = FALSE) %>%
+      SqlRender::snakeCaseToCamelCaseNames()
+    sql <- ResultModelManager::generateSqlSchema(csvFilepath = rdmsFile)
+    sql <- SqlRender::render(
+      sql = sql,
+      database_schema = databaseSchema
+    )
+    DatabaseConnector::executeSql(connection = connection, sql = sql)
+
+    # Upload cohorts
+    DatabaseConnector::insertTable(
+      connection = connection,
+      databaseSchema = databaseSchema,
+      tableName = "cg_cohort_definition",
+      data = cohorts %>%
+        rename(cohortDefinitionId = "cohortId"),
+      dropTableIfExists = TRUE,
+      createTable = TRUE,
+      camelCaseToSnakeCase = TRUE
+    )
+  }
 
   # Extract database ID and create a temp file and table
   resultsFile <- file.path(exportFolder, "cm_result.csv")
   databaseIdentifier <- readr::read_csv(resultsFile, show_col_types = FALSE) %>%
     head(1) %>%
     transmute(
-      .data$database_id,
-      cdm_source_name = .data$database_id,
-      cdm_source_abbreviation = .data$database_id
+      database_id = as.character(.data$database_id),
+      cdm_source_name = as.character(.data$database_id),
+      cdm_source_abbreviation = as.character(.data$database_id)
     )
   databaseIdentifierFile <- tempfile(fileext = ".csv")
   readr::write_csv(databaseIdentifier, databaseIdentifierFile)
@@ -98,21 +121,9 @@ uploadExportedResults <- function(connectionDetails,
     tableName = "database_meta_data",
     data = databaseIdentifier,
     dropTableIfExists = FALSE,
-    createTable = TRUE
+    createTable = !append
   )
   on.exit(unlink(databaseIdentifierFile), add = TRUE)
-
-  # Upload cohorts
-  DatabaseConnector::insertTable(
-    connection = connection,
-    databaseSchema =databaseSchema,
-    tableName = "cg_cohort_definition",
-    data = cohorts %>%
-      rename(cohortDefinitionId = "cohortId"),
-    dropTableIfExists = TRUE,
-    createTable = TRUE,
-    camelCaseToSnakeCase = TRUE
-  )
 
   # Upload results
   ResultModelManager::uploadResults(
@@ -152,7 +163,7 @@ launchResultsViewerUsingSqlite <- function(sqliteFileName) {
 #' @param connectionDetails An R object of type `connectionDetails` created using the
 #'                          [DatabaseConnector::createConnectionDetails()] function.
 #' @param databaseSchema    The name of the database schema where the results were
-#'                          written using [uploadExportedResults(].
+#'                          written using [uploadExportedResults()].
 #'
 #' @return
 #' Does not return anything. Is called for the side-effect of launching the Shiny
@@ -182,8 +193,6 @@ launchResultsViewer <- function(connectionDetails, databaseSchema) {
     ShinyAppBuilder::addModuleConfig(aboutModule) %>%
     # addModuleConfig(cohortGeneratorModule) %>%
     ShinyAppBuilder::addModuleConfig(cohortMethodModule)
-
-  # Launch shiny app locally -----------------------------------------------------
   connectionHandler <- ResultModelManager::ConnectionHandler$new(connectionDetails)
   ShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)
   connectionHandler$closeConnection()

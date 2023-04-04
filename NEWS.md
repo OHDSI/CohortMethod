@@ -53,6 +53,9 @@ Changes:
     
     - Dropping arguments like `createPs` and `fitOutcomeModel` from the `createCmAnalysis()` function. Instead, not providing `createPsArgs` or `fitOutcomeModelArgs` is assumed to mean skipping propensity score creation or outcome model fitting, respectively.
 
+17. Added the `exportToCsv()` function for exporting study results to CSV files that do not contain patient-level information and can therefore be shared between sites. The `getResultsDataModel()` function returns the data model for these CSV files.
+	
+18. Added the `uploadExportedResults()` and `insertExportedResultsInSqlite()` functions for uploading the results from the CSV files in a database. The `launchResultsViewer()` and `launchResultsViewerUsingSqlite()` functions were added for launching a Shiny app to view the results in the (SQLite) database.
   
 Bug fixes:
 

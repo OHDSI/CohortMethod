@@ -11,7 +11,7 @@ launchResultsViewer(connectionDetails, databaseSchema)
 \code{\link[DatabaseConnector:createConnectionDetails]{DatabaseConnector::createConnectionDetails()}} function.}
 
 \item{databaseSchema}{The name of the database schema where the results were
-written using \link{uploadExportedResults(}.}
+written using \code{\link[=uploadExportedResults]{uploadExportedResults()}}.}
 }
 \value{
 Does not return anything. Is called for the side-effect of launching the Shiny

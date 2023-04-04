@@ -7,7 +7,7 @@
 exportToCsv(
   outputFolder,
   exportFolder = file.path(outputFolder, "export"),
-  databaseId = 1,
+  databaseId,
   minCellCount = 5,
   maxCores = 1,
   cmDiagnosticThresholds = createCmDiagnosticThresholds()

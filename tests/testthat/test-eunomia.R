@@ -206,7 +206,7 @@ test_that("Multiple analyses", {
 
   expect_equal(nrow(analysisSum), 12)
 
-  CohortMethod::exportToCsv(outputFolder)
+  CohortMethod::exportToCsv(outputFolder, databaseId = "Test")
   cohortMethodResultFile <- file.path(outputFolder, "export", "cm_result.csv")
   expect_true(file.exists(cohortMethodResultFile))
 

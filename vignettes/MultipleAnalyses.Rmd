@@ -11,8 +11,8 @@ output:
     toc: yes
 vignette: >
   %\VignetteIndexEntry{Multiple analyses using CohortMethod}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
 ---
 
 
@@ -502,6 +502,61 @@ if (folderExists) {
                         seLogRrPositives = hoi$seLogRr, null)
 }
 ```
+
+# Exporting to CSV
+
+The results generated so far all reside in binary object on your local file system, mixing aggregate statistics such as hazard ratios with patient-level data including propensity scores per person. How could we share our results with others, possibly outside our organization? This is where the `exportToCsv()` function comes in. This function exports all results, including diagnostics to CSV (comma-separated values) files. These files only contain aggregate statistics, not patient-level data. The format is CSV files to enable human review.
+
+```{r eval=FALSE}
+exportToCsv(
+  outputFolder,
+  exportFolder = file.path(folder, "export"),
+  databaseId = "My CDM",
+  minCellCount = 5,
+  maxCores = parallel::detectCores()
+)
+```
+
+Any person counts in the results that are smaller than the `minCellCount` argument will be blinded, by replacing the count with the negative `minCellCount`. For example, if the number of people with the outcome is 3, and `minCellCount = 5`, the count will be reported to be -5, which in the Shiny app will be displayed as '<5'. 
+
+Information on the data model used to generate the CSV files can be retrieved using `getResultsDataModel()`:
+
+```{r}
+getResultsDataModel()
+```
+
+# View results in a Shiny app
+
+Finally, we can view the results in a Shiny app. For this we must first load the CSV files produced by `exportToCsv()` into a database. We could use the `uploadExportedResults()` function for this. However, if we just want to view the results ourselves we can create a small SQLite database ourselves without having to set up a database server. In any case we need to specify the names of the exposure and outcome cohorts we used in our study. We can create the SQLite database using:
+
+```{r eval=FALSE}
+cohorts <- data.frame(
+  cohortId = c(
+    1118084,
+    1124300,
+    192671),
+  cohortName = c(
+    "Celecoxib",
+    "Diclofenac",
+    "GI Bleed"
+  )
+)
+
+insertExportedResultsInSqlite(
+  sqliteFileName = file.path(folder, "myResults.sqlite"), 
+  exportFolder = file.path(folder, "export"), 
+  cohorts = cohorts
+)
+
+```
+
+Next we launch the Shiny app using:
+```{r eval=FALSE}
+launchResultsViewerUsingSqlite(
+  sqliteFileName = file.path(folder, "myResults.sqlite")
+)
+```
+
 
 # Acknowledgments
 
