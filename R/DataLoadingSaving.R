@@ -403,21 +403,23 @@ downSample <-
     ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
     preSampleCounts <- dplyr::tibble(dummy = 0)
     idx <- which(counts$treatment == 1)
-    if (length(idx) == 0) {
-      preSampleCounts$targetPersons <- 0
-      preSampleCounts$targetExposures <- 0
-    } else {
-      preSampleCounts$targetPersons <- counts$personCount[idx]
-      preSampleCounts$targetExposures <- counts$rowCount[idx]
-    }
+    preSampleCounts <- preSample(idx, "target", counts, preSampleCounts)
+    # if (length(idx) == 0) {
+    #   preSampleCounts$targetPersons <- 0
+    #   preSampleCounts$targetExposures <- 0
+    # } else {
+    #   preSampleCounts$targetPersons <- counts$personCount[idx]
+    #   preSampleCounts$targetExposures <- counts$rowCount[idx]
+    # }
     idx <- which(counts$treatment == 0)
-    if (length(idx) == 0) {
-      preSampleCounts$comparatorPersons <- 0
-      preSampleCounts$comparatorExposures <- 0
-    } else {
-      preSampleCounts$comparatorPersons <- counts$personCount[idx]
-      preSampleCounts$comparatorExposures <- counts$rowCount[idx]
-    }
+    preSampleCounts <- preSample(idx, "comparator", counts, preSampleCounts)
+    # if (length(idx) == 0) {
+    #   preSampleCounts$comparatorPersons <- 0
+    #   preSampleCounts$comparatorExposures <- 0
+    # } else {
+    #   preSampleCounts$comparatorPersons <- counts$personCount[idx]
+    #   preSampleCounts$comparatorExposures <- counts$rowCount[idx]
+    # }
     preSampleCounts$dummy <- NULL
     if (preSampleCounts$targetExposures > maxCohortSize) {
       message(
@@ -449,6 +451,19 @@ downSample <-
     }
     return(list(sampled = sampled, preSampleCounts = preSampleCounts))
   }
+
+preSample <- function(idx, colType, counts, preSampleCounts) {
+  personCol <- paste0(colType, "Persons")
+  exposuresCol <- paste0(colType, "Exposures")
+  if (length(idx) == 0) {
+      preSampleCounts[personCol] <- 0
+      preSampleCounts[exposuresCol] <- 0
+    } else {
+      preSampleCounts[personCol] <- counts$personCount[idx]
+      preSampleCounts[exposuresCol] <- counts$rowCount[idx]
+    }
+  return(preSampleCounts)
+}
 
 handleCohortCovariateBuilders <-
   function(covariateSettings,
