@@ -193,49 +193,9 @@ getDbCohortMethodData <- function(connectionDetails,
 
   sampled <- FALSE
   if (maxCohortSize != 0) {
-    renderedSql <- SqlRender::loadRenderTranslateSql("CountCohorts.sql",
-                                                     packageName = "CohortMethod",
-                                                     dbms = connectionDetails$dbms,
-                                                     tempEmulationSchema = tempEmulationSchema,
-                                                     target_id = targetId
-    )
-    counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
-    ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-    preSampleCounts <- dplyr::tibble(dummy = 0)
-    idx <- which(counts$treatment == 1)
-    if (length(idx) == 0) {
-      preSampleCounts$targetPersons <- 0
-      preSampleCounts$targetExposures <- 0
-    } else {
-      preSampleCounts$targetPersons <- counts$personCount[idx]
-      preSampleCounts$targetExposures <- counts$rowCount[idx]
-    }
-    idx <- which(counts$treatment == 0)
-    if (length(idx) == 0) {
-      preSampleCounts$comparatorPersons <- 0
-      preSampleCounts$comparatorExposures <- 0
-    } else {
-      preSampleCounts$comparatorPersons <- counts$personCount[idx]
-      preSampleCounts$comparatorExposures <- counts$rowCount[idx]
-    }
-    preSampleCounts$dummy <- NULL
-    if (preSampleCounts$targetExposures > maxCohortSize) {
-      message("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize)
-      sampled <- TRUE
-    }
-    if (preSampleCounts$comparatorExposures > maxCohortSize) {
-      message("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize)
-      sampled <- TRUE
-    }
-    if (sampled) {
-      renderedSql <- SqlRender::loadRenderTranslateSql("SampleCohorts.sql",
-                                                       packageName = "CohortMethod",
-                                                       dbms = connectionDetails$dbms,
-                                                       tempEmulationSchema = tempEmulationSchema,
-                                                       max_cohort_size = maxCohortSize
-      )
-      DatabaseConnector::executeSql(connection, renderedSql)
-    }
+    outList <- downSample(connection, tempEmulationSchema, targetId, maxCohortSize, sampled)
+    sampled <- outList$sampled
+    preSampleCounts <- outList$preSampleCounts
   }
 
   message("Fetching cohorts from server")
@@ -386,6 +346,55 @@ getDbCohortMethodData <- function(connectionDetails,
   class(covariateData) <- "CohortMethodData"
   attr(class(covariateData), "package") <- "CohortMethod"
   return(covariateData)
+}
+
+downSample <- function(connection, tempEmulationSchema, targetId, maxCohortSize, sampled) {
+  renderedSql <- SqlRender::loadRenderTranslateSql(
+    "CountCohorts.sql",
+    packageName = "CohortMethod",
+    dbms = connection@dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    target_id = targetId
+  )
+  counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
+  ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
+  preSampleCounts <- dplyr::tibble(dummy = 0)
+  idx <- which(counts$treatment == 1)
+  if (length(idx) == 0) {
+    preSampleCounts$targetPersons <- 0
+    preSampleCounts$targetExposures <- 0
+  } else {
+    preSampleCounts$targetPersons <- counts$personCount[idx]
+    preSampleCounts$targetExposures <- counts$rowCount[idx]
+  }
+  idx <- which(counts$treatment == 0)
+  if (length(idx) == 0) {
+    preSampleCounts$comparatorPersons <- 0
+    preSampleCounts$comparatorExposures <- 0
+  } else {
+    preSampleCounts$comparatorPersons <- counts$personCount[idx]
+    preSampleCounts$comparatorExposures <- counts$rowCount[idx]
+  }
+  preSampleCounts$dummy <- NULL
+  if (preSampleCounts$targetExposures > maxCohortSize) {
+    message("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize)
+    sampled <- TRUE
+  }
+  if (preSampleCounts$comparatorExposures > maxCohortSize) {
+    message("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize)
+    sampled <- TRUE
+  }
+  if (sampled) {
+    renderedSql <- SqlRender::loadRenderTranslateSql(
+      "SampleCohorts.sql",
+      packageName = "CohortMethod",
+      dbms = connection@dbms,
+      tempEmulationSchema = tempEmulationSchema,
+      max_cohort_size = maxCohortSize
+    )
+    DatabaseConnector::executeSql(connection, renderedSql)
+  }
+  return(list(sampled = sampled, preSampleCounts = preSampleCounts))
 }
 
 handleCohortCovariateBuilders <- function(covariateSettings, exposureDatabaseSchema, exposureTable) {
