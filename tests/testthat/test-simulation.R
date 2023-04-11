@@ -33,7 +33,7 @@ test_that("createCohortMethodDataSimulationProfile", {
     cdmVersion = "5",
     washoutPeriod = 183,
     firstExposureOnly = TRUE,
-    removeDuplicateSubjects = TRUE,
+    removeDuplicateSubjects = "keep all",
     restrictToCommonPeriod = TRUE,
     maxCohortSize = 100000,
     covariateSettings = covarSettings
@@ -67,7 +67,7 @@ test_that("Test bad covariate data", {
     cdmVersion = "5",
     washoutPeriod = 183,
     firstExposureOnly = TRUE,
-    removeDuplicateSubjects = TRUE,
+    removeDuplicateSubjects = "keep all",
     restrictToCommonPeriod = TRUE,
     maxCohortSize = 100000,
     covariateSettings = covarSettings
@@ -93,7 +93,7 @@ test_that("Test bad covariate data", {
       cdmVersion = "5",
       washoutPeriod = 183,
       firstExposureOnly = TRUE,
-      removeDuplicateSubjects = TRUE,
+      removeDuplicateSubjects = "keep all",
       restrictToCommonPeriod = TRUE,
       maxCohortSize = 100000,
       covariateSettings = covarSettings
