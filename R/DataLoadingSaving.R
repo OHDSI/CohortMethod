@@ -136,58 +136,120 @@ getDbCohortMethodData <- function(connectionDetails,
       removeDuplicateSubjects <- "keep all"
     }
   }
+  errorMessages <- checkmate::makeAssertCollection()
+  if (is(connectionDetails, "connectionDetails")) {
+    checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
+  } else {
+    checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  }
+  checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertInt(targetId, add = errorMessages)
+  checkmate::assertInt(comparatorId, add = errorMessages)
+  checkmate::assertIntegerish(outcomeIds, add = errorMessages)
+  checkmate::assertCharacter(studyStartDate, len = 1, add = errorMessages)
+  checkmate::assertCharacter(studyEndDate, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
+  checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
+  checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
+  checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
+  checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
+  checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
+  checkmate::assertList(covariateSettings, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
 
-  env <- environment()
-
-  checkParameters(env)
+  if (studyStartDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
+    stop("Study start date must have format YYYYMMDD")
+  }
+  if (studyEndDate != "" && regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
+    stop("Study end date must have format YYYYMMDD")
+  }
 
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
   message("Constructing target and comparator cohorts")
-  renderedSql <- SqlRender::loadRenderTranslateSql(
-    "CreateCohorts.sql",
-    packageName = "CohortMethod",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    exposure_database_schema = exposureDatabaseSchema,
-    exposure_table = exposureTable,
-    target_id = targetId,
-    comparator_id = comparatorId,
-    study_start_date = studyStartDate,
-    study_end_date = studyEndDate,
-    first_only = firstExposureOnly,
-    remove_duplicate_subjects = removeDuplicateSubjects,
-    washout_period = washoutPeriod,
-    restrict_to_common_period = restrictToCommonPeriod
+  renderedSql <- SqlRender::loadRenderTranslateSql("CreateCohorts.sql",
+                                                   packageName = "CohortMethod",
+                                                   dbms = connectionDetails$dbms,
+                                                   tempEmulationSchema = tempEmulationSchema,
+                                                   cdm_database_schema = cdmDatabaseSchema,
+                                                   exposure_database_schema = exposureDatabaseSchema,
+                                                   exposure_table = exposureTable,
+                                                   target_id = targetId,
+                                                   comparator_id = comparatorId,
+                                                   study_start_date = studyStartDate,
+                                                   study_end_date = studyEndDate,
+                                                   first_only = firstExposureOnly,
+                                                   remove_duplicate_subjects = removeDuplicateSubjects,
+                                                   washout_period = washoutPeriod,
+                                                   restrict_to_common_period = restrictToCommonPeriod
   )
   DatabaseConnector::executeSql(connection, renderedSql)
 
   sampled <- FALSE
   if (maxCohortSize != 0) {
-    downSample(env)
+    renderedSql <- SqlRender::loadRenderTranslateSql("CountCohorts.sql",
+                                                     packageName = "CohortMethod",
+                                                     dbms = connectionDetails$dbms,
+                                                     tempEmulationSchema = tempEmulationSchema,
+                                                     target_id = targetId
+    )
+    counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
+    ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
+    preSampleCounts <- dplyr::tibble(dummy = 0)
+    idx <- which(counts$treatment == 1)
+    if (length(idx) == 0) {
+      preSampleCounts$targetPersons <- 0
+      preSampleCounts$targetExposures <- 0
+    } else {
+      preSampleCounts$targetPersons <- counts$personCount[idx]
+      preSampleCounts$targetExposures <- counts$rowCount[idx]
+    }
+    idx <- which(counts$treatment == 0)
+    if (length(idx) == 0) {
+      preSampleCounts$comparatorPersons <- 0
+      preSampleCounts$comparatorExposures <- 0
+    } else {
+      preSampleCounts$comparatorPersons <- counts$personCount[idx]
+      preSampleCounts$comparatorExposures <- counts$rowCount[idx]
+    }
+    preSampleCounts$dummy <- NULL
+    if (preSampleCounts$targetExposures > maxCohortSize) {
+      message("Downsampling target cohort from ", preSampleCounts$targetExposures, " to ", maxCohortSize)
+      sampled <- TRUE
+    }
+    if (preSampleCounts$comparatorExposures > maxCohortSize) {
+      message("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures, " to ", maxCohortSize)
+      sampled <- TRUE
+    }
+    if (sampled) {
+      renderedSql <- SqlRender::loadRenderTranslateSql("SampleCohorts.sql",
+                                                       packageName = "CohortMethod",
+                                                       dbms = connectionDetails$dbms,
+                                                       tempEmulationSchema = tempEmulationSchema,
+                                                       max_cohort_size = maxCohortSize
+      )
+      DatabaseConnector::executeSql(connection, renderedSql)
+    }
   }
 
   message("Fetching cohorts from server")
   start <- Sys.time()
-  cohortSql <- SqlRender::loadRenderTranslateSql(
-    "GetCohorts.sql",
-    packageName = "CohortMethod",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    target_id = targetId,
-    sampled = sampled
+  cohortSql <- SqlRender::loadRenderTranslateSql("GetCohorts.sql",
+                                                 packageName = "CohortMethod",
+                                                 dbms = connectionDetails$dbms,
+                                                 tempEmulationSchema = tempEmulationSchema,
+                                                 target_id = targetId,
+                                                 sampled = sampled
   )
-  cohorts <-
-    DatabaseConnector::querySql(connection, cohortSql, snakeCaseToCamelCase = TRUE)
+  cohorts <- DatabaseConnector::querySql(connection, cohortSql, snakeCaseToCamelCase = TRUE)
   cohorts$rowId <- as.numeric(cohorts$rowId)
-  ParallelLogger::logDebug(
-    "Fetched cohort total rows in target is ",
-    sum(cohorts$treatment),
-    ", total rows in comparator is ",
-    sum(!cohorts$treatment)
-  )
+  ParallelLogger::logDebug("Fetched cohort total rows in target is ", sum(cohorts$treatment), ", total rows in comparator is ", sum(!cohorts$treatment))
   if (nrow(cohorts) == 0) {
     warning("Target and comparator cohorts are empty")
   } else if (sum(cohorts$treatment == 1) == 0) {
@@ -201,31 +263,80 @@ getDbCohortMethodData <- function(connectionDetails,
     studyStartDate = studyStartDate,
     studyEndDate = studyEndDate
   )
-  if (firstExposureOnly ||
-      removeDuplicateSubjects != "keep all" || washoutPeriod != 0) {
-    removeDupes(env)
+  if (firstExposureOnly || removeDuplicateSubjects != "keep all" || washoutPeriod != 0) {
+    rawCountSql <- SqlRender::loadRenderTranslateSql("CountOverallExposedPopulation.sql",
+                                                     packageName = "CohortMethod",
+                                                     dbms = connectionDetails$dbms,
+                                                     tempEmulationSchema = tempEmulationSchema,
+                                                     cdm_database_schema = cdmDatabaseSchema,
+                                                     exposure_database_schema = exposureDatabaseSchema,
+                                                     exposure_table = tolower(exposureTable),
+                                                     target_id = targetId,
+                                                     comparator_id = comparatorId,
+                                                     study_start_date = studyStartDate,
+                                                     study_end_date = studyEndDate
+    )
+    rawCount <- DatabaseConnector::querySql(connection, rawCountSql, snakeCaseToCamelCase = TRUE)
+    if (nrow(rawCount) == 0) {
+      counts <- dplyr::tibble(
+        description = "Original cohorts",
+        targetPersons = 0,
+        comparatorPersons = 0,
+        targetExposures = 0,
+        comparatorExposures = 0
+      )
+    } else {
+      counts <- dplyr::tibble(
+        description = "Original cohorts",
+        targetPersons = rawCount$exposedCount[rawCount$treatment == 1],
+        comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
+        targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
+        comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0]
+      )
+    }
+    metaData$attrition <- counts
+    label <- c()
+    if (firstExposureOnly) {
+      label <- c(label, "first exp. only")
+    }
+    if (removeDuplicateSubjects == "remove all") {
+      label <- c(label, "removed subs in both cohorts")
+    } else if (removeDuplicateSubjects == "keep first") {
+      label <- c(label, "first cohort only")
+    }
+
+    if (restrictToCommonPeriod) {
+      label <- c(label, "restrict to common period")
+    }
+    if (washoutPeriod) {
+      label <- c(label, paste(washoutPeriod, "days of obs. prior"))
+    }
+    label <- paste(label, collapse = " & ")
+    substring(label, 1) <- toupper(substring(label, 1, 1))
+    if (sampled) {
+      preSampleCounts$description <- label
+      metaData$attrition <- rbind(metaData$attrition, preSampleCounts)
+      metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
+    } else {
+      metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, label))
+    }
   } else {
     if (sampled) {
       preSampleCounts$description <- "Original cohorts"
       metaData$attrition <- preSampleCounts
-      metaData$attrition <-
-        rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
+      metaData$attrition <- rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
     } else {
       metaData$attrition <- getCounts(cohorts, "Original cohorts")
     }
   }
   delta <- Sys.time() - start
-  message("Fetching cohorts took ",
-          signif(delta, 3),
-          " ",
-          attr(delta, "units"))
+  message("Fetching cohorts took ", signif(delta, 3), " ", attr(delta, "units"))
   if (sampled) {
     cohortTable <- "#cohort_sample"
   } else {
     cohortTable <- "#cohort_person"
   }
-  covariateSettings <-
-    handleCohortCovariateBuilders(covariateSettings, exposureDatabaseSchema, exposureTable)
+  covariateSettings <- handleCohortCovariateBuilders(covariateSettings, exposureDatabaseSchema, exposureTable)
   covariateData <- FeatureExtraction::getDbCovariateData(
     connection = connection,
     oracleTempSchema = tempEmulationSchema,
@@ -236,241 +347,58 @@ getDbCohortMethodData <- function(connectionDetails,
     rowIdField = "row_id",
     covariateSettings = covariateSettings
   )
-  ParallelLogger::logDebug("Fetched covariates total count is ",
-                           nrow_temp(covariateData$covariates))
+  ParallelLogger::logDebug("Fetched covariates total count is ", nrow_temp(covariateData$covariates))
   message("Fetching outcomes from server")
   start <- Sys.time()
-  outcomeSql <- SqlRender::loadRenderTranslateSql(
-    "GetOutcomes.sql",
-    packageName = "CohortMethod",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    outcome_database_schema = outcomeDatabaseSchema,
-    outcome_table = outcomeTable,
-    outcome_ids = outcomeIds,
-    sampled = sampled
+  outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
+                                                  packageName = "CohortMethod",
+                                                  dbms = connectionDetails$dbms,
+                                                  tempEmulationSchema = tempEmulationSchema,
+                                                  cdm_database_schema = cdmDatabaseSchema,
+                                                  outcome_database_schema = outcomeDatabaseSchema,
+                                                  outcome_table = outcomeTable,
+                                                  outcome_ids = outcomeIds,
+                                                  sampled = sampled
   )
-  outcomes <-
-    DatabaseConnector::querySql(connection, outcomeSql, snakeCaseToCamelCase = TRUE)
+  outcomes <- DatabaseConnector::querySql(connection, outcomeSql, snakeCaseToCamelCase = TRUE)
   outcomes$rowId <- as.numeric(outcomes$rowId)
   metaData$outcomeIds <- outcomeIds
   delta <- Sys.time() - start
-  message("Fetching outcomes took ",
-          signif(delta, 3),
-          " ",
-          attr(delta, "units"))
+  message("Fetching outcomes took ", signif(delta, 3), " ", attr(delta, "units"))
   ParallelLogger::logDebug("Fetched outcomes total count is ", nrow(outcomes))
 
   # Remove temp tables:
-  renderedSql <-
-    SqlRender::loadRenderTranslateSql(
-      "RemoveCohortTempTables.sql",
-      packageName = "CohortMethod",
-      dbms = connectionDetails$dbms,
-      tempEmulationSchema = tempEmulationSchema,
-      sampled = sampled
-    )
+  renderedSql <- SqlRender::loadRenderTranslateSql("RemoveCohortTempTables.sql",
+                                                   packageName = "CohortMethod",
+                                                   dbms = connectionDetails$dbms,
+                                                   tempEmulationSchema = tempEmulationSchema,
+                                                   sampled = sampled
+  )
   DatabaseConnector::executeSql(connection,
                                 renderedSql,
                                 progressBar = FALSE,
-                                reportOverallTime = FALSE)
+                                reportOverallTime = FALSE
+  )
 
   covariateData$cohorts <- cohorts
   covariateData$outcomes <- outcomes
-  attr(covariateData, "metaData") <-
-    append(attr(covariateData, "metaData"), metaData)
+  attr(covariateData, "metaData") <- append(attr(covariateData, "metaData"), metaData)
   class(covariateData) <- "CohortMethodData"
   attr(class(covariateData), "package") <- "CohortMethod"
   return(covariateData)
 }
 
-checkParameters <- function(env) {
-  errorMessages <- checkmate::makeAssertCollection()
-  if (is(env$connectionDetails, "connectionDetails")) {
-    checkmate::assertClass(env$connectionDetails, "connectionDetails", add = errorMessages)
-  } else {
-    checkmate::assertClass(env$connectionDetails, "ConnectionDetails", add = errorMessages)
+handleCohortCovariateBuilders <- function(covariateSettings, exposureDatabaseSchema, exposureTable) {
+  if (is(covariateSettings, "covariateSettings")) {
+    covariateSettings <- list(covariateSettings)
   }
-  checkmate::assertCharacter(env$cdmDatabaseSchema, len = 1, add = errorMessages)
-  checkmate::assertCharacter(
-    env$tempEmulationSchema,
-    len = 1,
-    null.ok = TRUE,
-    add = errorMessages
-  )
-  checkmate::assertInt(env$targetId, add = errorMessages)
-  checkmate::assertInt(env$comparatorId, add = errorMessages)
-  checkmate::assertIntegerish(env$outcomeIds, add = errorMessages)
-  checkmate::assertCharacter(env$studyStartDate, len = 1, add = errorMessages)
-  checkmate::assertCharacter(env$studyEndDate, len = 1, add = errorMessages)
-  checkmate::assertCharacter(env$exposureDatabaseSchema, len = 1, add = errorMessages)
-  checkmate::assertCharacter(env$exposureTable, len = 1, add = errorMessages)
-  checkmate::assertCharacter(env$outcomeDatabaseSchema, len = 1, add = errorMessages)
-  checkmate::assertCharacter(env$outcomeTable, len = 1, add = errorMessages)
-  checkmate::assertCharacter(env$cdmVersion, len = 1, add = errorMessages)
-  checkmate::assertLogical(env$firstExposureOnly, len = 1, add = errorMessages)
-  checkmate::assertChoice(env$removeDuplicateSubjects,
-                          c("keep all", "keep first", "remove all"),
-                          add = errorMessages)
-  checkmate::assertLogical(env$restrictToCommonPeriod, len = 1, add = errorMessages)
-  checkmate::assertInt(env$washoutPeriod, lower = 0, add = errorMessages)
-  checkmate::assertInt(env$maxCohortSize, lower = 0, add = errorMessages)
-  checkmate::assertList(env$covariateSettings, add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-
-  if (env$studyStartDate != "" &&
-      regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", env$studyStartDate) == -1) {
-    stop("Study start date must have format YYYYMMDD")
-  }
-  if (env$studyEndDate != "" &&
-      regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", env$studyEndDate) == -1) {
-    stop("Study end date must have format YYYYMMDD")
-  }
-}
-
-downSample <- function(env) {
-  renderedSql <- SqlRender::loadRenderTranslateSql(
-    "CountCohorts.sql",
-    packageName = "CohortMethod",
-    dbms = env$connectionDetails$dbms,
-    tempEmulationSchema = env$tempEmulationSchema,
-    target_id = env$targetId
-  )
-  counts <-
-    DatabaseConnector::querySql(env$connection, renderedSql, snakeCaseToCamelCase = TRUE)
-  ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-  env$preSampleCounts <- dplyr::tibble(dummy = 0)
-
-  idx <- which(counts$treatment == 1)
-  getPreSampleCounts(env, "target")
-  idx <- which(counts$treatment == 0)
-  getPreSampleCounts(env, "comparator")
-
-  env$preSampleCounts$dummy <- NULL
-  if (env$preSampleCounts$targetExposures > env$maxCohortSize) {
-    message(
-      "Downsampling target cohort from ",
-      env$preSampleCounts$targetExposures,
-      " to ",
-      env$maxCohortSize
-    )
-    env$sampled <- TRUE
-  }
-  if (env$preSampleCounts$comparatorExposures > env$maxCohortSize) {
-    message(
-      "Downsampling comparator cohort from ",
-      env$preSampleCounts$comparatorExposures,
-      " to ",
-      env$maxCohortSize
-    )
-    env$sampled <- TRUE
-  }
-  if (env$sampled) {
-    renderedSql <- SqlRender::loadRenderTranslateSql(
-      "SampleCohorts.sql",
-      packageName = "CohortMethod",
-      dbms = env$connectionDetails$dbms,
-      tempEmulationSchema = env$tempEmulationSchema,
-      max_cohort_size = env$maxCohortSize
-    )
-    DatabaseConnector::executeSql(env$connection, renderedSql)
-  }
-}
-
-removeDupes <- function(env) {
-  rawCountSql <- SqlRender::loadRenderTranslateSql(
-    "CountOverallExposedPopulation.sql",
-    packageName = "CohortMethod",
-    dbms = env$connectionDetails$dbms,
-    tempEmulationSchema = env$tempEmulationSchema,
-    cdm_database_schema = env$cdmDatabaseSchema,
-    exposure_database_schema = env$exposureDatabaseSchema,
-    exposure_table = tolower(env$exposureTable),
-    target_id = env$targetId,
-    comparator_id = env$comparatorId,
-    study_start_date = env$studyStartDate,
-    study_end_date = env$studyEndDate
-  )
-  rawCount <- DatabaseConnector::querySql(env$connection,
-                                          rawCountSql,
-                                          snakeCaseToCamelCase = TRUE)
-  if (nrow(rawCount) == 0) {
-    counts <- dplyr::tibble(
-      description = "Original cohorts",
-      targetPersons = 0,
-      comparatorPersons = 0,
-      targetExposures = 0,
-      comparatorExposures = 0
-    )
-  } else {
-    counts <- dplyr::tibble(
-      description = "Original cohorts",
-      targetPersons = rawCount$exposedCount[rawCount$treatment == 1],
-      comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-      targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
-      comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0]
-    )
-  }
-  env$metaData$attrition <- counts
-  label <- c()
-  if (env$firstExposureOnly) {
-    label <- c(label, "first exp. only")
-  }
-  if (env$removeDuplicateSubjects == "remove all") {
-    label <- c(label, "removed subs in both cohorts")
-  } else if (env$removeDuplicateSubjects == "keep first") {
-    label <- c(label, "first cohort only")
-  }
-
-  if (env$restrictToCommonPeriod) {
-    label <- c(label, "restrict to common period")
-  }
-  if (env$washoutPeriod) {
-    label <- c(label, paste(env$washoutPeriod, "days of obs. prior"))
-  }
-  label <- paste(label, collapse = " & ")
-  substring(label, 1) <- toupper(substring(label, 1, 1))
-  if (env$sampled) {
-    env$preSampleCounts$description <- label
-    env$metaData$attrition <-
-      rbind(env$metaData$attrition, env$preSampleCounts)
-    env$metaData$attrition <-
-      rbind(env$metaData$attrition,
-            getCounts(env$cohorts, "Random sample"))
-  } else {
-    env$metaData$attrition <-
-      rbind(env$metaData$attrition, getCounts(env$cohorts, label))
-  }
-}
-
-getPreSampleCounts <- function(env, col) {
-  personsCol <- paste0(col, "Persons")
-  exposureCol <- paste0(col, "Exposures")
-  if (length(env$idx) == 0) {
-    env$preSampleCounts[personsCol] <- 0
-    env$preSampleCounts[exposureCol] <- 0
-  } else {
-    env$preSampleCounts[personsCol] <- env$counts$personCount[env$idx]
-    env$preSampleCounts[exposureCol] <- env$counts$rowCount[env$idx]
-  }
-}
-
-handleCohortCovariateBuilders <-
-  function(covariateSettings,
-           exposureDatabaseSchema,
-           exposureTable) {
-    if (is(covariateSettings, "covariateSettings")) {
-      covariateSettings <- list(covariateSettings)
+  for (i in 1:length(covariateSettings)) {
+    object <- covariateSettings[[i]]
+    if ("covariateCohorts" %in% names(object) && is.null(object$covariateCohortTable)) {
+      object$covariateCohortDatabaseSchema <- exposureDatabaseSchema
+      object$covariateCohortTable <- exposureTable
+      covariateSettings[[i]] <- object
     }
-    for (i in 1:length(covariateSettings)) {
-      object <- covariateSettings[[i]]
-      if ("covariateCohorts" %in% names(object) &&
-          is.null(object$covariateCohortTable)) {
-        object$covariateCohortDatabaseSchema <- exposureDatabaseSchema
-        object$covariateCohortTable <- exposureTable
-        covariateSettings[[i]] <- object
-      }
-    }
-    return(covariateSettings)
   }
+  return(covariateSettings)
+}
