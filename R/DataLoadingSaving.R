@@ -124,11 +124,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   maxCohortSize = 0,
                                   covariateSettings) {
   errorMessages <- checkmate::makeAssertCollection()
-  if (is(connectionDetails, "connectionDetails")) {
-    checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
-  } else {
-    checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
-  }
+  checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(
     tempEmulationSchema,
@@ -404,22 +400,8 @@ downSample <-
     preSampleCounts <- dplyr::tibble(dummy = 0)
     idx <- which(counts$treatment == 1)
     preSampleCounts <- preSample(idx, "target", counts, preSampleCounts)
-    # if (length(idx) == 0) {
-    #   preSampleCounts$targetPersons <- 0
-    #   preSampleCounts$targetExposures <- 0
-    # } else {
-    #   preSampleCounts$targetPersons <- counts$personCount[idx]
-    #   preSampleCounts$targetExposures <- counts$rowCount[idx]
-    # }
     idx <- which(counts$treatment == 0)
     preSampleCounts <- preSample(idx, "comparator", counts, preSampleCounts)
-    # if (length(idx) == 0) {
-    #   preSampleCounts$comparatorPersons <- 0
-    #   preSampleCounts$comparatorExposures <- 0
-    # } else {
-    #   preSampleCounts$comparatorPersons <- counts$personCount[idx]
-    #   preSampleCounts$comparatorExposures <- counts$rowCount[idx]
-    # }
     preSampleCounts$dummy <- NULL
     if (preSampleCounts$targetExposures > maxCohortSize) {
       message(
