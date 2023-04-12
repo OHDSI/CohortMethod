@@ -213,10 +213,10 @@ createStudyPopulation <- function(cohortMethodData,
       if (isEnd(startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
-          outcomes$daysToCohortEnd + riskWindowStart]
+                                               outcomes$daysToCohortEnd + riskWindowStart]
       } else {
         priorOutcomeRowIds <- outcomes$rowId[outcomes$daysToEvent > -priorOutcomeLookback & outcomes$daysToEvent <
-          riskWindowStart]
+                                               riskWindowStart]
       }
       population <- population[!(population$rowId %in% priorOutcomeRowIds), ]
       metaData$attrition <- rbind(
@@ -251,7 +251,7 @@ createStudyPopulation <- function(cohortMethodData,
       population <- population[order(population$personSeqId, population$riskStart), ]
       idx <- 1:(nrow(population) - 1)
       idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
-        population$personSeqId[idx] == population$personSeqId[idx + 1])
+                     population$personSeqId[idx] == population$personSeqId[idx + 1])
       if (length(idx) > 0) {
         population$endDate[idx] <- population$startDate[idx + 1] - 1
         population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
@@ -308,7 +308,7 @@ createStudyPopulation <- function(cohortMethodData,
     population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
     population$survivalTime <- population$timeAtRisk
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
-      0] - population$riskStart[population$outcomeCount != 0] + 1
+                                                                                      0] - population$riskStart[population$outcomeCount != 0] + 1
   }
   attr(population, "metaData") <- metaData
   ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
@@ -340,7 +340,7 @@ getCounts <- function(population, description = "") {
   comparatorPersons <- length(unique(population$personSeqId[population$treatment == 0]))
   targetExposures <- length(population$personSeqId[population$treatment == 1])
   comparatorExposures <- length(population$personSeqId[population$treatment == 0])
-  counts <- dplyr::tibble(
+  counts <- tibble(
     description = description,
     targetPersons = targetPersons,
     comparatorPersons = comparatorPersons,
@@ -465,7 +465,7 @@ plotTimeToEvent <- function(cohortMethodData,
 
   outcomes <- outcomes %>%
     inner_join(select(population, "rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd"),
-      by = "rowId"
+               by = "rowId"
     ) %>%
     filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%
     mutate(exposed = .data$daysToEvent >= .data$riskStart & .data$daysToEvent <= .data$riskEnd)
@@ -477,7 +477,7 @@ plotTimeToEvent <- function(cohortMethodData,
     end <- number * periodLength + periodLength
     idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
     idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
-    dplyr::tibble(
+    tibble(
       number = number,
       start = start,
       end = end,
@@ -509,28 +509,28 @@ plotTimeToEvent <- function(cohortMethodData,
       filter(.data$end <= 0)
   }
   vizData <- rbind(
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateExposedTarget,
       status = "Exposed events",
       type = targetLabel
     ),
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateUnexposedTarget,
       status = "Unexposed events",
       type = targetLabel
     ),
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateExposedComparator,
       status = "Exposed events",
       type = comparatorLabel
     ),
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateUnexposedComparator,

@@ -1124,7 +1124,7 @@ createReferenceTable <- function(cmAnalysisList,
     },
     studyPopArgsList
   )
-  analysisIdToStudyPopArgsId <- dplyr::tibble(
+  analysisIdToStudyPopArgsId <- tibble(
     analysisId = analyses$analysisId,
     studyPopArgsId = studyPopArgsId
   )
@@ -1158,7 +1158,7 @@ createReferenceTable <- function(cmAnalysisList,
     },
     psArgsList
   )
-  analysisIdToPsArgsId <- dplyr::tibble(analysisId = analyses$analysisId, psArgsId = psArgsId)
+  analysisIdToPsArgsId <- tibble(analysisId = analyses$analysisId, psArgsId = psArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToPsArgsId, by = "analysisId")
   idx <- !(referenceTable$psArgsId %in% noPsIds)
   referenceTable$psFile <- ""
@@ -1210,7 +1210,7 @@ createReferenceTable <- function(cmAnalysisList,
         },
         studyPopArgsList
       )
-      analysisIdToStudyPopArgsEquivalentId <- dplyr::tibble(
+      analysisIdToStudyPopArgsEquivalentId <- tibble(
         analysisId = analyses$analysisId,
         studyPopArgsEquivalentId = studyPopArgsEquivalentId
       )
@@ -1273,7 +1273,7 @@ createReferenceTable <- function(cmAnalysisList,
       }
       return(i)
     })
-    analysisIdToStrataArgsId <- dplyr::tibble(analysisId = analyses$analysisId, strataArgsId = strataArgsId)
+    analysisIdToStrataArgsId <- tibble(analysisId = analyses$analysisId, strataArgsId = strataArgsId)
     referenceTable <- inner_join(referenceTable, analysisIdToStrataArgsId, by = "analysisId")
   }
   idx <- referenceTable$strataArgsId != 0
@@ -1311,7 +1311,7 @@ createReferenceTable <- function(cmAnalysisList,
       }
       return(i)
     })
-    analysisIdToBalanceArgsId <- dplyr::tibble(analysisId = analyses$analysisId, sharedBalanceId = sharedBalanceId)
+    analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, sharedBalanceId = sharedBalanceId)
     referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
   }
   idx <- referenceTable$sharedBalanceId != 0
@@ -1350,7 +1350,7 @@ createReferenceTable <- function(cmAnalysisList,
       }
       return(i)
     })
-    analysisIdToBalanceArgsId <- dplyr::tibble(analysisId = analyses$analysisId, balanceId = balanceId)
+    analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, balanceId = balanceId)
     referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
 
     balanceIdsRequiringFiltering <- sapply(
@@ -1443,7 +1443,7 @@ createReferenceTable <- function(cmAnalysisList,
       },
       matchableArgsList
     )
-    analysisIdToPrefilterId <- dplyr::tibble(
+    analysisIdToPrefilterId <- tibble(
       analysisId = analyses$analysisId,
       prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds)
     )

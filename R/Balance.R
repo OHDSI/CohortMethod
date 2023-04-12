@@ -505,7 +505,7 @@ plotCovariateBalanceOfTopVariables <- function(balance,
   topAfter$facet <- paste("Top", n, afterLabel)
   filtered <- rbind(topBefore, topAfter)
 
-  data <- dplyr::tibble(
+  data <- tibble(
     covariateId = rep(filtered$covariateId, 2),
     covariate = rep(filtered$covariateName, 2),
     difference = c(filtered$beforeMatchingStdDiff, filtered$afterMatchingStdDiff),

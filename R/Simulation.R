@@ -67,8 +67,8 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
 
   message("Computing propensity model")
   propensityScore <- createPs(cohortMethodData,
-    maxCohortSizeForFitting = 25000,
-    prior = Cyclops::createPrior("laplace", 0.1, exclude = 0)
+                              maxCohortSizeForFitting = 25000,
+                              prior = Cyclops::createPrior("laplace", 0.1, exclude = 0)
   )
   propensityModel <- attr(propensityScore, "metaData")$psModelCoef
 
@@ -119,7 +119,7 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
   event <- as.integer(cohortEnd < obsEnd)
   time <- cohortEnd
   time[cohortEnd > obsEnd] <- obsEnd[cohortEnd > obsEnd]
-  data <- dplyr::tibble(time = time, event = event)
+  data <- tibble(time = time, event = event)
   data <- data[data$time > 0, ]
   fitCohortEnd <- survival::survreg(survival::Surv(
     time,
@@ -183,18 +183,18 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   rowId <- do.call("c", rowId)
   covariateIds <- covariatePrevalence$covariateId
   covariateId <- sapply(1:length(personsPerCov),
-    function(x, personsPerCov, covariateIds) {
-      rep(
-        covariateIds[x],
-        personsPerCov[x]
-      )
-    },
-    personsPerCov = personsPerCov,
-    covariateIds = covariateIds
+                        function(x, personsPerCov, covariateIds) {
+                          rep(
+                            covariateIds[x],
+                            personsPerCov[x]
+                          )
+                        },
+                        personsPerCov = personsPerCov,
+                        covariateIds = covariateIds
   )
   covariateId <- do.call("c", covariateId)
   covariateValue <- rep(1, length(covariateId))
-  covariates <- dplyr::tibble(
+  covariates <- tibble(
     rowId = rowId,
     covariateId = covariateId,
     covariateValue = covariateValue
@@ -204,7 +204,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   betas <- profile$propensityModel
   intercept <- betas[1]
   betas <- betas[2:length(betas)]
-  betas <- dplyr::tibble(
+  betas <- tibble(
     beta = as.numeric(betas),
     covariateId = as.numeric(names(betas))
   )
@@ -223,7 +223,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   treatmentVar$covariateId <- 1
 
   message("Generating cohorts")
-  cohorts <- dplyr::tibble(
+  cohorts <- tibble(
     rowId = treatmentVar$rowId,
     treatment = treatmentVar$covariateValue,
     personId = treatmentVar$rowId,
@@ -238,12 +238,12 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   )
 
   message("Generating outcomes after index date")
-  allOutcomes <- dplyr::tibble()
+  allOutcomes <- tibble()
   for (i in 1:length(profile$metaData$outcomeIds)) {
     betas <- profile$outcomeModels[[i]]
     intercept <- betas[1]
     betas <- betas[2:length(betas)]
-    betas <- dplyr::tibble(beta = as.numeric(betas), covariateId = as.numeric(names(betas)))
+    betas <- tibble(beta = as.numeric(betas), covariateId = as.numeric(names(betas)))
     temp <- merge(covariates, betas)
     temp$value <- temp$covariateValue * temp$beta # Currently pointless, since covariateValue is always 1
     temp <- aggregate(value ~ rowId, data = temp, sum)
@@ -254,7 +254,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     temp$nOutcomes <- rpois(n, temp$value)
     temp$nOutcomes[temp$nOutcomes > temp$daysToObsEnd] <- temp$daysToObsEnd[temp$nOutcomes > temp$daysToObsEnd]
     outcomeRows <- sum(temp$nOutcomes)
-    outcomes <- dplyr::tibble(
+    outcomes <- tibble(
       rowId = rep(0, outcomeRows),
       outcomeId = rep(profile$metaData$outcomeIds[i], outcomeRows),
       daysToEvent = rep(0, outcomeRows)
@@ -281,7 +281,7 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     nOutcomes <- rpois(nrow(cohorts), rate * cohorts$daysFromObsStart)
     nOutcomes[nOutcomes > cohorts$daysFromObsStart] <- cohorts$daysFromObsStart[nOutcomes > cohorts$daysFromObsStart]
     outcomeRows <- sum(nOutcomes)
-    outcomes <- dplyr::tibble(
+    outcomes <- tibble(
       rowId = rep(0, outcomeRows),
       outcomeId = rep(outcomeId, outcomeRows),
       daysToEvent = rep(0, outcomeRows)

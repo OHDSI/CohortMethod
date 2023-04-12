@@ -292,14 +292,14 @@ computeIptw <- function(population, estimator = "ate") {
   if (estimator == "ate") {
     # 'Stabilized' ATE:
     population$iptw <- ifelse(population$treatment == 1,
-      mean(population$treatment == 1) / population$propensityScore,
-      mean(population$treatment == 0) / (1 - population$propensityScore)
+                              mean(population$treatment == 1) / population$propensityScore,
+                              mean(population$treatment == 0) / (1 - population$propensityScore)
     )
   } else if (estimator == "att") {
     # 'Stabilized' ATT:
     population$iptw <- ifelse(population$treatment == 1,
-      mean(population$treatment == 1),
-      mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)
+                              mean(population$treatment == 1),
+                              mean(population$treatment == 0) * population$propensityScore / (1 - population$propensityScore)
     )
   } else if (estimator == "ato") {
     population$iptw <- ifelse(population$treatment == 1,
@@ -330,13 +330,13 @@ getPsModel <- function(propensityScore, cohortMethodData) {
 
   coefficients <- attr(propensityScore, "metaData")$psModelCoef
   if (is.null(coefficients)) {
-    return(dplyr::tibble(
+    return(tibble(
       coefficient = NA,
       covariateId = NA,
       covariateName = NA
     ))
   }
-  result <- dplyr::tibble(
+  result <- tibble(
     coefficient = coefficients[1],
     covariateId = NA,
     covariateName = "(Intercept)"
@@ -348,12 +348,12 @@ getPsModel <- function(propensityScore, cohortMethodData) {
       pull(.data$covariateId) %>%
       is("integer64")
     if (covariateIdIsInteger64) {
-      coefficients <- dplyr::tibble(
+      coefficients <- tibble(
         coefficient = coefficients,
         covariateId = bit64::as.integer64(attr(coefficients, "names"))
       )
     } else {
-      coefficients <- dplyr::tibble(
+      coefficients <- tibble(
         coefficient = coefficients,
         covariateId = as.numeric(attr(coefficients, "names"))
       )
@@ -679,7 +679,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 
   if (confidenceIntervals) {
     aucCi <- aucWithCi(data$propensityScore, data$treatment)
-    return(dplyr::tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
+    return(tibble(auc = aucCi[1], aucLb95ci = aucCi[2], aucUb95ci = aucCi[3]))
   } else {
     auc <- aucWithoutCi(data$propensityScore, data$treatment)
     return(auc)
@@ -724,7 +724,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
   cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
   cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
   result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
-    (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
+                         (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
     attr(
       result,
@@ -994,7 +994,7 @@ matchOnPs <- function(population,
       maxRatio,
       caliper
     )
-    result <- dplyr::as_tibble(result)
+    result <- as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
 
@@ -1019,7 +1019,7 @@ matchOnPs <- function(population,
         maxRatio,
         caliper
       )
-      subResult <- dplyr::as_tibble(subResult)
+      subResult <- as_tibble(subResult)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
       return(subset)
@@ -1120,8 +1120,8 @@ matchOnPsAndCovariates <- function(population,
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
-    covariateIds,
-    sep = "_"
+                                                                                covariateIds,
+                                                                                sep = "_"
   )]
   return(matchOnPs(population, caliper, caliperScale, maxRatio, allowReverseMatch, stratificationColumns))
 }
@@ -1198,8 +1198,8 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
       population$stratumId <- rep(1, nrow(population))
     } else {
       population$stratumId <- as.integer(as.character(cut(population$propensityScore,
-        breaks = breaks,
-        labels = 1:(length(breaks) - 1)
+                                                          breaks = breaks,
+                                                          labels = 1:(length(breaks) - 1)
       )))
     }
     return(population)
@@ -1209,8 +1209,8 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
         subset$stratumId <- rep(1, nrow(subset))
       } else {
         subset$stratumId <- as.integer(as.character(cut(subset$propensityScore,
-          breaks = breaks,
-          labels = 1:(length(breaks) - 1)
+                                                        breaks = breaks,
+                                                        labels = 1:(length(breaks) - 1)
         )))
       }
       return(subset)
@@ -1279,8 +1279,8 @@ stratifyByPsAndCovariates <- function(population,
 
   population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
   stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
-    covariateIds,
-    sep = "_"
+                                                                                covariateIds,
+                                                                                sep = "_"
   )]
   return(stratifyByPs(
     population = population,
