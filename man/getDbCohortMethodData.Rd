@@ -19,7 +19,7 @@ getDbCohortMethodData(
   outcomeTable = "condition_occurrence",
   cdmVersion = "5",
   firstExposureOnly = FALSE,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   restrictToCommonPeriod = FALSE,
   washoutPeriod = 0,
   maxCohortSize = 0,
