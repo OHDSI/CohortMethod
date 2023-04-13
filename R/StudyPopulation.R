@@ -98,13 +98,6 @@ createStudyPopulation <- function(cohortMethodData,
                                   riskWindowEnd = 0,
                                   endAnchor = "cohort end",
                                   censorAtNewRiskWindow = FALSE) {
-  if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects) {
-      removeDuplicateSubjects <- "remove all"
-    } else {
-      removeDuplicateSubjects <- "keep all"
-    }
-  }
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)

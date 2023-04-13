@@ -152,11 +152,11 @@ getDbCohortMethodData <- function(connectionDetails,
     studyEndDate <- ""
   }
   if (studyStartDate != "" &&
-      regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
+    regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
     stop("Study start date must have format YYYYMMDD")
   }
   if (studyEndDate != "" &&
-      regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
+    regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
     stop("Study end date must have format YYYYMMDD")
   }
 
@@ -188,7 +188,8 @@ getDbCohortMethodData <- function(connectionDetails,
       connection = connection,
       tempEmulationSchema = tempEmulationSchema,
       targetId = targetId,
-      maxCohortSize = maxCohortSize)
+      maxCohortSize = maxCohortSize
+    )
     sampled <- outList$sampled
     preSampleCounts <- outList$preSampleCounts
   } else {
@@ -208,7 +209,8 @@ getDbCohortMethodData <- function(connectionDetails,
   cohorts <- DatabaseConnector::querySql(
     connection = connection,
     sql = cohortSql,
-    snakeCaseToCamelCase = TRUE)
+    snakeCaseToCamelCase = TRUE
+  )
   cohorts$rowId <- as.numeric(cohorts$rowId)
   ParallelLogger::logDebug(
     "Fetched cohort total rows in target is ",
@@ -246,9 +248,10 @@ getDbCohortMethodData <- function(connectionDetails,
     rawCount <- DatabaseConnector::querySql(
       connection = connection,
       sql = rawCountSql,
-      snakeCaseToCamelCase = TRUE)
+      snakeCaseToCamelCase = TRUE
+    )
     if (nrow(rawCount) == 0) {
-      counts <- dplyr::tibble(
+      counts <- tibble(
         description = "Original cohorts",
         targetPersons = 0,
         comparatorPersons = 0,
@@ -256,7 +259,7 @@ getDbCohortMethodData <- function(connectionDetails,
         comparatorExposures = 0
       )
     } else {
-      counts <- dplyr::tibble(
+      counts <- tibble(
         description = "Original cohorts",
         targetPersons = rawCount$exposedCount[rawCount$treatment == 1],
         comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
@@ -299,7 +302,8 @@ getDbCohortMethodData <- function(connectionDetails,
       metaData$attrition <- preSampleCounts
       metaData$attrition <- rbind(
         metaData$attrition,
-        getCounts(cohorts, "Random sample"))
+        getCounts(cohorts, "Random sample")
+      )
     } else {
       metaData$attrition <- getCounts(cohorts, "Original cohorts")
     }
@@ -314,7 +318,8 @@ getDbCohortMethodData <- function(connectionDetails,
   covariateSettings <- handleCohortCovariateBuilders(
     covariateSettings = covariateSettings,
     exposureDatabaseSchema = exposureDatabaseSchema,
-    exposureTable = exposureTable)
+    exposureTable = exposureTable
+  )
   covariateData <- FeatureExtraction::getDbCovariateData(
     connection = connection,
     oracleTempSchema = tempEmulationSchema,
@@ -327,7 +332,8 @@ getDbCohortMethodData <- function(connectionDetails,
   )
   ParallelLogger::logDebug(
     "Fetched covariates total count is ",
-    nrow_temp(covariateData$covariates))
+    nrow_temp(covariateData$covariates)
+  )
   message("Fetching outcomes from server")
   start <- Sys.time()
   outcomeSql <- SqlRender::loadRenderTranslateSql(
@@ -344,7 +350,8 @@ getDbCohortMethodData <- function(connectionDetails,
   outcomes <- DatabaseConnector::querySql(
     connection = connection,
     sql = outcomeSql,
-    snakeCaseToCamelCase = TRUE)
+    snakeCaseToCamelCase = TRUE
+  )
   outcomes$rowId <- as.numeric(outcomes$rowId)
   metaData$outcomeIds <- outcomeIds
   delta <- Sys.time() - start
@@ -363,7 +370,8 @@ getDbCohortMethodData <- function(connectionDetails,
     connection = connection,
     sql = renderedSql,
     progressBar = FALSE,
-    reportOverallTime = FALSE)
+    reportOverallTime = FALSE
+  )
 
   covariateData$cohorts <- cohorts
   covariateData$outcomes <- outcomes
@@ -387,18 +395,20 @@ downSample <- function(connection,
   )
   counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
   ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-  preSampleCounts <- dplyr::bind_cols(
+  preSampleCounts <- bind_cols(
     countPreSample(id = 1, counts = counts),
     countPreSample(id = 0, counts = counts)
   )
   if (preSampleCounts$targetExposures > maxCohortSize) {
-    message("Downsampling target cohort from ", preSampleCounts$targetExposures,
-            " to ", maxCohortSize
+    message(
+      "Downsampling target cohort from ", preSampleCounts$targetExposures,
+      " to ", maxCohortSize
     )
     sampled <- TRUE
   }
   if (preSampleCounts$comparatorExposures > maxCohortSize) {
-    message("Downsampling comparator cohort from ", preSampleCounts$comparatorExposures,
+    message(
+      "Downsampling comparator cohort from ", preSampleCounts$comparatorExposures,
       " to ", maxCohortSize
     )
     sampled <- TRUE
@@ -417,15 +427,15 @@ downSample <- function(connection,
 }
 
 countPreSample <- function(id, counts) {
-  preSampleCounts <- dplyr::tibble(dummy = 0)
+  preSampleCounts <- tibble(dummy = 0)
   idx <- which(counts$treatment == id)
 
-  switch(
-    id + 1,
+  switch(id + 1,
     {
       personsCol <- "comparatorPersons"
       exposuresCol <- "comparatorExposures"
-    }, {
+    },
+    {
       personsCol <- "targetPersons"
       exposuresCol <- "targetExposures"
     }
@@ -436,7 +446,7 @@ countPreSample <- function(id, counts) {
 
   if (length(idx) != 0) {
     preSampleCounts[personsCol] <- counts$personCount[idx]
-    preSampleCounts[exposuresCol]  <- counts$rowCount[idx]
+    preSampleCounts[exposuresCol] <- counts$rowCount[idx]
   }
   preSampleCounts$dummy <- NULL
   return(preSampleCounts)
@@ -451,7 +461,7 @@ handleCohortCovariateBuilders <- function(covariateSettings,
   for (i in 1:length(covariateSettings)) {
     object <- covariateSettings[[i]]
     if ("covariateCohorts" %in% names(object) &&
-        is.null(object$covariateCohortTable)) {
+      is.null(object$covariateCohortTable)) {
       object$covariateCohortDatabaseSchema <- exposureDatabaseSchema
       object$covariateCohortTable <- exposureTable
       covariateSettings[[i]] <- object

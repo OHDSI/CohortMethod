@@ -13,13 +13,15 @@ Changes:
 
 5. Removing deprecated `addExposureDaysToStart` and `addExposureDaysToStart` arguments from `createStudyPopulation()` and `plotTimeToEvent()` functions.
 
-6. Adding `computeEquipoise()` function.
+6. The `removeDuplicateSubjects` argument of `getDbCohortMethodData()` and `createStudyPopulation()` is no longer allowed to be a boolean.
 
-7. Output likelihood profile as data frame instead of named vector for consistency with other HADES packages.
+7. Adding `computeEquipoise()` function.
 
-8. Added the `covariateFilter` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
+8. Output likelihood profile as data frame instead of named vector for consistency with other HADES packages.
 
-9. Rounding propensity scores to 10 digits to improve reproducibility across operating systems.
+9. Added the `covariateFilter` argument to the `computeCovariateBalance` function, to allow balance to be computed only for a subset of covariates.
+
+10. Rounding propensity scores to 10 digits to improve reproducibility across operating systems.
 
 11. Setting `covariateCohortDatabaseSchema` and `covariateCohortTable` of cohort-based covariate builders to `exposureDatabaseSchema` and `exposureTable`, respectively if `covariateCohortTable` is `NULL`.
 
