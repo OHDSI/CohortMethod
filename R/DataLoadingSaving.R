@@ -387,10 +387,10 @@ downSample <- function(connection,
   )
   counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
   ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-  # preSampleCounts <- dplyr::tibble(dummy = 0)
-  preSampleCounts <- countPreSample(id = 1, counts = counts)
-  preSampleCounts <- countPreSample(id = 0, counts = counts, preSampleCounts)
-  preSampleCounts$dummy <- NULL
+  preSampleCounts <- dplyr::bind_cols(
+    countPreSample(id = 1, counts = counts),
+    countPreSample(id = 0, counts = counts)
+  )
   if (preSampleCounts$targetExposures > maxCohortSize) {
     message("Downsampling target cohort from ", preSampleCounts$targetExposures,
             " to ", maxCohortSize
@@ -416,11 +416,8 @@ downSample <- function(connection,
   return(list(sampled = sampled, preSampleCounts = preSampleCounts))
 }
 
-countPreSample <- function(id, counts, preSampleCounts = NULL) {
-  if (is.null(preSampleCounts)) {
-    preSampleCounts <- dplyr::tibble(dummy = 0)
-  }
-
+countPreSample <- function(id, counts) {
+  preSampleCounts <- dplyr::tibble(dummy = 0)
   idx <- which(counts$treatment == id)
 
   switch(
@@ -441,6 +438,7 @@ countPreSample <- function(id, counts, preSampleCounts = NULL) {
     preSampleCounts[personsCol] <- counts$personCount[idx]
     preSampleCounts[exposuresCol]  <- counts$rowCount[idx]
   }
+  preSampleCounts$dummy <- NULL
   return(preSampleCounts)
 }
 
