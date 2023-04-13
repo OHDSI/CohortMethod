@@ -101,14 +101,14 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
   checkmate::reportAssertions(collection = errorMessages)
   settings <- createMultiThreadingSettings(
     getDbCohortMethodDataThreads = min(3, maxCores),
-    createPsThreads = max(1, round(maxCores / 10)),
+    createPsThreads = max(1, floor(maxCores / 10)),
     psCvThreads = min(10, maxCores),
     createStudyPopThreads = min(3, maxCores),
     trimMatchStratifyThreads = min(5, maxCores),
     computeSharedBalanceThreads = min(3, maxCores),
     computeBalanceThreads = min(5, maxCores),
     prefilterCovariatesThreads = min(3, maxCores),
-    fitOutcomeModelThreads = max(1, round(maxCores / 4)),
+    fitOutcomeModelThreads = max(1, floor(maxCores / 4)),
     outcomeCvThreads = min(4, maxCores),
     calibrationThreads = min(4, maxCores)
   )
