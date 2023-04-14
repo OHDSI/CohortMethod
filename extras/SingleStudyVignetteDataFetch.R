@@ -101,7 +101,7 @@ studyPop <- createStudyPopulation(
   outcomeId = 3,
   firstExposureOnly = FALSE,
   washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   removeSubjectsWithPriorOutcome = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -115,7 +115,7 @@ plotTimeToEvent(
   outcomeId = 3,
   firstExposureOnly = FALSE,
   washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   minDaysAtRisk = 1,
   riskWindowStart = 0,
   startAnchor = "cohort start",
@@ -224,7 +224,7 @@ outcomeModel <- fitOutcomeModel(
 saveRDS(outcomeModel, file = file.path(folder, "OutcomeModel3.rds"))
 
 population <- stratifyByPs(ps, numberOfStrata = 10)
-interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurrent use of antithrombotic agents
 outcomeModel <- fitOutcomeModel(
   population = population,
   cohortMethodData = cohortMethodData,

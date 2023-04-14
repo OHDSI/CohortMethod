@@ -44,12 +44,8 @@ test_that("createStudyPop: removeDuplicateSubjects = 'remove all'", {
       mutate(rowId = 1, treatment = 1)
   )
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = FALSE)
-  expect_equal(nrow(sp), 2)
   sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "keep all")
   expect_equal(nrow(sp), 2)
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = TRUE)
-  expect_equal(nrow(sp), 0)
   sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "remove all")
   expect_equal(nrow(sp), 0)
 })
