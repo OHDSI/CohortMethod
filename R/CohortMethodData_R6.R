@@ -4,8 +4,8 @@
 #'
 #' @description
 #'   Class to build COhortMethodData.
-CohortMethodData <- R6::R6Class(
-  classname = "CohortMethodData",
+CohortMethodDataR6 <- R6::R6Class(
+  classname = "CohortMethodDataR6",
   ## Public ----
   public = list(
     ### Methods ----

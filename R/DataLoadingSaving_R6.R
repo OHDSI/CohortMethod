@@ -146,7 +146,7 @@ getDbCohortMethodData <- function(
   )
 
   # Initiate CohortMethodData instance
-  cohortMethodData <- CohortMethodData$new(
+  cohortMethodDataR6 <- CohortMethodDataR6$new(
     metaData = metaData,
     outcomeIds = outcomeIds,
     firstExposureOnly = firstExposureOnly,
@@ -158,18 +158,18 @@ getDbCohortMethodData <- function(
     cohortDbInterface = cohortDbInterface
   )
 
-  cohortMethodData$createCohorts()
+  cohortMethodDataR6$createCohorts()
 
   if (maxCohortSize != 0) {
-    cohortMethodData$downSample()
+    cohortMethodDataR6$downSample()
   }
 
   start <- Sys.time()
-  cohortMethodData$getCohorts()
+  cohortMethodDataR6$getCohorts()
   delta <- Sys.time() - start
   message(
     "Fetching cohorts took ", signif(delta, 3), " ", attr(delta, "units")
   )
 
-  return(cohortMethodData$buildCovariateData())
+  return(cohortMethodDataR6$buildCovariateData())
 }
