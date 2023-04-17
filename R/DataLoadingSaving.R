@@ -104,25 +104,25 @@
 #' A [CohortMethodData] object.
 #'
 #' @export
-getDbCohortMethodData <- function(connectionDetails,
-                                  cdmDatabaseSchema,
-                                  tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-                                  targetId,
-                                  comparatorId,
-                                  outcomeIds,
-                                  studyStartDate = "",
-                                  studyEndDate = "",
-                                  exposureDatabaseSchema = cdmDatabaseSchema,
-                                  exposureTable = "drug_era",
-                                  outcomeDatabaseSchema = cdmDatabaseSchema,
-                                  outcomeTable = "condition_occurrence",
-                                  cdmVersion = "5",
-                                  firstExposureOnly = FALSE,
-                                  removeDuplicateSubjects = "keep all",
-                                  restrictToCommonPeriod = FALSE,
-                                  washoutPeriod = 0,
-                                  maxCohortSize = 0,
-                                  covariateSettings) {
+getDbCohortMethodData_DEP <- function(connectionDetails,
+                                      cdmDatabaseSchema,
+                                      tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
+                                      targetId,
+                                      comparatorId,
+                                      outcomeIds,
+                                      studyStartDate = "",
+                                      studyEndDate = "",
+                                      exposureDatabaseSchema = cdmDatabaseSchema,
+                                      exposureTable = "drug_era",
+                                      outcomeDatabaseSchema = cdmDatabaseSchema,
+                                      outcomeTable = "condition_occurrence",
+                                      cdmVersion = "5",
+                                      firstExposureOnly = FALSE,
+                                      removeDuplicateSubjects = "keep all",
+                                      restrictToCommonPeriod = FALSE,
+                                      washoutPeriod = 0,
+                                      maxCohortSize = 0,
+                                      covariateSettings) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
@@ -152,11 +152,11 @@ getDbCohortMethodData <- function(connectionDetails,
     studyEndDate <- ""
   }
   if (studyStartDate != "" &&
-    regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
+      regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
     stop("Study start date must have format YYYYMMDD")
   }
   if (studyEndDate != "" &&
-    regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
+      regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
     stop("Study end date must have format YYYYMMDD")
   }
 
@@ -431,14 +431,14 @@ countPreSample <- function(id, counts) {
   idx <- which(counts$treatment == id)
 
   switch(id + 1,
-    {
-      personsCol <- "comparatorPersons"
-      exposuresCol <- "comparatorExposures"
-    },
-    {
-      personsCol <- "targetPersons"
-      exposuresCol <- "targetExposures"
-    }
+         {
+           personsCol <- "comparatorPersons"
+           exposuresCol <- "comparatorExposures"
+         },
+         {
+           personsCol <- "targetPersons"
+           exposuresCol <- "targetExposures"
+         }
   )
 
   preSampleCounts[personsCol] <- 0
@@ -461,7 +461,7 @@ handleCohortCovariateBuilders <- function(covariateSettings,
   for (i in 1:length(covariateSettings)) {
     object <- covariateSettings[[i]]
     if ("covariateCohorts" %in% names(object) &&
-      is.null(object$covariateCohortTable)) {
+        is.null(object$covariateCohortTable)) {
       object$covariateCohortDatabaseSchema <- exposureDatabaseSchema
       object$covariateCohortTable <- exposureTable
       covariateSettings[[i]] <- object
