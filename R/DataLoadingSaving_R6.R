@@ -171,6 +171,5 @@ getDbCohortMethodData <- function(
     "Fetching cohorts took ", signif(delta, 3), " ", attr(delta, "units")
   )
 
-  covariateData <- cohortMethodData$buildCovariateData()
-  return(covariateData)
+  return(cohortMethodData$buildCovariateData())
 }

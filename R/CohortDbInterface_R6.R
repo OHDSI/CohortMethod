@@ -144,6 +144,7 @@ CohortDbInterface <- R6::R6Class(
       )
       return(cohorts)
     },
+
     #' @description
     #'   Counts cohorts
     #'
@@ -258,7 +259,7 @@ CohortDbInterface <- R6::R6Class(
       metaData$outcomeIds <- outcomeIds
       delta <- Sys.time() - start
       message("Fetching outcomes took ", signif(delta, 3), " ", attr(delta, "units"))
-      return(metaData)
+      return(list(metadata = metaData, outcomes = outcomes))
     },
     #' @description
     #'   Remove temp tables

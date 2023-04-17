@@ -94,7 +94,7 @@ CohortMethodData <- R6::R6Class(
       if (private$preSampleCounts$targetExposures > private$maxCohortSize) {
         message(
           "Downsampling target cohort from ",
-          private$preSampleCounts$targetExposures, " to ", maxCohortSize
+          private$preSampleCounts$targetExposures, " to ", private$maxCohortSize
         )
         private$sampled <- TRUE
       }
@@ -109,7 +109,7 @@ CohortMethodData <- R6::R6Class(
       }
 
       if (private$sampled) {
-        private$sampleCohorts()
+        private$cohortDbInterface$sampleCohorts(private$maxCohortSize)
       }
       return(invisible(self))
     },
@@ -122,6 +122,8 @@ CohortMethodData <- R6::R6Class(
         sampled = private$sampled,
         targetId = private$metaData$targetId
       )
+
+      private$checkCohorts()
       return(invisible(self))
     },
 
@@ -136,24 +138,26 @@ CohortMethodData <- R6::R6Class(
       }
 
       private$handleCohortCovariateBuilders()
-      private$covariateData <- private$cohortDbInterface$extractCovarDat(
+      covariateData <- private$cohortDbInterface$extractCovarDat(
         cohortTable = cohortTable,
         covariateSettings = private$covariateSettings
       )
 
       message("Fetching outcomes from server")
-      private$metaData <- private$cohortDbInterface$getOutcomes(
+      outList <- private$cohortDbInterface$getOutcomes(
         metaData = private$metaData,
         outcomeIds = private$outcomeIds,
         sampled = private$sampled
       )
+      private$metaData <- outList$metadata
       private$cohortDbInterface$rmTempTables(sampled = private$sampled)
 
-      private$covariateData$cohorts <- private$cohorts
-      attr(private$covariateData, "metaData") <- append(attr(private$covariateData, "metaData"), private$metaData)
-      class(private$covariateData) <- "CohortMethodData"
-      attr(class(private$covariateData), "package") <- "CohortMethod"
-      return(private$covariateData)
+      covariateData$cohorts <- private$cohorts
+      covariateData$outcomes <- outList$outcomes
+      attr(covariateData, "metaData") <- append(attr(covariateData, "metaData"), private$metaData)
+      class(covariateData) <- "CohortMethodData"
+      attr(class(covariateData), "package") <- "CohortMethod"
+      return(covariateData)
     }
   ),
   ## Private ----
@@ -172,7 +176,6 @@ CohortMethodData <- R6::R6Class(
     counts = 0,
     preSampleCounts = dplyr::tibble(dummy = 0),
     cohorts = NULL,
-    covariateData = NULL,
     cohortDbInterface = NULL,
 
     ### Methods ----

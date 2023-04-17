@@ -251,7 +251,7 @@ getDbCohortMethodData_DEP <- function(connectionDetails,
       snakeCaseToCamelCase = TRUE
     )
     if (nrow(rawCount) == 0) {
-      counts <- tibble(
+      counts <- dplyr::tibble(
         description = "Original cohorts",
         targetPersons = 0,
         comparatorPersons = 0,
@@ -259,7 +259,7 @@ getDbCohortMethodData_DEP <- function(connectionDetails,
         comparatorExposures = 0
       )
     } else {
-      counts <- tibble(
+      counts <- dplyr::tibble(
         description = "Original cohorts",
         targetPersons = rawCount$exposedCount[rawCount$treatment == 1],
         comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
@@ -291,10 +291,10 @@ getDbCohortMethodData_DEP <- function(connectionDetails,
       metaData$attrition <-
         rbind(metaData$attrition, preSampleCounts)
       metaData$attrition <-
-        rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
+        rbind(metaData$attrition, CohortMethod:::getCounts(cohorts, "Random sample"))
     } else {
       metaData$attrition <-
-        rbind(metaData$attrition, getCounts(cohorts, label))
+        rbind(metaData$attrition, CohortMethod:::getCounts(cohorts, label))
     }
   } else {
     if (sampled) {
@@ -302,10 +302,10 @@ getDbCohortMethodData_DEP <- function(connectionDetails,
       metaData$attrition <- preSampleCounts
       metaData$attrition <- rbind(
         metaData$attrition,
-        getCounts(cohorts, "Random sample")
+        CohortMethod:::getCounts(cohorts, "Random sample")
       )
     } else {
-      metaData$attrition <- getCounts(cohorts, "Original cohorts")
+      metaData$attrition <- CohortMethod:::getCounts(cohorts, "Original cohorts")
     }
   }
   delta <- Sys.time() - start
@@ -332,7 +332,7 @@ getDbCohortMethodData_DEP <- function(connectionDetails,
   )
   ParallelLogger::logDebug(
     "Fetched covariates total count is ",
-    nrow_temp(covariateData$covariates)
+    CohortMethod:::nrow_temp(covariateData$covariates)
   )
   message("Fetching outcomes from server")
   start <- Sys.time()
@@ -395,7 +395,7 @@ downSample <- function(connection,
   )
   counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
   ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-  preSampleCounts <- bind_cols(
+  preSampleCounts <- dplyr::bind_cols(
     countPreSample(id = 1, counts = counts),
     countPreSample(id = 0, counts = counts)
   )
@@ -427,7 +427,7 @@ downSample <- function(connection,
 }
 
 countPreSample <- function(id, counts) {
-  preSampleCounts <- tibble(dummy = 0)
+  preSampleCounts <- dplyr::tibble(dummy = 0)
   idx <- which(counts$treatment == id)
 
   switch(id + 1,
