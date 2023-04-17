@@ -160,6 +160,9 @@
     <loc>/reference/getPsModel.html</loc>
   </url>
   <url>
+    <loc>/reference/getResultsDataModel.html</loc>
+  </url>
+  <url>
     <loc>/reference/getResultsSummary.html</loc>
   </url>
   <url>
@@ -172,7 +175,16 @@
     <loc>/reference/insertDbPopulation.html</loc>
   </url>
   <url>
+    <loc>/reference/insertExportedResultsInSqlite.html</loc>
+  </url>
+  <url>
     <loc>/reference/isCohortMethodData.html</loc>
+  </url>
+  <url>
+    <loc>/reference/launchResultsViewer.html</loc>
+  </url>
+  <url>
+    <loc>/reference/launchResultsViewerUsingSqlite.html</loc>
   </url>
   <url>
     <loc>/reference/loadCmAnalysisList.html</loc>
@@ -245,5 +257,8 @@
   </url>
   <url>
     <loc>/reference/truncateIptw.html</loc>
+  </url>
+  <url>
+    <loc>/reference/uploadExportedResults.html</loc>
   </url>
 </urlset>

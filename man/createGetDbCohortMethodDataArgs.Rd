@@ -8,7 +8,7 @@ createGetDbCohortMethodDataArgs(
   studyStartDate = "",
   studyEndDate = "",
   firstExposureOnly = FALSE,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   restrictToCommonPeriod = FALSE,
   washoutPeriod = 0,
   maxCohortSize = 0,

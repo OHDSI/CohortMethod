@@ -74,11 +74,20 @@ reference:
       - createMultiThreadingSettings
       - createDefaultMultiThreadingSettings
       - runCmAnalyses
+  - title: "Results of multiple analyses"
+    desc: >
+      Functions for viewing results of multiple analyses.
+    contents:
       - getFileReference
       - getResultsSummary
       - getInteractionResultsSummary
       - createCmDiagnosticThresholds
       - exportToCsv
+      - getResultsDataModel
+      - insertExportedResultsInSqlite
+      - launchResultsViewerUsingSqlite
+      - uploadExportedResults
+      - launchResultsViewer
   - title: "Simulation"
     desc: >
       Functions for simulating cohort method data objects.

@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # exportFolder = file.path(folder, "export")
 # library(dplyr)
 
@@ -31,6 +32,13 @@
 #'
 #' @export
 insertExportedResultsInSqlite <- function(sqliteFileName, exportFolder, cohorts) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(sqliteFileName, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
+  checkmate::assertDataFrame(cohorts, add = errorMessages)
+  checkmate::assertNames(colnames(cohorts), must.include = c("cohortId", "cohortName"), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ensureInstalled("RSQLite")
   connectionDetails <- DatabaseConnector::createConnectionDetails(
     dbms = "sqlite",
@@ -62,7 +70,6 @@ insertExportedResultsInSqlite <- function(sqliteFileName, exportFolder, cohorts)
 #'                          using the [exportToCsv()] function.
 #' @template Cohorts
 #'
-#'
 #' @return
 #' Does not return anything. Is called for the side-effect of having the results uploaded
 #' to the server.
@@ -73,7 +80,15 @@ uploadExportedResults <- function(connectionDetails,
                                   append = FALSE,
                                   exportFolder,
                                   cohorts) {
-  # ensureInstalled("CohortGenerator")
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  checkmate::assertCharacter(databaseSchema, len = 1, add = errorMessages)
+  checkmate::assertLogical(append, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
+  checkmate::assertDataFrame(cohorts, add = errorMessages)
+  checkmate::assertNames(colnames(cohorts), must.include = c("cohortId", "cohortName"), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ensureInstalled("ResultModelManager")
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
@@ -81,7 +96,6 @@ uploadExportedResults <- function(connectionDetails,
   if (!append) {
     # Create tables
     rdmsFile <- system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod")
-    # specification <- CohortGenerator::readCsv(file = rdmsFile)
     specification <- readr::read_csv(file = rdmsFile, show_col_types = FALSE) %>%
       SqlRender::snakeCaseToCamelCaseNames()
     sql <- ResultModelManager::generateSqlSchema(csvFilepath = rdmsFile)
@@ -147,6 +161,10 @@ uploadExportedResults <- function(connectionDetails,
 #'
 #' @export
 launchResultsViewerUsingSqlite <- function(sqliteFileName) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(sqliteFileName, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ensureInstalled("RSQLite")
   connectionDetails <- DatabaseConnector::createConnectionDetails(
     dbms = "sqlite",
@@ -171,6 +189,11 @@ launchResultsViewerUsingSqlite <- function(sqliteFileName) {
 #'
 #' @export
 launchResultsViewer <- function(connectionDetails, databaseSchema) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  checkmate::assertCharacter(databaseSchema, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   ensureInstalled("ShinyAppBuilder")
   ensureInstalled("markdown")
   aboutModule <- ShinyAppBuilder::createDefaultAboutConfig(

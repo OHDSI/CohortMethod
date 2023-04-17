@@ -46,7 +46,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails,
                                           studyEndDate = "",
                                           firstExposureOnly = TRUE,
                                           washoutPeriod = 183,
-                                          removeDuplicateSubjects = TRUE,
+                                          removeDuplicateSubjects = "remove all",
                                           covariateSettings = covariateSettings)
 
 summary(cohortMethodData)

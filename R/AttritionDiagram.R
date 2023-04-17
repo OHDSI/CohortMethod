@@ -105,53 +105,53 @@ drawAttritionDiagram <- function(object,
   }
 
   downArrow <- function(p, x1, y1, x2, y2) {
-    p <- p + ggplot2::geom_segment(ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2))
+    p <- p + ggplot2::geom_segment(ggplot2::aes(x = !!x1, y = !!y1, xend = !!x2, yend = !!y2))
     p <- p + ggplot2::geom_segment(ggplot2::aes(
-      x = x2,
-      y = y2,
-      xend = x2 + arrowLength,
-      yend = y2 + arrowLength
+      x = !!x2,
+      y = !!y2,
+      xend = !!(x2 + arrowLength),
+      yend = !!(y2 + arrowLength)
     ))
     p <- p + ggplot2::geom_segment(ggplot2::aes(
-      x = x2,
-      y = y2,
-      xend = x2 - arrowLength,
-      yend = y2 + arrowLength
+      x = !!x2,
+      y = !!y2,
+      xend = !!(x2 - arrowLength),
+      yend = !!(y2 + arrowLength)
     ))
     return(p)
   }
   rightArrow <- function(p, x1, y1, x2, y2) {
-    p <- p + ggplot2::geom_segment(ggplot2::aes(x = x1, y = y1, xend = x2, yend = y2))
+    p <- p + ggplot2::geom_segment(ggplot2::aes(x = !!x1, y = !!y1, xend = !!x2, yend = !!y2))
     p <- p + ggplot2::geom_segment(ggplot2::aes(
-      x = x2,
-      y = y2,
-      xend = x2 - arrowLength,
-      yend = y2 + arrowLength
+      x = !!x2,
+      y = !!y2,
+      xend = !!(x2 - arrowLength),
+      yend = !!(y2 + arrowLength)
     ))
     p <- p + ggplot2::geom_segment(ggplot2::aes(
-      x = x2,
-      y = y2,
-      xend = x2 - arrowLength,
-      yend = y2 - arrowLength
+      x = !!x2,
+      y = !!y2,
+      xend = !!(x2 - arrowLength),
+      yend = !!(y2 - arrowLength)
     ))
     return(p)
   }
   box <- function(p, x, y) {
     p <- p + ggplot2::geom_rect(ggplot2::aes(
-      xmin = x - (boxWidth / 2) + shadowOffset,
-      ymin = y - (boxHeight / 2) - shadowOffset,
-      xmax = x + (boxWidth / 2) + shadowOffset,
-      ymax = y + (boxHeight / 2) - shadowOffset
+      xmin = !!(x - (boxWidth / 2) + shadowOffset),
+      ymin = !!(y - (boxHeight / 2) - shadowOffset),
+      xmax = !!(x + (boxWidth / 2) + shadowOffset),
+      ymax = !!(y + (boxHeight / 2) - shadowOffset)
     ), fill = rgb(0,
       0,
       0,
       alpha = 0.2
     ))
     p <- p + ggplot2::geom_rect(ggplot2::aes(
-      xmin = x - (boxWidth / 2),
-      ymin = y - (boxHeight / 2),
-      xmax = x + (boxWidth / 2),
-      ymax = y + (boxHeight / 2)
+      xmin = !!(x - (boxWidth / 2)),
+      ymin = !!(y - (boxHeight / 2)),
+      xmax = !!(x + (boxWidth / 2)),
+      ymax = !!(y + (boxHeight / 2))
     ), fill = rgb(
       0.94,
       0.94,
@@ -160,7 +160,7 @@ drawAttritionDiagram <- function(object,
     return(p)
   }
   label <- function(p, x, y, text, hjust = 0) {
-    p <- p + ggplot2::geom_text(ggplot2::aes(x = x, y = y, label = paste("\"", text, "\"",
+    p <- p + ggplot2::geom_text(ggplot2::aes(x = !!x, y = !!y, label = !!paste("\"", text, "\"",
       sep = ""
     )),
     hjust = hjust,

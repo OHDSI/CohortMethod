@@ -26,22 +26,14 @@ folder <- "d:/temp/cohortMethodVignette2"
 
 # Set connection details -------------------------------------------------------
 
-# MDCD on RedShift
+# MDCR on RedShift
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
-                                                                connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
+                                                                connectionString = keyring::key_get("redShiftConnectionStringOhdaMdcr"),
                                                                 user = keyring::key_get("redShiftUserName"),
                                                                 password = keyring::key_get("redShiftPassword"))
-cdmDatabaseSchema <- "cdm"
-resultsDatabaseSchema <- "scratch_mschuemi2"
+cdmDatabaseSchema <- "cdm_truven_mdcr_v2322"
+resultsDatabaseSchema <- "scratch_mschuemi"
 cdmVersion <- "5"
-
-# Eunomia
-cdmDatabaseSchema <- "main"
-resultsDatabaseSchema <- "main"
-cdmVersion <- "5"
-
-connectionDetails <- Eunomia::getEunomiaConnectionDetails()
-
 
 # Create cohorts ---------------------------------------------------------------
 connection <- DatabaseConnector::connect(connectionDetails)

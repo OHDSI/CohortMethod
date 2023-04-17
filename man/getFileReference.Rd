@@ -10,7 +10,7 @@ getFileReference(outputFolder)
 \item{outputFolder}{Name of the folder where all the outputs have been written to.}
 }
 \value{
-A tibble containing file nams of artifacts generated for each target-comparator-outcome-analysis combination.
+A tibble containing file names of artifacts generated for each target-comparator-outcome-analysis combination.
 }
 \description{
 Get file reference

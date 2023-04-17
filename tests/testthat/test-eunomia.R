@@ -216,6 +216,16 @@ test_that("Multiple analyses", {
   targetComparatorOutcome <- readr::read_csv(file.path(outputFolder, "export", "cm_target_comparator_outcome.csv"), show_col_types = FALSE)
   expect_true(is.numeric(targetComparatorOutcome$outcome_of_interest))
 
+  cohorts <- data.frame(
+    cohortId = c(1, 2, 998, 999, 3, 4),
+    cohortName = c("e1", "e2", "e3", "e4", "o1", "o2")
+  )
+  insertExportedResultsInSqlite(sqliteFileName = file.path(outputFolder, "export", "results.sqlite"),
+                                exportFolder = file.path(outputFolder, "export"),
+                                cohorts = cohorts)
+  expect_true(file.exists(file.path(outputFolder, "export", "results.sqlite")))
+
+
   # Make all people one gender for cmAnalysis4 so that interaction terms don't throw a warning
   connection <- DatabaseConnector::connect(connectionDetails)
 

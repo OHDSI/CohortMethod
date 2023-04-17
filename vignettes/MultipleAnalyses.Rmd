@@ -309,7 +309,7 @@ A convenient way to save `cmAnalysisList` to file is by using the `saveCmAnalysi
 
 ## Covariate balance
 
-In our code, we specified that covariate balance must be computed for some of our analysis. For computational reasons, covariate balance has been split into two: We can compute covariate balance for each target-comparator-outcome-analysis combination, and we can compute covariate balance for each target-comparator-analysis, so across all outcomes. The latter is referred to as 'shared covariate balance'. Since there can be many outcomes, it is often not feasible to recompute (or store) balance for all covariates for each outcome. Moreover, the differences between study populations for the various outcomes are likely very small; the only differences will arise from removing those having the outcome prior, which will exlude different people from the study population depending on the outcome. We therefore typically compute the balance for all covariates across all outcomes (shared balance), and only for a small subset of covariates for each outcome. In the code above, we use all covariates for the shared balance computation, which we typically use to evaluate whether our analysis achieved covariate balance. We limit the covariates for the per-outcome balance computations to only those used for the standard 'table 1' definition used in the `getDefaultCmTable1Specifications()` function, which we can use to create a 'table 1' for each outcome. 
+In our code, we specified that covariate balance must be computed for some of our analysis. For computational reasons, covariate balance has been split into two: We can compute covariate balance for each target-comparator-outcome-analysis combination, and we can compute covariate balance for each target-comparator-analysis, so across all outcomes. The latter is referred to as 'shared covariate balance'. Since there can be many outcomes, it is often not feasible to recompute (or store) balance for all covariates for each outcome. Moreover, the differences between study populations for the various outcomes are likely very small; the only differences will arise from removing those having the outcome prior, which will exclude different people from the study population depending on the outcome. We therefore typically compute the balance for all covariates across all outcomes (shared balance), and only for a small subset of covariates for each outcome. In the code above, we use all covariates for the shared balance computation, which we typically use to evaluate whether our analysis achieved covariate balance. We limit the covariates for the per-outcome balance computations to only those used for the standard 'table 1' definition used in the `getDefaultCmTable1Specifications()` function, which we can use to create a 'table 1' for each outcome. 
 
 # Executing multiple analyses
 
@@ -557,6 +557,9 @@ launchResultsViewerUsingSqlite(
 )
 ```
 
+```{r echo=FALSE, fig.cap="CohortMethod Shiny app", out.width = '80%'}
+knitr::include_graphics("shinyApp.png")
+```
 
 # Acknowledgments
 

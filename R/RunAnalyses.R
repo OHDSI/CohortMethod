@@ -215,11 +215,7 @@ runCmAnalyses <- function(connectionDetails,
                           refitPsForEveryStudyPopulation = TRUE,
                           multiThreadingSettings = createMultiThreadingSettings()) {
   errorMessages <- checkmate::makeAssertCollection()
-  if (is(connectionDetails, "connectionDetails")) {
-    checkmate::assertClass(connectionDetails, "connectionDetails", add = errorMessages)
-  } else {
-    checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
-  }
+  checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
@@ -1623,7 +1619,7 @@ createReferenceTable <- function(cmAnalysisList,
 #' @param outputFolder       Name of the folder where all the outputs have been written to.
 #'
 #' @return
-#' A tibble containing file nams of artifacts generated for each target-comparator-outcome-analysis combination.
+#' A tibble containing file names of artifacts generated for each target-comparator-outcome-analysis combination.
 #'
 #' @export
 getFileReference <- function(outputFolder) {

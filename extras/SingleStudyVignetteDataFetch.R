@@ -23,21 +23,15 @@ folder <- "d:/temp/cohortMethodVignette"
 # dir.create(folder)
 
 # Set connection details -------------------------------------------------------
-# MDCD on RedShift
+# MDCR on RedShift
 connectionDetails <- DatabaseConnector::createConnectionDetails(
   dbms = "redshift",
-  connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
+  connectionString = keyring::key_get("redShiftConnectionStringOhdaMdcr"),
   user = keyring::key_get("redShiftUserName"),
   password = keyring::key_get("redShiftPassword")
 )
-cdmDatabaseSchema <- "cdm"
-resultsDatabaseSchema <- "scratch_mschuemi2"
-cdmVersion <- "5"
-
-# Eunomia
-connectionDetails <- Eunomia::getEunomiaConnectionDetails()
-cdmDatabaseSchema <- "main"
-resultsDatabaseSchema <- "main"
+cdmDatabaseSchema <- "cdm_truven_mdcr_v2322"
+resultsDatabaseSchema <- "scratch_mschuemi"
 cdmVersion <- "5"
 
 # Create cohorts ---------------------------------------------------------------
@@ -101,7 +95,7 @@ studyPop <- createStudyPopulation(
   outcomeId = 3,
   firstExposureOnly = FALSE,
   washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   removeSubjectsWithPriorOutcome = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -115,7 +109,7 @@ plotTimeToEvent(
   outcomeId = 3,
   firstExposureOnly = FALSE,
   washoutPeriod = 0,
-  removeDuplicateSubjects = FALSE,
+  removeDuplicateSubjects = "keep all",
   minDaysAtRisk = 1,
   riskWindowStart = 0,
   startAnchor = "cohort start",
@@ -224,7 +218,7 @@ outcomeModel <- fitOutcomeModel(
 saveRDS(outcomeModel, file = file.path(folder, "OutcomeModel3.rds"))
 
 population <- stratifyByPs(ps, numberOfStrata = 10)
-interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurrent use of antithrombotic agents
 outcomeModel <- fitOutcomeModel(
   population = population,
   cohortMethodData = cohortMethodData,
