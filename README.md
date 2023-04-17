@@ -81,6 +81,7 @@ User Documentation
 Documentation can be found on the [package website](https://ohdsi.github.io/CohortMethod).
 
 PDF versions of the documentation are also available:
+
 * Vignette: [Single studies using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/inst/doc/SingleStudies.pdf)
 * Vignette: [Running multiple analyses at once using the CohortMethod package](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/inst/doc/MultipleAnalyses.pdf)
 * Package manual: [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/extras/CohortMethod.pdf)

@@ -89,7 +89,7 @@ CohortMethod package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2023-02-28</h4>
+            <h4 data-toc-skip class="date">2023-04-17</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/MultipleAnalyses.Rmd" class="external-link"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -220,24 +220,23 @@ following content:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">/***********************************</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">File VignetteOutcomes.sql</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">***********************************/</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">IF</span> OBJECT_ID(<span class="st">'@resultsDatabaseSchema.outcomes'</span>, <span class="st">'U'</span>) <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">DROP</span> <span class="kw">TABLE</span> @resultsDatabaseSchema.outcomes;</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> ancestor_concept_id <span class="kw">AS</span> cohort_definition_id,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    condition_start_date <span class="kw">AS</span> cohort_start_date,</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    condition_end_date <span class="kw">AS</span> cohort_end_date,</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    condition_occurrence.person_id <span class="kw">AS</span> subject_id</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">INTO</span> @resultsDatabaseSchema.outcomes</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.condition_occurrence</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.visit_occurrence</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_occurrence.visit_occurrence_id <span class="op">=</span> visit_occurrence.visit_occurrence_id</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.concept_ancestor</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_concept_id <span class="op">=</span> descendant_concept_id</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ancestor_concept_id <span class="kw">IN</span> (<span class="dv">192671</span>, <span class="dv">24609</span>, <span class="dv">29735</span>, <span class="dv">73754</span>, <span class="dv">80004</span>, <span class="dv">134718</span>, <span class="dv">139099</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="dv">141932</span>, <span class="dv">192367</span>, <span class="dv">193739</span>, <span class="dv">194997</span>, <span class="dv">197236</span>, <span class="dv">199074</span>, <span class="dv">255573</span>, <span class="dv">257007</span>, <span class="dv">313459</span>, <span class="dv">314658</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="dv">316084</span>, <span class="dv">319843</span>, <span class="dv">321596</span>, <span class="dv">374366</span>, <span class="dv">375292</span>, <span class="dv">380094</span>, <span class="dv">433753</span>, <span class="dv">433811</span>, <span class="dv">436665</span>, <span class="dv">436676</span>,</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="dv">436940</span>, <span class="dv">437784</span>, <span class="dv">438134</span>, <span class="dv">440358</span>, <span class="dv">440374</span>, <span class="dv">443617</span>, <span class="dv">443800</span>, <span class="dv">4084966</span>, <span class="dv">4288310</span>)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">DROP</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">EXISTS</span> @resultsDatabaseSchema.outcomes;</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> ancestor_concept_id <span class="kw">AS</span> cohort_definition_id,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    condition_start_date <span class="kw">AS</span> cohort_start_date,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    condition_end_date <span class="kw">AS</span> cohort_end_date,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    condition_occurrence.person_id <span class="kw">AS</span> subject_id</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">INTO</span> @resultsDatabaseSchema.outcomes</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.condition_occurrence</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.visit_occurrence</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_occurrence.visit_occurrence_id <span class="op">=</span> visit_occurrence.visit_occurrence_id</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.concept_ancestor</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_concept_id <span class="op">=</span> descendant_concept_id</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ancestor_concept_id <span class="kw">IN</span> (<span class="dv">192671</span>, <span class="dv">24609</span>, <span class="dv">29735</span>, <span class="dv">73754</span>, <span class="dv">80004</span>, <span class="dv">134718</span>, <span class="dv">139099</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="dv">141932</span>, <span class="dv">192367</span>, <span class="dv">193739</span>, <span class="dv">194997</span>, <span class="dv">197236</span>, <span class="dv">199074</span>, <span class="dv">255573</span>, <span class="dv">257007</span>, <span class="dv">313459</span>, <span class="dv">314658</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="dv">316084</span>, <span class="dv">319843</span>, <span class="dv">321596</span>, <span class="dv">374366</span>, <span class="dv">375292</span>, <span class="dv">380094</span>, <span class="dv">433753</span>, <span class="dv">433811</span>, <span class="dv">436665</span>, <span class="dv">436676</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="dv">436940</span>, <span class="dv">437784</span>, <span class="dv">438134</span>, <span class="dv">440358</span>, <span class="dv">440374</span>, <span class="dv">443617</span>, <span class="dv">443800</span>, <span class="dv">4084966</span>, <span class="dv">4288310</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
 <p>This is parameterized SQL which can be used by the
 <code>SqlRender</code> package. We use parameterized SQL so we do not
 have to pre-specify the names of the CDM and result schemas. That way,
@@ -488,7 +487,7 @@ there can be many outcomes, it is often not feasible to recompute (or
 store) balance for all covariates for each outcome. Moreover, the
 differences between study populations for the various outcomes are
 likely very small; the only differences will arise from removing those
-having the outcome prior, which will exlude different people from the
+having the outcome prior, which will exclude different people from the
 study population depending on the outcome. We therefore typically
 compute the balance for all covariates across all outcomes (shared
 balance), and only for a small subset of covariates for each outcome. In
@@ -580,21 +579,20 @@ files.</p>
 <code class="sourceCode R"><span><span class="va">resultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getResultsSummary.html">getResultsSummary</a></span><span class="op">(</span><span class="va">outputFolder</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">resultsSum</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 x 27</span></span></span>
-<span><span class="co">##   analysisId targetId comparat~1 outco~2 trueE~3 targe~4 compa~5 targe~6 compa~7</span></span>
-<span><span class="co">##        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300   <span style="text-decoration: underline;">29</span>735       1   <span style="text-decoration: underline;">86</span>294   <span style="text-decoration: underline;">99</span>497  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">116</span>045</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">140</span>673       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">192</span>671      <span style="color: #BB0000;">NA</span>   <span style="text-decoration: underline;">84</span>447   <span style="text-decoration: underline;">97</span>429  1.12<span style="color: #949494;">e</span>7 6<span style="text-decoration: underline;">952</span>965</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">197</span>494       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">5</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">198</span>185       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">6</span>          1  1<span style="text-decoration: underline;">118</span>084    1<span style="text-decoration: underline;">124</span>300  <span style="text-decoration: underline;">198</span>199       1   <span style="text-decoration: underline;">86</span>718   <span style="text-decoration: underline;">99</span>941  1.15<span style="color: #949494;">e</span>7 7<span style="text-decoration: underline;">152</span>671</span></span>
-<span><span class="co">## <span style="color: #949494;"># ... with 18 more variables: targetOutcomes &lt;dbl&gt;, comparatorOutcomes &lt;dbl&gt;,</span></span></span>
+<span><span class="co">##   analysisId targetId comparatorId outcomeId trueEffectSize targetSubjects</span></span>
+<span><span class="co">##        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300     <span style="text-decoration: underline;">29</span>735              1          <span style="text-decoration: underline;">86</span>294</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">140</span>673              1          <span style="text-decoration: underline;">86</span>718</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">192</span>671             <span style="color: #BB0000;">NA</span>          <span style="text-decoration: underline;">84</span>447</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">197</span>494              1          <span style="text-decoration: underline;">86</span>718</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">198</span>185              1          <span style="text-decoration: underline;">86</span>718</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">6</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">198</span>199              1          <span style="text-decoration: underline;">86</span>718</span></span>
+<span><span class="co">## <span style="color: #949494;"># i 21 more variables: comparatorSubjects &lt;int&gt;, targetDays &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   comparatorDays &lt;dbl&gt;, targetOutcomes &lt;dbl&gt;, comparatorOutcomes &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   rr &lt;dbl&gt;, ci95Lb &lt;dbl&gt;, ci95Ub &lt;dbl&gt;, p &lt;dbl&gt;, logRr &lt;dbl&gt;, seLogRr &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   llr &lt;dbl&gt;, mdrr &lt;dbl&gt;, attritionFraction &lt;dbl&gt;, calibratedRr &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   calibratedCi95Lb &lt;dbl&gt;, calibratedCi95Ub &lt;dbl&gt;, calibratedP &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   calibratedLogRr &lt;dbl&gt;, calibratedSeLogRr &lt;dbl&gt;, ease &lt;dbl&gt;, and abbreviated</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   variable names 1: comparatorId, 2: outcomeId, 3: trueEffectSize,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   4: targetSubjects, 5: comparatorSubjects, 6: targetDays, ...</span></span></span></code></pre>
+<span><span class="co">## <span style="color: #949494;">#   calibratedLogRr &lt;dbl&gt;, calibratedSeLogRr &lt;dbl&gt;, ease &lt;dbl&gt;</span></span></span></code></pre>
 <p>This tells us, per target-comparator-outcome-analysis combination,
 the estimated relative risk and 95% confidence interval, as well as the
 number of people in the treated and comparator group (after trimming and
@@ -670,16 +668,102 @@ female’ (covariate ID 8532001):</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="exporting-to-csv">Exporting to CSV<a class="anchor" aria-label="anchor" href="#exporting-to-csv"></a>
+</h2>
+<p>The results generated so far all reside in binary object on your
+local file system, mixing aggregate statistics such as hazard ratios
+with patient-level data including propensity scores per person. How
+could we share our results with others, possibly outside our
+organization? This is where the <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> function
+comes in. This function exports all results, including diagnostics to
+CSV (comma-separated values) files. These files only contain aggregate
+statistics, not patient-level data. The format is CSV files to enable
+human review.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/exportToCsv.html">exportToCsv</a></span><span class="op">(</span></span>
+<span>  <span class="va">outputFolder</span>,</span>
+<span>  exportFolder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"export"</span><span class="op">)</span>,</span>
+<span>  databaseId <span class="op">=</span> <span class="st">"My CDM"</span>,</span>
+<span>  minCellCount <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  maxCores <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Any person counts in the results that are smaller than the
+<code>minCellCount</code> argument will be blinded, by replacing the
+count with the negative <code>minCellCount</code>. For example, if the
+number of people with the outcome is 3, and
+<code>minCellCount = 5</code>, the count will be reported to be -5,
+which in the Shiny app will be displayed as ‘&lt;5’.</p>
+<p>Information on the data model used to generate the CSV files can be
+retrieved using <code><a href="../reference/getResultsDataModel.html">getResultsDataModel()</a></code>:</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getResultsDataModel.html">getResultsDataModel</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 171 x 7</span></span></span>
+<span><span class="co">##    table_name       column_name data_type is_required primary_key min_cell_count</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attrition     sequence_n~ int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attrition     description varchar   Yes         No          No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attrition     subjects    int       Yes         No          Yes           </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attrition     exposure_id int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attrition     target_id   int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attrition     comparator~ int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attrition     analysis_id int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attrition     outcome_id  int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attrition     database_id varchar   Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_up_di~ target_id   int       Yes         Yes         No            </span></span>
+<span><span class="co">## <span style="color: #949494;"># i 161 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># i 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
+</div>
+<div class="section level2">
+<h2 id="view-results-in-a-shiny-app">View results in a Shiny app<a class="anchor" aria-label="anchor" href="#view-results-in-a-shiny-app"></a>
+</h2>
+<p>Finally, we can view the results in a Shiny app. For this we must
+first load the CSV files produced by <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> into a
+database. We could use the <code><a href="../reference/uploadExportedResults.html">uploadExportedResults()</a></code> function
+for this. However, if we just want to view the results ourselves we can
+create a small SQLite database ourselves without having to set up a
+database server. In any case we need to specify the names of the
+exposure and outcome cohorts we used in our study. We can create the
+SQLite database using:</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fl">1118084</span>,</span>
+<span>    <span class="fl">1124300</span>,</span>
+<span>    <span class="fl">192671</span><span class="op">)</span>,</span>
+<span>  cohortName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"Celecoxib"</span>,</span>
+<span>    <span class="st">"Diclofenac"</span>,</span>
+<span>    <span class="st">"GI Bleed"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/insertExportedResultsInSqlite.html">insertExportedResultsInSqlite</a></span><span class="op">(</span></span>
+<span>  sqliteFileName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"myResults.sqlite"</span><span class="op">)</span>, </span>
+<span>  exportFolder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"export"</span><span class="op">)</span>, </span>
+<span>  cohorts <span class="op">=</span> <span class="va">cohorts</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Next we launch the Shiny app using:</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/launchResultsViewerUsingSqlite.html">launchResultsViewerUsingSqlite</a></span><span class="op">(</span></span>
+<span>  sqliteFileName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"myResults.sqlite"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="shinyApp.png" alt="CohortMethod Shiny app" width="80%"><p class="caption">
+CohortMethod Shiny app
+</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="acknowledgments">Acknowledgments<a class="anchor" aria-label="anchor" href="#acknowledgments"></a>
 </h2>
 <p>Considerable work has been dedicated to provide the
 <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##   Schuemie M, Suchard M, Ryan P (2022). _CohortMethod: New-User Cohort</span></span>
+<span><span class="co">##   Schuemie M, Suchard M, Ryan P (2023). _CohortMethod: New-User Cohort</span></span>
 <span><span class="co">##   Method with Large Scale Propensity and Outcome Models_.</span></span>
 <span><span class="co">##   https://ohdsi.github.io/CohortMethod,</span></span>
 <span><span class="co">##   https://github.com/OHDSI/CohortMethod.</span></span>
@@ -690,13 +774,13 @@ female’ (covariate ID 8532001):</p>
 <span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome</span></span>
 <span><span class="co">## Models},</span></span>
 <span><span class="co">##     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},</span></span>
-<span><span class="co">##     year = {2022},</span></span>
+<span><span class="co">##     year = {2023},</span></span>
 <span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod,</span></span>
 <span><span class="co">## https://github.com/OHDSI/CohortMethod},</span></span>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite Cyclops in publications use:</span></span>

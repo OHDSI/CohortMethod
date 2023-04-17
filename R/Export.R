@@ -59,6 +59,13 @@ createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
                                          sdmThreshold = 0.1,
                                          equipoiseThreshold = 0.2,
                                          attritionFractionThreshold = 1) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertNumeric(mdrrThreshold, len = 1, lower = 0, add = errorMessages)
+  checkmate::assertNumeric(easeThreshold, len = 1, lower = 0, add = errorMessages)
+  checkmate::assertNumeric(sdmThreshold, len = 1, lower = 0, add = errorMessages)
+  checkmate::assertNumeric(equipoiseThreshold, len = 1, lower = 0, add = errorMessages)
+  checkmate::assertNumeric(attritionFractionThreshold, len = 1, lower = 0, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   thresholds <- list()
   for (name in names(formals(createCmDiagnosticThresholds))) {
     thresholds[[name]] <- get(name)

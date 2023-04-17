@@ -62,9 +62,6 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     select("covariateId", "prevalence") %>%
     collect()
 
-  # covariatePrevalence <- sums$prevalence
-  # names(covariatePrevalence) <- sums$covariateId
-
   message("Computing propensity model")
   propensityScore <- createPs(cohortMethodData,
                               maxCohortSizeForFitting = 25000,
@@ -84,7 +81,6 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
       removeSubjectsWithPriorOutcome = FALSE,
       outcomeId = outcomeId
     )
-    # studyPop <- trimByPsToEquipoise(studyPop)
     studyPop <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
     outcomeModel <- fitOutcomeModel(
       population = studyPop,
@@ -171,7 +167,6 @@ simulateCohortMethodData <- function(profile, n = 10000) {
   checkmate::assertClass(profile, "CohortDataSimulationProfile", add = errorMessages)
   checkmate::assertInt(n, lower = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
 
   message("Generating covariates")
   # Treatment variable is generated elsewhere:

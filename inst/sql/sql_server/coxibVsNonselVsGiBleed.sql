@@ -2,7 +2,7 @@
 File coxibVsNonselVsGiBleed.sql
 ***********************************/
 
-DROP TABLE IF EXIST @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
+DROP TABLE IF EXISTS @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
 
 CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
   cohort_definition_id INT,
