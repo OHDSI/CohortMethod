@@ -127,8 +127,8 @@ createStudyPopulation <- function(cohortMethodData,
   if (is.null(population)) {
     metaData <- attr(cohortMethodData, "metaData")
     population <- cohortMethodData$cohorts %>%
-      dplyr::collect() %>%
-      dplyr::select(-"personId")
+      collect() %>%
+      select(-"personId")
   } else {
     metaData <- attr(population, "metaData")
   }
@@ -149,22 +149,22 @@ createStudyPopulation <- function(cohortMethodData,
     message("Restrict to common period")
     if (nrow(population) > 0) {
       population <- population %>%
-        dplyr::group_by(.data$treatment) %>%
-        dplyr::summarise(
+        group_by(.data$treatment) %>%
+        summarise(
           treatmentStart = min(.data$cohortStartDate),
           treatmentEnd = max(.data$cohortStartDate)
         ) %>%
-        dplyr::ungroup() %>%
-        dplyr::summarise(
+        ungroup() %>%
+        summarise(
           periodStart = max(.data$treatmentStart),
           periodEnd = min(.data$treatmentEnd)
         ) %>%
-        dplyr::cross_join(population) %>%
-        dplyr::filter(
+        cross_join(population) %>%
+        filter(
           population$cohortStartDate >= .data$periodStart &
             population$cohortStartDate <= .data$periodEnd
         ) %>%
-        dplyr::select(-"periodStart", -"periodEnd")
+        select(-"periodStart", -"periodEnd")
     }
     metaData$attrition <- rbind(
       metaData$attrition,
@@ -185,7 +185,7 @@ createStudyPopulation <- function(cohortMethodData,
     message("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
     if (nrow(population) > 0) {
       population <- population %>%
-        dplyr::arrange(.data$personSeqId, .data$cohortStartDate)
+        arrange(.data$personSeqId, .data$cohortStartDate)
       # Remove ties:
       idx <- fastDuplicated(population, c("personSeqId", "cohortStartDate"))
       # If duplicate, then we must remove both things that are a tie:
@@ -207,7 +207,7 @@ createStudyPopulation <- function(cohortMethodData,
   if (washoutPeriod) {
     message(paste("Requiring", washoutPeriod, "days of observation prior index date"))
     population <- population %>%
-      dplyr::filter(.data$daysFromObsStart >= washoutPeriod)
+      filter(.data$daysFromObsStart >= washoutPeriod)
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
       "At least",
       washoutPeriod,
@@ -220,26 +220,26 @@ createStudyPopulation <- function(cohortMethodData,
     } else {
       message("Removing subjects with prior outcomes (if any)")
       outcomes <- cohortMethodData$outcomes %>%
-        dplyr::filter(.data$outcomeId == !!outcomeId) %>%
-        dplyr::collect()
+        filter(.data$outcomeId == !!outcomeId) %>%
+        collect()
       if (isEnd(startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes %>%
-          dplyr::filter(
+          filter(
             .data$daysToEvent > -priorOutcomeLookback &
               outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart
           ) %>%
-          dplyr::select("rowId")
+          select("rowId")
       } else {
         priorOutcomeRowIds <- outcomes %>%
-          dplyr::filter(
+          filter(
             .data$daysToEvent > -priorOutcomeLookback &
               .data$daysToEvent < riskWindowStart
           ) %>%
-          dplyr::select("rowId")
+          select("rowId")
       }
       population <- population %>%
-        dplyr::filter(!(.data$rowId %in% priorOutcomeRowIds))
+        filter(!(.data$rowId %in% priorOutcomeRowIds))
       metaData$attrition <- rbind(
         metaData$attrition,
         getCounts(population, paste("No prior outcome"))
@@ -305,8 +305,8 @@ createStudyPopulation <- function(cohortMethodData,
   } else {
     # Select outcomes during time at risk
     outcomes <- cohortMethodData$outcomes %>%
-      dplyr::filter(.data$outcomeId == !!outcomeId) %>%
-      dplyr::collect()
+      filter(.data$outcomeId == !!outcomeId) %>%
+      collect()
     outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
     outcomes <- outcomes %>%
       filter(
@@ -319,8 +319,8 @@ createStudyPopulation <- function(cohortMethodData,
       population$outcomeCount <- rep(0, nrow(population))
     } else {
       outcomeCount <- outcomes %>%
-        dplyr::group_by(.data$rowId) %>%
-        dplyr::summarise(outcomeCount = length(.data$outcomeId))
+        group_by(.data$rowId) %>%
+        summarise(outcomeCount = length(.data$outcomeId))
       population$outcomeCount <- 0
       population$outcomeCount[match(outcomeCount$rowId, population$rowId)] <- outcomeCount$outcomeCount
     }
@@ -368,7 +368,7 @@ getCounts <- function(population, description = "") {
   comparatorPersons <- length(unique(population$personSeqId[population$treatment == 0]))
   targetExposures <- length(population$personSeqId[population$treatment == 1])
   comparatorExposures <- length(population$personSeqId[population$treatment == 0])
-  counts <- dplyr::tibble(
+  counts <- tibble(
     description = description,
     targetPersons = targetPersons,
     comparatorPersons = comparatorPersons,
@@ -468,7 +468,7 @@ plotTimeToEvent <- function(cohortMethodData,
   checkmate::reportAssertions(collection = errorMessages)
   if (is.null(population)) {
     population <- cohortMethodData$cohorts %>%
-      dplyr::collect()
+      collect()
   }
   population <- createStudyPopulation(
     cohortMethodData = cohortMethodData,
@@ -487,16 +487,16 @@ plotTimeToEvent <- function(cohortMethodData,
     censorAtNewRiskWindow = censorAtNewRiskWindow
   )
   outcomes <- cohortMethodData$outcomes %>%
-    dplyr::filter(.data$outcomeId == !!outcomeId) %>%
-    dplyr::select("rowId", "daysToEvent") %>%
-    dplyr::collect()
+    filter(.data$outcomeId == !!outcomeId) %>%
+    select("rowId", "daysToEvent") %>%
+    collect()
 
   outcomes <- outcomes %>%
-    dplyr::inner_join(dplyr::select(population, "rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd"),
+    inner_join(select(population, "rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd"),
       by = "rowId"
     ) %>%
-    dplyr::filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%
-    dplyr::mutate(exposed = .data$daysToEvent >= .data$riskStart & .data$daysToEvent <= .data$riskEnd)
+    filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%
+    mutate(exposed = .data$daysToEvent >= .data$riskStart & .data$daysToEvent <= .data$riskEnd)
 
   idxExposed <- outcomes$exposed == 1
   idxTarget <- outcomes$treatment == 1
@@ -505,7 +505,7 @@ plotTimeToEvent <- function(cohortMethodData,
     end <- number * periodLength + periodLength
     idxInPeriod <- outcomes$daysToEvent >= start & outcomes$daysToEvent < end
     idxPopInPeriod <- -population$daysFromObsStart <= start & population$daysToObsEnd >= end
-    dplyr::tibble(
+    tibble(
       number = number,
       start = start,
       end = end,
@@ -523,8 +523,8 @@ plotTimeToEvent <- function(cohortMethodData,
   periods <- lapply(-floor(numberOfPeriods / 2):ceiling(numberOfPeriods / 2), createPeriod)
   periods <- do.call("rbind", periods)
   periods <- periods %>%
-    dplyr::filter(.data$observedTarget > 0) %>%
-    dplyr::mutate(
+    filter(.data$observedTarget > 0) %>%
+    mutate(
       rateExposedTarget = .data$eventsExposedTarget / .data$observedTarget,
       rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
       rateExposedComparator = .data$eventsExposedComparator / .data$observedComparator,
@@ -534,31 +534,31 @@ plotTimeToEvent <- function(cohortMethodData,
     )
   if (!includePostIndexTime) {
     periods <- periods %>%
-      dplyr::filter(.data$end <= 0)
+      filter(.data$end <= 0)
   }
   vizData <- rbind(
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateExposedTarget,
       status = "Exposed events",
       type = targetLabel
     ),
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateUnexposedTarget,
       status = "Unexposed events",
       type = targetLabel
     ),
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateExposedComparator,
       status = "Exposed events",
       type = comparatorLabel
     ),
-    dplyr::tibble(
+    tibble(
       start = periods$start,
       end = periods$end,
       rate = periods$rateUnexposedComparator,
@@ -623,7 +623,7 @@ plotTimeToEvent <- function(cohortMethodData,
       curve <- bind_rows(curve, postTarget, postComparator)
     }
     curve <- curve %>%
-      dplyr::mutate(
+      mutate(
         rate = 0,
         status = "Exposed events",
         type = factor(.data$type, levels = c(targetLabel, comparatorLabel)),
