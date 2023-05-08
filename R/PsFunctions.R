@@ -873,7 +873,6 @@ truncateIptw <- function(population, maxWeight = 10) {
 }
 
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
-  covariateIds <- c(2018006, 8527004)
   covariates <- cohortMethodData$covariates %>%
     filter(.data$covariateId %in% covariateIds) %>%
     collect()
