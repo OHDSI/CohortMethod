@@ -1229,7 +1229,8 @@ exportDiagnosticsSummary <- function(outputFolder,
                               .data$attritionDiagnostic != "FAIL" &
                               .data$easeDiagnostic != "FAIL" &
                               .data$equipoiseDiagnostic != "FAIL" &
-                              .data$balanceDiagnostic != "FAIL", 1, 0),
+                              .data$balanceDiagnostic != "FAIL" &
+                              .data$sharedBalanceDiagnostic != "FAIL", 1, 0),
            databaseId = !!databaseId)
 
   if (nrow(results) == 0) {

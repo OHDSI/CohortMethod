@@ -1,3 +1,15 @@
+CohortMethod 5.1.0
+==================
+
+Changes:
+
+1. Now also not unblinding if shared balance diagnostic fails.
+
+Bugfixes:
+
+1. Fixing matching on PS and other covariates.
+
+
 CohortMethod 5.0.0
 ==================
 
