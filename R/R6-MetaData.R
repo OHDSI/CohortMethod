@@ -198,8 +198,8 @@ MetaData <- R6::R6Class(
       writeLines(paste("Propensity Score Error", self$psError))
       writeLines(paste("High Correlation Propensity Scores: ", dim(self$psHighCorrelation)))
       writeLines(paste("Estimator: ", self$estimator))
+      return(invisible(self))
     }
-    return(invisible(self))
   ),
   private = list(
     # Private ----
