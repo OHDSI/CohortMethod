@@ -9,100 +9,101 @@ MetaData <- R6::R6Class(
     # Public ----
     ## Fields ----
     #' @field targetId
-    #'  A unique identifier to define the target cohort, as \link[base]{numeric}.
+    #' (\link[base]{numeric}) A unique identifier to define the target cohort.
     targetId = 0,
 
     #' @field comparatorId
-    #'   A unique identifier to define the comparator cohort, as \link[base]{numeric}.
+    #' (\link[base]{numeric}) A unique identifier to define the comparator cohort.
     comparatorId = 0,
 
     #' @field studyStartDate
-    #'   A calendar date specifying the minimum date that a cohort index date
-    #'   can appear. Date format is 'yyyymmdd', as \link[base]{character}.
+    #' (\link[base]{character}) A calendar date specifying the minimum date
+    #' that a cohort index date can appear. Date format is 'yyyymmdd'.
     studyStartDate = "",
 
     #' @field studyEndDate
-    #'   A calendar date specifying the maximum date that a cohort index date
-    #'   can appear. Date format is 'yyyymmdd'. Important: the study end data
-    #'   is also used to truncate risk windows, meaning no outcomes beyond the
-    #'   study end date will be considered, as \link[base]{character}.
+    #' (\link[base]{character}) A calendar date specifying the maximum date
+    #' that a cohort index date can appear. Date format is 'yyyymmdd'.
+    #' Important: the study end data is also used to truncate risk windows,
+    #' meaning no outcomes beyond the study end date will be considered.
     studyEndDate = "",
 
     #' @field attrition
-    #'   Attrition table as \link[base]{data.frame}.
+    #' (\link[base]{data.frame}) Attrition table.
     attrition = NULL,
 
     #' @field outcomeIds
-    #'   Vector (\link[base]{c}) of outcome ID's (\link[base]{numeric}) of length `n`.
+    #' (\link[base]{c}) Vector of outcome ID's (\link[base]{numeric}) of length `n`.
     outcomeIds = NULL,
 
     #' @field populationSize
-    #'   Population size as \link[base]{numeric} of length `1`.
+    #' \link[base]{numeric} Population size.
     populationSize = 0,
 
     #' @field deletedRedundantCovariateIds
-    #'   Vector (\link[base]{c}) of deleted redundant covariate ID's
-    #'   (\link[base]{numeric}) of length `n`.
+    #' (\link[base]{c}) Vector of deleted redundant covariate ID's
+    #' (\link[base]{numeric}) of length `n`.
     deletedRedundantCovariateIds = NULL,
 
     #' @field deletedInfrequentCovariateIds
-    #'   Vector (\link[base]{c}) of deleted infrequent covariate ID's
-    #'   (\link[base]{numeric}) of length `n`.
+    #' (\link[base]{c}) Vector of deleted infrequent covariate ID's
+    #' (\link[base]{numeric}) of length `n`.
     deletedInfrequentCovariateIds = NULL,
 
     #' @field deletedRedundantCovariateIdsForOutcomeModel
-    #'   Vector (\link[base]{c}) of deleted redundant covariate ID's for the
-    #'   outcome model (\link[base]{numeric}) of length `n`.
+    #' (\link[base]{c}) Vector of deleted redundant covariate ID's for the
+    #' outcome model (\link[base]{numeric}) of length `n`.
     deletedRedundantCovariateIdsForOutcomeModel = NULL,
 
     #' @field deletedInfrequentCovariateIdsForOutcomeModel
-    #'   Vector (\link[base]{c}) of deleted infrequent covariate ID's for the
-    #'   outcome model (\link[base]{numeric}) of length `n`.
+    #' (\link[base]{c}) Vector of deleted infrequent covariate ID's for the
+    #' outcome model (\link[base]{numeric}) of length `n`.
     deletedInfrequentCovariateIdsForOutcomeModel = NULL,
 
     #' @field psModelCoef
-    #'   Coefficient of the Propensity Score Model, returned by
-    #'   \link[CohortMethod]{coef.OutcomeModel}. See \link[stats]{coef}
+    #' (\link[base]{numeric}) Coefficient of the Propensity Score Model,
+    #' returned by \link[CohortMethod]{coef.OutcomeModel}. See
+    #' \link[stats]{coef}
     psModelCoef = NULL,
 
     #' @field psModelPriorVariance
-    #'   Variance returned by \link[stats]{predict} using a fitted Cyclops
-    #'   model. See \link[Cyclops]{fitCyclopsModel}
+    #' (\link[base]{numeric}) Variance returned by \link[stats]{predict} using
+    #' a fitted Cyclops model. See \link[Cyclops]{fitCyclopsModel}
     psModelPriorVariance = NULL,
 
     #' @field psError
-    #'   Error message as \link[base]{character}.
+    #' (\link[base]{character}) Error message.
     psError = "",
 
     #' @field psHighCorrelation
-    #'   if `errorOnHighCorrelation == TRUE`: `CohortMethodData$covariateRef`
-    #'   else: `NULL`.
+    #' if `errorOnHighCorrelation == TRUE`: `CohortMethodData$covariateRef`
+    #' else: `NULL`.
     psHighCorrelation = NULL,
 
     #' @field estimator
-    #'   Estimator as (\link[base]{character}) passed to createPs.
-    #'   See \link[CohortMethod]{createPs}.
+    #' Estimator as (\link[base]{character}) passed to createPs.
+    #' See \link[CohortMethod]{createPs}.
     estimator = "att",
 
     ## Methods ----
     #' @description
-    #'   Initializer for the MetaData object.
+    #' Initializer for the MetaData object.
     #'
     #' @param targetId
-    #'    A unique identifier to define the target cohort, as \link[base]{numeric}.
+    #' A unique identifier to define the target cohort, as \link[base]{numeric}.
     #' @param comparatorId
-    #'   A unique identifier to define the comparator cohort, as \link[base]{numeric}.
+    #' A unique identifier to define the comparator cohort, as \link[base]{numeric}.
     #' @param studyStartDate
-    #'   A calendar date specifying the minimum date that a cohort index date
-    #'   can appear. Date format is 'yyyymmdd', as \link[base]{character}.
+    #' A calendar date specifying the minimum date that a cohort index date
+    #' can appear. Date format is 'yyyymmdd', as \link[base]{character}.
     #' @param studyEndDate
-    #'   A calendar date specifying the maximum date that a cohort index date
-    #'   can appear. Date format is 'yyyymmdd'. Important: the study end data
-    #'   is also used to truncate risk windows, meaning no outcomes beyond the
-    #'   study end date will be considered, as \link[base]{character}.
+    #' A calendar date specifying the maximum date that a cohort index date
+    #' can appear. Date format is 'yyyymmdd'. Important: the study end data
+    #' is also used to truncate risk windows, meaning no outcomes beyond the
+    #' study end date will be considered, as \link[base]{character}.
     #'
     #' @return
-    #'   `invisible(self)`
+    #' `invisible(self)`
     initialize = function(targetId, comparatorId, studyStartDate, studyEndDate) {
       self$targetId <- targetId
       self$comparatorId <- comparatorId
@@ -115,10 +116,10 @@ MetaData <- R6::R6Class(
     },
 
     #' @description
-    #'   Validation method for MetaData object.
+    #' Validation method for MetaData object.
     #'
     #' @return
-    #'   `invisible(self)`
+    #' `invisible(self)`
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
 
@@ -144,11 +145,11 @@ MetaData <- R6::R6Class(
     },
 
     #' @description
-    #'   Returns a \link[base]{list} containing all fields of the MetaData
-    #'   object.
+    #' Returns a \link[base]{list} containing all fields of the MetaData
+    #' object.
     #'
     #' @return
-    #'   \link[base]{list}
+    #' \link[base]{list}
     getMetaData = function() {
       return(list(
         targetId = self$targetId,
@@ -171,15 +172,16 @@ MetaData <- R6::R6Class(
     },
 
     ### Overloads ----
-    #' Title
+    #' @description
+    #' Overload for \link[base]{print}.
     #'
     #' @param x
-    #'   \link[CohortMethod]{MetaData} object.
+    #' \link[CohortMethod]{MetaData} object.
     #' @param ...
-    #'   Further arguments passed to or from other methods.
+    #' Further arguments passed to or from other methods.
     #'
     #' @return
-    #'   `invisible(self)`
+    #' `invisible(self)`
     print = function(x, ...) {
       writeLines(paste("Class:", paste0(class(o), collapse = " ")))
       writeLines(paste("Target ID: ", self$targetId))
