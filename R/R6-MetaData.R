@@ -183,7 +183,7 @@ MetaData <- R6::R6Class(
     #' @return
     #' `invisible(self)`
     print = function(x, ...) {
-      writeLines(paste("Class:", paste0(class(o), collapse = " ")))
+      writeLines(paste("Class:", paste0(class(self), collapse = " ")))
       writeLines(paste("Target ID: ", self$targetId))
       writeLines(paste("Comparator ID: ", self$comparatorId))
       writeLines(paste("Study Start Date: ", self$studyStartDate))
