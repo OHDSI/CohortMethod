@@ -375,8 +375,8 @@ runCmAnalyses <- function(connectionDetails,
       if (!is.null(outcome$startAnchor)) {
         args$startAnchor <- outcome$startAnchor
       }
-      if (!is.null(outcome$riskWindowStart)) {
-        args$riskWindowStart <- outcome$riskWindowStart
+      if (!is.null(outcome$riskWindowEnd)) {
+        args$riskWindowEnd <- outcome$riskWindowEnd
       }
       if (!is.null(outcome$endAnchor)) {
         args$endAnchor <- outcome$endAnchor
