@@ -166,7 +166,7 @@ createStudyPopulation <- function(cohortMethodData,
     )
   } else if (removeDuplicateSubjects == "keep first") {
     message("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
-    if (nrow(population) > 0) {
+    if (nrow(population) > 1) {
       population <- population[order(population$personSeqId, population$cohortStartDate), ]
       # Remove ties:
       idx <- fastDuplicated(population, c("personSeqId", "cohortStartDate"))
