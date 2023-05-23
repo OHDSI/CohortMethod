@@ -225,6 +225,24 @@ test_that("createStudyPop: censor at new risk window start", {
   expect_equal(sp$timeAtRisk, c(101, 101, 101))
 })
 
+test_that("createStudyPop: keep first when only 1 person overall", {
+  cohorts <- bind_rows(cohortRow)
+  cohorts$rowId <- c(1)
+  cohorts$treatment <- c(0)
+  cohorts$personSeqId <- c(1)
+  cohorts$cohortStartDate <- as.Date(c("2000-01-01"))
+  cohorts$daysToCohortEnd <- c(100)
+  cohorts$daysToObsEnd <- c(1000)
+  tmpCmd$cohorts <- cohorts
+
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    censorAtNewRiskWindow = TRUE,
+    removeDuplicateSubjects = "keep first"
+  )
+  expect_equal(nrow(sp), 1)
+})
+
 test_that("createStudyPop: outcomes", {
   outcomes <- outcomeRow
   outcomes$rowId[1] <- 1

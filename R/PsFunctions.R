@@ -873,7 +873,6 @@ truncateIptw <- function(population, maxWeight = 10) {
 }
 
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
-  covariateIds <- c(2018006, 8527004)
   covariates <- cohortMethodData$covariates %>%
     filter(.data$covariateId %in% covariateIds) %>%
     collect()
@@ -1032,17 +1031,21 @@ matchOnPs <- function(population,
       maxRatio = maxRatio,
       caliper = caliper
     )
-    maxStratumId <- 0
-    for (i in 1:length(results)) {
-      if (nrow(results[[i]]) > 0) {
-        if (maxStratumId != 0) {
-          results[[i]]$stratumId <- results[[i]]$stratumId + maxStratumId + 1
+    if (length(results) == 0) {
+      result <- population %>%
+        mutate(stratumId = 0)
+    } else {
+      maxStratumId <- 0
+      for (i in seq_len(length(results))) {
+        if (nrow(results[[i]]) > 0) {
+          if (maxStratumId != 0) {
+            results[[i]]$stratumId <- results[[i]]$stratumId + maxStratumId + 1
+          }
+          maxStratumId <- max(results[[i]]$stratumId)
         }
-        maxStratumId <- max(results[[i]]$stratumId)
       }
+      result <- do.call(rbind, results)
     }
-    result <- do.call(rbind, results)
-
     if (reverseTreatment) {
       result$treatment <- 1 - result$treatment
     }
@@ -1050,7 +1053,7 @@ matchOnPs <- function(population,
     if (!is.null(attr(result, "metaData"))) {
       attr(result, "metaData")$attrition <- rbind(
         attr(result, "metaData")$attrition,
-        getCounts(result, paste("Trimmed to equipoise"))
+        getCounts(result, paste("Matched on propensity score"))
       )
     }
 

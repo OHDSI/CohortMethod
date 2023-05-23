@@ -1,3 +1,25 @@
+CohortMethod 5.1.1
+==================
+
+Bugfixes:
+
+1. Now passing outcome-specific `riskWindowEnd` argument in `runCmAnalyses()` when specified.
+
+2. Fixed error when calling `createStudyPopulation()` with "keep first" when there is only 1 person in the population.
+
+
+CohortMethod 5.1.0
+==================
+
+Changes:
+
+1. Now also not unblinding if shared balance diagnostic fails.
+
+Bugfixes:
+
+1. Fixing matching on PS and other covariates.
+
+
 CohortMethod 5.0.0
 ==================
 
