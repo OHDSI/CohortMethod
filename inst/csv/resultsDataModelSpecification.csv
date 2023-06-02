@@ -58,11 +58,11 @@ cm_result,calibrated_p,float,No,No,No,The calibrated two-sided p-value.
 cm_result,calibrated_log_rr,float,No,No,No,The log of the calibrated relative risk.
 cm_result,calibrated_se_log_rr,float,No,No,No,The standard error of the log of the calibrated relative risk.
 cm_result,database_id,varchar,Yes,Yes,No,Foreign key referencing the database.
-cm_interaction_result,analysis_id,int,Yes,No,No,Foreign key referencing the cm_analysis table.
-cm_interaction_result,target_id,int,Yes,No,No,The identifier for the target cohort.
-cm_interaction_result,comparator_id,int,Yes,No,No,The identifier for the comparator cohort.
-cm_interaction_result,outcome_id,int,Yes,No,No,The identifier for the outcome cohort.
-cm_interaction_result,interaction_covariate_id,int,Yes,No,No,Foreign key referencing the cm_covariate table.
+cm_interaction_result,analysis_id,int,Yes,Yes,No,Foreign key referencing the cm_analysis table.
+cm_interaction_result,target_id,int,Yes,Yes,No,The identifier for the target cohort.
+cm_interaction_result,comparator_id,int,Yes,Yes,No,The identifier for the comparator cohort.
+cm_interaction_result,outcome_id,int,Yes,Yes,No,The identifier for the outcome cohort.
+cm_interaction_result,interaction_covariate_id,int,Yes,Yes,No,Foreign key referencing the cm_covariate table.
 cm_interaction_result,rr,float,Yes,No,No,The estimated relative risk (e.g. the ratio of hazard ratios).
 cm_interaction_result,ci_95_lb,float,Yes,No,No,The lower bound of the 95% confidence interval of the relative risk.
 cm_interaction_result,ci_95_ub,float,Yes,No,No,The upper bound of the 95% confidence interval of the relative risk.
@@ -81,7 +81,7 @@ cm_interaction_result,calibrated_ci_95_ub,float,No,No,No,The upper bound of the 
 cm_interaction_result,calibrated_p,float,No,No,No,The calibrated two-sided p-value.
 cm_interaction_result,calibrated_log_rr,float,No,No,No,The log of the calibrated relative risk.
 cm_interaction_result,calibrated_se_log_rr,float,No,No,No,The standard error of the log of the calibrated relative risk.
-cm_interaction_result,database_id,varchar,Yes,No,No,Foreign key referencing the database.
+cm_interaction_result,database_id,varchar,Yes,Yes,No,Foreign key referencing the database.
 cm_covariate,covariate_id,bigint,Yes,Yes,No,A unique identified for a covariate.
 cm_covariate,covariate_name,varchar,Yes,No,No,"A name for a covariate, e.g. 'Age group: 20-25 years'."
 cm_covariate,analysis_id,int,Yes,Yes,No,Foreign key referencing the cm_analysis table.
