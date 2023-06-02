@@ -279,11 +279,12 @@ fitOutcomeModel <- function(population,
         if (any(separability)) {
           removeCovariateIds <- as.numeric(names(separability)[separability])
           # Add main effects of separable interaction effects, and the other way around:
-          # TODO: don't remove main effect is useCovariates = TRUE
-          removeCovariateIds <- unique(c(
-            removeCovariateIds,
-            interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]
-          ))
+          if (!useCovariates) {
+            removeCovariateIds <- unique(c(
+              removeCovariateIds,
+              interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]
+            ))
+          }
           removeCovariateIds <- unique(c(
             removeCovariateIds,
             interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]
