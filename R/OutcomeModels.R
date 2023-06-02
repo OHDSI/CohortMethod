@@ -212,6 +212,15 @@ fitOutcomeModel <- function(population,
             collect()
         } else {
           # TODO: check if main effect covariate exists in data
+          mainEffectTermsCheck <- !is.null(covariateData$covariates %>%
+            distinct(.data$covariateId) %>%
+            inner_join(covariateData$covariateRef, by = "covariateId") %>%
+            select(id = "covariateId", name = "covariateName") %>%
+            collect())
+
+          if (!mainEffectTermsCheck) {
+            message("No main effects exist.")
+          }
         }
 
         # Create interaction terms
