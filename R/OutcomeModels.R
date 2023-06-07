@@ -219,7 +219,7 @@ fitOutcomeModel <- function(population,
             collect())
 
           if (!mainEffectTermsCheck) {
-            message("No main effects exist.")
+            stop("No main effects exist.")
           }
         }
 
