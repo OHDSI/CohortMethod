@@ -2,7 +2,7 @@
 % Please edit documentation in R/Balance.R
 \name{computeCovariateBalance}
 \alias{computeCovariateBalance}
-\title{Compute covariate balance before and after matching and trimming}
+\title{Compute covariate balance before and after PS adjustment}
 \usage{
 computeCovariateBalance(
   population,
@@ -13,8 +13,7 @@ computeCovariateBalance(
 )
 }
 \arguments{
-\item{population}{A data frame containing the people that are remaining after matching
-and/or trimming.}
+\item{population}{A data frame containing the people that are remaining after PS adjustment.}
 
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
 \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
@@ -33,12 +32,46 @@ of covariate IDs, or a table 1 specifications object as generated for example us
 balance will be computed for all variables found in the data.}
 }
 \value{
-Returns a tibble describing the covariate balance before and after matching/trimming.
+Returns a tibble describing the covariate balance before and after PS adjustment,
+with one row per covariate and the following columns:
+\itemize{
+\item beforeMatchingMeanTarget: The (weighted) mean value in the target before PS adjustment.
+\item beforeMatchingMeanComparator: The (weighted) mean value in the comparator before PS adjustment.
+\item beforeMatchingSumTarget: The (weighted) sum value in the target before PS adjustment.
+\item beforeMatchingSumComparator: The (weighted) sum value in the comparator before PS adjustment.
+\item beforeMatchingSdTarget: The standard deviation of the value in the target before PS adjustment.
+\item beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
+\item beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
+\item afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
+\item afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
+\item afterMatchingSumTarget: The (weighted) sum value in the target after PS adjustment.
+\item afterMatchingSumComparator: The (weighted) sum value in the comparator after PS adjustment.
+\item afterMatchingSdTarget: The standard deviation of the value in the target after PS adjustment.
+\item afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
+\item afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
+\item beforeMatchingStdDiff: The standardized difference of means when comparing the target to
+the comparator before PS adjustment.
+\item afterMatchingStdDiff: The standardized difference of means when comparing the target to
+the comparator after PS adjustment.
+\item targetStdDiff: The standardized difference of means when comparing the target
+before PS adjustment to the target after PS adjustment.
+\item comparatorStdDiff: The standardized difference of means when comparing the comparator
+before PS adjustment to the comparator after PS adjustment.
+}
+
+The 'beforeMatchingStdDiff' and 'afterMatchingStdDiff' columns inform on the balance:
+are the target and comparator sufficiently similar in terms of baseline covariates to
+allow for valid causal estimation?
+
+The 'targetStdDiff' and 'comparatorStdDiff' columns inform on the generalizability:
+are the cohorts after PS adjustment sufficiently similar to the cohorts before adjustment
+to allow generalizing the findings to the original cohorts?
 }
 \description{
 For every covariate, prevalence in treatment and comparator groups before and after
-matching/trimming are computed. When variable ratio matching was used the balance score will be
-corrected according the method described in Austin et al (2008).
+matching/trimming/weighting are computed. When variable ratio matching was used
+the balance score will be corrected according the method described in Austin et
+al (2008).
 }
 \details{
 The population data frame should have the following three columns:

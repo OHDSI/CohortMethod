@@ -1180,7 +1180,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
     basePop <- population$propensityScore
   } else if (baseSelection == "target") {
     basePop <- population$propensityScore[population$treatment == 1]
-  } else if (baseSelection == "target") {
+  } else if (baseSelection == "comparator") {
     basePop <- population$propensityScore[population$treatment == 0]
   } else {
     stop(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
