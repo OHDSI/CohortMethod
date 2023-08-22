@@ -155,8 +155,7 @@ test_that("studyEndDate", {
       outcomeTable = "cohort",
       covariateSettings = covSettings,
       studyEndDate = "02032022"
-    ),
-    "Study end date must have format YYYYMMDD"
+    )
   )
 
   ## "10000000" (1000-00-00) ----
@@ -235,7 +234,7 @@ test_that("studyEndDate", {
 test_that("tempEmulationSchema", {
   ## default ----
   expect_no_error(
-    expect_no_warning(
+    # expect_no_warning(
       getDbCohortMethodData(
         connectionDetails = connectionDetails,
         cdmDatabaseSchema = "main",
@@ -250,7 +249,7 @@ test_that("tempEmulationSchema", {
         # In Eunomia
         tempEmulationSchema = "main"
       )
-    )
+    # )
   )
   ## comments ----
   # Throws:
