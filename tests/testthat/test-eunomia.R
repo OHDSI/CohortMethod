@@ -19,12 +19,6 @@ test_that("Check installation", {
 
 test_that("Multiple analyses", {
   outputFolder <- tempfile(pattern = "cmData")
-  withr::defer(
-    {
-      unlink(outputFolder, recursive = TRUE)
-    },
-    testthat::teardown_env()
-  )
 
   tcos1 <- createTargetComparatorOutcomes(
     targetId = 1,
@@ -301,6 +295,13 @@ test_that("Multiple analyses", {
       targetComparatorOutcomesList = targetComparatorOutcomesList <- list(tcos1, tcos2, "brokenObject")
     )
   })
+
+  withr::defer(
+    {
+      unlink(outputFolder, recursive = TRUE)
+    },
+    testthat::teardown_env()
+  )
 })
 
 
