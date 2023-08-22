@@ -17,7 +17,7 @@ covSettings <- createDefaultCovariateSettings(
 )
 
 test_that("CohortMethodData table dimension check", {
-  cmd <<- getDbCohortMethodData(
+  cmd <- getDbCohortMethodData(
     connectionDetails = connectionDetails,
     cdmDatabaseSchema = "main",
     targetId = 1,
@@ -43,8 +43,8 @@ test_that("studyStartDate", {
   # min: 1000-00-00
   # max: 2999-19-39
 
-  ## "02032022" (0203-20-22) ----
-  expect_error(
+  ## 20230822 (2023-08-22) ----
+  expect_no_error(
     expect_warning(
       getDbCohortMethodData(
         connectionDetails = connectionDetails,
@@ -57,29 +57,64 @@ test_that("studyStartDate", {
         exposureTable = "cohort",
         outcomeTable = "cohort",
         covariateSettings = covSettings,
-        studyStartDate = "02032022"
-      ),
-      "Study start date must have format YYYYMMDD"
+        studyStartDate = "20230822"
+      )
     )
+  )
+
+  ## "" ("") ----
+  expect_no_error(
+    suppressWarnings(
+      getDbCohortMethodData(
+        connectionDetails = connectionDetails,
+        cdmDatabaseSchema = "main",
+        targetId = 1,
+        comparatorId = 2,
+        outcomeIds = c(3, 4),
+        exposureDatabaseSchema = "main",
+        outcomeDatabaseSchema = "main",
+        exposureTable = "cohort",
+        outcomeTable = "cohort",
+        covariateSettings = covSettings,
+        studyStartDate = ""
+      )
+    )
+  )
+
+  ## "02032022" (0203-20-22) ----
+  expect_error(
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyStartDate = "02032022"
+    ),
+    "Date: .+ is not valid"
   )
 
   ## "10000000" (1000-00-00) ----
   expect_error(
-    expect_warning(
-      getDbCohortMethodData(
-        connectionDetails = connectionDetails,
-        cdmDatabaseSchema = "main",
-        targetId = 1,
-        comparatorId = 2,
-        outcomeIds = c(3, 4),
-        exposureDatabaseSchema = "main",
-        outcomeDatabaseSchema = "main",
-        exposureTable = "cohort",
-        outcomeTable = "cohort",
-        covariateSettings = covSettings,
-        studyStartDate = "10000000"
-      ) # invalid date
-    )
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyStartDate = "10000000"
+    ),
+    "Date: .+ is not valid"
   )
 
   ## "09991231" (0999-12-31) ----
@@ -96,26 +131,25 @@ test_that("studyStartDate", {
       outcomeTable = "cohort",
       covariateSettings = covSettings,
       studyStartDate = "09991231"
-    ) # "date out of bounds ('10000101' - '29991231')"
+    ), "Date must be >= 1000-01-01"
   )
 
   ## "29991939" (2999-19-39) ----
   expect_error(
-    expect_warning(
-      getDbCohortMethodData(
-        connectionDetails = connectionDetails,
-        cdmDatabaseSchema = "main",
-        targetId = 1,
-        comparatorId = 2,
-        outcomeIds = c(3, 4),
-        exposureDatabaseSchema = "main",
-        outcomeDatabaseSchema = "main",
-        exposureTable = "cohort",
-        outcomeTable = "cohort",
-        covariateSettings = covSettings,
-        studyStartDate = "29991939"
-      ) # invalid date
-    )
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyStartDate = "29991939"
+    ),
+    "Date: .+ is not valid"
   )
 
   ## "29991940" (2999-19-40) ----
@@ -132,7 +166,25 @@ test_that("studyStartDate", {
       outcomeTable = "cohort",
       covariateSettings = covSettings,
       studyStartDate = "29991940"
-    ) # invalid date
+    ),
+    "Date: .+ is not valid"
+  )
+
+  expect_error(
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyStartDate = "30000101"
+    ),
+    "Date must be <= 2999-12-31"
   )
 })
 
@@ -140,6 +192,40 @@ test_that("studyEndDate", {
   # pattern: ^[12][0-9]{3}[01][0-9][0-3][0-9]
   # min: 1000-00-00
   # max: 2999-19-39
+
+  ## 20230822 (2023-08-22) ----
+  expect_no_error(
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyEndDate = "20230822"
+    )
+  )
+
+  ## "" ("") ----
+  expect_no_error(
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyEndDate = ""
+    )
+  )
 
   ## "02032022" (0203-20-22) ----
   expect_error(
@@ -155,7 +241,8 @@ test_that("studyEndDate", {
       outcomeTable = "cohort",
       covariateSettings = covSettings,
       studyEndDate = "02032022"
-    )
+    ),
+    "Date: .+ is not valid"
   )
 
   ## "10000000" (1000-00-00) ----
@@ -173,7 +260,8 @@ test_that("studyEndDate", {
         outcomeTable = "cohort",
         covariateSettings = covSettings,
         studyEndDate = "10000000"
-      )# "invalid date"
+      ),
+      "Date: .+ is not valid"
     )
   )
 
@@ -191,26 +279,26 @@ test_that("studyEndDate", {
       outcomeTable = "cohort",
       covariateSettings = covSettings,
       studyEndDate = "09991231"
-    ) # "date out of bounds ('10000101' - '29991231')"
+    ),
+    "Date must be >= 1000-01-01"
   )
 
   ## "29991939" (2999-19-39) ----
   expect_error(
-    expect_warning(
-      getDbCohortMethodData(
-        connectionDetails = connectionDetails,
-        cdmDatabaseSchema = "main",
-        targetId = 1,
-        comparatorId = 2,
-        outcomeIds = c(3, 4),
-        exposureDatabaseSchema = "main",
-        outcomeDatabaseSchema = "main",
-        exposureTable = "cohort",
-        outcomeTable = "cohort",
-        covariateSettings = covSettings,
-        studyEndDate = "29991939"
-      )
-    ) # "invalid date"
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyEndDate = "29991939"
+    ),
+    "Date: .+ is not valid"
   )
 
   ## "29991940" (2999-19-40) ----
@@ -227,14 +315,32 @@ test_that("studyEndDate", {
       outcomeTable = "cohort",
       covariateSettings = covSettings,
       studyEndDate = "29991940"
-    ) # "date out of bounds ('10000101' - '29991231')"
+    ),
+    "Date: .+ is not valid"
+  )
+
+  expect_error(
+    getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      covariateSettings = covSettings,
+      studyEndDate = "30000101"
+    ),
+    "Date must be <= 2999-12-31"
   )
 })
 
 test_that("tempEmulationSchema", {
   ## default ----
   expect_no_error(
-    # expect_no_warning(
+    suppressWarnings(
       getDbCohortMethodData(
         connectionDetails = connectionDetails,
         cdmDatabaseSchema = "main",
@@ -249,7 +355,7 @@ test_that("tempEmulationSchema", {
         # In Eunomia
         tempEmulationSchema = "main"
       )
-    # )
+    )
   )
   ## comments ----
   # Throws:
