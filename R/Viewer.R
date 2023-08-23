@@ -137,9 +137,10 @@ uploadExportedResults <- function(connectionDetails,
     dropTableIfExists = FALSE,
     createTable = !append
   )
-  try({
-    on.exit(unlink(databaseIdentifierFile), add = TRUE, after = TRUE)
-  })
+  try(
+    expr = {on.exit(unlink(databaseIdentifierFile), add = TRUE, after = TRUE)},
+    silent = TRUE
+  )
 
   # Upload results
   ResultModelManager::uploadResults(
