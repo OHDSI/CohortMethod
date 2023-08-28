@@ -136,7 +136,7 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
-  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
+  checkmate::assertCharacter(cdmVersion, len = 1, n.chars = 1, pattern = "^[5]$", add = errorMessages)
   checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
   checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
   checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
@@ -145,12 +145,9 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertList(covariateSettings, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (is.null(studyStartDate)) {
-    studyStartDate <- ""
-  }
-  if (is.null(studyEndDate)) {
-    studyEndDate <- ""
-  }
+  dateCheck(studyStartDate)
+  dateCheck(studyEndDate)
+
   if (studyStartDate != "" &&
     regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
     stop("Study start date must have format YYYYMMDD")
@@ -468,4 +465,21 @@ handleCohortCovariateBuilders <- function(covariateSettings,
     }
   }
   return(covariateSettings)
+}
+
+dateCheck <- function(date) {
+  if (date != "") {
+    tryCatch({
+      dateFormatted <- paste0(
+        substr(x = date, start = 1, stop = 4), "-",
+        substr(x = date, start = 5, stop = 6), "-",
+        substr(x = date, start = 7, stop = 8)
+      )
+
+      date <- as.Date(dateFormatted)
+    }, error = function(e) {
+      stop(sprintf("Date: %s (%s) is not valid", date, dateFormatted))
+    })
+    checkmate::assertDate(date, lower = "1000-01-01", upper = "2999-12-31")
+  }
 }

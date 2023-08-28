@@ -91,7 +91,14 @@ uploadExportedResults <- function(connectionDetails,
 
   ensureInstalled("ResultModelManager")
   connection <- DatabaseConnector::connect(connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection))
+
+  withr::defer({
+    tryCatch({
+      DatabaseConnector::disconnect(connection)
+    }, error = function(e) {
+      message(e)
+    })
+  })
 
   if (!append) {
     # Create tables
@@ -137,8 +144,13 @@ uploadExportedResults <- function(connectionDetails,
     dropTableIfExists = FALSE,
     createTable = !append
   )
-  on.exit(unlink(databaseIdentifierFile), add = TRUE)
-
+  withr::defer({
+    tryCatch({
+      unlink(databaseIdentifierFile)
+    }, error = function(e) {
+      message(e)
+    })
+  })
   # Upload results
   ResultModelManager::uploadResults(
     connection = connection,
