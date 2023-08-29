@@ -266,7 +266,7 @@ createPs <- function(cohortMethodData,
   population$propensityScore <- round(population$propensityScore, 10)
   population <- computePreferenceScore(population)
   population <- computeIptw(population, estimator)
-  attr(population, "metaData")$estimator <- estimator
+  attr(population, "metaData")$iptwEstimator <- estimator
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
   message("Creating propensity scores took ", signif(delta, 3), " ", attr(delta, "units"))
@@ -996,20 +996,6 @@ matchOnPs <- function(population,
     result <- as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
-
-    if (reverseTreatment) {
-      population$treatment <- 1 - population$treatment
-    }
-
-    if (!is.null(attr(population, "metaData"))) {
-      attr(population, "metaData")$attrition <- rbind(
-        attr(population, "metaData")$attrition,
-        getCounts(population, paste("Matched on propensity score"))
-      )
-    }
-
-    ParallelLogger::logDebug("Population size after matching is ", nrow(result))
-    return(population)
   } else {
     f <- function(subset, maxRatio, caliper) {
       subResult <- matchPsInternal(
@@ -1046,20 +1032,26 @@ matchOnPs <- function(population,
       }
       result <- do.call(rbind, results)
     }
-    if (reverseTreatment) {
-      result$treatment <- 1 - result$treatment
-    }
-
-    if (!is.null(attr(result, "metaData"))) {
-      attr(result, "metaData")$attrition <- rbind(
-        attr(result, "metaData")$attrition,
-        getCounts(result, paste("Matched on propensity score"))
-      )
-    }
-
-    ParallelLogger::logDebug("Population size after matching is ", nrow(result))
-    return(result)
+    attr(result, "metaData") <- attr(population, "metaData")
+    population <- result
   }
+  if (reverseTreatment) {
+    population$treatment <- 1 - population$treatment
+  }
+
+  if (!is.null(attr(population, "metaData"))) {
+    attr(population, "metaData")$attrition <- rbind(
+      attr(population, "metaData")$attrition,
+      getCounts(population, paste("Matched on propensity score"))
+    )
+    if (reverseTreatment) {
+      attr(population, "metaData")$targetEstimator <- "atu"
+    } else {
+      attr(population, "metaData")$targetEstimator <- "att"
+    }
+  }
+  ParallelLogger::logDebug("Population size after matching is ", nrow(result))
+  return(population)
 }
 
 #' Match by propensity score as well as other covariates
@@ -1178,12 +1170,18 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   baseSelection <- tolower(baseSelection)
   if (baseSelection == "all") {
     basePop <- population$propensityScore
+    targetEstimator <- "ate"
   } else if (baseSelection == "target") {
     basePop <- population$propensityScore[population$treatment == 1]
+    targetEstimator <- "att"
   } else if (baseSelection == "comparator") {
     basePop <- population$propensityScore[population$treatment == 0]
+    targetEstimator <- "atu"
   } else {
     stop(paste0("Unknown base selection: '", baseSelection, "'. Please choose 'all', 'target', or 'comparator'"))
+  }
+  if (!is.null(attr(population, "metaData"))) {
+    attr(population, "metaData")$targetEstimator <- targetEstimator
   }
   if (length(basePop) == 0) {
     psStrata <- c()
@@ -1236,7 +1234,8 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
         maxStratumId <- max(results[[i]]$stratumId)
       }
     }
-    result <- do.call(rbind, results)
+    result <- dbind_rows(results)
+    attr(result, "metaData") <- attr(population, "metaData")
     return(result)
   }
 }

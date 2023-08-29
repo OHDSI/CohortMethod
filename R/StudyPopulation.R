@@ -132,6 +132,7 @@ createStudyPopulation <- function(cohortMethodData,
   } else {
     metaData <- attr(population, "metaData")
   }
+  metaData$targetEstimator <- "ate"
 
   if (firstExposureOnly) {
     message("Keeping only first exposure per subject")

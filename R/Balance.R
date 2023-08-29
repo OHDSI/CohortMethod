@@ -61,6 +61,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
   useWeighting <- (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) ||
     (!hasStrata && hasIptw)
 
+  # By definition:
+  sumW <- 1
+
   covariates <- filterCovariates(cohortMethodData$covariates, cohortMethodData$covariateRef, covariateFilter)
 
   if (useWeighting) {
@@ -146,7 +149,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
         sd = sqrt((.data$sumSqr - (.data$sum^2 / .data$n)) / .data$n),
         mean = .data$sum / .data$n,
         overallMean = .data$sum / overallCount,
-        overallSumSqr = sumSqr / overallCount
+        overallSumSqr = .data$sumSqr / overallCount
       ) %>%
       ungroup() %>%
       select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
@@ -171,9 +174,6 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
            overallMeanComparator = "overallMean",
            overallSumSqrComparator = "overallSumSqr",
            overallSumWSqrComparator = "overallSumWSqr")
-
-  # By definition:
-  sumW <- 1
 
   result <- target %>%
     full_join(comparator, by = "covariateId") %>%

@@ -453,6 +453,10 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePtWeighting <- inversePtWeighting
+  if (inversePtWeighting) {
+    outcomeModel$targetEstimator <- outcomeModel$iptwEstimator
+  }
+  outcomeModel$iptwEstimator <- NULL
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelmainEffectEstimates <- mainEffectEstimates
   if (length(interactionCovariateIds) != 0) {
