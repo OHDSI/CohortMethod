@@ -70,75 +70,125 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
         mutate(weight = 1 / .data$n) %>%
         inner_join(cohorts, by = c("stratumId", "treatment")) %>%
         select("rowId", "treatment", "weight")
+      # Overall weight is for computing mean and SD across T and C
+      overallW <-  stratumSize %>%
+        group_by(.data$stratumId) %>%
+        summarise(weight = 1 / sum(.data$n, na.rm = TRUE)) %>%
+        ungroup() %>%
+        inner_join(cohorts, by = c("stratumId")) %>%
+        select("rowId", "weight")
     } else {
       w <- cohorts %>%
         mutate(weight = .data$iptw) %>%
         select("rowId", "treatment", "weight")
+      overallW <- w
     }
     # Normalize so sum(weight) == 1 per treatment arm:
     wSum <- w %>%
       group_by(.data$treatment) %>%
       summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
       ungroup()
+    overallWSum <- overallW %>%
+      summarize(overallWSum = sum(.data$weight, na.rm = TRUE)) %>%
+      pull()
 
     cohortMethodData$w <- w %>%
       inner_join(wSum, by = "treatment") %>%
       mutate(weight = .data$weight / .data$wSum) %>%
       select("rowId", "treatment", "weight")
 
-    # By definition:
-    sumW <- 1
+    cohortMethodData$overallW <- overallW %>%
+      mutate(overallWeight = .data$weight / overallWSum) %>%
+      select("rowId", "overallWeight")
 
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
     result <- covariates %>%
       inner_join(cohortMethodData$w, by = c("rowId")) %>%
+      inner_join(cohortMethodData$overallW, by = c("rowId")) %>%
       group_by(.data$covariateId, .data$treatment) %>%
       summarise(
         sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
         mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
+        overallMean = sum(.data$overallWeight * as.numeric(.data$covariateValue), na.rm = TRUE),
         sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-        sumWSqr = sum(.data$weight^2, na.rm = TRUE)
+        sumWSqr = sum(.data$weight^2, na.rm = TRUE),
+        overallSumSqr = sum(.data$overallWeight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        overallSumWSqr = sum(.data$overallWeight^2, na.rm = TRUE),
+        .groups = "drop"
       ) %>%
       mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) %>%
       ungroup() %>%
-      select("covariateId", "treatment", "sum", "mean", "sd") %>%
+      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
       collect()
 
     cohortMethodData$w <- NULL
+    cohortMethodData$overallW <- NULL
   } else {
+    # Don't use weighting
     cohortCounts <- cohorts %>%
       group_by(.data$treatment) %>%
       count()
+    overallCount <- cohorts %>%
+      count() %>%
+      pull()
 
     result <- covariates %>%
       inner_join(select(cohorts, "rowId", "treatment"), by = "rowId") %>%
       group_by(.data$covariateId, .data$treatment) %>%
       summarise(
         sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-        sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE)
+        sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        overallSumWSqr = sum(1 / overallCount^2, na.rm = TRUE),
+        .groups = "drop"
       ) %>%
       inner_join(cohortCounts, by = "treatment") %>%
       mutate(
         sd = sqrt((.data$sumSqr - (.data$sum^2 / .data$n)) / .data$n),
-        mean = .data$sum / .data$n
+        mean = .data$sum / .data$n,
+        overallMean = .data$sum / overallCount,
+        overallSumSqr = sumSqr / overallCount
       ) %>%
       ungroup() %>%
-      select("covariateId", "treatment", "sum", "mean", "sd") %>%
+      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
       collect()
   }
   target <- result %>%
     filter(.data$treatment == 1) %>%
-    select("covariateId", sumTarget = "sum", meanTarget = "mean", sdTarget = "sd")
+    select("covariateId",
+           sumTarget = "sum",
+           meanTarget = "mean",
+           sdTarget = "sd",
+           overallMeanTarget = "overallMean",
+           overallSumSqrTarget = "overallSumSqr",
+           overallSumWSqrTarget = "overallSumWSqr")
 
   comparator <- result %>%
     filter(.data$treatment == 0) %>%
-    select("covariateId", sumComparator = "sum", meanComparator = "mean", sdComparator = "sd")
+    select("covariateId",
+           sumComparator = "sum",
+           meanComparator = "mean",
+           sdComparator = "sd",
+           overallMeanComparator = "overallMean",
+           overallSumSqrComparator = "overallSumSqr",
+           overallSumWSqrComparator = "overallSumWSqr")
+
+  # By definition:
+  sumW <- 1
 
   result <- target %>%
     full_join(comparator, by = "covariateId") %>%
-    mutate(sd = sqrt((.data$sdTarget^2 + .data$sdComparator^2) / 2))
+    mutate(mean = .data$overallMeanTarget + .data$overallMeanComparator,
+           overallSumSqr = .data$overallSumSqrTarget + .data$overallSumSqrComparator,
+           overallSumWSqr = .data$overallSumWSqrTarget + .data$overallSumWSqrComparator) %>%
+    mutate(sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr))) %>%
+    select(-"overallMeanTarget",
+           -"overallMeanComparator",
+           -"overallSumSqrTarget",
+           -"overallSumSqrComparator",
+           -"overallSumWSqrTarget",
+           -"overallSumWSqrComparator")
 
-  return(result)
+    return(result)
 }
 
 #' Compute covariate balance before and after PS adjustment
@@ -179,6 +229,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' - beforeMatchingSumComparator: The (weighted) sum value in the comparator before PS adjustment.
 #' - beforeMatchingSdTarget: The standard deviation of the value in the target before PS adjustment.
 #' - beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
+#' - beforeMatchingMean: The mean of the value across target and comparator before PS adjustment.
 #' - beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
 #' - afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
 #' - afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
@@ -186,6 +237,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' - afterMatchingSumComparator: The (weighted) sum value in the comparator after PS adjustment.
 #' - afterMatchingSdTarget: The standard deviation of the value in the target after PS adjustment.
 #' - afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
+#' - afterMatchingMean: The mean of the value across target and comparator after PS adjustment.
 #' - afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
 #' - beforeMatchingStdDiff: The standardized difference of means when comparing the target to
 #'                          the comparator before PS adjustment.
@@ -195,14 +247,17 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #'                  before PS adjustment to the target after PS adjustment.
 #' - comparatorStdDiff: The standardized difference of means when comparing the comparator
 #'                      before PS adjustment to the comparator after PS adjustment.
+#'  -targetComparatorStdDiff:  The standardized difference of means when comparing the entire
+#'                             population before PS adjustment to the entire population after
+#'                             PS adjustment.
 #'
 #' The 'beforeMatchingStdDiff' and 'afterMatchingStdDiff' columns inform on the balance:
 #' are the target and comparator sufficiently similar in terms of baseline covariates to
 #' allow for valid causal estimation?
 #'
-#' The 'targetStdDiff' and 'comparatorStdDiff' columns inform on the generalizability:
-#' are the cohorts after PS adjustment sufficiently similar to the cohorts before adjustment
-#' to allow generalizing the findings to the original cohorts?
+#' The 'targetStdDiff', 'comparatorStdDiff', and 'targetComparatorStdDiff' columns inform on
+#' the generalizability: are the cohorts after PS adjustment sufficiently similar to the cohorts
+#' before adjustment to allow generalizing the findings to the original cohorts?
 #'
 #' @references
 #' Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one
@@ -292,6 +347,7 @@ computeCovariateBalance <- function(population,
            beforeMatchingSumComparator = "sumComparator",
            beforeMatchingSdTarget = "sdTarget",
            beforeMatchingSdComparator = "sdComparator",
+           beforeMatchingMean = "mean",
            beforeMatchingSd = "sd")
   afterMatching <- afterMatching %>%
     select("covariateId",
@@ -301,7 +357,9 @@ computeCovariateBalance <- function(population,
            afterMatchingSumComparator = "sumComparator",
            afterMatchingSdTarget = "sdTarget",
            afterMatchingSdComparator = "sdComparator",
-           afterMatchingSd = "sd")
+           afterMatchingMean = "mean",
+           afterMatchingSd = "sd",
+           matches("overallMean"))
   balance <- beforeMatching %>%
     full_join(afterMatching, by = "covariateId") %>%
     inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") %>%
@@ -329,11 +387,15 @@ computeCovariateBalance <- function(population,
         .data$beforeMatchingSdComparator == 0,
         0,
         (.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / .data$beforeMatchingSdComparator
+      ),
+      targetComparatorStdDiff = if_else(
+        .data$beforeMatchingSd == 0,
+        0,
+        (.data$beforeMatchingMean - .data$afterMatchingMean) / .data$beforeMatchingSd
       )
 
     ) %>%
     arrange(desc(abs(.data$beforeMatchingStdDiff)))
-  # TODO: Compute generalizability across T and C
 
   delta <- Sys.time() - start
   message(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))

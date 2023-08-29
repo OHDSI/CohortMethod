@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
-Version: 5.1.1
-Date: 2023-05-19
+Version: 5.2.0
+Date: 2023-08-28
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
@@ -43,7 +43,7 @@ Imports:
 	cli,
 	pillar,
 	Rcpp (>= 0.11.2),
-	SqlRender (>= 1.7.0),
+	SqlRender (>= 1.12.0),
 	survival,
 	ParallelLogger (>= 3.0.1),
 	bit64,
