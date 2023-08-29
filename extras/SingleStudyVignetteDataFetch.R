@@ -16,6 +16,7 @@
 
 # This code should be used to fetch the data that is used in the vignettes.
 library(CohortMethod)
+library(dplyr)
 options(andromedaTempFolder = "d:/andromedaTemp")
 
 folder <- "d:/temp/cohortMethodVignette"
@@ -30,31 +31,91 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(
   user = keyring::key_get("redShiftUserName"),
   password = keyring::key_get("redShiftPassword")
 )
-cdmDatabaseSchema <- "cdm_truven_mdcr_v2322"
-resultsDatabaseSchema <- "scratch_mschuemi"
-cdmVersion <- "5"
+cdmDatabaseSchema <- "cdm_truven_mdcr_v2540"
+cohortDatabaseSchema <- "scratch_mschuemi"
+cohortTable  <- "cm_vignette"
 
-# Create cohorts ---------------------------------------------------------------
-connection <- DatabaseConnector::connect(connectionDetails)
-sql <- SqlRender::loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
-  packageName = "CohortMethod",
-  dbms = connectionDetails$dbms,
-  cdmDatabaseSchema = cdmDatabaseSchema,
-  resultsDatabaseSchema = resultsDatabaseSchema
+
+osteoArthritisOfKneeConceptId <- 4079750
+celecoxibConceptId <- 1118084
+diclofenacConceptId <- 1124300
+
+# Define exposure cohorts ------------------------------------------------------
+library(Capr)
+library(CirceR)
+
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
 )
-DatabaseConnector::executeSql(connection, sql)
+attrition = attrition(
+  "prior osteoarthritis of knee" = withAll(
+    atLeast(1, condition(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
+  )
+)
+celecoxib <- cs(
+  descendants(celecoxibConceptId),
+  name = "Celecoxib"
+)
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+celecoxibCohort <- cohort(
+  entry = entry(
+    drug(celecoxib, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(celecoxib,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
+diclofenacCohort <- cohort(
+  entry = entry(
+    drug(diclofenac, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(diclofenac,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
+exposureCohorts <- tibble(cohortId = c(1,2),
+                          cohortName = c("Celecoxib", "Diclofenac"),
+                          json = c(as.json(celecoxibCohort), as.json(diclofenacCohort)))
+exposureCohorts$sql <- sapply(exposureCohorts$json,
+                              buildCohortQuery,
+                              options = createGenerateOptions())
+
+# Define outcome cohort --------------------------------------------------------
+library(PhenotypeLibrary)
+outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
+
+
+# Generate cohorts -------------------------------------------------------------
+library(CohortGenerator)
+allCohorts <- bind_rows(outcomeCohorts,
+                        exposureCohorts)
+cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
+createCohortTables(connectionDetails = connectionDetails,
+                   cohortDatabaseSchema = cohortDatabaseSchema,
+                   cohortTableNames = cohortTableNames)
+generateCohortSet(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = cdmDatabaseSchema,
+                  cohortDatabaseSchema = cohortDatabaseSchema,
+                  cohortTableNames = cohortTableNames,
+                  cohortDefinitionSet = allCohorts)
 
 # Check number of subjects per cohort:
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed GROUP BY cohort_definition_id"
-DatabaseConnector::renderTranslateQuerySql(connection, sql,  resultsDatabaseSchema = resultsDatabaseSchema)
-
+connection <- DatabaseConnector::connect(connectionDetails)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
+DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
 DatabaseConnector::disconnect(connection)
 
 # Run analyses -----------------------------------------------------------------
-nsaids <- c(1118084, 1124300)
-
 covSettings <- createDefaultCovariateSettings(
-  excludedCovariateConceptIds = nsaids,
+  excludedCovariateConceptIds = c(diclofenacConceptId, celecoxibConceptId),
   addDescendantsToExclude = TRUE
 )
 
@@ -64,20 +125,12 @@ cohortMethodData <- getDbCohortMethodData(
   cdmDatabaseSchema = cdmDatabaseSchema,
   targetId = 1,
   comparatorId = 2,
-  outcomeIds = 3,
-  studyStartDate = "",
-  studyEndDate = "",
-  exposureDatabaseSchema = resultsDatabaseSchema,
-  exposureTable = "coxibVsNonselVsGiBleed",
-  outcomeDatabaseSchema = resultsDatabaseSchema,
-  outcomeTable = "coxibVsNonselVsGiBleed",
-  cdmVersion = cdmVersion,
-  firstExposureOnly = TRUE,
-  removeDuplicateSubjects = "remove all",
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 180,
-  covariateSettings = covSettings,
-  maxCohortSize = 50000
+  outcomeIds = 77,
+  exposureDatabaseSchema = cohortDatabaseSchema,
+  exposureTable = cohortTable,
+  outcomeDatabaseSchema = cohortDatabaseSchema,
+  outcomeTable = cohortTable,
+  covariateSettings = covSettings
 )
 
 saveCohortMethodData(cohortMethodData, file.path(folder, "cohortMethodData.zip"))
@@ -92,10 +145,8 @@ getAttritionTable(cohortMethodData)
 
 studyPop <- createStudyPopulation(
   cohortMethodData = cohortMethodData,
-  outcomeId = 3,
-  firstExposureOnly = FALSE,
-  washoutPeriod = 0,
-  removeDuplicateSubjects = "keep all",
+  outcomeId = 77,
+  removeDuplicateSubjects = "keep first",
   removeSubjectsWithPriorOutcome = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -106,7 +157,7 @@ studyPop <- createStudyPopulation(
 
 plotTimeToEvent(
   cohortMethodData = cohortMethodData,
-  outcomeId = 3,
+  outcomeId = 77,
   firstExposureOnly = FALSE,
   washoutPeriod = 0,
   removeDuplicateSubjects = "keep all",
@@ -139,7 +190,7 @@ saveRDS(ps, file = file.path(folder, "ps.rds"))
 
 # ps <- readRDS(file.path(folder, "ps.rds"))
 
-plotPs(ps)
+plotPs(ps, showAucLabel = TRUE, fileName = file.path(folder, "ps.png"))
 
 computePsAuc(ps)
 

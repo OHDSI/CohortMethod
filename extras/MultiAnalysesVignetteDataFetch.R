@@ -1,5 +1,3 @@
-# @file MultiAnalysesVignetteDataFetch.R
-#
 # Copyright 2023 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
@@ -16,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#### Fetch data for multiple analyses vignette ####
+# This code should be used to fetch the data that is used in the vignettes.
 library(CohortMethod)
+library(dplyr)
 options(andromedaTempFolder = "d:/andromedaTemp")
 
 folder <- "d:/temp/cohortMethodVignette2"
@@ -25,36 +24,21 @@ folder <- "d:/temp/cohortMethodVignette2"
 # dir.create(folder)
 
 # Set connection details -------------------------------------------------------
-
 # MDCR on RedShift
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
-                                                                connectionString = keyring::key_get("redShiftConnectionStringOhdaMdcr"),
-                                                                user = keyring::key_get("redShiftUserName"),
-                                                                password = keyring::key_get("redShiftPassword"))
-cdmDatabaseSchema <- "cdm_truven_mdcr_v2322"
-resultsDatabaseSchema <- "scratch_mschuemi"
-cdmVersion <- "5"
+connectionDetails <- DatabaseConnector::createConnectionDetails(
+  dbms = "redshift",
+  connectionString = keyring::key_get("redShiftConnectionStringOhdaMdcr"),
+  user = keyring::key_get("redShiftUserName"),
+  password = keyring::key_get("redShiftPassword")
+)
+cdmDatabaseSchema <- "cdm_truven_mdcr_v2540"
+cohortDatabaseSchema <- "scratch_mschuemi"
+cohortTable  <- "cm_vignette"
 
-# Create cohorts ---------------------------------------------------------------
-connection <- DatabaseConnector::connect(connectionDetails)
 
-sql <- SqlRender::loadRenderTranslateSql("VignetteOutcomes.sql",
-                                         packageName = "CohortMethod",
-                                         dbms = connectionDetails$dbms,
-                                         cdmDatabaseSchema = cdmDatabaseSchema,
-                                         resultsDatabaseSchema = resultsDatabaseSchema)
-
-DatabaseConnector::executeSql(connection, sql)
-
-# Check number of subjects per cohort:
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @resultsDatabaseSchema.outcomes GROUP BY cohort_definition_id"
-DatabaseConnector::renderTranslateQuerySql(connection, sql, resultsDatabaseSchema = resultsDatabaseSchema)
-
-DatabaseConnector::disconnect(connection)
-
-# Create analysis specifications -----------------------------------------------
-nsaids <- 21603933
-
+osteoArthritisOfKneeConceptId <- 4079750
+celecoxibConceptId <- 1118084
+diclofenacConceptId <- 1124300
 negativeControlIds <- c(29735, 140673, 197494,
                         198185, 198199, 200528, 257315,
                         314658, 317376, 321319, 380731,
@@ -65,7 +49,101 @@ negativeControlIds <- c(29735, 140673, 197494,
                         4134454, 4152280, 4165112, 4174262,
                         4182210, 4270490, 4286201, 4289933)
 
-outcomeOfInterest <- createOutcome(outcomeId = 192671,
+# Define exposure cohorts ------------------------------------------------------
+library(Capr)
+library(CirceR)
+
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
+)
+attrition = attrition(
+  "prior osteoarthritis of knee" = withAll(
+    atLeast(1, condition(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
+  )
+)
+celecoxib <- cs(
+  descendants(celecoxibConceptId),
+  name = "Celecoxib"
+)
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+celecoxibCohort <- cohort(
+  entry = entry(
+    drug(celecoxib, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(celecoxib,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
+diclofenacCohort <- cohort(
+  entry = entry(
+    drug(diclofenac, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(diclofenac,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
+exposureCohorts <- tibble(cohortId = c(1,2),
+                          cohortName = c("Celecoxib", "Diclofenac"),
+                          json = c(as.json(celecoxibCohort), as.json(diclofenacCohort)))
+exposureCohorts$sql <- sapply(exposureCohorts$json,
+                              buildCohortQuery,
+                              options = createGenerateOptions())
+
+# Define outcome cohort --------------------------------------------------------
+library(PhenotypeLibrary)
+outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
+
+# Define negative control cohorts ----------------------------------------------
+negativeControlCohorts <- tibble(cohortId = negativeControlIds,
+                                 cohortName = sprintf("Negative control %d", negativeControlIds),
+                                 outcomeConceptId = negativeControlIds)
+
+
+# Generate cohorts -------------------------------------------------------------
+library(CohortGenerator)
+allCohorts <- bind_rows(outcomeCohorts,
+                        exposureCohorts)
+cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
+createCohortTables(connectionDetails = connectionDetails,
+                   cohortDatabaseSchema = cohortDatabaseSchema,
+                   cohortTableNames = cohortTableNames)
+generateCohortSet(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = cdmDatabaseSchema,
+                  cohortDatabaseSchema = cohortDatabaseSchema,
+                  cohortTableNames = cohortTableNames,
+                  cohortDefinitionSet = allCohorts)
+generateNegativeControlOutcomeCohorts(connectionDetails = connectionDetails,
+                                      cdmDatabaseSchema = cdmDatabaseSchema,
+                                      cohortDatabaseSchema = cohortDatabaseSchema,
+                                      cohortTable = cohortTable,
+                                      negativeControlOutcomeCohortSet = negativeControlCohorts)
+
+# Check number of subjects per cohort:
+connection <- DatabaseConnector::connect(connectionDetails)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
+DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
+DatabaseConnector::disconnect(connection)
+
+# Create analysis specifications -----------------------------------------------
+negativeControlIds <- c(29735, 140673, 197494,
+                        198185, 198199, 200528, 257315,
+                        314658, 317376, 321319, 380731,
+                        432661, 432867, 433516, 433701,
+                        433753, 435140, 435459, 435524,
+                        435783, 436665, 436676, 442619,
+                        444252, 444429, 4131756, 4134120,
+                        4134454, 4152280, 4165112, 4174262,
+                        4182210, 4270490, 4286201, 4289933)
+
+outcomeOfInterest <- createOutcome(outcomeId = 77,
                                    outcomeOfInterest = TRUE)
 
 negativeControlOutcomes <- lapply(negativeControlIds,
@@ -75,22 +153,19 @@ negativeControlOutcomes <- lapply(negativeControlIds,
 
 
 
-tcos <- createTargetComparatorOutcomes(targetId = 1118084,
-                                       comparatorId = 1124300,
+tcos <- createTargetComparatorOutcomes(targetId = 1,
+                                       comparatorId = 2,
                                        outcomes = append(list(outcomeOfInterest),
                                                          negativeControlOutcomes))
 targetComparatorOutcomesList <- list(tcos)
 
-covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
+covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = c(1118084, 1124300),
                                                 addDescendantsToExclude = TRUE)
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
-                                                   restrictToCommonPeriod = FALSE,
+                                                   restrictToCommonPeriod = TRUE,
                                                    firstExposureOnly = TRUE,
                                                    removeDuplicateSubjects = "remove all",
-                                                   studyStartDate = "",
-                                                   studyEndDate = "",
-                                                   # maxCohortSize = 100000,
                                                    covariateSettings = covarSettings)
 
 createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
@@ -204,12 +279,11 @@ multiThreadingSettings <- createDefaultMultiThreadingSettings(parallel::detectCo
 
 result <- runCmAnalyses(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
-                        exposureDatabaseSchema = cdmDatabaseSchema,
-                        exposureTable = "drug_era",
-                        outcomeDatabaseSchema = resultsDatabaseSchema,
-                        outcomeTable = "outcomes",
+                        exposureDatabaseSchema = cohortDatabaseSchema,
+                        exposureTable = cohortTable,
+                        outcomeDatabaseSchema = cohortDatabaseSchema,
+                        outcomeTable = cohortTable,
                         outputFolder = folder,
-                        cdmVersion = cdmVersion,
                         cmAnalysisList = cmAnalysisList,
                         targetComparatorOutcomesList = targetComparatorOutcomesList,
                         multiThreadingSettings = multiThreadingSettings)
