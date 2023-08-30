@@ -188,7 +188,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
            -"overallSumWSqrTarget",
            -"overallSumWSqrComparator")
 
-    return(result)
+  return(result)
 }
 
 #' Compute covariate balance before and after PS adjustment
@@ -221,7 +221,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #'
 #' @return
 #' Returns a tibble describing the covariate balance before and after PS adjustment,
-#' with one row per covariate and the following columns:
+#' with one row per covariate, with the same data as the `covariateRef` table in the `CohortMethodData` object,
+#' and the following additional columns:
 #'
 #' - beforeMatchingMeanTarget: The (weighted) mean value in the target before PS adjustment.
 #' - beforeMatchingMeanComparator: The (weighted) mean value in the comparator before PS adjustment.
@@ -397,6 +398,10 @@ computeCovariateBalance <- function(population,
     ) %>%
     arrange(desc(abs(.data$beforeMatchingStdDiff)))
 
+  metaData <- attr(population, "metaData")
+  if (!is.null(metaData) && !is.null(metaData$targetEstimator)) {
+    attr(balance, "targetEstimator") <- metaData$targetEstimator
+  }
   delta <- Sys.time() - start
   message(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
@@ -760,4 +765,103 @@ plotCovariatePrevalence <- function(balance,
     ggplot2::ggsave(filename = fileName, plot = plot, width = 8, height = 4, dpi = 400)
   }
   return(plot)
+}
+
+#' Get information on generalizability
+#'
+#' @description
+#' to assess generalizability we compare the distribution of covariates before and after
+#' any (propensity score) adjustments. We compute the standardized difference of mean as
+#' our metric of generalizability. (Lipton et al., 2017)
+#'
+#' Depending on our target estimand, we need to consider a different base population for
+#' generalizability. For example, if we aim to estimate the average treatment effect in
+#' thetreated (ATT), our base population should be the target population, meaning we
+#' should consider the covariate distribution before and after PS adjustment in the target
+#' population only. By default this function will attempt to select the right base
+#' population based on what operations have been performed on the population. For example,
+#' if PS matching has been performed we assume the target estimand is the ATT, and the
+#' target population is selected as base.
+#'
+#' Requires running [computeCovariateBalance()]` first.
+#'
+#' @param balance       A data frame created by the `computeCovariateBalance` function.
+#' @param baseSelection The selection of the population to consider for generalizability.
+#'                      Options are "auto", "target", "comparator", and "both". The "auto"
+#'                      option will attempt to use the balance meta-data to pick the most
+#'                      appropriate population based on the target estimator.
+#'
+#' @return
+#' A tibble with the following columns:
+#'
+#' - covariateId: The ID of the covariate. Can be linked to the `covariates` and `covariateRef`
+#'   tables in the `CohortMethodData` object.
+#' - covariateName: The name of the covariate.
+#' - beforeMatchingMean: The mean covariate value before any (propensity score) adjustment.
+#' - afterMatchingMean: The mean covariate value after any (propensity score) adjustment.
+#' - stdDiff: The standardized difference of means between before and after adjustment.
+#'
+#' The tibble also has a 'baseSelection' attribute, documenting the base population used
+#' to assess generalizability.
+#'
+#' @references Tipton E, Hallberg K, Hedges LV, Chan W (2017) Implications of Small Samples
+#' for Generalization: Adjustments and Rules of Thumb, Eval Rev. Oct;41(5):472-505.
+#'
+#' @export
+getGeneralizabilityTable <- function(balance, baseSelection = "auto") {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(balance, add = errorMessages)
+  checkmate::assertCharacter(baseSelection, len = 1, add = errorMessages)
+  checkmate::assertChoice(baseSelection, c("auto", "target", "comparator",  "both"), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+  if (baseSelection == "auto") {
+    targetEstimator <- attr(balance, "targetEstimator")
+    if (is.null(targetEstimator)) {
+      stop("The baseSelection is set to 'auto' but the balance object does not contain a target estimator attribute. ",
+           "Please set the baseSelection manually.")
+    }
+    if (targetEstimator == "ate" | targetEstimator == "ato") {
+      baseSelection <- "both"
+      message("Selecting both target and comparator as base for generalizability")
+    } else if (targetEstimator == "att") {
+      baseSelection <- "target"
+      message("Selecting target as base for generalizability")
+    } else if (targetEstimator == "atu") {
+      baseSelection <- "comparator"
+      message("Selecting comparator as base for generalizability")
+    } else {
+      stop("Unkown target estimator: ", targetEstimator)
+    }
+  }
+  if (baseSelection == "target") {
+    generalizability <- balance %>%
+      mutate(absGeneralizabilityStdDiff = abs(.data$targetStdDiff)) %>%
+      arrange(desc(.data$absGeneralizabilityStdDiff)) %>%
+      select("covariateId",
+             "covariateName",
+             beforeMatchingMean = "beforeMatchingMeanTarget",
+             afterMatchingMean = "afterMatchingMeanTarget",
+             stdDiff = "targetStdDiff")
+  } else if (baseSelection == "comparator") {
+    generalizability <- balance %>%
+      mutate(absGeneralizabilityStdDiff = abs(.data$comparatorStdDiff)) %>%
+      arrange(desc(.data$absGeneralizabilityStdDiff)) %>%
+      select("covariateId",
+             "covariateName",
+             beforeMatchingMean = "beforeMatchingMeanComparator",
+             afterMatchingMean = "afterMatchingMeanComparator",
+             stdDiff = "comparatorStdDiff")
+  } else {
+    generalizability <- balance %>%
+      mutate(absGeneralizabilityStdDiff = abs(.data$targetComparatorStdDiff)) %>%
+      arrange(desc(.data$absGeneralizabilityStdDiff)) %>%
+      select("covariateId",
+             "covariateName",
+             "beforeMatchingMean",
+             "afterMatchingMean",
+             stdDiff = "targetComparatorStdDiff")
+  }
+  attr(generalizability, "baseSelection") <- baseSelection
+  return(generalizability)
 }

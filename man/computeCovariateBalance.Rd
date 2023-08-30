@@ -33,7 +33,8 @@ balance will be computed for all variables found in the data.}
 }
 \value{
 Returns a tibble describing the covariate balance before and after PS adjustment,
-with one row per covariate and the following columns:
+with one row per covariate, with the same data as the \code{covariateRef} table in the \code{CohortMethodData} object,
+and the following additional columns:
 \itemize{
 \item beforeMatchingMeanTarget: The (weighted) mean value in the target before PS adjustment.
 \item beforeMatchingMeanComparator: The (weighted) mean value in the comparator before PS adjustment.

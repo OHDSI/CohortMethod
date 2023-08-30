@@ -36,14 +36,14 @@ cohortDatabaseSchema <- "scratch_mschuemi"
 cohortTable  <- "cm_vignette"
 
 
-osteoArthritisOfKneeConceptId <- 4079750
-celecoxibConceptId <- 1118084
-diclofenacConceptId <- 1124300
+
 
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)
-library(CirceR)
 
+osteoArthritisOfKneeConceptId <- 4079750
+celecoxibConceptId <- 1118084
+diclofenacConceptId <- 1124300
 osteoArthritisOfKnee <- cs(
   descendants(osteoArthritisOfKneeConceptId),
   name = "Osteoarthritis of knee"
@@ -81,22 +81,21 @@ diclofenacCohort <- cohort(
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+# Define outcome cohort --------------------------------------------------------
+library(PhenotypeLibrary)
+outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
+
+# Generate cohorts -------------------------------------------------------------
+library(CirceR)
 exposureCohorts <- tibble(cohortId = c(1,2),
                           cohortName = c("Celecoxib", "Diclofenac"),
                           json = c(as.json(celecoxibCohort), as.json(diclofenacCohort)))
 exposureCohorts$sql <- sapply(exposureCohorts$json,
                               buildCohortQuery,
                               options = createGenerateOptions())
-
-# Define outcome cohort --------------------------------------------------------
-library(PhenotypeLibrary)
-outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
-
-
-# Generate cohorts -------------------------------------------------------------
-library(CohortGenerator)
 allCohorts <- bind_rows(outcomeCohorts,
                         exposureCohorts)
+library(CohortGenerator)
 cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
 createCohortTables(connectionDetails = connectionDetails,
                    cohortDatabaseSchema = cohortDatabaseSchema,
@@ -216,6 +215,11 @@ saveRDS(balance, file = file.path(folder, "balance.rds"))
 table1 <- createCmTable1(balance)
 print(table1, row.names = FALSE, right = FALSE)
 plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE, fileName = "extras/balanceScatterplot.png")
+getGeneralizabilityTable(balance)
+
+balanceIptw <- computeCovariateBalance(ps, cohortMethodData)
+saveRDS(balanceIptw, file = file.path(folder, "balanceIptw.rds"))
+getGeneralizabilityTable(balanceIptw)
 
 outcomeModel <- fitOutcomeModel(
   population = studyPop,
@@ -229,6 +233,15 @@ summary(outcomeModel)
 coef(outcomeModel)
 confint(outcomeModel)
 saveRDS(outcomeModel, file = file.path(folder, "OutcomeModel1.rds"))
+
+outcomeModel <- fitOutcomeModel(
+  population = ps,
+  modelType = "cox",
+  stratified = FALSE,
+  useCovariates = FALSE,
+  inversePtWeighting = TRUE
+)
+saveRDS(outcomeModel, file = file.path(folder, "OutcomeModel1b.rds"))
 
 outcomeModel <- fitOutcomeModel(
   population = matchedPop,
