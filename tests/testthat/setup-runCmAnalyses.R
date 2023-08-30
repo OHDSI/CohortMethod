@@ -95,6 +95,72 @@ createStudyPopArgs2 <- createCreateStudyPopulationArgs(
   endAnchor = "cohort end"
 )
 
+## Analysis 1 ----
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(
+  modelType = "cox"
+)
+
+cmAnalysis1 <- createCmAnalysis(
+  analysisId = 1,
+  description = "No matching, simple outcome model",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs1,
+  fitOutcomeModelArgs = fitOutcomeModelArgs1
+)
+
+## Analysis 2 ----
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  stratified = TRUE
+)
+
+cmAnalysis2 <- createCmAnalysis(
+  analysisId = 2,
+  description = "Matching",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs2,
+  createPsArgs = createPsArgs,
+  matchOnPsArgs = matchOnPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs2
+)
+
+## Analysis 3 ----
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  inversePtWeighting = TRUE
+)
+cmAnalysis3 <- createCmAnalysis(
+  analysisId = 3,
+  description = "IPTW",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs2,
+  createPsArgs = createPsArgs,
+  truncateIptwArgs = truncateIptwArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs3
+)
+
+## Analysis 4 ----
+fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  stratified = TRUE,
+  interactionCovariateIds = 8532001
+)
+
+cmAnalysis4 <- createCmAnalysis(
+  analysisId = 4,
+  description = "Matching with gender interaction",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopArgs = createStudyPopArgs2,
+  createPsArgs = createPsArgs,
+  matchOnPsArgs = matchOnPsArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs4
+)
+
+cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4)
+
 # Clean-up ----
 withr::defer({
   unlink(outputFolder)
