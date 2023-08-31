@@ -453,6 +453,10 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- stratified
   outcomeModel$outcomeModelUseCovariates <- useCovariates
   outcomeModel$inversePtWeighting <- inversePtWeighting
+  if (inversePtWeighting) {
+    outcomeModel$targetEstimator <- outcomeModel$iptwEstimator
+  }
+  outcomeModel$iptwEstimator <- NULL
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelmainEffectEstimates <- mainEffectEstimates
   if (length(interactionCovariateIds) != 0) {
@@ -643,6 +647,7 @@ print.OutcomeModel <- function(x, ...) {
   writeLines(paste("Stratified:", x$outcomeModelStratified))
   writeLines(paste("Use covariates:", x$outcomeModelUseCovariates))
   writeLines(paste("Use inverse probability of treatment weighting:", x$inversePtWeighting))
+  writeLines(paste("Target estimand:", x$targetEstimator))
   writeLines(paste("Status:", x$outcomeModelStatus))
   if (!is.null(x$outcomeModelPriorVariance) && !is.na(x$outcomeModelPriorVariance)) {
     writeLines(paste("Prior variance:", x$outcomeModelPriorVariance))

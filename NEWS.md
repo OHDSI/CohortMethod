@@ -1,11 +1,31 @@
-CohortMethod 5.1.1
+CohortMethod 5.2.0
 ==================
+
+Changes:
+
+1. The `computeCovariateBalance()` function now also computes standardized difference of mean comparing cohorts before and after PS adjustment, which can inform on generalizability.
+
+2. Added the `getGeneralizabilityTable()` function.
+
+3. Improved computation of overall standard deviation when computing covariate balance (actually computing the SD instead of taking the mean of the target and comparator). Should produce more accurate balance estimations.
+
+4. Generated population objects now keep track of likely target estimator (e.g. 'ATT', or 'ATE'). This informs selection of base population when calling `getGeneralizabilityTable()`. 
+
+5. Deprecated the `attritionFractionThreshold` argument of the `createCmDiagnosticThresholds` function, and instead added the `generalizabilitySdmThreshold` argument.
+
+6. The results schema specifications of the `exportToCsv()` function has changed:
+    - Removed the `attrition_fraction` and `attrition_diagnostic` fields from the `cm_diagnostics_summary ` table.
+    - Added the `generalizability_max_sdm` and `generalizabiltiy_diagnostic` fields to the `cm_diagnostics_summary` table.
+    - Added the `mean_before`, `mean_after`, `target_std_diff`, `comparator_std_diff`, and `target_comparator_std_diff` fields to both the `cm_covariate_balance` and `cm_shared_covariate_balance` tables.
+    
 
 Bugfixes:
 
 1. Now passing outcome-specific `riskWindowEnd` argument in `runCmAnalyses()` when specified.
 
 2. Fixed error when calling `createStudyPopulation()` with "keep first" when there is only 1 person in the population.
+
+3. Fixing `runCmAnalyses()` when using `refitPsForEveryOutcome = TRUE`.
 
 
 CohortMethod 5.1.0

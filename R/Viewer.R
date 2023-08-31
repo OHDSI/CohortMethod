@@ -99,12 +99,12 @@ uploadExportedResults <- function(connectionDetails,
       message(e)
     })
   })
+  rdmsFile <- system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod")
+  specification <- readr::read_csv(file = rdmsFile, show_col_types = FALSE) %>%
+    SqlRender::snakeCaseToCamelCaseNames()
 
   if (!append) {
     # Create tables
-    rdmsFile <- system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod")
-    specification <- readr::read_csv(file = rdmsFile, show_col_types = FALSE) %>%
-      SqlRender::snakeCaseToCamelCaseNames()
     sql <- ResultModelManager::generateSqlSchema(csvFilepath = rdmsFile)
     sql <- SqlRender::render(
       sql = sql,

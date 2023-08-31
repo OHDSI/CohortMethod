@@ -9,7 +9,8 @@ createCmDiagnosticThresholds(
   easeThreshold = 0.25,
   sdmThreshold = 0.1,
   equipoiseThreshold = 0.2,
-  attritionFractionThreshold = 1
+  attritionFractionThreshold = NULL,
+  generalizabilitySdmThreshold = 1
 )
 }
 \arguments{
@@ -25,10 +26,12 @@ fail.}
 
 \item{equipoiseThreshold}{What is the minimum required equipoise?}
 
-\item{attritionFractionThreshold}{What is the maximum allowed attrition fraction? If the attrition
-between the input target cohort and the target cohort entering the
-outcome model is greater than this fraction, the diagnostic will
-fail.}
+\item{attritionFractionThreshold}{DEPRECATED. See \code{generalizabilitySdmThreshold} instead.}
+
+\item{generalizabilitySdmThreshold}{What is the maximum allowed standardized difference of mean
+(SDM)when comparing the population before and after PS
+adjustments? If the SDM is greater than this value, the diagnostic
+will fail.}
 }
 \value{
 An object of type \code{CmDiagnosticThresholds}.

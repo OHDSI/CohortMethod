@@ -45,10 +45,11 @@ getResultsDataModel <- function() {
 #'                              any covariate has an SDM exceeding this threshold, the diagnostic will
 #'                              fail.
 #' @param equipoiseThreshold    What is the minimum required equipoise?
-#' @param attritionFractionThreshold What is the maximum allowed attrition fraction? If the attrition
-#'                                   between the input target cohort and the target cohort entering the
-#'                                   outcome model is greater than this fraction, the diagnostic will
-#'                                   fail.
+#' @param attritionFractionThreshold DEPRECATED. See `generalizabilitySdmThreshold` instead.
+#' @param generalizabilitySdmThreshold What is the maximum allowed standardized difference of mean
+#'                                     (SDM)when comparing the population before and after PS
+#'                                     adjustments? If the SDM is greater than this value, the diagnostic
+#'                                     will fail.
 #'
 #' @return
 #' An object of type `CmDiagnosticThresholds`.
@@ -58,14 +59,19 @@ createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
                                          easeThreshold = 0.25,
                                          sdmThreshold = 0.1,
                                          equipoiseThreshold = 0.2,
-                                         attritionFractionThreshold = 1) {
+                                         attritionFractionThreshold = NULL,
+                                         generalizabilitySdmThreshold = 1) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertNumeric(mdrrThreshold, len = 1, lower = 0, add = errorMessages)
   checkmate::assertNumeric(easeThreshold, len = 1, lower = 0, add = errorMessages)
   checkmate::assertNumeric(sdmThreshold, len = 1, lower = 0, add = errorMessages)
   checkmate::assertNumeric(equipoiseThreshold, len = 1, lower = 0, add = errorMessages)
-  checkmate::assertNumeric(attritionFractionThreshold, len = 1, lower = 0, add = errorMessages)
+  checkmate::assertNumeric(generalizabilitySdmThreshold, len = 1, lower = 0, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
+  if (!is.null(attritionFractionThreshold)) {
+    warning("The attritionFractionThreshold argument is deprecated and will be ignored. ",
+    "See generalizabilitySdmThreshold instead.")
+  }
   thresholds <- list()
   for (name in names(formals(createCmDiagnosticThresholds))) {
     thresholds[[name]] <- get(name)
@@ -535,7 +541,8 @@ exportCohortMethodResults <- function(outputFolder,
       "calibratedCi95Ub",
       "calibratedP",
       "calibratedLogRr",
-      "calibratedSeLogRr"
+      "calibratedSeLogRr",
+      "targetEstimator"
     ) %>%
     mutate(databaseId = !!databaseId) %>%
     enforceMinCellValue("targetSubjects", minCellCount) %>%
@@ -579,7 +586,8 @@ exportCmInteractionResults <- function(outputFolder,
         "calibratedCi95Ub",
         "calibratedP",
         "calibratedLogRr",
-        "calibratedSeLogRr"
+        "calibratedSeLogRr",
+        "targetEstimator"
       ) %>%
       mutate(databaseId = !!databaseId) %>%
       enforceMinCellValue("targetSubjects", minCellCount) %>%
@@ -730,7 +738,13 @@ tidyBalance <- function(balance, minCellCount) {
            stdDiffBefore = "beforeMatchingStdDiff",
            targetMeanAfter = "afterMatchingMeanTarget",
            comparatorMeanAfter = "afterMatchingMeanComparator",
-           stdDiffAfter = "afterMatchingStdDiff"
+           stdDiffAfter = "afterMatchingStdDiff",
+           meanBefore = "beforeMatchingMean",
+           meanAfter = "afterMatchingMean",
+           "targetStdDiff",
+           "comparatorStdDiff",
+           "targetComparatorStdDiff",
+
     ) %>%
     mutate(
       targetMeanBefore = ifelse(is.na(.data$targetMeanBefore), 0, .data$targetMeanBefore),
@@ -738,14 +752,25 @@ tidyBalance <- function(balance, minCellCount) {
       stdDiffBefore = ifelse(is.na(.data$stdDiffBefore), 0, .data$stdDiffBefore),
       targetMeanAfter = ifelse(is.na(.data$targetMeanAfter), 0, .data$targetMeanAfter),
       comparatorMeanAfter = ifelse(is.na(.data$comparatorMeanAfter), 0, .data$comparatorMeanAfter),
-      stdDiffAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$stdDiffAfter)
+      stdDiffAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$stdDiffAfter),
+      meanBefore = ifelse(is.na(.data$meanBefore), 0, .data$meanBefore),
+      meanAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$meanAfter),
+      targetStdDiff = ifelse(is.na(.data$targetStdDiff), 0, .data$targetStdDiff),
+      comparatorStdDiff = ifelse(is.na(.data$comparatorStdDiff), 0, .data$comparatorStdDiff),
+      targetComparatorStdDiff = ifelse(is.na(.data$targetComparatorStdDiff), 0, .data$targetComparatorStdDiff)
     ) %>%
     filter(!(round(.data$targetMeanBefore) == 0 &
                round(.data$comparatorMeanBefore, 3) == 0 &
                round(.data$stdDiffBefore, 3) == 0 &
                round(.data$targetMeanAfter, 3) == 0 &
                round(.data$comparatorMeanAfter, 3) == 0 &
-               round(.data$stdDiffAfter, 3) == 0)) %>%
+               round(.data$stdDiffAfter, 3) == 0 &
+               round(.data$meanBefore, 3) == 0 &
+               round(.data$meanAfter, 3) == 0 &
+               round(.data$targetStdDiff, 3) == 0 &
+               round(.data$comparatorStdDiff, 3) == 0 &
+               round(.data$targetComparatorStdDiff, 3) == 0)
+           ) %>%
     enforceMinCellValue("targetMeanBefore",
                         minCellCount / inferredTargetBeforeSize,
                         silent = TRUE
@@ -762,13 +787,26 @@ tidyBalance <- function(balance, minCellCount) {
                         minCellCount / inferredComparatorAfterSize,
                         silent = TRUE
     ) %>%
+    enforceMinCellValue("meanBefore",
+                        minCellCount / inferredComparatorAfterSize,
+                        silent = TRUE
+    ) %>%
+    enforceMinCellValue("meanAfter",
+                        minCellCount / inferredComparatorAfterSize,
+                        silent = TRUE
+    ) %>%
     mutate(
       targetMeanBefore = round(.data$targetMeanBefore, 3),
       comparatorMeanBefore = round(.data$comparatorMeanBefore, 3),
       stdDiffBefore = round(.data$stdDiffBefore, 3),
       targetMeanAfter = round(.data$targetMeanAfter, 3),
       comparatorMeanAfter = round(.data$comparatorMeanAfter, 3),
-      stdDiffAfter = round(.data$stdDiffAfter, 3)
+      stdDiffAfter = round(.data$stdDiffAfter, 3),
+      meanBefore = round(.data$meanBefore, 3),
+      meanAfter = round(.data$meanAfter, 3),
+      targetStdDiff = round(.data$targetStdDiff, 3),
+      comparatorStdDiff = round(.data$comparatorStdDiff, 3),
+      targetComparatorStdDiff = round(.data$targetComparatorStdDiff, 3)
     ) %>%
     return()
 }
@@ -1119,59 +1157,64 @@ exportDiagnosticsSummary <- function(outputFolder,
                                      cmDiagnosticThresholds) {
   message("- diagnostics_summary table")
   reference <- getFileReference(outputFolder)
+  resultsSummary <- getResultsSummary(outputFolder)
 
-  getMaxSdm <- function(balanceFile) {
+  getMaxSdms <- function(balanceFile) {
     balance <- readRDS(file.path(outputFolder, balanceFile))
     if (nrow(balance) == 0) {
-      return(as.numeric(NA))
+      tibble(balanceFile = !!balanceFile,
+             maxSdm = as.numeric(NA),
+             maxTargetSdm = as.numeric(NA),
+             maxComparatorSdm = as.numeric(NA),
+             maxTargetComparatorSdm = as.numeric(NA)) %>%
+        return()
     } else {
-      return(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE))
+      tibble(balanceFile = !!balanceFile,
+             maxSdm = as.numeric(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE)),
+             maxTargetSdm = as.numeric(max(abs(balance$targetStdDiff), na.rm = TRUE)),
+             maxComparatorSdm = as.numeric(max(abs(balance$comparatorStdDiff), na.rm = TRUE)),
+             maxTargetComparatorSdm = as.numeric(max(abs(balance$targetComparatorStdDiff), na.rm = TRUE))) %>%
+        return()
     }
   }
-
   getEquipoise <- function(sharedPsFile) {
     ps <- readRDS(file.path(outputFolder, sharedPsFile))
-    return(computeEquipoise(ps))
+    tibble(sharedPsFile = !!sharedPsFile,
+           equipoise = computeEquipoise(ps)) %>%
+      return()
   }
 
   balanceFiles <- reference %>%
     filter(.data$balanceFile != "") %>%
     distinct(.data$balanceFile) %>%
     pull()
-  maxSdm <- as.numeric(sapply(balanceFiles, getMaxSdm))
-
+  maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) %>%
+    select("balanceFile", "maxSdm")
   sharedBalanceFiles <- reference %>%
     filter(.data$sharedBalanceFile != "") %>%
     distinct(.data$sharedBalanceFile) %>%
     pull()
-  sharedMaxSdm <- as.numeric(sapply(sharedBalanceFiles, getMaxSdm))
-
+  sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) %>%
+    rename(sharedBalanceFile = "balanceFile",
+           sharedMaxSdm = "maxSdm")
   sharedPsFiles <- reference %>%
     filter(.data$sharedPsFile != "") %>%
     distinct(.data$sharedPsFile) %>%
     pull()
-  equipoise <- as.numeric(sapply(sharedPsFiles, getEquipoise))
-
-  results1 <- reference %>%
+  equipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise))
+  results <- reference %>%
     filter(.data$outcomeOfInterest) %>%
-    left_join(tibble(
-      balanceFile = balanceFiles,
-      maxSdm = maxSdm
-    ),
-    by = "balanceFile"
-    ) %>%
-    left_join(tibble(
-      sharedBalanceFile = sharedBalanceFiles,
-      sharedMaxSdm = sharedMaxSdm
-    ),
-    by = "sharedBalanceFile"
-    ) %>%
-    left_join(tibble(
-      sharedPsFile = sharedPsFiles,
-      equipoise = equipoise
-    ),
-    by = "sharedPsFile"
-    ) %>%
+    inner_join(
+      resultsSummary,
+      by = join_by("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
+    left_join(maxSdm, by = "balanceFile") %>%
+    left_join(sharedMaxSdm, by = "sharedBalanceFile") %>%
+    mutate(generalizabilityMaxSdm = if_else(.data$targetEstimator == "att",
+                                            .data$maxTargetSdm,
+                                            if_else(.data$targetEstimator == "atu",
+                                                    .data$maxComparatorSdm,
+                                                    .data$maxTargetComparatorSdm))) %>%
+    left_join(equipoise, by = "sharedPsFile") %>%
     select(
       "analysisId",
       "targetId",
@@ -1179,22 +1222,14 @@ exportDiagnosticsSummary <- function(outputFolder,
       "outcomeId",
       "maxSdm",
       "sharedMaxSdm",
-      "equipoise"
-    )
-
-  results2 <- getResultsSummary(outputFolder) %>%
-    select(
-      "analysisId",
-      "targetId",
-      "comparatorId",
-      "outcomeId",
+      "equipoise",
       "mdrr",
-      "attritionFraction",
+      "generalizabilityMaxSdm",
       "ease"
     )
 
-  results <- results1 %>%
-    inner_join(results2, by = c("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
+  # Apply diagnostics thresholds:
+  results <- results %>%
     mutate(balanceDiagnostic = case_when(
       is.na(.data$maxSdm) ~ "NOT EVALUATED",
       .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
@@ -1215,9 +1250,9 @@ exportDiagnosticsSummary <- function(outputFolder,
       .data$mdrr < cmDiagnosticThresholds$mdrrThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
-    mutate(attritionDiagnostic = case_when(
-      is.na(.data$attritionFraction) ~ "NOT EVALUATED",
-      .data$attritionFraction < cmDiagnosticThresholds$attritionFractionThreshold ~ "PASS",
+    mutate(generalizabilityDiagnostic = case_when(
+      is.na(.data$generalizabilityMaxSdm) ~ "NOT EVALUATED",
+      .data$generalizabilityMaxSdm < cmDiagnosticThresholds$generalizabilitySdmThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
     mutate(easeDiagnostic = case_when(
@@ -1226,12 +1261,17 @@ exportDiagnosticsSummary <- function(outputFolder,
       TRUE ~ "FAIL"
     )) %>%
     mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &
-                              .data$attritionDiagnostic != "FAIL" &
+                              .data$generalizabilityDiagnostic != "FAIL" &
                               .data$easeDiagnostic != "FAIL" &
                               .data$equipoiseDiagnostic != "FAIL" &
                               .data$balanceDiagnostic != "FAIL" &
                               .data$sharedBalanceDiagnostic != "FAIL", 1, 0),
            databaseId = !!databaseId)
+
+  # Add deprecated fields:
+  results <- results %>%
+    mutate(attritionFraction = as.numeric(NA),
+           attritionDiagnostic = "NOT EVALUATED")
 
   if (nrow(results) == 0) {
     results <- createEmptyResult("cm_diagnostics_summary")

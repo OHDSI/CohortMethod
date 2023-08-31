@@ -29,7 +29,7 @@ This vignette describes how you can use the `CohortMethod` package to perform a 
 
 # Installation instructions
 
-Before installing the `CohortMethod` package make sure you have Java available.  Java can be downloaded from [www.java.com](http://www.java.com). For Windows users, RTools is also necessary.  RTools can be downloaded from [CRAN](http://cran.r-project.org/bin/windows/Rtools/).
+Before installing the `CohortMethod` package make sure you have Java available.  For Windows users, RTools is also necessary. See [these instructions](https://ohdsi.github.io/Hades/rSetup.html) for properly configuring your R environment.
 
 The `CohortMethod` package is currently maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the `drat` package:
 
@@ -55,122 +55,120 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql",
                                              password = "supersecret")
 
 cdmDatabaseSchema <- "my_cdm_data"
-resultsDatabaseSchema <- "my_results"
+cohortDatabaseSchema <- "my_results"
+cohortTable <- "my_cohorts"
 options(sqlRenderTempEmulationSchema = NULL)
 ```
 
-The last two lines define the `cdmDatabaseSchema` and `resultSchema` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last few lines define the `cdmDatabaseSchema`, `cohortDatabaseSchema`, and `cohortTable` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`. For database platforms that do not support temp tables, such as Oracle, it is also necessary to provide a schema where the user has write access that can be used to emulate temp tables. PostgreSQL supports temp tables, so we can set `options(sqlRenderTempEmulationSchema = NULL)` (or not set the `sqlRenderTempEmulationSchema` at all.)
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. One could use an external cohort definition tools, but in this example we do this by writing SQL statements against the OMOP CDM that populate a table of events in which we are interested. The resulting table should have the same structure as the `cohort` table in the CDM. This means it should have the fields `cohort_definition_id`, `cohort_start_date`, `cohort_end_date`,and `subject_id`.
-
-For our example study, we have created a file called *coxibVsNonselVsGiBleed.sql* with the following contents:
-
-```sql
-/***********************************
-File coxibVsNonselVsGiBleed.sql
-***********************************/
-
-DROP TABLE IF EXISTS @resultsDatabaseSchema.coxibVsNonselVsGiBleed;
-
-CREATE TABLE @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-  cohort_definition_id INT,
-  cohort_start_date DATE,
-	cohort_end_date DATE,
-	subject_id BIGINT
-	);
-
-INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_definition_id,
-	cohort_start_date,
-	cohort_end_date,
-	subject_id
-	)
-SELECT 1, -- Exposure
-	drug_era_start_date,
-	drug_era_end_date,
-	person_id
-FROM @cdmDatabaseSchema.drug_era
-WHERE drug_concept_id = 1118084;-- celecoxib
-
-INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_definition_id,
-	cohort_start_date,
-	cohort_end_date,
-	subject_id
-	)
-SELECT 2, -- Comparator
-	drug_era_start_date,
-	drug_era_end_date,
-	person_id
-FROM @cdmDatabaseSchema.drug_era
-WHERE drug_concept_id = 1124300; --diclofenac
-
-INSERT INTO @resultsDatabaseSchema.coxibVsNonselVsGiBleed (
-	cohort_definition_id,
-	cohort_start_date,
-	cohort_end_date,
-	subject_id
-	)
-SELECT 3, -- Outcome
-	condition_start_date,
-	condition_end_date,
-	condition_occurrence.person_id
-FROM @cdmDatabaseSchema.condition_occurrence
-INNER JOIN @cdmDatabaseSchema.visit_occurrence
-	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
-WHERE condition_concept_id IN (
-		SELECT descendant_concept_id
-		FROM @cdmDatabaseSchema.concept_ancestor
-		WHERE ancestor_concept_id = 192671 -- GI - Gastrointestinal haemorrhage
-		)
-	AND visit_occurrence.visit_concept_id IN (9201, 9203);
-```
-
-This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
+We need to define the exposures and outcomes for our study. Here, we will define our exposures using the OHDSI `Capr` package. We define two cohorts, one for celecoxib and one for diclofenac. For each cohort we require a prior diagnosis of 'osteoarthritis of knee', and 365 days of continuous prior observation.  we restrict to the first exposure per person:
 
 ```{r eval=FALSE}
-library(SqlRender)
-sql <- readSql("coxibVsNonselVsGiBleed.sql")
-sql <- render(sql,
-              cdmDatabaseSchema = cdmDatabaseSchema,
-              resultsDatabaseSchema = resultsDatabaseSchema)
-sql <- translate(sql, targetDialect = connectionDetails$dbms)
+library(Capr)
 
-connection <- connect(connectionDetails)
-executeSql(connection, sql)
+osteoArthritisOfKneeConceptId <- 4079750
+celecoxibConceptId <- 1118084
+diclofenacConceptId <- 1124300
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
+)
+attrition = attrition(
+  "prior osteoarthritis of knee" = withAll(
+    atLeast(1, condition(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
+  )
+)
+celecoxib <- cs(
+  descendants(celecoxibConceptId),
+  name = "Celecoxib"
+)
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+celecoxibCohort <- cohort(
+  entry = entry(
+    drug(celecoxib, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(celecoxib,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
+diclofenacCohort <- cohort(
+  entry = entry(
+    drug(diclofenac, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(diclofenac,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
 ```
 
-In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the `connectionDetails`. Next, we connect to the server, and submit the rendered and translated SQL.
-
-If all went well, we now have a table with the events of interest. We can see how many events per type:
+We'll pull the outcome definition from the OHDSI `PhenotypeLibrary`:
 
 ```{r eval=FALSE}
-sql <- paste("SELECT cohort_definition_id, COUNT(*) AS count",
-             "FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed",
-             "GROUP BY cohort_definition_id")
-sql <- render(sql, resultsDatabaseSchema = resultsDatabaseSchema)
-sql <- translate(sql, targetDialect = connectionDetails$dbms)
+library(PhenotypeLibrary)
+outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
+```
 
-querySql(connection, sql)
+We combine the exposure and outcome cohort definitions, and use `CohortGenerator` to generate the cohorts:
+
+```{r eval=FALSE}
+library(CirceR)
+# For exposures, create a cohort definition set table as required by CohortGenerator:
+exposureCohorts <- tibble(cohortId = c(1,2),
+                          cohortName = c("Celecoxib", "Diclofenac"),
+                          json = c(as.json(celecoxibCohort), 
+                                   as.json(diclofenacCohort)))
+exposureCohorts$sql <- sapply(exposureCohorts$json,
+                              buildCohortQuery,
+                              options = createGenerateOptions())
+allCohorts <- bind_rows(outcomeCohorts,
+                        exposureCohorts)
+
+library(CohortGenerator)
+cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
+createCohortTables(connectionDetails = connectionDetails,
+                   cohortDatabaseSchema = cohortDatabaseSchema,
+                   cohortTableNames = cohortTableNames)
+generateCohortSet(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = cdmDatabaseSchema,
+                  cohortDatabaseSchema = cohortDatabaseSchema,
+                  cohortTableNames = cohortTableNames,
+                  cohortDefinitionSet = allCohorts)
+```
+
+If all went well, we now have a table with the cohorts of interest. We can see how many entries per cohort:
+
+```{r eval=FALSE}
+connection <- DatabaseConnector::connect(connectionDetails)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
+DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
+DatabaseConnector::disconnect(connection)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,3),count = c(50000,50000,15000))
+data.frame(cohort_concept_id = c(1,2,77),count = c(109307,176675,733601))
 ```
 
 ## Extracting the data from the server
 
-Now we can tell `CohortMethod` to define the cohorts based on our events, construct covariates, and extract all necessary data for our analysis.
+Now we can tell `CohortMethod` to extract the cohorts, construct covariates, and extract all necessary data for our analysis.
 
-**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. You will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the covariate settings. In this example code we exclude all NSAIDs from the covariates by pointing to the concept ID of the NSAID class and specifying `addDescendantsToExclude = TRUE`.
+**Important**: The target and comparator drug must not be included in the covariates, including any descendant concepts. You will need to manually add the drugs and descendants to the `excludedCovariateConceptIds` of the covariate settings. In this example code we exclude the concepts for celecoxib and diclofenac and specify `addDescendantsToExclude = TRUE`:
 
 ```{r eval=FALSE}
-nsaids <- 21603933
-
 # Define which types of covariates must be constructed:
-covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
-                                              addDescendantsToExclude = TRUE)
+covSettings <- createDefaultCovariateSettings(
+  excludedCovariateConceptIds = c(diclofenacConceptId, celecoxibConceptId),
+  addDescendantsToExclude = TRUE
+)
 
 #Load data:
 cohortMethodData <- getDbCohortMethodData(
@@ -178,18 +176,11 @@ cohortMethodData <- getDbCohortMethodData(
   cdmDatabaseSchema = cdmDatabaseSchema,
   targetId = 1,
   comparatorId = 2,
-  outcomeIds = 3,
-  studyStartDate = "",
-  studyEndDate = "",
-  exposureDatabaseSchema = resultsDatabaseSchema,
-  exposureTable = "coxibVsNonselVsGiBleed",
-  outcomeDatabaseSchema = resultsDatabaseSchema,
-  outcomeTable = "coxibVsNonselVsGiBleed",
-  cdmVersion = cdmVersion,
-  firstExposureOnly = TRUE,
-  removeDuplicateSubjects = "remove all",
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 180,
+  outcomeIds = 77,
+  exposureDatabaseSchema = cohortDatabaseSchema,
+  exposureTable = cohortTable,
+  outcomeDatabaseSchema = cohortDatabaseSchema,
+  outcomeTable = cohortTable,
   covariateSettings = covSettings
 )
 cohortMethodData
@@ -236,7 +227,7 @@ We can use the `loadCohortMethodData()` function to load the data in a future se
 
 Typically, a new user is defined as first time use of a drug (either target or comparator), and typically a washout period (a minimum number of days prior first use) is used to make sure it is truly first use. When using the `CohortMethod` package, you can enforce the necessary requirements for new use in three ways:
 
-1. When creating the cohorts in the database, for example when using a cohort definition tool.
+1. When creating the cohorts in the database, for example using `Capr`.
 2. When loading the cohorts using the `getDbCohortMethodData` function, you can use the `firstExposureOnly`, `removeDuplicateSubjects`, `restrictToCommonPeriod`, and `washoutPeriod` arguments. (As shown in the example above).
 3. When defining the study population using the `createStudyPopulation` function (see below) using the `firstExposureOnly`, `removeDuplicateSubjects`, `restrictToCommonPeriod`, and `washoutPeriod` arguments.
 
@@ -352,10 +343,23 @@ if (folderExists) {
   }
   propensityModel$covariateName <- truncRight(as.character(propensityModel$covariateName), 40)
   head(propensityModel)
-  }
+}
 ```
 
 One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example variations of the drugs of interest that we forgot to exclude.
+
+Finally, we can inspect the percent of the population in equipoise, meaning they have a prefence score between 0.3 and 0.7:
+
+```{r eval=FALSE}
+CohortMethod::computeEquipoise(ps)
+```
+```{r echo=FALSE,message=FALSE}
+if (folderExists) {
+  CohortMethod::computeEquipoise(ps)
+}
+```
+
+A low equipoise indicates there is little overlap between the target and comparator populations.
 
 ## Using the propensity score
 
@@ -485,24 +489,28 @@ if (folderExists) {
 \fontsize{10}{12}
 \selectfont
 
-## Inserting the population cohort in the database ##
+## Generalizability
 
-For various reasons it might be necessary to insert the study population back into the database, for example because we want to use an external cohort characterization tool. We can use the `insertDbPopulation` function for this purpose:
+The goal of any propensity score adjustments is typically to make the target and comparator cohorts comparably, to allow proper causal inference. However, in doing so, we often need to modify our population, for example dropping subjects that have no counterpart in the other exposure cohort. The population we end up estimating an effect for may end up being very different from the population we started with. An important question is: how different? And it what ways? If the populations before and after adjustment are very different, our estimated effect may not generalize to the original population (if effect modification is present). The `getGeneralizabilityTable()` function informs on these differences:
 
 ```{r eval=FALSE}
-insertDbPopulation(
-  population = matchedPop,
-  cohortIds = c(101,100),
-  connectionDetails = connectionDetails,
-  cohortDatabaseSchema = resultsDatabaseSchema,
-  cohortTable = "coxibVsNonselVsGiBleed",
-  createTable = FALSE,
-  cdmVersion = cdmVersion
-)
+getGeneralizabilityTable(balance)
 ```
 
-This function will store the population in a table with the same structure as the `cohort` table in the CDM, in this case in the same table where we had created our original cohorts.
+```{r comment=NA,echo=FALSE,message=FALSE}
+if (folderExists) {
+  table <- getGeneralizabilityTable(balance)
+  truncRight <- function(x, n){
+    nc <- nchar(x)
+    x[nc > (n - 3)] <- paste('...',substr(x[nc > (n - 3)], nc[nc > (n - 3)] - n + 1, nc[nc > (n - 3)]),sep = "")
+    x
+  }
+  table$covariateName <- truncRight(table$covariateName, 30)
+  table
+}
+```
 
+In this case, because we used PS matching, we are likely aiming to estimate the average treatment effect in the treated (ATT). For this reason, the `getGeneralizabilityTable()` function automatically selected the target cohort as the basis for evaluating generalizability: it shows, for each covariate, the mean value before and PS adjustment in the target cohort. Also shown is the standardized difference of mean, and the table is reverse sorted by the absolute standard difference of mean (ASDM).
 
 # Follow-up and power
 
@@ -757,7 +765,7 @@ We can also plot time-to-event, showing both events before and after the index d
 
 ```{r eval=FALSE}
 plotTimeToEvent(cohortMethodData = cohortMethodData,
-                outcomeId = 3,
+                outcomeId = 77,
                 firstExposureOnly = FALSE,
                 washoutPeriod = 0,
                 removeDuplicateSubjects = "keep all",
@@ -771,7 +779,7 @@ plotTimeToEvent(cohortMethodData = cohortMethodData,
 ```{r echo=FALSE, message=FALSE, results='hide'}
 if (folderExists) {
   plotTimeToEvent(cohortMethodData = cohortMethodData,
-                  outcomeId = 3,
+                  outcomeId = 77,
                   firstExposureOnly = FALSE,
                   washoutPeriod = 0,
                   removeDuplicateSubjects = "keep all",

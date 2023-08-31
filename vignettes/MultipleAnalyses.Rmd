@@ -18,8 +18,8 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)
-outputFolder <- "d:/temp/cohortMethodVignette2_arrow"
-folderExists <- dir.exists(outputFolder)
+folder <- "d:/temp/cohortMethodVignette2"
+folderExists <- dir.exists(folder)
 ```
 # Introduction
 
@@ -57,70 +57,77 @@ There are a two arguments (`excludedCovariateConceptIds`, and `includedCovariate
 We need to tell R how to connect to the server where the data are. `CohortMethod` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
 ```{r eval=FALSE}
-connectionDetails <- createConnectionDetails(dbms = "postgresql", 
-                                             server = "localhost/ohdsi", 
-                                             user = "joe", 
+connectionDetails <- createConnectionDetails(dbms = "postgresql",
+                                             server = "localhost/ohdsi",
+                                             user = "joe",
                                              password = "supersecret")
 
 cdmDatabaseSchema <- "my_cdm_data"
-resultsDatabaseSchema <- "my_results"
+cohortDatabaseSchema <- "my_results"
+cohortTable <- "my_cohorts"
 options(sqlRenderTempEmulationSchema = NULL)
-outputFolder <- "./CohortMethodOutput"
 ```
 
-The last three lines define the `cdmDatabaseSchema`, `resultSchema`, and `outputFolder` variables. We'll use these later to tell R where the data in CDM format live,  where we want to write intermediate tables, and where the intermediate and output files should be stored in the local file system. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`.
+The last few lines define the `cdmDatabaseSchema`, `cohortDatabaseSchema`, and `cohortTable` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`. For database platforms that do not support temp tables, such as Oracle, it is also necessary to provide a schema where the user has write access that can be used to emulate temp tables. PostgreSQL supports temp tables, so we can set `options(sqlRenderTempEmulationSchema = NULL)` (or not set the `sqlRenderTempEmulationSchema` at all.)
 
-We also need to prepare our exposures and outcomes of interest. The drug_era table in the OMOP Common Data Model already contains prespecified cohorts of users at the ingredient level, so we will use that for the exposures. For the outcomes, we want to restrict our analysis only to those outcomes that are recorded in an inpatient setting, so we will need to create a custom cohort table. For this example, we want to include GI bleed (concept ID 192671) as well as a set of 35 negative controls. Negative controls are defined as those outcomes where there is no evidence that either the target drug (celexocib) or comparator drug (diclofenac) causes the outcome. 
-
-We create a text file called *VignetteOutcomes.sql* with the following content:
-
-```sql
-/***********************************
-File VignetteOutcomes.sql
-***********************************/
-DROP TABLE IF EXISTS @resultsDatabaseSchema.outcomes;
-
-SELECT ancestor_concept_id AS cohort_definition_id,
-	condition_start_date AS cohort_start_date,
-	condition_end_date AS cohort_end_date,
-	condition_occurrence.person_id AS subject_id
-INTO @resultsDatabaseSchema.outcomes
-FROM @cdmDatabaseSchema.condition_occurrence
-INNER JOIN @cdmDatabaseSchema.visit_occurrence
-	ON condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id
-INNER JOIN @cdmDatabaseSchema.concept_ancestor
-	ON condition_concept_id = descendant_concept_id
-WHERE ancestor_concept_id IN (192671, 24609, 29735, 73754, 80004, 134718, 139099,
-141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658,
-316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676,
-436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310)
-	AND visit_occurrence.visit_concept_id IN (9201, 9203);
-```
-This is parameterized SQL which can be used by the `SqlRender` package. We use parameterized SQL so we do not have to pre-specify the names of the CDM and result schemas. That way, if we want to run the SQL on a different schema, we only need to change the parameter values; we do not have to change the SQL code. By also making use of translation functionality in `SqlRender`, we can make sure the SQL code can be run in many different environments.
+We need to define the exposures and outcomes for our study. Here, we will define our exposures using the OHDSI `Capr` package. We define two cohorts, one for celecoxib and one for diclofenac. For each cohort we require a prior diagnosis of 'osteoarthritis of knee', and 365 days of continuous prior observation.  we restrict to the first exposure per person:
 
 ```{r eval=FALSE}
-library(SqlRender)
-sql <- readSql("VignetteOutcomes.sql")
-sql <- render(sql,
-              cdmDatabaseSchema = cdmDatabaseSchema, 
-              resultsDatabaseSchema = resultsDatabaseSchema)
-sql <- translate(sql, targetDialect = connectionDetails$dbms)
+library(Capr)
 
-connection <- connect(connectionDetails)
-executeSql(connection, sql)
+osteoArthritisOfKneeConceptId <- 4079750
+celecoxibConceptId <- 1118084
+diclofenacConceptId <- 1124300
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
+)
+attrition = attrition(
+  "prior osteoarthritis of knee" = withAll(
+    atLeast(1, condition(osteoArthritisOfKnee), 
+            duringInterval(eventStarts(-Inf, 0)))
+  )
+)
+celecoxib <- cs(
+  descendants(celecoxibConceptId),
+  name = "Celecoxib"
+)
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+celecoxibCohort <- cohort(
+  entry = entry(
+    drug(celecoxib, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(celecoxib,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
+diclofenacCohort <- cohort(
+  entry = entry(
+    drug(diclofenac, firstOccurrence()),
+    observationWindow = continuousObservation(priorDays = 365)
+  ),
+  attrition = attrition,
+  exit = exit(endStrategy = drugExit(diclofenac,
+                                     persistenceWindow = 30,
+                                     surveillanceWindow = 0))
+)
 ```
 
-In this code, we first read the SQL from the file into memory. In the next line, we replace the two parameter names with the actual values. We then translate the SQL into the dialect appropriate for the DBMS we already specified in the `connectionDetails`. Next, we connect to the server, and submit the rendered and translated SQL.
-
-# Specifying hypotheses of interest
-
-The first group of arguments define the target, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
+We'll pull the outcome definition from the OHDSI `PhenotypeLibrary`:
 
 ```{r eval=FALSE}
-outcomeOfInterest <- createOutcome(outcomeId = 192671,
-                                   outcomeOfInterest = TRUE)
+library(PhenotypeLibrary)
+outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
+```
 
-negativeControlIds <- c(192671, 29735, 140673, 197494,
+In addition to the outcome of interest, we also want to include a large set of negative control outcomes:
+```{r eval=FALSE}
+negativeControlIds <- c(29735, 140673, 197494,
                         198185, 198199, 200528, 257315,
                         314658, 317376, 321319, 380731,
                         432661, 432867, 433516, 433701,
@@ -129,27 +136,89 @@ negativeControlIds <- c(192671, 29735, 140673, 197494,
                         444252, 444429, 4131756, 4134120,
                         4134454, 4152280, 4165112, 4174262,
                         4182210, 4270490, 4286201, 4289933)
+negativeControlCohorts <- tibble(
+  cohortId = negativeControlIds,
+  cohortName = sprintf("Negative control %d", negativeControlIds),
+  outcomeConceptId = negativeControlIds
+)
+```
 
+We combine the exposure and outcome cohort definitions, and use `CohortGenerator` to generate the cohorts:
+
+```{r eval=FALSE}
+library(CirceR)
+# For exposures, create a cohort definition set table as required by CohortGenerator:
+exposureCohorts <- tibble(cohortId = c(1,2),
+                          cohortName = c("Celecoxib", "Diclofenac"),
+                          json = c(as.json(celecoxibCohort), 
+                                   as.json(diclofenacCohort)))
+exposureCohorts$sql <- sapply(exposureCohorts$json,
+                              buildCohortQuery,
+                              options = createGenerateOptions())
+allCohorts <- bind_rows(outcomeCohorts,
+                        exposureCohorts)
+
+library(CohortGenerator)
+cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
+createCohortTables(connectionDetails = connectionDetails,
+                   cohortDatabaseSchema = cohortDatabaseSchema,
+                   cohortTableNames = cohortTableNames)
+generateCohortSet(connectionDetails = connectionDetails,
+                  cdmDatabaseSchema = cdmDatabaseSchema,
+                  cohortDatabaseSchema = cohortDatabaseSchema,
+                  cohortTableNames = cohortTableNames,
+                  cohortDefinitionSet = allCohorts)
+generateNegativeControlOutcomeCohorts(
+  connectionDetails = connectionDetails,
+  cdmDatabaseSchema = cdmDatabaseSchema,
+  cohortDatabaseSchema = cohortDatabaseSchema,
+  cohortTable = cohortTable,
+  negativeControlOutcomeCohortSet = negativeControlCohorts
+)
+```
+
+If all went well, we now have a table with the cohorts of interest. We can see how many entries per cohort:
+
+```{r eval=FALSE}
+connection <- DatabaseConnector::connect(connectionDetails)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
+DatabaseConnector::renderTranslateQuerySql(
+  connection = connection, 
+  sql = sql,  
+  cohortDatabaseSchema = cohortDatabaseSchema, 
+  cohortTable = cohortTable
+)
+DatabaseConnector::disconnect(connection)
+```
+```{r echo=FALSE,message=FALSE}
+if (folderExists) {
+ readRDS(file.path(folder, "cohortCounts.rds")) 
+}
+```
+
+# Specifying hypotheses of interest
+
+The first group of arguments define the target, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
+
+```{r eval=FALSE}
+outcomeOfInterest <- createOutcome(outcomeId = 77,
+                                   outcomeOfInterest = TRUE)
 negativeControlOutcomes <- lapply(
   negativeControlIds,
   function(outcomeId) createOutcome(outcomeId = outcomeId,
                                     outcomeOfInterest = FALSE,
                                     trueEffectSize = 1)
 )
-
-
-
 tcos <- createTargetComparatorOutcomes(
-  targetId = 1118084,
-  comparatorId = 1124300,
+  targetId = 1,
+  comparatorId = 2,
   outcomes = append(list(outcomeOfInterest),
                     negativeControlOutcomes)
 )
-
 targetComparatorOutcomesList <- list(tcos)
 ```
 
-We first define the outcome of interest (GI-bleed, concept ID 192671), explicitly stating this is an outcome of interest (`outcomeOfInterest = TRUE`), meaning we want the full set of artifacts generated for this outcome. We then create a set of negative control outcomes. Because we specify `outcomeOfInterest = FALSE`, many of the artifacts will not be saved (like the matched population), or even not generated at all (like the covariate balance). This can save a lot of compute time and disk space. We also provide the true effect size for these controls, which will be used later for empirical calibration. We set the target to be celecoxib (concept ID 1118084), and the comparator to be diclofenac (concept ID 1124300).
+We first define the outcome of interest (GI-bleed, cohort ID 77), explicitly stating this is an outcome of interest (`outcomeOfInterest = TRUE`), meaning we want the full set of artifacts generated for this outcome. We then create a set of negative control outcomes. Because we specify `outcomeOfInterest = FALSE`, many of the artifacts will not be saved (like the matched population), or even not generated at all (like the covariate balance). This can save a lot of compute time and disk space. We also provide the true effect size for these controls, which will be used later for empirical calibration. We set the target to be celecoxib (cohort ID 1), and the comparator to be diclofenac (cohort ID 2).
 
 A convenient way to save `targetComparatorOutcomesList` to file is by using the `saveTargetComparatorOutcomesList` function, and we can load it again using the `loadTargetComparatorOutcomesList` function.
 
@@ -158,10 +227,8 @@ A convenient way to save `targetComparatorOutcomesList` to file is by using the 
 The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion function is available that has (almost) the same arguments. For example, for the `trimByPs()` function there is the `createTrimByPsArgs()` function. These companion functions can be used to create the arguments to be used during execution:
 
 ```{r eval=TRUE}
-nsaids <- 21603933
-
 covarSettings <- createDefaultCovariateSettings(
-  excludedCovariateConceptIds = nsaids,
+  excludedCovariateConceptIds = c(1118084, 1124300),
   addDescendantsToExclude = TRUE
 )
 
@@ -275,7 +342,11 @@ cmAnalysis5 <- createCmAnalysis(
   fitOutcomeModelArgs = fitOutcomeModelArgs4
 )
 
-interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
+interactionCovariateIds <- c(
+  8532001, # Female
+  201826210, # T2DM
+  21600960413 # concurrent use of antithrombotic agents
+)
 
 fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(
   modelType = "cox",
@@ -321,12 +392,11 @@ multiThreadingSettings <- createDefaultMultiThreadingSettings(parallel::detectCo
 result <- runCmAnalyses(
   connectionDetails = connectionDetails,
   cdmDatabaseSchema = cdmDatabaseSchema,
-  exposureDatabaseSchema = cdmDatabaseSchema,
-  exposureTable = "drug_era",
-  outcomeDatabaseSchema = resultsDatabaseSchema,
-  outcomeTable = "outcomes",
+  exposureDatabaseSchema = cohortDatabaseSchema,
+  exposureTable = cohortTable,
+  outcomeDatabaseSchema = cohortDatabaseSchema,
+  outcomeTable = cohortTable,
   outputFolder = folder,
-  cdmVersion = cdmVersion,
   cmAnalysisList = cmAnalysisList,
   targetComparatorOutcomesList = targetComparatorOutcomesList,
   multiThreadingSettings = multiThreadingSettings
@@ -335,7 +405,7 @@ result <- runCmAnalyses(
 
 In the code above, we first specify how many parallel threads `CohortMethod` can use. Many of the computations can be computed in parallel, and providing more than one CPU core can greatly speed up the computation. Here we specify `CohortMethod` can use all the CPU cores detected in the system (using the `parallel::detectCores()` function). 
 
-We call `runCmAnalyses()`, providing the arguments for connecting to the database, which schemas and tables to use, as well as the analyses and hypotheses of interest. The `outputFolder` specifies where the outcome models and intermediate files will be written. 
+We call `runCmAnalyses()`, providing the arguments for connecting to the database, which schemas and tables to use, as well as the analyses and hypotheses of interest. The `folder` specifies where the outcome models and intermediate files will be written. 
 
 ## Restarting
 
@@ -346,21 +416,25 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 The result of the `runCmAnalyses()` is a data frame with one row per target-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our target, comparator, outcome of interest, and last analysis:
 
 ```{r eval=FALSE}
-psFile <- result$psFile[result$targetId == 1118084 & 
-                        result$comparatorId == 1124300 & 
-                        result$outcomeId == 192671 &
-                        result$analysisId == 5]
-ps <- readRDS(file.path(outputFolder, psFile))
+psFile <- result %>%
+  filter(targetId == 1,
+         comparatorId == 2,
+         outcomeId == 77,
+         analysisId == 5) %>%
+  pull(psFile)
+ps <- readRDS(file.path(folder, psFile))
 plotPs(ps)
 ```
 ```{r echo=FALSE,message=FALSE}
 if (folderExists) {
-  result <- readRDS(file.path(outputFolder, "outcomeModelReference.rds"))
-  psFile <- result$psFile[result$targetId == 1118084 & 
-                            result$comparatorId == 1124300 & 
-                            result$outcomeId == 192671 &
-                            result$analysisId == 5]
-  ps <- readRDS(file.path(outputFolder, psFile))
+  result <- readRDS(file.path(folder, "outcomeModelReference.rds"))
+  psFile <- result %>%
+    filter(targetId == 1,
+           comparatorId == 2,
+           outcomeId == 77,
+           analysisId == 5) %>%
+    pull(psFile)
+  ps <- readRDS(file.path(folder, psFile))
   plotPs(ps)
 }
 ```
@@ -374,13 +448,13 @@ result <- getFileReference(folder)
 
 We can get a summary of the results using `getResultsSummary()`:
 ```{r eval=FALSE}
-resultsSum <- getResultsSummary(outputFolder)
-head(resultsSum)
+resultsSum <- getResultsSummary(folder)
+resultsSum
 ```
 ```{r echo=FALSE,message=FALSE}
 if (folderExists) {
-  resultsSum <- readRDS(file.path(outputFolder, "resultsSummary.rds"))
-  head(resultsSum)
+  resultsSum <- readRDS(file.path(folder, "resultsSummary.rds"))
+  resultsSum
 }
 ```
 
@@ -395,109 +469,193 @@ install.packages("EmpiricalCalibration")
 library(EmpiricalCalibration)
 
 # Analysis 1: No matching, simple outcome model
-negCons <- resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId != 192671, ]
-hoi <-  resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+ncs <- resultsSum %>%
+  filter(analysisId == 1,
+         outcomeId != 77)
+hoi <- resultsSum %>%
+  filter(analysisId == 1,
+         outcomeId == 77)
+null <- fitNull(ncs$logRr, ncs$seLogRr)
+plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                      seLogRrNegatives = ncs$seLogRr, 
+                      logRrPositives = hoi$logRr, 
+                      seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
   library(EmpiricalCalibration)
-  negCons <- resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId != 192671, ]
-  hoi <-  resultsSum[resultsSum$analysisId == 1 & resultsSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+  ncs <- resultsSum %>%
+    filter(analysisId == 1,
+           outcomeId != 77)
+  hoi <- resultsSum %>%
+    filter(analysisId == 1,
+           outcomeId == 77)
+  null <- fitNull(ncs$logRr, ncs$seLogRr)
+  plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                        seLogRrNegatives = ncs$seLogRr, 
+                        logRrPositives = hoi$logRr, 
+                        seLogRrPositives = hoi$seLogRr, null)
 }
 ```
 
 ```{r eval=FALSE}
 # Analysis 2: Matching
-negCons <- resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId != 192671, ]
-hoi <-  resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+ncs <- resultsSum %>%
+  filter(analysisId == 2,
+         outcomeId != 77)
+hoi <- resultsSum %>%
+  filter(analysisId == 2,
+         outcomeId == 77)
+null <- fitNull(ncs$logRr, ncs$seLogRr)
+plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                      seLogRrNegatives = ncs$seLogRr, 
+                      logRrPositives = hoi$logRr, 
+                      seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
-  negCons <- resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId != 192671, ]
-  hoi <-  resultsSum[resultsSum$analysisId == 2 & resultsSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+  library(EmpiricalCalibration)
+  ncs <- resultsSum %>%
+    filter(analysisId == 2,
+           outcomeId != 77)
+  hoi <- resultsSum %>%
+    filter(analysisId == 2,
+           outcomeId == 77)
+  null <- fitNull(ncs$logRr, ncs$seLogRr)
+  plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                        seLogRrNegatives = ncs$seLogRr, 
+                        logRrPositives = hoi$logRr, 
+                        seLogRrPositives = hoi$seLogRr, null)
 }
 ```
 
 ```{r eval=FALSE}
 # Analysis 3: Stratification
-negCons <- resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId != 192671, ]
-hoi <-  resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+ncs <- resultsSum %>%
+  filter(analysisId == 3,
+         outcomeId != 77)
+hoi <- resultsSum %>%
+  filter(analysisId == 3,
+         outcomeId == 77)
+null <- fitNull(ncs$logRr, ncs$seLogRr)
+plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                      seLogRrNegatives = ncs$seLogRr, 
+                      logRrPositives = hoi$logRr, 
+                      seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
-  negCons <- resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId != 192671, ]
-  hoi <-  resultsSum[resultsSum$analysisId == 3 & resultsSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+  library(EmpiricalCalibration)
+  ncs <- resultsSum %>%
+    filter(analysisId == 3,
+           outcomeId != 77)
+  hoi <- resultsSum %>%
+    filter(analysisId == 3,
+           outcomeId == 77)
+  null <- fitNull(ncs$logRr, ncs$seLogRr)
+  plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                        seLogRrNegatives = ncs$seLogRr, 
+                        logRrPositives = hoi$logRr, 
+                        seLogRrPositives = hoi$seLogRr, null)
 }
 ```
 
 ```{r eval=FALSE}
 # Analysis 4: Inverse probability of treatment weighting
-negCons <- resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId != 192671, ]
-hoi <-  resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+ncs <- resultsSum %>%
+  filter(analysisId == 4,
+         outcomeId != 77)
+hoi <- resultsSum %>%
+  filter(analysisId == 4,
+         outcomeId == 77)
+null <- fitNull(ncs$logRr, ncs$seLogRr)
+plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                      seLogRrNegatives = ncs$seLogRr, 
+                      logRrPositives = hoi$logRr, 
+                      seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
-  negCons <- resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId != 192671, ]
-  hoi <-  resultsSum[resultsSum$analysisId == 4 & resultsSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+  library(EmpiricalCalibration)
+  ncs <- resultsSum %>%
+    filter(analysisId == 4,
+           outcomeId != 77)
+  hoi <- resultsSum %>%
+    filter(analysisId == 4,
+           outcomeId == 77)
+  null <- fitNull(ncs$logRr, ncs$seLogRr)
+  plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                        seLogRrNegatives = ncs$seLogRr, 
+                        logRrPositives = hoi$logRr, 
+                        seLogRrPositives = hoi$seLogRr, null)
 }
 ```
 
 ```{r eval=FALSE}
 # Analysis 5: Stratification plus full outcome model
-negCons <- resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId != 192671, ]
-hoi <-  resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+ncs <- resultsSum %>%
+  filter(analysisId == 5,
+         outcomeId != 77)
+hoi <- resultsSum %>%
+  filter(analysisId == 5,
+         outcomeId == 77)
+null <- fitNull(ncs$logRr, ncs$seLogRr)
+plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                      seLogRrNegatives = ncs$seLogRr, 
+                      logRrPositives = hoi$logRr, 
+                      seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
-  negCons <- resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId != 192671, ]
-  hoi <-  resultsSum[resultsSum$analysisId == 5 & resultsSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(negCons$logRr, negCons$seLogRr, hoi$logRr, hoi$seLogRr, null)
+  library(EmpiricalCalibration)
+  ncs <- resultsSum %>%
+    filter(analysisId == 5,
+           outcomeId != 77)
+  hoi <- resultsSum %>%
+    filter(analysisId == 5,
+           outcomeId == 77)
+  null <- fitNull(ncs$logRr, ncs$seLogRr)
+  plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                        seLogRrNegatives = ncs$seLogRr, 
+                        logRrPositives = hoi$logRr, 
+                        seLogRrPositives = hoi$seLogRr, null)
 }
 ```
 
-Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are stored in a separate results summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with 'gender = female' (covariate ID 8532001): 
-
+Analysis 6 explored interactions with certain variables. The estimates for these interaction terms are stored in a separate results summary. We can examine whether these estimates are also consistent with the null. In this example we consider the interaction with 'concurrent use of antithrombotic agents' (covariate ID 21600960413): 
 
 ```{r eval=FALSE}
-interactionResultsSum <- getInteractionResultsSummary(outputFolder)
-
+interactionResultsSum <- getInteractionResultsSummary(folder)
 
 # Analysis 6: Stratification plus interaction terms
-negCons <- interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId != 192671, ]
-hoi <-  interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId == 192671, ]
-null <- fitNull(negCons$logRr, negCons$seLogRr)
-plotCalibrationEffect(logRrNegatives = negCons$logRr, 
-                      seLogRrNegatives = negCons$seLogRr, 
+ncs <- interactionResultsSum %>%
+  filter(analysisId == 6,
+         interactionCovariateId == 21600960413,
+         outcomeId != 77)
+hoi <- interactionResultsSum %>%
+  filter(analysisId == 6,
+         interactionCovariateId == 21600960413,
+         outcomeId == 77)
+null <- fitNull(ncs$logRr, ncs$seLogRr)
+plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                      seLogRrNegatives = ncs$seLogRr, 
                       logRrPositives = hoi$logRr, 
                       seLogRrPositives = hoi$seLogRr, null)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  interactionResultsSum <- getInteractionResultsSummary(outputFolder)
-  negCons <- interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId != 192671, ]
-  hoi <-  interactionResultsSum[interactionResultsSum$analysisId == 6 & interactionResultsSum$outcomeId == 192671, ]
-  null <- fitNull(negCons$logRr, negCons$seLogRr)
-  plotCalibrationEffect(logRrNegatives = negCons$logRr, 
-                        seLogRrNegatives = negCons$seLogRr, 
+  interactionResultsSum <- getInteractionResultsSummary(folder)
+  ncs <- interactionResultsSum %>%
+    filter(analysisId == 6,
+           interactionCovariateId == 21600960413,
+           outcomeId != 77)
+  hoi <- interactionResultsSum %>%
+    filter(analysisId == 6,
+           interactionCovariateId == 21600960413,
+           outcomeId == 77)
+  null <- fitNull(ncs$logRr, ncs$seLogRr)
+  plotCalibrationEffect(logRrNegatives = ncs$logRr, 
+                        seLogRrNegatives = ncs$seLogRr, 
                         logRrPositives = hoi$logRr, 
                         seLogRrPositives = hoi$seLogRr, null)
 }
@@ -509,7 +667,7 @@ The results generated so far all reside in binary object on your local file syst
 
 ```{r eval=FALSE}
 exportToCsv(
-  outputFolder,
+  folder,
   exportFolder = file.path(folder, "export"),
   databaseId = "My CDM",
   minCellCount = 5,
@@ -532,9 +690,9 @@ Finally, we can view the results in a Shiny app. For this we must first load the
 ```{r eval=FALSE}
 cohorts <- data.frame(
   cohortId = c(
-    1118084,
-    1124300,
-    192671),
+    1,
+    2,
+    77),
   cohortName = c(
     "Celecoxib",
     "Diclofenac",

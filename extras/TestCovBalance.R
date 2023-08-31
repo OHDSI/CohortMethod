@@ -255,3 +255,70 @@ newXbalance <- function(fmla, strataColumn = NULL , data, report = c("std.diffs"
   class(ans) <- c("xbal", "list")
   ans
 }
+
+# Code for testing generalizability metrics ------------------------------------
+# saveRDS(population, "d:/temp/studyPop.rds")
+# saveCohortMethodData(cohortMethodData, "d:/temp/cmData.zip")
+
+
+population <- readRDS("d:/temp/studyPop.rds")
+cohortMethodData <- loadCohortMethodData("d:/temp/cmData.zip")
+cohorts <- cohortMethodData$cohorts %>%
+  collect()
+
+bal <- computeCovariateBalance(population, cohortMethodData) %>%
+  arrange(covariateId)
+
+
+tPlusCBefore <- cohortMethodData$cohorts %>%
+  collect() %>%
+  select("rowId") %>%
+  mutate(treatment = 1)
+tPlusCAfter <- population %>%
+  # mutate(stratumId = stratumId + treatment * (1 + max(population$stratumId))) %>%
+  select("rowId", "stratumId") %>%
+  mutate(treatment = 0)
+adjustedCohorts <- bind_rows(tPlusCBefore, tPlusCAfter)
+# cohortMethodData$adjustedCohorts <- adjustedCohorts
+# adjustedCohorts <- cohortMethodData$adjustedCohorts
+dummyBal <- CohortMethod:::computeMeansPerGroup(cohorts = adjustedCohorts, cohortMethodData, NULL) %>%
+  arrange(covariateId)
+
+# Compute mean before the hard way:
+cohortMethodData$cohorts %>%
+  left_join(cohortMethodData$covariates %>%
+              filter(covariateId == 1007),
+            by = join_by("rowId")) %>%
+  mutate(covariateValue = if_else(is.na(covariateValue), 0, covariateValue)) %>%
+  summarise(mean(covariateValue),
+            sd(covariateValue))
+# Using the dummy cov balance:
+dummyBal %>%
+  select(meanTarget, sdTarget) %>%
+  head(10)
+# Compute mean in before using computeCovariateBalance output:
+# Using insight that "The exact pooled variance is the mean of the variances
+# plus the variance of the means of the component data sets." from
+# https://arxiv.org/ftp/arxiv/papers/1007/1007.1012.pdf
+bal %>%
+  mutate(meanBefore = beforeMatchingMeanTarget * mean(cohorts$treatment) + beforeMatchingMeanComparator * mean(!cohorts$treatment)) %>%
+  mutate(beforeVarTarget = beforeMatchingSdTarget^2,
+         beforeVarComparator = beforeMatchingSdComparator^2) %>%
+  mutate(meanVar = beforeVarTarget * mean(cohorts$treatment) + beforeVarComparator * mean(!cohorts$treatment),
+         varOfMeans = (beforeMatchingMeanTarget-meanBefore)^2 * mean(cohorts$treatment) + (beforeMatchingMeanComparator-meanBefore)^2 * mean(!cohorts$treatment)) %>%
+  mutate(sdBefore = sqrt(meanVar + varOfMeans)) %>%
+  select(meanBefore, sdBefore) %>%
+  head(10)
+bal  %>%
+  select("beforeMatchingMean", "beforeMatchingSd") %>%
+  head(10)
+
+# Same for after matching:
+dummyBal %>%
+  select(meanComparator, sdComparator) %>%
+  head(10)
+bal %>%
+  select("afterMatchingMean", "afterMatchingSd") %>%
+  head(10)
+
+
