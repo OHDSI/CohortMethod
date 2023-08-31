@@ -25,6 +25,8 @@ Bugfixes:
 
 2. Fixed error when calling `createStudyPopulation()` with "keep first" when there is only 1 person in the population.
 
+3. Fixing `runCmAnalyses()` when using `refitPsForEveryOutcome = TRUE`.
+
 
 CohortMethod 5.1.0
 ==================

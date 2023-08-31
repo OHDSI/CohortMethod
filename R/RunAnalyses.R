@@ -690,7 +690,9 @@ runCmAnalyses <- function(connectionDetails,
       params <- list(
         cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
         prefilteredCovariatesFile = prefilteredCovariatesFile,
+        psFile =  file.path(outputFolder, refRow$psFile),
         sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
+        refitPsForEveryOutcome = refitPsForEveryOutcome,
         args = analysisRow,
         outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile)
       )
@@ -955,8 +957,12 @@ doFitOutcomeModelPlus <- function(params) {
   studyPop <- do.call("createStudyPopulation", args)
 
   if (!is.null(params$args$createPsArgs)) {
-    ps <- getPs(params$sharedPsFile)
-    ps <- addPsToStudyPopulation(studyPop, ps)
+    if (params$refitPsForEveryOutcome) {
+      ps <- getPs(params$psFile)
+    } else {
+      ps <- getPs(params$sharedPsFile)
+      ps <- addPsToStudyPopulation(studyPop, ps)
+    }
   } else {
     ps <- studyPop
   }
@@ -1294,41 +1300,45 @@ createReferenceTable <- function(cmAnalysisList,
 
   # Add shared covariate balance files (per target-comparator-analysis)
   args <- "computeSharedCovariateBalanceArgs"
-  normBalanceArgs <- function(balanceArgs) {
-    return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
-  }
-  balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
-  balanceArgsList <- balanceArgsList[sapply(
-    balanceArgsList,
-    function(balanceArgs) {
-      return(!is.null(balanceArgs$computeSharedCovariateBalanceArgs))
-    }
-  )]
-  balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
-  if (length(balanceArgsList) == 0) {
-    referenceTable$sharedBalanceId <- 0
+  if (refitPsForEveryOutcome) {
+    referenceTable$sharedBalanceFile <- ""
   } else {
-    sharedBalanceId <- sapply(cmAnalysisList, function(cmAnalysis) {
-      i <- which.list(balanceArgsList, normBalanceArgs(cmAnalysis))
-      if (is.null(i)) {
-        i <- 0
+    normBalanceArgs <- function(balanceArgs) {
+      return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
+    }
+    balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
+    balanceArgsList <- balanceArgsList[sapply(
+      balanceArgsList,
+      function(balanceArgs) {
+        return(!is.null(balanceArgs$computeSharedCovariateBalanceArgs))
       }
-      return(i)
-    })
-    analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, sharedBalanceId = sharedBalanceId)
-    referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
+    )]
+    balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
+    if (length(balanceArgsList) == 0) {
+      referenceTable$sharedBalanceId <- 0
+    } else {
+      sharedBalanceId <- sapply(cmAnalysisList, function(cmAnalysis) {
+        i <- which.list(balanceArgsList, normBalanceArgs(cmAnalysis))
+        if (is.null(i)) {
+          i <- 0
+        }
+        return(i)
+      })
+      analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, sharedBalanceId = sharedBalanceId)
+      referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
+    }
+    idx <- referenceTable$sharedBalanceId != 0
+    referenceTable$sharedBalanceFile <- ""
+    referenceTable$sharedBalanceFile[idx] <- .createsharedBalanceFileName(
+      loadId = referenceTable$loadArgsId[idx],
+      studyPopId = referenceTable$studyPopArgsId[idx],
+      psId = referenceTable$psArgsId[idx],
+      strataId = referenceTable$strataArgsId[idx],
+      sharedBalanceId = referenceTable$sharedBalanceId[idx],
+      targetId = referenceTable$targetId[idx],
+      comparatorId = referenceTable$comparatorId[idx]
+    )
   }
-  idx <- referenceTable$sharedBalanceId != 0
-  referenceTable$sharedBalanceFile <- ""
-  referenceTable$sharedBalanceFile[idx] <- .createsharedBalanceFileName(
-    loadId = referenceTable$loadArgsId[idx],
-    studyPopId = referenceTable$studyPopArgsId[idx],
-    psId = referenceTable$psArgsId[idx],
-    strataId = referenceTable$strataArgsId[idx],
-    sharedBalanceId = referenceTable$sharedBalanceId[idx],
-    targetId = referenceTable$targetId[idx],
-    comparatorId = referenceTable$comparatorId[idx]
-  )
 
   # Add covariate balance files (per target-comparator-analysis-outcome)
   args <- "computeCovariateBalanceArgs"
@@ -1380,7 +1390,7 @@ createReferenceTable <- function(cmAnalysisList,
     studyPopId = referenceTable$studyPopArgsId[idx],
     psId = referenceTable$psArgsId[idx],
     strataId = referenceTable$strataArgsId[idx],
-    sharedBalanceId = referenceTable$sharedBalanceId[idx],
+    balanceId = referenceTable$balanceId[idx],
     targetId = referenceTable$targetId[idx],
     comparatorId = referenceTable$comparatorId[idx],
     outcomeId = referenceTable$outcomeId[idx]
@@ -1502,11 +1512,16 @@ createReferenceTable <- function(cmAnalysisList,
 
   # Remove non-essential files for outcomes not of interest:
   idx <- !referenceTable$outcomeOfInterest
-  referenceTable$studyPopFile[idx] <- ""
-  referenceTable$psFile[idx] <- ""
   referenceTable$strataFile[idx] <- ""
   referenceTable$filteredForbalanceFile[idx] <- ""
   referenceTable$balanceFile[idx] <- ""
+  if (!refitPsForEveryOutcome) {
+    # If we're computing a PS per outcome it probably is a good idea to save it.
+    # For that it is more convenient to save the study population as well (so we can
+    # use the regular PS-model fitting routine)
+    referenceTable$studyPopFile[idx] <- ""
+    referenceTable$psFile[idx] <- ""
+  }
 
   # Remove rows that the user specified to exclude:
   if (!is.null(analysesToExclude)) {
@@ -1609,11 +1624,11 @@ createReferenceTable <- function(cmAnalysisList,
                                    studyPopId,
                                    psId,
                                    strataId,
-                                   sharedBalanceId,
+                                   balanceId,
                                    targetId,
                                    comparatorId,
                                    outcomeId) {
-  name <- sprintf("Balance_l%s_s%s_p%s_t%s_c%s_s%s_b%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, sharedBalanceId, .f(outcomeId))
+  name <- sprintf("Balance_l%s_s%s_p%s_t%s_c%s_s%s_b%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, balanceId, .f(outcomeId))
   return(name)
 }
 
