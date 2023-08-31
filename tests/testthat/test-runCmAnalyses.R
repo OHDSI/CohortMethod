@@ -426,19 +426,19 @@ test_that("refitPsForEveryOutcome", {
   )
 
   ### TRUE ----
-  # unlink(outputFolder, recursive = TRUE)
-  # expect_no_error(
-  #   suppressWarnings(runCmAnalyses(
-  #     connectionDetails = connectionDetails,
-  #     cdmDatabaseSchema = "main",
-  #     exposureTable = "cohort",
-  #     outcomeTable = "cohort",
-  #     outputFolder = outputFolder,
-  #     cmAnalysisList = cmAnalysisList,
-  #     targetComparatorOutcomesList = targetComparatorOutcomesList,
-  #     refitPsForEveryOutcome = TRUE
-  #   ))
-  # )
+  unlink(outputFolder, recursive = TRUE)
+  expect_no_error(
+    suppressWarnings(runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder,
+      cmAnalysisList = cmAnalysisList,
+      targetComparatorOutcomesList = targetComparatorOutcomesList,
+      refitPsForEveryOutcome = TRUE
+    ))
+  )
   # Note:
   # Throws Error:
   # cannot open file '.\Temp\RtmpwLKCGK\cmData6dbc562227db': it is a directory
@@ -490,6 +490,49 @@ test_that("refitPsForEveryStudyPopulation", {
       refitPsForEveryStudyPopulation = TRUE
     ))
   )
+
+  ## output check ----
+  refitFalse <- suppressWarnings(runCmAnalyses(
+    connectionDetails = connectionDetails,
+    cdmDatabaseSchema = "main",
+    exposureTable = "cohort",
+    outcomeTable = "cohort",
+    outputFolder = outputFolder,
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList,
+    refitPsForEveryStudyPopulation = FALSE
+  ))
+
+  refitTrue <- suppressWarnings(runCmAnalyses(
+    connectionDetails = connectionDetails,
+    cdmDatabaseSchema = "main",
+    exposureTable = "cohort",
+    outcomeTable = "cohort",
+    outputFolder = outputFolder,
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList,
+    refitPsForEveryStudyPopulation = TRUE
+  ))
+
+  # Check refitTrue != refitFalse
+  expect_false(identical(refitTrue, refitFalse))
+
+  modelsTrue <- refitTrue$sharedPsFile[
+    !refitTrue$sharedPsFile %in% refitFalse$sharedPsFile]
+
+  modelsFalse <- refitFalse$sharedPsFile[
+    !refitFalse$sharedPsFile %in% refitTrue$sharedPsFile]
+
+  expectedDif <- c(7L, 7L, 0L, 0L, 7L, 7L, 0L, 0L, 7L, 7L, 0L, 0L)
+
+  actualDif <- lapply(seq_len(length(modelsTrue)), function(i) {
+    fileFalse <- readRDS(file.path(outputFolder, modelsFalse[i]))
+    fileTrue <- readRDS(file.path(outputFolder, modelsTrue[i]))
+    nrow(fileFalse) - nrow(fileTrue)
+  }) |>
+    unlist()
+
+  expect_identical(expectedDif, actualDif)
 
   ### 0 ----
   unlink(outputFolder, recursive = TRUE)
