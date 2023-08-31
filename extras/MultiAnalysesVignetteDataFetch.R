@@ -35,24 +35,13 @@ cdmDatabaseSchema <- "cdm_truven_mdcr_v2540"
 cohortDatabaseSchema <- "scratch_mschuemi"
 cohortTable  <- "cm_vignette"
 
-
-osteoArthritisOfKneeConceptId <- 4079750
-celecoxibConceptId <- 1118084
-diclofenacConceptId <- 1124300
-negativeControlIds <- c(29735, 140673, 197494,
-                        198185, 198199, 200528, 257315,
-                        314658, 317376, 321319, 380731,
-                        432661, 432867, 433516, 433701,
-                        433753, 435140, 435459, 435524,
-                        435783, 436665, 436676, 442619,
-                        444252, 444429, 4131756, 4134120,
-                        4134454, 4152280, 4165112, 4174262,
-                        4182210, 4270490, 4286201, 4289933)
-
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)
 library(CirceR)
 
+osteoArthritisOfKneeConceptId <- 4079750
+celecoxibConceptId <- 1118084
+diclofenacConceptId <- 1124300
 osteoArthritisOfKnee <- cs(
   descendants(osteoArthritisOfKneeConceptId),
   name = "Osteoarthritis of knee"
@@ -102,6 +91,15 @@ library(PhenotypeLibrary)
 outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
 
 # Define negative control cohorts ----------------------------------------------
+negativeControlIds <- c(29735, 140673, 197494,
+                        198185, 198199, 200528, 257315,
+                        314658, 317376, 321319, 380731,
+                        432661, 432867, 433516, 433701,
+                        433753, 435140, 435459, 435524,
+                        435783, 436665, 436676, 442619,
+                        444252, 444429, 4131756, 4134120,
+                        4134454, 4152280, 4165112, 4174262,
+                        4182210, 4270490, 4286201, 4289933)
 negativeControlCohorts <- tibble(cohortId = negativeControlIds,
                                  cohortName = sprintf("Negative control %d", negativeControlIds),
                                  outcomeConceptId = negativeControlIds)
@@ -129,30 +127,18 @@ generateNegativeControlOutcomeCohorts(connectionDetails = connectionDetails,
 # Check number of subjects per cohort:
 connection <- DatabaseConnector::connect(connectionDetails)
 sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
-DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
+cohortCounts <- DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
+saveRDS(cohortCounts, file.path(folder, "cohortCounts.rds"))
 DatabaseConnector::disconnect(connection)
+cohortCounts
 
 # Create analysis specifications -----------------------------------------------
-negativeControlIds <- c(29735, 140673, 197494,
-                        198185, 198199, 200528, 257315,
-                        314658, 317376, 321319, 380731,
-                        432661, 432867, 433516, 433701,
-                        433753, 435140, 435459, 435524,
-                        435783, 436665, 436676, 442619,
-                        444252, 444429, 4131756, 4134120,
-                        4134454, 4152280, 4165112, 4174262,
-                        4182210, 4270490, 4286201, 4289933)
-
 outcomeOfInterest <- createOutcome(outcomeId = 77,
                                    outcomeOfInterest = TRUE)
-
 negativeControlOutcomes <- lapply(negativeControlIds,
                                   function(outcomeId) createOutcome(outcomeId = outcomeId,
                                                                     outcomeOfInterest = FALSE,
                                                                     trueEffectSize = 1))
-
-
-
 tcos <- createTargetComparatorOutcomes(targetId = 1,
                                        comparatorId = 2,
                                        outcomes = append(list(outcomeOfInterest),
@@ -277,16 +263,18 @@ cmAnalysisList <- loadCmAnalysisList(file.path(folder, 'cmAnalysisList.json'))
 targetComparatorOutcomesList <- loadTargetComparatorOutcomesList(file.path(folder, 'targetComparatorOutcomesList.json'))
 multiThreadingSettings <- createDefaultMultiThreadingSettings(parallel::detectCores())
 
-result <- runCmAnalyses(connectionDetails = connectionDetails,
-                        cdmDatabaseSchema = cdmDatabaseSchema,
-                        exposureDatabaseSchema = cohortDatabaseSchema,
-                        exposureTable = cohortTable,
-                        outcomeDatabaseSchema = cohortDatabaseSchema,
-                        outcomeTable = cohortTable,
-                        outputFolder = folder,
-                        cmAnalysisList = cmAnalysisList,
-                        targetComparatorOutcomesList = targetComparatorOutcomesList,
-                        multiThreadingSettings = multiThreadingSettings)
+result <- runCmAnalyses(
+  connectionDetails = connectionDetails,
+  cdmDatabaseSchema = cdmDatabaseSchema,
+  exposureDatabaseSchema = cohortDatabaseSchema,
+  exposureTable = cohortTable,
+  outcomeDatabaseSchema = cohortDatabaseSchema,
+  outcomeTable = cohortTable,
+  outputFolder = folder,
+  cmAnalysisList = cmAnalysisList,
+  targetComparatorOutcomesList = targetComparatorOutcomesList,
+  multiThreadingSettings = multiThreadingSettings
+)
 
 # Export to CSV ----------------------------------------------------------------
 exportToCsv(

@@ -1234,7 +1234,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
         maxStratumId <- max(results[[i]]$stratumId)
       }
     }
-    result <- dbind_rows(results)
+    result <- bind_rows(results)
     attr(result, "metaData") <- attr(population, "metaData")
     return(result)
   }

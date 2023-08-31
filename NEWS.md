@@ -5,8 +5,11 @@ Changes:
 
 1. The `computeCovariateBalance()` function now also computes standardized difference of mean comparing cohorts before and after PS adjustment, which can inform on generalizability.
 
-2. Improved computation of overall standard deviation when computing covariate balance. Should produce more accurate balance estimations.
+2. Added the `getGeneralizabilityTable()` function.
 
+3. Improved computation of overall standard deviation when computing covariate balance. Should produce more accurate balance estimations.
+
+4. Generated population objects now keep track of likely target estimator (e.g. 'ATT'). Informs selection of base population when calling `getGeneralizabilityTable()`. 
 
 Bugfixes:
 
