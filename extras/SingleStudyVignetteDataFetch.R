@@ -36,8 +36,6 @@ cohortDatabaseSchema <- "scratch_mschuemi"
 cohortTable  <- "cm_vignette"
 
 
-
-
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)
 

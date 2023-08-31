@@ -237,6 +237,8 @@ cmAnalysis5 <- createCmAnalysis(analysisId = 5,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPsArgs = createPsArgs,
                                 matchOnPsArgs = matchOnPsArgs,
+                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+                                computeCovariateBalanceArgs = computeCovBalArgs,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs4)
 
 interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
@@ -252,6 +254,8 @@ cmAnalysis6 <- createCmAnalysis(analysisId = 6,
                                 createStudyPopArgs = createStudyPopArgs,
                                 createPsArgs = createPsArgs,
                                 stratifyByPsArgs = stratifyByPsArgs,
+                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+                                computeCovariateBalanceArgs = computeCovBalArgs,
                                 fitOutcomeModelArgs = fitOutcomeModelArgs5)
 cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
 
@@ -285,9 +289,9 @@ exportToCsv(
 )
 
 # Cleanup ----------------------------------------------------------------------
-sql <- "DROP TABLE @resultsDatabaseSchema.outcomes"
+sql <- "DROP TABLE @cohortDatabaseSchema.@cohortTable;"
 connection <- DatabaseConnector::connect(connectionDetails)
-DatabaseConnector::renderTranslateExecuteSql(connection, sql, resultsDatabaseSchema = resultsDatabaseSchema)
+DatabaseConnector::renderTranslateExecuteSql(connection, sql, cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
 DatabaseConnector::disconnect(connection)
 
 # Shiny app --------------------------------------------------------------------

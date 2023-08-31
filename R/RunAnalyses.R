@@ -473,7 +473,7 @@ runCmAnalyses <- function(connectionDetails,
       tasks <- split(subset, subset$sharedPsFile)
       cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$trimMatchStratifyThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
-      dummy <- ParallelLogger::clusterApply(cluster, tasks, addPsToStudyPop, outputFolder = outputFolder)
+      dummy <- ParallelLogger::clusterApply(cluster, tasks, addPsToStudyPopForSubset, outputFolder = outputFolder)
       ParallelLogger::stopCluster(cluster)
     }
   }
@@ -805,23 +805,35 @@ doFitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   return(NULL)
 }
 
-addPsToStudyPop <- function(subset, outputFolder) {
+addPsToStudyPopForSubset <- function(subset, outputFolder) {
   ps <- readRDS(file.path(outputFolder, subset$sharedPsFile[1]))
 
   addToStudyPop <- function(i) {
     refRow <- subset[i, ]
     studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
-    newMetaData <- attr(studyPop, "metaData")
-    newMetaData$psModelCoef <- attr(ps, "metaData")$psModelCoef
-    newMetaData$psModelPriorVariance <- attr(ps, "metaData")$psModelPriorVariance
-    idx <- match(studyPop$rowId, ps$rowId)
-    studyPop$propensityScore <- ps$propensityScore[idx]
-    studyPop$iptw <- ps$iptw[idx]
-    attr(studyPop, "metaData") <- newMetaData
+    studyPop <- addPsToStudyPopulation(studyPop, ps)
     saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
     return(NULL)
   }
   plyr::l_ply(1:nrow(subset), addToStudyPop)
+}
+
+addPsToStudyPopulation <- function(studyPopulation, ps) {
+  # Merge meta-data
+  newMetaData <- attr(studyPopulation, "metaData")
+  psMetaData <-  attr(ps, "metaData")
+  missingColumns <- setdiff(names(psMetaData), names(newMetaData))
+  newMetaData <- append(newMetaData, psMetaData[missingColumns])
+  attr(studyPopulation, "metaData") <- newMetaData
+
+  # Merge data
+  missingColumns <- setdiff(names(ps), names(studyPopulation))
+  idx <- match(studyPopulation$rowId, ps$rowId)
+  studyPopulation <- bind_cols(
+    studyPopulation,
+    ps[idx, missingColumns]
+  )
+  return(studyPopulation)
 }
 
 applyTrimMatchStratify <- function(ps, arguments) {
@@ -943,12 +955,8 @@ doFitOutcomeModelPlus <- function(params) {
   studyPop <- do.call("createStudyPopulation", args)
 
   if (!is.null(params$args$createPsArgs)) {
-    # Add PS
     ps <- getPs(params$sharedPsFile)
-    idx <- match(studyPop$rowId, ps$rowId)
-    studyPop$propensityScore <- ps$propensityScore[idx]
-    studyPop$iptw <- ps$iptw[idx]
-    ps <- studyPop
+    ps <- addPsToStudyPopulation(studyPop, ps)
   } else {
     ps <- studyPop
   }
@@ -1724,7 +1732,7 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
         seLogRr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
         llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr,
         mdrr = !!mdrr,
-        attritionFraction = !!attritionFraction
+        targetEstimator = outcomeModel$targetEstimator
       )
 
     mainResults[[i]] <- mainResult
@@ -1741,7 +1749,8 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
             ci95Ub = exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[j]),
             p = !!p,
             logRr = outcomeModel$outcomeModelInteractionEstimates$logRr[j],
-            seLogRr = outcomeModel$outcomeModelInteractionEstimates$seLogRr[j]
+            seLogRr = outcomeModel$outcomeModelInteractionEstimates$seLogRr[j],
+            targetEstimator = outcomeModel$targetEstimator
           )
       }
     }
