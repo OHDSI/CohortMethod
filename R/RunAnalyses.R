@@ -530,7 +530,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
-    tasks <- lapply(seq_len(nrow(subset)), createSharedBalanceTask)
+    tasks <- lapply(1:nrow(subset), createSharedBalanceTask)
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$computeSharedBalanceThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
     dummy <- ParallelLogger::clusterApply(cluster, tasks, doComputeSharedBalance)
