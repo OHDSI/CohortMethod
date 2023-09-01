@@ -443,6 +443,50 @@ test_that("refitPsForEveryOutcome", {
   # Throws Error:
   # cannot open file '.\Temp\RtmpwLKCGK\cmData6dbc562227db': it is a directory
 
+  ### Check files ----
+  refitTrue <- suppressWarnings(runCmAnalyses(
+    connectionDetails = connectionDetails,
+    cdmDatabaseSchema = "main",
+    exposureTable = "cohort",
+    outcomeTable = "cohort",
+    outputFolder = outputFolder,
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList,
+    refitPsForEveryOutcome = TRUE
+  ))
+
+  refitFalse <- suppressWarnings(runCmAnalyses(
+    connectionDetails = connectionDetails,
+    cdmDatabaseSchema = "main",
+    exposureTable = "cohort",
+    outcomeTable = "cohort",
+    outputFolder = outputFolder,
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList,
+    refitPsForEveryOutcome = FALSE
+  ))
+
+  expect_false(identical(refitTrue, refitFalse))
+  expect_true(all(grepl(
+    pattern = "(^StudyPop_l1_s\\d+_t\\d+_c\\d+_o\\d+\\.rds$|^$)",
+    x = c(refitTrue$studyPopFile, refitFalse$studyPopFile)
+  )))
+
+  expect_true(all(grepl(
+    pattern = "(^Ps_l1_s\\d+_p\\d+_t\\d+_c\\d+\\.rds$|^$)",
+    x = c(refitTrue$sharedPsFile, refitFalse$sharedPsFile)
+  )))
+
+  expect_true(all(grepl(
+    pattern = "(^Ps_l1_s\\d+_p\\d+_t\\d+_c\\d+_o\\d+\\.rds$|^$)",
+    x = c(refitTrue$psFile, refitFalse$psFile)
+  )))
+
+  expect_true(all(grepl(
+    pattern = "(^Balance_l1_s\\d+_p\\d+_t\\d+_c\\d+_s\\d+_b\\d+\\.rds$|^$)",
+    x = c(refitTrue$sharedBalanceFile, refitFalse$sharedBalanceFile)
+  )))
+
   ### 0 ----
   unlink(outputFolder, recursive = TRUE)
   expect_error(
