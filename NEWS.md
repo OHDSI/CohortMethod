@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 CohortMethod 5.2.0
 ==================
 
@@ -28,6 +29,8 @@ Bugfixes:
 3. Fixing `runCmAnalyses()` when using `refitPsForEveryOutcome = TRUE`.
 
 
+=======
+>>>>>>> release-5.1.0
 CohortMethod 5.1.0
 ==================
 
@@ -38,6 +41,10 @@ Changes:
 Bugfixes:
 
 1. Fixing matching on PS and other covariates.
+
+2. Now passing outcome-specific `riskWindowEnd` argument in `runCmAnalyses()` when specified.
+
+3. Fixed error when calling `createStudyPopulation()` with "keep first" when there is only 1 person in the population.
 
 
 CohortMethod 5.0.0

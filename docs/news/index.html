@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.1.0</span>
       </span>
     </div>
 
@@ -63,6 +63,15 @@
       <small>Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="5.1.0" id="cohortmethod-510">CohortMethod 5.1.0<a class="anchor" aria-label="anchor" href="#cohortmethod-510"></a></h2>
+<p>Changes:</p>
+<ol style="list-style-type: decimal"><li>Now also not unblinding if shared balance diagnostic fails.</li>
+</ol><p>Bugfixes:</p>
+<ol style="list-style-type: decimal"><li><p>Fixing matching on PS and other covariates.</p></li>
+<li><p>Now passing outcome-specific <code>riskWindowEnd</code> argument in <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code> when specified.</p></li>
+<li><p>Fixed error when calling <code><a href="../reference/createStudyPopulation.html">createStudyPopulation()</a></code> with “keep first” when there is only 1 person in the population.</p></li>
+</ol></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="5.0.0" id="cohortmethod-500">CohortMethod 5.0.0<a class="anchor" aria-label="anchor" href="#cohortmethod-500"></a></h2>
 <p>Changes:</p>
