@@ -1,5 +1,5 @@
 library(CohortMethod)
-options(fftempdir = "c:/fftemp")
+options(andromedaTempFolder = "d:/andromedaTemp")
 
 # Simulation --------------------------------------------------------------------------------------
 n <- 10000
@@ -8,18 +8,14 @@ pT <- 0.3 # Probability of treatment
 
 # Introduce confounding by having baseline hazard correlate with PS:
 baselineHazard <- function(ps) {
-  return(0.001) + ps*0.004
+  return(0.001 + ps*0.004)
 }
 
 runOneSimulation <- function(x, strategy = "match") {
-  population <- data.frame(rowId = 1:n,
-                           treatment = as.integer(runif(n, 0,1) < pT))
-
-
-  propensityScore <- sqrt(runif(n, 0,1))
-  propensityScore[population$treatment == 0] <- 1 - propensityScore[population$treatment == 0]
-  x <- exp(log(propensityScore/(1 - propensityScore)) + log(pT/(1 - pT)))
-  population$propensityScore <- x/(x + 1)
+  propensityScore <- logistic(log(pT) + rnorm(n, sd = 2))
+  population <- tibble(rowId = 1:n,
+                       treatment = as.integer(runif(n, 0,1) < propensityScore),
+                       propensityScore = propensityScore)
   population$hazard <- baselineHazard(population$propensityScore) * (1 + (hr - 1)*population$treatment)
   timeToEvent <- round(rexp(n, population$hazard))
   timeToCensor <- round(rexp(n, 0.01))
@@ -32,7 +28,7 @@ runOneSimulation <- function(x, strategy = "match") {
   if (strategy == "match") {
     population <- matchOnPs(population , maxRatio = 100)
   } else {
-    population <- stratifyByPs(population, numberOfStrata = 5)
+    population <- stratifyByPs(population, numberOfStrata = 10)
   }
 
   # Code from plotKaplanMeier:
