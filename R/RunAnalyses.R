@@ -224,15 +224,16 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
-  checkmate::assertList(cmAnalysisList, min.len = 1, add = errorMessages)
-  for (i in 1:length(cmAnalysisList)) {
-    checkmate::assertClass(cmAnalysisList[[i]], "cmAnalysis", add = errorMessages)
-  }
-  checkmate::assertList(targetComparatorOutcomesList, min.len = 1, add = errorMessages)
-  for (i in 1:length(targetComparatorOutcomesList)) {
-    checkmate::assertClass(targetComparatorOutcomesList[[i]], "targetComparatorOutcomes", add = errorMessages)
-  }
+  checkmate::assertList(cmAnalysisList, min.len = 1, types = "cmAnalysis", add = errorMessages)
+  checkmate::assertList(targetComparatorOutcomesList, min.len = 1, types = "targetComparatorOutcomes", add = errorMessages)
   checkmate::assertDataFrame(analysesToExclude, null.ok = TRUE, add = errorMessages)
+
+  if (!is.null(analysesToExclude)) {
+    if (nrow(analysesToExclude) == 0) {
+      warning("Passed `data.frame` with 0 rows to parameter: `analysesToExclude`, no analyses excluded.")
+    }
+  }
+
   checkmate::assertLogical(refitPsForEveryOutcome, len = 1, add = errorMessages)
   checkmate::assertLogical(refitPsForEveryStudyPopulation, len = 1, add = errorMessages)
   checkmate::assertClass(multiThreadingSettings, "CmMultiThreadingSettings", add = errorMessages)
