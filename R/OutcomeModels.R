@@ -80,6 +80,10 @@ fitOutcomeModel <- function(population,
                             )) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
+  checkmate::assertNames(names(population), must.include = c("rowId", "outcomeCount", "treatment", "timeAtRisk", "personSeqId"), add = errorMessages)
+  if (!is.null(cohortMethodData)) {
+    checkmate::assertNames(names(cohortMethodData), must.include = c("analysisRef", "cohorts", "covariateRef", "covariates", "outcomes"), add = errorMessages)
+  }
   checkmate::assertClass(cohortMethodData, "CohortMethodData", null.ok = TRUE, add = errorMessages)
   checkmate::assertChoice(modelType, c("logistic", "poisson", "cox"), add = errorMessages)
   checkmate::assertLogical(stratified, len = 1, add = errorMessages)
@@ -95,9 +99,6 @@ fitOutcomeModel <- function(population,
   checkmate::reportAssertions(collection = errorMessages)
   if (stratified && nrow(population) > 0 && is.null(population$stratumId)) {
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
-  }
-  if (is.null(population$outcomeCount)) {
-    stop("No outcome variable found in population object. Use createStudyPopulation to create variable.")
   }
   if (is.null(cohortMethodData) && useCovariates) {
     stop("Requested all covariates for model, but no cohortMethodData object specified")
