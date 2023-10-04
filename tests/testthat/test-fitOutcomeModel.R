@@ -445,67 +445,6 @@ test_that("interactionCovariateIds", {
   )
 })
 
-test_that("interactionCovariateIds", {
-  # Hard check on 64bit?
-  # Warning on empty?
-  # Allow negatives?
-  femaleCovId <- 8532001
-
-  ## Defaults ----
-  mod <- fitOutcomeModel(
-    population = studyPopMatched,
-    cohortMethodData = sCohortMethodData,
-    interactionCovariateIds = femaleCovId
-  )
-
-  expect_s3_class(mod, "OutcomeModel")
-
-  ## Empty ----
-  mod <- fitOutcomeModel(
-    population = studyPopMatched,
-    cohortMethodData = sCohortMethodData,
-    interactionCovariateIds = c()
-  )
-
-  expect_s3_class(mod, "OutcomeModel")
-
-  ## 64-bit int ----
-  mod <- fitOutcomeModel(
-    population = studyPopMatched,
-    cohortMethodData = sCohortMethodData,
-    interactionCovariateIds = bit64::as.integer64(99999999999)
-  )
-
-  expect_s3_class(mod, "OutcomeModel")
-
-  ## Negative
-  mod <- fitOutcomeModel(
-    population = studyPopMatched,
-    cohortMethodData = sCohortMethodData,
-    interactionCovariateIds = -femaleCovId
-  )
-
-  expect_s3_class(mod, "OutcomeModel")
-
-  ## Negative 64-bit ----
-  mod <- fitOutcomeModel(
-    population = studyPopMatched,
-    cohortMethodData = sCohortMethodData,
-    interactionCovariateIds = -bit64::as.integer64(99999999999)
-  )
-
-  expect_s3_class(mod, "OutcomeModel")
-
-  ## NA ----
-  expect_error(
-    fitOutcomeModel(
-      population = studyPopMatched,
-      cohortMethodData = sCohortMethodData,
-      interactionCovariateIds = NA
-    )
-  )
-})
-
 test_that("excludeCovariateIds", {
   # Hard check on 64bit?
   # Warning on empty?
