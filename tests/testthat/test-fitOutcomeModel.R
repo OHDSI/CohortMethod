@@ -1,4 +1,3 @@
-library(CohortMethod)
 library(testthat)
 library(dplyr)
 
@@ -43,7 +42,7 @@ test_that("population", {
     fitOutcomeModel(
       population = "studyPop"
     ),
-    "not 'character'"
+    "not 'character'|Must have names"
   )
 
   ## Minimal columns ----
@@ -73,12 +72,13 @@ test_that("cohortMethodData", {
   expect_s3_class(mod, "OutcomeModel")
 
   ## Wrong data ----
+
   expect_error(
     fitOutcomeModel(
       population = studyPop,
       cohortMethodData = iris
     ),
-    "Must inherit from class 'CohortMethodData'"
+    "('analysisRef','cohorts','covariateRef','covariates','outcomes'|Must inherit from class 'CohortMethodData')"
   )
 
   ## Empty CohortMethodData ----
