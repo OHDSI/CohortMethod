@@ -60,6 +60,17 @@ test_that("population", {
     ),
     "Names must include the elements"
   )
+
+  ## sum(outcomeCount) == 0 ----
+  pop <- studyPop %>%
+    mutate(outcomeCount = 0)
+
+  expect_output(
+    fitOutcomeModel(
+      population = pop
+    ),
+    "NO OUTCOMES FOUND FOR POPULATION"
+  )
 })
 
 test_that("cohortMethodData", {
@@ -260,6 +271,29 @@ test_that("stratified", {
     modTrue1$outcomeCounts,
     modTrue2$outcomeCounts
   ))
+
+  ## sum(treatment) == 0 ----
+  pop0 <- studyPopStratisfied %>%
+    mutate(treatment = 0)
+
+  pop1 <- studyPopStratisfied %>%
+    mutate(treatment = 1)
+
+  expect_output(
+    fitOutcomeModel(
+      population = pop0,
+      stratified = TRUE
+    ),
+    "NO STRATA WITH BOTH TARGET, COMPARATOR, .+ OUTCOME"
+  )
+
+  expect_output(
+    fitOutcomeModel(
+      population = pop1,
+      stratified = TRUE
+    ),
+    "NO STRATA WITH BOTH TARGET, COMPARATOR, .+ OUTCOME"
+  )
 })
 
 test_that("useCovariates", {
@@ -443,6 +477,16 @@ test_that("interactionCovariateIds", {
       interactionCovariateIds = NA
     )
   )
+
+  ## length(interactionCovariateIds) > 1 & useCovariates ----
+  mod <- suppressWarnings(fitOutcomeModel(
+    population = studyPopMatched,
+    cohortMethodData = sCohortMethodData,
+    useCovariates = TRUE,
+    interactionCovariateIds = c(femaleCovId)
+  ))
+
+  expect_s3_class(mod, "OutcomeModel")
 })
 
 test_that("excludeCovariateIds", {
@@ -650,17 +694,6 @@ test_that("profileGrid", {
   )
 
   expect_s3_class(mod, "OutcomeModel")
-
-  ## Gird and Bounds ----
-  expect_error(
-    fitOutcomeModel(
-      population = studyPop,
-      cohortMethodData = sCohortMethodData,
-      profileGrid = log(seq(10)),
-      profileBounds = c(log(0.1), log(10))
-    ),
-    "grid and bounds"
-  )
 })
 
 test_that("profileBounds", {
@@ -924,5 +957,75 @@ test_that("control", {
       cohortMethodData = sCohortMethodData,
       control = controlMalformed
     ))
+  )
+})
+
+test_that("Combinations", {
+  ## stratified && nrow(population) > 0 && is.null(population$stratumId)
+  expect_error(
+    suppressWarnings(fitOutcomeModel(
+      population = studyPop,
+      stratified = TRUE
+    )),
+    "matchOnPs or stratifyByPs"
+  )
+  ## is.null(cohortMethodData) && useCovariates
+  expect_error(
+    suppressWarnings(fitOutcomeModel(
+      population = studyPop,
+      useCovariates = TRUE
+    )),
+    "covariates .+ no cohortMethodData object specified"
+  )
+
+  ## is.null(cohortMethodData) && length(interactionCovariateIds) != 0
+  expect_error(
+    suppressWarnings(fitOutcomeModel(
+      population = studyPop,
+      interactionCovariateIds = c(8532001)
+    )),
+    "interaction terms .+ no cohortMethodData object specified"
+  )
+
+  ## any(excludeCovariateIds %in% interactionCovariateIds)
+  expect_error(
+    suppressWarnings(fitOutcomeModel(
+      population = studyPop,
+      cohortMethodData = sCohortMethodData,
+      interactionCovariateIds = c(8532001),
+      excludeCovariateIds = c(8532001)
+    )),
+    "exclude covariates .+ used for interaction"
+  )
+
+  # any(includeCovariateIds %in% excludeCovariateIds)
+  expect_error(
+    suppressWarnings(fitOutcomeModel(
+      population = studyPop,
+      cohortMethodData = sCohortMethodData,
+      includeCovariateIds = c(8532001),
+      excludeCovariateIds = c(8532001)
+    )),
+    "exclude covariates .+ included"
+  )
+
+  ## inversePtWeighting && is.null(population$iptw)
+  expect_error(
+    suppressWarnings(fitOutcomeModel(
+      population = studyPop,
+      inversePtWeighting = TRUE
+    )),
+    "no IPTW are provided"
+  )
+
+  ## !is.null(profileGrid) && !is.null(profileBounds)
+  expect_error(
+    fitOutcomeModel(
+      population = studyPop,
+      cohortMethodData = sCohortMethodData,
+      profileGrid = log(seq(10)),
+      profileBounds = c(log(0.1), log(10))
+    ),
+    "grid and bounds"
   )
 })

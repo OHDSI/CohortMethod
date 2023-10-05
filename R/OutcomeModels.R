@@ -109,6 +109,9 @@ fitOutcomeModel <- function(population,
   if (any(excludeCovariateIds %in% interactionCovariateIds)) {
     stop("Can't exclude covariates that are to be used for interaction terms")
   }
+  if (any(includeCovariateIds %in% excludeCovariateIds)) {
+    stop("Can't exclude covariates that are to be included")
+  }
   if (inversePtWeighting && is.null(population$iptw)) {
     stop("Requested inverse probability weighting, but no IPTW are provided. Use createPs to generate them")
   }
