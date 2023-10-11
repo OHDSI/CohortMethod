@@ -48,7 +48,8 @@ Imports:
 	ParallelLogger (>= 3.0.1),
 	bit64,
 	checkmate,
-	EmpiricalCalibration
+	EmpiricalCalibration,
+	zip
 Suggests:
 	testthat,
 	pROC,

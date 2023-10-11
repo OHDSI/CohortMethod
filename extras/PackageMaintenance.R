@@ -96,3 +96,9 @@ rCode <- ParallelLogger::createArgFunction("fitOutcomeModel",
 writeLines(rCode, "r/CreateArgFunctions.R")
 styler::style_file("r/CreateArgFunctions.R")
 
+
+
+ResultModelManager::generateSqlSchema(
+  csvFilepath = "d:/temp/resultsDataModelSpecification.csv",
+  sqlOutputPath = "d:/temp",
+  overwrite = TRUE)

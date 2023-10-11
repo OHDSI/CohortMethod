@@ -677,10 +677,10 @@ exportToCsv(
 
 Any person counts in the results that are smaller than the `minCellCount` argument will be blinded, by replacing the count with the negative `minCellCount`. For example, if the number of people with the outcome is 3, and `minCellCount = 5`, the count will be reported to be -5, which in the Shiny app will be displayed as '<5'. 
 
-Information on the data model used to generate the CSV files can be retrieved using `getResultsDataModel()`:
+Information on the data model used to generate the CSV files can be retrieved using `getResultsDataModelSpecifications()`:
 
 ```{r}
-getResultsDataModel()
+getResultsDataModelSpecifications()
 ```
 
 # View results in a Shiny app
