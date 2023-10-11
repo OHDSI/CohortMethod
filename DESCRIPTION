@@ -60,7 +60,7 @@ Suggests:
 	R.utils,
 	RSQLite,
 	ResultModelManager,
-	ShinyAppBuilder,
+	ShinyAppBuilder (>= 1.2.0),
 	markdown,
 	remotes
 Remotes:

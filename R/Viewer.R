@@ -220,7 +220,7 @@ launchResultsViewer <- function(connectionDetails, databaseSchema) {
     schema = databaseSchema,
     databaseTable = 'DATABASE_META_DATA'
   )
-  cohortMethodModule <- ShinyAppBuilder::createDefaultEstimationConfig(
+  cohortMethodModule <- ShinyAppBuilder::createDefaultCohortMethodConfig(
     resultDatabaseDetails = resultDatabaseDetails,
     useKeyring = TRUE
   )
