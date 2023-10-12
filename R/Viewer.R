@@ -208,10 +208,7 @@ launchResultsViewer <- function(connectionDetails, databaseSchema) {
 
   ensureInstalled("ShinyAppBuilder")
   ensureInstalled("markdown")
-  aboutModule <- ShinyAppBuilder::createDefaultAboutConfig(
-    resultDatabaseDetails = NULL,
-    useKeyring = TRUE
-  )
+  aboutModule <- ShinyAppBuilder::createDefaultAboutConfig()
   resultDatabaseDetails <- list(
     dbms = connectionDetails$dbms,
     tablePrefix = 'cm_',
@@ -220,13 +217,9 @@ launchResultsViewer <- function(connectionDetails, databaseSchema) {
     schema = databaseSchema,
     databaseTable = 'DATABASE_META_DATA'
   )
-  cohortMethodModule <- ShinyAppBuilder::createDefaultCohortMethodConfig(
-    resultDatabaseDetails = resultDatabaseDetails,
-    useKeyring = TRUE
-  )
+  cohortMethodModule <- ShinyAppBuilder::createDefaultCohortMethodConfig()
   shinyAppConfig <- ShinyAppBuilder::initializeModuleConfig() %>%
     ShinyAppBuilder::addModuleConfig(aboutModule) %>%
-    # addModuleConfig(cohortGeneratorModule) %>%
     ShinyAppBuilder::addModuleConfig(cohortMethodModule)
   connectionHandler <- ResultModelManager::ConnectionHandler$new(connectionDetails)
   ShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)

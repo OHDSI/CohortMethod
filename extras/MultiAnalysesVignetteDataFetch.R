@@ -311,3 +311,58 @@ insertExportedResultsInSqlite(sqliteFileName = file.path(folder, "export", "resu
                               exportFolder = file.path(folder, "export"),
                               cohorts = cohorts)
 launchResultsViewerUsingSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"))
+
+# Upload results to SQLite using RMM -------------------------------------------
+databaseFile <-  file.path(folder, "export", "CohortMethodResults.sqlite")
+connectionDetails <- DatabaseConnector::createConnectionDetails(
+  dbms = "sqlite",
+  server = databaseFile
+)
+createResultsDataModel(
+  connectionDetails = connectionDetails,
+  databaseSchema = "main",
+  tablePrefix = ""
+)
+uploadResults(
+  connectionDetails = connectionDetails,
+  schema = "main",
+  zipFileName = file.path(folder, "export", "Results_MDCD.zip"),
+  purgeSiteDataBeforeUploading = FALSE
+)
+# Add cohort and database tables:
+connection <- DatabaseConnector::connect(connectionDetails)
+cohorts <- data.frame(
+  cohortId = c(
+    1118084,
+    1124300,
+    192671),
+  cohortName = c(
+    "Celecoxib",
+    "Diclofenac",
+    "GI Bleed"
+  )
+)
+DatabaseConnector::insertTable(
+  connection = connection,
+  databaseSchema = "main",
+  tableName = "cg_cohort_definition",
+  data = cohorts,
+  dropTableIfExists = TRUE,
+  createTable = TRUE,
+  camelCaseToSnakeCase = TRUE
+)
+databases <- tibble(
+  database_id = "MDCR",
+  cdm_source_name = "Merative Marketscan MDCR",
+  cdm_source_abbreviation = "MDCR"
+)
+DatabaseConnector::insertTable(
+  connection = connection,
+  databaseSchema = "main",
+  tableName = "databases",
+  data = databases,
+  dropTableIfExists = TRUE,
+  createTable = TRUE
+)
+DatabaseConnector::disconnect(connection)
+

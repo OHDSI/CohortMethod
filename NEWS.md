@@ -15,6 +15,7 @@ Changes:
 
 6. The results schema specifications of the `exportToCsv()` function has changed:
     - Removed the `attrition_fraction` and `attrition_diagnostic` fields from the `cm_diagnostics_summary ` table.
+    - Added the `target_estimator` field to the `cm_result` add `cm_interaction_result` tables.
     - Added the `generalizability_max_sdm` and `generalizabiltiy_diagnostic` fields to the `cm_diagnostics_summary` table.
     - Added the `mean_before`, `mean_after`, `target_std_diff`, `comparator_std_diff`, and `target_comparator_std_diff` fields to both the `cm_covariate_balance` and `cm_shared_covariate_balance` tables.
     
