@@ -55,7 +55,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
     stratumSize <- cohorts %>%
       group_by(.data$stratumId, .data$treatment) %>%
       count() %>%
-      ungroup()
+      ungroup() %>%
+      collect()
   }
 
   useWeighting <- (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) ||
@@ -68,7 +69,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       # Variable strata sizes detected: weigh by size of strata set
       w <- stratumSize %>%
         mutate(weight = 1 / .data$n) %>%
-        inner_join(cohorts, by = c("stratumId", "treatment")) %>%
+        inner_join(cohorts, by = c("stratumId", "treatment"), copy = TRUE) %>%
         select("rowId", "treatment", "weight")
     } else {
       w <- cohorts %>%
