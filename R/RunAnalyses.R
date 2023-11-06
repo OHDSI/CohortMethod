@@ -1617,7 +1617,7 @@ createReferenceTable <- function(cmAnalysisList,
                                             balanceId,
                                             targetId,
                                             comparatorId) {
-  name <- sprintf("FilterForBalance_l%s_s%s_p%s_t%s_c%s_s%s_b%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, balanceId)
+  name <- sprintf("FilterForBalance_l%s_s%s_p%s_t%s_c%s_s%s_b%s.zip", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, balanceId)
   return(name)
 }
 
