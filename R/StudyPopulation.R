@@ -230,14 +230,14 @@ createStudyPopulation <- function(cohortMethodData,
             .data$daysToEvent > -priorOutcomeLookback &
               outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart
           ) %>%
-          select("rowId")
+          pull("rowId")
       } else {
         priorOutcomeRowIds <- outcomes %>%
           filter(
             .data$daysToEvent > -priorOutcomeLookback &
               .data$daysToEvent < riskWindowStart
           ) %>%
-          select("rowId")
+          pull("rowId")
       }
       population <- population %>%
         filter(!(.data$rowId %in% priorOutcomeRowIds))
