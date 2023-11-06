@@ -55,7 +55,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
     stratumSize <- cohorts %>%
       group_by(.data$stratumId, .data$treatment) %>%
       count() %>%
-      ungroup()
+      ungroup() %>%
+      collect()
   }
 
   useWeighting <- (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) ||
@@ -71,19 +72,20 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       # Variable strata sizes detected: weigh by size of strata set
       w <- stratumSize %>%
         mutate(weight = 1 / .data$n) %>%
-        inner_join(cohorts, by = c("stratumId", "treatment")) %>%
+        inner_join(cohorts, by = c("stratumId", "treatment"), copy = TRUE) %>%
         select("rowId", "treatment", "weight")
       # Overall weight is for computing mean and SD across T and C
       overallW <-  stratumSize %>%
         group_by(.data$stratumId) %>%
         summarise(weight = 1 / sum(.data$n, na.rm = TRUE)) %>%
         ungroup() %>%
-        inner_join(cohorts, by = c("stratumId")) %>%
+        inner_join(cohorts, by = c("stratumId"), copy = TRUE) %>%
         select("rowId", "weight")
     } else {
       w <- cohorts %>%
         mutate(weight = .data$iptw) %>%
-        select("rowId", "treatment", "weight")
+        select("rowId", "treatment", "weight") %>%
+        collect()
       overallW <- w
     }
     # Normalize so sum(weight) == 1 per treatment arm:
@@ -338,7 +340,7 @@ computeCovariateBalance <- function(population,
   on.exit(cohortMethodData$tempCohortsAfterMatching <- NULL, add = TRUE)
 
   beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateFilter)
-  afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateFilter)
+  afterMatching <- computeMeansPerGroup(cohorts = cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateFilter)
 
   beforeMatching <- beforeMatching %>%
     select("covariateId",
