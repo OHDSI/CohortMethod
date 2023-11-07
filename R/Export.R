@@ -158,7 +158,7 @@ exportToCsv <- function(outputFolder,
     minCellCount = minCellCount
   )
 
-  exporLikelihoodProfiles(
+  exportLikelihoodProfiles(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId
@@ -587,7 +587,7 @@ exportCmInteractionResults <- function(outputFolder,
   writeToCsv(results, fileName)
 }
 
-exporLikelihoodProfiles <- function(outputFolder,
+exportLikelihoodProfiles <- function(outputFolder,
                                     exportFolder,
                                     databaseId) {
   message("- likelihood_profile table")
