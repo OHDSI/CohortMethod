@@ -24,7 +24,9 @@ Changes:
 
 Bugfixes:
 
-3. Fixing `runCmAnalyses()` when using `refitPsForEveryOutcome = TRUE`.
+1. Fixing `runCmAnalyses()` when using `refitPsForEveryOutcome = TRUE`.
+
+2. Handling edge case when exporting preference distribution and the target or comparator only has 1 subject.
 
 
 CohortMethod 5.1.0

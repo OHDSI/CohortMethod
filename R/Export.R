@@ -811,7 +811,10 @@ exportPreferenceScoreDistribution <- function(outputFolder,
   # rows <- split(reference, reference$sharedPsFile)[[2]]
   preparePlot <- function(rows) {
     ps <- readRDS(file.path(outputFolder, rows$sharedPsFile[1]))
-    if (nrow(ps) > 0 && min(ps$propensityScore) < max(ps$propensityScore)) {
+    if (nrow(ps) > 0 &&
+        min(ps$propensityScore) < max(ps$propensityScore) &&
+        sum(ps$treatment == 1) > 1 &&
+        sum(ps$treatment == 0) > 1 ) {
       ps <- computePreferenceScore(ps)
       d1 <- density(ps$preferenceScore[ps$treatment == 1], from = 0, to = 1, n = 100)
       d0 <- density(ps$preferenceScore[ps$treatment == 0], from = 0, to = 1, n = 100)
