@@ -1702,10 +1702,10 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     if (is.null(coefficient)) {
       p <- NA
     } else {
-      p <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
-                                                     seLogRr = estimate$seLogRr)
-      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
-                                                             seLogRr = estimate$seLogRr,
+      p <- EmpiricalCalibration::computeTraditionalP(logRr = coefficient,
+                                                     seLogRr = outcomeModel$outcomeModelTreatmentEstimate$seLogRr)
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = coefficient,
+                                                             seLogRr = outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
                                                              twoSided = FALSE,
                                                              upper = TRUE)
     }
