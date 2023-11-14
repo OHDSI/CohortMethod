@@ -135,6 +135,8 @@ uploadExportedResults <- function(connectionDetails,
       cdm_source_abbreviation = as.character(.data$database_id)
     )
   databaseIdentifierFile <- tempfile(fileext = ".csv")
+  # Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+  readr::local_edition(1)
   readr::write_csv(databaseIdentifier, databaseIdentifierFile)
   DatabaseConnector::insertTable(
     connection = connection,

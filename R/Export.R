@@ -220,6 +220,8 @@ exportToCsv <- function(outputFolder,
 
 writeToCsv <- function(data, fileName, append = FALSE) {
   colnames(data) <- SqlRender::camelCaseToSnakeCase(colnames(data))
+  # Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+  readr::local_edition(1)
   readr::write_csv(x = data, file = fileName, append = append)
 }
 
