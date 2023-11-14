@@ -1,5 +1,7 @@
 library(Eunomia)
 library(CohortMethod)
+# Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+readr::local_edition(1)
 
 connectionDetails <- getEunomiaConnectionDetails()
 Eunomia::createCohorts(connectionDetails)
