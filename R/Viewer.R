@@ -100,6 +100,8 @@ uploadExportedResults <- function(connectionDetails,
     })
   })
   rdmsFile <- system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod")
+  # Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+  readr::local_edition(1)
   specification <- readr::read_csv(file = rdmsFile, show_col_types = FALSE) %>%
     SqlRender::snakeCaseToCamelCaseNames()
 

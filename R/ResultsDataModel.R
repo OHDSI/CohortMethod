@@ -23,6 +23,8 @@
 #' @export
 getResultsDataModelSpecifications <- function() {
   pathToCsv <- system.file("csv", "resultsDataModelSpecification.csv", package = utils::packageName())
+  # Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+  readr::local_edition(1)
   resultsDataModelSpecifications <- readr::read_csv(file = pathToCsv, col_types = readr::cols())
   colnames(resultsDataModelSpecifications) <- SqlRender::snakeCaseToCamelCase(colnames(resultsDataModelSpecifications))
   return(resultsDataModelSpecifications)

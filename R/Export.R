@@ -248,6 +248,8 @@ enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
 }
 
 createEmptyResult <- function(tableName) {
+  # Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+  readr::local_edition(1)
   columns <- readr::read_csv(
     file = system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod"),
     show_col_types = FALSE) %>%

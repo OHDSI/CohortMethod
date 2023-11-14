@@ -35,6 +35,8 @@ getDefaultCmTable1Specifications <- function() {
     analysisId = readr::col_integer(),
     covariateIds = readr::col_character()
   )
+  # Workaround for issue https://github.com/tidyverse/vroom/issues/519:
+  readr::local_edition(1)
   specifications <- readr::read_csv(fileName, col_types = colTypes)
   return(specifications)
 }
