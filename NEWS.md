@@ -20,6 +20,8 @@ Changes:
     - Added the `mean_before`, `mean_after`, `target_std_diff`, `comparator_std_diff`, and `target_comparator_std_diff` fields to both the `cm_covariate_balance` and `cm_shared_covariate_balance` tables.
     
 7. Improve speed of covariate balance computation.
+
+8. Adding one-sided (calibrated) p-values to results summary and results model.
     
 
 Bugfixes:

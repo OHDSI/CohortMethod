@@ -56,7 +56,7 @@ cm_result,calibrated_rr,float,No,No,No,No,The calibrated relative risk.
 cm_result,calibrated_ci_95_lb,float,No,No,No,No,The lower bound of the calibrated 95% confidence interval of the relative risk.
 cm_result,calibrated_ci_95_ub,float,No,No,No,No,The upper bound of the calibrated 95% confidence interval of the relative risk.
 cm_result,calibrated_p,float,No,No,No,No,The calibrated two-sided p-value.
-cm_result,calibrated_one-sided_p,float,No,No,No,No,The calibrated one-sided p-value considering the null hypothesis of RR <= 1.
+cm_result,calibrated_one_sided_p,float,No,No,No,No,The calibrated one-sided p-value considering the null hypothesis of RR <= 1.
 cm_result,calibrated_log_rr,float,No,No,No,No,The log of the calibrated relative risk.
 cm_result,calibrated_se_log_rr,float,No,No,No,No,The standard error of the log of the calibrated relative risk.
 cm_result,target_estimator,varchar,Yes,No,No,No,"The target estimator, for example ""att"", ""ate"", ""atu"" or ""ato""."
