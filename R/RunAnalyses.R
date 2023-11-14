@@ -1701,6 +1701,7 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     ci <- confint(outcomeModel)
     if (is.null(coefficient)) {
       p <- NA
+      oneSidedP <- NA
     } else {
       p <- EmpiricalCalibration::computeTraditionalP(logRr = coefficient,
                                                      seLogRr = outcomeModel$outcomeModelTreatmentEstimate$seLogRr)
