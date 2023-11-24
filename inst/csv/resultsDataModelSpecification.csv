@@ -42,7 +42,7 @@ cm_result,rr,float,No,No,No,No,The estimated relative risk (e.g. the hazard rati
 cm_result,ci_95_lb,float,No,No,No,No,The lower bound of the 95% confidence interval of the relative risk.
 cm_result,ci_95_ub,float,No,No,No,No,The upper bound of the 95% confidence interval of the relative risk.
 cm_result,p,float,No,No,No,No,The two-sided p-value considering the null hypothesis of no effect.
-cm_result,one_sided_p,float,No,No,No,No,he one-sided p-value considering the null hypothesis of RR <= 1.
+cm_result,one_sided_p,float,No,No,No,No,The one-sided p-value considering the null hypothesis of RR <= 1.
 cm_result,target_subjects,int,Yes,No,Yes,No,The number of subject in the target cohort.
 cm_result,comparator_subjects,int,Yes,No,Yes,No,The number of subject in the comparator cohort.
 cm_result,target_days,int,Yes,No,No,No,The number of days observed in the target cohort.
