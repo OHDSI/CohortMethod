@@ -58,7 +58,7 @@ createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
   checkmate::reportAssertions(collection = errorMessages)
   if (!is.null(attritionFractionThreshold)) {
     warning("The attritionFractionThreshold argument is deprecated and will be ignored. ",
-    "See generalizabilitySdmThreshold instead.")
+            "See generalizabilitySdmThreshold instead.")
   }
   thresholds <- list()
   for (name in names(formals(createCmDiagnosticThresholds))) {
@@ -594,8 +594,8 @@ exportCmInteractionResults <- function(outputFolder,
 }
 
 exportLikelihoodProfiles <- function(outputFolder,
-                                    exportFolder,
-                                    databaseId) {
+                                     exportFolder,
+                                     databaseId) {
   message("- likelihood_profile table")
   reference <- getFileReference(outputFolder)
   fileName <- file.path(exportFolder, "cm_likelihood_profile.csv")
@@ -764,7 +764,7 @@ tidyBalance <- function(balance, minCellCount) {
                round(.data$targetStdDiff, 3) == 0 &
                round(.data$comparatorStdDiff, 3) == 0 &
                round(.data$targetComparatorStdDiff, 3) == 0)
-           ) %>%
+    ) %>%
     enforceMinCellValue("targetMeanBefore",
                         minCellCount / inferredTargetBeforeSize,
                         silent = TRUE
@@ -1200,7 +1200,6 @@ exportDiagnosticsSummary <- function(outputFolder,
     pull()
   equipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise))
   results <- reference %>%
-    filter(.data$outcomeOfInterest) %>%
     inner_join(
       resultsSummary,
       by = join_by("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
@@ -1227,6 +1226,7 @@ exportDiagnosticsSummary <- function(outputFolder,
 
   # Apply diagnostics thresholds:
   results <- results %>%
+    mutate(databaseId = !!databaseId) %>%
     mutate(balanceDiagnostic = case_when(
       is.na(.data$maxSdm) ~ "NOT EVALUATED",
       .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
@@ -1262,8 +1262,12 @@ exportDiagnosticsSummary <- function(outputFolder,
                               .data$easeDiagnostic != "FAIL" &
                               .data$equipoiseDiagnostic != "FAIL" &
                               .data$balanceDiagnostic != "FAIL" &
-                              .data$sharedBalanceDiagnostic != "FAIL", 1, 0),
-           databaseId = !!databaseId)
+                              .data$sharedBalanceDiagnostic != "FAIL", 1, 0)) %>%
+    mutate(unblindForEvidenceSynthesis = ifelse(.data$generalizabilityDiagnostic != "FAIL" &
+                                                  .data$easeDiagnostic != "FAIL" &
+                                                  .data$equipoiseDiagnostic != "FAIL" &
+                                                  .data$balanceDiagnostic != "FAIL" &
+                                                  .data$sharedBalanceDiagnostic != "FAIL", 1, 0))
 
   # Add deprecated fields:
   results <- results %>%

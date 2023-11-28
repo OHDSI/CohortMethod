@@ -131,6 +131,7 @@ cm_diagnostics_summary,attrition_diagnostic,varchar(20),No,No,No,Yes,DEPRECATED:
 cm_diagnostics_summary,generalizability_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the generalizability diagnostic.
 cm_diagnostics_summary,ease_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the EASE diagnostic.
 cm_diagnostics_summary,unblind,int,Yes,No,No,No,"Is unblinding the result recommended? (1 = yes, 0 = no)"
+cm_diagnostics_summary,unblind_for_evidence_synthesis,int,Yes,No,No,No,"Is unblinding the result for inclusion in evidence synthesis recommended? This ignores the MDRR diagnostic. (1 = yes, 0 = no)"
 cm_target_comparator_outcome,outcome_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_target_comparator_outcome,outcome_of_interest,int,Yes,No,No,No,"Is the outcome of interest (1 = yes, 0 = no)"
 cm_target_comparator_outcome,true_effect_size,float,No,No,No,No,The true effect size for the target-comparator-outcome. For negatitive controls this equals 1.

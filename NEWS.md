@@ -22,6 +22,10 @@ Changes:
 7. Improve speed of covariate balance computation.
 
 8. Adding one-sided (calibrated) p-values to results summary and results model.
+
+9. Adding `unblind_for_evidence_synthesis` field to `cm_diagnostics_summary` table.
+
+10. The `cm_diagnostics_summary` table now also contains negative controls. 
     
 
 Bugfixes:
