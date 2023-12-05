@@ -42,11 +42,18 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
       group_by(.data$treatment) %>%
       summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
       ungroup()
+    overallWSum <- overallW %>%
+      summarize(overallWSum = sum(.data$weight, na.rm = TRUE)) %>%
+      pull()
 
     cohortMethodData$w <- w %>%
       inner_join(wSum, by = "treatment") %>%
       mutate(weight = .data$weight / .data$wSum) %>%
       select(.data$rowId, .data$treatment, .data$weight)
+
+    cohortMethodData$overallW <- overallW %>%
+      mutate(overallWeight = .data$weight / overallWSum) %>%
+      select("rowId", "overallWeight")
 
     # By definition:
     sumW <- 1
@@ -54,46 +61,87 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
     result <- cohortMethodData$covariates %>%
       inner_join(cohortMethodData$w, by = c("rowId")) %>%
+      inner_join(cohortMethodData$overallW, by = c("rowId")) %>%
       group_by(.data$covariateId, .data$treatment) %>%
-      summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-                mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
-                sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-                sumWSqr = sum(.data$weight^2, na.rm = TRUE)) %>%
-      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW/(sumW^2 - .data$sumWSqr))) %>%
+      summarise(
+        sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+        mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
+        overallMean = sum(.data$overallWeight * as.numeric(.data$covariateValue), na.rm = TRUE),
+        sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        sumWSqr = sum(.data$weight^2, na.rm = TRUE),
+        overallSumSqr = sum(.data$overallWeight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        overallSumWSqr = sum(.data$overallWeight^2, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) %>%
       ungroup() %>%
-      select(.data$covariateId, .data$treatment, .data$sum, .data$mean, .data$sd) %>%
+      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
       collect()
 
     cohortMethodData$w <- NULL
+    cohortMethodData$overallW <- NULL
+
   } else {
     cohortCounts <- cohorts %>%
       group_by(.data$treatment) %>%
       count()
+    overallCount <- cohorts %>%
+      count() %>%
+      pull()
 
     result <- cohortMethodData$covariates %>%
-      inner_join(select(cohorts, .data$rowId, .data$treatment), by = "rowId") %>%
+      inner_join(select(cohorts, "rowId", "treatment"), by = "rowId") %>%
       group_by(.data$covariateId, .data$treatment) %>%
-      summarise(sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-                sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE)) %>%
+      summarise(
+        sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+        sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        overallSumWSqr = sum(1 / overallCount^2, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
       inner_join(cohortCounts, by = "treatment") %>%
-      mutate(sd = sqrt((.data$sumSqr - (.data$sum^2/.data$n))/.data$n),
-             mean = .data$sum/.data$n) %>%
+      mutate(
+        sd = sqrt((.data$sumSqr - (.data$sum^2 / .data$n)) / .data$n),
+        mean = .data$sum / .data$n,
+        overallMean = .data$sum / overallCount,
+        overallSumSqr = .data$sumSqr / overallCount
+      ) %>%
       ungroup() %>%
-      select(.data$covariateId, .data$treatment, .data$sum, .data$mean, .data$sd) %>%
+      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
       collect()
   }
+
   target <- result %>%
     filter(.data$treatment == 1) %>%
-    select(.data$covariateId, sumTarget = .data$sum, meanTarget = .data$mean, sdTarget = .data$sd)
+    select("covariateId",
+           sumTarget = "sum",
+           meanTarget = "mean",
+           sdTarget = "sd",
+           overallMeanTarget = "overallMean",
+           overallSumSqrTarget = "overallSumSqr",
+           overallSumWSqrTarget = "overallSumWSqr")
 
   comparator <- result %>%
     filter(.data$treatment == 0) %>%
-    select(.data$covariateId, sumComparator = .data$sum, meanComparator = .data$mean, sdComparator = .data$sd)
+    select("covariateId",
+           sumComparator = "sum",
+           meanComparator = "mean",
+           sdComparator = "sd",
+           overallMeanComparator = "overallMean",
+           overallSumSqrComparator = "overallSumSqr",
+           overallSumWSqrComparator = "overallSumWSqr")
 
   result <- target %>%
     full_join(comparator, by = "covariateId") %>%
-    mutate(sd = sqrt((.data$sdTarget^2 + .data$sdComparator^2)/2)) %>%
-    select(!c(.data$sdTarget, .data$sdComparator))
+    mutate(mean = .data$overallMeanTarget + .data$overallMeanComparator,
+           overallSumSqr = .data$overallSumSqrTarget + .data$overallSumSqrComparator,
+           overallSumWSqr = .data$overallSumWSqrTarget + .data$overallSumWSqrComparator) %>%
+    mutate(sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr))) %>%
+    select(-"overallMeanTarget",
+           -"overallMeanComparator",
+           -"overallSumSqrTarget",
+           -"overallSumSqrComparator",
+           -"overallSumWSqrTarget",
+           -"overallSumWSqrComparator")
 
   return(result)
 }
@@ -123,7 +171,45 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
 #' - propensityScore (numeric): Propensity score.
 #'
 #' @return
-#' Returns a tibble describing the covariate balance before and after matching/trimming.
+#' Returns a tibble describing the covariate balance before and after PS adjustment,
+#' with one row per covariate, with the same data as the `covariateRef` table in the `CohortMethodData` object,
+#' and the following additional columns:
+#'
+#' - beforeMatchingMeanTarget: The (weighted) mean value in the target before PS adjustment.
+#' - beforeMatchingMeanComparator: The (weighted) mean value in the comparator before PS adjustment.
+#' - beforeMatchingSumTarget: The (weighted) sum value in the target before PS adjustment.
+#' - beforeMatchingSumComparator: The (weighted) sum value in the comparator before PS adjustment.
+#' - beforeMatchingSdTarget: The standard deviation of the value in the target before PS adjustment.
+#' - beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
+#' - beforeMatchingMean: The mean of the value across target and comparator before PS adjustment.
+#' - beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
+#' - afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
+#' - afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
+#' - afterMatchingSumTarget: The (weighted) sum value in the target after PS adjustment.
+#' - afterMatchingSumComparator: The (weighted) sum value in the comparator after PS adjustment.
+#' - afterMatchingSdTarget: The standard deviation of the value in the target after PS adjustment.
+#' - afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
+#' - afterMatchingMean: The mean of the value across target and comparator after PS adjustment.
+#' - afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
+#' - beforeMatchingStdDiff: The standardized difference of means when comparing the target to
+#'                          the comparator before PS adjustment.
+#' - afterMatchingStdDiff: The standardized difference of means when comparing the target to
+#'                         the comparator after PS adjustment.
+#' - targetStdDiff: The standardized difference of means when comparing the target
+#'                  before PS adjustment to the target after PS adjustment.
+#' - comparatorStdDiff: The standardized difference of means when comparing the comparator
+#'                      before PS adjustment to the comparator after PS adjustment.
+#'  -targetComparatorStdDiff:  The standardized difference of means when comparing the entire
+#'                             population before PS adjustment to the entire population after
+#'                             PS adjustment.
+#'
+#' The 'beforeMatchingStdDiff' and 'afterMatchingStdDiff' columns inform on the balance:
+#' are the target and comparator sufficiently similar in terms of baseline covariates to
+#' allow for valid causal estimation?
+#'
+#' The 'targetStdDiff', 'comparatorStdDiff', and 'targetComparatorStdDiff' columns inform on
+#' the generalizability: are the cohorts after PS adjustment sufficiently similar to the cohorts
+#' before adjustment to allow generalizing the findings to the original cohorts?
 #'
 #' @references
 #' Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one
@@ -189,16 +275,38 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
   beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData)
   afterMatching <- computeMeansPerGroup(cohortMethodData$tempCohortsAfterMatching, cohortMethodData)
 
-  colnames(beforeMatching)[colnames(beforeMatching) == "meanTarget"] <- "beforeMatchingMeanTarget"
-  colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
-  colnames(beforeMatching)[colnames(beforeMatching) == "sumTarget"] <- "beforeMatchingSumTarget"
-  colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingSumComparator"
-  colnames(beforeMatching)[colnames(beforeMatching) == "sd"] <- "beforeMatchingSd"
-  colnames(afterMatching)[colnames(afterMatching) == "meanTarget"] <- "afterMatchingMeanTarget"
-  colnames(afterMatching)[colnames(afterMatching) == "meanComparator"] <- "afterMatchingMeanComparator"
-  colnames(afterMatching)[colnames(afterMatching) == "sumTarget"] <- "afterMatchingSumTarget"
-  colnames(afterMatching)[colnames(afterMatching) == "sumComparator"] <- "afterMatchingSumComparator"
-  colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
+
+  beforeMatching <- beforeMatching %>%
+    select("covariateId",
+           beforeMatchingMeanTarget = "meanTarget",
+           beforeMatchingMeanComparator = "meanComparator",
+           beforeMatchingSumTarget = "sumTarget",
+           beforeMatchingSumComparator = "sumComparator",
+           beforeMatchingSdTarget = "sdTarget",
+           beforeMatchingSdComparator = "sdComparator",
+           beforeMatchingMean = "mean",
+           beforeMatchingSd = "sd")
+  afterMatching <- afterMatching %>%
+    select("covariateId",
+           afterMatchingMeanTarget = "meanTarget",
+           afterMatchingMeanComparator = "meanComparator",
+           afterMatchingSumTarget = "sumTarget",
+           afterMatchingSumComparator = "sumComparator",
+           afterMatchingSdTarget = "sdTarget",
+           afterMatchingSdComparator = "sdComparator",
+           afterMatchingMean = "mean",
+           afterMatchingSd = "sd",
+           matches("overallMean"))
+  # colnames(beforeMatching)[colnames(beforeMatching) == "meanTarget"] <- "beforeMatchingMeanTarget"
+  # colnames(beforeMatching)[colnames(beforeMatching) == "meanComparator"] <- "beforeMatchingMeanComparator"
+  # colnames(beforeMatching)[colnames(beforeMatching) == "sumTarget"] <- "beforeMatchingSumTarget"
+  # colnames(beforeMatching)[colnames(beforeMatching) == "sumComparator"] <- "beforeMatchingSumComparator"
+  # colnames(beforeMatching)[colnames(beforeMatching) == "sd"] <- "beforeMatchingSd"
+  # colnames(afterMatching)[colnames(afterMatching) == "meanTarget"] <- "afterMatchingMeanTarget"
+  # colnames(afterMatching)[colnames(afterMatching) == "meanComparator"] <- "afterMatchingMeanComparator"
+  # colnames(afterMatching)[colnames(afterMatching) == "sumTarget"] <- "afterMatchingSumTarget"
+  # colnames(afterMatching)[colnames(afterMatching) == "sumComparator"] <- "afterMatchingSumComparator"
+  # colnames(afterMatching)[colnames(afterMatching) == "sd"] <- "afterMatchingSd"
   balance <- beforeMatching %>%
     full_join(afterMatching, by = "covariateId") %>%
     inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") %>%
@@ -206,12 +314,41 @@ computeCovariateBalance <- function(population, cohortMethodData, subgroupCovari
                  select(.data$analysisId, .data$domainId, .data$isBinary) %>%
                  collect() %>%
                  mutate(domainId = as.factor(.data$domainId)), by = "analysisId") %>%
-    mutate(beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator)/.data$beforeMatchingSd,
-           afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator)/.data$afterMatchingSd)
+    # mutate(beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator)/.data$beforeMatchingSd,
+    #        afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator)/.data$afterMatchingSd)
+    mutate(
+      beforeMatchingStdDiff = if_else(
+        .data$beforeMatchingSd == 0,
+        0,
+        (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator) / .data$beforeMatchingSd
+      ),
+      afterMatchingStdDiff = if_else(
+        .data$afterMatchingSd == 0,
+        0,
+        (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator) / .data$afterMatchingSd
+      ),
+      targetStdDiff = if_else(
+        .data$beforeMatchingSdTarget == 0,
+        0,
+        (.data$beforeMatchingMeanTarget - .data$afterMatchingMeanTarget) / .data$beforeMatchingSdTarget
+      ),
+      comparatorStdDiff = if_else(
+        .data$beforeMatchingSdComparator == 0,
+        0,
+        (.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / .data$beforeMatchingSdComparator
+      ),
+      targetComparatorStdDiff = if_else(
+        .data$beforeMatchingSd == 0,
+        0,
+        (.data$beforeMatchingMean - .data$afterMatchingMean) / .data$beforeMatchingSd
+      )
 
-  balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
-  balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
-  balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
+    ) %>%
+    arrange(desc(abs(.data$beforeMatchingStdDiff)))
+
+  # balance$beforeMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
+  # balance$afterMatchingStdDiff[balance$beforeMatchingSd == 0] <- 0
+  # balance <- balance[order(-abs(balance$beforeMatchingStdDiff)), ]
   delta <- Sys.time() - start
   ParallelLogger::logInfo(paste("Computing covariate balance took", signif(delta, 3), attr(delta, "units")))
   return(balance)
