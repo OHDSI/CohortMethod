@@ -27,7 +27,46 @@ will be downsampled before computing covariate balance to save time.
 Setting this number to 0 means no downsampling will be applied.}
 }
 \value{
-Returns a tibble describing the covariate balance before and after matching/trimming.
+Returns a tibble describing the covariate balance before and after PS adjustment,
+with one row per covariate, with the same data as the \code{covariateRef} table in the \code{CohortMethodData} object,
+and the following additional columns:
+\itemize{
+\item beforeMatchingMeanTarget: The (weighted) mean value in the target before PS adjustment.
+\item beforeMatchingMeanComparator: The (weighted) mean value in the comparator before PS adjustment.
+\item beforeMatchingSumTarget: The (weighted) sum value in the target before PS adjustment.
+\item beforeMatchingSumComparator: The (weighted) sum value in the comparator before PS adjustment.
+\item beforeMatchingSdTarget: The standard deviation of the value in the target before PS adjustment.
+\item beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
+\item beforeMatchingMean: The mean of the value across target and comparator before PS adjustment.
+\item beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
+\item afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
+\item afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
+\item afterMatchingSumTarget: The (weighted) sum value in the target after PS adjustment.
+\item afterMatchingSumComparator: The (weighted) sum value in the comparator after PS adjustment.
+\item afterMatchingSdTarget: The standard deviation of the value in the target after PS adjustment.
+\item afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
+\item afterMatchingMean: The mean of the value across target and comparator after PS adjustment.
+\item afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
+\item beforeMatchingStdDiff: The standardized difference of means when comparing the target to
+the comparator before PS adjustment.
+\item afterMatchingStdDiff: The standardized difference of means when comparing the target to
+the comparator after PS adjustment.
+\item targetStdDiff: The standardized difference of means when comparing the target
+before PS adjustment to the target after PS adjustment.
+\item comparatorStdDiff: The standardized difference of means when comparing the comparator
+before PS adjustment to the comparator after PS adjustment.
+-targetComparatorStdDiff:  The standardized difference of means when comparing the entire
+population before PS adjustment to the entire population after
+PS adjustment.
+}
+
+The 'beforeMatchingStdDiff' and 'afterMatchingStdDiff' columns inform on the balance:
+are the target and comparator sufficiently similar in terms of baseline covariates to
+allow for valid causal estimation?
+
+The 'targetStdDiff', 'comparatorStdDiff', and 'targetComparatorStdDiff' columns inform on
+the generalizability: are the cohorts after PS adjustment sufficiently similar to the cohorts
+before adjustment to allow generalizing the findings to the original cohorts?
 }
 \description{
 For every covariate, prevalence in treatment and comparator groups before and after

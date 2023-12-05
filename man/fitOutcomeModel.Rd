@@ -19,8 +19,8 @@ fitOutcomeModel(
   profileGrid = NULL,
   profileBounds = c(log(0.1), log(10)),
   prior = createPrior("laplace", useCrossValidation = TRUE),
-  control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance
-    = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
+  control = createControl(cvType = "auto", seed = 1, startingVariance = 0.01, tolerance =
+    2e-07, cvRepetitions = 10, noiseLevel = "quiet")
 )
 }
 \arguments{

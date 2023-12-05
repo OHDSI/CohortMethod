@@ -1,3 +1,11 @@
+CohortMethod 4.2.3
+==================
+Changes:
+
+1. Fix `sd` computation in `computeCovariateBalance()` and `computeMeansPerGroup()`
+2. Retain per group `sd` in `computeCovariateBalance()` results
+
+
 CohortMethod 4.2.2
 ==================
 
