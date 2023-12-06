@@ -30,6 +30,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
       ungroup()
   }
 
+  # By definition:
+  sumW <- 1
+
   if (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) {
     # Variable strata sizes detected: weigh by size of strata set
     w <- stratumSize %>%
@@ -55,8 +58,6 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
       mutate(overallWeight = .data$weight / overallWSum) %>%
       select("rowId", "overallWeight")
 
-    # By definition:
-    sumW <- 1
 
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
     result <- cohortMethodData$covariates %>%
