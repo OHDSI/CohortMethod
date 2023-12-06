@@ -37,8 +37,16 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData) {
     # Variable strata sizes detected: weigh by size of strata set
     w <- stratumSize %>%
       mutate(weight = 1/.data$n) %>%
-      inner_join(cohorts, by = c("stratumId", "treatment")) %>%
-      select(.data$rowId, .data$treatment, .data$weight)
+      inner_join(cohorts, by = c("stratumId", "treatment"), copy = TRUE) %>%
+      select("rowId", "treatment", "weight")
+
+    # Overall weight is for computing mean and SD across T and C
+    overallW <-  stratumSize %>%
+      group_by(.data$stratumId) %>%
+      summarise(weight = 1 / sum(.data$n, na.rm = TRUE)) %>%
+      ungroup() %>%
+      inner_join(cohorts, by = c("stratumId"), copy = TRUE) %>%
+      select("rowId", "weight")
 
     # Normalize so sum(weight) == 1 per treatment arm:
     wSum <- w %>%
