@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.0</span>
       </span>
     </div>
 
@@ -64,6 +64,29 @@
     </div>
 
     <div class="section level2">
+<h2 class="page-header" data-toc-text="5.2.0" id="cohortmethod-520">CohortMethod 5.2.0<a class="anchor" aria-label="anchor" href="#cohortmethod-520"></a></h2>
+<p>Changes:</p>
+<ol style="list-style-type: decimal"><li><p>The <code><a href="../reference/computeCovariateBalance.html">computeCovariateBalance()</a></code> function now also computes standardized difference of mean comparing cohorts before and after PS adjustment, which can inform on generalizability.</p></li>
+<li><p>Added the <code><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code> function.</p></li>
+<li><p>Improved computation of overall standard deviation when computing covariate balance (actually computing the SD instead of taking the mean of the target and comparator). Should produce more accurate balance estimations.</p></li>
+<li><p>Generated population objects now keep track of likely target estimator (e.g. ‘ATT’, or ‘ATE’). This informs selection of base population when calling <code><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code>.</p></li>
+<li><p>Deprecated the <code>attritionFractionThreshold</code> argument of the <code>createCmDiagnosticThresholds</code> function, and instead added the <code>generalizabilitySdmThreshold</code> argument.</p></li>
+<li>
+<p>The results schema specifications of the <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> function has changed:</p>
+<ul><li>Removed the <code>attrition_fraction</code> and <code>attrition_diagnostic</code> fields from the <code>cm_diagnostics_summary</code> table.</li>
+<li>Added the <code>target_estimator</code> field to the <code>cm_result</code> add <code>cm_interaction_result</code> tables.</li>
+<li>Added the <code>generalizability_max_sdm</code> and <code>generalizabiltiy_diagnostic</code> fields to the <code>cm_diagnostics_summary</code> table.</li>
+<li>Added the <code>mean_before</code>, <code>mean_after</code>, <code>target_std_diff</code>, <code>comparator_std_diff</code>, and <code>target_comparator_std_diff</code> fields to both the <code>cm_covariate_balance</code> and <code>cm_shared_covariate_balance</code> tables.</li>
+</ul></li>
+<li><p>Improve speed of covariate balance computation.</p></li>
+<li><p>Adding one-sided (calibrated) p-values to results summary and results model.</p></li>
+<li><p>Adding <code>unblind_for_evidence_synthesis</code> field to <code>cm_diagnostics_summary</code> table.</p></li>
+<li><p>The <code>cm_diagnostics_summary</code> table now also contains negative controls.</p></li>
+</ol><p>Bugfixes:</p>
+<ol style="list-style-type: decimal"><li><p>Fixing <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code> when using <code>refitPsForEveryOutcome = TRUE</code>.</p></li>
+<li><p>Handling edge case when exporting preference distribution and the target or comparator only has 1 subject.</p></li>
+</ol></div>
+    <div class="section level2">
 <h2 class="page-header" data-toc-text="5.1.0" id="cohortmethod-510">CohortMethod 5.1.0<a class="anchor" aria-label="anchor" href="#cohortmethod-510"></a></h2>
 <p>Changes:</p>
 <ol style="list-style-type: decimal"><li>Now also not unblinding if shared balance diagnostic fails.</li>
@@ -103,7 +126,7 @@
 <li><p>Added empirical calibration to the <code><a href="../reference/getResultsSummary.html">getResultsSummary()</a></code> function. Controls can be identified by the <code>trueEffectSize</code> argument in the <code><a href="../reference/createOutcome.html">createOutcome()</a></code> function.</p></li>
 <li><p>Dropping arguments like <code>createPs</code> and <code>fitOutcomeModel</code> from the <code><a href="../reference/createCmAnalysis.html">createCmAnalysis()</a></code> function. Instead, not providing <code>createPsArgs</code> or <code>fitOutcomeModelArgs</code> is assumed to mean skipping propensity score creation or outcome model fitting, respectively.</p></li>
 </ul></li>
-<li><p>Added the <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> function for exporting study results to CSV files that do not contain patient-level information and can therefore be shared between sites. The <code><a href="../reference/getResultsDataModel.html">getResultsDataModel()</a></code> function returns the data model for these CSV files.</p></li>
+<li><p>Added the <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> function for exporting study results to CSV files that do not contain patient-level information and can therefore be shared between sites. The <code>getResultsDataModel()</code> function returns the data model for these CSV files.</p></li>
 <li><p>Added the <code><a href="../reference/uploadExportedResults.html">uploadExportedResults()</a></code> and <code><a href="../reference/insertExportedResultsInSqlite.html">insertExportedResultsInSqlite()</a></code> functions for uploading the results from the CSV files in a database. The <code><a href="../reference/launchResultsViewer.html">launchResultsViewer()</a></code> and <code><a href="../reference/launchResultsViewerUsingSqlite.html">launchResultsViewerUsingSqlite()</a></code> functions were added for launching a Shiny app to view the results in the (SQLite) database.</p></li>
 </ol><p>Bug fixes:</p>
 <ol style="list-style-type: decimal"><li>Fixed error when using integer <code>maxWeight</code> when performng IPTW.</li>

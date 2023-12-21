@@ -4,13 +4,13 @@
     <loc>/404.html</loc>
   </url>
   <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
     <loc>/articles/MultipleAnalyses.html</loc>
   </url>
   <url>
     <loc>/articles/SingleStudies.html</loc>
+  </url>
+  <url>
+    <loc>/articles/index.html</loc>
   </url>
   <url>
     <loc>/authors.html</loc>
@@ -25,12 +25,6 @@
     <loc>/pull_request_template.html</loc>
   </url>
   <url>
-    <loc>/reference/adjustedKm.html</loc>
-  </url>
-  <url>
-    <loc>/reference/checkCmInstallation.html</loc>
-  </url>
-  <url>
     <loc>/reference/CohortMethod-package.html</loc>
   </url>
   <url>
@@ -38,6 +32,12 @@
   </url>
   <url>
     <loc>/reference/CohortMethodData-class.html</loc>
+  </url>
+  <url>
+    <loc>/reference/adjustedKm.html</loc>
+  </url>
+  <url>
+    <loc>/reference/checkCmInstallation.html</loc>
   </url>
   <url>
     <loc>/reference/cohortMethodDataSimulationProfile.html</loc>
@@ -103,6 +103,9 @@
     <loc>/reference/createPs.html</loc>
   </url>
   <url>
+    <loc>/reference/createResultsDataModel.html</loc>
+  </url>
+  <url>
     <loc>/reference/createStratifyByPsAndCovariatesArgs.html</loc>
   </url>
   <url>
@@ -139,6 +142,9 @@
     <loc>/reference/getAttritionTable.html</loc>
   </url>
   <url>
+    <loc>/reference/getDataMigrator.html</loc>
+  </url>
+  <url>
     <loc>/reference/getDbCohortMethodData.html</loc>
   </url>
   <url>
@@ -151,6 +157,9 @@
     <loc>/reference/getFollowUpDistribution.html</loc>
   </url>
   <url>
+    <loc>/reference/getGeneralizabilityTable.html</loc>
+  </url>
+  <url>
     <loc>/reference/getInteractionResultsSummary.html</loc>
   </url>
   <url>
@@ -161,6 +170,9 @@
   </url>
   <url>
     <loc>/reference/getResultsDataModel.html</loc>
+  </url>
+  <url>
+    <loc>/reference/getResultsDataModelSpecifications.html</loc>
   </url>
   <url>
     <loc>/reference/getResultsSummary.html</loc>
@@ -200,6 +212,9 @@
   </url>
   <url>
     <loc>/reference/matchOnPsAndCovariates.html</loc>
+  </url>
+  <url>
+    <loc>/reference/migrateDataModel.html</loc>
   </url>
   <url>
     <loc>/reference/plotCovariateBalanceOfTopVariables.html</loc>
@@ -260,5 +275,8 @@
   </url>
   <url>
     <loc>/reference/uploadExportedResults.html</loc>
+  </url>
+  <url>
+    <loc>/reference/uploadResults.html</loc>
   </url>
 </urlset>

@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.0</span>
       </span>
     </div>
 
@@ -89,7 +89,7 @@ package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2023-04-17</h4>
+            <h4 data-toc-skip class="date">2023-12-21</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/SingleStudies.Rmd" class="external-link"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="hidden name"><code>SingleStudies.Rmd</code></div>
@@ -113,8 +113,8 @@ bleeding-related hospitalization. For simplicity, we focus on one coxib
 <h2 id="installation-instructions">Installation instructions<a class="anchor" aria-label="anchor" href="#installation-instructions"></a>
 </h2>
 <p>Before installing the <code>CohortMethod</code> package make sure you
-have Java available. Java can be downloaded from <a href="http://www.java.com" class="external-link">www.java.com</a>. For Windows users, RTools
-is also necessary. RTools can be downloaded from <a href="http://cran.r-project.org/bin/windows/Rtools/" class="external-link">CRAN</a>.</p>
+have Java available. For Windows users, RTools is also necessary. See <a href="https://ohdsi.github.io/Hades/rSetup.html" class="external-link">these instructions</a>
+for properly configuring your R environment.</p>
 <p>The <code>CohortMethod</code> package is currently maintained in a <a href="https://github.com/OHDSI/CohortMethod" class="external-link">Github repository</a>, and
 has dependencies on other packages in Github. All of these packages can
 be downloaded and installed from within R using the <code>drat</code>
@@ -138,154 +138,145 @@ Observational Medical Outcomes Partnership (OMOP) Common Data Model
 <p>We need to tell R how to connect to the server where the data are.
 <code>CohortMethod</code> uses the <code>DatabaseConnector</code>
 package, which provides the <code>createConnectionDetails</code>
-function. Type <code>?createConnectionDetails</code> for the specific
+function. Type <code><a href="https://ohdsi.github.io/DatabaseConnector/reference/createConnectionDetails.html" class="external-link">?createConnectionDetails</a></code> for the specific
 settings required for the various database management systems (DBMS).
 For example, one might connect to a PostgreSQL database using this
 code:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms <span class="op">=</span> <span class="st">"postgresql"</span>,</span>
+<code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/createConnectionDetails.html" class="external-link">createConnectionDetails</a></span><span class="op">(</span>dbms <span class="op">=</span> <span class="st">"postgresql"</span>,</span>
 <span>                                             server <span class="op">=</span> <span class="st">"localhost/ohdsi"</span>,</span>
 <span>                                             user <span class="op">=</span> <span class="st">"joe"</span>,</span>
 <span>                                             password <span class="op">=</span> <span class="st">"supersecret"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cdmDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_cdm_data"</span></span>
-<span><span class="va">resultsDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_results"</span></span>
+<span><span class="va">cohortDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_results"</span></span>
+<span><span class="va">cohortTable</span> <span class="op">&lt;-</span> <span class="st">"my_cohorts"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>sqlRenderTempEmulationSchema <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
-<p>The last two lines define the <code>cdmDatabaseSchema</code> and
-<code>resultSchema</code> variables. We’ll use these later to tell R
-where the data in CDM format live, and where we want to write
-intermediate tables. Note that for Microsoft SQL Server, databaseschemas
-need to specify both the database and the schema, so for example
-<code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>.</p>
+<p>The last few lines define the <code>cdmDatabaseSchema</code>,
+<code>cohortDatabaseSchema</code>, and <code>cohortTable</code>
+variables. We’ll use these later to tell R where the data in CDM format
+live, and where we want to write intermediate tables. Note that for
+Microsoft SQL Server, databaseschemas need to specify both the database
+and the schema, so for example
+<code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>. For database
+platforms that do not support temp tables, such as Oracle, it is also
+necessary to provide a schema where the user has write access that can
+be used to emulate temp tables. PostgreSQL supports temp tables, so we
+can set <code>options(sqlRenderTempEmulationSchema = NULL)</code> (or
+not set the <code>sqlRenderTempEmulationSchema</code> at all.)</p>
 </div>
 <div class="section level3">
 <h3 id="preparing-the-exposures-and-outcomes">Preparing the exposures and outcome(s)<a class="anchor" aria-label="anchor" href="#preparing-the-exposures-and-outcomes"></a>
 </h3>
-<p>We need to define the exposures and outcomes for our study. One could
-use an external cohort definition tools, but in this example we do this
-by writing SQL statements against the OMOP CDM that populate a table of
-events in which we are interested. The resulting table should have the
-same structure as the <code>cohort</code> table in the CDM. This means
-it should have the fields <code>cohort_definition_id</code>,
-<code>cohort_start_date</code>, <code>cohort_end_date</code>,and
-<code>subject_id</code>.</p>
-<p>For our example study, we have created a file called
-<em>coxibVsNonselVsGiBleed.sql</em> with the following contents:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">/***********************************</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">File coxibVsNonselVsGiBleed.sql</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">***********************************/</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">DROP</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">EXISTS</span> @resultsDatabaseSchema.coxibVsNonselVsGiBleed;</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> @resultsDatabaseSchema.coxibVsNonselVsGiBleed (</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  cohort_definition_id <span class="dt">INT</span>,</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  cohort_start_date <span class="dt">DATE</span>,</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    cohort_end_date <span class="dt">DATE</span>,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    subject_id BIGINT</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    );</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> @resultsDatabaseSchema.coxibVsNonselVsGiBleed (</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    cohort_definition_id,</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    cohort_start_date,</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    cohort_end_date,</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    subject_id</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="dv">1</span>, <span class="co">-- Exposure</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    drug_era_start_date,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    drug_era_end_date,</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    person_id</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.drug_era</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> drug_concept_id <span class="op">=</span> <span class="dv">1118084</span>;<span class="co">-- celecoxib</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> @resultsDatabaseSchema.coxibVsNonselVsGiBleed (</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    cohort_definition_id,</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    cohort_start_date,</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    cohort_end_date,</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    subject_id</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="dv">2</span>, <span class="co">-- Comparator</span></span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    drug_era_start_date,</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    drug_era_end_date,</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    person_id</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.drug_era</span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> drug_concept_id <span class="op">=</span> <span class="dv">1124300</span>; <span class="co">--diclofenac</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> @resultsDatabaseSchema.coxibVsNonselVsGiBleed (</span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    cohort_definition_id,</span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    cohort_start_date,</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    cohort_end_date,</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    subject_id</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="dv">3</span>, <span class="co">-- Outcome</span></span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    condition_start_date,</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    condition_end_date,</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    condition_occurrence.person_id</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.condition_occurrence</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.visit_occurrence</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_occurrence.visit_occurrence_id <span class="op">=</span> visit_occurrence.visit_occurrence_id</span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> condition_concept_id <span class="kw">IN</span> (</span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>        <span class="kw">SELECT</span> descendant_concept_id</span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>        <span class="kw">FROM</span> @cdmDatabaseSchema.concept_ancestor</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>        <span class="kw">WHERE</span> ancestor_concept_id <span class="op">=</span> <span class="dv">192671</span> <span class="co">-- GI - Gastrointestinal haemorrhage</span></span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
-<p>This is parameterized SQL which can be used by the
-<code>SqlRender</code> package. We use parameterized SQL so we do not
-have to pre-specify the names of the CDM and result schemas. That way,
-if we want to run the SQL on a different schema, we only need to change
-the parameter values; we do not have to change the SQL code. By also
-making use of translation functionality in <code>SqlRender</code>, we
-can make sure the SQL code can be run in many different
-environments.</p>
+<p>We need to define the exposures and outcomes for our study. Here, we
+will define our exposures using the OHDSI <code>Capr</code> package. We
+define two cohorts, one for celecoxib and one for diclofenac. For each
+cohort we require a prior diagnosis of ‘osteoarthritis of knee’, and 365
+days of continuous prior observation. we restrict to the first exposure
+per person:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/Capr/" class="external-link">Capr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">osteoArthritisOfKneeConceptId</span> <span class="op">&lt;-</span> <span class="fl">4079750</span></span>
+<span><span class="va">celecoxibConceptId</span> <span class="op">&lt;-</span> <span class="fl">1118084</span></span>
+<span><span class="va">diclofenacConceptId</span> <span class="op">&lt;-</span> <span class="fl">1124300</span></span>
+<span><span class="va">osteoArthritisOfKnee</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">cs</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">descendants</a></span><span class="op">(</span><span class="va">osteoArthritisOfKneeConceptId</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"Osteoarthritis of knee"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">attrition</span> <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/attrition.html" class="external-link">attrition</a></span><span class="op">(</span></span>
+<span>  <span class="st">"prior osteoarthritis of knee"</span> <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/withAll.html" class="external-link">withAll</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/atLeast.html" class="external-link">atLeast</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu">condition</span><span class="op">(</span><span class="va">osteoArthritisOfKnee</span><span class="op">)</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/duringInterval.html" class="external-link">duringInterval</a></span><span class="op">(</span><span class="fu"><a href="https://ohdsi.github.io/Capr/reference/eventStarts.html" class="external-link">eventStarts</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">celecoxib</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">cs</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">descendants</a></span><span class="op">(</span><span class="va">celecoxibConceptId</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"Celecoxib"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">diclofenac</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">cs</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">descendants</a></span><span class="op">(</span><span class="va">diclofenacConceptId</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"Diclofenac"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">celecoxibCohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cohort.html" class="external-link">cohort</a></span><span class="op">(</span></span>
+<span>  entry <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/entry.html" class="external-link">entry</a></span><span class="op">(</span></span>
+<span>    <span class="fu">drug</span><span class="op">(</span><span class="va">celecoxib</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    observationWindow <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/continuousObservation.html" class="external-link">continuousObservation</a></span><span class="op">(</span>priorDays <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  attrition <span class="op">=</span> <span class="va">attrition</span>,</span>
+<span>  exit <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/exit.html" class="external-link">exit</a></span><span class="op">(</span>endStrategy <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExit.html" class="external-link">drugExit</a></span><span class="op">(</span><span class="va">celecoxib</span>,</span>
+<span>                                     persistenceWindow <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>                                     surveillanceWindow <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">diclofenacCohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cohort.html" class="external-link">cohort</a></span><span class="op">(</span></span>
+<span>  entry <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/entry.html" class="external-link">entry</a></span><span class="op">(</span></span>
+<span>    <span class="fu">drug</span><span class="op">(</span><span class="va">diclofenac</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    observationWindow <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/continuousObservation.html" class="external-link">continuousObservation</a></span><span class="op">(</span>priorDays <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  attrition <span class="op">=</span> <span class="va">attrition</span>,</span>
+<span>  exit <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/exit.html" class="external-link">exit</a></span><span class="op">(</span>endStrategy <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExit.html" class="external-link">drugExit</a></span><span class="op">(</span><span class="va">diclofenac</span>,</span>
+<span>                                     persistenceWindow <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>                                     surveillanceWindow <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>We’ll pull the outcome definition from the OHDSI
+<code>PhenotypeLibrary</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/SqlRender/" class="external-link">SqlRender</a></span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/readSql.html" class="external-link">readSql</a></span><span class="op">(</span><span class="st">"coxibVsNonselVsGiBleed.sql"</span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="va">sql</span>,</span>
-<span>              cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
-<span>              resultsDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/translate.html" class="external-link">translate</a></span><span class="op">(</span><span class="va">sql</span>, targetDialect <span class="op">=</span> <span class="va">connectionDetails</span><span class="op">$</span><span class="va">dbms</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">connection</span> <span class="op">&lt;-</span> <span class="fu">connect</span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></span>
-<span><span class="fu">executeSql</span><span class="op">(</span><span class="va">connection</span>, <span class="va">sql</span><span class="op">)</span></span></code></pre></div>
-<p>In this code, we first read the SQL from the file into memory. In the
-next line, we replace the two parameter names with the actual values. We
-then translate the SQL into the dialect appropriate for the DBMS we
-already specified in the <code>connectionDetails</code>. Next, we
-connect to the server, and submit the rendered and translated SQL.</p>
-<p>If all went well, we now have a table with the events of interest. We
-can see how many events per type:</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/PhenotypeLibrary/" class="external-link">PhenotypeLibrary</a></span><span class="op">)</span></span>
+<span><span class="va">outcomeCohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/PhenotypeLibrary/reference/getPlCohortDefinitionSet.html" class="external-link">getPlCohortDefinitionSet</a></span><span class="op">(</span><span class="fl">77</span><span class="op">)</span> <span class="co"># GI bleed</span></span></code></pre></div>
+<p>We combine the exposure and outcome cohort definitions, and use
+<code>CohortGenerator</code> to generate the cohorts:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"SELECT cohort_definition_id, COUNT(*) AS count"</span>,</span>
-<span>             <span class="st">"FROM @resultsDatabaseSchema.coxibVsNonselVsGiBleed"</span>,</span>
-<span>             <span class="st">"GROUP BY cohort_definition_id"</span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="va">sql</span>, resultsDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/translate.html" class="external-link">translate</a></span><span class="op">(</span><span class="va">sql</span>, targetDialect <span class="op">=</span> <span class="va">connectionDetails</span><span class="op">$</span><span class="va">dbms</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CirceR" class="external-link">CirceR</a></span><span class="op">)</span></span>
+<span><span class="co"># For exposures, create a cohort definition set table as required by CohortGenerator:</span></span>
+<span><span class="va">exposureCohorts</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span>,</span>
+<span>                          cohortName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Celecoxib"</span>, <span class="st">"Diclofenac"</span><span class="op">)</span>,</span>
+<span>                          json <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://ohdsi.github.io/Capr/reference/as.json.html" class="external-link">as.json</a></span><span class="op">(</span><span class="va">celecoxibCohort</span><span class="op">)</span>, </span>
+<span>                                   <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/as.json.html" class="external-link">as.json</a></span><span class="op">(</span><span class="va">diclofenacCohort</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">exposureCohorts</span><span class="op">$</span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">exposureCohorts</span><span class="op">$</span><span class="va">json</span>,</span>
+<span>                              <span class="va">buildCohortQuery</span>,</span>
+<span>                              options <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/CirceR/reference/createGenerateOptions.html" class="external-link">createGenerateOptions</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">allCohorts</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span><span class="va">outcomeCohorts</span>,</span>
+<span>                        <span class="va">exposureCohorts</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">querySql</span><span class="op">(</span><span class="va">connection</span>, <span class="va">sql</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   cohort_concept_id count</span></span>
-<span><span class="co">## 1                 1 50000</span></span>
-<span><span class="co">## 2                 2 50000</span></span>
-<span><span class="co">## 3                 3 15000</span></span></code></pre>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CohortGenerator/" class="external-link">CohortGenerator</a></span><span class="op">)</span></span>
+<span><span class="va">cohortTableNames</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/getCohortTableNames.html" class="external-link">getCohortTableNames</a></span><span class="op">(</span>cohortTable <span class="op">=</span> <span class="va">cohortTable</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/createCohortTables.html" class="external-link">createCohortTables</a></span><span class="op">(</span>connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
+<span>                   cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>                   cohortTableNames <span class="op">=</span> <span class="va">cohortTableNames</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/generateCohortSet.html" class="external-link">generateCohortSet</a></span><span class="op">(</span>connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
+<span>                  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>                  cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>                  cohortTableNames <span class="op">=</span> <span class="va">cohortTableNames</span>,</span>
+<span>                  cohortDefinitionSet <span class="op">=</span> <span class="va">allCohorts</span><span class="op">)</span></span></code></pre></div>
+<p>If all went well, we now have a table with the cohorts of interest.
+We can see how many entries per cohort:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">connection</span> <span class="op">&lt;-</span> <span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/connect.html" class="external-link">connect</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></span>
+<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="st">"SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"</span></span>
+<span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/renderTranslateQuerySql.html" class="external-link">renderTranslateQuerySql</a></span><span class="op">(</span><span class="va">connection</span>, <span class="va">sql</span>,  cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>, cohortTable <span class="op">=</span> <span class="va">cohortTable</span><span class="op">)</span></span>
+<span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/disconnect.html" class="external-link">disconnect</a></span><span class="op">(</span><span class="va">connection</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##   cohort_concept_id  count</span></span>
+<span><span class="co">## 1                 1 109307</span></span>
+<span><span class="co">## 2                 2 176675</span></span>
+<span><span class="co">## 3                77 733601</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="extracting-the-data-from-the-server">Extracting the data from the server<a class="anchor" aria-label="anchor" href="#extracting-the-data-from-the-server"></a>
 </h3>
-<p>Now we can tell <code>CohortMethod</code> to define the cohorts based
-on our events, construct covariates, and extract all necessary data for
-our analysis.</p>
+<p>Now we can tell <code>CohortMethod</code> to extract the cohorts,
+construct covariates, and extract all necessary data for our
+analysis.</p>
 <p><strong>Important</strong>: The target and comparator drug must not
 be included in the covariates, including any descendant concepts. You
 will need to manually add the drugs and descendants to the
 <code>excludedCovariateConceptIds</code> of the covariate settings. In
-this example code we exclude all NSAIDs from the covariates by pointing
-to the concept ID of the NSAID class and specifying
-<code>addDescendantsToExclude = TRUE</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">nsaids</span> <span class="op">&lt;-</span> <span class="fl">21603933</span></span>
-<span></span>
-<span><span class="co"># Define which types of covariates must be constructed:</span></span>
-<span><span class="va">covSettings</span> <span class="op">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span><span class="op">(</span>excludedCovariateConceptIds <span class="op">=</span> <span class="va">nsaids</span>,</span>
-<span>                                              addDescendantsToExclude <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+this example code we exclude the concepts for celecoxib and diclofenac
+and specify <code>addDescendantsToExclude = TRUE</code>:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Define which types of covariates must be constructed:</span></span>
+<span><span class="va">covSettings</span> <span class="op">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span><span class="op">(</span></span>
+<span>  excludedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">diclofenacConceptId</span>, <span class="va">celecoxibConceptId</span><span class="op">)</span>,</span>
+<span>  addDescendantsToExclude <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Load data:</span></span>
 <span><span class="va">cohortMethodData</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData</a></span><span class="op">(</span></span>
@@ -293,42 +284,14 @@ to the concept ID of the NSAID class and specifying
 <span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
 <span>  targetId <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  comparatorId <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  outcomeIds <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  studyStartDate <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  studyEndDate <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span>,</span>
-<span>  exposureTable <span class="op">=</span> <span class="st">"coxibVsNonselVsGiBleed"</span>,</span>
-<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span>,</span>
-<span>  outcomeTable <span class="op">=</span> <span class="st">"coxibVsNonselVsGiBleed"</span>,</span>
-<span>  cdmVersion <span class="op">=</span> <span class="va">cdmVersion</span>,</span>
-<span>  firstExposureOnly <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  removeDuplicateSubjects <span class="op">=</span> <span class="st">"remove all"</span>,</span>
-<span>  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  washoutPeriod <span class="op">=</span> <span class="fl">180</span>,</span>
+<span>  outcomeIds <span class="op">=</span> <span class="fl">77</span>,</span>
+<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>  exposureTable <span class="op">=</span> <span class="va">cohortTable</span>,</span>
+<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>  outcomeTable <span class="op">=</span> <span class="va">cohortTable</span>,</span>
 <span>  covariateSettings <span class="op">=</span> <span class="va">covSettings</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">cohortMethodData</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># CohortMethodData object</span></span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Target cohort ID: 1</span></span>
-<span><span class="co">## Comparator cohort ID: 2</span></span>
-<span><span class="co">## Outcome cohort ID(s): 3</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## <span style="color: #949494;">Inherits from CovariateData:</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># CovariateData object</span></span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## All cohorts</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## <span style="color: #949494;">Inherits from Andromeda:</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># Andromeda object</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi\AppData\Local\Temp\2\RtmpQZKV1W\file312c37fb2b73.sqlite</span></span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Tables:</span></span>
-<span><span class="co">## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)</span></span>
-<span><span class="co">## $cohorts (rowId, personSeqId, personId, treatment, cohortStartDate, daysFromObsStart, daysToCohortEnd, daysToObsEnd)</span></span>
-<span><span class="co">## $covariateRef (covariateId, covariateName, analysisId, conceptId)</span></span>
-<span><span class="co">## $covariates (rowId, covariateId, covariateValue)</span></span>
-<span><span class="co">## $outcomes (rowId, outcomeId, daysToEvent)</span></span></code></pre>
 <p>There are many parameters, but they are all documented in the
 <code>CohortMethod</code> manual. The
 <code>createDefaultCovariateSettings</code> function is described in the
@@ -349,22 +312,6 @@ are large. We can use the generic <code><a href="https://rdrr.io/r/base/summary.
 view some more information of the data we extracted:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## CohortMethodData object summary</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Target cohort ID: 1</span></span>
-<span><span class="co">## Comparator cohort ID: 2</span></span>
-<span><span class="co">## Outcome cohort ID(s): 3</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Target persons: 50000</span></span>
-<span><span class="co">## Comparator persons: 50000</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Outcome counts:</span></span>
-<span><span class="co">##   Event count Person count</span></span>
-<span><span class="co">## 3       36380         7447</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Covariates:</span></span>
-<span><span class="co">## Number of covariates: 62004</span></span>
-<span><span class="co">## Number of non-zero covariate values: 41097434</span></span></code></pre>
 <div class="section level4">
 <h4 id="saving-the-data-to-file">Saving the data to file<a class="anchor" aria-label="anchor" href="#saving-the-data-to-file"></a>
 </h4>
@@ -374,7 +321,7 @@ sessions. Because <code>cohortMethodData</code> uses
 <code>Andromeda</code>, we cannot use R’s regular save function.
 Instead, we’ll have to use the <code><a href="../reference/saveCohortMethodData.html">saveCohortMethodData()</a></code>
 function:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/saveCohortMethodData.html">saveCohortMethodData</a></span><span class="op">(</span><span class="va">cohortMethodData</span>, <span class="st">"coxibVsNonselVsGiBleed.zip"</span><span class="op">)</span></span></code></pre></div>
 <p>We can use the <code><a href="../reference/loadCohortMethodData.html">loadCohortMethodData()</a></code> function to load
 the data in a future session.</p>
@@ -388,8 +335,8 @@ of days prior first use) is used to make sure it is truly first use.
 When using the <code>CohortMethod</code> package, you can enforce the
 necessary requirements for new use in three ways:</p>
 <ol style="list-style-type: decimal">
-<li>When creating the cohorts in the database, for example when using a
-cohort definition tool.</li>
+<li>When creating the cohorts in the database, for example using
+<code>Capr</code>.</li>
 <li>When loading the cohorts using the
 <code>getDbCohortMethodData</code> function, you can use the
 <code>firstExposureOnly</code>, <code>removeDuplicateSubjects</code>,
@@ -423,7 +370,7 @@ together, for example by removing exposed subjects that had the outcome
 prior to exposure, and only keeping outcomes that fall within a defined
 risk window. For this we can use the <code>createStudyPopulation</code>
 function:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">studyPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createStudyPopulation.html">createStudyPopulation</a></span><span class="op">(</span></span>
 <span>  cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>,</span>
 <span>  outcomeId <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -456,16 +403,8 @@ truncated at the end of observation or the study end date. We also
 remove subjects who have no time at risk. To see how many people are
 left in the study population we can always use the
 <code>getAttritionTable</code> function:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">studyPop</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 x 5</span></span></span>
-<span><span class="co">##   description                     targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
-<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> Original cohorts                       <span style="text-decoration: underline;">856</span>973            <span style="text-decoration: underline;">915</span>830         1<span style="text-decoration: underline;">946</span>114             1<span style="text-decoration: underline;">786</span>318</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> First exp. only &amp; removed s ...        <span style="text-decoration: underline;">373</span>874            <span style="text-decoration: underline;">541</span>386          <span style="text-decoration: underline;">373</span>874              <span style="text-decoration: underline;">541</span>386</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span> Random sample                           <span style="text-decoration: underline;">50</span>000             <span style="text-decoration: underline;">50</span>000           <span style="text-decoration: underline;">50</span>000               <span style="text-decoration: underline;">50</span>000</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span> No prior outcome                        <span style="text-decoration: underline;">48</span>700             <span style="text-decoration: underline;">48</span>715           <span style="text-decoration: underline;">48</span>700               <span style="text-decoration: underline;">48</span>715</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">5</span> Have at least 1 days at ris ...         <span style="text-decoration: underline;">48</span>667             <span style="text-decoration: underline;">48</span>688           <span style="text-decoration: underline;">48</span>667               <span style="text-decoration: underline;">48</span>688</span></span></code></pre>
 <p>One additional filtering step that is often used is matching or
 trimming on propensity scores, as will be discussed next.</p>
 </div>
@@ -483,7 +422,7 @@ the subjects.</p>
 </h3>
 <p>We can fit a propensity model using the covariates constructed by the
 <code>getDbcohortMethodData()</code> function:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createPs.html">createPs</a></span><span class="op">(</span>cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>, population <span class="op">=</span> <span class="va">studyPop</span><span class="op">)</span></span></code></pre></div>
 <p>The <code><a href="../reference/createPs.html">createPs()</a></code> function uses the <code>Cyclops</code>
 package to fit a large-scale regularized logistic regression.</p>
@@ -501,36 +440,31 @@ the cross-validation.</p>
 </h3>
 <p>We can compute the area under the receiver-operator curve (AUC) for
 the propensity score model:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/computePsAuc.html">computePsAuc</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] 0.81</span></span></code></pre>
 <p>We can also plot the propensity score distribution, although we
 prefer the preference score distribution:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span>, </span>
 <span>       scale <span class="op">=</span> <span class="st">"preference"</span>, </span>
 <span>       showCountsLabel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>       showAucLabel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>       showEquiposeLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
 <p>It is also possible to inspect the propensity model itself by showing
 the covariates that have non-zero coefficients:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getPsModel.html">getPsModel</a></span><span class="op">(</span><span class="va">ps</span>, <span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 x 3</span></span></span>
-<span><span class="co">##   coefficient covariateId covariateName                              </span></span>
-<span><span class="co">##         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                      </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span>       -<span style="color: #BB0000;">3.47</span>  <span style="text-decoration: underline;">1</span>150<span style="text-decoration: underline;">871</span>413 ...gh 0 days relative to index: misoprostol</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span>       -<span style="color: #BB0000;">2.45</span>     2<span style="text-decoration: underline;">016</span>006 index year: 2016                           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span>       -<span style="color: #BB0000;">2.43</span>     2<span style="text-decoration: underline;">017</span>006 index year: 2017                           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span>       -<span style="color: #BB0000;">2.39</span>     2<span style="text-decoration: underline;">018</span>006 index year: 2018                           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">5</span>       -<span style="color: #BB0000;">2.37</span>     2<span style="text-decoration: underline;">015</span>006 index year: 2015                           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">6</span>       -<span style="color: #BB0000;">2.30</span>     2<span style="text-decoration: underline;">014</span>006 index year: 2014</span></span></code></pre>
 <p>One advantage of using the regularization when fitting the propensity
 model is that most coefficients will shrink to zero and fall out of the
 model. It is a good idea to inspect the remaining variables for anything
 that should not be there, for example variations of the drugs of
 interest that we forgot to exclude.</p>
+<p>Finally, we can inspect the percent of the population in equipoise,
+meaning they have a prefence score between 0.3 and 0.7:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">CohortMethod</span><span class="fu">::</span><span class="fu"><a href="../reference/computeEquipoise.html">computeEquipoise</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
+<p>A low equipoise indicates there is little overlap between the target
+and comparator populations.</p>
 </div>
 <div class="section level3">
 <h3 id="using-the-propensity-score">Using the propensity score<a class="anchor" aria-label="anchor" href="#using-the-propensity-score"></a>
@@ -538,43 +472,30 @@ interest that we forgot to exclude.</p>
 <p>We can use the propensity scores to trim, stratify, match, or weigh
 our population. For example, one could trim to equipoise, meaning only
 subjects with a preference score between 0.25 and 0.75 are kept:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">trimmedPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trimByPsToEquipoise.html">trimByPsToEquipoise</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">trimmedPop</span>, <span class="va">ps</span>, scale <span class="op">=</span> <span class="st">"preference"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-25-1.png" width="700"></p>
 <p>Instead (or additionally), we could stratify the population based on
 the propensity score:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stratifiedPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/stratifyByPs.html">stratifyByPs</a></span><span class="op">(</span><span class="va">ps</span>, numberOfStrata <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">stratifiedPop</span>, <span class="va">ps</span>, scale <span class="op">=</span> <span class="st">"preference"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-27-1.png" width="700"></p>
 <p>We can also match subjects based on propensity scores. In this
 example, we’re using one-to-one matching:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="va">matchedPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/matchOnPs.html">matchOnPs</a></span><span class="op">(</span><span class="va">ps</span>, caliper <span class="op">=</span> <span class="fl">0.2</span>, caliperScale <span class="op">=</span> <span class="st">"standardized logit"</span>, maxRatio <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">matchedPop</span>, <span class="va">ps</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-29-1.png" width="700"></p>
 <p>Note that for both stratification and matching it is possible to
 specify additional matching criteria such as age and sex using the
 <code><a href="../reference/stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> and
 <code><a href="../reference/matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> functions, respectively.</p>
 <p>We can see the effect of trimming and/or matching on the population
 using the <code>getAttritionTable</code> function:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 x 5</span></span></span>
-<span><span class="co">##   description                     targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
-<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> Original cohorts                       <span style="text-decoration: underline;">856</span>973            <span style="text-decoration: underline;">915</span>830         1<span style="text-decoration: underline;">946</span>114             1<span style="text-decoration: underline;">786</span>318</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> First exp. only &amp; removed s ...        <span style="text-decoration: underline;">373</span>874            <span style="text-decoration: underline;">541</span>386          <span style="text-decoration: underline;">373</span>874              <span style="text-decoration: underline;">541</span>386</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span> Random sample                           <span style="text-decoration: underline;">50</span>000             <span style="text-decoration: underline;">50</span>000           <span style="text-decoration: underline;">50</span>000               <span style="text-decoration: underline;">50</span>000</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span> No prior outcome                        <span style="text-decoration: underline;">48</span>700             <span style="text-decoration: underline;">48</span>715           <span style="text-decoration: underline;">48</span>700               <span style="text-decoration: underline;">48</span>715</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">5</span> Have at least 1 days at ris ...         <span style="text-decoration: underline;">48</span>667             <span style="text-decoration: underline;">48</span>688           <span style="text-decoration: underline;">48</span>667               <span style="text-decoration: underline;">48</span>688</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">6</span> Matched on propensity score             <span style="text-decoration: underline;">22</span>339             <span style="text-decoration: underline;">22</span>339           <span style="text-decoration: underline;">22</span>339               <span style="text-decoration: underline;">22</span>339</span></span></code></pre>
 <p>Or, if we like, we can plot an attrition diagram:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/drawAttritionDiagram.html">drawAttritionDiagram</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-33-1.png" width="480"></p>
 </div>
 <div class="section level3">
 <h3 id="evaluating-covariate-balance">Evaluating covariate balance<a class="anchor" aria-label="anchor" href="#evaluating-covariate-balance"></a>
@@ -582,15 +503,12 @@ using the <code>getAttritionTable</code> function:</p>
 <p>To evaluate whether our use of the propensity score is indeed making
 the two cohorts more comparable, we can compute the covariate balance
 before and after trimming, matching, and/or stratifying:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">balance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeCovariateBalance.html">computeCovariateBalance</a></span><span class="op">(</span><span class="va">matchedPop</span>, <span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot</a></span><span class="op">(</span><span class="va">balance</span>, showCovariateCountLabel <span class="op">=</span> <span class="cn">TRUE</span>, showMaxLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: Removed 23590 rows containing missing values (`geom_point()`).</span></span></code></pre>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-37-1.png" width="672"></p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-39-1.png" width="768"></p>
 <p>The ‘before matching’ population is the population as extracted by
 the <code>getDbCohortMethodData</code> function, so before any further
 filtering steps.</p>
@@ -603,113 +521,34 @@ select population characteristics before and after
 matching/stratification/trimming. This is usually the first table, and
 so will be referred to as ‘table 1’. To generate this table, you can use
 the <code>createCmTable1</code> function:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/createCmTable1.html">createCmTable1</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
-<pre><code>                                                         Before matching                      After matching                     
-                                                         Target          Comparator           Target         Comparator          
- Characteristic                                          %               %          Std. diff %              %          Std. diff
- Age group                                                                                                                       
-    25 -  29                                                              0.0                                 0.0                
-    30 -  34                                                              0.0                                 0.0                
-    40 -  44                                              0.0             0.0        0.00      0.0            0.0       -0.01    
-    45 -  49                                              0.1             0.1        0.00      0.0            0.1       -0.01    
-    50 -  54                                              0.2             0.2        0.00      0.2            0.2        0.00    
-    55 -  59                                              0.5             0.5       -0.01      0.5            0.6       -0.01    
-    60 -  64                                              0.8             1.2       -0.04      1.1            1.1       -0.01    
-    65 -  69                                             25.8            29.0       -0.07     29.6           29.2        0.01    
-    70 -  74                                             25.0            25.0        0.00     25.1           24.9        0.01    
-    75 -  79                                             20.6            18.9        0.04     18.8           19.0       -0.01    
-    80 -  84                                             15.2            13.2        0.06     13.4           13.7       -0.01    
-    85 -  89                                              8.3             8.0        0.01      7.8            7.8        0.00    
-    90 -  94                                              3.0             3.2       -0.01      2.9            2.8        0.01    
-    95 -  99                                              0.6             0.7       -0.02      0.6            0.6        0.00    
-   100 - 104                                              0.1             0.1        0.00      0.1            0.0        0.02    
- Gender: female                                          59.5            61.8       -0.05     60.0           60.3        0.00    
- Medical history: General                                                                                                        
-   Acute respiratory disease                             18.4            22.2       -0.10     20.2           20.4        0.00    
-   Attention deficit hyperactivity disorder               0.1             0.2       -0.03      0.2            0.2        0.00    
-   Chronic liver disease                                  0.8             1.4       -0.05      1.0            1.1       -0.01    
-   Chronic obstructive lung disease                      10.2            10.4       -0.01      9.4            9.6       -0.01    
-   Crohn's disease                                        0.3             0.4       -0.02      0.3            0.3        0.00    
-   Dementia                                               2.9             3.3       -0.03      2.8            2.9       -0.01    
-   Depressive disorder                                    6.2             9.3       -0.12      8.0            7.8        0.01    
-   Diabetes mellitus                                     18.6            25.3       -0.16     21.7           21.5        0.00    
-   Gastroesophageal reflux disease                       10.0            15.1       -0.16     13.3           13.0        0.01    
-   Gastrointestinal hemorrhage                            3.6             3.3        0.02      2.3            2.2        0.01    
-   Human immunodeficiency virus infection                 0.0             0.1       -0.02      0.0            0.1       -0.01    
-   Hyperlipidemia                                        31.5            49.0       -0.36     42.7           41.8        0.02    
-   Hypertensive disorder                                 50.2            61.3       -0.22     56.8           56.5        0.01    
-   Lesion of liver                                        0.6             0.8       -0.02      0.6            0.6        0.00    
-   Obesity                                                3.8             7.3       -0.15      5.6            5.3        0.01    
-   Osteoarthritis                                        47.0            49.3       -0.05     50.6           50.0        0.01    
-   Pneumonia                                              4.7             4.7        0.00      4.0            4.2       -0.01    
-   Psoriasis                                              1.0             1.4       -0.03      1.3            1.2        0.01    
-   Renal impairment                                       4.7            10.5       -0.22      6.3            6.1        0.01    
-   Rheumatoid arthritis                                   2.4             3.0       -0.04      2.9            2.9        0.00    
-   Schizophrenia                                          0.1             0.1       -0.01      0.1            0.1       -0.01    
-   Ulcerative colitis                                     0.4             0.5       -0.02      0.4            0.4        0.00    
-   Urinary tract infectious disease                       8.9            10.8       -0.06      9.7            9.6        0.00    
-   Viral hepatitis C                                      0.1             0.3       -0.04      0.2            0.2        0.00    
- Medical history: Cardiovascular disease                                                                                         
-   Atrial fibrillation                                    8.7             9.6       -0.03      8.2            8.4       -0.01    
-   Cerebrovascular disease                               10.3            10.5       -0.01      9.5            9.6        0.00    
-   Coronary arteriosclerosis                             17.2            18.4       -0.03     16.4           16.7       -0.01    
-   Heart disease                                         38.5            38.7        0.00     35.8           36.1       -0.01    
-   Heart failure                                          7.8             8.2       -0.01      6.3            6.4        0.00    
-   Ischemic heart disease                                 8.7             8.6        0.00      7.1            7.3       -0.01    
-   Peripheral vascular disease                            7.3            10.1       -0.10      7.9            8.0        0.00    
-   Pulmonary embolism                                     0.7             0.8       -0.02      0.6            0.7       -0.01    
-   Venous thrombosis                                      1.9             2.5       -0.04      2.2            2.2        0.00    
- Medical history: Neoplasms                                                                                                      
-   Malignant lymphoma                                     0.8             0.9       -0.01      0.8            0.8        0.00    
-   Malignant neoplasm of anorectum                        0.5             0.3        0.03      0.4            0.3        0.00    
-   Malignant neoplastic disease                          17.3            17.8       -0.01     17.4           17.5        0.00    
-   Malignant tumor of breast                              3.0             3.2       -0.01      3.1            3.1        0.00    
-   Malignant tumor of colon                               0.9             0.7        0.02      0.8            0.7        0.00    
-   Malignant tumor of lung                                0.7             0.5        0.02      0.6            0.6        0.01    
-   Malignant tumor of urinary bladder                     0.8             0.8        0.00      0.8            0.8        0.00    
-   Primary malignant neoplasm of prostate                 3.9             3.4        0.02      3.6            3.6        0.00    
- Medication use                                                                                                                  
-   Agents acting on the renin-angiotensin system         44.2            49.6       -0.11     47.9           48.2       -0.01    
-   Antibacterials for systemic use                       60.9            65.6       -0.10     61.8           62.4       -0.01    
-   Antidepressants                                       25.7            26.7       -0.02     26.2           26.5       -0.01    
-   Antiepileptics                                        14.7            17.8       -0.08     16.8           16.8        0.00    
-   Antiinflammatory and antirheumatic products           25.0            28.6       -0.08     28.9           28.8        0.00    
-   Antineoplastic agents                                  4.1             5.1       -0.05      4.8            4.7        0.00    
-   Antipsoriatics                                         0.7             1.1       -0.04      0.8            0.9       -0.01    
-   Antithrombotic agents                                 22.1            19.7        0.06     19.0           19.4       -0.01    
-   Beta blocking agents                                  34.4            38.1       -0.08     35.3           35.6       -0.01    
-   Calcium channel blockers                              26.6            28.7       -0.05     26.9           27.2       -0.01    
-   Diuretics                                             42.4            41.2        0.02     40.5           41.3       -0.02    
-   Drugs for acid related disorders                      37.1            38.9       -0.04     35.6           36.0       -0.01    
-   Drugs for obstructive airway diseases                 38.2            44.7       -0.13     42.5           42.4        0.00    
-   Drugs used in diabetes                                17.3            21.1       -0.10     18.5           18.6        0.00    
-   Immunosuppressants                                     3.0             4.9       -0.10      4.2            4.2        0.00    
-   Lipid modifying agents                                49.1            56.0       -0.14     54.5           54.3        0.00    
-   Opioids                                               36.4            34.2        0.05     34.9           35.4       -0.01    
-   Psycholeptics                                         30.2            29.8        0.01     30.0           30.5       -0.01    
-   Psychostimulants, agents used for adhd and nootropics  1.5             1.8       -0.02      1.9            1.9       -0.01    </code></pre>
 </div>
 <div class="section level3">
-<h3 id="inserting-the-population-cohort-in-the-database">Inserting the population cohort in the database<a class="anchor" aria-label="anchor" href="#inserting-the-population-cohort-in-the-database"></a>
+<h3 id="generalizability">Generalizability<a class="anchor" aria-label="anchor" href="#generalizability"></a>
 </h3>
-<p>For various reasons it might be necessary to insert the study
-population back into the database, for example because we want to use an
-external cohort characterization tool. We can use the
-<code>insertDbPopulation</code> function for this purpose:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">insertDbPopulation</span><span class="op">(</span></span>
-<span>  population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
-<span>  cohortIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">101</span>,<span class="fl">100</span><span class="op">)</span>,</span>
-<span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
-<span>  cohortDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span>,</span>
-<span>  cohortTable <span class="op">=</span> <span class="st">"coxibVsNonselVsGiBleed"</span>,</span>
-<span>  createTable <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cdmVersion <span class="op">=</span> <span class="va">cdmVersion</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>This function will store the population in a table with the same
-structure as the <code>cohort</code> table in the CDM, in this case in
-the same table where we had created our original cohorts.</p>
+<p>The goal of any propensity score adjustments is typically to make the
+target and comparator cohorts comparably, to allow proper causal
+inference. However, in doing so, we often need to modify our population,
+for example dropping subjects that have no counterpart in the other
+exposure cohort. The population we end up estimating an effect for may
+end up being very different from the population we started with. An
+important question is: how different? And it what ways? If the
+populations before and after adjustment are very different, our
+estimated effect may not generalize to the original population (if
+effect modification is present). The
+<code><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code> function informs on these
+differences:</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
+<p>In this case, because we used PS matching, we are likely aiming to
+estimate the average treatment effect in the treated (ATT). For this
+reason, the <code><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code> function
+automatically selected the target cohort as the basis for evaluating
+generalizability: it shows, for each covariate, the mean value before
+and PS adjustment in the target cohort. Also shown is the standardized
+difference of mean, and the table is reverse sorted by the absolute
+standard difference of mean (ASDM).</p>
 </div>
 </div>
 <div class="section level2">
@@ -725,7 +564,7 @@ in retrospective studies (the data has already been collected), and the
 true effect size is unknown, the CohortMethod package provides a
 function to compute the minimum detectable relative risk (MDRR)
 instead:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/computeMdrr.html">computeMdrr</a></span><span class="op">(</span></span>
 <span>  population <span class="op">=</span> <span class="va">studyPop</span>,</span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -733,13 +572,11 @@ instead:</p>
 <span>  power <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  twoSided <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes    mdrr         se</span></span>
-<span><span class="co">## 1         48667             48688           48667               48688    7421404        3693928           554 1.26878 0.08497186</span></span></code></pre>
 <p>In this example we used the <code>studyPop</code> object, so the
 population before any matching or trimming. If we want to know the MDRR
 after matching, we use the <code>matchedPop</code> object we created
 earlier instead:</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/computeMdrr.html">computeMdrr</a></span><span class="op">(</span></span>
 <span>  population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -747,8 +584,6 @@ earlier instead:</p>
 <span>  power <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  twoSided <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr       se</span></span>
-<span><span class="co">## 1         22339             22339           22339               22339    3118703        1801997           226 1.451674 0.133038</span></span></code></pre>
 <p>Even thought the MDRR in the matched population is higher, meaning we
 have less power, we should of course not be fooled: matching most likely
 eliminates confounding, and is therefore preferred to not matching.</p>
@@ -757,16 +592,12 @@ we can also inspect the distribution of follow-up time. We defined
 follow-up time as time at risk, so not censored by the occurrence of the
 outcome. The <code>getFollowUpDistribution</code> can provide a simple
 overview:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getFollowUpDistribution.html">getFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   100% 75% 50% 25%   0% Treatment</span></span>
-<span><span class="co">## 1    2  60  60 126 4184         1</span></span>
-<span><span class="co">## 2    2  45  60  67 2996         0</span></span></code></pre>
 <p>The output is telling us number of days of follow-up each quantile of
 the study population has. We can also plot the distribution:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotFollowUpDistribution.html">plotFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-50-1.png" width="768"></p>
 </div>
 <div class="section level2">
 <h2 id="outcome-models">Outcome models<a class="anchor" aria-label="anchor" href="#outcome-models"></a>
@@ -779,52 +610,28 @@ associated with the outcome.</p>
 <p>In theory we could fit an outcome model without using the propensity
 scores. In this example we are fitting an outcome model using a Cox
 regression:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">studyPop</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: FALSE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##           Estimate lower .95 upper .95   logRr seLogRr</span></span>
-<span><span class="co">## treatment  1.25115   1.03524   1.51802 0.22406  0.0976</span></span></code></pre>
 <p>But of course we want to make use of the matching done on the
 propensity score:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
 <span>                                stratified <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: TRUE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##             Estimate  lower .95  upper .95      logRr seLogRr</span></span>
-<span><span class="co">## treatment  0.9942982  0.7212731  1.3608869 -0.0057181   0.162</span></span></code></pre>
 <p>Note that we define the sub-population to be only those in the
 <code>matchedPop</code> object, which we created earlier by matching on
 the propensity score. We also now use a stratified Cox model,
 conditioning on the propensity score match sets.</p>
 <p>Instead of matching or stratifying we can also perform Inverse
 Probability of Treatment Weighting (IPTW):</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">ps</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
 <span>                                inversePtWeighting <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: FALSE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: TRUE</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##           Estimate lower .95 upper .95   logRr seLogRr</span></span>
-<span><span class="co">## treatment  1.15095   0.83724   1.61142 0.14059   0.167</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="adding-interaction-terms">Adding interaction terms<a class="anchor" aria-label="anchor" href="#adding-interaction-terms"></a>
@@ -833,7 +640,7 @@ Probability of Treatment Weighting (IPTW):</p>
 groups in the population. To explore this, we may include interaction
 terms in the model. In this example we include three interaction
 terms:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">interactionCovariateIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8532001</span>, <span class="fl">201826210</span>, <span class="fl">21600960413</span><span class="op">)</span> </span>
 <span><span class="co"># 8532001 = Female</span></span>
 <span><span class="co"># 201826210 = Type 2 Diabetes</span></span>
@@ -843,28 +650,16 @@ terms:</p>
 <span>                                stratified <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                                interactionCovariateIds <span class="op">=</span> <span class="va">interactionCovariateIds</span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: TRUE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##                                                                                                            Estimate lower .95 upper .95    logRr seLogRr</span></span>
-<span><span class="co">## treatment                                                                                                   1.24991   0.87272   1.80961  0.22307  0.1860</span></span>
-<span><span class="co">## treatment * condition_era group during day -365 through 0 days relative to index: Type 2 diabetes mellitus  1.05089   0.68593   1.62105  0.04964  0.2194</span></span>
-<span><span class="co">## treatment * drug_era group during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS             0.63846   0.42639   0.96305 -0.44870  0.2078</span></span>
-<span><span class="co">## treatment * gender = FEMALE                                                                                 0.78988   0.54227   1.14572 -0.23587  0.1908</span></span></code></pre>
 <p>Note that you can use the <code>grepCovariateNames</code> to find
 covariate IDs.</p>
 <p>It is prudent to verify that covariate balance has also been achieved
 in the subgroups of interest. For example, we can check the covariate
 balance in the subpopulation of females:</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">balanceFemale</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeCovariateBalance.html">computeCovariateBalance</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>, </span>
 <span>                                         cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>, </span>
 <span>                                         subgroupCovariateId <span class="op">=</span> <span class="fl">8532001</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot</a></span><span class="op">(</span><span class="va">balanceFemale</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-60-1.png" width="768"></p>
 </div>
 <div class="section level3">
 <h3 id="adding-covariates-to-the-outcome-model">Adding covariates to the outcome model<a class="anchor" aria-label="anchor" href="#adding-covariates-to-the-outcome-model"></a>
@@ -875,48 +670,33 @@ more robust against misspecification of the model, and more likely to
 remove bias. For this we use the regularized Cox regression in the
 <code>Cyclops</code> package. (Note that the treatment variable is
 automatically excluded from regularization.)</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
 <span>                                cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
 <span>                                stratified <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                                useCovariates <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: TRUE</span></span>
-<span><span class="co">## Use covariates: TRUE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## Prior variance: 0.0374185437128226</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##             Estimate  lower .95  upper .95      logRr seLogRr</span></span>
-<span><span class="co">## treatment  0.9985318  0.6870719  1.4438456 -0.0014693  0.1894</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="inspecting-the-outcome-model">Inspecting the outcome model<a class="anchor" aria-label="anchor" href="#inspecting-the-outcome-model"></a>
 </h3>
 <p>We can inspect more details of the outcome model:</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">outcomeModel</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## 900000010805 </span></span>
-<span><span class="co">##    0.9985318</span></span></code></pre>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">outcomeModel</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] 0.6870719 1.4438456</span></span></code></pre>
 <p>We can also see the covariates that ended up in the outcome
 model:</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getOutcomeModel.html">getOutcomeModel</a></span><span class="op">(</span><span class="va">outcomeModel</span>, <span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##    coefficient    id      name</span></span>
-<span><span class="co">## 1 -0.001469294 9e+11 Treatment</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="kaplan-meier-plot">Kaplan-Meier plot<a class="anchor" aria-label="anchor" href="#kaplan-meier-plot"></a>
 </h3>
 <p>We can create the Kaplan-Meier plot:</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotKaplanMeier.html">plotKaplanMeier</a></span><span class="op">(</span><span class="va">matchedPop</span>, includeZero <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-70-1.png" width="700"></p>
 <p>Note that the Kaplan-Meier plot will automatically adjust for any
 stratification, matching, or trimming that may have been applied.</p>
 </div>
@@ -927,9 +707,9 @@ stratification, matching, or trimming that may have been applied.</p>
 the index date, and events during and outside the defined time-at-risk
 window. This plot can provide insight into the temporal pattern of the
 outcome relative to the exposures:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotTimeToEvent.html">plotTimeToEvent</a></span><span class="op">(</span>cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>,</span>
-<span>                outcomeId <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>                outcomeId <span class="op">=</span> <span class="fl">77</span>,</span>
 <span>                firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                washoutPeriod <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>                removeDuplicateSubjects <span class="op">=</span> <span class="st">"keep all"</span>,</span>
@@ -938,7 +718,6 @@ outcome relative to the exposures:</p>
 <span>                startAnchor <span class="op">=</span> <span class="st">"cohort start"</span>,</span>
 <span>                riskWindowEnd <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>                endAnchor <span class="op">=</span> <span class="st">"cohort end"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-72-1.png" width="700"></p>
 <p>Note that this plot does not show any adjustment for the propensity
 score.</p>
 </div>
@@ -948,7 +727,7 @@ score.</p>
 </h2>
 <p>Considerable work has been dedicated to provide the
 <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
@@ -959,16 +738,14 @@ score.</p>
 <span><span class="co">## A BibTeX entry for LaTeX users is</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">##   @Manual{,</span></span>
-<span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome</span></span>
-<span><span class="co">## Models},</span></span>
+<span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome Models},</span></span>
 <span><span class="co">##     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},</span></span>
 <span><span class="co">##     year = {2023},</span></span>
-<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod,</span></span>
-<span><span class="co">## https://github.com/OHDSI/CohortMethod},</span></span>
+<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},</span></span>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite Cyclops in publications use:</span></span>

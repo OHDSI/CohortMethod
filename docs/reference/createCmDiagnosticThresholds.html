@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.0</span>
       </span>
     </div>
 
@@ -74,7 +74,8 @@
 <span>  easeThreshold <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  sdmThreshold <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  equipoiseThreshold <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>  attritionFractionThreshold <span class="op">=</span> <span class="fl">1</span></span>
+<span>  attritionFractionThreshold <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  generalizabilitySdmThreshold <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -101,10 +102,14 @@ fail.</p></dd>
 
 
 <dt>attritionFractionThreshold</dt>
-<dd><p>What is the maximum allowed attrition fraction? If the attrition
-between the input target cohort and the target cohort entering the
-outcome model is greater than this fraction, the diagnostic will
-fail.</p></dd>
+<dd><p>DEPRECATED. See <code>generalizabilitySdmThreshold</code> instead.</p></dd>
+
+
+<dt>generalizabilitySdmThreshold</dt>
+<dd><p>What is the maximum allowed standardized difference of mean
+(SDM)when comparing the population before and after PS
+adjustments? If the SDM is greater than this value, the diagnostic
+will fail.</p></dd>
 
 </dl></div>
     <div id="value">

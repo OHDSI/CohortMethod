@@ -59,6 +59,7 @@ reference:
       - plotCovariateBalanceScatterPlot
       - plotCovariatePrevalence
       - plotTimeToEvent
+      - getGeneralizabilityTable
   - title: "Running multiple analyses"
     desc: >
       Functions for running multiple analyses in an efficient way.
@@ -83,10 +84,14 @@ reference:
       - getInteractionResultsSummary
       - createCmDiagnosticThresholds
       - exportToCsv
-      - getResultsDataModel
+      - getResultsDataModelSpecifications
       - insertExportedResultsInSqlite
       - launchResultsViewerUsingSqlite
+      - createResultsDataModel
+      - migrateDataModel
+      - getDataMigrator
       - uploadExportedResults
+      - uploadResults
       - launchResultsViewer
   - title: "Simulation"
     desc: >

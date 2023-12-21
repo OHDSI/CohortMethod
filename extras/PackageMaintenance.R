@@ -31,7 +31,7 @@ devtools::spell_check()
 
 # Create manual and vignettes:
 unlink("extras/CohortMethod.pdf")
-shell("R CMD Rd2pdf ./ --output=extras/CohortMethod.pdf")
+system("R CMD Rd2pdf ./ --output=extras/CohortMethod.pdf")
 
 rmarkdown::render("vignettes/SingleStudies.Rmd",
                   output_file = "../inst/doc/SingleStudies.pdf",

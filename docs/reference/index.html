@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.0</span>
       </span>
     </div>
 
@@ -201,7 +201,7 @@
       </tr><tr><td>
           <p><code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code> </p>
         </td>
-        <td><p>Compute covariate balance before and after matching and trimming</p></td>
+        <td><p>Compute covariate balance before and after PS adjustment</p></td>
       </tr><tr><td>
           <p><code><a href="plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables()</a></code> </p>
         </td>
@@ -218,6 +218,10 @@
           <p><code><a href="plotTimeToEvent.html">plotTimeToEvent()</a></code> </p>
         </td>
         <td><p>Plot time-to-event</p></td>
+      </tr><tr><td>
+          <p><code><a href="getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code> </p>
+        </td>
+        <td><p>Get information on generalizability</p></td>
       </tr></tbody><tbody><tr><th colspan="2">
           <h2 id="running-multiple-analyses">Running multiple analyses <a href="#running-multiple-analyses" class="anchor" aria-hidden="true"></a></h2>
           <p class="section-desc"></p><p>Functions for running multiple analyses in an efficient way.</p>
@@ -339,9 +343,9 @@
         </td>
         <td><p>Export cohort method results to CSV files</p></td>
       </tr><tr><td>
-          <p><code><a href="getResultsDataModel.html">getResultsDataModel()</a></code> </p>
+          <p><code><a href="getResultsDataModelSpecifications.html">getResultsDataModelSpecifications()</a></code> </p>
         </td>
-        <td><p>Get results data model</p></td>
+        <td><p>Get specifications for CohortMethod results data model</p></td>
       </tr><tr><td>
           <p><code><a href="insertExportedResultsInSqlite.html">insertExportedResultsInSqlite()</a></code> </p>
         </td>
@@ -351,9 +355,25 @@
         </td>
         <td><p>Launch Shiny app using a SQLite database</p></td>
       </tr><tr><td>
+          <p><code><a href="createResultsDataModel.html">createResultsDataModel()</a></code> </p>
+        </td>
+        <td><p>Create the results data model tables on a database server.</p></td>
+      </tr><tr><td>
+          <p><code><a href="migrateDataModel.html">migrateDataModel()</a></code> </p>
+        </td>
+        <td><p>Migrate Data model</p></td>
+      </tr><tr><td>
+          <p><code><a href="getDataMigrator.html">getDataMigrator()</a></code> </p>
+        </td>
+        <td><p>Get database migrations instance</p></td>
+      </tr><tr><td>
           <p><code><a href="uploadExportedResults.html">uploadExportedResults()</a></code> </p>
         </td>
         <td><p>Upload exported results to a database</p></td>
+      </tr><tr><td>
+          <p><code><a href="uploadResults.html">uploadResults()</a></code> </p>
+        </td>
+        <td><p>Upload results to the database server.</p></td>
       </tr><tr><td>
           <p><code><a href="launchResultsViewer.html">launchResultsViewer()</a></code> </p>
         </td>

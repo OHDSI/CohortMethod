@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.0</span>
       </span>
     </div>
 
@@ -89,7 +89,7 @@ CohortMethod package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2023-04-17</h4>
+            <h4 data-toc-skip class="date">2023-12-21</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/MultipleAnalyses.Rmd" class="external-link"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -183,95 +183,91 @@ of concept IDs will be used.</p>
 <p>We need to tell R how to connect to the server where the data are.
 <code>CohortMethod</code> uses the <code>DatabaseConnector</code>
 package, which provides the <code>createConnectionDetails</code>
-function. Type <code>?createConnectionDetails</code> for the specific
+function. Type <code><a href="https://ohdsi.github.io/DatabaseConnector/reference/createConnectionDetails.html" class="external-link">?createConnectionDetails</a></code> for the specific
 settings required for the various database management systems (DBMS).
 For example, one might connect to a PostgreSQL database using this
 code:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms <span class="op">=</span> <span class="st">"postgresql"</span>, </span>
-<span>                                             server <span class="op">=</span> <span class="st">"localhost/ohdsi"</span>, </span>
-<span>                                             user <span class="op">=</span> <span class="st">"joe"</span>, </span>
+<code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms <span class="op">=</span> <span class="st">"postgresql"</span>,</span>
+<span>                                             server <span class="op">=</span> <span class="st">"localhost/ohdsi"</span>,</span>
+<span>                                             user <span class="op">=</span> <span class="st">"joe"</span>,</span>
 <span>                                             password <span class="op">=</span> <span class="st">"supersecret"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cdmDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_cdm_data"</span></span>
-<span><span class="va">resultsDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_results"</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>sqlRenderTempEmulationSchema <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span><span class="va">outputFolder</span> <span class="op">&lt;-</span> <span class="st">"./CohortMethodOutput"</span></span></code></pre></div>
-<p>The last three lines define the <code>cdmDatabaseSchema</code>,
-<code>resultSchema</code>, and <code>outputFolder</code> variables.
-We’ll use these later to tell R where the data in CDM format live, where
-we want to write intermediate tables, and where the intermediate and
-output files should be stored in the local file system. Note that for
+<span><span class="va">cohortDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_results"</span></span>
+<span><span class="va">cohortTable</span> <span class="op">&lt;-</span> <span class="st">"my_cohorts"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>sqlRenderTempEmulationSchema <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<p>The last few lines define the <code>cdmDatabaseSchema</code>,
+<code>cohortDatabaseSchema</code>, and <code>cohortTable</code>
+variables. We’ll use these later to tell R where the data in CDM format
+live, and where we want to write intermediate tables. Note that for
 Microsoft SQL Server, databaseschemas need to specify both the database
 and the schema, so for example
-<code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>.</p>
-<p>We also need to prepare our exposures and outcomes of interest. The
-drug_era table in the OMOP Common Data Model already contains
-prespecified cohorts of users at the ingredient level, so we will use
-that for the exposures. For the outcomes, we want to restrict our
-analysis only to those outcomes that are recorded in an inpatient
-setting, so we will need to create a custom cohort table. For this
-example, we want to include GI bleed (concept ID 192671) as well as a
-set of 35 negative controls. Negative controls are defined as those
-outcomes where there is no evidence that either the target drug
-(celexocib) or comparator drug (diclofenac) causes the outcome.</p>
-<p>We create a text file called <em>VignetteOutcomes.sql</em> with the
-following content:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">/***********************************</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">File VignetteOutcomes.sql</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">***********************************/</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">DROP</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">EXISTS</span> @resultsDatabaseSchema.outcomes;</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> ancestor_concept_id <span class="kw">AS</span> cohort_definition_id,</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    condition_start_date <span class="kw">AS</span> cohort_start_date,</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    condition_end_date <span class="kw">AS</span> cohort_end_date,</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    condition_occurrence.person_id <span class="kw">AS</span> subject_id</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">INTO</span> @resultsDatabaseSchema.outcomes</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> @cdmDatabaseSchema.condition_occurrence</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.visit_occurrence</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_occurrence.visit_occurrence_id <span class="op">=</span> visit_occurrence.visit_occurrence_id</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> @cdmDatabaseSchema.concept_ancestor</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> condition_concept_id <span class="op">=</span> descendant_concept_id</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ancestor_concept_id <span class="kw">IN</span> (<span class="dv">192671</span>, <span class="dv">24609</span>, <span class="dv">29735</span>, <span class="dv">73754</span>, <span class="dv">80004</span>, <span class="dv">134718</span>, <span class="dv">139099</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="dv">141932</span>, <span class="dv">192367</span>, <span class="dv">193739</span>, <span class="dv">194997</span>, <span class="dv">197236</span>, <span class="dv">199074</span>, <span class="dv">255573</span>, <span class="dv">257007</span>, <span class="dv">313459</span>, <span class="dv">314658</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="dv">316084</span>, <span class="dv">319843</span>, <span class="dv">321596</span>, <span class="dv">374366</span>, <span class="dv">375292</span>, <span class="dv">380094</span>, <span class="dv">433753</span>, <span class="dv">433811</span>, <span class="dv">436665</span>, <span class="dv">436676</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="dv">436940</span>, <span class="dv">437784</span>, <span class="dv">438134</span>, <span class="dv">440358</span>, <span class="dv">440374</span>, <span class="dv">443617</span>, <span class="dv">443800</span>, <span class="dv">4084966</span>, <span class="dv">4288310</span>)</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> visit_occurrence.visit_concept_id <span class="kw">IN</span> (<span class="dv">9201</span>, <span class="dv">9203</span>);</span></code></pre></div>
-<p>This is parameterized SQL which can be used by the
-<code>SqlRender</code> package. We use parameterized SQL so we do not
-have to pre-specify the names of the CDM and result schemas. That way,
-if we want to run the SQL on a different schema, we only need to change
-the parameter values; we do not have to change the SQL code. By also
-making use of translation functionality in <code>SqlRender</code>, we
-can make sure the SQL code can be run in many different
-environments.</p>
+<code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>. For database
+platforms that do not support temp tables, such as Oracle, it is also
+necessary to provide a schema where the user has write access that can
+be used to emulate temp tables. PostgreSQL supports temp tables, so we
+can set <code>options(sqlRenderTempEmulationSchema = NULL)</code> (or
+not set the <code>sqlRenderTempEmulationSchema</code> at all.)</p>
+<p>We need to define the exposures and outcomes for our study. Here, we
+will define our exposures using the OHDSI <code>Capr</code> package. We
+define two cohorts, one for celecoxib and one for diclofenac. For each
+cohort we require a prior diagnosis of ‘osteoarthritis of knee’, and 365
+days of continuous prior observation. we restrict to the first exposure
+per person:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/Capr/" class="external-link">Capr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">osteoArthritisOfKneeConceptId</span> <span class="op">&lt;-</span> <span class="fl">4079750</span></span>
+<span><span class="va">celecoxibConceptId</span> <span class="op">&lt;-</span> <span class="fl">1118084</span></span>
+<span><span class="va">diclofenacConceptId</span> <span class="op">&lt;-</span> <span class="fl">1124300</span></span>
+<span><span class="va">osteoArthritisOfKnee</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">cs</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">descendants</a></span><span class="op">(</span><span class="va">osteoArthritisOfKneeConceptId</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"Osteoarthritis of knee"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">attrition</span> <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/attrition.html" class="external-link">attrition</a></span><span class="op">(</span></span>
+<span>  <span class="st">"prior osteoarthritis of knee"</span> <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/withAll.html" class="external-link">withAll</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/atLeast.html" class="external-link">atLeast</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu">condition</span><span class="op">(</span><span class="va">osteoArthritisOfKnee</span><span class="op">)</span>, </span>
+<span>            <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/duringInterval.html" class="external-link">duringInterval</a></span><span class="op">(</span><span class="fu"><a href="https://ohdsi.github.io/Capr/reference/eventStarts.html" class="external-link">eventStarts</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">celecoxib</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">cs</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">descendants</a></span><span class="op">(</span><span class="va">celecoxibConceptId</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"Celecoxib"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">diclofenac</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">cs</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cs.html" class="external-link">descendants</a></span><span class="op">(</span><span class="va">diclofenacConceptId</span><span class="op">)</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"Diclofenac"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">celecoxibCohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cohort.html" class="external-link">cohort</a></span><span class="op">(</span></span>
+<span>  entry <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/entry.html" class="external-link">entry</a></span><span class="op">(</span></span>
+<span>    <span class="fu">drug</span><span class="op">(</span><span class="va">celecoxib</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    observationWindow <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/continuousObservation.html" class="external-link">continuousObservation</a></span><span class="op">(</span>priorDays <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  attrition <span class="op">=</span> <span class="va">attrition</span>,</span>
+<span>  exit <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/exit.html" class="external-link">exit</a></span><span class="op">(</span>endStrategy <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExit.html" class="external-link">drugExit</a></span><span class="op">(</span><span class="va">celecoxib</span>,</span>
+<span>                                     persistenceWindow <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>                                     surveillanceWindow <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">diclofenacCohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cohort.html" class="external-link">cohort</a></span><span class="op">(</span></span>
+<span>  entry <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/entry.html" class="external-link">entry</a></span><span class="op">(</span></span>
+<span>    <span class="fu">drug</span><span class="op">(</span><span class="va">diclofenac</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    observationWindow <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/continuousObservation.html" class="external-link">continuousObservation</a></span><span class="op">(</span>priorDays <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  attrition <span class="op">=</span> <span class="va">attrition</span>,</span>
+<span>  exit <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/exit.html" class="external-link">exit</a></span><span class="op">(</span>endStrategy <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExit.html" class="external-link">drugExit</a></span><span class="op">(</span><span class="va">diclofenac</span>,</span>
+<span>                                     persistenceWindow <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>                                     surveillanceWindow <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>We’ll pull the outcome definition from the OHDSI
+<code>PhenotypeLibrary</code>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/SqlRender/" class="external-link">SqlRender</a></span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/readSql.html" class="external-link">readSql</a></span><span class="op">(</span><span class="st">"VignetteOutcomes.sql"</span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="va">sql</span>,</span>
-<span>              cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>, </span>
-<span>              resultsDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span><span class="op">)</span></span>
-<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SqlRender/reference/translate.html" class="external-link">translate</a></span><span class="op">(</span><span class="va">sql</span>, targetDialect <span class="op">=</span> <span class="va">connectionDetails</span><span class="op">$</span><span class="va">dbms</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">connection</span> <span class="op">&lt;-</span> <span class="fu">connect</span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></span>
-<span><span class="fu">executeSql</span><span class="op">(</span><span class="va">connection</span>, <span class="va">sql</span><span class="op">)</span></span></code></pre></div>
-<p>In this code, we first read the SQL from the file into memory. In the
-next line, we replace the two parameter names with the actual values. We
-then translate the SQL into the dialect appropriate for the DBMS we
-already specified in the <code>connectionDetails</code>. Next, we
-connect to the server, and submit the rendered and translated SQL.</p>
-</div>
-<div class="section level2">
-<h2 id="specifying-hypotheses-of-interest">Specifying hypotheses of interest<a class="anchor" aria-label="anchor" href="#specifying-hypotheses-of-interest"></a>
-</h2>
-<p>The first group of arguments define the target, comparator, and
-outcome. Here we demonstrate how to create one set, and add that set to
-a list:</p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/PhenotypeLibrary/" class="external-link">PhenotypeLibrary</a></span><span class="op">)</span></span>
+<span><span class="va">outcomeCohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/PhenotypeLibrary/reference/getPlCohortDefinitionSet.html" class="external-link">getPlCohortDefinitionSet</a></span><span class="op">(</span><span class="fl">77</span><span class="op">)</span> <span class="co"># GI bleed</span></span></code></pre></div>
+<p>In addition to the outcome of interest, we also want to include a
+large set of negative control outcomes:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">outcomeOfInterest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createOutcome.html">createOutcome</a></span><span class="op">(</span>outcomeId <span class="op">=</span> <span class="fl">192671</span>,</span>
-<span>                                   outcomeOfInterest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">negativeControlIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">192671</span>, <span class="fl">29735</span>, <span class="fl">140673</span>, <span class="fl">197494</span>,</span>
+<code class="sourceCode R"><span><span class="va">negativeControlIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">29735</span>, <span class="fl">140673</span>, <span class="fl">197494</span>,</span>
 <span>                        <span class="fl">198185</span>, <span class="fl">198199</span>, <span class="fl">200528</span>, <span class="fl">257315</span>,</span>
 <span>                        <span class="fl">314658</span>, <span class="fl">317376</span>, <span class="fl">321319</span>, <span class="fl">380731</span>,</span>
 <span>                        <span class="fl">432661</span>, <span class="fl">432867</span>, <span class="fl">433516</span>, <span class="fl">433701</span>,</span>
@@ -280,26 +276,80 @@ a list:</p>
 <span>                        <span class="fl">444252</span>, <span class="fl">444429</span>, <span class="fl">4131756</span>, <span class="fl">4134120</span>,</span>
 <span>                        <span class="fl">4134454</span>, <span class="fl">4152280</span>, <span class="fl">4165112</span>, <span class="fl">4174262</span>,</span>
 <span>                        <span class="fl">4182210</span>, <span class="fl">4270490</span>, <span class="fl">4286201</span>, <span class="fl">4289933</span><span class="op">)</span></span>
+<span><span class="va">negativeControlCohorts</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span></span>
+<span>  cohortId <span class="op">=</span> <span class="va">negativeControlIds</span>,</span>
+<span>  cohortName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Negative control %d"</span>, <span class="va">negativeControlIds</span><span class="op">)</span>,</span>
+<span>  outcomeConceptId <span class="op">=</span> <span class="va">negativeControlIds</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>We combine the exposure and outcome cohort definitions, and use
+<code>CohortGenerator</code> to generate the cohorts:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CirceR" class="external-link">CirceR</a></span><span class="op">)</span></span>
+<span><span class="co"># For exposures, create a cohort definition set table as required by CohortGenerator:</span></span>
+<span><span class="va">exposureCohorts</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span>,</span>
+<span>                          cohortName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Celecoxib"</span>, <span class="st">"Diclofenac"</span><span class="op">)</span>,</span>
+<span>                          json <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://ohdsi.github.io/Capr/reference/as.json.html" class="external-link">as.json</a></span><span class="op">(</span><span class="va">celecoxibCohort</span><span class="op">)</span>, </span>
+<span>                                   <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/as.json.html" class="external-link">as.json</a></span><span class="op">(</span><span class="va">diclofenacCohort</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">exposureCohorts</span><span class="op">$</span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">exposureCohorts</span><span class="op">$</span><span class="va">json</span>,</span>
+<span>                              <span class="va">buildCohortQuery</span>,</span>
+<span>                              options <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/CirceR/reference/createGenerateOptions.html" class="external-link">createGenerateOptions</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">allCohorts</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span><span class="va">outcomeCohorts</span>,</span>
+<span>                        <span class="va">exposureCohorts</span><span class="op">)</span></span>
 <span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CohortGenerator/" class="external-link">CohortGenerator</a></span><span class="op">)</span></span>
+<span><span class="va">cohortTableNames</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/getCohortTableNames.html" class="external-link">getCohortTableNames</a></span><span class="op">(</span>cohortTable <span class="op">=</span> <span class="va">cohortTable</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/createCohortTables.html" class="external-link">createCohortTables</a></span><span class="op">(</span>connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
+<span>                   cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>                   cohortTableNames <span class="op">=</span> <span class="va">cohortTableNames</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/generateCohortSet.html" class="external-link">generateCohortSet</a></span><span class="op">(</span>connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
+<span>                  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>                  cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>                  cohortTableNames <span class="op">=</span> <span class="va">cohortTableNames</span>,</span>
+<span>                  cohortDefinitionSet <span class="op">=</span> <span class="va">allCohorts</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/CohortGenerator/reference/generateNegativeControlOutcomeCohorts.html" class="external-link">generateNegativeControlOutcomeCohorts</a></span><span class="op">(</span></span>
+<span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
+<span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>  cohortTable <span class="op">=</span> <span class="va">cohortTable</span>,</span>
+<span>  negativeControlOutcomeCohortSet <span class="op">=</span> <span class="va">negativeControlCohorts</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>If all went well, we now have a table with the cohorts of interest.
+We can see how many entries per cohort:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">connection</span> <span class="op">&lt;-</span> <span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/connect.html" class="external-link">connect</a></span><span class="op">(</span><span class="va">connectionDetails</span><span class="op">)</span></span>
+<span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="st">"SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"</span></span>
+<span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/renderTranslateQuerySql.html" class="external-link">renderTranslateQuerySql</a></span><span class="op">(</span></span>
+<span>  connection <span class="op">=</span> <span class="va">connection</span>, </span>
+<span>  sql <span class="op">=</span> <span class="va">sql</span>,  </span>
+<span>  cohortDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>, </span>
+<span>  cohortTable <span class="op">=</span> <span class="va">cohortTable</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/disconnect.html" class="external-link">disconnect</a></span><span class="op">(</span><span class="va">connection</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="specifying-hypotheses-of-interest">Specifying hypotheses of interest<a class="anchor" aria-label="anchor" href="#specifying-hypotheses-of-interest"></a>
+</h2>
+<p>The first group of arguments define the target, comparator, and
+outcome. Here we demonstrate how to create one set, and add that set to
+a list:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">outcomeOfInterest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createOutcome.html">createOutcome</a></span><span class="op">(</span>outcomeId <span class="op">=</span> <span class="fl">77</span>,</span>
+<span>                                   outcomeOfInterest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">negativeControlOutcomes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
 <span>  <span class="va">negativeControlIds</span>,</span>
 <span>  <span class="kw">function</span><span class="op">(</span><span class="va">outcomeId</span><span class="op">)</span> <span class="fu"><a href="../reference/createOutcome.html">createOutcome</a></span><span class="op">(</span>outcomeId <span class="op">=</span> <span class="va">outcomeId</span>,</span>
 <span>                                    outcomeOfInterest <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                                    trueEffectSize <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span></span>
-<span></span>
 <span><span class="va">tcos</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes</a></span><span class="op">(</span></span>
-<span>  targetId <span class="op">=</span> <span class="fl">1118084</span>,</span>
-<span>  comparatorId <span class="op">=</span> <span class="fl">1124300</span>,</span>
+<span>  targetId <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  comparatorId <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/append.html" class="external-link">append</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">outcomeOfInterest</span><span class="op">)</span>,</span>
 <span>                    <span class="va">negativeControlOutcomes</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span></span>
 <span><span class="va">targetComparatorOutcomesList</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">tcos</span><span class="op">)</span></span></code></pre></div>
-<p>We first define the outcome of interest (GI-bleed, concept ID
-192671), explicitly stating this is an outcome of interest
+<p>We first define the outcome of interest (GI-bleed, cohort ID 77),
+explicitly stating this is an outcome of interest
 (<code>outcomeOfInterest = TRUE</code>), meaning we want the full set of
 artifacts generated for this outcome. We then create a set of negative
 control outcomes. Because we specify
@@ -308,8 +358,8 @@ be saved (like the matched population), or even not generated at all
 (like the covariate balance). This can save a lot of compute time and
 disk space. We also provide the true effect size for these controls,
 which will be used later for empirical calibration. We set the target to
-be celecoxib (concept ID 1118084), and the comparator to be diclofenac
-(concept ID 1124300).</p>
+be celecoxib (cohort ID 1), and the comparator to be diclofenac (cohort
+ID 2).</p>
 <p>A convenient way to save <code>targetComparatorOutcomesList</code> to
 file is by using the <code>saveTargetComparatorOutcomesList</code>
 function, and we can load it again using the
@@ -325,11 +375,9 @@ function is available that has (almost) the same arguments. For example,
 for the <code><a href="../reference/trimByPs.html">trimByPs()</a></code> function there is the
 <code><a href="../reference/createTrimByPsArgs.html">createTrimByPsArgs()</a></code> function. These companion functions
 can be used to create the arguments to be used during execution:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">nsaids</span> <span class="op">&lt;-</span> <span class="fl">21603933</span></span>
-<span></span>
-<span><span class="va">covarSettings</span> <span class="op">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span><span class="op">(</span></span>
-<span>  excludedCovariateConceptIds <span class="op">=</span> <span class="va">nsaids</span>,</span>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">covarSettings</span> <span class="op">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span><span class="op">(</span></span>
+<span>  excludedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1118084</span>, <span class="fl">1124300</span><span class="op">)</span>,</span>
 <span>  addDescendantsToExclude <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -356,7 +404,7 @@ can be used to create the arguments to be used during execution:</p>
 <p>Any argument that is not explicitly specified by the user will assume
 the default value specified in the function. We can now combine the
 arguments for the various functions into a single analysis:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cmAnalysis1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span></span>
 <span>  analysisId <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"No matching, simple outcome model"</span>,</span>
@@ -371,7 +419,7 @@ analysis.</p>
 <p>We can easily create more analyses, for example by using matching,
 stratification, inverse probability of treatment weighting, or by using
 more sophisticated outcome models:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">createPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCreatePsArgs.html">createCreatePsArgs</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Use default settings only</span></span>
 <span></span>
 <span><span class="va">matchOnPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createMatchOnPsArgs.html">createMatchOnPsArgs</a></span><span class="op">(</span>maxRatio <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
@@ -427,7 +475,7 @@ more sophisticated outcome models:</p>
 <span>  fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Note: Using propensity scores but not computing covariate balance</span></span></code></pre>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fitOutcomeModelArgs4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span></span>
 <span>  useCovariates <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -444,8 +492,12 @@ more sophisticated outcome models:</p>
 <span>  fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs4</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Note: Using propensity scores but not computing covariate balance</span></span></code></pre>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">interactionCovariateIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8532001</span>, <span class="fl">201826210</span>, <span class="fl">21600960413</span><span class="op">)</span> <span class="co"># Female, T2DM, concurent use of antithrombotic agents</span></span>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">interactionCovariateIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="fl">8532001</span>, <span class="co"># Female</span></span>
+<span>  <span class="fl">201826210</span>, <span class="co"># T2DM</span></span>
+<span>  <span class="fl">21600960413</span> <span class="co"># concurrent use of antithrombotic agents</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fitOutcomeModelArgs5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span></span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -464,7 +516,7 @@ more sophisticated outcome models:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Note: Using propensity scores but not computing covariate balance</span></span></code></pre>
 <p>These analyses can be combined in a list:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cmAnalysisList</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cmAnalysis1</span>, </span>
 <span>                       <span class="va">cmAnalysis2</span>, </span>
 <span>                       <span class="va">cmAnalysis3</span>, </span>
@@ -512,18 +564,17 @@ we do not want all combinations of analyses and hypothesis to be
 computed, we can can skip certain analyses by using the
 <code>analysesToExclude</code> argument of the
 <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code>.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">multiThreadingSettings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createDefaultMultiThreadingSettings.html">createDefaultMultiThreadingSettings</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCmAnalyses.html">runCmAnalyses</a></span><span class="op">(</span></span>
 <span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
 <span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
-<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
-<span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
-<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">resultsDatabaseSchema</span>,</span>
-<span>  outcomeTable <span class="op">=</span> <span class="st">"outcomes"</span>,</span>
+<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>  exposureTable <span class="op">=</span> <span class="va">cohortTable</span>,</span>
+<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cohortDatabaseSchema</span>,</span>
+<span>  outcomeTable <span class="op">=</span> <span class="va">cohortTable</span>,</span>
 <span>  outputFolder <span class="op">=</span> <span class="va">folder</span>,</span>
-<span>  cdmVersion <span class="op">=</span> <span class="va">cdmVersion</span>,</span>
 <span>  cmAnalysisList <span class="op">=</span> <span class="va">cmAnalysisList</span>,</span>
 <span>  targetComparatorOutcomesList <span class="op">=</span> <span class="va">targetComparatorOutcomesList</span>,</span>
 <span>  multiThreadingSettings <span class="op">=</span> <span class="va">multiThreadingSettings</span></span>
@@ -536,7 +587,7 @@ use all the CPU cores detected in the system (using the
 <code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code> function).</p>
 <p>We call <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code>, providing the arguments for
 connecting to the database, which schemas and tables to use, as well as
-the analyses and hypotheses of interest. The <code>outputFolder</code>
+the analyses and hypotheses of interest. The <code>folder</code>
 specifies where the outcome models and intermediate files will be
 written.</p>
 <div class="section level3">
@@ -557,42 +608,28 @@ file names of the intermediate and end-result files that were
 constructed. For example, we can retrieve and plot the propensity scores
 for the combination of our target, comparator, outcome of interest, and
 last analysis:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">psFile</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">psFile</span><span class="op">[</span><span class="va">result</span><span class="op">$</span><span class="va">targetId</span> <span class="op">==</span> <span class="fl">1118084</span> <span class="op">&amp;</span> </span>
-<span>                        <span class="va">result</span><span class="op">$</span><span class="va">comparatorId</span> <span class="op">==</span> <span class="fl">1124300</span> <span class="op">&amp;</span> </span>
-<span>                        <span class="va">result</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span> <span class="op">&amp;</span></span>
-<span>                        <span class="va">result</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span><span class="op">]</span></span>
-<span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outputFolder</span>, <span class="va">psFile</span><span class="op">)</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">psFile</span> <span class="op">&lt;-</span> <span class="va">result</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">targetId</span> <span class="op">==</span> <span class="fl">1</span>,</span>
+<span>         <span class="va">comparatorId</span> <span class="op">==</span> <span class="fl">2</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span>,</span>
+<span>         <span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">pull</span><span class="op">(</span><span class="va">psFile</span><span class="op">)</span></span>
+<span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="va">psFile</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
 <p>Note that some of the file names will appear several times in the
 table. For example, analysis 3 and 5 only differ in terms of the outcome
 model, and will share the same propensity score and stratification
 files.</p>
 <p>We can always retrieve the file reference table again using the
 <code><a href="../reference/getFileReference.html">getFileReference()</a></code> function:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getFileReference.html">getFileReference</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span></code></pre></div>
 <p>We can get a summary of the results using
 <code><a href="../reference/getResultsSummary.html">getResultsSummary()</a></code>:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">resultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getResultsSummary.html">getResultsSummary</a></span><span class="op">(</span><span class="va">outputFolder</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">resultsSum</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 x 27</span></span></span>
-<span><span class="co">##   analysisId targetId comparatorId outcomeId trueEffectSize targetSubjects</span></span>
-<span><span class="co">##        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300     <span style="text-decoration: underline;">29</span>735              1          <span style="text-decoration: underline;">86</span>294</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">140</span>673              1          <span style="text-decoration: underline;">86</span>718</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">192</span>671             <span style="color: #BB0000;">NA</span>          <span style="text-decoration: underline;">84</span>447</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">197</span>494              1          <span style="text-decoration: underline;">86</span>718</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">5</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">198</span>185              1          <span style="text-decoration: underline;">86</span>718</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">6</span>          1  1<span style="text-decoration: underline;">118</span>084      1<span style="text-decoration: underline;">124</span>300    <span style="text-decoration: underline;">198</span>199              1          <span style="text-decoration: underline;">86</span>718</span></span>
-<span><span class="co">## <span style="color: #949494;"># i 21 more variables: comparatorSubjects &lt;int&gt;, targetDays &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   comparatorDays &lt;dbl&gt;, targetOutcomes &lt;dbl&gt;, comparatorOutcomes &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   rr &lt;dbl&gt;, ci95Lb &lt;dbl&gt;, ci95Ub &lt;dbl&gt;, p &lt;dbl&gt;, logRr &lt;dbl&gt;, seLogRr &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   llr &lt;dbl&gt;, mdrr &lt;dbl&gt;, attritionFraction &lt;dbl&gt;, calibratedRr &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   calibratedCi95Lb &lt;dbl&gt;, calibratedCi95Ub &lt;dbl&gt;, calibratedP &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   calibratedLogRr &lt;dbl&gt;, calibratedSeLogRr &lt;dbl&gt;, ease &lt;dbl&gt;</span></span></span></code></pre>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">resultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getResultsSummary.html">getResultsSummary</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
+<span><span class="va">resultsSum</span></span></code></pre></div>
 <p>This tells us, per target-comparator-outcome-analysis combination,
 the estimated relative risk and 95% confidence interval, as well as the
 number of people in the treated and comparator group (after trimming and
@@ -608,63 +645,96 @@ each plot, the blue dots represent our negative control outcomes, and
 the yellow diamond represents our health outcome of interest: GI bleed.
 An unbiased, well-calibrated analysis should have 95% of the negative
 controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"EmpiricalCalibration"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/EmpiricalCalibration/" class="external-link">EmpiricalCalibration</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Analysis 1: No matching, simple outcome model</span></span>
-<span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Analysis 2: Matching</span></span>
-<span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-18-1.png" width="700"></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Analysis 3: Stratification</span></span>
-<span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
+<span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">hoi</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">1</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
+<span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Analysis 4: Inverse probability of treatment weighting</span></span>
-<span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-22-1.png" width="700"></p>
+<code class="sourceCode R"><span><span class="co"># Analysis 2: Matching</span></span>
+<span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">hoi</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
+<span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Analysis 3: Stratification</span></span>
+<span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">hoi</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
+<span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Analysis 4: Inverse probability of treatment weighting</span></span>
+<span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">hoi</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
+<span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 5: Stratification plus full outcome model</span></span>
-<span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">resultsSum</span><span class="op">[</span><span class="va">resultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span> <span class="op">&amp;</span> <span class="va">resultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-24-1.png" width="700"></p>
+<span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">hoi</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
+<span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
 <p>Analysis 6 explored interactions with certain variables. The
 estimates for these interaction terms are stored in a separate results
 summary. We can examine whether these estimates are also consistent with
-the null. In this example we consider the interaction with ‘gender =
-female’ (covariate ID 8532001):</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">interactionResultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getInteractionResultsSummary.html">getInteractionResultsSummary</a></span><span class="op">(</span><span class="va">outputFolder</span><span class="op">)</span></span>
-<span></span>
+the null. In this example we consider the interaction with ‘concurrent
+use of antithrombotic agents’ (covariate ID 21600960413):</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">interactionResultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getInteractionResultsSummary.html">getInteractionResultsSummary</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Analysis 6: Stratification plus interaction terms</span></span>
-<span><span class="va">negCons</span> <span class="op">&lt;-</span> <span class="va">interactionResultsSum</span><span class="op">[</span><span class="va">interactionResultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">6</span> <span class="op">&amp;</span> <span class="va">interactionResultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">hoi</span> <span class="op">&lt;-</span>  <span class="va">interactionResultsSum</span><span class="op">[</span><span class="va">interactionResultsSum</span><span class="op">$</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">6</span> <span class="op">&amp;</span> <span class="va">interactionResultsSum</span><span class="op">$</span><span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">192671</span>, <span class="op">]</span></span>
-<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">negCons</span><span class="op">$</span><span class="va">logRr</span>, </span>
-<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">negCons</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
+<span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">interactionResultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">6</span>,</span>
+<span>         <span class="va">interactionCovariateId</span> <span class="op">==</span> <span class="fl">21600960413</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">!=</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">hoi</span> <span class="op">&lt;-</span> <span class="va">interactionResultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">6</span>,</span>
+<span>         <span class="va">interactionCovariateId</span> <span class="op">==</span> <span class="fl">21600960413</span>,</span>
+<span>         <span class="va">outcomeId</span> <span class="op">==</span> <span class="fl">77</span><span class="op">)</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/fitNull.html" class="external-link">fitNull</a></span><span class="op">(</span><span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ohdsi.github.io/EmpiricalCalibration/reference/plotCalibrationEffect.html" class="external-link">plotCalibrationEffect</a></span><span class="op">(</span>logRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">logRr</span>, </span>
+<span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: Removed 1 rows containing missing values (`geom_vline()`).</span></span></code></pre>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-26-1.png" width="700"></p>
 </div>
 </div>
 <div class="section level2">
@@ -679,9 +749,9 @@ comes in. This function exports all results, including diagnostics to
 CSV (comma-separated values) files. These files only contain aggregate
 statistics, not patient-level data. The format is CSV files to enable
 human review.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/exportToCsv.html">exportToCsv</a></span><span class="op">(</span></span>
-<span>  <span class="va">outputFolder</span>,</span>
+<span>  <span class="va">folder</span>,</span>
 <span>  exportFolder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"export"</span><span class="op">)</span>,</span>
 <span>  databaseId <span class="op">=</span> <span class="st">"My CDM"</span>,</span>
 <span>  minCellCount <span class="op">=</span> <span class="fl">5</span>,</span>
@@ -694,24 +764,24 @@ number of people with the outcome is 3, and
 <code>minCellCount = 5</code>, the count will be reported to be -5,
 which in the Shiny app will be displayed as ‘&lt;5’.</p>
 <p>Information on the data model used to generate the CSV files can be
-retrieved using <code><a href="../reference/getResultsDataModel.html">getResultsDataModel()</a></code>:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/getResultsDataModel.html">getResultsDataModel</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 171 x 7</span></span></span>
-<span><span class="co">##    table_name       column_name data_type is_required primary_key min_cell_count</span></span>
-<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attrition     sequence_n~ int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attrition     description varchar   Yes         No          No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attrition     subjects    int       Yes         No          Yes           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attrition     exposure_id int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attrition     target_id   int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attrition     comparator~ int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attrition     analysis_id int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attrition     outcome_id  int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attrition     database_id varchar   Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_up_di~ target_id   int       Yes         Yes         No            </span></span>
-<span><span class="co">## <span style="color: #949494;"># i 161 more rows</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># i 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
+retrieved using <code><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications()</a></code>:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 188 × 8</span></span></span>
+<span><span class="co">##    tableName   columnName dataType isRequired primaryKey minCellCount deprecated</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attriti… sequence_… int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attriti… descripti… varchar  Yes        No         No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attriti… subjects   int      Yes        No         Yes          No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attriti… exposure_… int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attriti… target_id  int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attriti… comparato… int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attriti… analysis_… int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attriti… outcome_id int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attriti… database_… varchar  Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_… target_id  int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 178 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="view-results-in-a-shiny-app">View results in a Shiny app<a class="anchor" aria-label="anchor" href="#view-results-in-a-shiny-app"></a>
@@ -724,12 +794,12 @@ create a small SQLite database ourselves without having to set up a
 database server. In any case we need to specify the names of the
 exposure and outcome cohorts we used in our study. We can create the
 SQLite database using:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="fl">1118084</span>,</span>
-<span>    <span class="fl">1124300</span>,</span>
-<span>    <span class="fl">192671</span><span class="op">)</span>,</span>
+<span>    <span class="fl">1</span>,</span>
+<span>    <span class="fl">2</span>,</span>
+<span>    <span class="fl">77</span><span class="op">)</span>,</span>
 <span>  cohortName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="st">"Celecoxib"</span>,</span>
 <span>    <span class="st">"Diclofenac"</span>,</span>
@@ -743,7 +813,7 @@ SQLite database using:</p>
 <span>  cohorts <span class="op">=</span> <span class="va">cohorts</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Next we launch the Shiny app using:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/launchResultsViewerUsingSqlite.html">launchResultsViewerUsingSqlite</a></span><span class="op">(</span></span>
 <span>  sqliteFileName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"myResults.sqlite"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -758,7 +828,7 @@ CohortMethod Shiny app
 </h2>
 <p>Considerable work has been dedicated to provide the
 <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
@@ -771,16 +841,14 @@ CohortMethod Shiny app
 <span><span class="co">## A BibTeX entry for LaTeX users is</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">##   @Manual{,</span></span>
-<span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome</span></span>
-<span><span class="co">## Models},</span></span>
+<span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome Models},</span></span>
 <span><span class="co">##     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},</span></span>
 <span><span class="co">##     year = {2023},</span></span>
-<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod,</span></span>
-<span><span class="co">## https://github.com/OHDSI/CohortMethod},</span></span>
+<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},</span></span>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
 <span><span class="co">## To cite Cyclops in publications use:</span></span>
