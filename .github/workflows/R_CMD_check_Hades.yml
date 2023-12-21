@@ -91,7 +91,7 @@ jobs:
           check-dir: '"check"'
 
       - name: Upload source package
-        if: success() && runner.os == 'macOS' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && matrix.config.r == 'release'
+        if: success() && runner.os == 'macOS' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v2
         with:
           name: package_tarball
