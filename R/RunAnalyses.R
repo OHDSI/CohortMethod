@@ -749,7 +749,7 @@ getPs <- function(psFile) {
 }
 
 doCreateCmDataObject <- function(params) {
-  ParallelLogger::logDebug(sprintf("Calling getDbCohortMethodData() for targetId %d, comparatorId %d",
+  ParallelLogger::logDebug(sprintf("Calling getDbCohortMethodData() for targetId %s, comparatorId %s",
                                    params$args$targetId,
                                    params$args$comparatorId))
   cohortMethodData <- do.call("getDbCohortMethodData", params$args)
@@ -761,7 +761,7 @@ doCreateStudyPopObject <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
-  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId %d",
+  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId %s",
                                    params$cohortMethodDataFile,
                                    args$outcomeId))
   studyPop <- do.call("createStudyPopulation", args)
