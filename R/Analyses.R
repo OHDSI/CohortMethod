@@ -210,18 +210,19 @@ createOutcome <- function(outcomeId,
                           riskWindowEnd = NULL,
                           endAnchor = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertNumeric(outcomeId, add = errorMessages)
+  checkmate::assertInt(outcomeId, add = errorMessages)
   checkmate::assertLogical(outcomeOfInterest, add = errorMessages)
   checkmate::assertNumeric(trueEffectSize, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowStart, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowEnd, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   if (!is.null(startAnchor) && !grepl("start$|end$", startAnchor, ignore.case = TRUE)) {
-    stop("startAnchor should have value \'cohort start\' or \'cohort end\'")
+    stop("startAnchor should have value 'cohort start' or 'cohort end'")
   }
   if (!is.null(riskWindowEnd) && !grepl("start$|end$", endAnchor, ignore.case = TRUE)) {
-    stop("endAnchor should have value \'cohort start\' or \'cohort end\'")
+    stop("endAnchor should have value 'cohort start' or 'cohort end'")
   }
+
   outcome <- list()
   for (name in names(formals(createOutcome))) {
     outcome[[name]] <- get(name)
@@ -258,8 +259,8 @@ createTargetComparatorOutcomes <- function(targetId,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
   errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertNumeric(targetId, add = errorMessages)
-  checkmate::assertNumeric(comparatorId, add = errorMessages)
+  checkmate::assertInt(targetId, add = errorMessages)
+  checkmate::assertInt(comparatorId, add = errorMessages)
   checkmate::assertList(outcomes, min.len = 1, add = errorMessages)
   for (i in seq_along(outcomes)) {
     checkmate::assertClass(outcomes[[i]], "outcome", add = errorMessages)
