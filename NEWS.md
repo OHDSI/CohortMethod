@@ -1,3 +1,11 @@
+CohortMethod 5.2.1
+==================
+
+Changes:
+
+1. Ask to delete files in output folder when calling `runCmAnalyses()` with different analyses settings than those used to create the files. Also cleaning the cache.
+
+
 CohortMethod 5.2.0
 ==================
 
