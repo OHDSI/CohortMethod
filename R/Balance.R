@@ -36,7 +36,7 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
     covariateIds2 <- covariateFilter %>%
       filter(!is.na(.data$covariateIds)) %>%
       pull(.data$covariateIds) %>%
-      strsplit(",") %>%
+      strsplit(",|;") %>%
       unlist() %>%
       as.numeric()
     covariates %>%
