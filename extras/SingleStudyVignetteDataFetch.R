@@ -48,7 +48,7 @@ osteoArthritisOfKnee <- cs(
 )
 attrition = attrition(
   "prior osteoarthritis of knee" = withAll(
-    atLeast(1, condition(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
+    atLeast(1, conditionOccurrence(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
   )
 )
 celecoxib <- cs(
@@ -61,7 +61,7 @@ diclofenac  <- cs(
 )
 celecoxibCohort <- cohort(
   entry = entry(
-    drug(celecoxib, firstOccurrence()),
+    drugExposure(celecoxib, firstOccurrence()),
     observationWindow = continuousObservation(priorDays = 365)
   ),
   attrition = attrition,
@@ -71,7 +71,7 @@ celecoxibCohort <- cohort(
 )
 diclofenacCohort <- cohort(
   entry = entry(
-    drug(diclofenac, firstOccurrence()),
+    drugExposure(diclofenac, firstOccurrence()),
     observationWindow = continuousObservation(priorDays = 365)
   ),
   attrition = attrition,
@@ -79,18 +79,13 @@ diclofenacCohort <- cohort(
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
+
 # Define outcome cohort --------------------------------------------------------
 library(PhenotypeLibrary)
 outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
 
 # Generate cohorts -------------------------------------------------------------
-library(CirceR)
-exposureCohorts <- tibble(cohortId = c(1,2),
-                          cohortName = c("Celecoxib", "Diclofenac"),
-                          json = c(as.json(celecoxibCohort), as.json(diclofenacCohort)))
-exposureCohorts$sql <- sapply(exposureCohorts$json,
-                              buildCohortQuery,
-                              options = createGenerateOptions())
 allCohorts <- bind_rows(outcomeCohorts,
                         exposureCohorts)
 library(CohortGenerator)
