@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.1</span>
       </span>
     </div>
 
@@ -89,7 +89,7 @@ CohortMethod package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2023-12-21</h4>
+            <h4 data-toc-skip class="date">2024-02-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/MultipleAnalyses.Rmd" class="external-link"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -227,7 +227,7 @@ per person:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">attrition</span> <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/attrition.html" class="external-link">attrition</a></span><span class="op">(</span></span>
 <span>  <span class="st">"prior osteoarthritis of knee"</span> <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/withAll.html" class="external-link">withAll</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/atLeast.html" class="external-link">atLeast</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu">condition</span><span class="op">(</span><span class="va">osteoArthritisOfKnee</span><span class="op">)</span>, </span>
+<span>    <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/atLeast.html" class="external-link">atLeast</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/conditionOccurrence.html" class="external-link">conditionOccurrence</a></span><span class="op">(</span><span class="va">osteoArthritisOfKnee</span><span class="op">)</span>, </span>
 <span>            <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/duringInterval.html" class="external-link">duringInterval</a></span><span class="op">(</span><span class="fu"><a href="https://ohdsi.github.io/Capr/reference/eventStarts.html" class="external-link">eventStarts</a></span><span class="op">(</span><span class="op">-</span><span class="cn">Inf</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -241,7 +241,7 @@ per person:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">celecoxibCohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cohort.html" class="external-link">cohort</a></span><span class="op">(</span></span>
 <span>  entry <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/entry.html" class="external-link">entry</a></span><span class="op">(</span></span>
-<span>    <span class="fu">drug</span><span class="op">(</span><span class="va">celecoxib</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExposure.html" class="external-link">drugExposure</a></span><span class="op">(</span><span class="va">celecoxib</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    observationWindow <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/continuousObservation.html" class="external-link">continuousObservation</a></span><span class="op">(</span>priorDays <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  attrition <span class="op">=</span> <span class="va">attrition</span>,</span>
@@ -251,14 +251,16 @@ per person:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">diclofenacCohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/cohort.html" class="external-link">cohort</a></span><span class="op">(</span></span>
 <span>  entry <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/entry.html" class="external-link">entry</a></span><span class="op">(</span></span>
-<span>    <span class="fu">drug</span><span class="op">(</span><span class="va">diclofenac</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExposure.html" class="external-link">drugExposure</a></span><span class="op">(</span><span class="va">diclofenac</span>, <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/firstOccurrence.html" class="external-link">firstOccurrence</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    observationWindow <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/continuousObservation.html" class="external-link">continuousObservation</a></span><span class="op">(</span>priorDays <span class="op">=</span> <span class="fl">365</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  attrition <span class="op">=</span> <span class="va">attrition</span>,</span>
 <span>  exit <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/exit.html" class="external-link">exit</a></span><span class="op">(</span>endStrategy <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/drugExit.html" class="external-link">drugExit</a></span><span class="op">(</span><span class="va">diclofenac</span>,</span>
 <span>                                     persistenceWindow <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>                                     surveillanceWindow <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span><span class="co"># Note: this will automatically assign cohort IDs 1 and 2, respectively:</span></span>
+<span><span class="va">exposureCohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/makeCohortSet.html" class="external-link">makeCohortSet</a></span><span class="op">(</span><span class="va">celecoxibCohort</span>, <span class="va">diclofenacCohort</span><span class="op">)</span></span></code></pre></div>
 <p>We’ll pull the outcome definition from the OHDSI
 <code>PhenotypeLibrary</code>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -284,16 +286,7 @@ large set of negative control outcomes:</p>
 <p>We combine the exposure and outcome cohort definitions, and use
 <code>CohortGenerator</code> to generate the cohorts:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CirceR" class="external-link">CirceR</a></span><span class="op">)</span></span>
-<span><span class="co"># For exposures, create a cohort definition set table as required by CohortGenerator:</span></span>
-<span><span class="va">exposureCohorts</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="op">(</span>cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span>,</span>
-<span>                          cohortName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Celecoxib"</span>, <span class="st">"Diclofenac"</span><span class="op">)</span>,</span>
-<span>                          json <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://ohdsi.github.io/Capr/reference/as.json.html" class="external-link">as.json</a></span><span class="op">(</span><span class="va">celecoxibCohort</span><span class="op">)</span>, </span>
-<span>                                   <span class="fu"><a href="https://ohdsi.github.io/Capr/reference/as.json.html" class="external-link">as.json</a></span><span class="op">(</span><span class="va">diclofenacCohort</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">exposureCohorts</span><span class="op">$</span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">exposureCohorts</span><span class="op">$</span><span class="va">json</span>,</span>
-<span>                              <span class="va">buildCohortQuery</span>,</span>
-<span>                              options <span class="op">=</span> <span class="fu"><a href="https://ohdsi.github.io/CirceR/reference/createGenerateOptions.html" class="external-link">createGenerateOptions</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">allCohorts</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span><span class="va">outcomeCohorts</span>,</span>
+<code class="sourceCode R"><span><span class="va">allCohorts</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span><span class="va">outcomeCohorts</span>,</span>
 <span>                        <span class="va">exposureCohorts</span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CohortGenerator/" class="external-link">CohortGenerator</a></span><span class="op">)</span></span>
@@ -325,6 +318,38 @@ We can see how many entries per cohort:</p>
 <span>  cohortTable <span class="op">=</span> <span class="va">cohortTable</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/disconnect.html" class="external-link">disconnect</a></span><span class="op">(</span><span class="va">connection</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##    COHORT_DEFINITION_ID    COUNT</span></span>
+<span><span class="co">## 1                     2   176675</span></span>
+<span><span class="co">## 2                432867 31548471</span></span>
+<span><span class="co">## 3                    77   733601</span></span>
+<span><span class="co">## 4                442619      772</span></span>
+<span><span class="co">## 5                317376    67020</span></span>
+<span><span class="co">## 6                     1   109307</span></span>
+<span><span class="co">## 7                257315   918842</span></span>
+<span><span class="co">## 8               4182210  3650875</span></span>
+<span><span class="co">## 9               4174262   910846</span></span>
+<span><span class="co">## 10               380731    80707</span></span>
+<span><span class="co">## 11               444429        6</span></span>
+<span><span class="co">## 12               140673  6344090</span></span>
+<span><span class="co">## 13                29735   288675</span></span>
+<span><span class="co">## 14               436665   623024</span></span>
+<span><span class="co">## 15              4134454    15103</span></span>
+<span><span class="co">## 16               321319   971627</span></span>
+<span><span class="co">## 17               435140     1337</span></span>
+<span><span class="co">## 18               432661      990</span></span>
+<span><span class="co">## 19               197494   104253</span></span>
+<span><span class="co">## 20               433701    81191</span></span>
+<span><span class="co">## 21               435783   154047</span></span>
+<span><span class="co">## 22               433753   410743</span></span>
+<span><span class="co">## 23               314658  3032511</span></span>
+<span><span class="co">## 24               200528   878778</span></span>
+<span><span class="co">## 25               435524   308750</span></span>
+<span><span class="co">## 26              4286201   202230</span></span>
+<span><span class="co">## 27               436676   368572</span></span>
+<span><span class="co">## 28              4134120    43760</span></span>
+<span><span class="co">## 29               198199   215695</span></span>
+<span><span class="co">## 30               433516   214450</span></span>
+<span><span class="co">## 31               435459   140988</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="specifying-hypotheses-of-interest">Specifying hypotheses of interest<a class="anchor" aria-label="anchor" href="#specifying-hypotheses-of-interest"></a>
@@ -332,7 +357,7 @@ We can see how many entries per cohort:</p>
 <p>The first group of arguments define the target, comparator, and
 outcome. Here we demonstrate how to create one set, and add that set to
 a list:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeOfInterest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createOutcome.html">createOutcome</a></span><span class="op">(</span>outcomeId <span class="op">=</span> <span class="fl">77</span>,</span>
 <span>                                   outcomeOfInterest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">negativeControlOutcomes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span></span>
@@ -375,7 +400,7 @@ function is available that has (almost) the same arguments. For example,
 for the <code><a href="../reference/trimByPs.html">trimByPs()</a></code> function there is the
 <code><a href="../reference/createTrimByPsArgs.html">createTrimByPsArgs()</a></code> function. These companion functions
 can be used to create the arguments to be used during execution:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">covarSettings</span> <span class="op">&lt;-</span> <span class="fu">createDefaultCovariateSettings</span><span class="op">(</span></span>
 <span>  excludedCovariateConceptIds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1118084</span>, <span class="fl">1124300</span><span class="op">)</span>,</span>
 <span>  addDescendantsToExclude <span class="op">=</span> <span class="cn">TRUE</span></span>
@@ -404,7 +429,7 @@ can be used to create the arguments to be used during execution:</p>
 <p>Any argument that is not explicitly specified by the user will assume
 the default value specified in the function. We can now combine the
 arguments for the various functions into a single analysis:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cmAnalysis1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCmAnalysis.html">createCmAnalysis</a></span><span class="op">(</span></span>
 <span>  analysisId <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"No matching, simple outcome model"</span>,</span>
@@ -419,7 +444,7 @@ analysis.</p>
 <p>We can easily create more analyses, for example by using matching,
 stratification, inverse probability of treatment weighting, or by using
 more sophisticated outcome models:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">createPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createCreatePsArgs.html">createCreatePsArgs</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># Use default settings only</span></span>
 <span></span>
 <span><span class="va">matchOnPsArgs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createMatchOnPsArgs.html">createMatchOnPsArgs</a></span><span class="op">(</span>maxRatio <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
@@ -475,7 +500,7 @@ more sophisticated outcome models:</p>
 <span>  fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Note: Using propensity scores but not computing covariate balance</span></span></code></pre>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fitOutcomeModelArgs4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs</a></span><span class="op">(</span></span>
 <span>  useCovariates <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -492,7 +517,7 @@ more sophisticated outcome models:</p>
 <span>  fitOutcomeModelArgs <span class="op">=</span> <span class="va">fitOutcomeModelArgs4</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Note: Using propensity scores but not computing covariate balance</span></span></code></pre>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">interactionCovariateIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="fl">8532001</span>, <span class="co"># Female</span></span>
 <span>  <span class="fl">201826210</span>, <span class="co"># T2DM</span></span>
@@ -516,7 +541,7 @@ more sophisticated outcome models:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Note: Using propensity scores but not computing covariate balance</span></span></code></pre>
 <p>These analyses can be combined in a list:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cmAnalysisList</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">cmAnalysis1</span>, </span>
 <span>                       <span class="va">cmAnalysis2</span>, </span>
 <span>                       <span class="va">cmAnalysis3</span>, </span>
@@ -564,7 +589,7 @@ we do not want all combinations of analyses and hypothesis to be
 computed, we can can skip certain analyses by using the
 <code>analysesToExclude</code> argument of the
 <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code>.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">multiThreadingSettings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createDefaultMultiThreadingSettings.html">createDefaultMultiThreadingSettings</a></span><span class="op">(</span><span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCmAnalyses.html">runCmAnalyses</a></span><span class="op">(</span></span>
@@ -608,7 +633,7 @@ file names of the intermediate and end-result files that were
 constructed. For example, we can retrieve and plot the propensity scores
 for the combination of our target, comparator, outcome of interest, and
 last analysis:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">psFile</span> <span class="op">&lt;-</span> <span class="va">result</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">targetId</span> <span class="op">==</span> <span class="fl">1</span>,</span>
 <span>         <span class="va">comparatorId</span> <span class="op">==</span> <span class="fl">2</span>,</span>
@@ -617,19 +642,40 @@ last analysis:</p>
 <span>  <span class="fu">pull</span><span class="op">(</span><span class="va">psFile</span><span class="op">)</span></span>
 <span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="va">psFile</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
 <p>Note that some of the file names will appear several times in the
 table. For example, analysis 3 and 5 only differ in terms of the outcome
 model, and will share the same propensity score and stratification
 files.</p>
 <p>We can always retrieve the file reference table again using the
 <code><a href="../reference/getFileReference.html">getFileReference()</a></code> function:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getFileReference.html">getFileReference</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span></code></pre></div>
 <p>We can get a summary of the results using
 <code><a href="../reference/getResultsSummary.html">getResultsSummary()</a></code>:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">resultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getResultsSummary.html">getResultsSummary</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span><span class="va">resultsSum</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 216 x 29</span></span></span>
+<span><span class="co">##    analysisId targetId comparatorId outcomeId trueEffectSize targetSubjects</span></span>
+<span><span class="co">##         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>          1        1            2        77             <span style="color: #BB0000;">NA</span>          <span style="text-decoration: underline;">84</span>392</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>          1        1            2     <span style="text-decoration: underline;">29</span>735              1          <span style="text-decoration: underline;">86</span>648</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>          1        1            2    <span style="text-decoration: underline;">140</span>673              1          <span style="text-decoration: underline;">81</span>984</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>          1        1            2    <span style="text-decoration: underline;">197</span>494              1          <span style="text-decoration: underline;">87</span>506</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>          1        1            2    <span style="text-decoration: underline;">198</span>185              1          <span style="text-decoration: underline;">87</span>665</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>          1        1            2    <span style="text-decoration: underline;">198</span>199              1          <span style="text-decoration: underline;">87</span>123</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>          1        1            2    <span style="text-decoration: underline;">200</span>528              1          <span style="text-decoration: underline;">87</span>003</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>          1        1            2    <span style="text-decoration: underline;">257</span>315              1          <span style="text-decoration: underline;">86</span>649</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>          1        1            2    <span style="text-decoration: underline;">314</span>658              1          <span style="text-decoration: underline;">78</span>225</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>          1        1            2    <span style="text-decoration: underline;">317</span>376              1          <span style="text-decoration: underline;">87</span>534</span></span>
+<span><span class="co">## <span style="color: #949494;"># i 206 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># i 23 more variables: comparatorSubjects &lt;int&gt;, targetDays &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   comparatorDays &lt;dbl&gt;, targetOutcomes &lt;dbl&gt;, comparatorOutcomes &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   rr &lt;dbl&gt;, ci95Lb &lt;dbl&gt;, ci95Ub &lt;dbl&gt;, p &lt;dbl&gt;, oneSidedP &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   logRr &lt;dbl&gt;, seLogRr &lt;dbl&gt;, llr &lt;dbl&gt;, mdrr &lt;dbl&gt;, targetEstimator &lt;chr&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   calibratedRr &lt;dbl&gt;, calibratedCi95Lb &lt;dbl&gt;, calibratedCi95Ub &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   calibratedP &lt;dbl&gt;, calibratedOneSidedP &lt;dbl&gt;, calibratedLogRr &lt;dbl&gt;, ...</span></span></span></code></pre>
 <p>This tells us, per target-comparator-outcome-analysis combination,
 the estimated relative risk and 95% confidence interval, as well as the
 number of people in the treated and comparator group (after trimming and
@@ -645,7 +691,7 @@ each plot, the blue dots represent our negative control outcomes, and
 the yellow diamond represents our health outcome of interest: GI bleed.
 An unbiased, well-calibrated analysis should have 95% of the negative
 controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"EmpiricalCalibration"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/EmpiricalCalibration/" class="external-link">EmpiricalCalibration</a></span><span class="op">)</span></span>
 <span></span>
@@ -661,7 +707,8 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 2: Matching</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">2</span>,</span>
@@ -674,7 +721,8 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-23-1.png" width="700"></p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 3: Stratification</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">3</span>,</span>
@@ -687,7 +735,8 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-25-1.png" width="700"></p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 4: Inverse probability of treatment weighting</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">4</span>,</span>
@@ -700,7 +749,8 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-27-1.png" width="700"></p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 5: Stratification plus full outcome model</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">analysisId</span> <span class="op">==</span> <span class="fl">5</span>,</span>
@@ -713,12 +763,13 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-29-1.png" width="700"></p>
 <p>Analysis 6 explored interactions with certain variables. The
 estimates for these interaction terms are stored in a separate results
 summary. We can examine whether these estimates are also consistent with
 the null. In this example we consider the interaction with ‘concurrent
 use of antithrombotic agents’ (covariate ID 21600960413):</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">interactionResultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getInteractionResultsSummary.html">getInteractionResultsSummary</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Analysis 6: Stratification plus interaction terms</span></span>
@@ -735,6 +786,10 @@ use of antithrombotic agents’ (covariate ID 21600960413):</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Warning in checkWithinLimits(yLimits, c(seLogRrNegatives, seLogRrPositives), :</span></span>
+<span><span class="co">## Values are outside plotted range. Consider adjusting yLimits parameter</span></span></code></pre>
+<pre><code><span><span class="co">## Warning: Removed 1 rows containing missing values (`geom_vline()`).</span></span></code></pre>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-31-1.png" width="700"></p>
 </div>
 </div>
 <div class="section level2">
@@ -749,7 +804,7 @@ comes in. This function exports all results, including diagnostics to
 CSV (comma-separated values) files. These files only contain aggregate
 statistics, not patient-level data. The format is CSV files to enable
 human review.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/exportToCsv.html">exportToCsv</a></span><span class="op">(</span></span>
 <span>  <span class="va">folder</span>,</span>
 <span>  exportFolder <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"export"</span><span class="op">)</span>,</span>
@@ -765,23 +820,23 @@ number of people with the outcome is 3, and
 which in the Shiny app will be displayed as ‘&lt;5’.</p>
 <p>Information on the data model used to generate the CSV files can be
 retrieved using <code><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications()</a></code>:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 188 × 8</span></span></span>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 188 x 8</span></span></span>
 <span><span class="co">##    tableName   columnName dataType isRequired primaryKey minCellCount deprecated</span></span>
 <span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attriti… sequence_… int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attriti… descripti… varchar  Yes        No         No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attriti… subjects   int      Yes        No         Yes          No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attriti… exposure_… int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attriti… target_id  int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attriti… comparato… int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attriti… analysis_… int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attriti… outcome_id int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attriti… database_… varchar  Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_… target_id  int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #949494;"># ℹ 178 more rows</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attriti~ sequence_~ int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attriti~ descripti~ varchar  Yes        No         No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attriti~ subjects   int      Yes        No         Yes          No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attriti~ exposure_~ int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attriti~ target_id  int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attriti~ comparato~ int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attriti~ analysis_~ int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attriti~ outcome_id int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attriti~ database_~ varchar  Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_~ target_id  int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #949494;"># i 178 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># i 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="view-results-in-a-shiny-app">View results in a Shiny app<a class="anchor" aria-label="anchor" href="#view-results-in-a-shiny-app"></a>
@@ -794,7 +849,7 @@ create a small SQLite database ourselves without having to set up a
 database server. In any case we need to specify the names of the
 exposure and outcome cohorts we used in our study. We can create the
 SQLite database using:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="fl">1</span>,</span>
@@ -813,7 +868,7 @@ SQLite database using:</p>
 <span>  cohorts <span class="op">=</span> <span class="va">cohorts</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Next we launch the Shiny app using:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/launchResultsViewerUsingSqlite.html">launchResultsViewerUsingSqlite</a></span><span class="op">(</span></span>
 <span>  sqliteFileName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="st">"myResults.sqlite"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -828,12 +883,11 @@ CohortMethod Shiny app
 </h2>
 <p>Considerable work has been dedicated to provide the
 <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
-<span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
+<pre><code><span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##   Schuemie M, Suchard M, Ryan P (2023). _CohortMethod: New-User Cohort</span></span>
+<span><span class="co">##   Schuemie M, Suchard M, Ryan P (2024). _CohortMethod: New-User Cohort</span></span>
 <span><span class="co">##   Method with Large Scale Propensity and Outcome Models_.</span></span>
 <span><span class="co">##   https://ohdsi.github.io/CohortMethod,</span></span>
 <span><span class="co">##   https://github.com/OHDSI/CohortMethod.</span></span>
@@ -841,17 +895,18 @@ CohortMethod Shiny app
 <span><span class="co">## A BibTeX entry for LaTeX users is</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">##   @Manual{,</span></span>
-<span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome Models},</span></span>
+<span><span class="co">##     title = {CohortMethod: New-User Cohort Method with Large Scale Propensity and Outcome</span></span>
+<span><span class="co">## Models},</span></span>
 <span><span class="co">##     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},</span></span>
-<span><span class="co">##     year = {2023},</span></span>
-<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod},</span></span>
+<span><span class="co">##     year = {2024},</span></span>
+<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod,</span></span>
+<span><span class="co">## https://github.com/OHDSI/CohortMethod},</span></span>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
-<span><span class="co">## To cite Cyclops in publications use:</span></span>
+<pre><code><span><span class="co">## To cite Cyclops in publications use:</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">##   Suchard MA, Simpson SE, Zorych I, Ryan P, Madigan D (2013). "Massive</span></span>
 <span><span class="co">##   parallelization of serial inference algorithms for complex</span></span>

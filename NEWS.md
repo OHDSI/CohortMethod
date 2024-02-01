@@ -9,6 +9,8 @@ Bugfixes:
 
 1. Fixed bug in parsing covariate filter settings for balance.
 
+2. Updated vignettes to use latest `Capr` functions.
+
 
 CohortMethod 5.2.0
 ==================

@@ -109,6 +109,7 @@ diclofenacCohort <- cohort(
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+# Note: this will automatically assign cohort IDs 1 and 2, respectively:
 exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
 ```
 
