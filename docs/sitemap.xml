@@ -4,13 +4,13 @@
     <loc>/404.html</loc>
   </url>
   <url>
+    <loc>/articles/index.html</loc>
+  </url>
+  <url>
     <loc>/articles/MultipleAnalyses.html</loc>
   </url>
   <url>
     <loc>/articles/SingleStudies.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
   </url>
   <url>
     <loc>/authors.html</loc>
@@ -25,6 +25,12 @@
     <loc>/pull_request_template.html</loc>
   </url>
   <url>
+    <loc>/reference/adjustedKm.html</loc>
+  </url>
+  <url>
+    <loc>/reference/checkCmInstallation.html</loc>
+  </url>
+  <url>
     <loc>/reference/CohortMethod-package.html</loc>
   </url>
   <url>
@@ -32,12 +38,6 @@
   </url>
   <url>
     <loc>/reference/CohortMethodData-class.html</loc>
-  </url>
-  <url>
-    <loc>/reference/adjustedKm.html</loc>
-  </url>
-  <url>
-    <loc>/reference/checkCmInstallation.html</loc>
   </url>
   <url>
     <loc>/reference/cohortMethodDataSimulationProfile.html</loc>

@@ -1,4 +1,4 @@
-# Copyright 2023 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -259,10 +259,26 @@ runCmAnalyses <- function(connectionDetails,
     stop("Duplicate analysis IDs are not allowed")
   }
   outputFolder <- normalizePath(outputFolder, mustWork = FALSE)
+  cmAnalysisListFile <- file.path(outputFolder, "cmAnalysisList.rds")
+  if (file.exists(cmAnalysisListFile)) {
+    oldCmAnalysisList <- readRDS(cmAnalysisListFile)
+    if (!isTRUE(all.equal(oldCmAnalysisList, cmAnalysisList))) {
+      rm(list=ls(envir = cache), envir = cache)
+      message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
+      response <- utils::askYesNo("Do you want to delete the old files before proceeding?")
+      if (is.na(response)) {
+        # Cancel:
+        return()
+      } else if (response == TRUE) {
+        unlink(outputFolder, recursive = TRUE)
+      }
+    }
+  }
   if (!file.exists(outputFolder)) {
     dir.create(outputFolder)
   }
-
+  saveRDS(cmAnalysisList, cmAnalysisListFile)
+  saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   referenceTable <- createReferenceTable(
     cmAnalysisList = cmAnalysisList,
     targetComparatorOutcomesList = targetComparatorOutcomesList,
@@ -274,9 +290,6 @@ runCmAnalyses <- function(connectionDetails,
   referenceTable %>%
     select(-"includedCovariateConceptIds", "excludedCovariateConceptIds") %>%
     saveRDS(file.path(outputFolder, "outcomeModelReference.rds"))
-
-  saveRDS(cmAnalysisList, file.path(outputFolder, "cmAnalysisList.rds"))
-  saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
 
   # Create cohortMethodData objects -----------------------------
   subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile), ]
