@@ -815,7 +815,11 @@ addPsToStudyPopForSubset <- function(subset, outputFolder) {
     refRow <- subset[i, ]
     studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
     studyPop <- addPsToStudyPopulation(studyPop, ps)
+    tryCatch({
     saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
+    }, error = function(err) {
+      ParallelLogger::logError(paste("error saving ", refRow$psFile))
+    })
     return(NULL)
   }
   plyr::l_ply(1:nrow(subset), addToStudyPop)
