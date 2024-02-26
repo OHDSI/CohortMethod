@@ -907,11 +907,12 @@ applyTrimMatchStratify <- function(ps, arguments) {
 }
 
 doTrimMatchStratify <- function(params) {
-  ps <- getPs(params$psFile)
-  ParallelLogger::logDebug(sprintf("Performing matching etc., using %s",
-                                   params$psFile))
-
   tryCatch({
+    ps <- getPs(params$psFile)
+    ParallelLogger::logDebug(sprintf("Performing matching etc., using %s",
+                                     params$psFile))
+
+
     ps <- applyTrimMatchStratify(ps, params$args)
     saveRDS(ps, params$strataFile)
   }, error = function(err) {
