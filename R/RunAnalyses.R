@@ -493,7 +493,6 @@ runCmAnalyses <- function(connectionDetails,
   if (nrow(subset) != 0) {
     message("*** Trimming/Matching/Stratifying ***")
 
-    tasks <- list()
     createTrimMatchStratTask <- function(i) {
       refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
@@ -502,15 +501,17 @@ runCmAnalyses <- function(connectionDetails,
       )[[1]]
 
       if (file.exists(file.path(outputFolder, refRow$psFile))) {
-        tasks[[length(tasks) +  1]] <<- list(
+        task <- list(
           psFile = file.path(outputFolder, refRow$psFile),
           args = analysisRow,
           strataFile = file.path(outputFolder, refRow$strataFile)
         )
+
+        return(task)
       }
     }
 
-    lapply(1:nrow(subset), createTrimMatchStratTask)
+    tasks <- lapply(1:nrow(subset), createTrimMatchStratTask)
 
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$trimMatchStratifyThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -909,97 +910,114 @@ doTrimMatchStratify <- function(params) {
   ps <- getPs(params$psFile)
   ParallelLogger::logDebug(sprintf("Performing matching etc., using %s",
                                    params$psFile))
-  ps <- applyTrimMatchStratify(ps, params$args)
-  saveRDS(ps, params$strataFile)
+
+  tryCatch({
+    ps <- applyTrimMatchStratify(ps, params$args)
+    saveRDS(ps, params$strataFile)
+  }, error = function(err) {
+    ParallelLogger::logError(sprintf("Unable to save %s - %s", params$strataFile, err))
+  })
   return(NULL)
 }
 
 doPrefilterCovariates <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
-  covariates <- cohortMethodData$covariates
-  if (nrow_temp(covariates) > 0) {
-    if (params$args$useCovariates) {
-      covariatesToInclude <- params$args$includeCovariateIds
-      covariatesToExclude <- params$args$excludeCovariateIds
-    } else {
-      covariatesToInclude <- c()
-      covariatesToExclude <- c()
+  tryCatch({
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
+    covariates <- cohortMethodData$covariates
+    if (nrow_temp(covariates) > 0) {
+      if (params$args$useCovariates) {
+        covariatesToInclude <- params$args$includeCovariateIds
+        covariatesToExclude <- params$args$excludeCovariateIds
+      } else {
+        covariatesToInclude <- c()
+        covariatesToExclude <- c()
+      }
+      covariatesToInclude <- unique(c(covariatesToInclude, params$args$interactionCovariateIds))
+      if (length(covariatesToInclude) != 0) {
+        covariates <- covariates %>%
+          filter(.data$covariateId %in% covariatesToInclude)
+      }
+      if (length(covariatesToExclude) != 0) {
+        covariates <- covariates %>%
+          filter(!.data$covariateId %in% covariatesToExclude)
+      }
     }
-    covariatesToInclude <- unique(c(covariatesToInclude, params$args$interactionCovariateIds))
-    if (length(covariatesToInclude) != 0) {
-      covariates <- covariates %>%
-        filter(.data$covariateId %in% covariatesToInclude)
-    }
-    if (length(covariatesToExclude) != 0) {
-      covariates <- covariates %>%
-        filter(!.data$covariateId %in% covariatesToExclude)
-    }
-  }
-  filteredCohortMethodData <- Andromeda::andromeda(
-    cohorts = cohortMethodData$cohorts,
-    outcomes = cohortMethodData$outcomes,
-    covariates = covariates,
-    covariateRef = cohortMethodData$covariateRef,
-    analysisRef = cohortMethodData$analysisRef
-  )
-  attr(filteredCohortMethodData, "metaData") <- attr(cohortMethodData, "metaData")
-  class(filteredCohortMethodData) <- "CohortMethodData"
-  attr(class(filteredCohortMethodData), "package") <- "CohortMethod"
-  saveCohortMethodData(filteredCohortMethodData, params$prefilteredCovariatesFile)
+    filteredCohortMethodData <- Andromeda::andromeda(
+      cohorts = cohortMethodData$cohorts,
+      outcomes = cohortMethodData$outcomes,
+      covariates = covariates,
+      covariateRef = cohortMethodData$covariateRef,
+      analysisRef = cohortMethodData$analysisRef
+    )
+    attr(filteredCohortMethodData, "metaData") <- attr(cohortMethodData, "metaData")
+    class(filteredCohortMethodData) <- "CohortMethodData"
+    attr(class(filteredCohortMethodData), "package") <- "CohortMethod"
+    saveCohortMethodData(filteredCohortMethodData, params$prefilteredCovariatesFile)
+  }, error = function(err) {
+    ParallelLogger::logError(err)
+  })
   return(NULL)
 }
 
 doFitOutcomeModel <- function(params) {
-  if (params$prefilteredCovariatesFile == "") {
-    cohortMethodDataFile <- params$cohortMethodDataFile
-  } else {
-    cohortMethodDataFile <- params$prefilteredCovariatesFile
-  }
-  cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
-  studyPop <- readRDS(params$studyPopFile)
-  args <- list(cohortMethodData = cohortMethodData, population = studyPop)
-  args <- append(args, params$args)
-  ParallelLogger::logDebug(sprintf("Calling fitOutcomeModel() using %s and %s",
-                                   cohortMethodDataFile,
-                                   params$studyPopFile))
-  outcomeModel <- do.call("fitOutcomeModel", args)
-  saveRDS(outcomeModel, params$outcomeModelFile)
+  tryCatch({
+    if (params$prefilteredCovariatesFile == "") {
+      cohortMethodDataFile <- params$cohortMethodDataFile
+    } else {
+      cohortMethodDataFile <- params$prefilteredCovariatesFile
+    }
+    cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
+    studyPop <- readRDS(params$studyPopFile)
+    args <- list(cohortMethodData = cohortMethodData, population = studyPop)
+    args <- append(args, params$args)
+    ParallelLogger::logDebug(sprintf("Calling fitOutcomeModel() using %s and %s",
+                                     cohortMethodDataFile,
+                                     params$studyPopFile))
+    outcomeModel <- do.call("fitOutcomeModel", args)
+    saveRDS(outcomeModel, params$outcomeModelFile)
+  }, error = function(err) {
+    ParallelLogger::logError(err)
+  })
   return(NULL)
 }
 
 doFitOutcomeModelPlus <- function(params) {
-  if (params$prefilteredCovariatesFile == "") {
-    cohortMethodDataFile <- params$cohortMethodDataFile
-  } else {
-    cohortMethodDataFile <- params$prefilteredCovariatesFile
-  }
-  cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
-
-  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID %d",
-                                   cohortMethodDataFile,
-                                   params$args$createStudyPopArgs$outcomeId))
-
-  # Create study pop
-  args <- params$args$createStudyPopArgs
-  args$cohortMethodData <- cohortMethodData
-  studyPop <- do.call("createStudyPopulation", args)
-
-  if (!is.null(params$args$createPsArgs)) {
-    if (params$refitPsForEveryOutcome) {
-      ps <- getPs(params$psFile)
+  tryCatch({
+    if (params$prefilteredCovariatesFile == "") {
+      cohortMethodDataFile <- params$cohortMethodDataFile
     } else {
-      ps <- getPs(params$sharedPsFile)
-      ps <- addPsToStudyPopulation(studyPop, ps)
+      cohortMethodDataFile <- params$prefilteredCovariatesFile
     }
-  } else {
-    ps <- studyPop
-  }
-  ps <- applyTrimMatchStratify(ps, params$args)
-  args <- params$args$fitOutcomeModelArgs
-  args$population <- ps
-  args$cohortMethodData <- cohortMethodData
-  outcomeModel <- do.call("fitOutcomeModel", args)
-  saveRDS(outcomeModel, params$outcomeModelFile)
+    cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
+
+    ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID %d",
+                                     cohortMethodDataFile,
+                                     params$args$createStudyPopArgs$outcomeId))
+
+    # Create study pop
+    args <- params$args$createStudyPopArgs
+    args$cohortMethodData <- cohortMethodData
+    studyPop <- do.call("createStudyPopulation", args)
+
+    if (!is.null(params$args$createPsArgs)) {
+      if (params$refitPsForEveryOutcome) {
+        ps <- getPs(params$psFile)
+      } else {
+        ps <- getPs(params$sharedPsFile)
+        ps <- addPsToStudyPopulation(studyPop, ps)
+      }
+    } else {
+      ps <- studyPop
+    }
+    ps <- applyTrimMatchStratify(ps, params$args)
+    args <- params$args$fitOutcomeModelArgs
+    args$population <- ps
+    args$cohortMethodData <- cohortMethodData
+    outcomeModel <- do.call("fitOutcomeModel", args)
+    saveRDS(outcomeModel, params$outcomeModelFile)
+  }, error = function(err) {
+    ParallelLogger::logError(err)
+  })
   return(NULL)
 }
 
@@ -1011,65 +1029,81 @@ doComputeSharedBalance <- function(params) {
 
   # Create study pop
   message("Computing covariate balance across all outcomes (ignore messages about 'no outcome specified')")
-  args <- params$args$createStudyPopArgs
-  args$cohortMethodData <- cohortMethodData
-  studyPop <- do.call("createStudyPopulation", args)
+  tryCatch({
+    args <- params$args$createStudyPopArgs
+    args$cohortMethodData <- cohortMethodData
+    studyPop <- do.call("createStudyPopulation", args)
 
-  if (!is.null(params$args$createPsArgs)) {
-    # Add PS
-    ps <- getPs(params$sharedPsFile)
-    idx <- match(studyPop$rowId, ps$rowId)
-    studyPop$propensityScore <- ps$propensityScore[idx]
-    studyPop$iptw <- ps$iptw[idx]
-    ps <- studyPop
-  } else {
-    ps <- studyPop
-  }
-  ps <- applyTrimMatchStratify(ps, params$args)
-  args <- params$args$computeSharedCovariateBalanceArgs
-  args$population <- ps
-  args$cohortMethodData <- cohortMethodData
-  balance <- do.call("computeCovariateBalance", args)
-  saveRDS(balance, params$sharedBalanceFile)
+    if (!is.null(params$args$createPsArgs)) {
+      # Add PS
+      ps <- getPs(params$sharedPsFile)
+      idx <- match(studyPop$rowId, ps$rowId)
+      studyPop$propensityScore <- ps$propensityScore[idx]
+      studyPop$iptw <- ps$iptw[idx]
+      ps <- studyPop
+    } else {
+      ps <- studyPop
+    }
+
+
+    ps <- applyTrimMatchStratify(ps, params$args)
+    args <- params$args$computeSharedCovariateBalanceArgs
+    args$population <- ps
+    args$cohortMethodData <- cohortMethodData
+    balance <- do.call("computeCovariateBalance", args)
+    saveRDS(balance, params$sharedBalanceFile)
+  },
+    error = function(err) {
+      ParallelLogger::logError(err)
+    })
   return(NULL)
 }
 
 doFilterForCovariateBalance <- function(params) {
-  cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
-  covariateFilter <- params$
-    computeCovariateBalanceArgs$
-    covariateFilter
-  covariates <- filterCovariates(cohortMethodData$covariates, cohortMethodData$covariateRef, covariateFilter)
-  filteredCohortMethodData <- Andromeda::andromeda(
-    cohorts = cohortMethodData$cohorts,
-    outcomes = cohortMethodData$outcomes,
-    covariates = covariates,
-    covariateRef = cohortMethodData$covariateRef,
-    analysisRef = cohortMethodData$analysisRef
-  )
-  attr(filteredCohortMethodData, "metaData") <- attr(cohortMethodData, "metaData")
-  class(filteredCohortMethodData) <- "CohortMethodData"
-  attr(class(filteredCohortMethodData), "package") <- "CohortMethod"
-  saveCohortMethodData(filteredCohortMethodData, params$filteredForbalanceFile)
+  tryCatch({
+    cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
+    covariateFilter <- params$
+      computeCovariateBalanceArgs$
+      covariateFilter
+    covariates <- filterCovariates(cohortMethodData$covariates, cohortMethodData$covariateRef, covariateFilter)
+    filteredCohortMethodData <- Andromeda::andromeda(
+      cohorts = cohortMethodData$cohorts,
+      outcomes = cohortMethodData$outcomes,
+      covariates = covariates,
+      covariateRef = cohortMethodData$covariateRef,
+      analysisRef = cohortMethodData$analysisRef
+    )
+    attr(filteredCohortMethodData, "metaData") <- attr(cohortMethodData, "metaData")
+    class(filteredCohortMethodData) <- "CohortMethodData"
+    attr(class(filteredCohortMethodData), "package") <- "CohortMethod"
+    saveCohortMethodData(filteredCohortMethodData, params$filteredForbalanceFile)
+  }, error = function(err) {
+    ParallelLogger::logError(err)
+  })
   return(NULL)
 }
 
 doComputeBalance <- function(params) {
-  if (params$filteredForbalanceFile == "") {
-    cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
-  } else {
-    cohortMethodData <- getCohortMethodData(params$filteredForbalanceFile)
-  }
-  strataPop <- readRDS(params$strataFile)
+  tryCatch({
+    if (params$filteredForbalanceFile == "") {
+      cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+    } else {
+      cohortMethodData <- getCohortMethodData(params$filteredForbalanceFile)
+    }
+    strataPop <- readRDS(params$strataFile)
 
-  args <- params$computeCovariateBalanceArgs
-  args$population <- strataPop
-  args$cohortMethodData <- cohortMethodData
-  ParallelLogger::logDebug(sprintf("Computing balance balance using %s and %s",
-                                   params$cohortMethodDataFile,
-                                   params$strataFile))
-  balance <- do.call("computeCovariateBalance", args)
-  saveRDS(balance, params$balanceFile)
+    args <- params$computeCovariateBalanceArgs
+    args$population <- strataPop
+    args$cohortMethodData <- cohortMethodData
+    ParallelLogger::logDebug(sprintf("Computing balance balance using %s and %s",
+                                     params$cohortMethodDataFile,
+                                     params$strataFile))
+    balance <- do.call("computeCovariateBalance", args)
+    saveRDS(balance, params$balanceFile)
+  },
+    error = function(err) {
+      ParallelLogger::logError(err)
+    })
   return(NULL)
 }
 
