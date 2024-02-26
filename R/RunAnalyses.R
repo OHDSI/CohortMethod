@@ -279,13 +279,14 @@ runCmAnalyses <- function(connectionDetails,
   saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
 
   # Create cohortMethodData objects -----------------------------
-  subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile), ]
-  subset <- subset[subset$cohortMethodDataFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$cohortMethodDataFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$cohortMethodDataFile),]
+  subset <- subset[subset$cohortMethodDataFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$cohortMethodDataFile)),]
   if (nrow(subset) != 0) {
     message("*** Creating cohortMethodData objects ***")
+
     createCmDataTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -333,6 +334,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
+
     objectsToCreate <- lapply(1:nrow(subset), createCmDataTask)
     cluster <- ParallelLogger::makeCluster(min(length(objectsToCreate), multiThreadingSettings$getDbCohortMethodDataThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -341,13 +343,14 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Create study populations --------------------------------------
-  subset <- referenceTable[!duplicated(referenceTable$studyPopFile), ]
-  subset <- subset[subset$studyPopFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$studyPopFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$studyPopFile),]
+  subset <- subset[subset$studyPopFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$studyPopFile)),]
   if (nrow(subset) != 0) {
     message("*** Creating study populations ***")
+
     createStudyPopTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -393,6 +396,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
+
     objectsToCreate <- lapply(1:nrow(subset), createStudyPopTask)
     cluster <- ParallelLogger::makeCluster(min(length(objectsToCreate), multiThreadingSettings$createStudyPopThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -402,13 +406,14 @@ runCmAnalyses <- function(connectionDetails,
 
   # Fit propensity models ---------------------------------------
   if (refitPsForEveryOutcome) {
-    subset <- referenceTable[!duplicated(referenceTable$psFile), ]
-    subset <- subset[subset$psFile != "", ]
-    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
+    subset <- referenceTable[!duplicated(referenceTable$psFile),]
+    subset <- subset[subset$psFile != "",]
+    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)),]
     if (nrow(subset) != 0) {
       message("*** Fitting propensity models ***")
+
       createPsTask <- function(i) {
-        refRow <- subset[i, ]
+        refRow <- subset[i,]
         analysisRow <- ParallelLogger::matchInList(
           cmAnalysisList,
           list(analysisId = refRow$analysisId)
@@ -434,13 +439,14 @@ runCmAnalyses <- function(connectionDetails,
       ParallelLogger::stopCluster(cluster)
     }
   } else {
-    subset <- referenceTable[!duplicated(referenceTable$sharedPsFile), ]
-    subset <- subset[subset$sharedPsFile != "", ]
-    subset <- subset[!file.exists(file.path(outputFolder, subset$sharedPsFile)), ]
+    subset <- referenceTable[!duplicated(referenceTable$sharedPsFile),]
+    subset <- subset[subset$sharedPsFile != "",]
+    subset <- subset[!file.exists(file.path(outputFolder, subset$sharedPsFile)),]
     if (nrow(subset) != 0) {
       message("*** Fitting shared propensity models ***")
+
       createSharedPsTask <- function(i) {
-        refRow <- subset[i, ]
+        refRow <- subset[i,]
         analysisRow <- ParallelLogger::matchInList(
           cmAnalysisList,
           list(analysisId = refRow$analysisId)
@@ -459,6 +465,7 @@ runCmAnalyses <- function(connectionDetails,
         )
         return(task)
       }
+
       modelsToFit <- lapply(1:nrow(subset), createSharedPsTask)
       cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$createPsThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -466,9 +473,9 @@ runCmAnalyses <- function(connectionDetails,
       ParallelLogger::stopCluster(cluster)
     }
 
-    subset <- referenceTable[!duplicated(referenceTable$psFile), ]
-    subset <- subset[subset$psFile != "", ]
-    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
+    subset <- referenceTable[!duplicated(referenceTable$psFile),]
+    subset <- subset[subset$psFile != "",]
+    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)),]
     if (nrow(subset) != 0) {
       message("*** Adding propensity scores to study population objects ***")
       tasks <- split(subset, subset$sharedPsFile)
@@ -480,25 +487,30 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Trimming/Matching/Stratifying -----------------------------------------
-  subset <- referenceTable[!duplicated(referenceTable$strataFile), ]
-  subset <- subset[subset$strataFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$strataFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$strataFile),]
+  subset <- subset[subset$strataFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$strataFile)),]
   if (nrow(subset) != 0) {
     message("*** Trimming/Matching/Stratifying ***")
+
+    tasks <- list()
     createTrimMatchStratTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
-      task <- list(
-        psFile = file.path(outputFolder, refRow$psFile),
-        args = analysisRow,
-        strataFile = file.path(outputFolder, refRow$strataFile)
-      )
-      return(task)
+
+      if (file.exists(file.path(outputFolder, refRow$psFile))) {
+        tasks[[length(tasks) +  1]] <<- list(
+          psFile = file.path(outputFolder, refRow$psFile),
+          args = analysisRow,
+          strataFile = file.path(outputFolder, refRow$strataFile)
+        )
+      }
     }
-    tasks <- lapply(1:nrow(subset), createTrimMatchStratTask)
+
+    lapply(1:nrow(subset), createTrimMatchStratTask)
 
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$trimMatchStratifyThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -507,13 +519,14 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Computing shared covariate balance ----------------------------------
-  subset <- referenceTable[!duplicated(referenceTable$sharedBalanceFile), ]
-  subset <- subset[subset$sharedBalanceFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$sharedBalanceFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$sharedBalanceFile),]
+  subset <- subset[subset$sharedBalanceFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$sharedBalanceFile)),]
   if (nrow(subset) != 0) {
     message("*** Computing shared covariate balance ***")
+
     createSharedBalanceTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -530,6 +543,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
+
     tasks <- lapply(1:nrow(subset), createSharedBalanceTask)
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$computeSharedBalanceThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -538,13 +552,14 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Filtering covariates for computing covariate balance ------------------------------
-  subset <- referenceTable[!duplicated(referenceTable$filteredForbalanceFile), ]
-  subset <- subset[subset$filteredForbalanceFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$filteredForbalanceFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$filteredForbalanceFile),]
+  subset <- subset[subset$filteredForbalanceFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$filteredForbalanceFile)),]
   if (nrow(subset) != 0) {
     message("*** Filtering covariates for computing covariate balance ***")
+
     createFilterForCovariateBalanceTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -558,6 +573,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
+
     tasks <- lapply(1:nrow(subset), createFilterForCovariateBalanceTask)
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$prefilterCovariatesThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -566,13 +582,14 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Computing covariate balance (per outcome) -----------------------
-  subset <- referenceTable[!duplicated(referenceTable$balanceFile), ]
-  subset <- subset[subset$balanceFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$balanceFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$balanceFile),]
+  subset <- subset[subset$balanceFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$balanceFile)),]
   if (nrow(subset) != 0) {
     message("*** Computing covariate balance (per outcome) ***")
+
     createBalanceTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -592,6 +609,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
+
     tasks <- lapply(1:nrow(subset), createBalanceTask)
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$computeBalanceThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -600,13 +618,14 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Prefiltering covariates for outcome models  -------------------------
-  subset <- referenceTable[!duplicated(referenceTable$prefilteredCovariatesFile), ]
-  subset <- subset[subset$prefilteredCovariatesFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$prefilteredCovariatesFile)), ]
+  subset <- referenceTable[!duplicated(referenceTable$prefilteredCovariatesFile),]
+  subset <- subset[subset$prefilteredCovariatesFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$prefilteredCovariatesFile)),]
   if (nrow(subset) != 0) {
     message("*** Prefiltering covariates for outcome models ***")
+
     createPrefilterTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -624,6 +643,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
+
     tasks <- lapply(1:nrow(subset), createPrefilterTask)
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$prefilterCovariatesThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -632,13 +652,13 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Fitting outcome models --------------------------
-  subset <- referenceTable[referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$outcomeModelFile)), ]
+  subset <- referenceTable[referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$outcomeModelFile)),]
   if (nrow(subset) != 0) {
     message("*** Fitting outcome models for outcomes of interest ***")
 
     createOutcomeModelTask <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -664,6 +684,7 @@ runCmAnalyses <- function(connectionDetails,
         outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile)
       ))
     }
+
     modelsToFit <- lapply(1:nrow(subset), createOutcomeModelTask)
     cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$fitOutcomeModelThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -671,13 +692,13 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::stopCluster(cluster)
   }
 
-  subset <- referenceTable[!referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "", ]
-  subset <- subset[!file.exists(file.path(outputFolder, subset$outcomeModelFile)), ]
+  subset <- referenceTable[!referenceTable$outcomeOfInterest & referenceTable$outcomeModelFile != "",]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$outcomeModelFile)),]
   if (nrow(subset) != 0) {
     message("*** Fitting outcome models for other outcomes ***")
 
     createArgs <- function(i) {
-      refRow <- subset[i, ]
+      refRow <- subset[i,]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
@@ -691,7 +712,7 @@ runCmAnalyses <- function(connectionDetails,
       params <- list(
         cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
         prefilteredCovariatesFile = prefilteredCovariatesFile,
-        psFile =  file.path(outputFolder, refRow$psFile),
+        psFile = file.path(outputFolder, refRow$psFile),
         sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
         refitPsForEveryOutcome = refitPsForEveryOutcome,
         args = analysisRow,
@@ -699,6 +720,7 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(params)
     }
+
     modelsToFit <- lapply(1:nrow(subset), createArgs)
     cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$fitOutcomeModelThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -812,23 +834,24 @@ addPsToStudyPopForSubset <- function(subset, outputFolder) {
   ps <- readRDS(file.path(outputFolder, subset$sharedPsFile[1]))
 
   addToStudyPop <- function(i) {
-    refRow <- subset[i, ]
+    refRow <- subset[i,]
     studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
     studyPop <- addPsToStudyPopulation(studyPop, ps)
     tryCatch({
-    saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
+      saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
     }, error = function(err) {
       ParallelLogger::logError(paste("error saving ", refRow$psFile))
     })
     return(NULL)
   }
+
   plyr::l_ply(1:nrow(subset), addToStudyPop)
 }
 
 addPsToStudyPopulation <- function(studyPopulation, ps) {
   # Merge meta-data
   newMetaData <- attr(studyPopulation, "metaData")
-  psMetaData <-  attr(ps, "metaData")
+  psMetaData <- attr(ps, "metaData")
   missingColumns <- setdiff(names(psMetaData), names(newMetaData))
   newMetaData <- append(newMetaData, psMetaData[missingColumns])
   attr(studyPopulation, "metaData") <- newMetaData
@@ -1013,7 +1036,9 @@ doComputeSharedBalance <- function(params) {
 
 doFilterForCovariateBalance <- function(params) {
   cohortMethodData <- loadCohortMethodData(params$cohortMethodDataFile)
-  covariateFilter <- params$computeCovariateBalanceArgs$covariateFilter
+  covariateFilter <- params$
+    computeCovariateBalanceArgs$
+    covariateFilter
   covariates <- filterCovariates(cohortMethodData$covariates, cohortMethodData$covariateRef, covariateFilter)
   filteredCohortMethodData <- Andromeda::andromeda(
     cohorts = cohortMethodData$cohorts,
@@ -1062,10 +1087,12 @@ createReferenceTable <- function(cmAnalysisList,
       analysisFolder = sprintf("Analysis_%d", analysis$analysisId)
     )
   }
+
   analyses <- bind_rows(lapply(cmAnalysisList, convertAnalysisToTable))
   foldersToCreate <- file.path(outputFolder, analyses$analysisFolder)
   foldersToCreate <- foldersToCreate[!dir.exists(foldersToCreate)]
   sapply(foldersToCreate, dir.create)
+
   convertOutcomeToTable <- function(outcome) {
     tibble(
       outcomeId = outcome$outcomeId,
@@ -1074,6 +1101,7 @@ createReferenceTable <- function(cmAnalysisList,
     ) %>%
       return()
   }
+
   convertTcosToTable <- function(tcos) {
     lapply(tcos$outcomes, convertOutcomeToTable) %>%
       bind_rows() %>%
@@ -1085,6 +1113,7 @@ createReferenceTable <- function(cmAnalysisList,
       ) %>%
       return()
   }
+
   tcos <- bind_rows(lapply(targetComparatorOutcomesList, convertTcosToTable))
   referenceTable <- analyses %>%
     cross_join(tcos)
@@ -1099,6 +1128,7 @@ createReferenceTable <- function(cmAnalysisList,
       }
     }, list, object)))
   }
+
   loadingArgsList <- unique(ParallelLogger::selectFromList(
     cmAnalysisList,
     "getDbCohortMethodDataArgs"
@@ -1193,21 +1223,23 @@ createReferenceTable <- function(cmAnalysisList,
       studyPopArgsList <- lapply(studyPopArgsList, function(x) {
         return(x[[1]])
       })
+
       equivalent <- function(studyPopArgs1, studyPopArgs2) {
         if (identical(studyPopArgs1, studyPopArgs2)) {
           return(TRUE)
         }
         if (studyPopArgs1$firstExposureOnly != studyPopArgs2$firstExposureOnly ||
-            studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
-            studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
-            studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
-            studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
-            studyPopArgs1$minDaysAtRisk != 0) {
+          studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
+          studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
+          studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
+          studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
+          studyPopArgs1$minDaysAtRisk != 0) {
           return(FALSE)
         } else {
           return(TRUE)
         }
       }
+
       findFirstEquivalent <- function(studyPopArgsList, studyPopArgs) {
         for (i in 1:length(studyPopArgsList)) {
           if (equivalent(studyPopArgsList[[i]], studyPopArgs)) {
@@ -1215,6 +1247,7 @@ createReferenceTable <- function(cmAnalysisList,
           }
         }
       }
+
       studyPopArgsEquivalentId <- sapply(
         cmAnalysisList,
         function(cmAnalysis, studyPopArgsList) {
@@ -1260,9 +1293,11 @@ createReferenceTable <- function(cmAnalysisList,
     "stratifyByPsArgs",
     "stratifyByPsAndCovariatesArgs"
   )
+
   normStrataArgs <- function(strataArgs) {
     return(strataArgs[args][!is.na(names(strataArgs[args]))])
   }
+
   strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
   strataArgsList <- strataArgsList[sapply(
     strataArgsList,
@@ -1308,9 +1343,11 @@ createReferenceTable <- function(cmAnalysisList,
   if (refitPsForEveryOutcome) {
     referenceTable$sharedBalanceFile <- ""
   } else {
+
     normBalanceArgs <- function(balanceArgs) {
       return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
     }
+
     balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
     balanceArgsList <- balanceArgsList[sapply(
       balanceArgsList,
@@ -1347,9 +1384,11 @@ createReferenceTable <- function(cmAnalysisList,
 
   # Add covariate balance files (per target-comparator-analysis-outcome)
   args <- "computeCovariateBalanceArgs"
+
   normBalanceArgs <- function(balanceArgs) {
     return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
   }
+
   balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
   balanceArgsList <- balanceArgsList[sapply(
     balanceArgsList,
@@ -1374,7 +1413,9 @@ createReferenceTable <- function(cmAnalysisList,
 
     balanceIdsRequiringFiltering <- sapply(
       1:length(balanceArgsList),
-      function(i) ifelse(is.null(balanceArgsList[[i]]$computeCovariateBalanceArgs$covariateFilter), NA, i)
+      function(i) ifelse(is.null(balanceArgsList[[i]]$
+                                   computeCovariateBalanceArgs$
+                                   covariateFilter), NA, i)
     )
   }
   idx <- referenceTable$balanceId %in% balanceIdsRequiringFiltering
@@ -1406,25 +1447,43 @@ createReferenceTable <- function(cmAnalysisList,
     cmAnalysisList,
     c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")
   ))
+
   needsFilter <- function(loadingFittingArgs) {
     if (!"fitOutcomeModelArgs" %in% names(loadingFittingArgs)) {
       return(NULL)
     }
-    keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (length(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
-                                                                       length(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
-      length(loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds) != 0
+    keep <- (loadingFittingArgs$
+      fitOutcomeModelArgs$
+      useCovariates & (length(loadingFittingArgs$
+                                fitOutcomeModelArgs$
+                                excludeCovariateIds) != 0 |
+      length(loadingFittingArgs$
+               fitOutcomeModelArgs$
+               includeCovariateIds) != 0)) |
+      length(loadingFittingArgs$
+               fitOutcomeModelArgs$
+               interactionCovariateIds) != 0
     if (keep) {
       loadingFittingArgs$relevantFields <- list(
-        useCovariates = loadingFittingArgs$fitOutcomeModelArgs$useCovariates,
-        excludeCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds,
-        includeCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds,
-        interactionCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds
+        useCovariates = loadingFittingArgs$
+          fitOutcomeModelArgs$
+          useCovariates,
+        excludeCovariateIds = loadingFittingArgs$
+          fitOutcomeModelArgs$
+          excludeCovariateIds,
+        includeCovariateIds = loadingFittingArgs$
+          fitOutcomeModelArgs$
+          includeCovariateIds,
+        interactionCovariateIds = loadingFittingArgs$
+          fitOutcomeModelArgs$
+          interactionCovariateIds
       )
       return(loadingFittingArgs)
     } else {
       return(NULL)
     }
   }
+
   loadingFittingArgsList <- plyr::compact(lapply(loadingFittingArgsList, needsFilter))
   referenceTable$prefilteredCovariatesFile <- ""
   if (length(loadingFittingArgsList) != 0) {
@@ -1513,7 +1572,7 @@ createReferenceTable <- function(cmAnalysisList,
     referenceTable$targetId,
     referenceTable$comparatorId,
     referenceTable$outcomeId
-  ), ]
+  ),]
 
   # Remove non-essential files for outcomes not of interest:
   idx <- !referenceTable$outcomeOfInterest
@@ -1708,9 +1767,13 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
       oneSidedP <- NA
     } else {
       p <- EmpiricalCalibration::computeTraditionalP(logRr = coefficient,
-                                                     seLogRr = outcomeModel$outcomeModelTreatmentEstimate$seLogRr)
+                                                     seLogRr = outcomeModel$
+                                                       outcomeModelTreatmentEstimate$
+                                                       seLogRr)
       oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = coefficient,
-                                                             seLogRr = outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
+                                                             seLogRr = outcomeModel$
+                                                               outcomeModelTreatmentEstimate$
+                                                               seLogRr,
                                                              twoSided = FALSE,
                                                              upper = TRUE)
     }
@@ -1726,7 +1789,7 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     # Assuming we're interest in the attrition of the target population only. Could change to depend on type
     # of adjustment (e.g IPTW ATE should use target + comparator):
     attritionFraction <- 1 - (attrition$targetExposures[nrow(attrition)] / attrition$targetExposures[1])
-    result <- subset[i, ] %>%
+    result <- subset[i,] %>%
       select(
         "analysisId",
         "targetId",
@@ -1755,7 +1818,9 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
         p = !!p,
         oneSidedP = !!oneSidedP,
         logRr = if (is.null(coefficient)) NA else coefficient,
-        seLogRr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
+        seLogRr = if (is.null(coefficient)) NA else outcomeModel$
+          outcomeModelTreatmentEstimate$
+          seLogRr,
         llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr,
         mdrr = !!mdrr,
         targetEstimator = outcomeModel$targetEstimator
@@ -1765,17 +1830,33 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
 
     if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
       for (j in seq_len(nrow(outcomeModel$outcomeModelInteractionEstimates))) {
-        z <- outcomeModel$outcomeModelInteractionEstimates$logRr[j] / outcomeModel$outcomeModelInteractionEstimates$seLogRr[j]
+        z <- outcomeModel$
+          outcomeModelInteractionEstimates$
+          logRr[j] / outcomeModel$
+          outcomeModelInteractionEstimates$
+          seLogRr[j]
         p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
         interActionResults[[length(interActionResults) + 1]] <- result %>%
           mutate(
-            interactionCovariateId = outcomeModel$outcomeModelInteractionEstimates$covariateId[j],
-            rr = exp(outcomeModel$outcomeModelInteractionEstimates$logRr[j]),
-            ci95Lb = exp(outcomeModel$outcomeModelInteractionEstimates$logLb95[j]),
-            ci95Ub = exp(outcomeModel$outcomeModelInteractionEstimates$logUb95[j]),
+            interactionCovariateId = outcomeModel$
+              outcomeModelInteractionEstimates$
+              covariateId[j],
+            rr = exp(outcomeModel$
+                       outcomeModelInteractionEstimates$
+                       logRr[j]),
+            ci95Lb = exp(outcomeModel$
+                           outcomeModelInteractionEstimates$
+                           logLb95[j]),
+            ci95Ub = exp(outcomeModel$
+                           outcomeModelInteractionEstimates$
+                           logUb95[j]),
             p = !!p,
-            logRr = outcomeModel$outcomeModelInteractionEstimates$logRr[j],
-            seLogRr = outcomeModel$outcomeModelInteractionEstimates$seLogRr[j],
+            logRr = outcomeModel$
+              outcomeModelInteractionEstimates$
+              logRr[j],
+            seLogRr = outcomeModel$
+              outcomeModelInteractionEstimates$
+              seLogRr[j],
             targetEstimator = outcomeModel$targetEstimator
           )
       }
@@ -1819,8 +1900,10 @@ calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE
 
 # group = groups[[1]]
 calibrateGroup <- function(group) {
-  ncs <- group[group$trueEffectSize == 1 & !is.na(group$seLogRr), ]
-  pcs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize != 1 & !is.na(group$seLogRr), ]
+  ncs <- group[group$trueEffectSize == 1 & !is.na(group$seLogRr),]
+  pcs <- group[!is.na(group$trueEffectSize) &
+                 group$trueEffectSize != 1 &
+                 !is.na(group$seLogRr),]
   if (nrow(ncs) >= 5) {
     null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
     ease <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(null)
