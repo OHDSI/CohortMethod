@@ -1789,7 +1789,8 @@ getInteractionResultsSummary <- function(outputFolder) {
 
 summarizeResults <- function(referenceTable, outputFolder, mainFileName, interactionsFileName, calibrationThreads = 1) {
   subset <- referenceTable %>%
-    filter(.data$outcomeModelFile != "")
+    filter(.data$outcomeModelFile != "", file.exists(.data$outcomeModelFile))
+
   mainResults <- vector("list", nrow(subset))
   interActionResults <- list()
   pb <- txtProgressBar(style = 3)
