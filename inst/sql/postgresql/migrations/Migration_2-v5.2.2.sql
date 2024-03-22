@@ -50,7 +50,7 @@ ALTER TABLE @database_schema.@table_prefixcm_propensity_model ALTER COLUMN targe
 ALTER TABLE @database_schema.@table_prefixcm_propensity_model ALTER COLUMN comparator_id TYPE BIGINT;
 
 ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN target_id TYPE BIGINT;
-ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN comparator_id TYPE BIGINT
+ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN comparator_id TYPE BIGINT;
 
 
 -- Alter columns in cm_shared_covariate_balance table
