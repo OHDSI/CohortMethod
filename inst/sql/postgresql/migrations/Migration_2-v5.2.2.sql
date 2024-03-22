@@ -34,7 +34,7 @@ ALTER TABLE @database_schema.@table_prefixcm_diagnostics_summary ALTER COLUMN ou
 ALTER TABLE @database_schema.@table_prefixcm_target_comparator_outcome ALTER COLUMN outcome_id TYPE BIGINT;
 ALTER TABLE @database_schema.@table_prefixcm_target_comparator_outcome ALTER COLUMN target_id TYPE BIGINT;
 ALTER TABLE @database_schema.@table_prefixcm_target_comparator_outcome ALTER COLUMN comparator_id TYPE BIGINT;
-ALTER TABLE @database_schema.@table_prefixcm_target_comparator_outcome ALTER COLUMN outcome_of_interest BIGINT;
+ALTER TABLE @database_schema.@table_prefixcm_target_comparator_outcome ALTER COLUMN outcome_of_interest TYPE BIGINT;
 
 -- Alter columns in cm_kaplan_meier_dist table
 ALTER TABLE @database_schema.@table_prefixcm_kaplan_meier_dist ALTER COLUMN target_id TYPE BIGINT;
