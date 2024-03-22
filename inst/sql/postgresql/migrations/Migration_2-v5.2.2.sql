@@ -47,7 +47,7 @@ ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile ALTER COLUMN com
 ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile ALTER COLUMN outcome_id TYPE BIGINT;
 
 ALTER TABLE @database_schema.@table_prefixcm_propensity_model ALTER COLUMN target_id TYPE BIGINT;
-ALTER TABLE @database_schema.@table_preficm_propensity_model ALTER COLUMN comparator_id TYPE BIGINT
+ALTER TABLE @database_schema.@table_prefixcm_propensity_model ALTER COLUMN comparator_id TYPE BIGINT
 
 ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN target_id TYPE BIGINT;
 ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN comparator_id TYPE BIGINT
