@@ -211,6 +211,7 @@ createOutcome <- function(outcomeId,
                           endAnchor = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertNumeric(outcomeId, add = errorMessages)
+  checkmate::asserTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
   checkmate::assertLogical(outcomeOfInterest, add = errorMessages)
   checkmate::assertNumeric(trueEffectSize, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowStart, null.ok = TRUE, add = errorMessages)
@@ -260,6 +261,7 @@ createTargetComparatorOutcomes <- function(targetId,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertNumeric(targetId, add = errorMessages)
   checkmate::assertNumeric(comparatorId, add = errorMessages)
+  checkmate::assertTRUE(all(c(targetId, comparatorId) %% 1 == 0), add = errorMessages)
   checkmate::assertList(outcomes, min.len = 1, add = errorMessages)
   for (i in seq_along(outcomes)) {
     checkmate::assertClass(outcomes[[i]], "outcome", add = errorMessages)

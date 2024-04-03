@@ -102,6 +102,7 @@ createStudyPopulation <- function(cohortMethodData,
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
   checkmate::assertNumeric(outcomeId, null.ok = TRUE, add = errorMessages)
+  if (!is.null(outcomeId)) checkmate::asserTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
   checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
   checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
   checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)

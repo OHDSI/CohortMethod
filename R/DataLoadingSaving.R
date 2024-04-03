@@ -130,6 +130,7 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertNumeric(targetId, add = errorMessages)
   checkmate::assertNumeric(comparatorId, add = errorMessages)
   checkmate::assertNumeric(outcomeIds, add = errorMessages)
+  checkmate::assertTRUE(all(c(targetId, comparatorId, outcomeIds) %% 1 == 0), add = errorMessages)
   checkmate::assertCharacter(studyStartDate, len = 1, add = errorMessages)
   checkmate::assertCharacter(studyEndDate, len = 1, add = errorMessages)
   checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
