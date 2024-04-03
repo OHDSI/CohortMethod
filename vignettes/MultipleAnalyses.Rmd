@@ -84,7 +84,7 @@ osteoArthritisOfKnee <- cs(
 )
 attrition = attrition(
   "prior osteoarthritis of knee" = withAll(
-    atLeast(1, condition(osteoArthritisOfKnee), 
+    atLeast(1, conditionOccurrence(osteoArthritisOfKnee), 
             duringInterval(eventStarts(-Inf, 0)))
   )
 )
@@ -98,7 +98,7 @@ diclofenac  <- cs(
 )
 celecoxibCohort <- cohort(
   entry = entry(
-    drug(celecoxib, firstOccurrence()),
+    drugExposure(celecoxib, firstOccurrence()),
     observationWindow = continuousObservation(priorDays = 365)
   ),
   attrition = attrition,
@@ -108,7 +108,7 @@ celecoxibCohort <- cohort(
 )
 diclofenacCohort <- cohort(
   entry = entry(
-    drug(diclofenac, firstOccurrence()),
+    drugExposure(diclofenac, firstOccurrence()),
     observationWindow = continuousObservation(priorDays = 365)
   ),
   attrition = attrition,
@@ -116,6 +116,8 @@ diclofenacCohort <- cohort(
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+# Note: this will automatically assign cohort IDs 1 and 2, respectively:
+exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
 ```
 
 We'll pull the outcome definition from the OHDSI `PhenotypeLibrary`:
@@ -146,15 +148,6 @@ negativeControlCohorts <- tibble(
 We combine the exposure and outcome cohort definitions, and use `CohortGenerator` to generate the cohorts:
 
 ```{r eval=FALSE}
-library(CirceR)
-# For exposures, create a cohort definition set table as required by CohortGenerator:
-exposureCohorts <- tibble(cohortId = c(1,2),
-                          cohortName = c("Celecoxib", "Diclofenac"),
-                          json = c(as.json(celecoxibCohort), 
-                                   as.json(diclofenacCohort)))
-exposureCohorts$sql <- sapply(exposureCohorts$json,
-                              buildCohortQuery,
-                              options = createGenerateOptions())
 allCohorts <- bind_rows(outcomeCohorts,
                         exposureCohorts)
 

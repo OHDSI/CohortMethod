@@ -1,4 +1,4 @@
-# Copyright 2023 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -36,7 +36,7 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
     covariateIds2 <- covariateFilter %>%
       filter(!is.na(.data$covariateIds)) %>%
       pull(.data$covariateIds) %>%
-      strsplit(",") %>%
+      strsplit(",|;") %>%
       unlist() %>%
       as.numeric()
     covariates %>%

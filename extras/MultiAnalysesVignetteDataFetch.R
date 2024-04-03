@@ -1,4 +1,4 @@
-# Copyright 2023 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -37,7 +37,6 @@ cohortTable  <- "cm_vignette"
 
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)
-library(CirceR)
 
 osteoArthritisOfKneeConceptId <- 4079750
 celecoxibConceptId <- 1118084
@@ -46,9 +45,9 @@ osteoArthritisOfKnee <- cs(
   descendants(osteoArthritisOfKneeConceptId),
   name = "Osteoarthritis of knee"
 )
-attrition = attrition(
+attrition <- attrition(
   "prior osteoarthritis of knee" = withAll(
-    atLeast(1, condition(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
+    atLeast(1, conditionOccurrence(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
   )
 )
 celecoxib <- cs(
@@ -61,7 +60,7 @@ diclofenac  <- cs(
 )
 celecoxibCohort <- cohort(
   entry = entry(
-    drug(celecoxib, firstOccurrence()),
+    drugExposure(celecoxib, firstOccurrence()),
     observationWindow = continuousObservation(priorDays = 365)
   ),
   attrition = attrition,
@@ -71,7 +70,7 @@ celecoxibCohort <- cohort(
 )
 diclofenacCohort <- cohort(
   entry = entry(
-    drug(diclofenac, firstOccurrence()),
+    drugExposure(diclofenac, firstOccurrence()),
     observationWindow = continuousObservation(priorDays = 365)
   ),
   attrition = attrition,
@@ -79,12 +78,7 @@ diclofenacCohort <- cohort(
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
-exposureCohorts <- tibble(cohortId = c(1,2),
-                          cohortName = c("Celecoxib", "Diclofenac"),
-                          json = c(as.json(celecoxibCohort), as.json(diclofenacCohort)))
-exposureCohorts$sql <- sapply(exposureCohorts$json,
-                              buildCohortQuery,
-                              options = createGenerateOptions())
+exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
 
 # Define outcome cohort --------------------------------------------------------
 library(PhenotypeLibrary)
