@@ -211,7 +211,7 @@ createOutcome <- function(outcomeId,
                           endAnchor = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertNumeric(outcomeId, add = errorMessages)
-  checkmate::asserTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
+  checkmate::assertTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
   checkmate::assertLogical(outcomeOfInterest, add = errorMessages)
   checkmate::assertNumeric(trueEffectSize, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertInt(riskWindowStart, null.ok = TRUE, add = errorMessages)
