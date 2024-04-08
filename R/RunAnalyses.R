@@ -346,7 +346,6 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
-
     objectsToCreate <- lapply(1:nrow(subset), createCmDataTask)
     cluster <- ParallelLogger::makeCluster(min(length(objectsToCreate), multiThreadingSettings$getDbCohortMethodDataThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -416,14 +415,13 @@ runCmAnalyses <- function(connectionDetails,
 
   # Fit propensity models ---------------------------------------
   if (refitPsForEveryOutcome) {
-    subset <- referenceTable[!duplicated(referenceTable$psFile),]
-    subset <- subset[subset$psFile != "",]
-    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)),]
+    subset <- referenceTable[!duplicated(referenceTable$psFile), ]
+    subset <- subset[subset$psFile != "", ]
+    subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]
     if (nrow(subset) != 0) {
       message("*** Fitting propensity models ***")
-
       createPsTask <- function(i) {
-        refRow <- subset[i,]
+        refRow <- subset[i, ]
         analysisRow <- ParallelLogger::matchInList(
           cmAnalysisList,
           list(analysisId = refRow$analysisId)
@@ -474,7 +472,6 @@ runCmAnalyses <- function(connectionDetails,
         )
         return(task)
       }
-
       modelsToFit <- lapply(1:nrow(subset), createSharedPsTask)
       cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$createPsThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
@@ -528,9 +525,8 @@ runCmAnalyses <- function(connectionDetails,
   subset <- subset[!file.exists(file.path(outputFolder, subset$sharedBalanceFile)), ]
   if (nrow(subset) != 0) {
     message("*** Computing shared covariate balance ***")
-
     createSharedBalanceTask <- function(i) {
-      refRow <- subset[i,]
+      refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
         cmAnalysisList,
         list(analysisId = refRow$analysisId)

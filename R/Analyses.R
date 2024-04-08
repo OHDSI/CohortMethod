@@ -218,11 +218,12 @@ createOutcome <- function(outcomeId,
   checkmate::assertInt(riskWindowEnd, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   if (!is.null(startAnchor) && !grepl("start$|end$", startAnchor, ignore.case = TRUE)) {
-    stop("startAnchor should have value \'cohort start\' or \'cohort end\'")
+    stop("startAnchor should have value 'cohort start' or 'cohort end'")
   }
   if (!is.null(riskWindowEnd) && !grepl("start$|end$", endAnchor, ignore.case = TRUE)) {
-    stop("endAnchor should have value \'cohort start\' or \'cohort end\'")
+    stop("endAnchor should have value 'cohort start' or 'cohort end'")
   }
+
   outcome <- list()
   for (name in names(formals(createOutcome))) {
     outcome[[name]] <- get(name)
