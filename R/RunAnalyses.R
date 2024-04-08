@@ -571,7 +571,6 @@ runCmAnalyses <- function(connectionDetails,
       )
       return(task)
     }
-
     tasks <- lapply(1:nrow(subset), createFilterForCovariateBalanceTask)
     cluster <- ParallelLogger::makeCluster(min(length(tasks), multiThreadingSettings$prefilterCovariatesThreads))
     ParallelLogger::clusterRequire(cluster, "CohortMethod")
