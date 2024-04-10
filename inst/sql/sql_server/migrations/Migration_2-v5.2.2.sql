@@ -47,11 +47,10 @@ ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile ALTER COLUMN com
 ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile ALTER COLUMN outcome_id BIGINT;
 
 ALTER TABLE @database_schema.@table_prefixcm_propensity_model ALTER COLUMN target_id BIGINT;
-ALTER TABLE @database_schema.@table_preficm_propensity_model ALTER COLUMN comparator_id BIGINT
+ALTER TABLE @database_schema.@table_prefixcm_propensity_model ALTER COLUMN comparator_id BIGINT;
 
 ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN target_id BIGINT;
-ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN comparator_id BIGINT
-
+ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist ALTER COLUMN comparator_id BIGINT;
 
 -- Alter columns in cm_shared_covariate_balance table
 ALTER TABLE @database_schema.@table_prefixcm_shared_covariate_balance ALTER COLUMN target_id BIGINT;
