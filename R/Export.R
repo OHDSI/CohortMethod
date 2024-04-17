@@ -239,7 +239,10 @@ enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
       " because value below minimum"
     )
   }
-  if (length(minValues) == 1) {
+
+  if (all(is.na(toCensor))) {
+    data[, fieldName] <- NA
+  } else if (length(minValues) == 1) {
     data[toCensor, fieldName] <- -minValues
   } else {
     data[toCensor, fieldName] <- -minValues[toCensor]
