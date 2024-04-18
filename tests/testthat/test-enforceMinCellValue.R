@@ -8,7 +8,7 @@ test_that("enforceMinCellValue works as expected", {
 
 
 test_that("minCellValue handles bad inputs", {
-  x <- data.frame(a = c(0.1, 0.002))
+  x <- data.frame(a = c(0.1, 0.002, 0))
   res <- enforceMinCellValue(x, "a", NaN)
   checkmate::expect_data_frame(res)
   expect_true(all(is.na(res$a)))

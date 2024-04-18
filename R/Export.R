@@ -226,7 +226,8 @@ writeToCsv <- function(data, fileName, append = FALSE) {
 }
 
 enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
-  toCensor <- !is.na(pull(data, fieldName)) & pull(data, fieldName) < minValues & pull(data, fieldName) != 0
+  values <- pull(data, fieldName)
+  toCensor <- !is.na(values) & (values < minValues) & (values != 0)
   if (!silent) {
     percent <- round(100 * sum(toCensor) / nrow(data), 1)
     message(
@@ -240,7 +241,7 @@ enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
     )
   }
 
-  if (all(is.na(toCensor))) {
+  if (all(is.na(toCensor)) || all(is.na(minValues))) {
     data[, fieldName] <- NA
   } else if (length(minValues) == 1) {
     data[toCensor, fieldName] <- -minValues
