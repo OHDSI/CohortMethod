@@ -1,3 +1,17 @@
+CohortMethod 5.3.0
+==================
+
+Changes:
+
+1. Switching cohort IDs in results model to BIGINT.
+
+Bugfixes:
+
+1. Fix `enforceCellCount()` applied to covariate balance when all balance is NA.
+
+2. Stopping fitting PS model early when either target or comparator is empty. Prevents error when target or comparator is empty, sampling is required, and Cyclops happens to fit a model instead of declaring ILL CONDITIONED. 
+
+
 CohortMethod 5.2.1
 ==================
 
