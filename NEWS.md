@@ -11,6 +11,8 @@ Bugfixes:
 
 2. Stopping fitting PS model early when either target or comparator is empty. Prevents error when target or comparator is empty, sampling is required, and Cyclops happens to fit a model instead of declaring ILL CONDITIONED. 
 
+3. Message after matching on PS now shows correct number of subjects remaining after matching.
+
 
 CohortMethod 5.2.1
 ==================

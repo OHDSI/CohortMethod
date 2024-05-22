@@ -1054,7 +1054,7 @@ matchOnPs <- function(population,
       attr(population, "metaData")$targetEstimator <- "att"
     }
   }
-  ParallelLogger::logDebug("Population size after matching is ", nrow(result))
+  ParallelLogger::logDebug("Population size after matching is ", nrow(population))
   return(population)
 }
 
