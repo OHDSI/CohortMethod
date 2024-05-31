@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.3.0</span>
       </span>
     </div>
 
@@ -89,7 +89,7 @@ package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2024-02-01</h4>
+            <h4 data-toc-skip class="date">2024-05-31</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/SingleStudies.Rmd" class="external-link"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="hidden name"><code>SingleStudies.Rmd</code></div>
@@ -285,9 +285,6 @@ and specify <code>addDescendantsToExclude = TRUE</code>:</p>
 <span>  covariateSettings <span class="op">=</span> <span class="va">covSettings</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">cohortMethodData</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: Low disk space in 'C:\Users\ADMIN_~3\AppData\Local\Temp\2\Rtmp46ilPA'. Only 5.0 GB left.</span></span>
-<span><span class="co">## <span style="color: #949494;">Use options(warnDiskSpaceThreshold = &lt;n&gt;) to set the number of bytes for this warning to trigger.</span></span></span>
-<span><span class="co">## <span style="color: #949494;">This warning will not be shown for this file location again during this R session.</span></span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #949494;"># CohortMethodData object</span></span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Target cohort ID: 1</span></span>
@@ -297,11 +294,10 @@ and specify <code>addDescendantsToExclude = TRUE</code>:</p>
 <span><span class="co">## <span style="color: #949494;">Inherits from CovariateData:</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># CovariateData object</span></span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## All cohorts</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## <span style="color: #949494;">Inherits from Andromeda:</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># Andromeda object</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi\AppData\Local\Temp\2\Rtmp46ilPA\file155c3acb5b10.sqlite</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi\AppData\Local\Temp\2\RtmpuUeO9g\file718621a3854.sqlite</span></span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Tables:</span></span>
 <span><span class="co">## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)</span></span>
@@ -327,7 +323,7 @@ This object uses the <code>Andromeda</code> package to store information
 in a way that ensures R does not run out of memory, even when the data
 are large. We can use the generic <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> function to
 view some more information of the data we extracted:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## CohortMethodData object summary</span></span>
 <span><span class="co">## </span></span>
@@ -354,7 +350,7 @@ sessions. Because <code>cohortMethodData</code> uses
 <code>Andromeda</code>, we cannot use R’s regular save function.
 Instead, we’ll have to use the <code><a href="../reference/saveCohortMethodData.html">saveCohortMethodData()</a></code>
 function:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/saveCohortMethodData.html">saveCohortMethodData</a></span><span class="op">(</span><span class="va">cohortMethodData</span>, <span class="st">"coxibVsNonselVsGiBleed.zip"</span><span class="op">)</span></span></code></pre></div>
 <p>We can use the <code><a href="../reference/loadCohortMethodData.html">loadCohortMethodData()</a></code> function to load
 the data in a future session.</p>
@@ -403,7 +399,7 @@ together, for example by removing exposed subjects that had the outcome
 prior to exposure, and only keeping outcomes that fall within a defined
 risk window. For this we can use the <code>createStudyPopulation</code>
 function:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">studyPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createStudyPopulation.html">createStudyPopulation</a></span><span class="op">(</span></span>
 <span>  cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>,</span>
 <span>  outcomeId <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -436,7 +432,7 @@ truncated at the end of observation or the study end date. We also
 remove subjects who have no time at risk. To see how many people are
 left in the study population we can always use the
 <code>getAttritionTable</code> function:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">studyPop</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 4 x 5</span></span></span>
 <span><span class="co">##   description                     targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
@@ -462,7 +458,7 @@ the subjects.</p>
 </h3>
 <p>We can fit a propensity model using the covariates constructed by the
 <code>getDbcohortMethodData()</code> function:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createPs.html">createPs</a></span><span class="op">(</span>cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>, population <span class="op">=</span> <span class="va">studyPop</span><span class="op">)</span></span></code></pre></div>
 <p>The <code><a href="../reference/createPs.html">createPs()</a></code> function uses the <code>Cyclops</code>
 package to fit a large-scale regularized logistic regression.</p>
@@ -480,12 +476,12 @@ the cross-validation.</p>
 </h3>
 <p>We can compute the area under the receiver-operator curve (AUC) for
 the propensity score model:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/computePsAuc.html">computePsAuc</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 0.81</span></span></code></pre>
 <p>We can also plot the propensity score distribution, although we
 prefer the preference score distribution:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span>, </span>
 <span>       scale <span class="op">=</span> <span class="st">"preference"</span>, </span>
 <span>       showCountsLabel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
@@ -494,7 +490,7 @@ prefer the preference score distribution:</p>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-23-1.png" width="700"></p>
 <p>It is also possible to inspect the propensity model itself by showing
 the covariates that have non-zero coefficients:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getPsModel.html">getPsModel</a></span><span class="op">(</span><span class="va">ps</span>, <span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 x 3</span></span></span>
 <span><span class="co">##   coefficient covariateId covariateName                              </span></span>
@@ -512,7 +508,7 @@ that should not be there, for example variations of the drugs of
 interest that we forgot to exclude.</p>
 <p>Finally, we can inspect the percent of the population in equipoise,
 meaning they have a prefence score between 0.3 and 0.7:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">CohortMethod</span><span class="fu">::</span><span class="fu"><a href="../reference/computeEquipoise.html">computeEquipoise</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 0.4900214</span></span></code></pre>
 <p>A low equipoise indicates there is little overlap between the target
@@ -524,23 +520,23 @@ and comparator populations.</p>
 <p>We can use the propensity scores to trim, stratify, match, or weigh
 our population. For example, one could trim to equipoise, meaning only
 subjects with a preference score between 0.25 and 0.75 are kept:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">trimmedPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/trimByPsToEquipoise.html">trimByPsToEquipoise</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">trimmedPop</span>, <span class="va">ps</span>, scale <span class="op">=</span> <span class="st">"preference"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Population size after trimming is 123505</span></span></code></pre>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-29-1.png" width="700"></p>
 <p>Instead (or additionally), we could stratify the population based on
 the propensity score:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stratifiedPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/stratifyByPs.html">stratifyByPs</a></span><span class="op">(</span><span class="va">ps</span>, numberOfStrata <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">stratifiedPop</span>, <span class="va">ps</span>, scale <span class="op">=</span> <span class="st">"preference"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-31-1.png" width="700"></p>
 <p>We can also match subjects based on propensity scores. In this
 example, we’re using one-to-one matching:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="va">matchedPop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/matchOnPs.html">matchOnPs</a></span><span class="op">(</span><span class="va">ps</span>, caliper <span class="op">=</span> <span class="fl">0.2</span>, caliperScale <span class="op">=</span> <span class="st">"standardized logit"</span>, maxRatio <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">matchedPop</span>, <span class="va">ps</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Population size after matching is 252040</span></span></code></pre>
+<pre><code><span><span class="co">## Population size after matching is 115832</span></span></code></pre>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-33-1.png" width="700"></p>
 <p>Note that for both stratification and matching it is possible to
 specify additional matching criteria such as age and sex using the
@@ -548,7 +544,7 @@ specify additional matching criteria such as age and sex using the
 <code><a href="../reference/matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> functions, respectively.</p>
 <p>We can see the effect of trimming and/or matching on the population
 using the <code>getAttritionTable</code> function:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 x 5</span></span></span>
 <span><span class="co">##   description                     targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
@@ -559,7 +555,7 @@ using the <code>getAttritionTable</code> function:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">4</span> Have at least 1 days at ris ...         <span style="text-decoration: underline;">96</span>050            <span style="text-decoration: underline;">155</span>990           <span style="text-decoration: underline;">96</span>050              <span style="text-decoration: underline;">155</span>990</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">5</span> Matched on propensity score             <span style="text-decoration: underline;">57</span>916             <span style="text-decoration: underline;">57</span>916           <span style="text-decoration: underline;">57</span>916               <span style="text-decoration: underline;">57</span>916</span></span></code></pre>
 <p>Or, if we like, we can plot an attrition diagram:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/drawAttritionDiagram.html">drawAttritionDiagram</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-37-1.png" width="480"></p>
 </div>
@@ -569,13 +565,13 @@ using the <code>getAttritionTable</code> function:</p>
 <p>To evaluate whether our use of the propensity score is indeed making
 the two cohorts more comparable, we can compute the covariate balance
 before and after trimming, matching, and/or stratifying:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">balance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeCovariateBalance.html">computeCovariateBalance</a></span><span class="op">(</span><span class="va">matchedPop</span>, <span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot</a></span><span class="op">(</span><span class="va">balance</span>, showCovariateCountLabel <span class="op">=</span> <span class="cn">TRUE</span>, showMaxLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Warning: Removed 27794 rows containing missing values (`geom_point()`).</span></span></code></pre>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-41-1.png" width="672"></p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-43-1.png" width="768"></p>
 <p>The ‘before matching’ population is the population as extracted by
@@ -590,7 +586,7 @@ select population characteristics before and after
 matching/stratification/trimming. This is usually the first table, and
 so will be referred to as ‘table 1’. To generate this table, you can use
 the <code>createCmTable1</code> function:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/createCmTable1.html">createCmTable1</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
 <pre><code>                                                         Before matching                      After matching                     
                                                          Target          Comparator           Target         Comparator          
@@ -691,7 +687,7 @@ estimated effect may not generalize to the original population (if
 effect modification is present). The
 <code><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code> function informs on these
 differences:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
 <pre><code> [38;5;246m# A tibble: 78,589 x 5 [39m
    covariateId covariateName                     beforeMatchingMean afterMatchingMean stdDiff
@@ -730,7 +726,7 @@ in retrospective studies (the data has already been collected), and the
 true effect size is unknown, the CohortMethod package provides a
 function to compute the minimum detectable relative risk (MDRR)
 instead:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/computeMdrr.html">computeMdrr</a></span><span class="op">(</span></span>
 <span>  population <span class="op">=</span> <span class="va">studyPop</span>,</span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -744,7 +740,7 @@ instead:</p>
 population before any matching or trimming. If we want to know the MDRR
 after matching, we use the <code>matchedPop</code> object we created
 earlier instead:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/computeMdrr.html">computeMdrr</a></span><span class="op">(</span></span>
 <span>  population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
 <span>  modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -762,14 +758,14 @@ we can also inspect the distribution of follow-up time. We defined
 follow-up time as time at risk, so not censored by the occurrence of the
 outcome. The <code>getFollowUpDistribution</code> can provide a simple
 overview:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getFollowUpDistribution.html">getFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##   100% 75% 50% 25%   0% Treatment</span></span>
 <span><span class="co">## 1    2  60  60 134 4373         1</span></span>
 <span><span class="co">## 2    2  45  60  74 3833         0</span></span></code></pre>
 <p>The output is telling us number of days of follow-up each quantile of
 the study population has. We can also plot the distribution:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotFollowUpDistribution.html">plotFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-55-1.png" width="768"></p>
 </div>
@@ -784,7 +780,7 @@ associated with the outcome.</p>
 <p>In theory we could fit an outcome model without using the propensity
 scores. In this example we are fitting an outcome model using a Cox
 regression:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">studyPop</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
@@ -799,7 +795,7 @@ regression:</p>
 <span><span class="co">## treatment  0.88455   0.79111   0.98880 -0.12268  0.0569</span></span></code></pre>
 <p>But of course we want to make use of the matching done on the
 propensity score:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
 <span>                                stratified <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -819,7 +815,7 @@ the propensity score. We also now use a stratified Cox model,
 conditioning on the propensity score match sets.</p>
 <p>Instead of matching or stratifying we can also perform Inverse
 Probability of Treatment Weighting (IPTW):</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">ps</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
 <span>                                inversePtWeighting <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -841,7 +837,7 @@ Probability of Treatment Weighting (IPTW):</p>
 groups in the population. To explore this, we may include interaction
 terms in the model. In this example we include three interaction
 terms:</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">interactionCovariateIds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8532001</span>, <span class="fl">201826210</span>, <span class="fl">21600960413</span><span class="op">)</span> </span>
 <span><span class="co"># 8532001 = Female</span></span>
 <span><span class="co"># 201826210 = Type 2 Diabetes</span></span>
@@ -868,7 +864,7 @@ covariate IDs.</p>
 <p>It is prudent to verify that covariate balance has also been achieved
 in the subgroups of interest. For example, we can check the covariate
 balance in the subpopulation of females:</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">balanceFemale</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/computeCovariateBalance.html">computeCovariateBalance</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>, </span>
 <span>                                         cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>, </span>
 <span>                                         subgroupCovariateId <span class="op">=</span> <span class="fl">8532001</span><span class="op">)</span></span>
@@ -884,7 +880,7 @@ more robust against misspecification of the model, and more likely to
 remove bias. For this we use the regularized Cox regression in the
 <code>Cyclops</code> package. (Note that the treatment variable is
 automatically excluded from regularization.)</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">outcomeModel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fitOutcomeModel.html">fitOutcomeModel</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span>,</span>
 <span>                                cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>,</span>
 <span>                                modelType <span class="op">=</span> <span class="st">"cox"</span>,</span>
@@ -906,16 +902,16 @@ automatically excluded from regularization.)</p>
 <h3 id="inspecting-the-outcome-model">Inspecting the outcome model<a class="anchor" aria-label="anchor" href="#inspecting-the-outcome-model"></a>
 </h3>
 <p>We can inspect more details of the outcome model:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">outcomeModel</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## 900000010805 </span></span>
 <span><span class="co">##    0.9647651</span></span></code></pre>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">outcomeModel</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 0.7968613 1.1639351</span></span></code></pre>
 <p>We can also see the covariates that ended up in the outcome
 model:</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getOutcomeModel.html">getOutcomeModel</a></span><span class="op">(</span><span class="va">outcomeModel</span>, <span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##   coefficient    id      name</span></span>
 <span><span class="co">## 1 -0.03587062 9e+11 Treatment</span></span></code></pre>
@@ -924,7 +920,7 @@ model:</p>
 <h3 id="kaplan-meier-plot">Kaplan-Meier plot<a class="anchor" aria-label="anchor" href="#kaplan-meier-plot"></a>
 </h3>
 <p>We can create the Kaplan-Meier plot:</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotKaplanMeier.html">plotKaplanMeier</a></span><span class="op">(</span><span class="va">matchedPop</span>, includeZero <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-75-1.png" width="700"></p>
 <p>Note that the Kaplan-Meier plot will automatically adjust for any
@@ -937,7 +933,7 @@ stratification, matching, or trimming that may have been applied.</p>
 the index date, and events during and outside the defined time-at-risk
 window. This plot can provide insight into the temporal pattern of the
 outcome relative to the exposures:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotTimeToEvent.html">plotTimeToEvent</a></span><span class="op">(</span>cohortMethodData <span class="op">=</span> <span class="va">cohortMethodData</span>,</span>
 <span>                outcomeId <span class="op">=</span> <span class="fl">77</span>,</span>
 <span>                firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -958,7 +954,7 @@ score.</p>
 </h2>
 <p>Considerable work has been dedicated to provide the
 <code>CohortMethod</code> package.</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
 <span><span class="co">## </span></span>
@@ -977,7 +973,7 @@ score.</p>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## To cite Cyclops in publications use:</span></span>
 <span><span class="co">## </span></span>

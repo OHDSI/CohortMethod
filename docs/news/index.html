@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.3.0</span>
       </span>
     </div>
 
@@ -63,6 +63,15 @@
       <small>Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="5.3.0" id="cohortmethod-530">CohortMethod 5.3.0<a class="anchor" aria-label="anchor" href="#cohortmethod-530"></a></h2>
+<p>Changes:</p>
+<ol style="list-style-type: decimal"><li>Switching cohort IDs in results model to BIGINT.</li>
+</ol><p>Bugfixes:</p>
+<ol style="list-style-type: decimal"><li><p>Fix <code>enforceCellCount()</code> applied to covariate balance when all balance is NA.</p></li>
+<li><p>Stopping fitting PS model early when either target or comparator is empty. Prevents error when target or comparator is empty, sampling is required, and Cyclops happens to fit a model instead of declaring ILL CONDITIONED.</p></li>
+<li><p>Message after matching on PS now shows correct number of subjects remaining after matching.</p></li>
+</ol></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="5.2.1" id="cohortmethod-521">CohortMethod 5.2.1<a class="anchor" aria-label="anchor" href="#cohortmethod-521"></a></h2>
 <p>Changes:</p>
