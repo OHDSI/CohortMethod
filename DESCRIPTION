@@ -43,7 +43,7 @@ Imports:
 	cli,
 	pillar,
 	Rcpp (>= 0.11.2),
-	SqlRender (>= 1.17.1),
+	SqlRender (>= 1.18.0),
 	survival,
 	ParallelLogger (>= 3.0.1),
 	bit64,
@@ -64,11 +64,8 @@ Suggests:
 	markdown,
 	remotes
 Remotes:
-	ohdsi/FeatureExtraction,
-	ohdsi/Eunomia,
 	ohdsi/ResultModelManager,
-	ohdsi/ShinyAppBuilder,
-	ohdsi/SqlRender@develop
+	ohdsi/ShinyAppBuilder
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.3.1
