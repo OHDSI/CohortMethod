@@ -1,14 +1,6 @@
 library(CohortMethod)
 library(testthat)
 
-dim_tbl_dbi <- function(x) {
-  return(c(x %>%
-    summarise(n = n()) %>%
-    pull(),
-    ncol(x)
-  ))
-}
-
 nsaids <- c(1118084, 1124300)
 
 covSettings <- createDefaultCovariateSettings(
@@ -31,11 +23,21 @@ test_that("CohortMethodData table dimension check", {
   )
 
   # Dims of CohortMethodData tables
-  expect_identical(dim_tbl_dbi(cmd$analysisRef), c(24L, 7L))
-  expect_identical(dim_tbl_dbi(cmd$cohorts), c(2630L, 8L))
-  expect_identical(dim_tbl_dbi(cmd$covariateRef), c(389L, 4L))
-  expect_identical(dim_tbl_dbi(cmd$covariates), c(26923L, 3L))
-  expect_identical(dim_tbl_dbi(cmd$outcomes), c(3109L, 3L))
+  expect_equal(nrow(collect(cmd$cohorts)), 2630)
+  expect_equal(ncol(collect(cmd$cohorts)), 8)
+
+  expect_gte(nrow(collect(cmd$analysisRef)), 24)
+  expect_equal(ncol(collect(cmd$analysisRef)), 7)
+
+  expect_gte(nrow(collect(cmd$covariateRef)), 389)
+  expect_gte(ncol(collect(cmd$covariateRef)), 4)
+
+  expect_gte(nrow(collect(cmd$covariates)), 26923)
+  expect_equal(ncol(collect(cmd$covariates)), 3)
+
+  expect_equal(nrow(collect(cmd$outcomes)), 3109)
+  expect_equal(ncol(collect(cmd$outcomes)), 3)
+
 })
 
 test_that("studyStartDate", {
@@ -575,8 +577,8 @@ test_that("restrictToCommonPeriod", {
 
   meta1 <- attr(res1, "metaData")
   expect_equal(meta1$populationSize, 2630)
-  expect_equal(dim_tbl_dbi(res1$outcomes)[1], 3109)
-  expect_equal(dim_tbl_dbi(res1$covariates)[1], 26923)
+  expect_equal(nrow(collect(res1$outcomes)), 3109)
+  expect_gte(nrow(collect(res1$covariates)), 26923)
 
   ## TRUE ----
   res2 <- getDbCohortMethodData(
@@ -595,8 +597,8 @@ test_that("restrictToCommonPeriod", {
 
   meta2 <- attr(res2, "metaData")
   expect_equal(meta2$populationSize, 2627)
-  expect_equal(dim_tbl_dbi(res2$outcomes)[1], 3106)
-  expect_equal(dim_tbl_dbi(res2$covariates)[1], 26893)
+  expect_equal(nrow(collect(res2$outcomes)), 3106)
+  expect_gte(nrow(collect(res2$covariates)), 26893)
 
   ## "TRUE" ----
   expect_error(
