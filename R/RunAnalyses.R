@@ -774,7 +774,7 @@ doCreateStudyPopObject <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   args <- params$args
   args$cohortMethodData <- cohortMethodData
-  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId %d",
+  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId ",
                                    params$cohortMethodDataFile,
                                    args$outcomeId))
   studyPop <- do.call("createStudyPopulation", args)
@@ -961,7 +961,7 @@ doFitOutcomeModelPlus <- function(params) {
   }
   cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
 
-  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID %d",
+  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID ",
                                    cohortMethodDataFile,
                                    params$args$createStudyPopArgs$outcomeId))
 
