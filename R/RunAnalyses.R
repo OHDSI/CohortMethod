@@ -762,7 +762,7 @@ getPs <- function(psFile) {
 }
 
 doCreateCmDataObject <- function(params) {
-  ParallelLogger::logDebug(sprintf("Calling getDbCohortMethodData() for targetId %d, comparatorId %d",
+  ParallelLogger::logDebug(sprintf("Calling getDbCohortMethodData() for targetId %s, comparatorId %s",
                                    params$args$targetId,
                                    params$args$comparatorId))
   cohortMethodData <- do.call("getDbCohortMethodData", params$args)
