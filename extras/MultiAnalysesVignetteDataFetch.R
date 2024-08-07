@@ -307,7 +307,10 @@ insertExportedResultsInSqlite(sqliteFileName = file.path(folder, "export", "resu
 launchResultsViewerUsingSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"))
 
 # Upload results to SQLite using RMM -------------------------------------------
+library(CohortMethod)
+folder <- "d:/temp/cohortMethodVignette2"
 databaseFile <-  file.path(folder, "export", "CohortMethodResults.sqlite")
+# print(unlink(databaseFile))
 connectionDetails <- DatabaseConnector::createConnectionDetails(
   dbms = "sqlite",
   server = databaseFile
@@ -325,16 +328,31 @@ uploadResults(
 )
 # Add cohort and database tables:
 connection <- DatabaseConnector::connect(connectionDetails)
-cohorts <- data.frame(
-  cohortId = c(
+negativeControlIds <- c(29735, 140673, 197494,
+                        198185, 198199, 200528, 257315,
+                        314658, 317376, 321319, 380731,
+                        432661, 432867, 433516, 433701,
+                        433753, 435140, 435459, 435524,
+                        435783, 436665, 436676, 442619,
+                        444252, 444429, 4131756, 4134120,
+                        4134454, 4152280, 4165112, 4174262,
+                        4182210, 4270490, 4286201, 4289933)
+cohorts <- tibble(
+  cohortDefinitionId = c(
     1118084,
     1124300,
-    192671),
+    77,
+    negativeControlIds),
   cohortName = c(
     "Celecoxib",
     "Diclofenac",
-    "GI Bleed"
-  )
+    "GI Bleed",
+    sprintf("Negative control %d", negativeControlIds)
+  ),
+  isSubset = 0,
+  description = "",
+  json = "{}",
+  sqlCommand = ""
 )
 DatabaseConnector::insertTable(
   connection = connection,
@@ -359,4 +377,27 @@ DatabaseConnector::insertTable(
   createTable = TRUE
 )
 DatabaseConnector::disconnect(connection)
+
+# Launch Shiny app
+# databaseSchema <- "main"
+# sqliteFileName <- databaseFile
+# launchResultsViewerUsingSqlite(sqliteFileName = databaseFile)
+
+aboutModule <- ShinyAppBuilder::createDefaultAboutConfig()
+resultDatabaseDetails <- list(
+  dbms = connectionDetails$dbms,
+  tablePrefix = 'cm_',
+  cohortTablePrefix = 'cg_',
+  databaseTablePrefix = '',
+  schema =  "main",
+  databaseTable = 'DATABASE_META_DATA'
+)
+estimationModule <- ShinyAppBuilder::createDefaultEstimationConfig()
+shinyAppConfig <- ShinyAppBuilder::initializeModuleConfig() %>%
+  ShinyAppBuilder::addModuleConfig(aboutModule) %>%
+  ShinyAppBuilder::addModuleConfig(estimationModule)
+connectionHandler <- ResultModelManager::ConnectionHandler$new(connectionDetails)
+ShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)
+connectionHandler$closeConnection()
+
 
