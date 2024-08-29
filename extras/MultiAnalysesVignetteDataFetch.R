@@ -17,23 +17,24 @@
 # This code should be used to fetch the data that is used in the vignettes.
 library(CohortMethod)
 library(dplyr)
-options(andromedaTempFolder = "d:/andromedaTemp")
+options(andromedaTempFolder = "e:/andromedaTemp")
 
-folder <- "d:/temp/cohortMethodVignette2"
+folder <- "e:/temp/cohortMethodVignette2"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
 
 # Set connection details -------------------------------------------------------
-# MDCR on RedShift
-connectionDetails <- DatabaseConnector::createConnectionDetails(
-  dbms = "redshift",
-  connectionString = keyring::key_get("redShiftConnectionStringOhdaMdcr"),
-  user = keyring::key_get("redShiftUserName"),
-  password = keyring::key_get("redShiftPassword")
+# MDCR on DataBricks
+connectionDetails <- createConnectionDetails(
+  dbms = "spark",
+  connectionString = keyring::key_get("databricksConnectionString"),
+  user = "token",
+  password = keyring::key_get("databricksToken")
 )
-cdmDatabaseSchema <- "cdm_truven_mdcr_v2540"
-cohortDatabaseSchema <- "scratch_mschuemi"
+cdmDatabaseSchema <- "merative_mdcr.cdm_merative_mdcr_v3045"
+cohortDatabaseSchema <- "scratch.scratch_mschuemi"
 cohortTable  <- "cm_vignette"
+options(sqlRenderTempEmulationSchema = "scratch.scratch_mschuemi")
 
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)

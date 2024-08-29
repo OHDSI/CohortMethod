@@ -18,7 +18,7 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(CohortMethod)
-folder <- "d:/temp/cohortMethodVignette2"
+folder <- "e:/temp/cohortMethodVignette2"
 folderExists <- dir.exists(folder)
 ```
 # Introduction
