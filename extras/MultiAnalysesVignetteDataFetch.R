@@ -309,7 +309,7 @@ launchResultsViewerUsingSqlite(sqliteFileName = file.path(folder, "export", "res
 
 # Upload results to SQLite using RMM -------------------------------------------
 library(CohortMethod)
-folder <- "d:/temp/cohortMethodVignette2"
+folder <- "e:/temp/cohortMethodVignette2"
 databaseFile <-  file.path(folder, "export", "CohortMethodResults.sqlite")
 # print(unlink(databaseFile))
 connectionDetails <- DatabaseConnector::createConnectionDetails(
@@ -350,7 +350,10 @@ cohorts <- tibble(
     "GI Bleed",
     sprintf("Negative control %d", negativeControlIds)
   ),
+  subsetParent = NA,
   isSubset = 0,
+  subsetDefinitionId = NA,
+  isCohort = 0,
   description = "",
   json = "{}",
   sqlCommand = ""
