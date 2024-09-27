@@ -225,7 +225,7 @@ test_that("Multiple analyses", {
   expect_gt(nrow(ncDiagnostics), 0)
 
   cohorts <- data.frame(
-    cohortId = c(1, 2, 998, 999, 3, 4),
+    cohortDefinitionId = c(1, 2, 998, 999, 3, 4),
     cohortName = c("e1", "e2", "e3", "e4", "o1", "o2")
   )
   insertExportedResultsInSqlite(sqliteFileName = file.path(outputFolder, "export", "results.sqlite"),
