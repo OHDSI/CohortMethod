@@ -128,7 +128,7 @@ launchResultsViewerUsingSqlite <- function(sqliteFileName) {
 #' @param connectionDetails An R object of type `connectionDetails` created using the
 #'                          [DatabaseConnector::createConnectionDetails()] function.
 #' @param databaseSchema    The name of the database schema where the results were
-#'                          written using [uploadExportedResults()].
+#'                          written using [uploadResults()].
 #'
 #' @return
 #' Does not return anything. Is called for the side-effect of launching the Shiny
