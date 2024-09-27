@@ -682,7 +682,7 @@ Finally, we can view the results in a Shiny app. For this we must first load the
 
 ```{r eval=FALSE}
 cohorts <- data.frame(
-  cohortId = c(
+  cohortDefinitionId = c(
     1,
     2,
     77),

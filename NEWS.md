@@ -1,3 +1,16 @@
+CohortMethod 5.3.1
+==================
+
+Changes:
+
+1. Updating viewer code to work with newer versions of `OhdsiShinyModules` and `ShinyAppBuilder`.
+
+2. Dropped `uploadExportedResults()` function.
+
+3. The `cohorts` argument of `insertExportedResultsInSqlite()` has column `cohortId` renamed to `cohortDefinitionId`.
+
+
+
 CohortMethod 5.3.0
 ==================
 

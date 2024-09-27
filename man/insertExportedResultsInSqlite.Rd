@@ -15,8 +15,8 @@ using the \code{\link[=exportToCsv]{exportToCsv()}} function.}
 
 \item{cohorts}{A data frame describing the cohorts used in the study. Should
 include the target, comparator, and outcome of interest cohorts.
-The data frame should at least have a \code{cohortId} and \code{cohortName}
-columns.}
+The data frame should at least have a \code{cohortDefinitionId} and
+\code{cohortName} columns.}
 }
 \value{
 Does not return anything. Called for the side effect of inserting data into the

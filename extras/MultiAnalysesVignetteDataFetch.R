@@ -290,11 +290,12 @@ DatabaseConnector::renderTranslateExecuteSql(connection, sql, cohortDatabaseSche
 DatabaseConnector::disconnect(connection)
 
 # Shiny app --------------------------------------------------------------------
+folder <- "e:/temp/cohortMethodVignette2"
 cohorts <- data.frame(
-  cohortId = c(
-    1118084,
-    1124300,
-    192671),
+  cohortDefinitionId = c(
+    1,
+    2,
+    77),
   cohortName = c(
     "Celecoxib",
     "Diclofenac",
@@ -302,10 +303,15 @@ cohorts <- data.frame(
   )
 )
 
-insertExportedResultsInSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"),
-                              exportFolder = file.path(folder, "export"),
-                              cohorts = cohorts)
-launchResultsViewerUsingSqlite(sqliteFileName = file.path(folder, "export", "results.sqlite"))
+insertExportedResultsInSqlite(
+  sqliteFileName = file.path(folder, "myResults.sqlite"),
+  exportFolder = file.path(folder, "export"),
+  cohorts = cohorts
+)
+
+launchResultsViewerUsingSqlite(
+  sqliteFileName = file.path(folder, "myResults.sqlite")
+)
 
 # Upload results to SQLite using RMM -------------------------------------------
 library(CohortMethod)
@@ -329,34 +335,24 @@ uploadResults(
 )
 # Add cohort and database tables:
 connection <- DatabaseConnector::connect(connectionDetails)
-negativeControlIds <- c(29735, 140673, 197494,
-                        198185, 198199, 200528, 257315,
-                        314658, 317376, 321319, 380731,
-                        432661, 432867, 433516, 433701,
-                        433753, 435140, 435459, 435524,
-                        435783, 436665, 436676, 442619,
-                        444252, 444429, 4131756, 4134120,
-                        4134454, 4152280, 4165112, 4174262,
-                        4182210, 4270490, 4286201, 4289933)
 cohorts <- tibble(
   cohortDefinitionId = c(
-    1118084,
-    1124300,
-    77,
-    negativeControlIds),
+    1,
+    2,
+    77
+  ),
   cohortName = c(
     "Celecoxib",
     "Diclofenac",
-    "GI Bleed",
-    sprintf("Negative control %d", negativeControlIds)
+    "GI Bleed"
   ),
-  subsetParent = NA,
-  isSubset = 0,
-  subsetDefinitionId = NA,
-  isCohort = 0,
-  description = "",
-  json = "{}",
-  sqlCommand = ""
+  # subsetParent = NA,
+  # isSubset = 0,
+  # subsetDefinitionId = NA,
+  # isCohort = 0,
+  # description = "",
+  # json = "{}",
+  # sqlCommand = ""
 )
 DatabaseConnector::insertTable(
   connection = connection,
@@ -368,14 +364,14 @@ DatabaseConnector::insertTable(
   camelCaseToSnakeCase = TRUE
 )
 databases <- tibble(
-  database_id = "MDCR",
-  cdm_source_name = "Merative Marketscan MDCR",
-  cdm_source_abbreviation = "MDCR"
+  database_id = "MDCD",
+  cdm_source_name = "Merative Marketscan MDCD",
+  cdm_source_abbreviation = "MDCD"
 )
 DatabaseConnector::insertTable(
   connection = connection,
   databaseSchema = "main",
-  tableName = "databases",
+  tableName = "database_meta_data",
   data = databases,
   dropTableIfExists = TRUE,
   createTable = TRUE
