@@ -35,7 +35,8 @@ Compute the minimum detectable relative risk
 \details{
 Compute the minimum detectable relative risk (MDRR) and expected standard error (SE) for a given
 study population, using the actual observed sample size and number of outcomes. Currently, only
-computations for Cox models are implemented. For Cox model, the computations by Schoenfeld (1983) is used.
+computations for Cox and logistic models are implemented. For Cox model, the computations by
+Schoenfeld (1983) is used. For logistic models Wald's z-test is used.
 }
 \references{
 Schoenfeld DA (1983) Sample-size formula for the proportional-hazards regression model, Biometrics,

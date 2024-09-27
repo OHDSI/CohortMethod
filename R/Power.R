@@ -21,7 +21,8 @@
 #' @details
 #' Compute the minimum detectable relative risk (MDRR) and expected standard error (SE) for a given
 #' study population, using the actual observed sample size and number of outcomes. Currently, only
-#' computations for Cox models are implemented. For Cox model, the computations by Schoenfeld (1983) is used.
+#' computations for Cox and logistic models are implemented. For Cox model, the computations by
+#' Schoenfeld (1983) is used. For logistic models Wald's z-test is used.
 #'
 #' @param population   A data frame describing the study population as created using the
 #'                     \code{\link{createStudyPopulation}} function. This should at least have these
@@ -46,14 +47,16 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
   checkmate::assertNumber(alpha, lower = 0, upper = 1, add = errorMessages)
   checkmate::assertNumber(power, lower = 0, upper = 1, add = errorMessages)
   checkmate::assertLogical(twoSided, len = 1, add = errorMessages)
-  checkmate::assertChoice(modelType, c("cox"), add = errorMessages)
+  checkmate::assertChoice(modelType, c("cox", "logistic"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   pTarget <- mean(population$treatment)
   totalEvents <- sum(population$outcomeCount != 0)
+  totalSubjects <- nrow(population)
   mdrr <- computeMdrrFromAggregateStats(
     pTarget = pTarget,
     totalEvents = totalEvents,
+    totalSubjects = totalSubjects,
     alpha = alpha,
     power = power,
     twoSided = twoSided,
@@ -74,7 +77,7 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
   return(result)
 }
 
-computeMdrrFromAggregateStats <- function(pTarget, totalEvents, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
+computeMdrrFromAggregateStats <- function(pTarget, totalEvents, totalSubjects, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
   if (totalEvents == 0) {
     return(Inf)
   }
@@ -83,15 +86,22 @@ computeMdrrFromAggregateStats <- function(pTarget, totalEvents, alpha = 0.05, po
   } else {
     z1MinAlpha <- qnorm(1 - alpha)
   }
-  zBeta <- -qnorm(1 - power)
-
-  pComparator <- 1 - pTarget
-
   if (modelType == "cox") {
+    zBeta <- -qnorm(1 - power)
+    pComparator <- 1 - pTarget
     mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2 / (totalEvents * pTarget * pComparator)))
+  } else if (modelType == "logistic") {
+    pBaseline <- totalEvents / totalSubjects
+    se <- sqrt((1 / (totalEvents * (1 - pBaseline))))
+    fun <- function(z) {
+      pnorm(z - z1MinAlpha) - power
+    }
+    z <- uniroot(fun, c(0, 1e+07))$root
+    mdrr <- exp(z * se)
   } else {
-    return(NA)
+    stop("Unknown model type: ", modelType)
   }
+  return(mdrr)
 }
 
 #' Get the distribution of follow-up time

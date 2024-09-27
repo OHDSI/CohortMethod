@@ -1,4 +1,4 @@
-CohortMethod 5.3.1
+CohortMethod 5.4.0
 ==================
 
 Changes:
@@ -8,6 +8,8 @@ Changes:
 2. Dropped `uploadExportedResults()` function.
 
 3. The `cohorts` argument of `insertExportedResultsInSqlite()` has column `cohortId` renamed to `cohortDefinitionId`.
+
+4. Added computation of MDRR for logistic models.
 
 
 

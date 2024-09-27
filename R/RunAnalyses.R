@@ -1723,12 +1723,13 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
                                                              twoSided = FALSE,
                                                              upper = TRUE)
     }
-    pTarget <- outcomeModel$populationCounts$targetExposures /
-      (outcomeModel$populationCounts$targetExposures + outcomeModel$populationCounts$comparatorExposures)
+    totalSubjects <- outcomeModel$populationCounts$targetExposures + outcomeModel$populationCounts$comparatorExposures
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
+    pTarget <- outcomeModel$populationCounts$targetExposures / totalSubjects
     mdrr <- computeMdrrFromAggregateStats(
       pTarget = pTarget,
       totalEvents = totalEvents,
+      totalSubjects = totalSubjects,
       modelType = outcomeModel$outcomeModelType
     )
     attrition <- getAttritionTable(outcomeModel)
