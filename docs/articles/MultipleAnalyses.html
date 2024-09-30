@@ -6,20 +6,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Running multiple analyses at once using the CohortMethod package • CohortMethod</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
 <script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Running multiple analyses at once using the CohortMethod package">
-<meta property="og:description" content="CohortMethod">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
-    
+
 
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -33,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">CohortMethod</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">5.4.0</span>
       </span>
     </div>
 
@@ -45,7 +44,7 @@
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
-     
+
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
@@ -68,7 +67,7 @@
 <li>
   <a href="https://github.com/OHDSI/CohortMethod/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
-     
+
   </a>
 </li>
       </ul>
@@ -79,7 +78,7 @@
 </div>
 <!--/.navbar -->
 
-      
+
 
       </header><div class="row">
   <div class="col-md-9 contents">
@@ -89,7 +88,7 @@ CohortMethod package</h1>
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2024-05-31</h4>
+            <h4 data-toc-skip class="date">2024-09-30</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/MultipleAnalyses.Rmd" class="external-link"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="hidden name"><code>MultipleAnalyses.Rmd</code></div>
@@ -319,37 +318,36 @@ We can see how many entries per cohort:</p>
 <span><span class="op">)</span></span>
 <span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/disconnect.html" class="external-link">disconnect</a></span><span class="op">(</span><span class="va">connection</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##    COHORT_DEFINITION_ID    COUNT</span></span>
-<span><span class="co">## 1                     2   176675</span></span>
-<span><span class="co">## 2                432867 31548471</span></span>
-<span><span class="co">## 3                    77   733601</span></span>
-<span><span class="co">## 4                442619      772</span></span>
-<span><span class="co">## 5                317376    67020</span></span>
-<span><span class="co">## 6                     1   109307</span></span>
-<span><span class="co">## 7                257315   918842</span></span>
-<span><span class="co">## 8               4182210  3650875</span></span>
-<span><span class="co">## 9               4174262   910846</span></span>
-<span><span class="co">## 10               380731    80707</span></span>
-<span><span class="co">## 11               444429        6</span></span>
-<span><span class="co">## 12               140673  6344090</span></span>
-<span><span class="co">## 13                29735   288675</span></span>
-<span><span class="co">## 14               436665   623024</span></span>
-<span><span class="co">## 15              4134454    15103</span></span>
-<span><span class="co">## 16               321319   971627</span></span>
-<span><span class="co">## 17               435140     1337</span></span>
-<span><span class="co">## 18               432661      990</span></span>
-<span><span class="co">## 19               197494   104253</span></span>
-<span><span class="co">## 20               433701    81191</span></span>
-<span><span class="co">## 21               435783   154047</span></span>
-<span><span class="co">## 22               433753   410743</span></span>
-<span><span class="co">## 23               314658  3032511</span></span>
-<span><span class="co">## 24               200528   878778</span></span>
-<span><span class="co">## 25               435524   308750</span></span>
-<span><span class="co">## 26              4286201   202230</span></span>
-<span><span class="co">## 27               436676   368572</span></span>
-<span><span class="co">## 28              4134120    43760</span></span>
-<span><span class="co">## 29               198199   215695</span></span>
-<span><span class="co">## 30               433516   214450</span></span>
-<span><span class="co">## 31               435459   140988</span></span></code></pre>
+<span><span class="co">## 1               4182210  3999282</span></span>
+<span><span class="co">## 2                433516   225285</span></span>
+<span><span class="co">## 3                197494   109864</span></span>
+<span><span class="co">## 4                198199   215700</span></span>
+<span><span class="co">## 5                436665   667992</span></span>
+<span><span class="co">## 6                432661      990</span></span>
+<span><span class="co">## 7                257315   947702</span></span>
+<span><span class="co">## 8                200528   929099</span></span>
+<span><span class="co">## 9               4286201   209643</span></span>
+<span><span class="co">## 10                29735   306564</span></span>
+<span><span class="co">## 11               433701    86114</span></span>
+<span><span class="co">## 12               435783   165272</span></span>
+<span><span class="co">## 13               380731    93491</span></span>
+<span><span class="co">## 14              4134120    47673</span></span>
+<span><span class="co">## 15               432867 34228255</span></span>
+<span><span class="co">## 16               436676   397216</span></span>
+<span><span class="co">## 17               317376    70728</span></span>
+<span><span class="co">## 18               321319  1144743</span></span>
+<span><span class="co">## 19               433753   452773</span></span>
+<span><span class="co">## 20               435524   331191</span></span>
+<span><span class="co">## 21               314658  3166844</span></span>
+<span><span class="co">## 22               435459   150251</span></span>
+<span><span class="co">## 23               140673  7597288</span></span>
+<span><span class="co">## 24              4174262  1107081</span></span>
+<span><span class="co">## 25              4134454    16630</span></span>
+<span><span class="co">## 26               442619      929</span></span>
+<span><span class="co">## 27               444429        6</span></span>
+<span><span class="co">## 28                    2   185248</span></span>
+<span><span class="co">## 29                    1   116987</span></span>
+<span><span class="co">## 30                   77  1091702</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="specifying-hypotheses-of-interest">Specifying hypotheses of interest<a class="anchor" aria-label="anchor" href="#specifying-hypotheses-of-interest"></a>
@@ -656,26 +654,26 @@ files.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">resultsSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getResultsSummary.html">getResultsSummary</a></span><span class="op">(</span><span class="va">folder</span><span class="op">)</span></span>
 <span><span class="va">resultsSum</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 216 x 29</span></span></span>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 216 × 29</span></span></span>
 <span><span class="co">##    analysisId targetId comparatorId outcomeId trueEffectSize targetSubjects</span></span>
 <span><span class="co">##         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>          1        1            2        77             <span style="color: #BB0000;">NA</span>          <span style="text-decoration: underline;">84</span>392</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>          1        1            2     <span style="text-decoration: underline;">29</span>735              1          <span style="text-decoration: underline;">86</span>648</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>          1        1            2    <span style="text-decoration: underline;">140</span>673              1          <span style="text-decoration: underline;">81</span>984</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>          1        1            2    <span style="text-decoration: underline;">197</span>494              1          <span style="text-decoration: underline;">87</span>506</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>          1        1            2    <span style="text-decoration: underline;">198</span>185              1          <span style="text-decoration: underline;">87</span>665</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>          1        1            2    <span style="text-decoration: underline;">198</span>199              1          <span style="text-decoration: underline;">87</span>123</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>          1        1            2    <span style="text-decoration: underline;">200</span>528              1          <span style="text-decoration: underline;">87</span>003</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>          1        1            2    <span style="text-decoration: underline;">257</span>315              1          <span style="text-decoration: underline;">86</span>649</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>          1        1            2    <span style="text-decoration: underline;">314</span>658              1          <span style="text-decoration: underline;">78</span>225</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span>          1        1            2    <span style="text-decoration: underline;">317</span>376              1          <span style="text-decoration: underline;">87</span>534</span></span>
-<span><span class="co">## <span style="color: #949494;"># i 206 more rows</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># i 23 more variables: comparatorSubjects &lt;int&gt;, targetDays &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>          1        1            2        77             <span style="color: #BB0000;">NA</span>          <span style="text-decoration: underline;">90</span>716</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>          1        1            2     <span style="text-decoration: underline;">29</span>735              1          <span style="text-decoration: underline;">92</span>988</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>          1        1            2    <span style="text-decoration: underline;">140</span>673              1          <span style="text-decoration: underline;">86</span>766</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>          1        1            2    <span style="text-decoration: underline;">197</span>494              1          <span style="text-decoration: underline;">93</span>931</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>          1        1            2    <span style="text-decoration: underline;">198</span>185              1          <span style="text-decoration: underline;">94</span>107</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>          1        1            2    <span style="text-decoration: underline;">198</span>199              1          <span style="text-decoration: underline;">93</span>564</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>          1        1            2    <span style="text-decoration: underline;">200</span>528              1          <span style="text-decoration: underline;">93</span>396</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>          1        1            2    <span style="text-decoration: underline;">257</span>315              1          <span style="text-decoration: underline;">93</span>058</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>          1        1            2    <span style="text-decoration: underline;">314</span>658              1          <span style="text-decoration: underline;">84</span>073</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>          1        1            2    <span style="text-decoration: underline;">317</span>376              1          <span style="text-decoration: underline;">93</span>965</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 206 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 23 more variables: comparatorSubjects &lt;int&gt;, targetDays &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   comparatorDays &lt;dbl&gt;, targetOutcomes &lt;dbl&gt;, comparatorOutcomes &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   rr &lt;dbl&gt;, ci95Lb &lt;dbl&gt;, ci95Ub &lt;dbl&gt;, p &lt;dbl&gt;, oneSidedP &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   logRr &lt;dbl&gt;, seLogRr &lt;dbl&gt;, llr &lt;dbl&gt;, mdrr &lt;dbl&gt;, targetEstimator &lt;chr&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   calibratedRr &lt;dbl&gt;, calibratedCi95Lb &lt;dbl&gt;, calibratedCi95Ub &lt;dbl&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   calibratedP &lt;dbl&gt;, calibratedOneSidedP &lt;dbl&gt;, calibratedLogRr &lt;dbl&gt;, ...</span></span></span></code></pre>
+<span><span class="co">## <span style="color: #949494;">#   calibratedP &lt;dbl&gt;, calibratedOneSidedP &lt;dbl&gt;, calibratedLogRr &lt;dbl&gt;, …</span></span></span></code></pre>
 <p>This tells us, per target-comparator-outcome-analysis combination,
 the estimated relative risk and 95% confidence interval, as well as the
 number of people in the treated and comparator group (after trimming and
@@ -788,7 +786,8 @@ use of antithrombotic agents’ (covariate ID 21600960413):</p>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Warning in checkWithinLimits(yLimits, c(seLogRrNegatives, seLogRrPositives), :</span></span>
 <span><span class="co">## Values are outside plotted range. Consider adjusting yLimits parameter</span></span></code></pre>
-<pre><code><span><span class="co">## Warning: Removed 1 rows containing missing values (`geom_vline()`).</span></span></code></pre>
+<pre><code><span><span class="co">## Warning: Removed 1 row containing missing values or values outside the scale range</span></span>
+<span><span class="co">## (`geom_vline()`).</span></span></code></pre>
 <p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-31-1.png" width="700"></p>
 </div>
 </div>
@@ -822,28 +821,28 @@ which in the Shiny app will be displayed as ‘&lt;5’.</p>
 retrieved using <code><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications()</a></code>:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 188 x 8</span></span></span>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 188 × 8</span></span></span>
 <span><span class="co">##    tableName   columnName dataType isRequired primaryKey minCellCount deprecated</span></span>
 <span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attriti~ sequence_~ int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attriti~ descripti~ varchar  Yes        No         No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attriti~ subjects   int      Yes        No         Yes          No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attriti~ exposure_~ bigint   Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attriti~ target_id  bigint   Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attriti~ comparato~ bigint   Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attriti~ analysis_~ int      Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attriti~ outcome_id bigint   Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attriti~ database_~ varchar  Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_~ target_id  bigint   Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #949494;"># i 178 more rows</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># i 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attriti… sequence_… int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> cm_attriti… descripti… varchar  Yes        No         No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> cm_attriti… subjects   int      Yes        No         Yes          No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> cm_attriti… exposure_… bigint   Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> cm_attriti… target_id  bigint   Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> cm_attriti… comparato… bigint   Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> cm_attriti… analysis_… int      Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attriti… outcome_id bigint   Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_attriti… database_… varchar  Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_… target_id  bigint   Yes        Yes        No           No        </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 178 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="view-results-in-a-shiny-app">View results in a Shiny app<a class="anchor" aria-label="anchor" href="#view-results-in-a-shiny-app"></a>
 </h2>
 <p>Finally, we can view the results in a Shiny app. For this we must
 first load the CSV files produced by <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> into a
-database. We could use the <code><a href="../reference/uploadExportedResults.html">uploadExportedResults()</a></code> function
+database. We could use the <code>uploadExportedResults()</code> function
 for this. However, if we just want to view the results ourselves we can
 create a small SQLite database ourselves without having to set up a
 database server. In any case we need to specify the names of the
@@ -851,7 +850,7 @@ exposure and outcome cohorts we used in our study. We can create the
 SQLite database using:</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cohorts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  cohortId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  cohortDefinitionId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="fl">1</span>,</span>
 <span>    <span class="fl">2</span>,</span>
 <span>    <span class="fl">77</span><span class="op">)</span>,</span>
@@ -888,9 +887,9 @@ CohortMethod Shiny app
 <pre><code><span><span class="co">## To cite package 'CohortMethod' in publications use:</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">##   Schuemie M, Suchard M, Ryan P (2024). _CohortMethod: New-User Cohort</span></span>
-<span><span class="co">##   Method with Large Scale Propensity and Outcome Models_.</span></span>
-<span><span class="co">##   https://ohdsi.github.io/CohortMethod,</span></span>
-<span><span class="co">##   https://github.com/OHDSI/CohortMethod.</span></span>
+<span><span class="co">##   Method with Large Scale Propensity and Outcome Models_. R package</span></span>
+<span><span class="co">##   version 5.4.0, https://github.com/OHDSI/CohortMethod,</span></span>
+<span><span class="co">##   &lt;https://ohdsi.github.io/CohortMethod&gt;.</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## A BibTeX entry for LaTeX users is</span></span>
 <span><span class="co">## </span></span>
@@ -899,8 +898,9 @@ CohortMethod Shiny app
 <span><span class="co">## Models},</span></span>
 <span><span class="co">##     author = {Martijn Schuemie and Marc Suchard and Patrick Ryan},</span></span>
 <span><span class="co">##     year = {2024},</span></span>
-<span><span class="co">##     note = {https://ohdsi.github.io/CohortMethod,</span></span>
+<span><span class="co">##     note = {R package version 5.4.0, </span></span>
 <span><span class="co">## https://github.com/OHDSI/CohortMethod},</span></span>
+<span><span class="co">##     url = {https://ohdsi.github.io/CohortMethod},</span></span>
 <span><span class="co">##   }</span></span></code></pre>
 <p>Further, <code>CohortMethod</code> makes extensive use of the
 <code>Cyclops</code> package.</p>
@@ -932,9 +932,7 @@ Foundation grant IIS 1251151.</p>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
-        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
-    </nav>
-</div>
+      </div>
 
 </div>
 
@@ -947,16 +945,16 @@ Foundation grant IIS 1251151.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
       </footer>
 </div>
 
-  
 
 
-  
+
+
 
   </body>
 </html>
