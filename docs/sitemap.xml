@@ -1,282 +1,95 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/MultipleAnalyses.html</loc>
-  </url>
-  <url>
-    <loc>/articles/SingleStudies.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/news/index.html</loc>
-  </url>
-  <url>
-    <loc>/pull_request_template.html</loc>
-  </url>
-  <url>
-    <loc>/reference/adjustedKm.html</loc>
-  </url>
-  <url>
-    <loc>/reference/checkCmInstallation.html</loc>
-  </url>
-  <url>
-    <loc>/reference/CohortMethod-package.html</loc>
-  </url>
-  <url>
-    <loc>/reference/CohortMethod.html</loc>
-  </url>
-  <url>
-    <loc>/reference/CohortMethodData-class.html</loc>
-  </url>
-  <url>
-    <loc>/reference/cohortMethodDataSimulationProfile.html</loc>
-  </url>
-  <url>
-    <loc>/reference/computeCovariateBalance.html</loc>
-  </url>
-  <url>
-    <loc>/reference/computeEquipoise.html</loc>
-  </url>
-  <url>
-    <loc>/reference/computeMdrr.html</loc>
-  </url>
-  <url>
-    <loc>/reference/computePsAuc.html</loc>
-  </url>
-  <url>
-    <loc>/reference/constructEras.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createCmAnalysis.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createCmDiagnosticThresholds.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createCmTable1.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createCohortMethodDataSimulationProfile.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createComputeCovariateBalanceArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createCreatePsArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createCreateStudyPopulationArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createDefaultMultiThreadingSettings.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createFitOutcomeModelArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createGetDbCohortMethodDataArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createMatchOnPsAndCovariatesArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createMatchOnPsArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createMultiThreadingSettings.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createOutcome.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createPs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createResultsDataModel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createStratifyByPsAndCovariatesArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createStratifyByPsArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createStudyPopulation.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createTargetComparatorOutcomes.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createTrimByIptwArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createTrimByPsArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createTrimByPsToEquipoiseArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/createTruncateIptwArgs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/drawAttritionDiagram.html</loc>
-  </url>
-  <url>
-    <loc>/reference/exportToCsv.html</loc>
-  </url>
-  <url>
-    <loc>/reference/fitOutcomeModel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getAttritionTable.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getDataMigrator.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getDbCohortMethodData.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getDefaultCmTable1Specifications.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getFileReference.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getFollowUpDistribution.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getGeneralizabilityTable.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getInteractionResultsSummary.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getOutcomeModel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getPsModel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getResultsDataModel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getResultsDataModelSpecifications.html</loc>
-  </url>
-  <url>
-    <loc>/reference/getResultsSummary.html</loc>
-  </url>
-  <url>
-    <loc>/reference/grepCovariateNames.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/insertDbPopulation.html</loc>
-  </url>
-  <url>
-    <loc>/reference/insertExportedResultsInSqlite.html</loc>
-  </url>
-  <url>
-    <loc>/reference/isCohortMethodData.html</loc>
-  </url>
-  <url>
-    <loc>/reference/launchResultsViewer.html</loc>
-  </url>
-  <url>
-    <loc>/reference/launchResultsViewerUsingSqlite.html</loc>
-  </url>
-  <url>
-    <loc>/reference/loadCmAnalysisList.html</loc>
-  </url>
-  <url>
-    <loc>/reference/loadCohortMethodData.html</loc>
-  </url>
-  <url>
-    <loc>/reference/loadTargetComparatorOutcomesList.html</loc>
-  </url>
-  <url>
-    <loc>/reference/matchOnPs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/matchOnPsAndCovariates.html</loc>
-  </url>
-  <url>
-    <loc>/reference/migrateDataModel.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotCovariateBalanceOfTopVariables.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotCovariateBalanceScatterPlot.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotCovariatePrevalence.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotFollowUpDistribution.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotKaplanMeier.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotPs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plotTimeToEvent.html</loc>
-  </url>
-  <url>
-    <loc>/reference/runCmAnalyses.html</loc>
-  </url>
-  <url>
-    <loc>/reference/saveCmAnalysisList.html</loc>
-  </url>
-  <url>
-    <loc>/reference/saveCohortMethodData.html</loc>
-  </url>
-  <url>
-    <loc>/reference/saveTargetComparatorOutcomesList.html</loc>
-  </url>
-  <url>
-    <loc>/reference/simulateCohortMethodData.html</loc>
-  </url>
-  <url>
-    <loc>/reference/stratifyByPs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/stratifyByPsAndCovariates.html</loc>
-  </url>
-  <url>
-    <loc>/reference/summarizeAnalyses.html</loc>
-  </url>
-  <url>
-    <loc>/reference/trimByIptw.html</loc>
-  </url>
-  <url>
-    <loc>/reference/trimByPs.html</loc>
-  </url>
-  <url>
-    <loc>/reference/trimByPsToEquipoise.html</loc>
-  </url>
-  <url>
-    <loc>/reference/truncateIptw.html</loc>
-  </url>
-  <url>
-    <loc>/reference/uploadExportedResults.html</loc>
-  </url>
-  <url>
-    <loc>/reference/uploadResults.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/MultipleAnalyses.html</loc></url>
+<url><loc>/articles/SingleStudies.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/news/index.html</loc></url>
+<url><loc>/pull_request_template.html</loc></url>
+<url><loc>/reference/adjustedKm.html</loc></url>
+<url><loc>/reference/checkCmInstallation.html</loc></url>
+<url><loc>/reference/CohortMethod-package.html</loc></url>
+<url><loc>/reference/CohortMethodData-class.html</loc></url>
+<url><loc>/reference/cohortMethodDataSimulationProfile.html</loc></url>
+<url><loc>/reference/computeCovariateBalance.html</loc></url>
+<url><loc>/reference/computeEquipoise.html</loc></url>
+<url><loc>/reference/computeMdrr.html</loc></url>
+<url><loc>/reference/computePsAuc.html</loc></url>
+<url><loc>/reference/constructEras.html</loc></url>
+<url><loc>/reference/createCmAnalysis.html</loc></url>
+<url><loc>/reference/createCmDiagnosticThresholds.html</loc></url>
+<url><loc>/reference/createCmTable1.html</loc></url>
+<url><loc>/reference/createCohortMethodDataSimulationProfile.html</loc></url>
+<url><loc>/reference/createComputeCovariateBalanceArgs.html</loc></url>
+<url><loc>/reference/createCreatePsArgs.html</loc></url>
+<url><loc>/reference/createCreateStudyPopulationArgs.html</loc></url>
+<url><loc>/reference/createDefaultMultiThreadingSettings.html</loc></url>
+<url><loc>/reference/createFitOutcomeModelArgs.html</loc></url>
+<url><loc>/reference/createGetDbCohortMethodDataArgs.html</loc></url>
+<url><loc>/reference/createMatchOnPsAndCovariatesArgs.html</loc></url>
+<url><loc>/reference/createMatchOnPsArgs.html</loc></url>
+<url><loc>/reference/createMultiThreadingSettings.html</loc></url>
+<url><loc>/reference/createOutcome.html</loc></url>
+<url><loc>/reference/createPs.html</loc></url>
+<url><loc>/reference/createResultsDataModel.html</loc></url>
+<url><loc>/reference/createStratifyByPsAndCovariatesArgs.html</loc></url>
+<url><loc>/reference/createStratifyByPsArgs.html</loc></url>
+<url><loc>/reference/createStudyPopulation.html</loc></url>
+<url><loc>/reference/createTargetComparatorOutcomes.html</loc></url>
+<url><loc>/reference/createTrimByIptwArgs.html</loc></url>
+<url><loc>/reference/createTrimByPsArgs.html</loc></url>
+<url><loc>/reference/createTrimByPsToEquipoiseArgs.html</loc></url>
+<url><loc>/reference/createTruncateIptwArgs.html</loc></url>
+<url><loc>/reference/drawAttritionDiagram.html</loc></url>
+<url><loc>/reference/exportToCsv.html</loc></url>
+<url><loc>/reference/fitOutcomeModel.html</loc></url>
+<url><loc>/reference/getAttritionTable.html</loc></url>
+<url><loc>/reference/getDataMigrator.html</loc></url>
+<url><loc>/reference/getDbCohortMethodData.html</loc></url>
+<url><loc>/reference/getDefaultCmTable1Specifications.html</loc></url>
+<url><loc>/reference/getFileReference.html</loc></url>
+<url><loc>/reference/getFollowUpDistribution.html</loc></url>
+<url><loc>/reference/getGeneralizabilityTable.html</loc></url>
+<url><loc>/reference/getInteractionResultsSummary.html</loc></url>
+<url><loc>/reference/getOutcomeModel.html</loc></url>
+<url><loc>/reference/getPsModel.html</loc></url>
+<url><loc>/reference/getResultsDataModel.html</loc></url>
+<url><loc>/reference/getResultsDataModelSpecifications.html</loc></url>
+<url><loc>/reference/getResultsSummary.html</loc></url>
+<url><loc>/reference/grepCovariateNames.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/insertDbPopulation.html</loc></url>
+<url><loc>/reference/insertExportedResultsInSqlite.html</loc></url>
+<url><loc>/reference/isCohortMethodData.html</loc></url>
+<url><loc>/reference/launchResultsViewer.html</loc></url>
+<url><loc>/reference/launchResultsViewerUsingSqlite.html</loc></url>
+<url><loc>/reference/loadCmAnalysisList.html</loc></url>
+<url><loc>/reference/loadCohortMethodData.html</loc></url>
+<url><loc>/reference/loadTargetComparatorOutcomesList.html</loc></url>
+<url><loc>/reference/matchOnPs.html</loc></url>
+<url><loc>/reference/matchOnPsAndCovariates.html</loc></url>
+<url><loc>/reference/migrateDataModel.html</loc></url>
+<url><loc>/reference/plotCovariateBalanceOfTopVariables.html</loc></url>
+<url><loc>/reference/plotCovariateBalanceScatterPlot.html</loc></url>
+<url><loc>/reference/plotCovariatePrevalence.html</loc></url>
+<url><loc>/reference/plotFollowUpDistribution.html</loc></url>
+<url><loc>/reference/plotKaplanMeier.html</loc></url>
+<url><loc>/reference/plotPs.html</loc></url>
+<url><loc>/reference/plotTimeToEvent.html</loc></url>
+<url><loc>/reference/runCmAnalyses.html</loc></url>
+<url><loc>/reference/saveCmAnalysisList.html</loc></url>
+<url><loc>/reference/saveCohortMethodData.html</loc></url>
+<url><loc>/reference/saveTargetComparatorOutcomesList.html</loc></url>
+<url><loc>/reference/simulateCohortMethodData.html</loc></url>
+<url><loc>/reference/stratifyByPs.html</loc></url>
+<url><loc>/reference/stratifyByPsAndCovariates.html</loc></url>
+<url><loc>/reference/summarizeAnalyses.html</loc></url>
+<url><loc>/reference/trimByIptw.html</loc></url>
+<url><loc>/reference/trimByPs.html</loc></url>
+<url><loc>/reference/trimByPsToEquipoise.html</loc></url>
+<url><loc>/reference/truncateIptw.html</loc></url>
+<url><loc>/reference/uploadExportedResults.html</loc></url>
+<url><loc>/reference/uploadResults.html</loc></url>
 </urlset>
+

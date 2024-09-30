@@ -90,7 +90,6 @@ reference:
       - createResultsDataModel
       - migrateDataModel
       - getDataMigrator
-      - uploadExportedResults
       - uploadResults
       - launchResultsViewer
   - title: "Simulation"
