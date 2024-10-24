@@ -126,29 +126,39 @@ createPs <- function(cohortMethodData,
     sampled <- FALSE
     ref <- NULL
   } else {
-    covariates <- cohortMethodData$covariates %>%
-      filter(.data$rowId %in% local(population$rowId))
+    rowIds <- cohortMethodData$covariates %>%
+      distinct(.data$rowId) %>%
+      pull()
+    if (all(rowIds %in% population$rowId) &&
+        length(includeCovariateIds) == 0 &&
+        length(excludeCovariateIds) == 0) {
+      # No filtering necessary, send to tidyCovariateData:
+      covariateData <- FeatureExtraction::tidyCovariateData(cohortMethodData)
+    } else {
+      # Need filtering here before sending it to tidyCovariateData:
+      covariates <- cohortMethodData$covariates %>%
+        filter(.data$rowId %in% local(population$rowId))
 
-    if (length(includeCovariateIds) != 0) {
-      covariates <- covariates %>%
-        filter(.data$covariateId %in% includeCovariateIds)
+      if (length(includeCovariateIds) != 0) {
+        covariates <- covariates %>%
+          filter(.data$covariateId %in% includeCovariateIds)
+      }
+      if (length(excludeCovariateIds) != 0) {
+        covariates <- covariates %>%
+          filter(!.data$covariateId %in% excludeCovariateIds)
+      }
+      filteredCovariateData <- Andromeda::andromeda(
+        covariates = covariates,
+        covariateRef = cohortMethodData$covariateRef,
+        analysisRef = cohortMethodData$analysisRef
+      )
+      metaData <- attr(cohortMethodData, "metaData")
+      metaData$populationSize <- nrow(population)
+      attr(filteredCovariateData, "metaData") <- metaData
+      class(filteredCovariateData) <- "CovariateData"
+      covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
+      close(filteredCovariateData)
     }
-    if (length(excludeCovariateIds) != 0) {
-      covariates <- covariates %>%
-        filter(!.data$covariateId %in% excludeCovariateIds)
-    }
-    filteredCovariateData <- Andromeda::andromeda(
-      covariates = covariates,
-      covariateRef = cohortMethodData$covariateRef,
-      analysisRef = cohortMethodData$analysisRef
-    )
-    metaData <- attr(cohortMethodData, "metaData")
-    metaData$populationSize <- nrow(population)
-    attr(filteredCovariateData, "metaData") <- metaData
-    class(filteredCovariateData) <- "CovariateData"
-
-    covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
-    close(filteredCovariateData)
     on.exit(close(covariateData))
     covariates <- covariateData$covariates
     attr(population, "metaData")$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
