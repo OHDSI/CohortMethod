@@ -44,22 +44,24 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     stop("Covariates are empty")
   }
 
-  if (sum(cohortMethodData$cohorts %>% select("daysToCohortEnd") %>% pull()) == 0) {
+  if (sum(cohortMethodData$cohorts |> select("daysToCohortEnd") |> pull()) == 0) {
     warning("Cohort data appears to be limited, check daysToCohortEnd which appears to be all zeros")
   }
 
   message("Computing covariate prevalence")
   # (Note: currently limiting to binary covariates)
-  populationSize <- nrow(cohortMethodData$cohorts)
-  covariatePrevalence <- cohortMethodData$covariates %>%
-    group_by(.data$covariateId) %>%
-    summarise(sum = sum(.data$covariateValue, na.rm = TRUE)) %>%
-    mutate(prevalence = .data$sum / populationSize) %>%
-    ungroup() %>%
-    inner_join(cohortMethodData$covariateRef, by = "covariateId") %>%
-    inner_join(cohortMethodData$analysisRef, by = "analysisId") %>%
-    filter(.data$isBinary == "Y") %>%
-    select("covariateId", "prevalence") %>%
+  populationSize <- cohortMethodData$cohorts |>
+    count() |>
+    pull()
+  covariatePrevalence <- cohortMethodData$covariates |>
+    group_by(.data$covariateId) |>
+    summarise(sum = sum(.data$covariateValue, na.rm = TRUE)) |>
+    mutate(prevalence = .data$sum / populationSize) |>
+    ungroup() |>
+    inner_join(cohortMethodData$covariateRef, by = "covariateId") |>
+    inner_join(cohortMethodData$analysisRef, by = "analysisId") |>
+    filter(.data$isBinary == "Y") |>
+    select("covariateId", "prevalence") |>
     collect()
 
   message("Computing propensity model")
@@ -88,26 +90,28 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
       modelType = "poisson",
       stratified = FALSE,
       useCovariates = TRUE,
-      prior = Cyclops::createPrior("laplace", 0.1, exclude = 0)
+      prior = Cyclops::createPrior("laplace", 0.1, exclude = 0),
+      control = Cyclops::createControl(threads = 2),
+      profileBounds = NULL
     )
     outcomeModels[[i]] <- outcomeModel$outcomeModelCoefficients[outcomeModel$outcomeModelCoefficients != 0]
   }
 
   message("Computing rates of prior outcomes")
-  totalTime <- cohortMethodData$cohorts %>%
-    summarise(time = sum(.data$daysFromObsStart, na.rm = TRUE)) %>%
+  totalTime <- cohortMethodData$cohorts |>
+    summarise(time = sum(.data$daysFromObsStart, na.rm = TRUE)) |>
     pull()
 
-  preIndexOutcomeRates <- cohortMethodData$outcomes %>%
-    filter(.data$daysToEvent < 0) %>%
-    group_by(.data$outcomeId) %>%
-    summarise(n = n_distinct(.data$rowId)) %>%
-    mutate(rate = .data$n / totalTime) %>%
-    select("outcomeId", "rate") %>%
+  preIndexOutcomeRates <- cohortMethodData$outcomes |>
+    filter(.data$daysToEvent < 0) |>
+    group_by(.data$outcomeId) |>
+    summarise(n = n_distinct(.data$rowId)) |>
+    mutate(rate = .data$n / totalTime) |>
+    select("outcomeId", "rate") |>
     collect()
 
   message("Fitting models for time to observation period start, end and time to cohort end")
-  cohorts <- cohortMethodData$cohorts %>%
+  cohorts <- cohortMethodData$cohorts |>
     collect()
 
   obsEnd <- cohorts$daysToObsEnd
@@ -203,10 +207,10 @@ simulateCohortMethodData <- function(profile, n = 10000) {
     beta = as.numeric(betas),
     covariateId = as.numeric(names(betas))
   )
-  treatmentVar <- covariates %>%
-    inner_join(betas, by = "covariateId") %>%
-    mutate(value = .data$covariateValue * .data$beta) %>%
-    group_by(.data$rowId) %>%
+  treatmentVar <- covariates |>
+    inner_join(betas, by = "covariateId") |>
+    mutate(value = .data$covariateValue * .data$beta) |>
+    group_by(.data$rowId) |>
     summarise(value = sum(.data$value) + intercept)
   link <- function(x) {
     return(1 / (1 + exp(-x)))

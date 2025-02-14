@@ -1,3 +1,11 @@
+CohortMethod 5.4.1
+==================
+
+Bugfixes:
+
+1. Fixed NA covariate prevalences when calling `createCohortMethodDataSimulationProfile()`.
+
+
 CohortMethod 5.4.0
 ==================
 
