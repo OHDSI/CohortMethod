@@ -1,6 +1,10 @@
 CohortMethod 5.4.1
 ==================
 
+Changes:
+
+1. `createPs()` now checks if filtering of the covariate data is necessary (either because subject have been removed from the study population or because `excludeCovariateIds` or `includeCovariateIds` was specified). If no filtering is required, no extra copy of the covariate data data is created, saving IO time.
+
 Bugfixes:
 
 1. Fixed NA covariate prevalences when calling `createCohortMethodDataSimulationProfile()`.

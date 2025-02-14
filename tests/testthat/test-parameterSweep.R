@@ -77,6 +77,11 @@ test_that("Create study population functions", {
 })
 
 test_that("Propensity score functions", {
+  # No filtering required:
+  studyPop <- cohortMethodData$cohorts |>
+    collect()
+  ps <- createPs(cohortMethodData, studyPop)
+
   studyPop <- createStudyPopulation(cohortMethodData,
     outcomeId = 194133,
     removeSubjectsWithPriorOutcome = TRUE,
@@ -84,6 +89,7 @@ test_that("Propensity score functions", {
   )
   # Cross-validation:
   ps <- createPs(cohortMethodData, studyPop)
+
 
   ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
   expect_lt(0.65, computePsAuc(ps)[1])
