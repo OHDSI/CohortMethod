@@ -4,7 +4,7 @@
 \alias{.truncateSimulationProfile}
 \title{truncateSimulationProfile}
 \usage{
-.truncateSimulationProfile(profile, minCellCount = 10)
+.truncateSimulationProfile(profile, minCellCount = 5)
 }
 \arguments{
 \item{profile}{Object of class \code{CohortDataSimulationProfile}}

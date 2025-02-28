@@ -25,7 +25,7 @@
 ##' @param profile Object of class `CohortDataSimulationProfile`
 ##' @param minCellCount Number of cases below which prevalence will be set to zero 
 ##' @return Modified copy of supplied simulation profile
-.truncateSimulationProfile <- function(profile, minCellCount = 10) {
+.truncateSimulationProfile <- function(profile, minCellCount = 5) {
     checkmate::assertClass(profile, "CohortDataSimulationProfile")
     checkmate::assertIntegerish(minCellCount, lower = 0L, upper = profile$metaData$populationSize)
 
@@ -83,7 +83,7 @@
 #'
 #' @export
 createCohortMethodDataSimulationProfile <- function(cohortMethodData,
-                                                    minCellCount = 10) {
+                                                    minCellCount = 5) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)

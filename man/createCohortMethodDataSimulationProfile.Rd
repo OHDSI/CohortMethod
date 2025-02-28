@@ -4,7 +4,7 @@
 \alias{createCohortMethodDataSimulationProfile}
 \title{Create simulation profile}
 \usage{
-createCohortMethodDataSimulationProfile(cohortMethodData, minCellCount = 10)
+createCohortMethodDataSimulationProfile(cohortMethodData, minCellCount = 5)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
