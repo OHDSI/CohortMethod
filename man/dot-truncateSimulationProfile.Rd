@@ -2,14 +2,14 @@
 % Please edit documentation in R/Simulation.R
 \name{.truncateSimulationProfile}
 \alias{.truncateSimulationProfile}
-\title{truncateDataSimulationProfile}
+\title{truncateSimulationProfile}
 \usage{
-.truncateSimulationProfile(profile, minimumCaseCount = 10)
+.truncateSimulationProfile(profile, minCellCount = 10)
 }
 \arguments{
 \item{profile}{Object of class \code{CohortDataSimulationProfile}}
 
-\item{minimumCaseCount}{Number of cases below which prevalence will be set to zero}
+\item{minCellCount}{Number of cases below which prevalence will be set to zero}
 }
 \value{
 Modified copy of supplied simulation profile
