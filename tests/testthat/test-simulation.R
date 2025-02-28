@@ -51,6 +51,12 @@ test_that("createCohortMethodDataSimulationProfile", {
   expect_true(cohortDataSimulationProfile$cohortEndRate > 0)
   expect_true(cohortDataSimulationProfile$obsStartRate > 0)
   expect_true(cohortDataSimulationProfile$obsEndRate > 0)
+
+  # test truncation of covariate prevalence 
+  expect_true(.truncateSimulationProfile(cohortDataSimulationProfile, 100)$covariatePrevalence |>
+                                                                         filter(prevalence > 0) |>
+                                                                         summarize(min(prevalence)) |>
+                                                                         pull() >= round(100 * .data$metaData$populationSize)) 
 })
 
 test_that("Test bad covariate data", {
