@@ -4,11 +4,13 @@
 \alias{createCohortMethodDataSimulationProfile}
 \title{Create simulation profile}
 \usage{
-createCohortMethodDataSimulationProfile(cohortMethodData)
+createCohortMethodDataSimulationProfile(cohortMethodData, minCellCount = 5)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
 \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
+
+\item{minCellCount}{If > 0, will apply \code{.truncateSimulationProfile()}}
 }
 \value{
 An object of type \code{CohortDataSimulationProfile}.

@@ -11,8 +11,58 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# See the License for the specific language governing permissions and 
 # limitations under the License.
+
+
+
+##' Truncate low-prevalence covariates in a simulation profile 
+##'
+##' @description
+##' Set to zero all low-prevalence covariates in the supplied simulation table
+##' in order to prevent identification of persons 
+##' @title truncateSimulationProfile 
+##' @param profile Object of class `CohortDataSimulationProfile`
+##' @param minCellCount Number of cases below which prevalence will be set to zero 
+##' @return Modified copy of supplied simulation profile
+.truncateSimulationProfile <- function(profile, minCellCount = 5) {
+    checkmate::assertClass(profile, "CohortDataSimulationProfile")
+    checkmate::assertIntegerish(minCellCount, lower = 0L, upper = profile$metaData$populationSize)
+
+    if (minCellCount == 0) {
+        warning("No truncation was done on low-prevalence covariates. Object may include low cell counts that enable identification of persons.") 
+        return(profile)
+    }
+    
+    minObservedNonzeroPrevalence <- profile$covariatePrevalence |>
+        filter(prevalence > 0) |>
+        summarize(min(prevalence)) |>
+        pull()
+    
+    message(sprintf("Before truncating simulation profile, lowest non-zero covariate prevalence is %.08f (%.0f / %.0f)",
+            minObservedNonzeroPrevalence,
+            round(minObservedNonzeroPrevalence * profile$metaData$populationSize),
+            profile$metaData$populationSize))
+    
+    minimumAllowedPrevalence <- minCellCount / profile$metaData$populationSize
+    
+    profile$covariatePrevalence <- profile$covariatePrevalence |>
+        mutate(prevalence = ifelse(prevalence < minimumAllowedPrevalence, 
+                                   0, prevalence))
+
+    truncatedMinObservedNonzeroPrevalence <- profile$covariatePrevalence |>
+        filter(prevalence > 0) |>
+        summarize(min(prevalence)) |>
+        pull()
+    
+    message(sprintf("After truncating simulation profile, lowest non-zero covariate prevalence is %.08f (%.0f / %.0f)",
+            truncatedMinObservedNonzeroPrevalence,
+            round(truncatedMinObservedNonzeroPrevalence * profile$metaData$populationSize),
+            profile$metaData$populationSize))
+    
+    return(profile)
+}
+
 
 #' Create simulation profile
 #'
@@ -22,6 +72,7 @@
 #' characteristics.
 #'
 #' @template CohortMethodData
+#' @param minCellCount If > 0, will apply `.truncateSimulationProfile()`
 #'
 #' @details
 #' The output of this function is an object that can be used by the [simulateCohortMethodData()]
@@ -31,7 +82,8 @@
 #' An object of type `CohortDataSimulationProfile`.
 #'
 #' @export
-createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
+createCohortMethodDataSimulationProfile <- function(cohortMethodData,
+                                                    minCellCount = 5) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
@@ -144,7 +196,9 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData) {
     minObsTime = minObsTime,
     obsEndRate = 1 / exp(coef(fitObsEnd))
   )
+
   class(result) <- "CohortDataSimulationProfile"
+  result <- .truncateSimulationProfile(result, minCellCount)
   return(result)
 }
 
