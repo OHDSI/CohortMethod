@@ -60,12 +60,9 @@ Suggests:
 	R.utils,
 	RSQLite,
 	ResultModelManager,
-	ShinyAppBuilder (>= 1.2.0),
+	OhdsiShinyAppBuilder,
 	markdown,
 	remotes
-Remotes:
-	ohdsi/ResultModelManager,
-	ohdsi/ShinyAppBuilder
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.3.2

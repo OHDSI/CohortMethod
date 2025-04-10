@@ -383,7 +383,7 @@ DatabaseConnector::disconnect(connection)
 # sqliteFileName <- databaseFile
 # launchResultsViewerUsingSqlite(sqliteFileName = databaseFile)
 
-aboutModule <- ShinyAppBuilder::createDefaultAboutConfig()
+aboutModule <- OhdsiShinyAppBuilder::createDefaultAboutConfig()
 resultDatabaseDetails <- list(
   dbms = connectionDetails$dbms,
   tablePrefix = 'cm_',
@@ -392,12 +392,12 @@ resultDatabaseDetails <- list(
   schema =  "main",
   databaseTable = 'DATABASE_META_DATA'
 )
-estimationModule <- ShinyAppBuilder::createDefaultEstimationConfig()
-shinyAppConfig <- ShinyAppBuilder::initializeModuleConfig() %>%
-  ShinyAppBuilder::addModuleConfig(aboutModule) %>%
-  ShinyAppBuilder::addModuleConfig(estimationModule)
+estimationModule <- OhdsiShinyAppBuilder::createDefaultEstimationConfig()
+shinyAppConfig <- OhdsiShinyAppBuilder::initializeModuleConfig() %>%
+  OhdsiShinyAppBuilder::addModuleConfig(aboutModule) %>%
+  OhdsiShinyAppBuilder::addModuleConfig(estimationModule)
 connectionHandler <- ResultModelManager::ConnectionHandler$new(connectionDetails)
-ShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)
+OhdsiShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)
 connectionHandler$closeConnection()
 
 

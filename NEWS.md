@@ -9,6 +9,8 @@ Changes:
 
 3. Preparing for `Andromeda 1.0.0`: no longer assuming Andromeda tables are sorted.
 
+4. Changing dependency from `ShinyAppBuilder` to `OhdsiShinyAppBuilder`.
+
 
 Bugfixes:
 

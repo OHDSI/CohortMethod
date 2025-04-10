@@ -141,9 +141,9 @@ launchResultsViewer <- function(connectionDetails, databaseSchema) {
   checkmate::assertCharacter(databaseSchema, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  ensureInstalled("ShinyAppBuilder")
+  ensureInstalled("OhdsiShinyAppBuilder")
   ensureInstalled("markdown")
-  aboutModule <- ShinyAppBuilder::createDefaultAboutConfig()
+  aboutModule <- OhdsiShinyAppBuilder::createDefaultAboutConfig()
   resultDatabaseDetails <- list(
     dbms = connectionDetails$dbms,
     tablePrefix = 'cm_',
@@ -152,11 +152,11 @@ launchResultsViewer <- function(connectionDetails, databaseSchema) {
     schema =  "main",
     databaseTable = 'DATABASE_META_DATA'
   )
-  estimationModule <- ShinyAppBuilder::createDefaultEstimationConfig()
-  shinyAppConfig <- ShinyAppBuilder::initializeModuleConfig() %>%
-    ShinyAppBuilder::addModuleConfig(aboutModule) %>%
-    ShinyAppBuilder::addModuleConfig(estimationModule)
+  estimationModule <- OhdsiShinyAppBuilder::createDefaultEstimationConfig()
+  shinyAppConfig <- OhdsiShinyAppBuilder::initializeModuleConfig() %>%
+    OhdsiShinyAppBuilder::addModuleConfig(aboutModule) %>%
+    OhdsiShinyAppBuilder::addModuleConfig(estimationModule)
   connectionHandler <- ResultModelManager::ConnectionHandler$new(connectionDetails)
   on.exit(connectionHandler$closeConnection())
-  ShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)
+  OhdsiShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)
 }
