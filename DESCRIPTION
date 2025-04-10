@@ -45,7 +45,7 @@ Imports:
 	Rcpp (>= 0.11.2),
 	SqlRender (>= 1.18.0),
 	survival,
-	ParallelLogger (>= 3.0.1),
+	ParallelLogger (>= 3.4.2),
 	bit64,
 	checkmate,
 	EmpiricalCalibration,
@@ -61,8 +61,9 @@ Suggests:
 	RSQLite,
 	ResultModelManager,
 	OhdsiShinyAppBuilder,
-	markdown,
-	remotes
+	markdown
+Remotes:
+  ohdsi/ParallelLogger@develop
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.3.2

@@ -1,4 +1,4 @@
-# Copyright 2024 Observational Health Data Sciences and Informatics
+# Copyright 2025 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -239,9 +239,12 @@ fitOutcomeModel <- function(population,
         covariateData$interactionTerms <- interactionTerms
 
         targetRowIds <- informativePopulation$rowId[informativePopulation$treatment == 1]
+        # Call to compute() is required or else DuckDB complains about rowId being ambigous (even
+        # though it does not exist in covariateData$interactionTerms)
         interactionCovariates <- covariateData$covariatesSubset %>%
           filter(.data$rowId %in% targetRowIds) %>%
           inner_join(covariateData$interactionTerms, by = "covariateId") %>%
+          compute() %>%
           select("rowId", "interactionId", "covariateValue") %>%
           rename(covariateId = .data$interactionId)
 

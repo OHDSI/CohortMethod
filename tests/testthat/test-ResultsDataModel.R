@@ -12,7 +12,7 @@ if (dir.exists(Sys.getenv("DATABASECONNECTOR_JAR_FOLDER"))) {
       unlink(jdbcDriverFolder, recursive = TRUE, force = TRUE)
     },
     testthat::teardown_env()
-  )
+)
 }
 
 postgresConnectionDetails <- DatabaseConnector::createConnectionDetails(

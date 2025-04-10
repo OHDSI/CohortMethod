@@ -361,6 +361,11 @@ test_that("Warnings for createPs", {
     cohortMethodData = sCohortMethodData,
     population = studyPop3
   )
+  # DuckDB causes inconsistent ordering, so sort:
+  attr(ps3a, "metaData")$deletedInfrequentCovariateIds <- sort(attr(ps3a, "metaData")$deletedInfrequentCovariateIds)
+  attr(ps3b, "metaData")$deletedInfrequentCovariateIds <- sort(attr(ps3b, "metaData")$deletedInfrequentCovariateIds)
+  attr(ps3a, "metaData")$deletedRedundantCovariateIds <- sort(attr(ps3a, "metaData")$deletedRedundantCovariateIds)
+  attr(ps3b, "metaData")$deletedRedundantCovariateIds <- sort(attr(ps3b, "metaData")$deletedRedundantCovariateIds)
   expect_identical(ps3a, ps3b)
 
   covSettings2 <- createDefaultCovariateSettings()
