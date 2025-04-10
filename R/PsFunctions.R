@@ -261,10 +261,14 @@ createPs <- function(cohortMethodData,
       cyclopsFit$estimation$estimate[1] <- cfs[1]
       covariateData$fullOutcomes <- fullPopulation
       population <- fullPopulation
-      population$propensityScore <- predict(cyclopsFit, newOutcomes = covariateData$fullOutcomes, newCovariates = fullCovariates)
+      propensityScore <- predict(cyclopsFit, newOutcomes = covariateData$fullOutcomes, newCovariates = fullCovariates)
     } else {
-      population$propensityScore <- predict(cyclopsFit)
+      propensityScore <- predict(cyclopsFit)
     }
+    propensityScore <- tibble(rowId = as.numeric(names(propensityScore)),
+                              propensityScore = propensityScore)
+    population <- population |>
+      inner_join(propensityScore, by = join_by("rowId"))
     attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
     attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
   } else {
