@@ -20,7 +20,7 @@ set.seed(1234)
 data(cohortMethodDataSimulationProfile)
 sampleSize <- 1
 cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
-cohorts <- cohortMethodData$cohorts %>% collect()
+cohorts <- cohortMethodData$cohorts |> collect()
 cohortMethodData$cohorts <- cohorts[-1, ]
 
 test_that("Create study population functions with zero rows", {

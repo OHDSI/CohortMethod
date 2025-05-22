@@ -98,10 +98,10 @@ testUploadResults <- function(connectionDetails, resultsDatabaseSchema) {
 
   specifications <- getResultsDataModelSpecifications()
   for (tableName in unique(specifications$tableName)) {
-    primaryKey <- specifications %>%
+    primaryKey <- specifications |>
       dplyr::filter(tableName == !!tableName &
-                      primaryKey == "Yes") %>%
-      dplyr::select(columnName) %>%
+                      primaryKey == "Yes") |>
+      dplyr::select(columnName) |>
       dplyr::pull()
 
     if ("database_id" %in% primaryKey) {

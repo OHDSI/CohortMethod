@@ -393,8 +393,8 @@ resultDatabaseDetails <- list(
   databaseTable = 'DATABASE_META_DATA'
 )
 estimationModule <- OhdsiShinyAppBuilder::createDefaultEstimationConfig()
-shinyAppConfig <- OhdsiShinyAppBuilder::initializeModuleConfig() %>%
-  OhdsiShinyAppBuilder::addModuleConfig(aboutModule) %>%
+shinyAppConfig <- OhdsiShinyAppBuilder::initializeModuleConfig() |>
+  OhdsiShinyAppBuilder::addModuleConfig(aboutModule) |>
   OhdsiShinyAppBuilder::addModuleConfig(estimationModule)
 connectionHandler <- ResultModelManager::ConnectionHandler$new(connectionDetails)
 OhdsiShinyAppBuilder::viewShiny(shinyAppConfig, connectionHandler)

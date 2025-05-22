@@ -6,14 +6,14 @@ data(cohortMethodDataSimulationProfile)
 sampleSize <- 1
 tmpCmd <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
 
-cohortRow <- tmpCmd$cohorts %>%
+cohortRow <- tmpCmd$cohorts |>
   collect()
 
-outcomeRow <- tmpCmd$outcomes %>%
+outcomeRow <- tmpCmd$outcomes |>
   collect()
 
 test_that("createStudyPop: washout period", {
-  tmpCmd$cohorts <- cohortRow %>%
+  tmpCmd$cohorts <- cohortRow |>
     mutate(rowId = 1, daysFromObsStart = 170)
 
   sp <- createStudyPopulation(cohortMethodData = tmpCmd, washoutPeriod = 160)
@@ -24,9 +24,9 @@ test_that("createStudyPop: washout period", {
 
 test_that("createStudyPop: firstExposureOnly", {
   tmpCmd$cohorts <- bind_rows(
-    cohortRow %>%
+    cohortRow |>
       mutate(rowId = 1, daysFromObsStart = 200),
-    cohortRow %>%
+    cohortRow |>
       mutate(rowId = 1, daysFromObsStart = 210)
   )
 
@@ -38,9 +38,9 @@ test_that("createStudyPop: firstExposureOnly", {
 
 test_that("createStudyPop: removeDuplicateSubjects = 'remove all'", {
   tmpCmd$cohorts <- bind_rows(
-    cohortRow %>%
+    cohortRow |>
       mutate(rowId = 1, treatment = 0),
-    cohortRow %>%
+    cohortRow |>
       mutate(rowId = 1, treatment = 1)
   )
 

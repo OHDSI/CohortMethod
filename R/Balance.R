@@ -23,25 +23,25 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
   if (is.null(covariateFilter)) {
     return(covariates)
   } else if (is.numeric(covariateFilter)) {
-    covariates %>%
-      filter(.data$covariateId %in% covariateFilter) %>%
-      return()
+    covariates <- covariates |>
+      filter(.data$covariateId %in% covariateFilter) |>
+    return(covariates)
   } else if (is.data.frame(covariateFilter) && all(c("analysisId", "covariateIds") %in% colnames(covariateFilter))) {
-    analysisIds <- covariateFilter %>%
-      filter(is.na(.data$covariateIds)) %>%
+    analysisIds <- covariateFilter |>
+      filter(is.na(.data$covariateIds)) |>
       pull(.data$analysisId)
-    covariateIds1 <- covariateRef %>%
-      filter(.data$analysisId %in% analysisIds) %>%
+    covariateIds1 <- covariateRef |>
+      filter(.data$analysisId %in% analysisIds) |>
       pull(.data$covariateId)
-    covariateIds2 <- covariateFilter %>%
-      filter(!is.na(.data$covariateIds)) %>%
-      pull(.data$covariateIds) %>%
-      strsplit(",|;") %>%
-      unlist() %>%
+    covariateIds2 <- covariateFilter |>
+      filter(!is.na(.data$covariateIds)) |>
+      pull(.data$covariateIds) |>
+      strsplit(",|;") |>
+      unlist() |>
       as.numeric()
-    covariates %>%
-      filter(.data$covariateId %in% c(covariateIds1, covariateIds2)) %>%
-      return()
+    covariates <- covariates |>
+      filter(.data$covariateId %in% c(covariateIds1, covariateIds2)) |>
+    return(covariates)
   } else {
     stop("Unknown covariateFilter type")
   }
@@ -52,14 +52,14 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
   hasIptw <- "iptw" %in% colnames(cohorts)
 
   if (hasStrata) {
-    stratumSize <- cohorts %>%
-      group_by(.data$stratumId, .data$treatment) %>%
-      count() %>%
-      ungroup() %>%
+    stratumSize <- cohorts |>
+      group_by(.data$stratumId, .data$treatment) |>
+      count() |>
+      ungroup() |>
       collect()
   }
 
-  useWeighting <- (hasStrata && any(stratumSize %>% pull(.data$n) > 1)) ||
+  useWeighting <- (hasStrata && any(stratumSize |> pull(.data$n) > 1)) ||
     (!hasStrata && hasIptw)
 
   # By definition:
@@ -70,47 +70,47 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
   if (useWeighting) {
     if (hasStrata) {
       # Variable strata sizes detected: weigh by size of strata set
-      w <- stratumSize %>%
-        mutate(weight = 1 / .data$n) %>%
-        inner_join(cohorts, by = c("stratumId", "treatment"), copy = TRUE) %>%
+      w <- stratumSize |>
+        mutate(weight = 1 / .data$n) |>
+        inner_join(cohorts, by = c("stratumId", "treatment"), copy = TRUE) |>
         select("rowId", "treatment", "weight")
       # Overall weight is for computing mean and SD across T and C
-      overallW <-  stratumSize %>%
-        group_by(.data$stratumId) %>%
-        summarise(weight = 1 / sum(.data$n, na.rm = TRUE)) %>%
-        ungroup() %>%
-        inner_join(cohorts, by = c("stratumId"), copy = TRUE) %>%
+      overallW <-  stratumSize |>
+        group_by(.data$stratumId) |>
+        summarise(weight = 1 / sum(.data$n, na.rm = TRUE)) |>
+        ungroup() |>
+        inner_join(cohorts, by = c("stratumId"), copy = TRUE) |>
         select("rowId", "weight")
     } else {
-      w <- cohorts %>%
-        mutate(weight = .data$iptw) %>%
-        select("rowId", "treatment", "weight") %>%
+      w <- cohorts |>
+        mutate(weight = .data$iptw) |>
+        select("rowId", "treatment", "weight") |>
         collect()
       overallW <- w
     }
     # Normalize so sum(weight) == 1 per treatment arm:
-    wSum <- w %>%
-      group_by(.data$treatment) %>%
-      summarize(wSum = sum(.data$weight, na.rm = TRUE)) %>%
+    wSum <- w |>
+      group_by(.data$treatment) |>
+      summarize(wSum = sum(.data$weight, na.rm = TRUE)) |>
       ungroup()
-    overallWSum <- overallW %>%
-      summarize(overallWSum = sum(.data$weight, na.rm = TRUE)) %>%
+    overallWSum <- overallW |>
+      summarize(overallWSum = sum(.data$weight, na.rm = TRUE)) |>
       pull()
 
-    cohortMethodData$w <- w %>%
-      inner_join(wSum, by = "treatment") %>%
-      mutate(weight = .data$weight / .data$wSum) %>%
+    cohortMethodData$w <- w |>
+      inner_join(wSum, by = "treatment") |>
+      mutate(weight = .data$weight / .data$wSum) |>
       select("rowId", "treatment", "weight")
 
-    cohortMethodData$overallW <- overallW %>%
-      mutate(overallWeight = .data$weight / overallWSum) %>%
+    cohortMethodData$overallW <- overallW |>
+      mutate(overallWeight = .data$weight / overallWSum) |>
       select("rowId", "overallWeight")
 
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
-    result <- covariates %>%
-      inner_join(cohortMethodData$w, by = c("rowId")) %>%
-      inner_join(cohortMethodData$overallW, by = c("rowId")) %>%
-      group_by(.data$covariateId, .data$treatment) %>%
+    result <- covariates |>
+      inner_join(cohortMethodData$w, by = c("rowId")) |>
+      inner_join(cohortMethodData$overallW, by = c("rowId")) |>
+      group_by(.data$covariateId, .data$treatment) |>
       summarise(
         sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
         mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
@@ -120,45 +120,45 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
         overallSumSqr = sum(.data$overallWeight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
         overallSumWSqr = sum(.data$overallWeight^2, na.rm = TRUE),
         .groups = "drop"
-      ) %>%
-      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) %>%
-      ungroup() %>%
-      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
+      ) |>
+      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) |>
+      ungroup() |>
+      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") |>
       collect()
 
     cohortMethodData$w <- NULL
     cohortMethodData$overallW <- NULL
   } else {
     # Don't use weighting
-    cohortCounts <- cohorts %>%
-      group_by(.data$treatment) %>%
+    cohortCounts <- cohorts |>
+      group_by(.data$treatment) |>
       count()
-    overallCount <- cohorts %>%
-      count() %>%
+    overallCount <- cohorts |>
+      count() |>
       pull()
 
-    result <- covariates %>%
-      inner_join(select(cohorts, "rowId", "treatment"), by = "rowId") %>%
-      group_by(.data$covariateId, .data$treatment) %>%
+    result <- covariates |>
+      inner_join(select(cohorts, "rowId", "treatment"), by = "rowId") |>
+      group_by(.data$covariateId, .data$treatment) |>
       summarise(
         sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
         sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE),
         overallSumWSqr = sum(1 / overallCount^2, na.rm = TRUE),
         .groups = "drop"
-      ) %>%
-      inner_join(cohortCounts, by = "treatment") %>%
+      ) |>
+      inner_join(cohortCounts, by = "treatment") |>
       mutate(
         sd = sqrt((.data$sumSqr - (.data$sum^2 / .data$n)) / .data$n),
         mean = .data$sum / .data$n,
         overallMean = .data$sum / overallCount,
         overallSumSqr = .data$sumSqr / overallCount
-      ) %>%
-      ungroup() %>%
-      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") %>%
+      ) |>
+      ungroup() |>
+      select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") |>
       collect()
   }
-  target <- result %>%
-    filter(.data$treatment == 1) %>%
+  target <- result |>
+    filter(.data$treatment == 1) |>
     select("covariateId",
            sumTarget = "sum",
            meanTarget = "mean",
@@ -167,8 +167,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
            overallSumSqrTarget = "overallSumSqr",
            overallSumWSqrTarget = "overallSumWSqr")
 
-  comparator <- result %>%
-    filter(.data$treatment == 0) %>%
+  comparator <- result |>
+    filter(.data$treatment == 0) |>
     select("covariateId",
            sumComparator = "sum",
            meanComparator = "mean",
@@ -177,12 +177,12 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
            overallSumSqrComparator = "overallSumSqr",
            overallSumWSqrComparator = "overallSumWSqr")
 
-  result <- target %>%
-    full_join(comparator, by = "covariateId") %>%
+  result <- target |>
+    full_join(comparator, by = "covariateId") |>
     mutate(mean = .data$overallMeanTarget + .data$overallMeanComparator,
            overallSumSqr = .data$overallSumSqrTarget + .data$overallSumSqrComparator,
-           overallSumWSqr = .data$overallSumWSqrTarget + .data$overallSumWSqrComparator) %>%
-    mutate(sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr))) %>%
+           overallSumWSqr = .data$overallSumWSqrTarget + .data$overallSumWSqrComparator) |>
+    mutate(sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr))) |>
     select(-"overallMeanTarget",
            -"overallMeanComparator",
            -"overallSumSqrTarget",
@@ -288,17 +288,17 @@ computeCovariateBalance <- function(population,
   start <- Sys.time()
 
   if (!is.null(subgroupCovariateId)) {
-    subGroupCovariate <- cohortMethodData$covariates %>%
-      filter(.data$covariateId == subgroupCovariateId) %>%
+    subGroupCovariate <- cohortMethodData$covariates |>
+      filter(.data$covariateId == subgroupCovariateId) |>
       collect()
 
     if (nrow(subGroupCovariate) == 0) {
       stop("Cannot find covariate with ID ", subgroupCovariateId)
     }
 
-    tempCohorts <- cohortMethodData$cohorts %>%
-      collect() %>%
-      filter(.data$rowId %in% subGroupCovariate$rowId) %>%
+    tempCohorts <- cohortMethodData$cohorts |>
+      collect() |>
+      filter(.data$rowId %in% subGroupCovariate$rowId) |>
       sampleCohorts(maxCohortSize = maxCohortSize)
 
     if (nrow(tempCohorts) == 0) {
@@ -310,8 +310,8 @@ computeCovariateBalance <- function(population,
       stop("Subgroup population before PS adjustment doesn't have both target and comparator")
     }
 
-    tempCohortsAfterMatching <- population %>%
-      filter(.data$rowId %in% subGroupCovariate$rowId) %>%
+    tempCohortsAfterMatching <- population |>
+      filter(.data$rowId %in% subGroupCovariate$rowId) |>
       sampleCohorts(maxCohortSize = maxCohortSize)
 
     if (nrow(tempCohortsAfterMatching) == 0) {
@@ -322,18 +322,18 @@ computeCovariateBalance <- function(population,
       stop("Subgroup population before PS adjustment doesn't have both target and comparator")
     }
 
-    cohortMethodData$tempCohorts <- tempCohorts %>%
+    cohortMethodData$tempCohorts <- tempCohorts |>
       select("rowId", "treatment")
 
-    cohortMethodData$tempCohortsAfterMatching <- tempCohortsAfterMatching %>%
+    cohortMethodData$tempCohortsAfterMatching <- tempCohortsAfterMatching |>
       select("rowId", "treatment", matches("stratumId"), "iptw")
   } else {
-    cohortMethodData$tempCohorts <- cohortMethodData$cohorts %>%
-      select("rowId", "treatment") %>%
+    cohortMethodData$tempCohorts <- cohortMethodData$cohorts |>
+      select("rowId", "treatment") |>
       sampleCohortsAndromeda(maxCohortSize = maxCohortSize, label = "before PS adjustment")
 
-    cohortMethodData$tempCohortsAfterMatching <- population %>%
-      select("rowId", "treatment", matches("stratumId"), matches("iptw")) %>%
+    cohortMethodData$tempCohortsAfterMatching <- population |>
+      select("rowId", "treatment", matches("stratumId"), matches("iptw")) |>
       sampleCohorts(maxCohortSize = maxCohortSize, label = "after PS adjustment")
   }
   on.exit(cohortMethodData$tempCohorts <- NULL)
@@ -342,7 +342,7 @@ computeCovariateBalance <- function(population,
   beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateFilter)
   afterMatching <- computeMeansPerGroup(cohorts = cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateFilter)
 
-  beforeMatching <- beforeMatching %>%
+  beforeMatching <- beforeMatching |>
     select("covariateId",
            beforeMatchingMeanTarget = "meanTarget",
            beforeMatchingMeanComparator = "meanComparator",
@@ -352,7 +352,7 @@ computeCovariateBalance <- function(population,
            beforeMatchingSdComparator = "sdComparator",
            beforeMatchingMean = "mean",
            beforeMatchingSd = "sd")
-  afterMatching <- afterMatching %>%
+  afterMatching <- afterMatching |>
     select("covariateId",
            afterMatchingMeanTarget = "meanTarget",
            afterMatchingMeanComparator = "meanComparator",
@@ -363,13 +363,13 @@ computeCovariateBalance <- function(population,
            afterMatchingMean = "mean",
            afterMatchingSd = "sd",
            matches("overallMean"))
-  balance <- beforeMatching %>%
-    full_join(afterMatching, by = "covariateId") %>%
-    inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") %>%
-    inner_join(cohortMethodData$analysisRef %>%
-                 select("analysisId", "domainId", "isBinary") %>%
-                 collect() %>%
-                 mutate(domainId = as.factor(.data$domainId)), by = "analysisId") %>%
+  balance <- beforeMatching |>
+    full_join(afterMatching, by = "covariateId") |>
+    inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") |>
+    inner_join(cohortMethodData$analysisRef |>
+                 select("analysisId", "domainId", "isBinary") |>
+                 collect() |>
+                 mutate(domainId = as.factor(.data$domainId)), by = "analysisId") |>
     mutate(
       beforeMatchingStdDiff = if_else(
         .data$beforeMatchingSd == 0,
@@ -397,7 +397,7 @@ computeCovariateBalance <- function(population,
         (.data$beforeMatchingMean - .data$afterMatchingMean) / .data$beforeMatchingSd
       )
 
-    ) %>%
+    ) |>
     arrange(desc(abs(.data$beforeMatchingStdDiff)))
 
   metaData <- attr(population, "metaData")
@@ -412,9 +412,9 @@ computeCovariateBalance <- function(population,
 sampleSingleCohort <- function(cohorts, treatment, maxCohortSize) {
   variableStrata <- FALSE
   if ("stratumId" %in% colnames(cohorts)) {
-    strataSizes <- cohorts %>%
-      filter(.data$treatment == !!treatment) %>%
-      group_by(.data$stratumId) %>%
+    strataSizes <- cohorts |>
+      filter(.data$treatment == !!treatment) |>
+      group_by(.data$stratumId) |>
       summarise(count = n())
     variableStrata <- nrow(strataSizes) > 20 && any(strataSizes$count > 1)
   }
@@ -478,9 +478,9 @@ sampleCohortsAndromeda <- function(cohorts, maxCohortSize, label) {
   if (maxCohortSize <= 0) {
     return(cohorts)
   }
-  cohortCounts <- cohorts %>%
-    group_by(.data$treatment) %>%
-    count() %>%
+  cohortCounts <- cohorts |>
+    group_by(.data$treatment) |>
+    count() |>
     collect()
   if (any(cohortCounts$n > maxCohortSize)) {
     return(sampleCohorts(collect(cohorts), maxCohortSize, label))
@@ -720,25 +720,25 @@ plotCovariatePrevalence <- function(balance,
   checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  balance <- balance %>%
+  balance <- balance |>
     filter(.data$isBinary == "Y")
 
   prevalence <- bind_rows(
-    balance %>%
+    balance |>
       select(
         target = "beforeMatchingMeanTarget",
         comparator = "beforeMatchingMeanComparator",
         stdDiff = "beforeMatchingStdDiff"
-      ) %>%
+      ) |>
       mutate(panel = beforeLabel),
-    balance %>%
+    balance |>
       select(
         target = "afterMatchingMeanTarget",
         comparator = "afterMatchingMeanComparator",
         stdDiff = "afterMatchingStdDiff"
-      ) %>%
+      ) |>
       mutate(panel = afterLabel)
-  ) %>%
+  ) |>
     mutate(
       target = .data$target * 100,
       comparator = .data$comparator * 100,
@@ -837,27 +837,27 @@ getGeneralizabilityTable <- function(balance, baseSelection = "auto") {
     }
   }
   if (baseSelection == "target") {
-    generalizability <- balance %>%
-      mutate(absGeneralizabilityStdDiff = abs(.data$targetStdDiff)) %>%
-      arrange(desc(.data$absGeneralizabilityStdDiff)) %>%
+    generalizability <- balance |>
+      mutate(absGeneralizabilityStdDiff = abs(.data$targetStdDiff)) |>
+      arrange(desc(.data$absGeneralizabilityStdDiff)) |>
       select("covariateId",
              "covariateName",
              beforeMatchingMean = "beforeMatchingMeanTarget",
              afterMatchingMean = "afterMatchingMeanTarget",
              stdDiff = "targetStdDiff")
   } else if (baseSelection == "comparator") {
-    generalizability <- balance %>%
-      mutate(absGeneralizabilityStdDiff = abs(.data$comparatorStdDiff)) %>%
-      arrange(desc(.data$absGeneralizabilityStdDiff)) %>%
+    generalizability <- balance |>
+      mutate(absGeneralizabilityStdDiff = abs(.data$comparatorStdDiff)) |>
+      arrange(desc(.data$absGeneralizabilityStdDiff)) |>
       select("covariateId",
              "covariateName",
              beforeMatchingMean = "beforeMatchingMeanComparator",
              afterMatchingMean = "afterMatchingMeanComparator",
              stdDiff = "comparatorStdDiff")
   } else {
-    generalizability <- balance %>%
-      mutate(absGeneralizabilityStdDiff = abs(.data$targetComparatorStdDiff)) %>%
-      arrange(desc(.data$absGeneralizabilityStdDiff)) %>%
+    generalizability <- balance |>
+      mutate(absGeneralizabilityStdDiff = abs(.data$targetComparatorStdDiff)) |>
+      arrange(desc(.data$absGeneralizabilityStdDiff)) |>
       select("covariateId",
              "covariateName",
              "beforeMatchingMean",

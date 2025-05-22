@@ -55,9 +55,9 @@ test_that("Create study population functions", {
     minDaysAtRisk = 1
   )
   expect_true(all(studyPop$timeAtRisk > 0))
-  peopleWithPriorOutcomes <- cohortMethodData$outcomes %>%
-    filter(outcomeId == 194133 & daysToEvent < 0) %>%
-    distinct(rowId) %>%
+  peopleWithPriorOutcomes <- cohortMethodData$outcomes |>
+    filter(outcomeId == 194133 & daysToEvent < 0) |>
+    distinct(rowId) |>
     pull()
   expect_false(any(peopleWithPriorOutcomes %in% studyPop$rowId))
 

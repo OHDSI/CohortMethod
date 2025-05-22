@@ -256,10 +256,10 @@ createEmptyResult <- function(tableName) {
   readr::local_edition(1)
   columns <- readr::read_csv(
     file = system.file("csv", "resultsDataModelSpecification.csv", package = "CohortMethod"),
-    show_col_types = FALSE) %>%
-    SqlRender::snakeCaseToCamelCaseNames() %>%
-    filter(.data$tableName == !!tableName) %>%
-    pull(.data$columnName) %>%
+    show_col_types = FALSE) |>
+    SqlRender::snakeCaseToCamelCaseNames() |>
+    filter(.data$tableName == !!tableName) |>
+    pull(.data$columnName) |>
     SqlRender::snakeCaseToCamelCase()
   result <- vector(length = length(columns))
   names(result) <- columns
@@ -285,7 +285,7 @@ exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
     return(row)
   }
   cohortMethodAnalysis <- lapply(cmAnalysisList, cmAnalysisToRow)
-  cohortMethodAnalysis <- bind_rows(cohortMethodAnalysis) %>%
+  cohortMethodAnalysis <- bind_rows(cohortMethodAnalysis) |>
     distinct()
   unlink(tempFileName)
 
@@ -297,9 +297,9 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
   # Combining processing of tables so we only have to load cmData objects once
   message("- covariate_analysis and covariate tables")
   reference <- getFileReference(outputFolder)
-  cmDataFiles <- reference %>%
-    distinct(.data$cohortMethodDataFile) %>%
-    filter(.data$cohortMethodDataFile != "") %>%
+  cmDataFiles <- reference |>
+    distinct(.data$cohortMethodDataFile) |>
+    filter(.data$cohortMethodDataFile != "") |>
     pull()
 
   covariateAnalysis <- list()
@@ -307,31 +307,31 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
 
   for (cmDataFile in cmDataFiles) {
     cmData <- CohortMethod::loadCohortMethodData(file.path(outputFolder, cmDataFile))
-    rows <- reference %>%
+    rows <- reference |>
       filter(.data$cohortMethodDataFile == !!cmDataFile)
-    analysisIds <- rows %>%
+    analysisIds <- rows |>
       distinct(.data$analysisId)
 
-    covariateAnalysis[[length(covariateAnalysis) + 1]] <- cmData$analysisRef %>%
+    covariateAnalysis[[length(covariateAnalysis) + 1]] <- cmData$analysisRef |>
       select(
         covariateAnalysisId = "analysisId",
         covariateAnalysisName = "analysisName"
-      ) %>%
-      collect() %>%
+      ) |>
+      collect() |>
       cross_join(analysisIds)
 
-    covariates[[length(covariates) + 1]] <- cmData$covariateRef %>%
+    covariates[[length(covariates) + 1]] <- cmData$covariateRef |>
       select(
         "covariateId",
         "covariateName",
         covariateAnalysisId = "analysisId"
-      ) %>%
-      collect() %>%
-      cross_join(analysisIds) %>%
+      ) |>
+      collect() |>
+      cross_join(analysisIds) |>
       mutate(databaseId = !!databaseId)
   }
 
-  covariateAnalysis <- bind_rows(covariateAnalysis) %>%
+  covariateAnalysis <- bind_rows(covariateAnalysis) |>
     distinct(.data$covariateAnalysisId, .data$analysisId, .keep_all = TRUE)
   if (nrow(covariateAnalysis) == 0) {
     covariateAnalysis <- createEmptyResult("cm_covariate_analysis")
@@ -339,7 +339,7 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
   fileName <- file.path(exportFolder, "cm_covariate_analysis.csv")
   writeToCsv(covariateAnalysis, fileName)
 
-  covariates <- bind_rows(covariates) %>%
+  covariates <- bind_rows(covariates) |>
     distinct(.data$covariateId, .data$analysisId, .keep_all = TRUE)
   if (nrow(covariates) == 0) {
     covariates <- createEmptyResult("cm_covariate")
@@ -353,22 +353,22 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
 
   tcosList <- readRDS(file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   convertOutcomeToTable <- function(outcome) {
-    tibble(
+    table <- tibble(
       outcomeId = outcome$outcomeId,
       outcomeOfInterest = as.integer(outcome$outcomeOfInterest),
       trueEffectSize = if (is.null(outcome$trueEffectSize)) as.numeric(NA) else outcome$trueEffectSize
-    ) %>%
-      return()
+    )
+    return(table)
   }
   # tcos <- tcosList[[1]]
   convertToTable <- function(tcos) {
-    lapply(tcos$outcomes, convertOutcomeToTable) %>%
-      bind_rows() %>%
+    table <- lapply(tcos$outcomes, convertOutcomeToTable) |>
+      bind_rows() |>
       mutate(
         targetId = tcos$targetId,
         comparatorId = tcos$comparatorId
-      ) %>%
-      return()
+      )
+    return(table)
 
   }
   table <- lapply(tcosList, convertToTable)
@@ -387,29 +387,29 @@ exportAttrition <- function(outputFolder,
   if (file.exists(fileName)) {
     unlink(fileName)
   }
-  reference <- getFileReference(outputFolder) %>%
+  reference <- getFileReference(outputFolder) |>
     filter(.data$outcomeOfInterest)
   first <- !file.exists(fileName)
   pb <- txtProgressBar(style = 3)
   for (i in seq_len(nrow(reference))) {
     outcomeModel <- readRDS(file.path(outputFolder, reference$outcomeModelFile[i]))
-    attrition <- outcomeModel$attrition %>%
-      select("description", "targetPersons", "comparatorPersons") %>%
+    attrition <- outcomeModel$attrition |>
+      select("description", "targetPersons", "comparatorPersons") |>
       mutate(sequenceNumber = row_number())
-    attritionTarget <- attrition %>%
-      select("sequenceNumber", "description", subjects = "targetPersons") %>%
+    attritionTarget <- attrition |>
+      select("sequenceNumber", "description", subjects = "targetPersons") |>
       mutate(exposureId = reference$targetId[i])
-    attritionComparator <- attrition %>%
-      select("sequenceNumber", "description", subjects = "comparatorPersons") %>%
+    attritionComparator <- attrition |>
+      select("sequenceNumber", "description", subjects = "comparatorPersons") |>
       mutate(exposureId = reference$comparatorId[i])
-    attrition <- bind_rows(attritionTarget, attritionComparator) %>%
+    attrition <- bind_rows(attritionTarget, attritionComparator) |>
       mutate(
         targetId = reference$targetId[i],
         comparatorId = reference$comparatorId[i],
         analysisId = reference$analysisId[i],
         outcomeId = reference$outcomeId[i],
         databaseId = databaseId
-      ) %>%
+      ) |>
       enforceMinCellValue("subjects", minCellCount, silent = TRUE)
 
     writeToCsv(attrition, fileName, append = !first)
@@ -453,22 +453,22 @@ exportCmFollowUpDist <- function(outputFolder,
       )
       comparatorMinMaxDates <- targetMinMaxDates
     } else {
-      targetMinMaxDates <- strataPop %>%
-        filter(.data$treatment == 1) %>%
+      targetMinMaxDates <- strataPop |>
+        filter(.data$treatment == 1) |>
         summarise(
           minDate = min(.data$cohortStartDate),
           maxDate = max(.data$cohortStartDate)
         )
 
-      comparatorMinMaxDates <- strataPop %>%
-        filter(.data$treatment == 0) %>%
+      comparatorMinMaxDates <- strataPop |>
+        filter(.data$treatment == 0) |>
         summarise(
           minDate = min(.data$cohortStartDate),
           maxDate = max(.data$cohortStartDate)
         )
     }
 
-    tibble(
+    table <- tibble(
       target_id = row$targetId,
       comparator_id = row$comparatorId,
       outcome_id = row$outcomeId,
@@ -491,11 +491,11 @@ exportCmFollowUpDist <- function(outputFolder,
       targetMaxDate = targetMinMaxDates$maxDate,
       comparatorMinDate = comparatorMinMaxDates$minDate,
       comparatorMaxDate = comparatorMinMaxDates$maxDate
-    ) %>%
-      return()
+    )
+    return(table)
   }
   reference <- getFileReference(outputFolder)
-  rows <- reference %>%
+  rows <- reference |>
     filter(.data$outcomeOfInterest)
   results <- lapply(split(rows, 1:nrow(rows)), getFollowUpDist)
   results <- bind_rows(results)
@@ -513,7 +513,7 @@ exportCohortMethodResults <- function(outputFolder,
                                       databaseId,
                                       minCellCount) {
   message("- cm__result table")
-  results <- getResultsSummary(outputFolder) %>%
+  results <- getResultsSummary(outputFolder) |>
     select(
       "analysisId",
       "targetId",
@@ -541,11 +541,11 @@ exportCohortMethodResults <- function(outputFolder,
       "calibratedLogRr",
       "calibratedSeLogRr",
       "targetEstimator"
-    ) %>%
-    mutate(databaseId = !!databaseId) %>%
-    enforceMinCellValue("targetSubjects", minCellCount) %>%
-    enforceMinCellValue("comparatorSubjects", minCellCount) %>%
-    enforceMinCellValue("targetOutcomes", minCellCount) %>%
+    ) |>
+    mutate(databaseId = !!databaseId) |>
+    enforceMinCellValue("targetSubjects", minCellCount) |>
+    enforceMinCellValue("comparatorSubjects", minCellCount) |>
+    enforceMinCellValue("targetOutcomes", minCellCount) |>
     enforceMinCellValue("comparatorOutcomes", minCellCount)
   fileName <- file.path(exportFolder, "cm_result.csv")
   writeToCsv(results, fileName)
@@ -560,7 +560,7 @@ exportCmInteractionResults <- function(outputFolder,
   if (nrow(results) == 0) {
     results <- createEmptyResult("cm_interaction_result")
   } else {
-    results <- results %>%
+    results <- results |>
       select(
         "analysisId",
         "targetId",
@@ -586,11 +586,11 @@ exportCmInteractionResults <- function(outputFolder,
         "calibratedLogRr",
         "calibratedSeLogRr",
         "targetEstimator"
-      ) %>%
-      mutate(databaseId = !!databaseId) %>%
-      enforceMinCellValue("targetSubjects", minCellCount) %>%
-      enforceMinCellValue("comparatorSubjects", minCellCount) %>%
-      enforceMinCellValue("targetOutcomes", minCellCount) %>%
+      ) |>
+      mutate(databaseId = !!databaseId) |>
+      enforceMinCellValue("targetSubjects", minCellCount) |>
+      enforceMinCellValue("comparatorSubjects", minCellCount) |>
+      enforceMinCellValue("targetOutcomes", minCellCount) |>
       enforceMinCellValue("comparatorOutcomes", minCellCount)
   }
   fileName <- file.path(exportFolder, "cm_interaction_result.csv")
@@ -613,11 +613,11 @@ exportLikelihoodProfiles <- function(outputFolder,
       outcomeModel <- readRDS(file.path(outputFolder, reference$outcomeModelFile[i]))
       profile <- outcomeModel$logLikelihoodProfile
       if (!is.null(profile)) {
-        profile <- profile %>%
+        profile <- profile |>
           transmute(
             logRr = .data$point,
             logLikelihood = .data$value - max(.data$value)
-          ) %>%
+          ) |>
           mutate(
             targetId = reference$targetId[i],
             comparatorId = reference$comparatorId[i],
@@ -644,10 +644,10 @@ exportCovariateBalance <- function(outputFolder,
                                    databaseId,
                                    minCellCount) {
   message("- covariate_balance table")
-  reference <- getFileReference(outputFolder) %>%
+  reference <- getFileReference(outputFolder) |>
     filter(.data$balanceFile != "")
-  balanceFiles <- reference %>%
-    distinct(.data$balanceFile) %>%
+  balanceFiles <- reference |>
+    distinct(.data$balanceFile) |>
     pull()
 
   fileName <- file.path(exportFolder, "cm_covariate_balance.csv")
@@ -658,7 +658,7 @@ exportCovariateBalance <- function(outputFolder,
   pb <- txtProgressBar(style = 3)
 
   for (i in seq_along(balanceFiles)) {
-    rows <- reference %>%
+    rows <- reference |>
       filter(.data$balanceFile == !!balanceFiles[i])
     balance <- readRDS(file.path(outputFolder, balanceFiles[i]))
     balance <- tibble(
@@ -667,7 +667,7 @@ exportCovariateBalance <- function(outputFolder,
       comparatorId = rows$comparatorId[1],
       outcomeId = rows$outcomeId,
       analysisId = unique(rows$analysisId)
-    ) %>%
+    ) |>
       cross_join(tidyBalance(balance, minCellCount))
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
@@ -687,11 +687,11 @@ exportSharedCovariateBalance <- function(outputFolder,
                                          databaseId,
                                          minCellCount) {
   message("- shared_covariate_balance table")
-  reference <- getFileReference(outputFolder) %>%
-    filter(.data$sharedBalanceFile != "") %>%
+  reference <- getFileReference(outputFolder) |>
+    filter(.data$sharedBalanceFile != "") |>
     distinct(.data$sharedBalanceFile, .data$analysisId, .data$targetId, .data$comparatorId)
-  sharedBalanceFiles <- reference %>%
-    distinct(.data$sharedBalanceFile) %>%
+  sharedBalanceFiles <- reference |>
+    distinct(.data$sharedBalanceFile) |>
     pull()
 
   fileName <- file.path(exportFolder, "cm_shared_covariate_balance.csv")
@@ -701,7 +701,7 @@ exportSharedCovariateBalance <- function(outputFolder,
   first <- TRUE
   pb <- txtProgressBar(style = 3)
   for (i in seq_along(sharedBalanceFiles)) {
-    rows <- reference %>%
+    rows <- reference |>
       filter(.data$sharedBalanceFile == sharedBalanceFiles[i])
     balance <- readRDS(file.path(outputFolder, sharedBalanceFiles[i]))
     balance <- tibble(
@@ -709,7 +709,7 @@ exportSharedCovariateBalance <- function(outputFolder,
       targetId = rows$targetId[1],
       comparatorId = rows$comparatorId[1],
       analysisId = unique(rows$analysisId)
-    ) %>%
+    ) |>
       cross_join(tidyBalance(balance, minCellCount))
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
@@ -729,7 +729,7 @@ tidyBalance <- function(balance, minCellCount) {
   inferredTargetAfterSize <- mean(balance$afterMatchingSumTarget / balance$afterMatchingMeanTarget, na.rm = TRUE)
   inferredComparatorAfterSize <- mean(balance$afterMatchingSumComparator / balance$afterMatchingMeanComparator, na.rm = TRUE)
 
-  balance %>%
+  balance <- balance |>
     select("covariateId",
            targetMeanBefore = "beforeMatchingMeanTarget",
            comparatorMeanBefore = "beforeMatchingMeanComparator",
@@ -743,7 +743,7 @@ tidyBalance <- function(balance, minCellCount) {
            "comparatorStdDiff",
            "targetComparatorStdDiff",
 
-    ) %>%
+    ) |>
     mutate(
       targetMeanBefore = ifelse(is.na(.data$targetMeanBefore), 0, .data$targetMeanBefore),
       comparatorMeanBefore = ifelse(is.na(.data$comparatorMeanBefore), 0, .data$comparatorMeanBefore),
@@ -756,7 +756,7 @@ tidyBalance <- function(balance, minCellCount) {
       targetStdDiff = ifelse(is.na(.data$targetStdDiff), 0, .data$targetStdDiff),
       comparatorStdDiff = ifelse(is.na(.data$comparatorStdDiff), 0, .data$comparatorStdDiff),
       targetComparatorStdDiff = ifelse(is.na(.data$targetComparatorStdDiff), 0, .data$targetComparatorStdDiff)
-    ) %>%
+    ) |>
     filter(!(round(.data$targetMeanBefore) == 0 &
                round(.data$comparatorMeanBefore, 3) == 0 &
                round(.data$stdDiffBefore, 3) == 0 &
@@ -768,31 +768,31 @@ tidyBalance <- function(balance, minCellCount) {
                round(.data$targetStdDiff, 3) == 0 &
                round(.data$comparatorStdDiff, 3) == 0 &
                round(.data$targetComparatorStdDiff, 3) == 0)
-    ) %>%
+    ) |>
     enforceMinCellValue("targetMeanBefore",
                         minCellCount / inferredTargetBeforeSize,
                         silent = TRUE
-    ) %>%
+    ) |>
     enforceMinCellValue("comparatorMeanBefore",
                         minCellCount / inferredComparatorBeforeSize,
                         silent = TRUE
-    ) %>%
+    ) |>
     enforceMinCellValue("targetMeanAfter",
                         minCellCount / inferredTargetAfterSize,
                         silent = TRUE
-    ) %>%
+    ) |>
     enforceMinCellValue("comparatorMeanAfter",
                         minCellCount / inferredComparatorAfterSize,
                         silent = TRUE
-    ) %>%
+    ) |>
     enforceMinCellValue("meanBefore",
                         minCellCount / inferredComparatorAfterSize,
                         silent = TRUE
-    ) %>%
+    ) |>
     enforceMinCellValue("meanAfter",
                         minCellCount / inferredComparatorAfterSize,
                         silent = TRUE
-    ) %>%
+    ) |>
     mutate(
       targetMeanBefore = round(.data$targetMeanBefore, 3),
       comparatorMeanBefore = round(.data$comparatorMeanBefore, 3),
@@ -805,8 +805,8 @@ tidyBalance <- function(balance, minCellCount) {
       targetStdDiff = round(.data$targetStdDiff, 3),
       comparatorStdDiff = round(.data$comparatorStdDiff, 3),
       targetComparatorStdDiff = round(.data$targetComparatorStdDiff, 3)
-    ) %>%
-    return()
+    )
+  return(balance)
 }
 
 exportPreferenceScoreDistribution <- function(outputFolder,
@@ -814,8 +814,8 @@ exportPreferenceScoreDistribution <- function(outputFolder,
                                               databaseId) {
   message("- preference_score_dist table")
 
-  reference <- getFileReference(outputFolder) %>%
-    filter(.data$sharedPsFile != "") %>%
+  reference <- getFileReference(outputFolder) |>
+    filter(.data$sharedPsFile != "") |>
     distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId)
 
   # rows <- split(reference, reference$sharedPsFile)[[2]]
@@ -828,13 +828,13 @@ exportPreferenceScoreDistribution <- function(outputFolder,
       ps <- computePreferenceScore(ps)
       d1 <- density(ps$preferenceScore[ps$treatment == 1], from = 0, to = 1, n = 100)
       d0 <- density(ps$preferenceScore[ps$treatment == 0], from = 0, to = 1, n = 100)
-      result <- rows %>%
+      result <- rows |>
         select(
           "analysisId",
           "targetId",
           "comparatorId"
-        ) %>%
-        mutate(databaseId = !!databaseId) %>%
+        ) |>
+        mutate(databaseId = !!databaseId) |>
         cross_join(
           tibble(
             preferenceScore = d1$x,
@@ -860,8 +860,8 @@ exportPropensityModel <- function(outputFolder,
                                   exportFolder,
                                   databaseId) {
   message("- propensity_model table")
-  reference <- getFileReference(outputFolder) %>%
-    filter(.data$sharedPsFile != "") %>%
+  reference <- getFileReference(outputFolder) |>
+    filter(.data$sharedPsFile != "") |>
     distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId)
 
   # rows <- split(reference, reference$sharedPsFile)[[1]]
@@ -873,15 +873,15 @@ exportPropensityModel <- function(outputFolder,
       model <- tibble(
         covariateId = names(metaData$psModelCoef),
         coefficient = as.vector(metaData$psModelCoef)
-      ) %>%
-        filter(.data$coefficient != 0) %>%
-        mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) %>%
+      ) |>
+        filter(.data$coefficient != 0) |>
+        mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) |>
         mutate(covariateId = as.numeric(.data$covariateId))
-      rows %>%
-        select("targetId", "comparatorId", "analysisId") %>%
-        mutate(databaseId = !!databaseId) %>%
-        cross_join(model) %>%
-        return()
+      rows <- rows |>
+        select("targetId", "comparatorId", "analysisId") |>
+        mutate(databaseId = !!databaseId) |>
+        cross_join(model)
+      return(rows)
     } else {
       return(NULL)
     }
@@ -902,8 +902,8 @@ exportKaplanMeier <- function(outputFolder,
                               maxCores) {
   message("- kaplan_meier_dist table")
   message("  Computing KM curves")
-  reference <- getFileReference(outputFolder) %>%
-    filter(.data$outcomeOfInterest) %>%
+  reference <- getFileReference(outputFolder) |>
+    filter(.data$outcomeOfInterest) |>
     select(
       "strataFile",
       "studyPopFile",
@@ -1005,7 +1005,7 @@ prepareKm <- function(task,
   data <- enforceMinCellValue(data, "targetAtRisk", minCellCount)
   data <- enforceMinCellValue(data, "comparatorAtRisk", minCellCount)
   # Avoid SQL reserved word 'time':
-  data <- data %>%
+  data <- data |>
     rename(timeDay = "time")
   saveRDS(data, outputFileName)
 }
@@ -1163,58 +1163,58 @@ exportDiagnosticsSummary <- function(outputFolder,
   getMaxSdms <- function(balanceFile) {
     balance <- readRDS(file.path(outputFolder, balanceFile))
     if (nrow(balance) == 0) {
-      tibble(balanceFile = !!balanceFile,
-             maxSdm = as.numeric(NA),
-             maxTargetSdm = as.numeric(NA),
-             maxComparatorSdm = as.numeric(NA),
-             maxTargetComparatorSdm = as.numeric(NA)) %>%
-        return()
+      row <- tibble(balanceFile = !!balanceFile,
+                    maxSdm = as.numeric(NA),
+                    maxTargetSdm = as.numeric(NA),
+                    maxComparatorSdm = as.numeric(NA),
+                    maxTargetComparatorSdm = as.numeric(NA))
+      return(row)
     } else {
-      tibble(balanceFile = !!balanceFile,
-             maxSdm = as.numeric(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE)),
-             maxTargetSdm = as.numeric(max(abs(balance$targetStdDiff), na.rm = TRUE)),
-             maxComparatorSdm = as.numeric(max(abs(balance$comparatorStdDiff), na.rm = TRUE)),
-             maxTargetComparatorSdm = as.numeric(max(abs(balance$targetComparatorStdDiff), na.rm = TRUE))) %>%
-        return()
+      row <- tibble(balanceFile = !!balanceFile,
+                    maxSdm = as.numeric(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE)),
+                    maxTargetSdm = as.numeric(max(abs(balance$targetStdDiff), na.rm = TRUE)),
+                    maxComparatorSdm = as.numeric(max(abs(balance$comparatorStdDiff), na.rm = TRUE)),
+                    maxTargetComparatorSdm = as.numeric(max(abs(balance$targetComparatorStdDiff), na.rm = TRUE)))
+      return(row)
     }
   }
   getEquipoise <- function(sharedPsFile) {
     ps <- readRDS(file.path(outputFolder, sharedPsFile))
-    tibble(sharedPsFile = !!sharedPsFile,
-           equipoise = computeEquipoise(ps)) %>%
-      return()
+    row <- tibble(sharedPsFile = !!sharedPsFile,
+           equipoise = computeEquipoise(ps))
+    return(row)
   }
 
-  balanceFiles <- reference %>%
-    filter(.data$balanceFile != "") %>%
-    distinct(.data$balanceFile) %>%
+  balanceFiles <- reference |>
+    filter(.data$balanceFile != "") |>
+    distinct(.data$balanceFile) |>
     pull()
-  maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) %>%
+  maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) |>
     select("balanceFile", "maxSdm")
-  sharedBalanceFiles <- reference %>%
-    filter(.data$sharedBalanceFile != "") %>%
-    distinct(.data$sharedBalanceFile) %>%
+  sharedBalanceFiles <- reference |>
+    filter(.data$sharedBalanceFile != "") |>
+    distinct(.data$sharedBalanceFile) |>
     pull()
-  sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) %>%
+  sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) |>
     rename(sharedBalanceFile = "balanceFile",
            sharedMaxSdm = "maxSdm")
-  sharedPsFiles <- reference %>%
-    filter(.data$sharedPsFile != "") %>%
-    distinct(.data$sharedPsFile) %>%
+  sharedPsFiles <- reference |>
+    filter(.data$sharedPsFile != "") |>
+    distinct(.data$sharedPsFile) |>
     pull()
   equipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise))
-  results <- reference %>%
+  results <- reference |>
     inner_join(
       resultsSummary,
-      by = join_by("analysisId", "targetId", "comparatorId", "outcomeId")) %>%
-    left_join(maxSdm, by = "balanceFile") %>%
-    left_join(sharedMaxSdm, by = "sharedBalanceFile") %>%
+      by = join_by("analysisId", "targetId", "comparatorId", "outcomeId")) |>
+    left_join(maxSdm, by = "balanceFile") |>
+    left_join(sharedMaxSdm, by = "sharedBalanceFile") |>
     mutate(generalizabilityMaxSdm = if_else(.data$targetEstimator == "att",
                                             .data$maxTargetSdm,
                                             if_else(.data$targetEstimator == "atu",
                                                     .data$maxComparatorSdm,
-                                                    .data$maxTargetComparatorSdm))) %>%
-    left_join(equipoise, by = "sharedPsFile") %>%
+                                                    .data$maxTargetComparatorSdm))) |>
+    left_join(equipoise, by = "sharedPsFile") |>
     select(
       "analysisId",
       "targetId",
@@ -1229,44 +1229,44 @@ exportDiagnosticsSummary <- function(outputFolder,
     )
 
   # Apply diagnostics thresholds:
-  results <- results %>%
-    mutate(databaseId = !!databaseId) %>%
+  results <- results |>
+    mutate(databaseId = !!databaseId) |>
     mutate(balanceDiagnostic = case_when(
       is.na(.data$maxSdm) ~ "NOT EVALUATED",
       .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
       TRUE ~ "FAIL"
-    )) %>%
+    )) |>
     mutate(sharedBalanceDiagnostic = case_when(
       is.na(.data$sharedMaxSdm) ~ "NOT EVALUATED",
       .data$sharedMaxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
       TRUE ~ "FAIL"
-    )) %>%
+    )) |>
     mutate(equipoiseDiagnostic = case_when(
       is.na(.data$equipoise) ~ "NOT EVALUATED",
       .data$equipoise >= cmDiagnosticThresholds$equipoiseThreshold ~ "PASS",
       TRUE ~ "FAIL"
-    )) %>%
+    )) |>
     mutate(mdrrDiagnostic = case_when(
       is.na(.data$mdrr) ~ "NOT EVALUATED",
       .data$mdrr < cmDiagnosticThresholds$mdrrThreshold ~ "PASS",
       TRUE ~ "FAIL"
-    )) %>%
+    )) |>
     mutate(generalizabilityDiagnostic = case_when(
       is.na(.data$generalizabilityMaxSdm) ~ "NOT EVALUATED",
       .data$generalizabilityMaxSdm < cmDiagnosticThresholds$generalizabilitySdmThreshold ~ "PASS",
       TRUE ~ "FAIL"
-    )) %>%
+    )) |>
     mutate(easeDiagnostic = case_when(
       is.na(.data$ease) ~ "NOT EVALUATED",
       abs(.data$ease) < cmDiagnosticThresholds$easeThreshold ~ "PASS",
       TRUE ~ "FAIL"
-    )) %>%
+    )) |>
     mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &
                               .data$generalizabilityDiagnostic != "FAIL" &
                               .data$easeDiagnostic != "FAIL" &
                               .data$equipoiseDiagnostic != "FAIL" &
                               .data$balanceDiagnostic != "FAIL" &
-                              .data$sharedBalanceDiagnostic != "FAIL", 1, 0)) %>%
+                              .data$sharedBalanceDiagnostic != "FAIL", 1, 0)) |>
     mutate(unblindForEvidenceSynthesis = ifelse(.data$generalizabilityDiagnostic != "FAIL" &
                                                   .data$easeDiagnostic != "FAIL" &
                                                   .data$equipoiseDiagnostic != "FAIL" &
@@ -1274,7 +1274,7 @@ exportDiagnosticsSummary <- function(outputFolder,
                                                   .data$sharedBalanceDiagnostic != "FAIL", 1, 0))
 
   # Add deprecated fields:
-  results <- results %>%
+  results <- results |>
     mutate(attritionFraction = as.numeric(NA),
            attritionDiagnostic = "NOT EVALUATED")
 

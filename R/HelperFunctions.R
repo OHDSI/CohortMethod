@@ -76,7 +76,7 @@ checkCmInstallation <- function(connectionDetails) {
 
 nrow_temp <- function(x) {
   if (inherits(x, "tbl_dbi")) {
-    return(x %>% count() %>% pull())
+    return(x |> count() |> pull())
   } else {
     return(nrow(x))
   }

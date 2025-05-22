@@ -219,8 +219,8 @@ test_that("Multiple analyses", {
   expect_true(is.numeric(targetComparatorOutcome$outcome_of_interest))
 
   # Verify negative controls have diagnostics:
-  ncDiagnostics <- diagnosticsSummary %>%
-    inner_join(targetComparatorOutcome) %>%
+  ncDiagnostics <- diagnosticsSummary |>
+    inner_join(targetComparatorOutcome) |>
     filter(.data$outcome_of_interest == 0)
   expect_gt(nrow(ncDiagnostics), 0)
 
@@ -337,7 +337,7 @@ test_that("Warnings for createPs", {
     riskWindowEnd = 99999
   )
 
-  studyPop1 <- studyPop %>% subset(select = -c(rowId))
+  studyPop1 <- studyPop |> subset(select = -c(rowId))
   expect_error(
     createPs(
       cohortMethodData = sCohortMethodData,
@@ -346,7 +346,7 @@ test_that("Warnings for createPs", {
     regexp = "Missing column rowId in population"
   )
 
-  studyPop2 <- studyPop %>% subset(select = -c(treatment))
+  studyPop2 <- studyPop |> subset(select = -c(treatment))
   expect_error(
     createPs(
       cohortMethodData = sCohortMethodData,
@@ -355,7 +355,7 @@ test_that("Warnings for createPs", {
     regexp = "Missing column treatment in population"
   )
 
-  studyPop3 <- sCohortMethodData$cohorts %>% collect()
+  studyPop3 <- sCohortMethodData$cohorts |> collect()
   ps3a <- createPs(cohortMethodData = sCohortMethodData)
   ps3b <- createPs(
     cohortMethodData = sCohortMethodData,
@@ -404,13 +404,13 @@ test_that("Warnings for stratifyByPs", {
   ps <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
 
 
-  ps2 <- ps %>% subset(select = -c(treatment))
+  ps2 <- ps |> subset(select = -c(treatment))
   expect_error(
     stratifyByPs(population = ps2),
     regexp = "Names must include the elements"
   )
 
-  ps3 <- ps %>% subset(select = -c(propensityScore))
+  ps3 <- ps |> subset(select = -c(propensityScore))
   expect_error(
     stratifyByPs(population = ps3),
     regexp = "Names must include the elements"
@@ -426,7 +426,7 @@ test_that("Warnings for stratifyByPs", {
   vec1 <- rep(1, nrow(ps) / 2)
   vec0 <- rep(0, nrow(ps) / 2)
   stratCol <- c(vec0, vec1)
-  ps4 <- ps %>% mutate(stratCol = stratCol)
+  ps4 <- ps |> mutate(stratCol = stratCol)
   expect_warning(
     {
       stratifyByPs(
