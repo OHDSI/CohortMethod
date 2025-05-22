@@ -106,6 +106,14 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       mutate(overallWeight = .data$weight / overallWSum) |>
       select("rowId", "overallWeight")
 
+    cohortMethodData$sumWSqr <- cohortMethodData$w |>
+      group_by(.data$treatment) |>
+      summarise(sumWSqr = sum(.data$weight^2, na.rm = TRUE))
+
+    overallSumWSqr <- cohortMethodData$overallW |>
+      summarise(overallSumWSqr = sum(.data$overallWeight^2, na.rm = TRUE)) |>
+      pull()
+
     # Note: using abs() because due to rounding to machine precision number can become slightly negative:
     result <- covariates |>
       inner_join(cohortMethodData$w, by = c("rowId")) |>
@@ -116,12 +124,14 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
         mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
         overallMean = sum(.data$overallWeight * as.numeric(.data$covariateValue), na.rm = TRUE),
         sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-        sumWSqr = sum(.data$weight^2, na.rm = TRUE),
         overallSumSqr = sum(.data$overallWeight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-        overallSumWSqr = sum(.data$overallWeight^2, na.rm = TRUE),
         .groups = "drop"
       ) |>
-      mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) |>
+      inner_join(cohortMethodData$sumWSqr, join_by("treatment")) |>
+      mutate(
+        sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr)),
+        overallSumWSqr = overallSumWSqr
+      ) |>
       ungroup() |>
       select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") |>
       collect()
@@ -179,9 +189,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 
   result <- target |>
     full_join(comparator, by = "covariateId") |>
-    mutate(mean = .data$overallMeanTarget + .data$overallMeanComparator,
-           overallSumSqr = .data$overallSumSqrTarget + .data$overallSumSqrComparator,
-           overallSumWSqr = .data$overallSumWSqrTarget + .data$overallSumWSqrComparator) |>
+    mutate(mean = coalesce(.data$overallMeanTarget, 0) + coalesce(.data$overallMeanComparator, 0),
+           overallSumSqr = coalesce(.data$overallSumSqrTarget, 0) + coalesce(.data$overallSumSqrComparator, 0),
+           overallSumWSqr = coalesce(.data$overallSumWSqrTarget, 0) + coalesce(.data$overallSumWSqrComparator, 0)) |>
     mutate(sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr))) |>
     select(-"overallMeanTarget",
            -"overallMeanComparator",
@@ -363,40 +373,38 @@ computeCovariateBalance <- function(population,
            afterMatchingMean = "mean",
            afterMatchingSd = "sd",
            matches("overallMean"))
+
   balance <- beforeMatching |>
     full_join(afterMatching, by = "covariateId") |>
+    mutate(
+      beforeMatchingMeanTarget = coalesce(.data$beforeMatchingMeanTarget, 0),
+      beforeMatchingMeanComparator = coalesce(.data$beforeMatchingMeanComparator, 0),
+      beforeMatchingSumTarget = coalesce(.data$beforeMatchingSumTarget, 0),
+      beforeMatchingSumComparator = coalesce(.data$beforeMatchingSumComparator, 0),
+      beforeMatchingSdTarget = coalesce(.data$beforeMatchingSdTarget, 0),
+      beforeMatchingSdComparator = coalesce(.data$beforeMatchingSdComparator, 0),
+      beforeMatchingMean = coalesce(.data$beforeMatchingMean, 0),
+      beforeMatchingSd = coalesce(.data$beforeMatchingSd, 0),
+      afterMatchingMeanTarget = coalesce(.data$afterMatchingMeanTarget, 0),
+      afterMatchingMeanComparator = coalesce(.data$afterMatchingMeanComparator, 0),
+      afterMatchingSumTarget = coalesce(.data$afterMatchingSumTarget, 0),
+      afterMatchingSumComparator = coalesce(.data$afterMatchingSumComparator, 0),
+      afterMatchingSdTarget = coalesce(.data$afterMatchingSdTarget, 0),
+      afterMatchingSdComparator = coalesce(.data$afterMatchingSdComparator, 0),
+      afterMatchingMean = coalesce(.data$afterMatchingMean, 0),
+      afterMatchingSd = coalesce(.data$afterMatchingSd, 0)
+      ) |>
     inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") |>
     inner_join(cohortMethodData$analysisRef |>
                  select("analysisId", "domainId", "isBinary") |>
                  collect() |>
                  mutate(domainId = as.factor(.data$domainId)), by = "analysisId") |>
     mutate(
-      beforeMatchingStdDiff = if_else(
-        .data$beforeMatchingSd == 0,
-        0,
-        (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator) / .data$beforeMatchingSd
-      ),
-      afterMatchingStdDiff = if_else(
-        .data$afterMatchingSd == 0,
-        0,
-        (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator) / .data$afterMatchingSd
-      ),
-      targetStdDiff = if_else(
-        .data$beforeMatchingSdTarget == 0,
-        0,
-        (.data$beforeMatchingMeanTarget - .data$afterMatchingMeanTarget) / .data$beforeMatchingSdTarget
-      ),
-      comparatorStdDiff = if_else(
-        .data$beforeMatchingSdComparator == 0,
-        0,
-        (.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / .data$beforeMatchingSdComparator
-      ),
-      targetComparatorStdDiff = if_else(
-        .data$beforeMatchingSd == 0,
-        0,
-        (.data$beforeMatchingMean - .data$afterMatchingMean) / .data$beforeMatchingSd
-      )
-
+      beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator) / sqrt((.data$beforeMatchingSdTarget^2 + .data$beforeMatchingSdComparator^2) / 2),
+      afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator) / sqrt((.data$afterMatchingSdTarget^2 + .data$afterMatchingSdComparator^2) / 2),
+      targetStdDiff = (.data$beforeMatchingMeanTarget - .data$afterMatchingMeanTarget) / sqrt((.data$beforeMatchingSdTarget^2 + .data$afterMatchingSdTarget^2) / 2),
+      comparatorStdDiff = (.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / sqrt((.data$beforeMatchingSdComparator^2 + .data$afterMatchingSdComparator^2) / 2),
+      targetComparatorStdDiff = (.data$beforeMatchingMean - .data$afterMatchingMean) / sqrt((.data$beforeMatchingSd^2 + .data$beforeMatchingSd^2) / 2)
     ) |>
     arrange(desc(abs(.data$beforeMatchingStdDiff)))
 

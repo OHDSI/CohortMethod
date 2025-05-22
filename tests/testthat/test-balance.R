@@ -1,4 +1,5 @@
-library("testthat")
+library(testthat)
+library(CohortMethod)
 
 set.seed(1234)
 data(cohortMethodDataSimulationProfile)
@@ -9,9 +10,8 @@ cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, 
 studyPop <- cohortMethodData$cohorts |>
   collect() |>
   mutate(iptw = 0.1)
-results <- computeCovariateBalance(studyPop, cohortMethodData) |>
-  filter(!is.na(beforeMatchingMeanTarget),
-         !is.na(beforeMatchingMeanComparator))
+
+results <- computeCovariateBalance(studyPop, cohortMethodData)
 
 test_that("Test computation of covariate means and SDs", {
   # Too computationally expensive to test all, so randomly pick 5:
@@ -31,8 +31,8 @@ test_that("Test computation of covariate means and SDs", {
 
     # Overall
     gs <- denseData |>
-      summarise(mean = mean(covariateValue),
-                sd = sd(covariateValue)) |>
+      summarise(mean = mean(covariateValue, na.rm = TRUE),
+                sd = sd(covariateValue, na.rm = TRUE)) |>
       collect()
     expect_equal(result$beforeMatchingMean, gs$mean, tolerance = 0.01)
     expect_equal(result$beforeMatchingSd, gs$sd, tolerance = 0.01)
@@ -42,8 +42,8 @@ test_that("Test computation of covariate means and SDs", {
     # Target
     gs <- denseData |>
       filter(treatment == 1) |>
-      summarise(mean = mean(covariateValue),
-                sd = sd(covariateValue)) |>
+      summarise(mean = mean(covariateValue, na.rm = TRUE),
+                sd = sd(covariateValue, na.rm = TRUE)) |>
       collect()
     expect_equal(result$beforeMatchingMeanTarget, gs$mean, tolerance = 0.01)
     expect_equal(result$beforeMatchingSdTarget, gs$sd, tolerance = 0.01)
@@ -53,8 +53,8 @@ test_that("Test computation of covariate means and SDs", {
     # Comparator
     gs <- denseData |>
       filter(treatment == 0) |>
-      summarise(mean = mean(covariateValue),
-                sd = sd(covariateValue)) |>
+      summarise(mean = mean(covariateValue, na.rm = TRUE),
+                sd = sd(covariateValue, na.rm = TRUE)) |>
       collect()
     expect_equal(result$beforeMatchingMeanComparator, gs$mean, tolerance = 0.01)
     expect_equal(result$beforeMatchingSdComparator, gs$sd, tolerance = 0.01)
@@ -64,19 +64,19 @@ test_that("Test computation of covariate means and SDs", {
 })
 
 test_that("Test computation of SDMs", {
-  sdm <- (results$beforeMatchingMeanTarget - results$beforeMatchingMeanComparator) / results$beforeMatchingSd
+  sdm <- (results$beforeMatchingMeanTarget - results$beforeMatchingMeanComparator) / sqrt((results$beforeMatchingSdTarget^2 + results$beforeMatchingSdComparator^2) / 2)
   expect_equal(results$beforeMatchingStdDiff, sdm)
 
-  sdm <- (results$afterMatchingMeanTarget - results$afterMatchingMeanComparator) / results$afterMatchingSd
+  sdm <- (results$afterMatchingMeanTarget - results$afterMatchingMeanComparator) / sqrt((results$afterMatchingSdTarget^2 + results$afterMatchingSdComparator^2) / 2)
   expect_equal(results$afterMatchingStdDiff, sdm)
 
-  sdm <- (results$beforeMatchingMean - results$afterMatchingMean) / results$beforeMatchingSd
+  sdm <- (results$beforeMatchingMean - results$afterMatchingMean) / sqrt((results$beforeMatchingSd^2 + results$beforeMatchingSd^2) / 2)
   expect_equal(results$targetComparatorStdDiff, sdm)
 
-  sdm <- (results$beforeMatchingMeanTarget - results$afterMatchingMeanTarget) / results$beforeMatchingSdTarget
+  sdm <- (results$beforeMatchingMeanTarget - results$afterMatchingMeanTarget) / sqrt((results$beforeMatchingSdTarget^2 + results$beforeMatchingSdComparator^2) / 2)
   expect_equal(results$targetStdDiff, sdm)
 
-  sdm <- (results$beforeMatchingMeanComparator - results$afterMatchingMeanComparator) / results$beforeMatchingSdComparator
+  sdm <- (results$beforeMatchingMeanComparator - results$afterMatchingMeanComparator) / sqrt((results$beforeMatchingSdTarget^2 + results$beforeMatchingSdComparator^2) / 2)
   expect_equal(results$comparatorStdDiff, sdm)
 
 })
