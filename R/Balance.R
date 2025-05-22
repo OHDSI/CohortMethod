@@ -24,7 +24,7 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
     return(covariates)
   } else if (is.numeric(covariateFilter)) {
     covariates <- covariates |>
-      filter(.data$covariateId %in% covariateFilter) |>
+      filter(.data$covariateId %in% covariateFilter)
     return(covariates)
   } else if (is.data.frame(covariateFilter) && all(c("analysisId", "covariateIds") %in% colnames(covariateFilter))) {
     analysisIds <- covariateFilter |>
@@ -40,7 +40,7 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
       unlist() |>
       as.numeric()
     covariates <- covariates |>
-      filter(.data$covariateId %in% c(covariateIds1, covariateIds2)) |>
+      filter(.data$covariateId %in% c(covariateIds1, covariateIds2))
     return(covariates)
   } else {
     stop("Unknown covariateFilter type")
