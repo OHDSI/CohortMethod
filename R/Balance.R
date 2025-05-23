@@ -136,6 +136,51 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       select("covariateId", "treatment", "sum", "mean", "sd", "overallMean", "overallSumSqr", "overallSumWSqr") |>
       collect()
 
+    # Compute variance of SDM:
+    if (hasStrata) {
+      totalStratumSize <- stratumSize |>
+        group_by(.data$stratumId) |>
+        summarise(nInStratum = sum(.data$n))
+      nTotal <- sum(totalStratumSize$nInStratum)
+
+      variances <- covariates |>
+        inner_join(cohorts, by = join_by("rowId")) |>
+        group_by(.data$treatment, .data$stratumId, .data$covariateId) |>
+        summarise(
+          sumX = sum(.data$covariateValue, na.rm = TRUE),
+          sumXsqr = sum(.data$covariateValue * .data$covariateValue, na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        inner_join(stratumSize, by = join_by("treatment", "stratumId"), copy = TRUE) |>
+        mutate(
+          sumX = coalesce(.data$sumX, 0),
+          sumXsqr = coalesce(.data$sumXsqr, 0)
+        ) |>
+        mutate(
+          sumSqrDiffs = .data$sumXsqr - (.data$sumX * .data$sumX) / .data$n,
+          variance = case_when(
+            .data$n <= 1 ~ 0.0,
+            TRUE ~ .data$sumSqrDiffs / (.data$n - 1)
+          )
+        )
+      numerators <- variances |>
+        inner_join(totalStratumSize, by = join_by("stratumId"), copy = TRUE) |>
+        mutate(s = (.data$variance / .data$n) * ((.data$nInStratum / nTotal) ^ 2)) |>
+        group_by(.data$covariateId) |>
+        summarise(numerator = sum(.data$s, na.rm = TRUE)) |>
+        collect()
+    } else {
+      # Using IPTW:
+      numerators <- covariates |>
+        inner_join(cohortMethodData$w, by = c("rowId")) |>
+        inner_join(result, by = c("covariateId", "treatment"), copy = TRUE) |>
+        group_by(.data$covariateId, .data$treatment) |>
+        summarise(variance = sum(.data$weight^2 * (.data$covariateValue - .data$mean) ^2, na.rm = TRUE), .groups = "drop") |>
+        group_by(.data$covariateId) |>
+        summarise(numerator = sum(.data$variance, na.rm = TRUE)) |>
+        collect()
+    }
+
     cohortMethodData$w <- NULL
     cohortMethodData$overallW <- NULL
   } else {
@@ -175,7 +220,8 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
            sdTarget = "sd",
            overallMeanTarget = "overallMean",
            overallSumSqrTarget = "overallSumSqr",
-           overallSumWSqrTarget = "overallSumWSqr")
+           overallSumWSqrTarget = "overallSumWSqr"
+    )
 
   comparator <- result |>
     filter(.data$treatment == 0) |>
@@ -185,21 +231,66 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
            sdComparator = "sd",
            overallMeanComparator = "overallMean",
            overallSumSqrComparator = "overallSumSqr",
-           overallSumWSqrComparator = "overallSumWSqr")
+           overallSumWSqrComparator = "overallSumWSqr"
+    )
 
   result <- target |>
     full_join(comparator, by = "covariateId") |>
-    mutate(mean = coalesce(.data$overallMeanTarget, 0) + coalesce(.data$overallMeanComparator, 0),
-           overallSumSqr = coalesce(.data$overallSumSqrTarget, 0) + coalesce(.data$overallSumSqrComparator, 0),
-           overallSumWSqr = coalesce(.data$overallSumWSqrTarget, 0) + coalesce(.data$overallSumWSqrComparator, 0)) |>
-    mutate(sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr))) |>
-    select(-"overallMeanTarget",
-           -"overallMeanComparator",
-           -"overallSumSqrTarget",
-           -"overallSumSqrComparator",
-           -"overallSumWSqrTarget",
-           -"overallSumWSqrComparator")
+    mutate(
+      sumTarget = coalesce(.data$sumTarget, 0),
+      meanTarget = coalesce(.data$meanTarget, 0),
+      sdTarget = coalesce(.data$sdTarget, 0),
+      overallMeanTarget = coalesce(.data$overallMeanTarget, 0),
+      overallSumSqrTarget = coalesce(.data$overallSumSqrTarget, 0),
+      overallSumWSqrTarget = coalesce(.data$overallSumWSqrTarget, 0),
+      sumComparator = coalesce(.data$sumComparator, 0),
+      meanComparator = coalesce(.data$meanComparator, 0),
+      sdComparator = coalesce(.data$sdComparator, 0),
+      overallMeanComparator = coalesce(.data$overallMeanComparator, 0),
+      overallSumSqrComparator = coalesce(.data$overallSumSqrComparator, 0),
+      overallSumWSqrComparator = coalesce(.data$overallSumWSqrComparator, 0)
+    ) |>
+    mutate(mean = .data$overallMeanTarget + .data$overallMeanComparator,
+           overallSumSqr = .data$overallSumSqrTarget + .data$overallSumSqrComparator,
+           overallSumWSqr = .data$overallSumWSqrTarget + .data$overallSumWSqrComparator) |>
+    mutate(
+      sd = sqrt(abs(.data$overallSumSqr - .data$mean^2) * sumW / (sumW^2 - .data$overallSumWSqr)),
+      denominatorSd = sqrt((.data$sdTarget^2 + .data$sdComparator^2) / 2)
+    ) |>
+    mutate(
+      stdDiff = (meanTarget - meanComparator) / denominatorSd
+    )
 
+  if (useWeighting) {
+    result <- result |>
+      inner_join(numerators, by = join_by("covariateId")) |>
+      mutate(sdmVariance = .data$numerator / .data$denominatorSd ^ 2) |>
+      select(-"numerator")
+  } else {
+    cohortCounts <- cohorts |>
+      group_by(.data$treatment) |>
+      count() |>
+      collect()
+    count1 <- cohortCounts |>
+      filter(.data$treatment == 1) |>
+      pull(.data$n)
+    count0 <- cohortCounts |>
+      filter(.data$treatment == 0) |>
+      pull(.data$n)
+    result <- result |>
+      mutate(sdmVariance = (count1 + count0) / (count1 * count0) + (.data$stdDiff^2) / (2 * (count1 + count0 - 2)))
+  }
+
+  result <- result |>
+    select(
+      -"overallMeanTarget",
+      -"overallMeanComparator",
+      -"overallSumSqrTarget",
+      -"overallSumSqrComparator",
+      -"overallSumWSqrTarget",
+      -"overallSumWSqrComparator",
+      -"denominatorSd"
+    )
   return(result)
 }
 
@@ -361,7 +452,9 @@ computeCovariateBalance <- function(population,
            beforeMatchingSdTarget = "sdTarget",
            beforeMatchingSdComparator = "sdComparator",
            beforeMatchingMean = "mean",
-           beforeMatchingSd = "sd")
+           beforeMatchingSd = "sd",
+           beforeMatchingStdDiff = "stdDiff",
+           beforeMatchingSdmVariance = "sdmVariance")
   afterMatching <- afterMatching |>
     select("covariateId",
            afterMatchingMeanTarget = "meanTarget",
@@ -372,36 +465,18 @@ computeCovariateBalance <- function(population,
            afterMatchingSdComparator = "sdComparator",
            afterMatchingMean = "mean",
            afterMatchingSd = "sd",
+           afterMatchingStdDiff = "stdDiff",
+           afterMatchingSdmVariance = "sdmVariance",
            matches("overallMean"))
 
   balance <- beforeMatching |>
     full_join(afterMatching, by = "covariateId") |>
-    mutate(
-      beforeMatchingMeanTarget = coalesce(.data$beforeMatchingMeanTarget, 0),
-      beforeMatchingMeanComparator = coalesce(.data$beforeMatchingMeanComparator, 0),
-      beforeMatchingSumTarget = coalesce(.data$beforeMatchingSumTarget, 0),
-      beforeMatchingSumComparator = coalesce(.data$beforeMatchingSumComparator, 0),
-      beforeMatchingSdTarget = coalesce(.data$beforeMatchingSdTarget, 0),
-      beforeMatchingSdComparator = coalesce(.data$beforeMatchingSdComparator, 0),
-      beforeMatchingMean = coalesce(.data$beforeMatchingMean, 0),
-      beforeMatchingSd = coalesce(.data$beforeMatchingSd, 0),
-      afterMatchingMeanTarget = coalesce(.data$afterMatchingMeanTarget, 0),
-      afterMatchingMeanComparator = coalesce(.data$afterMatchingMeanComparator, 0),
-      afterMatchingSumTarget = coalesce(.data$afterMatchingSumTarget, 0),
-      afterMatchingSumComparator = coalesce(.data$afterMatchingSumComparator, 0),
-      afterMatchingSdTarget = coalesce(.data$afterMatchingSdTarget, 0),
-      afterMatchingSdComparator = coalesce(.data$afterMatchingSdComparator, 0),
-      afterMatchingMean = coalesce(.data$afterMatchingMean, 0),
-      afterMatchingSd = coalesce(.data$afterMatchingSd, 0)
-      ) |>
     inner_join(collect(cohortMethodData$covariateRef), by = "covariateId") |>
     inner_join(cohortMethodData$analysisRef |>
                  select("analysisId", "domainId", "isBinary") |>
                  collect() |>
                  mutate(domainId = as.factor(.data$domainId)), by = "analysisId") |>
     mutate(
-      beforeMatchingStdDiff = (.data$beforeMatchingMeanTarget - .data$beforeMatchingMeanComparator) / sqrt((.data$beforeMatchingSdTarget^2 + .data$beforeMatchingSdComparator^2) / 2),
-      afterMatchingStdDiff = (.data$afterMatchingMeanTarget - .data$afterMatchingMeanComparator) / sqrt((.data$afterMatchingSdTarget^2 + .data$afterMatchingSdComparator^2) / 2),
       targetStdDiff = (.data$beforeMatchingMeanTarget - .data$afterMatchingMeanTarget) / sqrt((.data$beforeMatchingSdTarget^2 + .data$afterMatchingSdTarget^2) / 2),
       comparatorStdDiff = (.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / sqrt((.data$beforeMatchingSdComparator^2 + .data$afterMatchingSdComparator^2) / 2),
       targetComparatorStdDiff = (.data$beforeMatchingMean - .data$afterMatchingMean) / sqrt((.data$beforeMatchingSd^2 + .data$beforeMatchingSd^2) / 2)
