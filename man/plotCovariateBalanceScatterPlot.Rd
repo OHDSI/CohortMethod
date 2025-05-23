@@ -8,6 +8,7 @@ plotCovariateBalanceScatterPlot(
   balance,
   absolute = TRUE,
   threshold = 0,
+  alpha = NULL,
   title = "Standardized difference of mean",
   fileName = NULL,
   beforeLabel = "Before matching",
@@ -22,6 +23,11 @@ plotCovariateBalanceScatterPlot(
 \item{absolute}{Should the absolute value of the difference be used?}
 
 \item{threshold}{Show a threshold value for after matching standardized difference.}
+
+\item{alpha}{The family-wise alpha for testing whether the absolute value of the standardized
+difference of means is greater than the threshold. If provided, any covariates
+significantly (after Bonferroni correction) exceeding the threshold will be
+highlighted in the plot.}
 
 \item{title}{The main title for the plot.}
 

@@ -41,7 +41,7 @@ simulateOne <- function(seed) {
     covariateFilter = NULL
   )
   t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
-  p <- (1 - pnorm(t))*2
+  p <- pnorm(t, lower.tail = FALSE)
   return(p)
 }
 cluster <- ParallelLogger::makeCluster(10)
@@ -50,7 +50,7 @@ ps <- ParallelLogger::clusterApply(cluster, 1:1000, simulateOne)
 ParallelLogger::stopCluster(cluster)
 
 ps <- unlist(ps)
-mean(ps<0.05, na.rm = TRUE)
+mean(ps<0.05/2, na.rm = TRUE)
 # [1] 0.078
 
 
@@ -85,7 +85,7 @@ simulateOne <- function(seed) {
     covariateFilter = NULL
   )
   t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
-  p <- (1 - pnorm(t))*2
+  p <- pnorm(t, lower.tail = FALSE)
   return(p)
 }
 cluster <- ParallelLogger::makeCluster(10)
@@ -94,7 +94,7 @@ ps <- ParallelLogger::clusterApply(cluster, 1:1000, simulateOne)
 ParallelLogger::stopCluster(cluster)
 
 ps <- unlist(ps)
-mean(ps<0.05, na.rm = TRUE)
+mean(ps<0.05/2, na.rm = TRUE)
 # [1] 0.059
 
 
@@ -138,7 +138,7 @@ simulateOne <- function(seed) {
     covariateFilter = NULL
   )
   t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
-  p <- (1 - pnorm(t))*2
+  p <- pnorm(t, lower.tail = FALSE)
   return(p)
 }
 cluster <- ParallelLogger::makeCluster(10)
@@ -147,5 +147,5 @@ ps <- ParallelLogger::clusterApply(cluster, 1:1000, simulateOne)
 ParallelLogger::stopCluster(cluster)
 
 ps <- unlist(ps)
-mean(ps<0.05, na.rm = TRUE)
+mean(ps<0.05/2, na.rm = TRUE)
 # [1] 0.067

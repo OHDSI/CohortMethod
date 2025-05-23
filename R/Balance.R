@@ -585,6 +585,10 @@ sampleCohortsAndromeda <- function(cohorts, maxCohortSize, label) {
 #' @param balance     A data frame created by the `computeCovariateBalance` function.
 #' @param absolute    Should the absolute value of the difference be used?
 #' @param threshold   Show a threshold value for after matching standardized difference.
+#' @param alpha       The family-wise alpha for testing whether the absolute value of the standardized
+#'                    difference of means is greater than the threshold. If provided, any covariates
+#'                    significantly (after Bonferroni correction) exceeding the threshold will be
+#'                    highlighted in the plot.
 #' @param title       The main title for the plot.
 #' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                    function `ggsave` in the ggplot2 package for supported file formats.
@@ -597,6 +601,7 @@ sampleCohortsAndromeda <- function(cohorts, maxCohortSize, label) {
 plotCovariateBalanceScatterPlot <- function(balance,
                                             absolute = TRUE,
                                             threshold = 0,
+                                            alpha = NULL,
                                             title = "Standardized difference of mean",
                                             fileName = NULL,
                                             beforeLabel = "Before matching",
@@ -607,6 +612,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
   checkmate::assertDataFrame(balance, add = errorMessages)
   checkmate::assertLogical(absolute, len = 1, add = errorMessages)
   checkmate::assertNumber(threshold, lower = 0, add = errorMessages)
+  checkmate::assertNumber(alpha, lower = 0, null.ok = TRUE, add = errorMessages)
   checkmate::assertCharacter(title, len = 1, add = errorMessages)
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertCharacter(beforeLabel, len = 1, add = errorMessages)
@@ -615,6 +621,19 @@ plotCovariateBalanceScatterPlot <- function(balance,
   checkmate::assertLogical(showMaxLabel, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
+  balance <- balance |>
+    filter(!is.na(.data$beforeMatchingStdDiff), !is.na(.data$afterMatchingStdDiff))
+  if (is.null(alpha)) {
+    showSignficant <- TRUE
+    # Bonferroni:
+    correctedAlpha <- alpha / nrow(balance)
+    balance <- computeBalanceP(balance, threshold) |>
+      mutate(Significant = if_else(coalesce(.data$p, 1) < correctedAlpha, "Yes", "No")) |>
+      bind_rows(tibble(Significant = c("Yes", "No"))) |>
+      mutate(Significant = factor(.data$Significant, levels = c("Yes", "No")))
+  } else {
+    showSignficant <- FALSE
+  }
   if (absolute) {
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
@@ -626,9 +645,16 @@ plotCovariateBalanceScatterPlot <- function(balance,
   plot <- ggplot2::ggplot(
     balance,
     ggplot2::aes(x = .data$beforeMatchingStdDiff, y = .data$afterMatchingStdDiff)
-  ) +
-    ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16) +
-    ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  )
+  if (showSignficant) {
+    plot <- plot + ggplot2::geom_point(ggplot2::aes(color = Significant), shape = 16) +
+      ggplot2::scale_color_manual(paste("Signifcant", tolower(afterLabel)), values = c(rgb(0.8, 0, 0, alpha = 0.8), rgb(0, 0, 0.8, alpha = 0.3))) +
+      ggplot2::theme(legend.position = "bottom")
+  } else {
+    plot <- plot + ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16)
+
+  }
+  plot <- plot + ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0) +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::ggtitle(title) +
@@ -949,4 +975,10 @@ getGeneralizabilityTable <- function(balance, baseSelection = "auto") {
   }
   attr(generalizability, "baseSelection") <- baseSelection
   return(generalizability)
+}
+
+computeBalanceP <- function(balance, threshold) {
+  balance <- balance |>
+    mutate(p = pnorm((abs(balance$afterMatchingStdDiff) - threshold)/sqrt(balance$afterMatchingSdmVariance), lower.tail = FALSE))
+  return(balance)
 }
