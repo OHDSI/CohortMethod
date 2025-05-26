@@ -149,3 +149,52 @@ ParallelLogger::stopCluster(cluster)
 ps <- unlist(ps)
 mean(ps<0.05/2, na.rm = TRUE)
 # [1] 0.067
+
+
+# Explore new balance metric with real data ------------------------------------
+# Assumes SingleStudyVignetteDataFetch.R has been executed
+library(CohortMethod)
+library(dplyr)
+options(andromedaTempFolder = "e:/andromedaTemp")
+folder <- "e:/temp/cohortMethodVignette"
+
+cohortMethodData <- loadCohortMethodData(file.path(folder, "cohortMethodData.zip"))
+studyPop <- readRDS(file.path(folder, "studyPop.rds"))
+ps <- readRDS(file.path(folder, "ps.rds"))
+
+matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 100)
+balance <- computeCovariateBalance(matchedPop, cohortMethodData)
+plotCovariateBalanceScatterPlot(balanceIptw, threshold = 0.1, alpha = 0.05)
+
+balanceIptw <- computeCovariateBalance(ps, cohortMethodData)
+plotCovariateBalanceScatterPlot(balanceIptw, threshold = 0.1, alpha = 0.05)
+
+balanceUnadjusted <- computeCovariateBalance(studyPop, cohortMethodData)
+plotCovariateBalanceScatterPlot(balanceUnadjusted, threshold = 0.1, alpha = 0.05)
+
+ageCovariateIds <- covariateIds <- 0:22 * 1000 + 3
+sexCovariateId <-  8532 * 1000 + 1
+psAgeSex <- createPs(
+  cohortMethodData = cohortMethodData,
+  population = studyPop,
+  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
+  control = createControl(
+    cvType = "auto",
+    startingVariance = 0.01,
+    noiseLevel = "quiet",
+    tolerance = 2e-07,
+    cvRepetitions = 1,
+    threads = 10
+  ),
+  includeCovariateIds = c(ageCovariateIds, sexCovariateId)
+)
+
+matchedPopAgeSex <- matchOnPs(psAgeSex, caliper = 0.25, caliperScale = "standardized", maxRatio = 100)
+balanceAgeSex <- computeCovariateBalance(matchedPopAgeSex, cohortMethodData)
+plotCovariateBalanceScatterPlot(balanceAgeSex, threshold = 0.1, alpha = 0.05)
+
+balanceIptwAgeSex <- computeCovariateBalance(psAgeSex, cohortMethodData)
+plotCovariateBalanceScatterPlot(balanceIptwAgeSex, threshold = 0.1, alpha = 0.05)
+
+
+

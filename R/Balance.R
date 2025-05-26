@@ -623,7 +623,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
 
   balance <- balance |>
     filter(!is.na(.data$beforeMatchingStdDiff), !is.na(.data$afterMatchingStdDiff))
-  if (is.null(alpha)) {
+  if (!is.null(alpha)) {
     showSignficant <- TRUE
     # Bonferroni:
     correctedAlpha <- alpha / nrow(balance)
