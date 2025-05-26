@@ -9,7 +9,9 @@ computeCovariateBalance(
   cohortMethodData,
   subgroupCovariateId = NULL,
   maxCohortSize = 250000,
-  covariateFilter = NULL
+  covariateFilter = NULL,
+  threshold = 0.1,
+  alpha = NULL
 )
 }
 \arguments{
@@ -30,6 +32,14 @@ Setting this number to 0 means no downsampling will be applied.}
 of covariate IDs, or a table 1 specifications object as generated for example using
 \code{\link[FeatureExtraction:getDefaultTable1Specifications]{FeatureExtraction::getDefaultTable1Specifications()}}. If \code{covariateFilter = NULL},
 balance will be computed for all variables found in the data.}
+
+\item{threshold}{Threshold value for the absolute value of the standardized difference of means (ASDM).
+If the ASDM exceeds this threshold it will be marked as unbalanced. (Hripcsak et al. 2025)}
+
+\item{alpha}{The family-wise alpha for testing whether the absolute value of the standardized
+difference of means is greater than the threshold. If not provided, any value greater
+than the threshold will be marked as unbalanced.
+highlighted in the plot.}
 }
 \value{
 Returns a tibble describing the covariate balance before and after PS adjustment,
@@ -44,6 +54,13 @@ and the following additional columns:
 \item beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
 \item beforeMatchingMean: The mean of the value across target and comparator before PS adjustment.
 \item beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
+\item beforeMatchingStdDiff: The standardized difference of means when comparing the target to
+the comparator before PS adjustment.
+\item beforeMatchingSdmVariance: The variance of the standardized difference of the means when comparing the target to
+the comparator before PS adjustment.
+\item beforeMatchingSdmP : The P-value for whether abs(beforeMatchingStdDiff) exceeds the threshold.
+\item beforeMatchingBalanced : TRUE if the covariate is considered balanced between the target and comparator before PS
+adjustment (depending on the threshold and alpha settings).
 \item afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
 \item afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
 \item afterMatchingSumTarget: The (weighted) sum value in the target after PS adjustment.
@@ -52,10 +69,13 @@ and the following additional columns:
 \item afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
 \item afterMatchingMean: The mean of the value across target and comparator after PS adjustment.
 \item afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
-\item beforeMatchingStdDiff: The standardized difference of means when comparing the target to
-the comparator before PS adjustment.
 \item afterMatchingStdDiff: The standardized difference of means when comparing the target to
 the comparator after PS adjustment.
+\item afterMatchingSdmVariance: The variance of the standardized difference of the means when comparing the target to
+the comparator after PS adjustment.
+\item afteMatchingSdmP : The P-value for whether abs(beforeMatchingStdDiff) exceeds the threshold.
+\item afteMatchingBalanced : TRUE if the covariate is considered balanced between the target and comparator before PS
+adjustment (depending on the threshold and alpha settings).
 \item targetStdDiff: The standardized difference of means when comparing the target
 before PS adjustment to the target after PS adjustment.
 \item comparatorStdDiff: The standardized difference of means when comparing the comparator
@@ -88,6 +108,9 @@ The population data frame should have the following three columns:
 }
 }
 \references{
-Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one
+Austin, PC (2008) Assessing balance in measured baseline covariates when using many-to-one
 matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
+
+Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ (2025)
+Assessing Covariate Balance with Small Sample Sizes. medRxiv. Feb 21:2024.04.23.24306230.
 }

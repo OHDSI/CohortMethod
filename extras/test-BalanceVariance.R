@@ -163,14 +163,14 @@ studyPop <- readRDS(file.path(folder, "studyPop.rds"))
 ps <- readRDS(file.path(folder, "ps.rds"))
 
 matchedPop <- matchOnPs(ps, caliper = 0.25, caliperScale = "standardized", maxRatio = 100)
-balance <- computeCovariateBalance(matchedPop, cohortMethodData)
-plotCovariateBalanceScatterPlot(balanceIptw, threshold = 0.1, alpha = 0.05)
+balance <- computeCovariateBalance(matchedPop, cohortMethodData, threshold = 0.1, alpha = 0.05)
+plotCovariateBalanceScatterPlot(balance, showUnbalanced = TRUE)
 
-balanceIptw <- computeCovariateBalance(ps, cohortMethodData)
-plotCovariateBalanceScatterPlot(balanceIptw, threshold = 0.1, alpha = 0.05)
+balanceIptw <- computeCovariateBalance(ps, cohortMethodData, threshold = 0.1, alpha = 0.05)
+plotCovariateBalanceScatterPlot(balanceIptw, showUnbalanced = TRUE)
 
-balanceUnadjusted <- computeCovariateBalance(studyPop, cohortMethodData)
-plotCovariateBalanceScatterPlot(balanceUnadjusted, threshold = 0.1, alpha = 0.05)
+balanceUnadjusted <- computeCovariateBalance(studyPop, cohortMethodData, threshold = 0.1, alpha = 0.05)
+plotCovariateBalanceScatterPlot(balanceUnadjusted, showUnbalanced = TRUE)
 
 ageCovariateIds <- covariateIds <- 0:22 * 1000 + 3
 sexCovariateId <-  8532 * 1000 + 1
@@ -190,11 +190,11 @@ psAgeSex <- createPs(
 )
 
 matchedPopAgeSex <- matchOnPs(psAgeSex, caliper = 0.25, caliperScale = "standardized", maxRatio = 100)
-balanceAgeSex <- computeCovariateBalance(matchedPopAgeSex, cohortMethodData)
-plotCovariateBalanceScatterPlot(balanceAgeSex, threshold = 0.1, alpha = 0.05)
+balanceAgeSex <- computeCovariateBalance(matchedPopAgeSex, cohortMethodData, threshold = 0.1, alpha = 0.05)
+plotCovariateBalanceScatterPlot(balanceAgeSex, showUnbalanced = TRUE)
 
-balanceIptwAgeSex <- computeCovariateBalance(psAgeSex, cohortMethodData)
-plotCovariateBalanceScatterPlot(balanceIptwAgeSex, threshold = 0.1, alpha = 0.05)
+balanceIptwAgeSex <- computeCovariateBalance(psAgeSex, cohortMethodData, threshold = 0.1, alpha = 0.05)
+plotCovariateBalanceScatterPlot(balanceIptwAgeSex, showUnbalanced = TRUE)
 
 
 

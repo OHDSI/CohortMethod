@@ -315,6 +315,12 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #'                          of covariate IDs, or a table 1 specifications object as generated for example using
 #'                          [FeatureExtraction::getDefaultTable1Specifications()]. If `covariateFilter = NULL`,
 #'                          balance will be computed for all variables found in the data.
+#' @param threshold   Threshold value for the absolute value of the standardized difference of means (ASDM).
+#'                    If the ASDM exceeds this threshold it will be marked as unbalanced. (Hripcsak et al. 2025)
+#' @param alpha       The family-wise alpha for testing whether the absolute value of the standardized
+#'                    difference of means is greater than the threshold. If not provided, any value greater
+#'                    than the threshold will be marked as unbalanced.
+#'                    highlighted in the plot.
 #' @details
 #' The population data frame should have the following three columns:
 #'
@@ -335,6 +341,13 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' - beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
 #' - beforeMatchingMean: The mean of the value across target and comparator before PS adjustment.
 #' - beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
+#' - beforeMatchingStdDiff: The standardized difference of means when comparing the target to
+#'                          the comparator before PS adjustment.
+#' - beforeMatchingSdmVariance: The variance of the standardized difference of the means when comparing the target to
+#'                          the comparator before PS adjustment.
+#' - beforeMatchingSdmP : The P-value for whether abs(beforeMatchingStdDiff) exceeds the threshold.
+#' - beforeMatchingBalanced : TRUE if the covariate is considered balanced between the target and comparator before PS
+#'                            adjustment (depending on the threshold and alpha settings).
 #' - afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
 #' - afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
 #' - afterMatchingSumTarget: The (weighted) sum value in the target after PS adjustment.
@@ -343,10 +356,13 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' - afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
 #' - afterMatchingMean: The mean of the value across target and comparator after PS adjustment.
 #' - afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
-#' - beforeMatchingStdDiff: The standardized difference of means when comparing the target to
-#'                          the comparator before PS adjustment.
 #' - afterMatchingStdDiff: The standardized difference of means when comparing the target to
 #'                         the comparator after PS adjustment.
+#' - afterMatchingSdmVariance: The variance of the standardized difference of the means when comparing the target to
+#'                          the comparator after PS adjustment.
+#' - afteMatchingSdmP : The P-value for whether abs(beforeMatchingStdDiff) exceeds the threshold.
+#' - afteMatchingBalanced : TRUE if the covariate is considered balanced between the target and comparator before PS
+#'                            adjustment (depending on the threshold and alpha settings).
 #' - targetStdDiff: The standardized difference of means when comparing the target
 #'                  before PS adjustment to the target after PS adjustment.
 #' - comparatorStdDiff: The standardized difference of means when comparing the comparator
@@ -364,15 +380,20 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' before adjustment to allow generalizing the findings to the original cohorts?
 #'
 #' @references
-#' Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one
+#' Austin, PC (2008) Assessing balance in measured baseline covariates when using many-to-one
 #' matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
+#'
+#' Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ (2025)
+#' Assessing Covariate Balance with Small Sample Sizes. medRxiv. Feb 21:2024.04.23.24306230.
 #'
 #' @export
 computeCovariateBalance <- function(population,
                                     cohortMethodData,
                                     subgroupCovariateId = NULL,
                                     maxCohortSize = 250000,
-                                    covariateFilter = NULL) {
+                                    covariateFilter = NULL,
+                                    threshold = 0.1,
+                                    alpha = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
@@ -384,6 +405,8 @@ computeCovariateBalance <- function(population,
     checkmate::assertDataFrame(covariateFilter, add = errorMessages)
     checkmate::assertNames(colnames(covariateFilter), must.include = c("analysisId", "covariateIds"), add = errorMessages)
   }
+  checkmate::assertNumber(threshold, lower = 0, add = errorMessages)
+  checkmate::assertNumber(alpha, lower = 0, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   start <- Sys.time()
@@ -443,7 +466,18 @@ computeCovariateBalance <- function(population,
   beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateFilter)
   afterMatching <- computeMeansPerGroup(cohorts = cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateFilter)
 
+  # Bonferroni:
+  if (is.null(alpha)) {
+    useAlpha <- FALSE
+  } else {
+    useAlpha <- TRUE
+    correctedAlphaBefore <- alpha / nrow(beforeMatching)
+    correctedAlphaAfter <- alpha / nrow(afterMatching)
+  }
+
   beforeMatching <- beforeMatching |>
+    mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, threshold)) |>
+    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaBefore) else (abs(.data$stdDiff) >= threshold)) |>
     select("covariateId",
            beforeMatchingMeanTarget = "meanTarget",
            beforeMatchingMeanComparator = "meanComparator",
@@ -454,8 +488,12 @@ computeCovariateBalance <- function(population,
            beforeMatchingMean = "mean",
            beforeMatchingSd = "sd",
            beforeMatchingStdDiff = "stdDiff",
-           beforeMatchingSdmVariance = "sdmVariance")
+           beforeMatchingSdmVariance = "sdmVariance",
+           beforeMatchingSdmP = "sdmP",
+           beforeMatchingBalanced = "balanced")
   afterMatching <- afterMatching |>
+    mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, threshold)) |>
+    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaAfter) else (abs(.data$stdDiff) >= threshold)) |>
     select("covariateId",
            afterMatchingMeanTarget = "meanTarget",
            afterMatchingMeanComparator = "meanComparator",
@@ -467,6 +505,8 @@ computeCovariateBalance <- function(population,
            afterMatchingSd = "sd",
            afterMatchingStdDiff = "stdDiff",
            afterMatchingSdmVariance = "sdmVariance",
+           afterMatchingSdmP = "sdmP",
+           afterMatchingBalanced = "balanced",
            matches("overallMean"))
 
   balance <- beforeMatching |>
@@ -585,10 +625,6 @@ sampleCohortsAndromeda <- function(cohorts, maxCohortSize, label) {
 #' @param balance     A data frame created by the `computeCovariateBalance` function.
 #' @param absolute    Should the absolute value of the difference be used?
 #' @param threshold   Show a threshold value for after matching standardized difference.
-#' @param alpha       The family-wise alpha for testing whether the absolute value of the standardized
-#'                    difference of means is greater than the threshold. If provided, any covariates
-#'                    significantly (after Bonferroni correction) exceeding the threshold will be
-#'                    highlighted in the plot.
 #' @param title       The main title for the plot.
 #' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                    function `ggsave` in the ggplot2 package for supported file formats.
@@ -596,44 +632,34 @@ sampleCohortsAndromeda <- function(cohorts, maxCohortSize, label) {
 #' @param afterLabel  Label for the y-axis.
 #' @param showCovariateCountLabel  Show a label with the number of covariates included in the plot?
 #' @param showMaxLabel Show a label with the maximum absolute standardized difference after matching/stratification?
+#' @param showUnbalanced Show covariates that are considered unbalanced with a different color?
 #'
 #' @export
 plotCovariateBalanceScatterPlot <- function(balance,
                                             absolute = TRUE,
                                             threshold = 0,
-                                            alpha = NULL,
                                             title = "Standardized difference of mean",
                                             fileName = NULL,
                                             beforeLabel = "Before matching",
                                             afterLabel = "After matching",
                                             showCovariateCountLabel = FALSE,
-                                            showMaxLabel = FALSE) {
+                                            showMaxLabel = FALSE,
+                                            showUnbalanced = FALSE) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(balance, add = errorMessages)
   checkmate::assertLogical(absolute, len = 1, add = errorMessages)
   checkmate::assertNumber(threshold, lower = 0, add = errorMessages)
-  checkmate::assertNumber(alpha, lower = 0, null.ok = TRUE, add = errorMessages)
   checkmate::assertCharacter(title, len = 1, add = errorMessages)
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertCharacter(beforeLabel, len = 1, add = errorMessages)
   checkmate::assertCharacter(afterLabel, len = 1, add = errorMessages)
   checkmate::assertLogical(showCovariateCountLabel, len = 1, add = errorMessages)
   checkmate::assertLogical(showMaxLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showUnbalanced, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   balance <- balance |>
     filter(!is.na(.data$beforeMatchingStdDiff), !is.na(.data$afterMatchingStdDiff))
-  if (!is.null(alpha)) {
-    showSignficant <- TRUE
-    # Bonferroni:
-    correctedAlpha <- alpha / nrow(balance)
-    balance <- computeBalanceP(balance, threshold) |>
-      mutate(Significant = if_else(coalesce(.data$p, 1) < correctedAlpha, "Yes", "No")) |>
-      bind_rows(tibble(Significant = c("Yes", "No"))) |>
-      mutate(Significant = factor(.data$Significant, levels = c("Yes", "No")))
-  } else {
-    showSignficant <- FALSE
-  }
   if (absolute) {
     balance$beforeMatchingStdDiff <- abs(balance$beforeMatchingStdDiff)
     balance$afterMatchingStdDiff <- abs(balance$afterMatchingStdDiff)
@@ -642,17 +668,23 @@ plotCovariateBalanceScatterPlot <- function(balance,
     min(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE),
     max(c(balance$beforeMatchingStdDiff, balance$afterMatchingStdDiff), na.rm = TRUE)
   )
+  if (showUnbalanced) {
+    balance <- balance |>
+      mutate(balanced = if_else(.data$afterMatchingBalanced, "Balanced", "Unbalanced")) |>
+      mutate(balanced = factor(.data$balanced, levels = c("Balanced", "Unbalanced"))) |>
+      bind_rows(tibble(balanced =  c("Balanced", "Unbalanced")))
+  }
+
   plot <- ggplot2::ggplot(
     balance,
     ggplot2::aes(x = .data$beforeMatchingStdDiff, y = .data$afterMatchingStdDiff)
   )
-  if (showSignficant) {
-    plot <- plot + ggplot2::geom_point(ggplot2::aes(color = Significant), shape = 16) +
-      ggplot2::scale_color_manual(paste("Signifcant", tolower(afterLabel)), values = c(rgb(0.8, 0, 0, alpha = 0.8), rgb(0, 0, 0.8, alpha = 0.3))) +
+  if (showUnbalanced) {
+    plot <- plot + ggplot2::geom_point(ggplot2::aes(color = .data$balanced), shape = 16) +
+      ggplot2::scale_color_manual(afterLabel, values = c(rgb(0, 0, 0.8, alpha = 0.3), rgb(0.8, 0, 0, alpha = 0.8))) +
       ggplot2::theme(legend.position = "bottom")
   } else {
     plot <- plot + ggplot2::geom_point(color = rgb(0, 0, 0.8, alpha = 0.3), shape = 16)
-
   }
   plot <- plot + ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = 0) +
@@ -663,7 +695,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
   if (threshold != 0) {
     plot <- plot + ggplot2::geom_hline(yintercept = c(
       threshold,
-      -threshold
+      -thresholdD
     ), alpha = 0.5, linetype = "dotted")
   }
   if (showCovariateCountLabel || showMaxLabel) {
@@ -977,8 +1009,7 @@ getGeneralizabilityTable <- function(balance, baseSelection = "auto") {
   return(generalizability)
 }
 
-computeBalanceP <- function(balance, threshold) {
-  balance <- balance |>
-    mutate(p = pnorm((abs(balance$afterMatchingStdDiff) - threshold)/sqrt(balance$afterMatchingSdmVariance), lower.tail = FALSE))
-  return(balance)
+computeBalanceP <- function(sdm, sdmVariance, threshold) {
+  p <-pnorm((abs(sdm) - threshold)/sqrt(sdmVariance), lower.tail = FALSE)
+  return(p)
 }
