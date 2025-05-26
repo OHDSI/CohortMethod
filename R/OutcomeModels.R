@@ -38,6 +38,7 @@
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
+#' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -63,6 +64,7 @@ fitOutcomeModel <- function(population,
                             stratified = FALSE,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
+                            bootstrapCi = FALSE,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
@@ -89,6 +91,7 @@ fitOutcomeModel <- function(population,
   checkmate::assertLogical(stratified, len = 1, add = errorMessages)
   checkmate::assertLogical(useCovariates, len = 1, add = errorMessages)
   checkmate::assertLogical(inversePtWeighting, len = 1, add = errorMessages)
+  checkmate::assertLogical(bootstrapCi, len = 1, add = errorMessages)
   .assertCovariateId(interactionCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(includeCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -117,6 +120,15 @@ fitOutcomeModel <- function(population,
   }
   if (!is.null(profileGrid) && !is.null(profileBounds)) {
     stop("Can't specify both a grid and bounds for likelihood profiling")
+  }
+  if (bootstrapCi && !is.null(interactionCovariateIds)) {
+    stop("Bootstrap confidence intervals has not been implemented for interactions")
+  }
+  if (bootstrapCi && useCovariates) {
+    stop("Bootstrap confidence intervals has not been implemented for models including other covariates")
+  }
+  if (bootstrapCi && modelType != "cox") {
+    stop("Bootstrap confidence intervals has only been implemented for Cox model")
   }
 
   start <- Sys.time()
@@ -217,10 +229,10 @@ fitOutcomeModel <- function(population,
         } else {
           # TODO: check if main effect covariate exists in data
           mainEffectTermsCheck <- !is.null(covariateData$covariates |>
-            distinct(.data$covariateId) |>
-            inner_join(covariateData$covariateRef, by = "covariateId") |>
-            select(id = "covariateId", name = "covariateName") |>
-            collect())
+                                             distinct(.data$covariateId) |>
+                                             inner_join(covariateData$covariateRef, by = "covariateId") |>
+                                             select(id = "covariateId", name = "covariateName") |>
+                                             collect())
 
           if (!mainEffectTermsCheck) {
             stop("No main effects exist.")
@@ -367,19 +379,44 @@ fitOutcomeModel <- function(population,
           status <- "OK"
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-          ci <- tryCatch(
-            {
-              confint(fit, parm = treatmentVarId, includePenalty = TRUE)
-            },
-            error = function(e) {
-              missing(e) # suppresses R CMD check note
-              c(0, -Inf, Inf)
+          if (bootstrapCi) {
+            # Implementation of Austin P (2016), Variance estimation when using inverse probability of treatment weighting (IPTW) with survival analysis:
+            computeHr <- function(dummy, data) {
+              indices <- sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
+              data <- data[indices, ]
+              if ("iptw" %in% names(data)) {
+                weights <- data$iptw
+              } else {
+                weights <- NULL
+              }
+              cyclopsData <- createCyclopsData(Surv(survivalTime, y) ~ treatment, weights = weights, modelType = "cox", data = data)
+              fit <- fitCyclopsModel(cyclopsData)
+              value <- coef(fit)
+              names(value) <- NULL
+              return(value)
             }
-          )
-          if (identical(ci, c(0, -Inf, Inf))) {
-            status <- "ERROR COMPUTING CI"
+            data <- population |>
+              inner_join(informativePopulation |>
+                           select("rowId", "y"),
+                         by = join_by("rowId"))
+            bootstrap <- sapply(seq_len(200), computeHr, data = data)
+            seLogRr <- sqrt(var(bootstrap))
+            ci <- c(0, logRr + qnorm(c(0.025, 0.975)) * seLogRr)
+          } else {
+            ci <- tryCatch(
+              {
+                confint(fit, parm = treatmentVarId, includePenalty = TRUE)
+              },
+              error = function(e) {
+                missing(e) # suppresses R CMD check note
+                c(0, -Inf, Inf)
+              }
+            )
+            if (identical(ci, c(0, -Inf, Inf))) {
+              status <- "ERROR COMPUTING CI"
+            }
+            seLogRr <- (ci[3] - ci[2]) / (2 * qnorm(0.975))
           }
-          seLogRr <- (ci[3] - ci[2]) / (2 * qnorm(0.975))
           llNull <- Cyclops::getCyclopsProfileLogLikelihood(
             object = fit,
             parm = treatmentVarId,

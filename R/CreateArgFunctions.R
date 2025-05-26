@@ -293,6 +293,7 @@ createComputeCovariateBalanceArgs <- function(subgroupCovariateId = NULL,
 #' @param stratified  Should the regression be conditioned on the strata defined in the population object (e.g. by matching or stratifying on propensity scores)?
 #' @param useCovariates  Whether to use the covariates in the cohortMethodData object in the outcome model.
 #' @param inversePtWeighting  Use inverse probability of treatment weighting (IPTW)
+#' @param bootstrapCi Compute confidence interval using bootstrapping instead of likelihood profiling?
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions with the main treatment effect.
 #' @param excludeCovariateIds  Exclude these covariates from the outcome model.
 #' @param includeCovariateIds  Include only these covariates in the outcome model.
@@ -306,6 +307,7 @@ createFitOutcomeModelArgs <- function(modelType = "logistic",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
+                                      bootstrapCi = FALSE,
                                       interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),
