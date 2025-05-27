@@ -384,7 +384,7 @@ fitOutcomeModel <- function(population,
             computeHr <- function(dummy, data) {
               indices <- sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
               data <- data[indices, ]
-              if ("iptw" %in% names(data)) {
+              if (inversePtWeighting) {
                 weights <- data$iptw
               } else {
                 weights <- NULL

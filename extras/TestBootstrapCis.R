@@ -3,24 +3,35 @@ library(survival)
 library(ipwCoxCSV)
 library(EmpiricalCalibration)
 library(dplyr)
-n <- 1000
-nSimulations <- 10000
-baselineHazard <- 0.001
-censorHazard <- 0.01
-hr <- 1 # True hazard ratio
-z <- 0.2 # Confounding magnitude
+settings = list(
+  n = 1000,
+  nSimulations = 1000,
+  baselineHazard = 0.001,
+  censorHazard = 0.01,
+  hr = 4, # True hazard ratio
+  z = 1 # Confounding magnitude
+)
 
-runSimulation <- function(seed, method) {
+runSimulation <- function(seed, settings, method) {
   set.seed(seed)
-  probTreatment <- runif(n) # The true propensity score
-  treatment <- runif(n) < probTreatment
-  hazard <- baselineHazard * ifelse(treatment, hr, 1) * (1 + z * probTreatment)
-  timeToEvent <- rexp(n, hazard)
-  timeToCensor <- rexp(n, censorHazard)
+  probTreatment <- runif(settings$n) # The true propensity score
+  treatment <- runif(settings$n) < probTreatment
+  hazard <- settings$baselineHazard * ifelse(treatment, settings$hr, 1) * (1 + settings$z * probTreatment)
+  timeToEvent <- rexp(settings$n, hazard)
+  timeToCensor <- rexp(settings$n, settings$censorHazard)
   status <- timeToEvent < timeToCensor
   time <- ifelse(status, timeToEvent, timeToCensor)
 
-  if (method == "Cyclops") {
+  if (method == "unadjusted") {
+    cyclopsData <- createCyclopsData(Surv(time, status) ~ treatment, modelType = "cox")
+    fit <- fitCyclopsModel(cyclopsData)
+    ci <- confint(fit, 1)
+    estimate <- data.frame(logRr = coef(fit),
+                           seLogRr = (ci[3] - ci[2])/(2 * qnorm(0.975)),
+                           ci95Lb = exp(ci[2]),
+                           ci95Ub = exp(ci[3]))
+    return(estimate)
+  } else if (method == "Cyclops") {
     # Stabilized IPTW for ATE:
     iptw <- ifelse(treatment,
                    mean(treatment == 1) / probTreatment,
@@ -83,16 +94,20 @@ runSimulation <- function(seed, method) {
                            ci95Ub = exp(ci[2]))
     return(estimate)
   } else if (method == "package") {
+    iptw <- ifelse(treatment,
+                   mean(treatment == 1) / probTreatment,
+                   mean(treatment == 0) / (1 - probTreatment))
+
     population <- tibble(
-      rowId = seq_len(n),
-      personSeqId = seq_len(n),
+      rowId = seq_len(settings$n),
+      personSeqId = seq_len(settings$n),
       timeAtRisk = time,
       survivalTime = time,
       outcomeCount = status,
       treatment = treatment,
       iptw = iptw
     )
-    model <- fitOutcomeModel(
+    model <- CohortMethod::fitOutcomeModel(
       population = population,
       modelType = "cox",
       inversePtWeighting = TRUE,
@@ -110,35 +125,50 @@ runSimulation <- function(seed, method) {
   }
 }
 
-estimates1 <- plyr::llply(1:nSimulations, runSimulation, method = "Cyclops", .progress = "text")
+cluster <- ParallelLogger::makeCluster(10)
+ParallelLogger::clusterRequire(cluster, "dplyr")
+ParallelLogger::clusterRequire(cluster, "Cyclops")
+ParallelLogger::clusterRequire(cluster, "survival")
+ParallelLogger::clusterRequire(cluster, "ipwCoxCSV")
+
+estimates0 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "unadjusted")
+estimates0 <- do.call(rbind, estimates0)
+message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates0$ci95Lb < settings$hr & settings$hr < estimates0$ci95Ub)))
+# Coverage = 68.1%
+# plotCalibrationEffect(estimates0$logRr, estimates0$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
+computeExpectedAbsoluteSystematicError(fitNull(estimates0$logRr - log(settings$hr), estimates0$seLogRr))
+# [1] 0.2085251
+
+estimates1 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "Cyclops")
 estimates1 <- do.call(rbind, estimates1)
-message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates1$ci95Lb < hr & hr < estimates1$ci95Ub)))
-# Coverage = 79.4%
-plotCalibrationEffect(estimates1$logRr, estimates1$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
-computeExpectedAbsoluteSystematicError(fitNull(estimates1$logRr, estimates1$seLogRr))
-# [1] 0.193238
+message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates1$ci95Lb < settings$hr & settings$hr < estimates1$ci95Ub)))
+# Coverage = 79.2%
+# plotCalibrationEffect(estimates1$logRr, estimates1$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
+computeExpectedAbsoluteSystematicError(fitNull(estimates1$logRr - log(settings$hr), estimates1$seLogRr))
+# [1] 0.1540369
 
-estimates2 <- plyr::llply(1:nSimulations, runSimulation, method = "ipwCoxCSV", .progress = "text")
+estimates2 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "ipwCoxCSV")
 estimates2 <- do.call(rbind, estimates2)
-message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates2$ci95Lb < hr & hr < estimates2$ci95Ub)))
-# Coverage = 93.2%
-plotCalibrationEffect(estimates2$logRr, estimates2$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
-computeExpectedAbsoluteSystematicError(fitNull(estimates2$logRr, estimates2$seLogRr))
-# [1] 0.07301792
+message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates2$ci95Lb < settings$hr & settings$hr < estimates2$ci95Ub)))
+# Coverage = 94.4%
+# plotCalibrationEffect(estimates2$logRr, estimates2$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
+computeExpectedAbsoluteSystematicError(fitNull(estimates2$logRr - log(settings$hr), estimates2$seLogRr))
+# [1] 0.05088311
 
-estimates3 <- plyr::llply(1:nSimulations, runSimulation, method = "bootstrap", .progress = "text")
+estimates3 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "bootstrap")
 estimates3 <- do.call(rbind, estimates3)
-message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates3$ci95Lb < hr & hr < estimates3$ci95Ub)))
-# Coverage = 94.8%
-plotCalibrationEffect(estimates3$logRr, estimates3$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
-computeExpectedAbsoluteSystematicError(fitNull(estimates3$logRr, estimates3$seLogRr))
-# [1] 0.0737213
+message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates3$ci95Lb < settings$hr & settings$hr < estimates3$ci95Ub)))
+# Coverage = 93.7%
+# plotCalibrationEffect(estimates3$logRr, estimates3$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
+computeExpectedAbsoluteSystematicError(fitNull(estimates3$logRr - log(settings$hr), estimates3$seLogRr))
+# [1] 93.7
 
-estimates4 <- plyr::llply(1:nSimulations, runSimulation, method = "package", .progress = "text")
+estimates4 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "package")
 estimates4 <- do.call(rbind, estimates4)
-message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates4$ci95Lb < hr & hr < estimates4$ci95Ub)))
-# Coverage = 92.9%
-plotCalibrationEffect(estimates4$logRr, estimates4$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
-computeExpectedAbsoluteSystematicError(fitNull(estimates4$logRr, estimates4$seLogRr))
-# [1] 0.07170155
+message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates4$ci95Lb < settings$hr & settings$hr < estimates4$ci95Ub)))
+# Coverage = 92.8%
+# plotCalibrationEffect(estimates4$logRr, estimates4$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
+computeExpectedAbsoluteSystematicError(fitNull(estimates4$logRr - log(settings$hr), estimates4$seLogRr))
+# [1] 0.06950879
 
+ParallelLogger::stopCluster(cluster)
