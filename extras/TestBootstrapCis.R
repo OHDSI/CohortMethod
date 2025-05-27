@@ -73,9 +73,11 @@ runSimulation <- function(seed, settings, method) {
     computeHr <- function(dummy, data, sample) {
       if (sample) {
         indices <- sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
-        data <- data[indices, ]
+        sampleData <- data[indices, ]
+      } else {
+        sampleData <- data
       }
-      cyclopsData <- createCyclopsData(Surv(time, status) ~ treatment, weights = iptw, modelType = "cox", data = data)
+      cyclopsData <- createCyclopsData(Surv(time, status) ~ treatment, weights = sampleData$iptw, modelType = "cox", data = sampleData)
       fit <- fitCyclopsModel(cyclopsData)
       value <- coef(fit)
       names(value) <- NULL
@@ -158,17 +160,17 @@ computeExpectedAbsoluteSystematicError(fitNull(estimates2$logRr - log(settings$h
 estimates3 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "bootstrap")
 estimates3 <- do.call(rbind, estimates3)
 message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates3$ci95Lb < settings$hr & settings$hr < estimates3$ci95Ub)))
-# Coverage = 93.7%
+# Coverage = 93.1%
 # plotCalibrationEffect(estimates3$logRr, estimates3$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
 computeExpectedAbsoluteSystematicError(fitNull(estimates3$logRr - log(settings$hr), estimates3$seLogRr))
-# [1] 93.7
+# [1] 0.07142416
 
 estimates4 <- ParallelLogger::clusterApply(cluster, 1:settings$nSimulations, runSimulation, settings = settings, method = "package")
 estimates4 <- do.call(rbind, estimates4)
 message(sprintf("Coverage = %0.1f%%", 100 * mean(estimates4$ci95Lb < settings$hr & settings$hr < estimates4$ci95Ub)))
-# Coverage = 92.8%
+# Coverage = 93.1%
 # plotCalibrationEffect(estimates4$logRr, estimates4$seLogRr, showExpectedAbsoluteSystematicError = TRUE, showCis = TRUE)
 computeExpectedAbsoluteSystematicError(fitNull(estimates4$logRr - log(settings$hr), estimates4$seLogRr))
-# [1] 0.06950879
+# [1] 0.07142416
 
 ParallelLogger::stopCluster(cluster)

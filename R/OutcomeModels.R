@@ -383,13 +383,13 @@ fitOutcomeModel <- function(population,
             # Implementation of Austin P (2016), Variance estimation when using inverse probability of treatment weighting (IPTW) with survival analysis:
             computeHr <- function(dummy, data) {
               indices <- sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
-              data <- data[indices, ]
+              sampleData <- data[indices, ]
               if (inversePtWeighting) {
-                weights <- data$iptw
+                weights <- sampleData$iptw
               } else {
                 weights <- NULL
               }
-              cyclopsData <- createCyclopsData(Surv(survivalTime, y) ~ treatment, weights = weights, modelType = "cox", data = data)
+              cyclopsData <- createCyclopsData(Surv(survivalTime, y) ~ treatment, weights = weights, modelType = "cox", data = sampleData)
               fit <- fitCyclopsModel(cyclopsData)
               value <- coef(fit)
               names(value) <- NULL
