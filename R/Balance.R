@@ -393,7 +393,7 @@ computeCovariateBalance <- function(population,
                                     maxCohortSize = 250000,
                                     covariateFilter = NULL,
                                     threshold = 0.1,
-                                    alpha = NULL) {
+                                    alpha = 0.05) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
@@ -477,7 +477,7 @@ computeCovariateBalance <- function(population,
 
   beforeMatching <- beforeMatching |>
     mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, threshold)) |>
-    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaBefore) else (abs(.data$stdDiff) >= threshold)) |>
+    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaBefore) else (abs(.data$stdDiff) <= threshold)) |>
     select("covariateId",
            beforeMatchingMeanTarget = "meanTarget",
            beforeMatchingMeanComparator = "meanComparator",
