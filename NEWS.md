@@ -7,6 +7,10 @@ Changes:
 
 2. Added `showUnbalanced` argument to `plotCovariateBalanceScatterPlot()`. Default value maintains old behavior.
 
+Bugfixes:
+
+1. Added some optimization to `createPs()` to prevent running out of memory for large data objects using Andromeda >= 1.0.0.
+
 
 CohortMethod 5.4.1
 ==================
