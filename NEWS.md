@@ -16,6 +16,8 @@ Bugfixes:
 
 1. Fixed NA covariate prevalences when calling `createCohortMethodDataSimulationProfile()`.
 
+2. Added some optimization to `createPs()` to prevent running out of memory for large data objects using Andromeda >= 1.0.0.
+
 
 CohortMethod 5.4.0
 ==================
