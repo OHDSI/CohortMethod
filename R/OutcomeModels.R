@@ -272,8 +272,9 @@ fitOutcomeModel <- function(population,
       # For debugging: log andromeda filename:
       ParallelLogger::logDebug("Andromeda filename: ", covariateData@driver@dbdir)
       # For debugging: Save a copy of the andromeda object:
-      tempFileName <- sprintf("e:/andromedaTemp/%s.zip", paste(sample(letters, 12), collapse = ""))
-      Andromeda::saveAndromeda(covariateData, tempFileName, maintainConnection = TRUE)
+      # tempFileName <- sprintf("e:/andromedaTemp/%s.zip", paste(sample(letters, 12), collapse = ""))
+      # ParallelLogger::logDebug("Andromeda temp filename: ", tempFileName)
+      # Andromeda::saveAndromeda(covariateData, tempFileName, maintainConnection = TRUE)
 
       outcomes <- covariateData$outcomes
       if (stratified) {
@@ -282,6 +283,7 @@ fitOutcomeModel <- function(population,
       } else {
         covariates <- covariateData$covariates
       }
+      Andromeda::flushAndromeda(covariateData)
       cyclopsData <- Cyclops::convertToCyclopsData(
         outcomes = outcomes,
         covariates = covariates,
@@ -294,7 +296,7 @@ fitOutcomeModel <- function(population,
         normalize = NULL,
         quiet = TRUE
       )
-
+      # unlink(tempFileName)
       if (!is.null(interactionTerms)) {
         # Check separability:
         separability <- Cyclops::getUnivariableSeparability(cyclopsData)
