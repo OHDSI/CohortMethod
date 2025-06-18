@@ -268,14 +268,6 @@ fitOutcomeModel <- function(population,
 
       # Fit model -------------------------------------------------------------------------------------------
       covariateData$outcomes <- informativePopulation
-
-      # For debugging: log andromeda filename:
-      ParallelLogger::logDebug("Andromeda filename: ", covariateData@driver@dbdir)
-      # For debugging: Save a copy of the andromeda object:
-      # tempFileName <- sprintf("e:/andromedaTemp/%s.zip", paste(sample(letters, 12), collapse = ""))
-      # ParallelLogger::logDebug("Andromeda temp filename: ", tempFileName)
-      # Andromeda::saveAndromeda(covariateData, tempFileName, maintainConnection = TRUE)
-
       outcomes <- covariateData$outcomes
       if (stratified) {
         covariates <- covariateData$covariates |>
