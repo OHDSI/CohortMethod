@@ -695,7 +695,7 @@ plotCovariateBalanceScatterPlot <- function(balance,
   if (threshold != 0) {
     plot <- plot + ggplot2::geom_hline(yintercept = c(
       threshold,
-      -thresholdD
+      -threshold
     ), alpha = 0.5, linetype = "dotted")
   }
   if (showCovariateCountLabel || showMaxLabel) {

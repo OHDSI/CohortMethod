@@ -50,9 +50,9 @@ test_that("cohortMethodData functions", {
 
 test_that("Create study population functions", {
   studyPop <- createStudyPopulation(cohortMethodData,
-    outcomeId = 194133,
-    removeSubjectsWithPriorOutcome = TRUE,
-    minDaysAtRisk = 1
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1
   )
   expect_true(all(studyPop$timeAtRisk > 0))
   peopleWithPriorOutcomes <- cohortMethodData$outcomes |>
@@ -65,7 +65,7 @@ test_that("Create study population functions", {
   expect_s3_class(aTable, "data.frame")
 
   plot <- plotTimeToEvent(cohortMethodData,
-    outcomeId = 194133
+                          outcomeId = 194133
   )
   expect_s3_class(plot, "ggplot")
 
@@ -83,9 +83,9 @@ test_that("Propensity score functions", {
   ps <- createPs(cohortMethodData, studyPop)
 
   studyPop <- createStudyPopulation(cohortMethodData,
-    outcomeId = 194133,
-    removeSubjectsWithPriorOutcome = TRUE,
-    minDaysAtRisk = 1
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1
   )
   # Cross-validation:
   ps <- createPs(cohortMethodData, studyPop)
@@ -124,9 +124,9 @@ test_that("Propensity score functions", {
 
   for (numberOfStrata in c(2, 5, 10, 20)) {
     strata <- stratifyByPsAndCovariates(psTrimmed,
-      numberOfStrata = numberOfStrata,
-      cohortMethodData = cohortMethodData,
-      covariateIds = c(0:27 * 1000 + 3, 8532001)
+                                        numberOfStrata = numberOfStrata,
+                                        cohortMethodData = cohortMethodData,
+                                        covariateIds = c(0:27 * 1000 + 3, 8532001)
     ) # age + sex
     expect_s3_class(strata, "data.frame")
   }
@@ -135,9 +135,9 @@ test_that("Propensity score functions", {
     for (caliperScale in c("propensity score", "standardized", "standardized logit")) {
       for (maxRatio in c(0, 1, 3)) {
         strata <- matchOnPs(psTrimmed,
-          caliper = caliper,
-          caliperScale = caliperScale,
-          maxRatio = maxRatio
+                            caliper = caliper,
+                            caliperScale = caliperScale,
+                            maxRatio = maxRatio
         )
         expect_s3_class(strata, "data.frame")
       }
@@ -148,11 +148,11 @@ test_that("Propensity score functions", {
     for (caliperScale in c("propensity score", "standardized", "standardized logit")) {
       for (maxRatio in c(0, 1, 3)) {
         strata <- matchOnPsAndCovariates(psTrimmed,
-          caliper = caliper,
-          caliperScale = caliperScale,
-          maxRatio = maxRatio,
-          cohortMethodData = cohortMethodData,
-          covariateIds = c(11:27, 8507)
+                                         caliper = caliper,
+                                         caliperScale = caliperScale,
+                                         maxRatio = maxRatio,
+                                         cohortMethodData = cohortMethodData,
+                                         covariateIds = c(11:27, 8507)
         ) # age + sex
         expect_s3_class(strata, "data.frame")
       }
@@ -162,9 +162,9 @@ test_that("Propensity score functions", {
 
 test_that("Balance functions", {
   studyPop <- createStudyPopulation(cohortMethodData,
-    outcomeId = 194133,
-    removeSubjectsWithPriorOutcome = TRUE,
-    minDaysAtRisk = 1
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1
   )
   ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
   psTrimmed <- trimByPsToEquipoise(ps)
@@ -193,11 +193,11 @@ test_that("Balance functions", {
 
 test_that("Outcome functions", {
   studyPop <- createStudyPopulation(cohortMethodData,
-    outcomeId = 194133,
-    removeSubjectsWithPriorOutcome = TRUE,
-    minDaysAtRisk = 1,
-    riskWindowStart = 0,
-    riskWindowEnd = 365
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1,
+                                    riskWindowStart = 0,
+                                    riskWindowEnd = 365
   )
   ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
 
@@ -209,27 +209,32 @@ test_that("Outcome functions", {
   for (modelType in c("logistic", "poisson", "cox")) {
     for (stratified in c(TRUE, FALSE)) {
       for (useCovariates in c(TRUE, FALSE)) {
-        writeLines(paste(
-          "modelType:",
-          modelType,
-          ",stratified:",
-          stratified,
-          ",useCovariates:",
-          useCovariates
-        ))
+        for (bootstrapCi in if(useCovariates) FALSE else TRUE) {
+          writeLines(paste(
+            "modelType:",
+            modelType,
+            ",stratified:",
+            stratified,
+            ",useCovariates:",
+            useCovariates,
+            ",bootstrapCI:",
+            bootstrapCi
+          ))
 
-        outcomeModel <- fitOutcomeModel(
-          population = strata,
-          cohortMethodData = cohortMethodData,
-          modelType = modelType,
-          stratified = stratified,
-          useCovariates = useCovariates,
-          prior = createPrior("laplace", 0.1)
-        )
-        expect_s3_class(outcomeModel, "OutcomeModel")
-        lbs <- c(lbs, confint(outcomeModel)[1])
-        # params <-
-        # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
+          outcomeModel <- fitOutcomeModel(
+            population = strata,
+            cohortMethodData = cohortMethodData,
+            modelType = modelType,
+            stratified = stratified,
+            useCovariates = useCovariates,
+            bootstrapCi = bootstrapCi,
+            prior = createPrior("laplace", 0.1)
+          )
+          expect_s3_class(outcomeModel, "OutcomeModel")
+          lbs <- c(lbs, confint(outcomeModel)[1])
+          # params <-
+          # c(params,paste('type:',type,',stratified:',stratified,',useCovariates:',useCovariates,',addExposureDaysToEnd:',addExposureDaysToEnd))
+        }
       }
     }
   }
@@ -256,11 +261,11 @@ test_that("Outcome functions", {
 
 test_that("Functions on outcome model", {
   studyPop <- createStudyPopulation(cohortMethodData,
-    outcomeId = 194133,
-    removeSubjectsWithPriorOutcome = TRUE,
-    minDaysAtRisk = 1,
-    riskWindowStart = 0,
-    riskWindowEnd = 365
+                                    outcomeId = 194133,
+                                    removeSubjectsWithPriorOutcome = TRUE,
+                                    minDaysAtRisk = 1,
+                                    riskWindowStart = 0,
+                                    riskWindowEnd = 365
   )
   ps <- createPs(cohortMethodData, studyPop, prior = createPrior("laplace", 0.1, exclude = 0))
 

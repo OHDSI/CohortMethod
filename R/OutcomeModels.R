@@ -39,6 +39,8 @@
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
 #' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
+#' @param bootstrapReplicates   When using bootstrapping to compute confidence intervals, how many replicates
+#'                              should be sampled?
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -65,6 +67,7 @@ fitOutcomeModel <- function(population,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
                             bootstrapCi = FALSE,
+                            bootstrapReplicates = 1000,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
@@ -92,6 +95,7 @@ fitOutcomeModel <- function(population,
   checkmate::assertLogical(useCovariates, len = 1, add = errorMessages)
   checkmate::assertLogical(inversePtWeighting, len = 1, add = errorMessages)
   checkmate::assertLogical(bootstrapCi, len = 1, add = errorMessages)
+  checkmate::assert_int(bootstrapReplicates, lower = 1, add = errorMessages)
   .assertCovariateId(interactionCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(includeCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -127,9 +131,9 @@ fitOutcomeModel <- function(population,
   if (bootstrapCi && useCovariates) {
     stop("Bootstrap confidence intervals has not been implemented for models including other covariates")
   }
-  if (bootstrapCi && modelType != "cox") {
-    stop("Bootstrap confidence intervals has only been implemented for Cox model")
-  }
+  # if (bootstrapCi && modelType != "cox") {
+  #   stop("Bootstrap confidence intervals has only been implemented for Cox model")
+  # }
 
   start <- Sys.time()
   treatmentEstimate <- NULL
@@ -380,28 +384,10 @@ fitOutcomeModel <- function(population,
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
           if (bootstrapCi) {
-            # Implementation of Austin P (2016), Variance estimation when using inverse probability of treatment weighting (IPTW) with survival analysis:
-            computeHr <- function(dummy, data) {
-              indices <- sample.int(n = nrow(data), size = nrow(data), replace = TRUE)
-              sampleData <- data[indices, ]
-              if (inversePtWeighting) {
-                weights <- sampleData$iptw
-              } else {
-                weights <- NULL
-              }
-              cyclopsData <- createCyclopsData(Surv(survivalTime, y) ~ treatment, weights = weights, modelType = "cox", data = sampleData)
-              fit <- fitCyclopsModel(cyclopsData)
-              value <- coef(fit)
-              names(value) <- NULL
-              return(value)
-            }
-            data <- population |>
-              inner_join(informativePopulation |>
-                           select("rowId", "y"),
-                         by = join_by("rowId"))
-            bootstrap <- sapply(seq_len(200), computeHr, data = data)
-            seLogRr <- sqrt(var(bootstrap))
-            ci <- c(0, logRr + qnorm(c(0.025, 0.975)) * seLogRr)
+            bootstrap <- Cyclops::runBootstrap(fit, bootstrapReplicates)
+            bootstrapSummary <- bootstrap$summary[as.character(treatmentVarId),]
+            ci <- c(0, bootstrapSummary$bpi_lower, bootstrapSummary$bpi_upper)
+            seLogRr <- bootstrapSummary$std_err
           } else {
             ci <- tryCatch(
               {

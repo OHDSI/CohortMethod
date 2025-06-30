@@ -11,7 +11,7 @@ computeCovariateBalance(
   maxCohortSize = 250000,
   covariateFilter = NULL,
   threshold = 0.1,
-  alpha = NULL
+  alpha = 0.05
 )
 }
 \arguments{
