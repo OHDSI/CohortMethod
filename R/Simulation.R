@@ -14,17 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
-##' Truncate low-prevalence covariates in a simulation profile
-##'
-##' @description
-##' Set to zero all low-prevalence covariates in the supplied simulation table
-##' in order to prevent identification of persons
-##' @title truncateSimulationProfile
-##' @param profile Object of class `CohortDataSimulationProfile`
-##' @param minCellCount Number of cases below which prevalence will be set to zero
-##' @return Modified copy of supplied simulation profile
 .truncateSimulationProfile <- function(profile, minCellCount = 5) {
     checkmate::assertClass(profile, "CohortDataSimulationProfile")
     checkmate::assertIntegerish(minCellCount, lower = 0L, upper = profile$metaData$populationSize)
@@ -72,7 +61,8 @@
 #' characteristics.
 #'
 #' @template CohortMethodData
-#' @param minCellCount If > 0, will apply `.truncateSimulationProfile()`
+#' @param minCellCount If > 0, willset to zero all low-prevalence covariates in
+#' the supplied simulation table in order to prevent identification of persons.
 #'
 #' @details
 #' The output of this function is an object that can be used by the [simulateCohortMethodData()]

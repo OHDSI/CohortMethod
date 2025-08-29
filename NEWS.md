@@ -1,4 +1,4 @@
-CohortMethod 5.4.1
+CohortMethod 5.5.0
 ==================
 
 Changes:

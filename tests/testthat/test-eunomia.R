@@ -244,14 +244,17 @@ test_that("Multiple analyses", {
     testthat::teardown_env()
   )
 
-  person <- DatabaseConnector::querySql(connection, "SELECT * FROM person;")
+  person <- DatabaseConnector::querySql(connection, "SELECT * FROM person;", snakeCaseToCamelCase = TRUE)
   personNew <- person
   personNew$GENDER_CONCEPT_ID <- rep(8507, nrow(personNew))
   personNew$GENDER_SOURCE_VALUE <- "F"
-  DatabaseConnector::insertTable(connection,
+  DatabaseConnector::insertTable(
+    connection = connection,
     tableName = "person",
     data = personNew,
-    dropTableIfExists = TRUE, createTable = TRUE
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    camelCaseToSnakeCase = TRUE
   )
 
   warningList <- capture_warnings({
@@ -275,10 +278,13 @@ test_that("Multiple analyses", {
   expect_equal(nrow(ref), 4)
 
   # Reset person table
-  DatabaseConnector::insertTable(connection,
+  DatabaseConnector::insertTable(
+    connection = connection,
     tableName = "person",
     data = person,
-    dropTableIfExists = TRUE, createTable = TRUE
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    camelCaseToSnakeCase = TRUE
   )
 
   expect_error(
