@@ -661,8 +661,6 @@ if (folderExists) {
 \fontsize{10}{12}
 \selectfont
 
-Note that you can use the `grepCovariateNames` to find covariate IDs.
-
 It is prudent to verify that covariate balance has also been achieved in the subgroups of interest. For example, we can check the covariate balance in the subpopulation of females:
 
 ```{r eval=FALSE}
