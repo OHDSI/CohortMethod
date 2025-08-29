@@ -246,8 +246,8 @@ test_that("Multiple analyses", {
 
   person <- DatabaseConnector::querySql(connection, "SELECT * FROM person;", snakeCaseToCamelCase = TRUE)
   personNew <- person
-  personNew$GENDER_CONCEPT_ID <- rep(8507, nrow(personNew))
-  personNew$GENDER_SOURCE_VALUE <- "F"
+  personNew$genderConceptId <- rep(8507, nrow(personNew))
+  personNew$genderSourceValue <- "F"
   DatabaseConnector::insertTable(
     connection = connection,
     tableName = "person",
