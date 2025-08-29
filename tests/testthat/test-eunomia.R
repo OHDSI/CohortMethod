@@ -248,7 +248,8 @@ test_that("Multiple analyses", {
   personNew <- person
   personNew$genderConceptId <- rep(8507, nrow(personNew))
   personNew$genderSourceValue <- "F"
-  DatabaseConnector::insertTable(connection,
+  DatabaseConnector::insertTable(
+    connection = connection,
     tableName = "person",
     data = personNew,
     dropTableIfExists = TRUE,
@@ -277,10 +278,13 @@ test_that("Multiple analyses", {
   expect_equal(nrow(ref), 4)
 
   # Reset person table
-  DatabaseConnector::insertTable(connection,
+  DatabaseConnector::insertTable(
+    connection = connection,
     tableName = "person",
     data = person,
-    dropTableIfExists = TRUE, createTable = TRUE
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    camelCaseToSnakeCase = TRUE
   )
 
   expect_error(
