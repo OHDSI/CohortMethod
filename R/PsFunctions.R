@@ -184,7 +184,6 @@ createPs <- function(cohortMethodData,
         population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
         # Instantiate sampled covariates to prevent out-of-memory error from Cyclops:
         covariateData$sampledCovariates <- covariates |>
-        covariates <- covariates |>
           filter(.data$rowId %in% local(population$rowId))
         covariates <- covariateData$sampledCovariates
       }
