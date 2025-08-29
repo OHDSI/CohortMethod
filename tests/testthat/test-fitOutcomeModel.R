@@ -18,7 +18,7 @@ test_that("population", {
   )
 
   ## 0 rows ----
-  emptyPop <- studyPop %>%
+  emptyPop <- studyPop |>
     filter(row_number() == 0)
 
   expect_output(
@@ -62,7 +62,7 @@ test_that("population", {
   )
 
   ## sum(outcomeCount) == 0 ----
-  pop <- studyPop %>%
+  pop <- studyPop |>
     mutate(outcomeCount = 0)
 
   expect_output(
@@ -273,10 +273,10 @@ test_that("stratified", {
   ))
 
   ## sum(treatment) == 0 ----
-  pop0 <- studyPopStratisfied %>%
+  pop0 <- studyPopStratisfied |>
     mutate(treatment = 0)
 
-  pop1 <- studyPopStratisfied %>%
+  pop1 <- studyPopStratisfied |>
     mutate(treatment = 1)
 
   expect_output(

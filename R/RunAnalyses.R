@@ -287,8 +287,8 @@ runCmAnalyses <- function(connectionDetails,
     refitPsForEveryOutcome = refitPsForEveryOutcome,
     refitPsForEveryStudyPopulation = refitPsForEveryStudyPopulation
   )
-  referenceTable %>%
-    select(-"includedCovariateConceptIds", "excludedCovariateConceptIds") %>%
+  referenceTable |>
+    select(-"includedCovariateConceptIds", "excludedCovariateConceptIds") |>
     saveRDS(file.path(outputFolder, "outcomeModelReference.rds"))
 
   # Create cohortMethodData objects -----------------------------
@@ -730,7 +730,7 @@ runCmAnalyses <- function(connectionDetails,
       calibrationThreads = multiThreadingSettings$calibrationThreads
     )
   }
-  referenceTable <- referenceTable %>%
+  referenceTable <- referenceTable |>
     select(-"includedCovariateConceptIds", "excludedCovariateConceptIds")
   invisible(referenceTable)
 }
@@ -913,11 +913,11 @@ doPrefilterCovariates <- function(params) {
     }
     covariatesToInclude <- unique(c(covariatesToInclude, params$args$interactionCovariateIds))
     if (length(covariatesToInclude) != 0) {
-      covariates <- covariates %>%
+      covariates <- covariates |>
         filter(.data$covariateId %in% covariatesToInclude)
     }
     if (length(covariatesToExclude) != 0) {
-      covariates <- covariates %>%
+      covariates <- covariates |>
         filter(!.data$covariateId %in% covariatesToExclude)
     }
   }
@@ -1076,26 +1076,26 @@ createReferenceTable <- function(cmAnalysisList,
   foldersToCreate <- foldersToCreate[!dir.exists(foldersToCreate)]
   sapply(foldersToCreate, dir.create)
   convertOutcomeToTable <- function(outcome) {
-    tibble(
+    table <- tibble(
       outcomeId = outcome$outcomeId,
       outcomeOfInterest = outcome$outcomeOfInterest,
       trueEffectSize = if (is.null(outcome$trueEffectSize)) as.numeric(NA) else outcome$trueEffectSize
-    ) %>%
-      return()
+    )
+    return(table)
   }
   convertTcosToTable <- function(tcos) {
-    lapply(tcos$outcomes, convertOutcomeToTable) %>%
-      bind_rows() %>%
+    table <- lapply(tcos$outcomes, convertOutcomeToTable) |>
+      bind_rows() |>
       mutate(
         targetId = tcos$targetId,
         comparatorId = tcos$comparatorId,
         includedCovariateConceptIds = paste(tcos$includedCovariateConceptIds, collapse = ","),
         excludedCovariateConceptIds = paste(tcos$excludedCovariateConceptIds, collapse = ",")
-      ) %>%
-      return()
+      )
+    return(table)
   }
   tcos <- bind_rows(lapply(targetComparatorOutcomesList, convertTcosToTable))
-  referenceTable <- analyses %>%
+  referenceTable <- analyses |>
     cross_join(tcos)
 
   # Add cohort method data file names
@@ -1485,7 +1485,7 @@ createReferenceTable <- function(cmAnalysisList,
   }
 
   # Add outcome model file names
-  referenceTable <- referenceTable %>%
+  referenceTable <- referenceTable |>
     mutate(outcomeModelFile = ifelse(.data$fitOutcomeModel,
                                      .createOutcomeModelFileName(
                                        folder = .data$analysisFolder,
@@ -1545,7 +1545,7 @@ createReferenceTable <- function(cmAnalysisList,
     }
     analysesToExclude <- analysesToExclude[, matchingColumns]
     countBefore <- nrow(referenceTable)
-    referenceTable <- referenceTable %>%
+    referenceTable <- referenceTable |>
       anti_join(analysesToExclude, by = matchingColumns)
     countAfter <- nrow(referenceTable)
     message(sprintf(
@@ -1703,7 +1703,7 @@ getInteractionResultsSummary <- function(outputFolder) {
 }
 
 summarizeResults <- function(referenceTable, outputFolder, mainFileName, interactionsFileName, calibrationThreads = 1) {
-  subset <- referenceTable %>%
+  subset <- referenceTable |>
     filter(.data$outcomeModelFile != "")
   mainResults <- vector("list", nrow(subset))
   interActionResults <- list()
@@ -1736,28 +1736,28 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     # Assuming we're interest in the attrition of the target population only. Could change to depend on type
     # of adjustment (e.g IPTW ATE should use target + comparator):
     attritionFraction <- 1 - (attrition$targetExposures[nrow(attrition)] / attrition$targetExposures[1])
-    result <- subset[i, ] %>%
+    result <- subset[i, ] |>
       select(
         "analysisId",
         "targetId",
         "comparatorId",
         "outcomeId",
         "trueEffectSize"
-      ) %>%
-      bind_cols(outcomeModel$populationCounts %>%
+      ) |>
+      bind_cols(outcomeModel$populationCounts |>
                   select(
                     targetSubjects = "targetPersons",
                     comparatorSubjects = "comparatorPersons"
-                  )) %>%
-      bind_cols(outcomeModel$timeAtRisk %>%
+                  )) |>
+      bind_cols(outcomeModel$timeAtRisk |>
                   select(
                     "targetDays",
                     "comparatorDays"
-                  )) %>%
-      bind_cols(outcomeModel$outcomeCounts %>%
+                  )) |>
+      bind_cols(outcomeModel$outcomeCounts |>
                   select("targetOutcomes", "comparatorOutcomes"))
 
-    mainResult <- result %>%
+    mainResult <- result |>
       mutate(
         rr = if (is.null(coefficient)) NA else exp(coefficient),
         ci95Lb = if (is.null(coefficient)) NA else exp(ci[1]),
@@ -1777,7 +1777,7 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
       for (j in seq_len(nrow(outcomeModel$outcomeModelInteractionEstimates))) {
         z <- outcomeModel$outcomeModelInteractionEstimates$logRr[j] / outcomeModel$outcomeModelInteractionEstimates$seLogRr[j]
         p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
-        interActionResults[[length(interActionResults) + 1]] <- result %>%
+        interActionResults[[length(interActionResults) + 1]] <- result |>
           mutate(
             interactionCovariateId = outcomeModel$outcomeModelInteractionEstimates$covariateId[j],
             rr = exp(outcomeModel$outcomeModelInteractionEstimates$logRr[j]),

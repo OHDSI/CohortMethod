@@ -76,14 +76,14 @@ computeMetrics <- function(sampleSize) {
 
 
   result <- dplyr::tibble(sampleSize = sampleSize,
-                           type = c("unadjusted", "stratified", "randomized"),
-                           p = c(x$overall$p.value, xRnd$overall$p.value[2]),
-                           maxAbsStdDiff = c(max(abs(bal$beforeMatchingStdDiff), na.rm = TRUE),
-                                             max(abs(bal$afterMatchingStdDiff), na.rm = TRUE),
-                                             max(abs(balRnd$afterMatchingStdDiff), na.rm = TRUE)),
-                           unbalCovs = c(sum(abs(bal$beforeMatchingStdDiff) > 0.1, na.rm = TRUE),
-                                         sum(abs(bal$afterMatchingStdDiff) > 0.1, na.rm = TRUE),
-                                         sum(abs(balRnd$afterMatchingStdDiff) > 0.1, na.rm = TRUE)))
+                          type = c("unadjusted", "stratified", "randomized"),
+                          p = c(x$overall$p.value, xRnd$overall$p.value[2]),
+                          maxAbsStdDiff = c(max(abs(bal$beforeMatchingStdDiff), na.rm = TRUE),
+                                            max(abs(bal$afterMatchingStdDiff), na.rm = TRUE),
+                                            max(abs(balRnd$afterMatchingStdDiff), na.rm = TRUE)),
+                          unbalCovs = c(sum(abs(bal$beforeMatchingStdDiff) > 0.1, na.rm = TRUE),
+                                        sum(abs(bal$afterMatchingStdDiff) > 0.1, na.rm = TRUE),
+                                        sum(abs(balRnd$afterMatchingStdDiff) > 0.1, na.rm = TRUE)))
   print(result)
 
 
@@ -263,62 +263,438 @@ newXbalance <- function(fmla, strataColumn = NULL , data, report = c("std.diffs"
 
 population <- readRDS("d:/temp/studyPop.rds")
 cohortMethodData <- loadCohortMethodData("d:/temp/cmData.zip")
-cohorts <- cohortMethodData$cohorts %>%
+cohorts <- cohortMethodData$cohorts |>
   collect()
 
-bal <- computeCovariateBalance(population, cohortMethodData) %>%
+bal <- computeCovariateBalance(population, cohortMethodData) |>
   arrange(covariateId)
 
 
-tPlusCBefore <- cohortMethodData$cohorts %>%
-  collect() %>%
-  select("rowId") %>%
+tPlusCBefore <- cohortMethodData$cohorts |>
+  collect() |>
+  select("rowId") |>
   mutate(treatment = 1)
-tPlusCAfter <- population %>%
-  # mutate(stratumId = stratumId + treatment * (1 + max(population$stratumId))) %>%
-  select("rowId", "stratumId") %>%
+tPlusCAfter <- population |>
+  # mutate(stratumId = stratumId + treatment * (1 + max(population$stratumId))) |>
+  select("rowId", "stratumId") |>
   mutate(treatment = 0)
 adjustedCohorts <- bind_rows(tPlusCBefore, tPlusCAfter)
 # cohortMethodData$adjustedCohorts <- adjustedCohorts
 # adjustedCohorts <- cohortMethodData$adjustedCohorts
-dummyBal <- CohortMethod:::computeMeansPerGroup(cohorts = adjustedCohorts, cohortMethodData, NULL) %>%
+dummyBal <- CohortMethod:::computeMeansPerGroup(cohorts = adjustedCohorts, cohortMethodData, NULL) |>
   arrange(covariateId)
 
 # Compute mean before the hard way:
-cohortMethodData$cohorts %>%
-  left_join(cohortMethodData$covariates %>%
+cohortMethodData$cohorts |>
+  left_join(cohortMethodData$covariates |>
               filter(covariateId == 1007),
-            by = join_by("rowId")) %>%
-  mutate(covariateValue = if_else(is.na(covariateValue), 0, covariateValue)) %>%
+            by = join_by("rowId")) |>
+  mutate(covariateValue = if_else(is.na(covariateValue), 0, covariateValue)) |>
   summarise(mean(covariateValue),
             sd(covariateValue))
 # Using the dummy cov balance:
-dummyBal %>%
-  select(meanTarget, sdTarget) %>%
+dummyBal |>
+  select(meanTarget, sdTarget) |>
   head(10)
 # Compute mean in before using computeCovariateBalance output:
 # Using insight that "The exact pooled variance is the mean of the variances
 # plus the variance of the means of the component data sets." from
 # https://arxiv.org/ftp/arxiv/papers/1007/1007.1012.pdf
-bal %>%
-  mutate(meanBefore = beforeMatchingMeanTarget * mean(cohorts$treatment) + beforeMatchingMeanComparator * mean(!cohorts$treatment)) %>%
+bal |>
+  mutate(meanBefore = beforeMatchingMeanTarget * mean(cohorts$treatment) + beforeMatchingMeanComparator * mean(!cohorts$treatment)) |>
   mutate(beforeVarTarget = beforeMatchingSdTarget^2,
-         beforeVarComparator = beforeMatchingSdComparator^2) %>%
+         beforeVarComparator = beforeMatchingSdComparator^2) |>
   mutate(meanVar = beforeVarTarget * mean(cohorts$treatment) + beforeVarComparator * mean(!cohorts$treatment),
-         varOfMeans = (beforeMatchingMeanTarget-meanBefore)^2 * mean(cohorts$treatment) + (beforeMatchingMeanComparator-meanBefore)^2 * mean(!cohorts$treatment)) %>%
-  mutate(sdBefore = sqrt(meanVar + varOfMeans)) %>%
-  select(meanBefore, sdBefore) %>%
+         varOfMeans = (beforeMatchingMeanTarget-meanBefore)^2 * mean(cohorts$treatment) + (beforeMatchingMeanComparator-meanBefore)^2 * mean(!cohorts$treatment)) |>
+  mutate(sdBefore = sqrt(meanVar + varOfMeans)) |>
+  select(meanBefore, sdBefore) |>
   head(10)
-bal  %>%
-  select("beforeMatchingMean", "beforeMatchingSd") %>%
+bal  |>
+  select("beforeMatchingMean", "beforeMatchingSd") |>
   head(10)
 
 # Same for after matching:
-dummyBal %>%
-  select(meanComparator, sdComparator) %>%
+dummyBal |>
+  select(meanComparator, sdComparator) |>
   head(10)
-bal %>%
-  select("afterMatchingMean", "afterMatchingSd") %>%
+bal |>
+  select("afterMatchingMean", "afterMatchingSd") |>
   head(10)
 
+# Implementing George's covariate balance ----------------------------------------------------------
+library(dplyr)
 
+# Simulation under the null, binary, no stratification
+threshold <- 0 # Normally 0.1, but then it is hard to figure what correct type 1 error is
+
+simulateOne <- function(seed) {
+  set.seed(seed)
+  n1 <- sample.int(90, 1) + 10
+  n0 <- sample.int(90, 1) + 10
+  proportion <- runif(1, 0.1, 0.9)
+  s1 <- rbinom(1, n1, proportion)
+  s0 <- rbinom(1, n0, proportion)
+
+  # George's algorithm:
+  p1 <- s1/n1
+  p0 <- s0/n0
+  var1 <- sqrt(p1 * (1-p1))
+  var0 <- sqrt(p0 * (1-p0))
+  sd <- sqrt((var1^2 + var0^2) / 2)
+  sdm <- (p1 - p0) / sd
+  varSdm <- (n1 + n0) / (n1*n0) + (sdm^2) / (2*(n1 + n0 - 2))
+  t <- (abs(sdm) - threshold)/sqrt(varSdm)
+  p <- (1 - pnorm(t))*2
+  return(p)
+}
+ps <- sapply(1:10000, simulateOne)
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.05290529 # Slightly higher than nominal, likely because of discrete counts
+
+
+# Simulation under the null, continuous, stratification
+threshold <- 0 # Normally 0.1, but then it is hard to figure what correct type 1 error is
+
+simulateOne <- function(seed) {
+  set.seed(seed)
+  nStrata <- 10
+  n1 <- sample.int(9, nStrata, replace = TRUE) + 1
+  n0 <- sample.int(9, nStrata, replace = TRUE) + 1
+  ratio <- n1/n0
+  proportion <- 1/(1+exp(1-ratio)) # Make proportion function of ratio to make problem non-trivial
+
+  # Create population data:
+  stratumId1 <- do.call(c, lapply(seq_len(nStrata), function(x) rep(x, n1[x])))
+  covariateValue1 <- rbinom(sum(n1), 1, proportion[stratumId1])
+  w1 <- 1/n1
+  w1 <- w1[stratumId1]
+  w1 <- w1 / sum(w1) # Normalization
+  sumW1 <- 1 # After normalization
+
+  stratumId0 <- do.call(c, lapply(seq_len(nStrata), function(x) rep(x, n0[x])))
+  covariateValue0 <- rbinom(sum(n0), 1, proportion[stratumId0])
+  w0 <- 1/n0
+  w0 <- w0[stratumId0]
+  w0 <- w0 / sum(w0) # Normalization
+  sumW0 <- 1 # After normalization
+
+  # Compute SDM using CohortMethod approach:
+  mean1 <- sum(w1 * covariateValue1)
+  sumSqr1 <- sum(w1 * covariateValue1^2)
+  sumWSqr1 <- sum(w1 ^ 2)
+  sd1 <- sqrt(abs(sumSqr1 - mean1^2) * sumW1 / (sumW1^2 - sumWSqr1))
+
+  mean0 <- sum(w0 * covariateValue0)
+  sumSqr0 <- sum(w0 * covariateValue0^2)
+  sumWSqr0 <- sum(w0 ^ 2)
+  sd0 <- sqrt(abs(sumSqr0 - mean0^2) * sumW0 / (sumW0^2 - sumWSqr0))
+
+  sd <- sqrt((sd1^2 + sd0^2) / 2)
+  sdm <- (mean1 - mean0) / sd
+
+  # Computing the variance of the SDM, taking stratification into account:
+  data <- tibble(
+    stratumId = c(stratumId1, stratumId0),
+    covariateValue = c(covariateValue1, covariateValue0),
+    treatment = c(rep(1, length(stratumId1)), rep(0, length(stratumId0)))
+  )
+  strataSizes <- data |>
+    group_by(.data$stratumId) |>
+    summarise(size = n())
+  numerator <- data |>
+    group_by(.data$treatment, .data$stratumId) |>
+    summarise(s = if_else(n() == 1, 0, var(.data$covariateValue) / n()), .groups = "drop") |>
+    inner_join(strataSizes, by = join_by("stratumId")) |>
+    mutate(s = s * ((size / nrow(data)) ^ 2)) |>
+    summarise(sum(s)) |>
+    pull()
+  varSdm <- numerator / sd^2
+
+  t <- (abs(sdm) - threshold)/sqrt(varSdm)
+  p <- (1 - pnorm(t))*2
+  return(p)
+}
+ps <- sapply(1:1000, simulateOne)
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.078
+
+# Simulation under the null, continuous, stratification, sparse covariates
+threshold <- 0
+
+simulateOne <- function(seed) {
+  set.seed(seed)
+  nStrata <- 10
+  n1 <- sample.int(9, nStrata, replace = TRUE) + 1
+  n0 <- sample.int(9, nStrata, replace = TRUE) + 1
+  ratio <- n1/n0
+  proportion <- 1/(1+exp(1-ratio)) # Make proportion function of ratio to make problem non-trivial
+
+  # Create population data:
+  stratumId1 <- do.call(c, lapply(seq_len(nStrata), function(x) rep(x, n1[x])))
+  covariateValue1 <- rbinom(sum(n1), 1, proportion[stratumId1])
+  stratumId0 <- do.call(c, lapply(seq_len(nStrata), function(x) rep(x, n0[x])))
+  covariateValue0 <- rbinom(sum(n0), 1, proportion[stratumId0])
+  data <- tibble(
+    rowId = seq_len(sum(n1) + sum(n0)),
+    stratumId = c(stratumId1, stratumId0),
+    covariateId = 1,
+    covariateValue = c(covariateValue1, covariateValue0),
+    treatment = c(rep(1, sum(n1)), rep(0, sum(n0)))
+  )
+  covariates <- data |>
+    filter(covariateValue != 0) |>
+    select("rowId", "covariateId", "covariateValue")
+  cohorts <- data |>
+    select("rowId", "stratumId", "treatment")
+
+  # Compute SDM using CohortMethod approach:
+  stratumSize <- cohorts |>
+    group_by(.data$stratumId, .data$treatment) |>
+    count() |>
+    ungroup() |>
+    collect()
+  sumW <- 1
+  w <- stratumSize |>
+    mutate(weight = 1 / .data$n) |>
+    inner_join(cohorts, by = c("stratumId", "treatment"), copy = TRUE) |>
+    select("rowId", "treatment", "weight")
+  wSum <- w |>
+    group_by(.data$treatment) |>
+    summarize(wSum = sum(.data$weight, na.rm = TRUE)) |>
+    ungroup()
+  w <- w |>
+    inner_join(wSum, by = "treatment") |>
+    mutate(weight = .data$weight / .data$wSum) |>
+    select("rowId", "treatment", "weight")
+  sumWSqr <- w |>
+    group_by(.data$treatment) |>
+    summarise(sumWSqr = sum(.data$weight^2, na.rm = TRUE))
+  result <- covariates |>
+    inner_join(w, by = c("rowId")) |>
+    group_by(.data$covariateId, .data$treatment) |>
+    summarise(
+      sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+      mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
+      sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    inner_join(sumWSqr, join_by("treatment")) |>
+    mutate(sd = sqrt(abs(.data$sumSqr - .data$mean^2) * sumW / (sumW^2 - .data$sumWSqr))) |>
+    ungroup() |>
+    select("covariateId", "treatment", "sum", "mean", "sd") |>
+    collect()
+
+  sd <- sqrt((sum(result$sd^2)) / 2)
+  sdm <- (result$mean[result$treatment == 1] - result$mean[result$treatment == 0]) / sd
+
+  # Compute variance of SDM using sparse data in efficient manner:
+  totalStratumSize <- stratumSize |>
+    group_by(.data$stratumId) |>
+    summarise(nInStratum = sum(.data$n))
+  nTotal <- sum(totalStratumSize$nInStratum)
+
+  variances <- covariates |>
+    inner_join(cohorts, by = join_by("rowId")) |>
+    group_by(.data$treatment, .data$stratumId, .data$covariateId) |>
+    summarise(
+      sumX = sum(.data$covariateValue),
+      sumXsqr = sum(.data$covariateValue * .data$covariateValue),
+      .groups = "drop"
+    ) |>
+    inner_join(stratumSize, by = join_by("treatment", "stratumId")) |>
+    mutate(
+      sumX = coalesce(sumX, 0),
+      sumXsqr = coalesce(sumXsqr, 0)
+    ) |>
+    mutate(
+      sumSqrDiffs = sumXsqr - (sumX * sumX) / n,
+      variance = case_when(
+        n <= 1 ~ 0.0,
+        TRUE ~ sumSqrDiffs / (n - 1)
+      )
+    )
+  numerator <- variances |>
+    inner_join(totalStratumSize, by = join_by("stratumId")) |>
+    mutate(s = (variance / n) * ((nInStratum / nTotal) ^ 2)) |>
+    summarise(sum(s)) |>
+    pull()
+  varSdm <- numerator / sd^2
+  t <- (abs(sdm) - threshold)/sqrt(varSdm)
+  p <- (1 - pnorm(t))*2
+  return(p)
+}
+ps <- sapply(1:1000, simulateOne)
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.078
+
+# Simulation under the null, continuous, stratification, sparse covariates, use code implemented in package
+simulateOne <- function(seed) {
+  print(seed)
+  set.seed(seed)
+
+  threshold <- 0
+
+  nStrata <- 10
+  n1 <- sample.int(9, nStrata, replace = TRUE) + 1
+  n0 <- sample.int(9, nStrata, replace = TRUE) + 1
+  ratio <- n1/n0
+  proportion <- 1/(1+exp(1-ratio)) # Make proportion function of ratio to make problem non-trivial
+
+  # Create population data:
+  stratumId1 <- do.call(c, lapply(seq_len(nStrata), function(x) rep(x, n1[x])))
+  covariateValue1 <- rbinom(sum(n1), 1, proportion[stratumId1])
+  stratumId0 <- do.call(c, lapply(seq_len(nStrata), function(x) rep(x, n0[x])))
+  covariateValue0 <- rbinom(sum(n0), 1, proportion[stratumId0])
+  data <- tibble(
+    rowId = seq_len(sum(n1) + sum(n0)),
+    stratumId = c(stratumId1, stratumId0),
+    covariateId = 1,
+    covariateValue = c(covariateValue1, covariateValue0),
+    treatment = c(rep(1, sum(n1)), rep(0, sum(n0)))
+  )
+  cohortMethodData <- Andromeda::andromeda()
+  cohortMethodData$covariates <- data |>
+    filter(covariateValue != 0) |>
+    select("rowId", "covariateId", "covariateValue")
+  cohortMethodData$cohorts <- data |>
+    select("rowId", "stratumId", "treatment")
+
+  balance <- CohortMethod:::computeMeansPerGroup(
+    cohorts = cohortMethodData$cohorts,
+    cohortMethodData = cohortMethodData,
+    covariateFilter = NULL
+  )
+  t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
+  p <- (1 - pnorm(t))*2
+  return(p)
+}
+cluster <- ParallelLogger::makeCluster(10)
+ParallelLogger::clusterRequire(cluster, "dplyr")
+ps <- ParallelLogger::clusterApply(cluster, 1:1000, simulateOne)
+ParallelLogger::stopCluster(cluster)
+
+ps <- unlist(ps)
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.078
+
+# Simulation under the null, continuous, no stratification
+threshold <- 0
+
+simulateOne <- function(seed) {
+  set.seed(seed)
+  n1 <- sample.int(90, 1) + 10
+  n0 <- sample.int(90, 1) + 10
+  trueMean <- runif(1, 0.1, 5)
+  trueSd <- 1
+  x1 <- rnorm(n1, mean = trueMean, sd = trueSd)
+  x0 <- rnorm(n0, mean = trueMean, sd = trueSd)
+
+  mean1 <- mean(x1)
+  mean0 <- mean(x0)
+  sd1 <- sd(x1)
+  sd0 <- sd(x0)
+  sd <- sqrt((sd1 ^ 2 + sd0^2) / 2)
+  sdm <- (mean1 - mean0) / sd
+  varSdm <- (n1 + n0) / (n1*n0) + (sdm^2) / (2*(n1 + n0 - 2))
+  t <- (abs(sdm) - threshold)/sqrt(varSdm)
+  p <- pnorm(t, lower.tail = FALSE)
+  return(p)
+}
+ps <- sapply(1:10000, simulateOne)
+mean(ps<0.05/2, na.rm = TRUE) # Divide by 2 because we take absolute value
+# [1] 0.053 #
+
+# Simulation under the null, continuous, no stratification, sparse, use code in package
+simulateOne <- function(seed) {
+  threshold <- 0
+
+  set.seed(seed)
+  n1 <- sample.int(90, 1) + 10
+  n0 <- sample.int(90, 1) + 10
+  trueMean <- runif(1, 0.1, 5)
+  trueSd <- 1
+  x1 <- rnorm(n1, mean = trueMean, sd = trueSd)
+  x0 <- rnorm(n0, mean = trueMean, sd = trueSd)
+
+  data <- tibble(
+    rowId = seq_len(sum(n1) + sum(n0)),
+    covariateId = 1,
+    covariateValue = c(x1, x0),
+    treatment = c(rep(1, sum(n1)), rep(0, sum(n0)))
+  )
+  cohortMethodData <- Andromeda::andromeda()
+  cohortMethodData$covariates <- data |>
+    filter(covariateValue != 0) |>
+    select("rowId", "covariateId", "covariateValue")
+  cohortMethodData$cohorts <- data |>
+    select("rowId", "treatment")
+
+  balance <- CohortMethod:::computeMeansPerGroup(
+    cohorts = cohortMethodData$cohorts,
+    cohortMethodData = cohortMethodData,
+    covariateFilter = NULL
+  )
+  t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
+  p <- (1 - pnorm(t))*2
+  return(p)
+}
+cluster <- ParallelLogger::makeCluster(10)
+ParallelLogger::clusterRequire(cluster, "dplyr")
+ps <- ParallelLogger::clusterApply(cluster, 1:1000, simulateOne)
+ParallelLogger::stopCluster(cluster)
+
+ps <- unlist(ps)
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.059
+
+# Simulation under the null, continuous, IPTW, sparse, use code in package
+simulateOne <- function(seed) {
+  threshold <- 0
+
+  set.seed(seed)
+  n1 <- sample.int(90, 1) + 10
+  n0 <- sample.int(90, 1) + 10
+  trueMean <- runif(1, 0.1, 5)
+  trueSd <- 1
+  x1 <- rnorm(n1, mean = trueMean, sd = trueSd)
+  x0 <- rnorm(n0, mean = trueMean, sd = trueSd)
+
+  data <- tibble(
+    rowId = seq_len(sum(n1) + sum(n0)),
+    covariateId = 1,
+    covariateValue = c(x1, x0),
+    treatment = c(rep(1, sum(n1)), rep(0, sum(n0)))
+  ) |> mutate(
+    propensityScore = case_when(
+      treatment == 1 ~ 0.6 + 0.1 * covariateValue,
+      treatment == 0 ~ 0.4 - 0.1 * covariateValue
+    )
+  ) |>
+    mutate(propensityScore = pmin(pmax(propensityScore, 0.01), 0.99)) |>
+    mutate(iptw = if_else(treatment == 1,
+                      (n1 / (n1 + n0)) / propensityScore,
+                      (n0 / (n1 + n0)) / (1 - propensityScore)))
+  cohortMethodData <- Andromeda::andromeda()
+  cohortMethodData$covariates <- data |>
+    filter(covariateValue != 0) |>
+    select("rowId", "covariateId", "covariateValue")
+  cohortMethodData$cohorts <- data |>
+    select("rowId", "treatment", "iptw")
+
+  balance <- CohortMethod:::computeMeansPerGroup(
+    cohorts = cohortMethodData$cohorts,
+    cohortMethodData = cohortMethodData,
+    covariateFilter = NULL
+  )
+  t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
+  p <- (1 - pnorm(t))*2
+  return(p)
+}
+cluster <- ParallelLogger::makeCluster(10)
+ParallelLogger::clusterRequire(cluster, "dplyr")
+ps <- ParallelLogger::clusterApply(cluster, 1:1000, simulateOne)
+ParallelLogger::stopCluster(cluster)
+
+ps <- unlist(ps)
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.067

@@ -1,3 +1,13 @@
+CohortMethod 5.5.0
+==================
+
+Changes:
+
+1. Added `threshold` and `alpha` arguments to `computeCovariateBalance()`, implementing George's new balance metric (ony mark covariates as unbalanced when absolute SDM is **significantly** greater than the threshold). Default values maintain old behaviour.
+
+2. Added `showUnbalanced` argument to `plotCovariateBalanceScatterPlot()`. Default value maintains old behavior.
+
+
 CohortMethod 5.4.1
 ==================
 

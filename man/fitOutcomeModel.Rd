@@ -11,6 +11,8 @@ fitOutcomeModel(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
+  bootstrapCi = FALSE,
+  bootstrapReplicates = 1000,
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
@@ -40,6 +42,11 @@ scores)?}
 object in the outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)}
+
+\item{bootstrapCi}{Compute confidence interval using bootstrapping instead of likelihood profiling?}
+
+\item{bootstrapReplicates}{When using bootstrapping to compute confidence intervals, how many replicates
+should be sampled?}
 
 \item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
 with the main treatment effect.}

@@ -38,6 +38,9 @@
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
+#' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
+#' @param bootstrapReplicates   When using bootstrapping to compute confidence intervals, how many replicates
+#'                              should be sampled?
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
 #'                                 with the main treatment effect.
 #' @param excludeCovariateIds   Exclude these covariates from the outcome model.
@@ -63,6 +66,8 @@ fitOutcomeModel <- function(population,
                             stratified = FALSE,
                             useCovariates = FALSE,
                             inversePtWeighting = FALSE,
+                            bootstrapCi = FALSE,
+                            bootstrapReplicates = 1000,
                             interactionCovariateIds = c(),
                             excludeCovariateIds = c(),
                             includeCovariateIds = c(),
@@ -89,6 +94,8 @@ fitOutcomeModel <- function(population,
   checkmate::assertLogical(stratified, len = 1, add = errorMessages)
   checkmate::assertLogical(useCovariates, len = 1, add = errorMessages)
   checkmate::assertLogical(inversePtWeighting, len = 1, add = errorMessages)
+  checkmate::assertLogical(bootstrapCi, len = 1, add = errorMessages)
+  checkmate::assert_int(bootstrapReplicates, lower = 1, add = errorMessages)
   .assertCovariateId(interactionCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
   .assertCovariateId(includeCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -118,6 +125,15 @@ fitOutcomeModel <- function(population,
   if (!is.null(profileGrid) && !is.null(profileBounds)) {
     stop("Can't specify both a grid and bounds for likelihood profiling")
   }
+  if (bootstrapCi && !is.null(interactionCovariateIds)) {
+    stop("Bootstrap confidence intervals has not been implemented for interactions")
+  }
+  if (bootstrapCi && useCovariates) {
+    stop("Bootstrap confidence intervals has not been implemented for models including other covariates")
+  }
+  # if (bootstrapCi && modelType != "cox") {
+  #   stop("Bootstrap confidence intervals has only been implemented for Cox model")
+  # }
 
   start <- Sys.time()
   treatmentEstimate <- NULL
@@ -162,18 +178,18 @@ fitOutcomeModel <- function(population,
         metaData$deletedRedundantCovariateIdsForOutcomeModel <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
         metaData$deletedInfrequentCovariateIdsForOutcomeModel <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
 
-        mainEffectTerms <- covariateData$covariates %>%
-          distinct(.data$covariateId) %>%
-          inner_join(covariateData$covariateRef, by = "covariateId") %>%
-          select(id = "covariateId", name = "covariateName") %>%
+        mainEffectTerms <- covariateData$covariates |>
+          distinct(.data$covariateId) |>
+          inner_join(covariateData$covariateRef, by = "covariateId") |>
+          select(id = "covariateId", name = "covariateName") |>
           collect()
 
-        treatmentVarId <- cohortMethodData$covariates %>%
-          summarise(value = max(.data$covariateId, na.rm = TRUE)) %>%
+        treatmentVarId <- cohortMethodData$covariates |>
+          summarise(value = max(.data$covariateId, na.rm = TRUE)) |>
           pull() + 1
 
-        treatmentCovariate <- informativePopulation %>%
-          select("rowId", covariateValue = "treatment") %>%
+        treatmentCovariate <- informativePopulation |>
+          select("rowId", covariateValue = "treatment") |>
           mutate(covariateId = treatmentVarId)
 
         appendToTable(covariateData$covariates, treatmentCovariate)
@@ -187,8 +203,8 @@ fitOutcomeModel <- function(population,
         # Don't add covariates, only use treatment as covariate ----------------------------------------------
         treatmentVarId <- 1
 
-        treatmentCovariate <- informativePopulation %>%
-          select("rowId", covariateValue = "treatment") %>%
+        treatmentCovariate <- informativePopulation |>
+          select("rowId", covariateValue = "treatment") |>
           mutate(covariateId = treatmentVarId)
 
         covariateData <- Andromeda::andromeda(
@@ -202,25 +218,25 @@ fitOutcomeModel <- function(population,
       # Interaction terms -----------------------------------------------------------------------------------
       interactionTerms <- NULL
       if (length(interactionCovariateIds) != 0) {
-        covariateData$covariatesSubset <- cohortMethodData$covariates %>%
-          filter(.data$covariateId %in% interactionCovariateIds) %>%
+        covariateData$covariatesSubset <- cohortMethodData$covariates |>
+          filter(.data$covariateId %in% interactionCovariateIds) |>
           filter(.data$rowId %in% local(informativePopulation$rowId))
 
         # Cannot have interaction terms without main effects, so add covariates if they haven't been included already:
         if (!useCovariates) {
           appendToTable(covariateData$covariates, covariateData$covariatesSubset)
-          mainEffectTerms <- covariateData$covariatesSubset %>%
-            distinct(.data$covariateId) %>%
-            inner_join(covariateData$covariateRef, by = "covariateId") %>%
-            select(id = "covariateId", name = "covariateName") %>%
+          mainEffectTerms <- covariateData$covariatesSubset |>
+            distinct(.data$covariateId) |>
+            inner_join(covariateData$covariateRef, by = "covariateId") |>
+            select(id = "covariateId", name = "covariateName") |>
             collect()
         } else {
           # TODO: check if main effect covariate exists in data
-          mainEffectTermsCheck <- !is.null(covariateData$covariates %>%
-            distinct(.data$covariateId) %>%
-            inner_join(covariateData$covariateRef, by = "covariateId") %>%
-            select(id = "covariateId", name = "covariateName") %>%
-            collect())
+          mainEffectTermsCheck <- !is.null(covariateData$covariates |>
+                                             distinct(.data$covariateId) |>
+                                             inner_join(covariateData$covariateRef, by = "covariateId") |>
+                                             select(id = "covariateId", name = "covariateName") |>
+                                             collect())
 
           if (!mainEffectTermsCheck) {
             stop("No main effects exist.")
@@ -228,9 +244,9 @@ fitOutcomeModel <- function(population,
         }
 
         # Create interaction terms
-        interactionTerms <- covariateData$covariateRef %>%
-          filter(.data$covariateId %in% interactionCovariateIds) %>%
-          select("covariateId", "covariateName") %>%
+        interactionTerms <- covariateData$covariateRef |>
+          filter(.data$covariateId %in% interactionCovariateIds) |>
+          select("covariateId", "covariateName") |>
           collect()
 
         interactionTerms$interactionId <- treatmentVarId + seq_len(nrow(interactionTerms))
@@ -241,19 +257,19 @@ fitOutcomeModel <- function(population,
         targetRowIds <- informativePopulation$rowId[informativePopulation$treatment == 1]
         # Call to compute() is required or else DuckDB complains about rowId being ambigous (even
         # though it does not exist in covariateData$interactionTerms)
-        interactionCovariates <- covariateData$covariatesSubset %>%
-          filter(.data$rowId %in% targetRowIds) %>%
-          inner_join(covariateData$interactionTerms, by = "covariateId") %>%
-          compute() %>%
-          select("rowId", "interactionId", "covariateValue") %>%
+        interactionCovariates <- covariateData$covariatesSubset |>
+          filter(.data$rowId %in% targetRowIds) |>
+          inner_join(covariateData$interactionTerms, by = "covariateId") |>
+          compute() |>
+          select("rowId", "interactionId", "covariateValue") |>
           rename(covariateId = .data$interactionId)
 
         appendToTable(covariateData$covariates, interactionCovariates)
 
-        uniqueCovariateIds <- covariateData$covariates %>%
-          distinct(.data$covariateId) %>%
+        uniqueCovariateIds <- covariateData$covariates |>
+          distinct(.data$covariateId) |>
           pull()
-        interactionTerms <- interactionTerms %>%
+        interactionTerms <- interactionTerms |>
           filter(.data$interactionId %in% uniqueCovariateIds, )
 
         if (nrow(interactionTerms) == 0) {
@@ -270,7 +286,7 @@ fitOutcomeModel <- function(population,
       covariateData$outcomes <- informativePopulation
       outcomes <- covariateData$outcomes
       if (stratified) {
-        covariates <- covariateData$covariates %>%
+        covariates <- covariateData$covariates |>
           inner_join(select(covariateData$outcomes, "rowId", "stratumId"), by = "rowId")
       } else {
         covariates <- covariateData$covariates
@@ -305,7 +321,7 @@ fitOutcomeModel <- function(population,
             removeCovariateIds,
             interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]
           ))
-          covariates <- covariates %>%
+          covariates <- covariates |>
             filter(!.data$covariateId %in% removeCovariateIds)
 
           cyclopsData <- Cyclops::convertToCyclopsData(
@@ -367,19 +383,26 @@ fitOutcomeModel <- function(population,
           status <- "OK"
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-          ci <- tryCatch(
-            {
-              confint(fit, parm = treatmentVarId, includePenalty = TRUE)
-            },
-            error = function(e) {
-              missing(e) # suppresses R CMD check note
-              c(0, -Inf, Inf)
+          if (bootstrapCi) {
+            bootstrap <- Cyclops::runBootstrap(fit, bootstrapReplicates)
+            bootstrapSummary <- bootstrap$summary[as.character(treatmentVarId),]
+            ci <- c(0, bootstrapSummary$bpi_lower, bootstrapSummary$bpi_upper)
+            seLogRr <- bootstrapSummary$std_err
+          } else {
+            ci <- tryCatch(
+              {
+                confint(fit, parm = treatmentVarId, includePenalty = TRUE)
+              },
+              error = function(e) {
+                missing(e) # suppresses R CMD check note
+                c(0, -Inf, Inf)
+              }
+            )
+            if (identical(ci, c(0, -Inf, Inf))) {
+              status <- "ERROR COMPUTING CI"
             }
-          )
-          if (identical(ci, c(0, -Inf, Inf))) {
-            status <- "ERROR COMPUTING CI"
+            seLogRr <- (ci[3] - ci[2]) / (2 * qnorm(0.975))
           }
-          seLogRr <- (ci[3] - ci[2]) / (2 * qnorm(0.975))
           llNull <- Cyclops::getCyclopsProfileLogLikelihood(
             object = fit,
             parm = treatmentVarId,
@@ -496,9 +519,9 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
     population$y[population$y != 0] <- 1
   }
   if (stratified) {
-    informativePopulation <- population %>%
-      filter(.data$y != 0) %>%
-      distinct(.data$stratumId) %>%
+    informativePopulation <- population |>
+      filter(.data$y != 0) |>
+      distinct(.data$stratumId) |>
       inner_join(population, by = "stratumId")
   } else {
     informativePopulation <- population
@@ -546,15 +569,15 @@ filterAndTidyCovariates <- function(cohortMethodData,
                                     includeRowIds,
                                     includeCovariateIds,
                                     excludeCovariateIds) {
-  covariates <- cohortMethodData$covariates %>%
+  covariates <- cohortMethodData$covariates |>
     filter(.data$rowId %in% includeRowIds)
 
   if (length(includeCovariateIds) != 0) {
-    covariates <- covariates %>%
+    covariates <- covariates |>
       filter(.data$covariateId %in% includeCovariateIds)
   }
   if (length(excludeCovariateIds) != 0) {
-    covariates <- covariates %>%
+    covariates <- covariates |>
       filter(!.data$covariateId %in% includeCovariateIds)
   }
   filteredCovariateData <- Andromeda::andromeda(
@@ -591,12 +614,12 @@ getOutcomeCounts <- function(population, modelType) {
 
 createSubgroupCounts <- function(interactionCovariateIds, covariatesSubset, population, modelType) {
   createSubgroupCounts <- function(subgroupCovariateId) {
-    subgroupRowIds <- covariatesSubset %>%
-      filter(.data$covariateId %in% subgroupCovariateId) %>%
-      distinct(.data$rowId) %>%
+    subgroupRowIds <- covariatesSubset |>
+      filter(.data$covariateId %in% subgroupCovariateId) |>
+      distinct(.data$rowId) |>
       pull()
 
-    subgroup <- population %>%
+    subgroup <- population |>
       filter(.data$rowId %in% subgroupRowIds)
 
     counts <- bind_cols(
@@ -702,9 +725,9 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
   attr(cfs, "names")[attr(cfs, "names") == "(Intercept)"] <- 0
   cfs <- data.frame(coefficient = cfs, id = as.numeric(attr(cfs, "names")))
 
-  ref <- cohortMethodData$covariateRef %>%
-    filter(.data$covariateId %in% local(cfs$covariateId)) %>%
-    select(id = "covariateId", name = "covariateName") %>%
+  ref <- cohortMethodData$covariateRef |>
+    filter(.data$covariateId %in% local(cfs$covariateId)) |>
+    select(id = "covariateId", name = "covariateName") |>
     collect()
 
   ref <- bind_rows(
@@ -719,7 +742,7 @@ getOutcomeModel <- function(outcomeModel, cohortMethodData) {
     )
   )
 
-  cfs <- cfs %>%
+  cfs <- cfs |>
     inner_join(ref, by = "id")
   return(cfs)
 }

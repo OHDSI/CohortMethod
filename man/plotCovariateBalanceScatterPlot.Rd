@@ -13,7 +13,8 @@ plotCovariateBalanceScatterPlot(
   beforeLabel = "Before matching",
   afterLabel = "After matching",
   showCovariateCountLabel = FALSE,
-  showMaxLabel = FALSE
+  showMaxLabel = FALSE,
+  showUnbalanced = FALSE
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ function \code{ggsave} in the ggplot2 package for supported file formats.}
 \item{showCovariateCountLabel}{Show a label with the number of covariates included in the plot?}
 
 \item{showMaxLabel}{Show a label with the maximum absolute standardized difference after matching/stratification?}
+
+\item{showUnbalanced}{Show covariates that are considered unbalanced with a different color?}
 }
 \value{
 A ggplot object. Use the \link[ggplot2:ggsave]{ggplot2::ggsave} function to save to file in a different

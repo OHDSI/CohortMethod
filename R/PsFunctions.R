@@ -101,7 +101,7 @@ createPs <- function(cohortMethodData,
   checkmate::reportAssertions(collection = errorMessages)
 
   if (is.null(population)) {
-    population <- cohortMethodData$cohorts %>%
+    population <- cohortMethodData$cohorts |>
       collect()
   }
   if (!("rowId" %in% colnames(population))) {
@@ -126,8 +126,8 @@ createPs <- function(cohortMethodData,
     sampled <- FALSE
     ref <- NULL
   } else {
-    rowIds <- cohortMethodData$covariates %>%
-      distinct(.data$rowId) %>%
+    rowIds <- cohortMethodData$covariates |>
+      distinct(.data$rowId) |>
       pull()
     if (all(rowIds %in% population$rowId) &&
         length(includeCovariateIds) == 0 &&
@@ -136,15 +136,15 @@ createPs <- function(cohortMethodData,
       covariateData <- FeatureExtraction::tidyCovariateData(cohortMethodData)
     } else {
       # Need filtering here before sending it to tidyCovariateData:
-      covariates <- cohortMethodData$covariates %>%
+      covariates <- cohortMethodData$covariates |>
         filter(.data$rowId %in% local(population$rowId))
 
       if (length(includeCovariateIds) != 0) {
-        covariates <- covariates %>%
+        covariates <- covariates |>
           filter(.data$covariateId %in% includeCovariateIds)
       }
       if (length(excludeCovariateIds) != 0) {
-        covariates <- covariates %>%
+        covariates <- covariates |>
           filter(!.data$covariateId %in% excludeCovariateIds)
       }
       filteredCovariateData <- Andromeda::andromeda(
@@ -184,6 +184,7 @@ createPs <- function(cohortMethodData,
         population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
         # Instantiate sampled covariates to prevent out-of-memory error from Cyclops:
         covariateData$sampledCovariates <- covariates |>
+        covariates <- covariates |>
           filter(.data$rowId %in% local(population$rowId))
         covariates <- covariateData$sampledCovariates
       }
@@ -206,8 +207,8 @@ createPs <- function(cohortMethodData,
       suspect <- suspect[!is.na(suspect)]
       if (length(suspect) != 0) {
         covariateIds <- as.numeric(names(suspect))
-        ref <- cohortMethodData$covariateRef %>%
-          filter(.data$covariateId %in% covariateIds) %>%
+        ref <- cohortMethodData$covariateRef |>
+          filter(.data$covariateId %in% covariateIds) |>
           collect()
         message("High correlation between covariate(s) and treatment detected:")
         message(paste(colnames(ref), collapse = "\t"))
@@ -364,8 +365,8 @@ getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
-    covariateIdIsInteger64 <- cohortMethodData$covariateRef %>%
-      pull(.data$covariateId) %>%
+    covariateIdIsInteger64 <- cohortMethodData$covariateRef |>
+      pull(.data$covariateId) |>
       is("integer64")
     if (covariateIdIsInteger64) {
       coefficients <- tibble(
@@ -378,12 +379,12 @@ getPsModel <- function(propensityScore, cohortMethodData) {
         covariateId = as.numeric(attr(coefficients, "names"))
       )
     }
-    covariateRef <- cohortMethodData$covariateRef %>%
+    covariateRef <- cohortMethodData$covariateRef |>
       collect()
-    coefficients <- coefficients %>%
-      inner_join(covariateRef, by = "covariateId") %>%
+    coefficients <- coefficients |>
+      inner_join(covariateRef, by = "covariateId") |>
       select("coefficient", "covariateId", "covariateName")
-    result <- bind_rows(result, coefficients) %>%
+    result <- bind_rows(result, coefficients) |>
       arrange(-abs(.data$coefficient))
   }
   return(result)
@@ -838,7 +839,7 @@ trimByIptw <- function(population, maxWeight = 10) {
   checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  population <- population %>%
+  population <- population |>
     filter(.data$iptw <= maxWeight)
   if (!is.null(attr(population, "metaData"))) {
     metaData <- attr(population, "metaData")
@@ -887,14 +888,14 @@ truncateIptw <- function(population, maxWeight = 10) {
 
   nTruncated <- sum(population$iptw > maxWeight)
   message(sprintf("Truncating %s (%0.1f%%) IPTW values", nTruncated, 100 * nTruncated / nrow(population)))
-  population <- population %>%
+  population <- population |>
     mutate(iptw = ifelse(.data$iptw > maxWeight, maxWeight, .data$iptw))
   return(population)
 }
 
 mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
-  covariates <- cohortMethodData$covariates %>%
-    filter(.data$covariateId %in% covariateIds) %>%
+  covariates <- cohortMethodData$covariates |>
+    filter(.data$covariateId %in% covariateIds) |>
     collect()
 
   for (covariateId in covariateIds) {
@@ -1038,7 +1039,7 @@ matchOnPs <- function(population,
       caliper = caliper
     )
     if (length(results) == 0) {
-      result <- population %>%
+      result <- population |>
         mutate(stratumId = 0)
     } else {
       maxStratumId <- 0

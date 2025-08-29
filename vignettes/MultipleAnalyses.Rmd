@@ -409,11 +409,11 @@ If for some reason the execution was interrupted, you can restart by re-issuing 
 The result of the `runCmAnalyses()` is a data frame with one row per target-target-outcome-analysis combination. It provides the file names of the intermediate and end-result files that were constructed. For example, we can retrieve and plot the propensity scores for the combination of our target, comparator, outcome of interest, and last analysis:
 
 ```{r eval=FALSE}
-psFile <- result %>%
+psFile <- result |>
   filter(targetId == 1,
          comparatorId == 2,
          outcomeId == 77,
-         analysisId == 5) %>%
+         analysisId == 5) |>
   pull(psFile)
 ps <- readRDS(file.path(folder, psFile))
 plotPs(ps)
@@ -421,11 +421,11 @@ plotPs(ps)
 ```{r echo=FALSE,message=FALSE}
 if (folderExists) {
   result <- readRDS(file.path(folder, "outcomeModelReference.rds"))
-  psFile <- result %>%
+  psFile <- result |>
     filter(targetId == 1,
            comparatorId == 2,
            outcomeId == 77,
-           analysisId == 5) %>%
+           analysisId == 5) |>
     pull(psFile)
   ps <- readRDS(file.path(folder, psFile))
   plotPs(ps)
@@ -462,10 +462,10 @@ install.packages("EmpiricalCalibration")
 library(EmpiricalCalibration)
 
 # Analysis 1: No matching, simple outcome model
-ncs <- resultsSum %>%
+ncs <- resultsSum |>
   filter(analysisId == 1,
          outcomeId != 77)
-hoi <- resultsSum %>%
+hoi <- resultsSum |>
   filter(analysisId == 1,
          outcomeId == 77)
 null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -477,10 +477,10 @@ plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
   library(EmpiricalCalibration)
-  ncs <- resultsSum %>%
+  ncs <- resultsSum |>
     filter(analysisId == 1,
            outcomeId != 77)
-  hoi <- resultsSum %>%
+  hoi <- resultsSum |>
     filter(analysisId == 1,
            outcomeId == 77)
   null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -493,10 +493,10 @@ if (folderExists) {
 
 ```{r eval=FALSE}
 # Analysis 2: Matching
-ncs <- resultsSum %>%
+ncs <- resultsSum |>
   filter(analysisId == 2,
          outcomeId != 77)
-hoi <- resultsSum %>%
+hoi <- resultsSum |>
   filter(analysisId == 2,
          outcomeId == 77)
 null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -508,10 +508,10 @@ plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
   library(EmpiricalCalibration)
-  ncs <- resultsSum %>%
+  ncs <- resultsSum |>
     filter(analysisId == 2,
            outcomeId != 77)
-  hoi <- resultsSum %>%
+  hoi <- resultsSum |>
     filter(analysisId == 2,
            outcomeId == 77)
   null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -524,10 +524,10 @@ if (folderExists) {
 
 ```{r eval=FALSE}
 # Analysis 3: Stratification
-ncs <- resultsSum %>%
+ncs <- resultsSum |>
   filter(analysisId == 3,
          outcomeId != 77)
-hoi <- resultsSum %>%
+hoi <- resultsSum |>
   filter(analysisId == 3,
          outcomeId == 77)
 null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -539,10 +539,10 @@ plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
   library(EmpiricalCalibration)
-  ncs <- resultsSum %>%
+  ncs <- resultsSum |>
     filter(analysisId == 3,
            outcomeId != 77)
-  hoi <- resultsSum %>%
+  hoi <- resultsSum |>
     filter(analysisId == 3,
            outcomeId == 77)
   null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -555,10 +555,10 @@ if (folderExists) {
 
 ```{r eval=FALSE}
 # Analysis 4: Inverse probability of treatment weighting
-ncs <- resultsSum %>%
+ncs <- resultsSum |>
   filter(analysisId == 4,
          outcomeId != 77)
-hoi <- resultsSum %>%
+hoi <- resultsSum |>
   filter(analysisId == 4,
          outcomeId == 77)
 null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -570,10 +570,10 @@ plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
   library(EmpiricalCalibration)
-  ncs <- resultsSum %>%
+  ncs <- resultsSum |>
     filter(analysisId == 4,
            outcomeId != 77)
-  hoi <- resultsSum %>%
+  hoi <- resultsSum |>
     filter(analysisId == 4,
            outcomeId == 77)
   null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -586,10 +586,10 @@ if (folderExists) {
 
 ```{r eval=FALSE}
 # Analysis 5: Stratification plus full outcome model
-ncs <- resultsSum %>%
+ncs <- resultsSum |>
   filter(analysisId == 5,
          outcomeId != 77)
-hoi <- resultsSum %>%
+hoi <- resultsSum |>
   filter(analysisId == 5,
          outcomeId == 77)
 null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -601,10 +601,10 @@ plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
   library(EmpiricalCalibration)
-  ncs <- resultsSum %>%
+  ncs <- resultsSum |>
     filter(analysisId == 5,
            outcomeId != 77)
-  hoi <- resultsSum %>%
+  hoi <- resultsSum |>
     filter(analysisId == 5,
            outcomeId == 77)
   null <- fitNull(ncs$logRr, ncs$seLogRr)
@@ -621,11 +621,11 @@ Analysis 6 explored interactions with certain variables. The estimates for these
 interactionResultsSum <- getInteractionResultsSummary(folder)
 
 # Analysis 6: Stratification plus interaction terms
-ncs <- interactionResultsSum %>%
+ncs <- interactionResultsSum |>
   filter(analysisId == 6,
          interactionCovariateId == 21600960413,
          outcomeId != 77)
-hoi <- interactionResultsSum %>%
+hoi <- interactionResultsSum |>
   filter(analysisId == 6,
          interactionCovariateId == 21600960413,
          outcomeId == 77)
@@ -638,11 +638,11 @@ plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
   interactionResultsSum <- getInteractionResultsSummary(folder)
-  ncs <- interactionResultsSum %>%
+  ncs <- interactionResultsSum |>
     filter(analysisId == 6,
            interactionCovariateId == 21600960413,
            outcomeId != 77)
-  hoi <- interactionResultsSum %>%
+  hoi <- interactionResultsSum |>
     filter(analysisId == 6,
            interactionCovariateId == 21600960413,
            outcomeId == 77)
