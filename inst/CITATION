@@ -2,7 +2,7 @@ citHeader("To cite CohortMethod in publications use:")
 
 bibentry(
   bibtype = "Article",
-  title   = "Health-Analytics Data to Evidence Suite (HADES): Open-Source Software for Observational Research"",
+  title   = "Health-analytics data to evidence suite (HADES): open-source software for observational research",
   author  = c(as.person("M. J. Schuemie"),
               as.person("J. M. Reps"),
               as.person("A. Black"),
@@ -19,7 +19,7 @@ bibentry(
               as.person("J. Swerdel"),
               as.person("R. D. Williams"),
               as.person("M. A. Suchard")),
-  journal  = "Studies in health technology and informatics",
+  journal  = "Studies in Health Technology and Informatics",
   year     = "2024",
   volume   = "310",
   pages    = "966-970",
