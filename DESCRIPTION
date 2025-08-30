@@ -26,9 +26,9 @@ VignetteBuilder: knitr
 URL: https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod
 BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
-	R (>= 3.6.0),
+	R (>= 4.1.0),
 	DatabaseConnector (>= 6.0.0),
-	Cyclops (>= 3.1.2),
+	Cyclops (>= 3.6.0),
 	FeatureExtraction  (>= 3.0.0),
 	Andromeda (>= 0.6.3)
 Imports:
