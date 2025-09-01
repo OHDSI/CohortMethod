@@ -62,8 +62,6 @@ Suggests:
 	ResultModelManager,
 	OhdsiShinyAppBuilder,
 	markdown
-Remotes:
-  ohdsi/ParallelLogger@develop
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.3.2
