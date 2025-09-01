@@ -19,7 +19,7 @@
 #' Get the default table 1 specifications
 #'
 #' @description
-#' Loads the default specifications for a table 1, to be used with the \code{\link{createTable1}}
+#' Loads the default specifications for a table 1, to be used with the \code{\link{createCmTable1}}
 #' function.
 #'
 #' Important: currently only works for binary covariates.

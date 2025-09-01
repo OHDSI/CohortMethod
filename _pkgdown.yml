@@ -1,5 +1,8 @@
+url: https://ohdsi.github.io/CohortMethod/
+
 template:
-  params:
+  bootstrap: 5
+  bslib:
     bootswatch: cosmo
 
 home:

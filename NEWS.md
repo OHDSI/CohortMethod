@@ -3,20 +3,6 @@ CohortMethod 5.5.0
 
 Changes:
 
-1. Added `threshold` and `alpha` arguments to `computeCovariateBalance()`, implementing George's new balance metric (ony mark covariates as unbalanced when absolute SDM is **significantly** greater than the threshold). Default values maintain old behaviour.
-
-2. Added `showUnbalanced` argument to `plotCovariateBalanceScatterPlot()`. Default value maintains old behavior.
-
-Bugfixes:
-
-1. Added some optimization to `createPs()` to prevent running out of memory for large data objects using Andromeda >= 1.0.0.
-
-
-CohortMethod 5.4.1
-==================
-
-Changes:
-
 1. `createPs()` now checks if filtering of the covariate data is necessary (either because subject have been removed from the study population or because `excludeCovariateIds` or `includeCovariateIds` was specified). If no filtering is required, no extra copy of the covariate data data is created, saving IO time.
 
 2. Added `minimumCaseCount` argument to `createCohortMethodDataSimulationProfile ()`.

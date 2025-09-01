@@ -50,7 +50,8 @@
 #' @param profileBounds         The bounds (on the log relative risk scale) for the adaptive sampling
 #'                              of the likelihood function. See details.
 #' @param prior                 The prior used to fit the model. See [Cyclops::createPrior()]
-#'                              for details.
+#'                              for details. The prior is only applied to non-treatment variables,
+#'                              so is not used when `useCovariates = FALSE`.
 #' @param control               The control object used to control the cross-validation used to
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              [Cyclops::createControl()] for details.
