@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
-Version: 5.5.0
-Date: 2025-08-29
+Version: 5.5.1
+Date: 2025-09-19
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
@@ -64,6 +64,6 @@ Suggests:
 	markdown
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Encoding: UTF-8

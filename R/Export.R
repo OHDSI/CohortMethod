@@ -992,7 +992,7 @@ prepareKm <- function(task,
     # Can happen when matching and treatment is predictable
     return(NULL)
   }
-  data <- prepareKaplanMeier(population)
+  data <- prepareKaplanMeierForExport(population)
   if (is.null(data)) {
     # No shared strata
     return(NULL)
@@ -1004,152 +1004,66 @@ prepareKm <- function(task,
   data$databaseId <- databaseId
   data <- enforceMinCellValue(data, "targetAtRisk", minCellCount)
   data <- enforceMinCellValue(data, "comparatorAtRisk", minCellCount)
-  # Avoid SQL reserved word 'time':
-  data <- data %>%
-    rename(timeDay = "time")
   saveRDS(data, outputFileName)
 }
 
-prepareKaplanMeier <- function(population) {
-  dataCutoff <- 0.9
-  population$y <- 0
-  population$y[population$outcomeCount != 0] <- 1
-  if (!"stratumId" %in% colnames(population) || length(unique(population$stratumId)) == nrow(population) / 2) {
-    sv <- survival::survfit(survival::Surv(survivalTime, y) ~ treatment, population, conf.int = TRUE)
-    idx <- summary(sv, censored = T)$strata == "treatment=1"
-    survTarget <- tibble(
-      time = sv$time[idx],
-      targetSurvival = sv$surv[idx],
-      targetSurvivalLb = sv$lower[idx],
-      targetSurvivalUb = sv$upper[idx]
-    )
-    idx <- summary(sv, censored = T)$strata == "treatment=0"
-    survComparator <- tibble(
-      time = sv$time[idx],
-      comparatorSurvival = sv$surv[idx],
-      comparatorSurvivalLb = sv$lower[idx],
-      comparatorSurvivalUb = sv$upper[idx]
-    )
-    data <- merge(survTarget, survComparator, all = TRUE)
-  } else {
-    population$stratumSizeT <- 1
-    strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1, ], sum)
-    if (max(strataSizesT$stratumSizeT) == 1) {
-      # variable ratio matching: use propensity score to compute IPTW
-      if (is.null(population$propensityScore)) {
-        stop("Variable ratio matching detected, but no propensity score found")
-      }
-      weights <- aggregate(propensityScore ~ stratumId, population, mean)
-      if (max(weights$propensityScore) > 0.99999) {
-        return(NULL)
-      }
-      weights$weight <- weights$propensityScore / (1 - weights$propensityScore)
-    } else {
-      # stratification: infer probability of treatment from subject counts
-      strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0, ], sum)
-      colnames(strataSizesC)[2] <- "stratumSizeC"
-      weights <- merge(strataSizesT, strataSizesC)
-      if (nrow(weights) == 0) {
-        warning("No shared strata between target and comparator")
-        return(NULL)
-      }
-      weights$weight <- weights$stratumSizeT / weights$stratumSizeC
-    }
-    population <- merge(population, weights[, c("stratumId", "weight")])
-    population$weight[population$treatment == 1] <- 1
-    idx <- population$treatment == 1
-    survTarget <- adjustedKm(
-      weight = population$weight[idx],
-      time = population$survivalTime[idx],
-      y = population$y[idx]
-    )
-    survTarget$targetSurvivalUb <- survTarget$s^exp(qnorm(0.975) / log(survTarget$s) * sqrt(survTarget$var) / survTarget$s)
-    survTarget$targetSurvivalLb <- survTarget$s^exp(qnorm(0.025) / log(survTarget$s) * sqrt(survTarget$var) / survTarget$s)
-    survTarget$targetSurvivalLb[survTarget$s > 0.9999] <- survTarget$s[survTarget$s > 0.9999]
-    survTarget$targetSurvival <- survTarget$s
-    survTarget$s <- NULL
-    survTarget$var <- NULL
-    idx <- population$treatment == 0
-    survComparator <- adjustedKm(
-      weight = population$weight[idx],
-      time = population$survivalTime[idx],
-      y = population$y[idx]
-    )
-    survComparator$comparatorSurvivalUb <- survComparator$s^exp(qnorm(0.975) / log(survComparator$s) *
-                                                                  sqrt(survComparator$var) / survComparator$s)
-    survComparator$comparatorSurvivalLb <- survComparator$s^exp(qnorm(0.025) / log(survComparator$s) *
-                                                                  sqrt(survComparator$var) / survComparator$s)
-    survComparator$comparatorSurvivalLb[survComparator$s > 0.9999] <- survComparator$s[survComparator$s >
-                                                                                         0.9999]
-    survComparator$comparatorSurvival <- survComparator$s
-    survComparator$s <- NULL
-    survComparator$var <- NULL
-    data <- merge(survTarget, survComparator, all = TRUE)
-  }
-  data <- data[, c("time", "targetSurvival", "targetSurvivalLb", "targetSurvivalUb", "comparatorSurvival", "comparatorSurvivalLb", "comparatorSurvivalUb")]
-  cutoff <- quantile(population$survivalTime, dataCutoff)
-  data <- data[data$time <= cutoff, ]
-  if (cutoff <= 300) {
-    xBreaks <- seq(0, cutoff, by = 50)
-  } else if (cutoff <= 600) {
-    xBreaks <- seq(0, cutoff, by = 100)
-  } else {
-    xBreaks <- seq(0, cutoff, by = 250)
-  }
+prepareKaplanMeierForExport <- function(population) {
+  data <- prepareKaplanMeier(population, dataCutoff = 0.9)
 
-  targetAtRisk <- c()
-  comparatorAtRisk <- c()
-  for (xBreak in xBreaks) {
-    targetAtRisk <- c(
-      targetAtRisk,
-      sum(population$treatment == 1 & population$survivalTime >= xBreak)
-    )
-    comparatorAtRisk <- c(
-      comparatorAtRisk,
-      sum(population$treatment == 0 & population$survivalTime >=
-            xBreak)
-    )
+  dataWide <- full_join(
+    data |>
+      filter(.data$treatment == 1) |>
+      select(
+        timeDay = "time",
+        targetSurvival = "survival",
+        targetSurvivalLb = "lower",
+        targetSurvivalUb = "upper",
+        targetAtRisk = "nAtRisk"
+      ),
+    data |>
+      filter(.data$treatment == 0) |>
+      select(
+        timeDay = "time",
+        comparatorSurvival = "survival",
+        comparatorSurvivalLb = "lower",
+        comparatorSurvivalUb = "upper",
+        comparatorAtRisk = "nAtRisk"
+      ),
+    by = join_by("timeDay")
+  )
+  if (nrow(dataWide) > 0) {
+    while (sum(is.na(dataWide$targetSurvival)) > 0) {
+      dataWide <- dataWide |>
+        mutate(targetSurvival = if_else(is.na(.data$targetSurvival),
+                                        lag(.data$targetSurvival, order_by = .data$timeDay, default = 1),
+                                        .data$targetSurvival),
+               targetSurvivalLb = if_else(is.na(.data$targetSurvivalLb),
+                                          lag(.data$targetSurvivalLb, order_by = .data$timeDay, default = 1),
+                                          .data$targetSurvivalLb),
+               targetSurvivalUb = if_else(is.na(.data$targetSurvivalUb),
+                                          lag(.data$targetSurvivalUb, order_by = .data$timeDay, default = 1),
+                                          .data$targetSurvivalUb)) |>
+        ungroup()
+    }
+    while (sum(is.na(dataWide$comparatorSurvival)) > 0) {
+      dataWide <- dataWide |>
+        mutate(comparatorSurvival = if_else(is.na(.data$comparatorSurvival),
+                                            lag(.data$comparatorSurvival, order_by = .data$timeDay, default = 1),
+                                            .data$comparatorSurvival),
+               comparatorSurvivalLb = if_else(is.na(.data$comparatorSurvivalLb),
+                                              lag(.data$comparatorSurvivalLb, order_by = .data$timeDay, default = 1),
+                                              .data$comparatorSurvivalLb),
+               comparatorSurvivalUb = if_else(is.na(.data$comparatorSurvivalUb),
+                                              lag(.data$comparatorSurvivalUb, order_by = .data$timeDay, default = 1),
+                                              .data$comparatorSurvivalUb)) |>
+        ungroup()
+    }
   }
-  data <- merge(data, tibble(
-    time = xBreaks,
-    targetAtRisk = targetAtRisk,
-    comparatorAtRisk = comparatorAtRisk
-  ), all = TRUE)
-  if (is.na(data$targetSurvival[1])) {
-    data$targetSurvival[1] <- 1
-    data$targetSurvivalUb[1] <- 1
-    data$targetSurvivalLb[1] <- 1
-  }
-  if (is.na(data$comparatorSurvival[1])) {
-    data$comparatorSurvival[1] <- 1
-    data$comparatorSurvivalUb[1] <- 1
-    data$comparatorSurvivalLb[1] <- 1
-  }
-  idx <- which(is.na(data$targetSurvival))
-  while (length(idx) > 0) {
-    data$targetSurvival[idx] <- data$targetSurvival[idx - 1]
-    data$targetSurvivalLb[idx] <- data$targetSurvivalLb[idx - 1]
-    data$targetSurvivalUb[idx] <- data$targetSurvivalUb[idx - 1]
-    idx <- which(is.na(data$targetSurvival))
-  }
-  idx <- which(is.na(data$comparatorSurvival))
-  while (length(idx) > 0) {
-    data$comparatorSurvival[idx] <- data$comparatorSurvival[idx - 1]
-    data$comparatorSurvivalLb[idx] <- data$comparatorSurvivalLb[idx - 1]
-    data$comparatorSurvivalUb[idx] <- data$comparatorSurvivalUb[idx - 1]
-    idx <- which(is.na(data$comparatorSurvival))
-  }
-  data$targetSurvival <- round(data$targetSurvival, 4)
-  data$targetSurvivalLb <- round(data$targetSurvivalLb, 4)
-  data$targetSurvivalUb <- round(data$targetSurvivalUb, 4)
-  data$comparatorSurvival <- round(data$comparatorSurvival, 4)
-  data$comparatorSurvivalLb <- round(data$comparatorSurvivalLb, 4)
-  data$comparatorSurvivalUb <- round(data$comparatorSurvivalUb, 4)
 
   # Remove duplicate (except time) entries:
-  data <- data[order(data$time), ]
-  data <- data[!duplicated(data[, -1]), ]
-  return(data)
+  dataWide <- dataWide[order(dataWide$timeDay), ]
+  dataWide <- dataWide[!duplicated(dataWide[, -1]), ]
+  return(dataWide)
 }
 
 exportDiagnosticsSummary <- function(outputFolder,

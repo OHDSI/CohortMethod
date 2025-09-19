@@ -1,3 +1,11 @@
+CohortMethod 5.5.1
+==================
+
+Bugfixes:
+
+1. Fixed error thrown by Kaplan Meier curves functions when only one of the cohorts is empty.
+
+
 CohortMethod 5.5.0
 ==================
 
