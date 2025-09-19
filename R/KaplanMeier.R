@@ -228,23 +228,8 @@ prepareKaplanMeier <- function(population, dataCutoff = 0.90) {
       group_by(.data$stratumId) |>
       summarise(stratumSizeT = sum(.data$treatment == 1),
                 stratumSizeC = sum(.data$treatment == 0))
-    if (max(strataSizes$stratumSizeT) == 1) {
-      # variable ratio matching: use propensity score to compute IPTW
-      if (!"propensityScore" %in% colnames(population)) {
-        stop("Variable ratio matching detected, but no propensity score found")
-      }
-      weights <- population |>
-        group_by(.data$stratumId) |>
-        summarise(propensityScore = mean(.data$propensityScore)) |>
-        mutate(weight = .data$propensityScore / (1 - .data$propensityScore))
-      if (max(weights$propensityScore) > 0.99999) {
-        return(NULL)
-      }
-    } else {
-      # stratification: infer probability of treatment from subject counts
       weights <- strataSizes |>
-        mutate(weight = .data$stratumSizeT / .data$stratumSizeT)
-    }
+        mutate(weight = .data$stratumSizeT / .data$stratumSizeC)
     population <- population |>
       inner_join(weights |>
                    select("stratumId", "weight"),
@@ -269,7 +254,7 @@ prepareKaplanMeier <- function(population, dataCutoff = 0.90) {
     data <- bind_rows(survTarget, survComparator) |>
       mutate(upper = .data$s^exp(qnorm(1 - 0.025) / log(.data$s) * sqrt(.data$var) / .data$s),
              lower = .data$s^exp(qnorm(0.025) / log(.data$s) * sqrt(.data$var) / .data$s)) |>
-      mutate(lower = if_else(.data$s > 0.999999, .data$s, .data$lower)) |>
+      mutate(lower = if_else(.data$s > 0.9999, .data$s, .data$lower)) |>
       select(-"var") |>
       rename(survival = "s")
 

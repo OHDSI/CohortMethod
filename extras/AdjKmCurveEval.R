@@ -11,7 +11,11 @@ baselineHazard <- function(ps) {
   return(0.001 + ps*0.004)
 }
 
-runOneSimulation <- function(x, strategy = "match") {
+logistic <- function(x) {
+  1 / (1 + exp(-x))
+}
+
+runOneSimulation <- function(x, strategy = "variable ratio matching") {
   propensityScore <- logistic(log(pT) + rnorm(n, sd = 2))
   population <- tibble(rowId = 1:n,
                        treatment = as.integer(runif(n, 0,1) < propensityScore),
@@ -21,39 +25,26 @@ runOneSimulation <- function(x, strategy = "match") {
   timeToCensor <- round(rexp(n, 0.01))
   population$survivalTime <- timeToEvent
   population$survivalTime[timeToEvent > timeToCensor] <- timeToCensor[timeToEvent > timeToCensor]
-  population$y <- 1
-  population$y[timeToEvent > timeToCensor] <- 0
+  population$outcomeCount <- 1
+  population$outcomeCount[timeToEvent > timeToCensor] <- 0
 
   # Adjustment strategy
-  if (strategy == "match") {
+  if (strategy == "variable ratio matching") {
     population <- matchOnPs(population , maxRatio = 100)
-  } else {
+  } else if (strategy == "1-on-1 matching") {
+    population <- matchOnPs(population , maxRatio = 1)
+  } else if (strategy == "stratification") {
     population <- stratifyByPs(population, numberOfStrata = 10)
+  } else if (strategy == "no adjustment") {
+    # Do nothing
+  } else {
+    stop("Unknown strategy: ", strategy)
   }
 
-  # Code from plotKaplanMeier:
-  population$stratumSizeT <- 1
-  strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1,], sum)
-  strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0,], sum)
-  colnames(strataSizesC)[2] <- "stratumSizeC"
-  weights <- merge(strataSizesT, strataSizesC)
-  weights$weight <- weights$stratumSizeT / weights$stratumSizeC
-  population <- merge(population, weights[, c("stratumId", "weight")])
-  population$weight[population$treatment == 1] <- 1
-  idx <- population$treatment == 1
-  survTarget <- CohortMethod:::adjustedKm(weight = population$weight[idx],
-                                          time = population$survivalTime[idx],
-                                          y = population$y[idx])
-  idx <- population$treatment == 0
-  survComparator <- CohortMethod:::adjustedKm(weight = population$weight[idx],
-                                              time = population$survivalTime[idx],
-                                              y = population$y[idx])
+  data <- CohortMethod:::prepareKaplanMeier(population)
 
   # Compute coverage:
   computeCoverage <- function(surv, trueHazards) {
-    surv$upper <- surv$s^exp(qnorm(1 - 0.025)/log(surv$s)*sqrt(surv$var)/surv$s)
-    surv$lower <- surv$s^exp(qnorm(0.025)/log(surv$s)*sqrt(surv$var)/surv$s)
-
     coverage <- rep(NA, nrow(surv))
     for (i in 1:nrow(surv)) {
       trueS <- (1 - trueHazards) ^ surv$time[i]
@@ -62,21 +53,29 @@ runOneSimulation <- function(x, strategy = "match") {
     }
     return(mean(coverage))
   }
-  cutoff <- quantile(population$survivalTime, 0.9)
-  survTarget <- survTarget[survTarget$time <= cutoff, ]
-  coverageT <- computeCoverage(survTarget, population$hazard[population$treatment == 1])
-
-  survComparator <- survComparator[survComparator$time <= cutoff, ]
-  coverageC <- computeCoverage(survComparator, population$hazard[population$treatment == 1] / hr)
+  coverageT <- computeCoverage(surv = data[data$treatment == 1, ],
+                               trueHazards = population$hazard[population$treatment == 1])
+  coverageC <- computeCoverage(surv = data[data$treatment == 0, ],
+                               trueHazards = population$hazard[population$treatment == 1] / hr)
   return(data.frame(coverageT = coverageT, coverageC = coverageC))
 }
 
-x <- plyr::llply(1:100, runOneSimulation, strategy = "match", .progress = "text")
+x <- plyr::llply(1:100, runOneSimulation, strategy = "variable ratio matching", .progress = "text")
 x <- do.call("rbind", x)
-mean(x$coverageT)
-mean(x$coverageC)
+writeLines(sprintf("Coverage target: %0.2f, comparator: %0.2f", mean(x$coverageT), mean(x$coverageC)))
+# Coverage target: 0.95, comparator: 0.91
 
-x <- plyr::llply(1:100, runOneSimulation, strategy = "stratify", .progress = "text")
+x <- plyr::llply(1:100, runOneSimulation, strategy = "1-on-1 matching", .progress = "text")
 x <- do.call("rbind", x)
-mean(x$coverageT)
-mean(x$coverageC)
+writeLines(sprintf("Coverage target: %0.2f, comparator: %0.2f", mean(x$coverageT), mean(x$coverageC)))
+# Coverage target: 0.95, comparator: 0.95
+
+x <- plyr::llply(1:100, runOneSimulation, strategy = "stratification", .progress = "text")
+x <- do.call("rbind", x)
+writeLines(sprintf("Coverage target: %0.2f, comparator: %0.2f", mean(x$coverageT), mean(x$coverageC)))
+# Coverage target: 0.94, comparator: 0.89
+
+x <- plyr::llply(1:100, runOneSimulation, strategy = "no adjustment", .progress = "text")
+x <- do.call("rbind", x)
+writeLines(sprintf("Coverage target: %0.2f, comparator: %0.2f", mean(x$coverageT), mean(x$coverageC)))
+# Coverage target: 0.94, comparator: 0.01
