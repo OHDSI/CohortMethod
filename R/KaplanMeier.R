@@ -81,80 +81,27 @@ plotKaplanMeier <- function(population,
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  population$y <- 0
-  population$y[population$outcomeCount != 0] <- 1
-  if (is.null(population$stratumId) || length(unique(population$stratumId)) == nrow(population) / 2) {
-    sv <- survival::survfit(survival::Surv(survivalTime, y) ~ treatment, population, conf.int = TRUE)
-    data <- data.frame(
-      time = sv$time,
-      n.censor = sv$n.censor,
-      s = sv$surv,
-      strata = summary(sv, censored = T)$strata,
-      upper = sv$upper,
-      lower = sv$lower
-    )
-    levels(data$strata)[levels(data$strata) == "treatment=0"] <- comparatorLabel
-    levels(data$strata)[levels(data$strata) == "treatment=1"] <- targetLabel
-  } else {
-    message("Variable size strata detected so using adjusted KM for stratified data")
-    population$stratumSizeT <- 1
-    strataSizesT <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 1, ], sum)
-    strataSizesC <- aggregate(stratumSizeT ~ stratumId, population[population$treatment == 0, ], sum)
-    colnames(strataSizesC)[2] <- "stratumSizeC"
-    weights <- merge(strataSizesT, strataSizesC)
-    weights$weight <- weights$stratumSizeT / weights$stratumSizeC
-    population <- merge(population, weights[, c("stratumId", "weight")])
-    population$weight[population$treatment == 1] <- 1
-
-    idx <- population$treatment == 1
-    survTarget <- adjustedKm(
-      weight = population$weight[idx],
-      time = population$survivalTime[idx],
-      y = population$y[idx]
-    )
-    survTarget$strata <- targetLabel
-    idx <- population$treatment == 0
-    survComparator <- adjustedKm(
-      weight = population$weight[idx],
-      time = population$survivalTime[idx],
-      y = population$y[idx]
-    )
-    survComparator$strata <- comparatorLabel
-    if (censorMarks) {
-      addCensorData <- function(surv, treatment) {
-        censorData <- aggregate(rowId ~ survivalTime, population[population$treatment == treatment, ], length)
-        colnames(censorData) <- c("time", "censored")
-        eventData <- aggregate(y ~ survivalTime, population, sum)
-        colnames(eventData) <- c("time", "events")
-        surv <- merge(surv, censorData)
-        surv <- merge(surv, eventData, all.x = TRUE)
-        surv$n.censor <- surv$censored - surv$events
-        return(surv)
-      }
-      survTarget <- addCensorData(survTarget, 1)
-      survComparator <- addCensorData(survComparator, 0)
-    }
-
-    data <- rbind(survTarget, survComparator)
-    data$upper <- data$s^exp(qnorm(1 - 0.025) / log(data$s) * sqrt(data$var) / data$s)
-    data$lower <- data$s^exp(qnorm(0.025) / log(data$s) * sqrt(data$var) / data$s)
-    data$lower[data$s > 0.999999] <- data$s[data$s > 0.999999]
+  if (nrow(population) == 0) {
+    warning("Population is empty. Cannot plot KM curves.")
+    return(NULL)
   }
-  data$strata <- factor(data$strata, levels = c(targetLabel, comparatorLabel))
-  cutoff <- quantile(population$survivalTime, dataCutoff)
+
+  data <- prepareKaplanMeier(population, dataCutoff)
+
+  vizData <- data |>
+    mutate(treatment = factor(if_else(.data$treatment == 1, targetLabel, comparatorLabel),
+                              levels = c(targetLabel, comparatorLabel)))
+
+  xBreaks <- data |>
+    filter(!is.na(.data$nAtRisk)) |>
+    distinct(.data$time) |>
+    pull()
+
+  cutoff <- max(data$time)
   xLabel <- "Time in days"
   yLabel <- "Survival probability"
   xlims <- c(-cutoff / 40, cutoff)
 
-  if (cutoff <= 300) {
-    xBreaks <- seq(0, cutoff, by = 50)
-  } else if (cutoff <= 600) {
-    xBreaks <- seq(0, cutoff, by = 100)
-  } else {
-    xBreaks <- seq(0, cutoff, by = 250)
-  }
-
-  data <- data[data$time <= cutoff, ]
   if (includeZero) {
     ylims <- c(0, 1)
   } else if (confidenceIntervals) {
@@ -162,11 +109,13 @@ plotKaplanMeier <- function(population,
   } else {
     ylims <- c(min(data$surv), 1)
   }
-  plot <- ggplot2::ggplot(data, ggplot2::aes(
+
+  plot <- ggplot2::ggplot(vizData, ggplot2::aes(
     x = .data$time,
-    y = .data$s,
-    color = .data$strata,
-    fill = .data$strata,
+    y = .data$survival,
+    group = .data$treatment,
+    color = .data$treatment,
+    fill = .data$treatment,
     ymin = .data$lower,
     ymax = .data$upper
   ))
@@ -195,8 +144,8 @@ plotKaplanMeier <- function(population,
 
   if (censorMarks == TRUE) {
     plot <- plot + ggplot2::geom_point(
-      data = subset(data, .data$n.censor >= 1),
-      ggplot2::aes(x = .data$time, y = .data$s),
+      data = vizData |> filter(.data$nCensor >= 1),
+      ggplot2::aes(x = .data$time, y = .data$survival),
       shape = "|",
       size = 3
     )
@@ -205,18 +154,20 @@ plotKaplanMeier <- function(population,
     plot <- plot + ggplot2::ggtitle(title)
   }
   if (dataTable) {
-    targetAtRisk <- c()
-    comparatorAtRisk <- c()
-    for (xBreak in xBreaks) {
-      targetAtRisk <- c(targetAtRisk, sum(population$treatment == 1 & population$survivalTime >= xBreak))
-      comparatorAtRisk <- c(comparatorAtRisk, sum(population$treatment == 0 & population$survivalTime >= xBreak))
-    }
-    labels <- data.frame(
-      x = c(0, xBreaks, xBreaks),
-      y = as.factor(c("Number at risk", rep(targetLabel, length(xBreaks)), rep(comparatorLabel, length(xBreaks)))),
-      label = c("", formatC(targetAtRisk, big.mark = ","), formatC(comparatorAtRisk, big.mark = ","))
-    )
-    labels$y <- factor(labels$y, levels = c(comparatorLabel, targetLabel, "Number at risk"))
+    labels <- bind_rows(
+      tibble(
+        x = 0,
+        y = "Number at risk",
+        label = ""
+      ),
+      data |>
+        filter(!is.na(.data$nAtRisk)) |>
+        transmute(x = .data$time,
+                  y = if_else(.data$treatment == 1, targetLabel, comparatorLabel),
+                  label = formatC(.data$nAtRisk, big.mark = ","))
+    ) |>
+      mutate(y = factor(.data$y, levels = c(comparatorLabel, targetLabel, "Number at risk")))
+
     dataTable <- ggplot2::ggplot(labels, ggplot2::aes(x = .data$x, y = .data$y, label = .data$label)) +
       ggplot2::geom_text(size = 3.5, vjust = 0.5) +
       ggplot2::scale_x_continuous(xLabel, limits = xlims, breaks = xBreaks) +
@@ -249,3 +200,117 @@ plotKaplanMeier <- function(population,
   }
   return(plot)
 }
+
+prepareKaplanMeier <- function(population, dataCutoff = 0.90) {
+  # Prepare curve data -----------------------------------------------------------------------------
+  population <- population |>
+    mutate(y = if_else(.data$outcomeCount == 0, 0, 1))
+  if (!"stratumId" %in% colnames(population) || length(unique(population$stratumId)) == nrow(population) / 2) {
+    message("No strata or 1-on-1 matching detected. Using unadjusted KM.")
+    sv <- survival::survfit(survival::Surv(survivalTime, y) ~ treatment, population, conf.int = TRUE)
+    if (all(population$treatment == 1) || all(population$treatment == 0)) {
+      # The strata property disappears when there is only one stratum:
+      treatment <- population$treatment[1]
+    } else {
+      treatment <- if_else(summary(sv, censored = T)$strata == "treatment=1", 1, 0)
+    }
+    data <- tibble(
+      time = sv$time,
+      nCensor = sv$n.censor,
+      survival = sv$surv,
+      treatment = treatment,
+      upper = sv$upper,
+      lower = sv$lower
+    )
+  } else {
+    message("Variable size strata detected. Using adjusted KM for stratified data.")
+    strataSizes <- population |>
+      group_by(.data$stratumId) |>
+      summarise(stratumSizeT = sum(.data$treatment == 1),
+                stratumSizeC = sum(.data$treatment == 0))
+      weights <- strataSizes |>
+        mutate(weight = .data$stratumSizeT / .data$stratumSizeC)
+    population <- population |>
+      inner_join(weights |>
+                   select("stratumId", "weight"),
+                 by = join_by("stratumId")) |>
+      mutate(weight = if_else(.data$treatment == 1, 1, .data$weight))
+    idx <- population$treatment == 1
+    survTarget <- adjustedKm(
+      weight = population$weight[idx],
+      time = population$survivalTime[idx],
+      y = population$y[idx]
+    )
+    survTarget <- survTarget |>
+      mutate(treatment = 1)
+    idx <- population$treatment == 0
+    survComparator <- adjustedKm(
+      weight = population$weight[idx],
+      time = population$survivalTime[idx],
+      y = population$y[idx]
+    )
+    survComparator <- survComparator |>
+      mutate(treatment = 0)
+    data <- bind_rows(survTarget, survComparator) |>
+      mutate(upper = .data$s^exp(qnorm(1 - 0.025) / log(.data$s) * sqrt(.data$var) / .data$s),
+             lower = .data$s^exp(qnorm(0.025) / log(.data$s) * sqrt(.data$var) / .data$s)) |>
+      mutate(lower = if_else(.data$s > 0.9999, .data$s, .data$lower)) |>
+      select(-"var") |>
+      rename(survival = "s")
+
+    # Add censor data
+    data <- data |>
+      inner_join(
+        population |>
+          group_by(.data$treatment, .data$survivalTime) |>
+          summarise(nCensor = n() - sum(.data$y), .groups = "drop") |>
+          rename(time = "survivalTime"),
+        by = join_by("treatment", "time")
+      )
+  }
+
+  # Prepare table data -----------------------------------------------------------------------------
+  cutoff <- quantile(population$survivalTime, dataCutoff)
+  if (cutoff <= 300) {
+    timeBreaks <- seq(0, cutoff, by = 50)
+  } else if (cutoff <= 600) {
+    timeBreaks <- seq(0, cutoff, by = 100)
+  } else {
+    timeBreaks <- seq(0, cutoff, by = 250)
+  }
+  dataTable <- tibble(
+    time = rep(timeBreaks, 2),
+    treatment = rep(c(1, 0), each = length(timeBreaks)),
+    nAtRisk = NA
+  )
+  for (i in seq_len(nrow(dataTable))) {
+    dataTable$nAtRisk[i] <- population |>
+      filter(.data$treatment == dataTable$treatment[i], .data$survivalTime >= dataTable$time[i]) |>
+      count() |>
+      pull()
+  }
+
+  # Combine ----------------------------------------------------------------------------------------
+  combined <- data |>
+    filter(time <= cutoff) |>
+    full_join(dataTable, by = join_by("treatment", "time")) |>
+    mutate(nCensor = if_else(is.na(.data$nCensor), 0, .data$nCensor))
+
+  while (sum(is.na(combined$survival)) > 0) {
+    combined <- combined |>
+      group_by(.data$treatment) |>
+      mutate(survival = if_else(is.na(.data$survival),
+                                lag(.data$survival, order_by = .data$time, default = 1),
+                                .data$survival),
+             lower = if_else(is.na(.data$lower),
+                             lag(.data$lower, order_by = .data$time, default = 1),
+                             .data$lower),
+             upper = if_else(is.na(.data$upper),
+                             lag(.data$upper, order_by = .data$time, default = 1),
+                             .data$upper)) |>
+      ungroup()
+  }
+
+  return(combined)
+}
+

@@ -31,3 +31,15 @@ test_that("Weighted Kaplan-Meier", {
   #   expect_equal(matched$survival.x, matched$survival.y)
   # }
 })
+
+test_that("No error when plotting KM curves and one cohort is empty", {
+  population <- tibble(
+    rowId = c(1, 2, 3, 4),
+    treatment = c(1, 1, 1, 1),
+    outcomeCount = c(1, 0, 1, 0),
+    stratumId = c(1, 1, 1, 1),
+    survivalTime = c(1, 2, 3, 4)
+  )
+  plot <- plotKaplanMeier(population)
+  expect_s3_class(plot, "gtable")
+})
