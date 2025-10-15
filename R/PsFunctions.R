@@ -126,9 +126,11 @@ createPs <- function(cohortMethodData,
     sampled <- FALSE
     ref <- NULL
   } else {
-    rowIds <- cohortMethodData$covariates %>%
-      distinct(.data$rowId) %>%
-      pull()
+    # For some reason GROUP BY is more efficient than DISTINCT on DuckDB:
+    rowIds <- cohortMethodData$covariates |>
+      group_by(.data$rowId) |>
+      summarise() |>
+      pull(rowId)
     if (all(rowIds %in% population$rowId) &&
         length(includeCovariateIds) == 0 &&
         length(excludeCovariateIds) == 0) {
