@@ -189,8 +189,6 @@ createPs <- function(cohortMethodData,
       covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
       close(filteredCovariateData)
     }
-    on.exit(close(covariateData))
-
     metaData$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
     metaData$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
 
@@ -203,7 +201,8 @@ createPs <- function(cohortMethodData,
     } else {
       message("Cyclops using precision of ", floatingPoint)
     }
-    cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariateData$covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
+    Andromeda::flushAndromeda(covariateData)
+    cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariateData$covariates, modelType = "lr", floatingPoint = floatingPoint)
     error <- NULL
     ref <- NULL
     if (errorOnHighCorrelation) {
@@ -282,10 +281,12 @@ createPs <- function(cohortMethodData,
         normalize = TRUE,
         removeRedundancy = FALSE
       )
+      close(covariateData)
       normCovariateData$outcomes <- population
       propensityScore <- predict(cyclopsFit, newOutcomes = normCovariateData$outcomes, newCovariates = normCovariateData$covariates)
       close(normCovariateData)
     } else {
+      close(covariateData)
       propensityScore <- predict(cyclopsFit)
     }
     propensityScore <- tibble(rowId = as.numeric(names(propensityScore)),
