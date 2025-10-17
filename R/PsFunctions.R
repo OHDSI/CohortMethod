@@ -276,15 +276,15 @@ createPs <- function(cohortMethodData,
                .data$covariateId %in% nonZeroCovariateIds)
       # No need to filter covariates because we already restricted to covariates
       # That ended up in the model, so just normalizing values:
-      covariateData <- FeatureExtraction::tidyCovariateData(
+      normCovariateData <- FeatureExtraction::tidyCovariateData(
         covariateData = covariateData,
         minFraction = 0,
         normalize = TRUE,
         removeRedundancy = FALSE
       )
-
-      covariateData$outcomes <- population
-      propensityScore <- predict(cyclopsFit, newOutcomes = covariateData$outcomes, newCovariates = covariateData$covariates)
+      normCovariateData$outcomes <- population
+      propensityScore <- predict(cyclopsFit, newOutcomes = normCovariateData$outcomes, newCovariates = normCovariateData$covariates)
+      close(normCovariateData)
     } else {
       propensityScore <- predict(cyclopsFit)
     }
