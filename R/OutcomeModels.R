@@ -276,6 +276,7 @@ fitOutcomeModel <- function(population,
       } else {
         covariates <- covariateData$covariates
       }
+      Andromeda::flushAndromeda(covariateData)
       cyclopsData <- Cyclops::convertToCyclopsData(
         outcomes = outcomes,
         covariates = covariates,

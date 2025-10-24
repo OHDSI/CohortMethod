@@ -968,7 +968,8 @@ doFitOutcomeModelPlus <- function(params) {
   # Create study pop
   args <- params$args$createStudyPopArgs
   args$cohortMethodData <- cohortMethodData
-  studyPop <- do.call("createStudyPopulation", args)
+  studyPop <- do.call("createStudyPopulation", args) |>
+    select(-"personSeqId", -"cohortStartDate")
 
   if (!is.null(params$args$createPsArgs)) {
     if (params$refitPsForEveryOutcome) {
@@ -980,6 +981,7 @@ doFitOutcomeModelPlus <- function(params) {
   } else {
     ps <- studyPop
   }
+  rm(studyPop)
   ps <- applyTrimMatchStratify(ps, params$args)
   args <- params$args$fitOutcomeModelArgs
   args$population <- ps
