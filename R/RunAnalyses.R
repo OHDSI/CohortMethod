@@ -968,8 +968,7 @@ doFitOutcomeModelPlus <- function(params) {
   # Create study pop
   args <- params$args$createStudyPopArgs
   args$cohortMethodData <- cohortMethodData
-  studyPop <- do.call("createStudyPopulation", args) |>
-    select(-"personSeqId", -"cohortStartDate")
+  studyPop <- do.call("createStudyPopulation", args)
 
   if (!is.null(params$args$createPsArgs)) {
     if (params$refitPsForEveryOutcome) {
