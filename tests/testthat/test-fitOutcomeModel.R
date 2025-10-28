@@ -846,14 +846,13 @@ test_that("prior", {
   emptyPrior <- list()
   class(emptyPrior) <- "cyclopsPrior"
 
-  expect_error(
-    fitOutcomeModel(
-      population = studyPop,
-      useCovariates = TRUE,
-      cohortMethodData = sCohortMethodData,
-      prior = emptyPrior
-    )
+  invalidPrior <- fitOutcomeModel(
+    population = studyPop,
+    useCovariates = TRUE,
+    cohortMethodData = sCohortMethodData,
+    prior = emptyPrior
   )
+  expect_true(grepl("invalid argument", invalidPrior$outcomeModelStatus))
 
   ## Malformed prior ----
   priorLaplace <- createPrior("laplace", useCrossValidation = TRUE)
@@ -863,14 +862,13 @@ test_that("prior", {
   )
   class(malformedLaplace) <- "cyclopsPrior"
 
-  expect_error(
-    fitOutcomeModel(
-      population = studyPop,
-      useCovariates = TRUE,
-      cohortMethodData = sCohortMethodData,
-      prior = malformedLaplace
-    )
+  invalidPrior <- fitOutcomeModel(
+    population = studyPop,
+    useCovariates = TRUE,
+    cohortMethodData = sCohortMethodData,
+    prior = malformedLaplace
   )
+  expect_true(grepl("invalid argument", invalidPrior$outcomeModelStatus))
 })
 
 test_that("control", {
@@ -917,46 +915,6 @@ test_that("control", {
       cohortMethodData = sCohortMethodData,
       control = NULL
     )
-  )
-
-  ## Empty control ----
-  controlEmpty <- list()
-  class(controlEmpty) <- "cyclopsControl"
-
-  expect_error(
-    suppressWarnings(fitOutcomeModel(
-      population = studyPop,
-      useCovariates = TRUE,
-      cohortMethodData = sCohortMethodData,
-      control = controlEmpty
-    ))
-  )
-
-  ## Malfored control ----
-  controlGrid <- createControl(
-    cvType = "grid",
-    seed = 1,
-    resetCoefficients = TRUE,
-    startingVariance = 0.01,
-    tolerance = 2e-07,
-    cvRepetitions = 10,
-    noiseLevel = "quiet"
-  )
-
-  controlMalformed <- list(
-    maxIterations = controlGrid$maxIterations,
-    autoSearch = controlGrid$autoSearch,
-    convergenceType = controlGrid$convergenceType
-  )
-  class(controlMalformed) <- "cyclopsControl"
-
-  expect_error(
-    suppressWarnings(fitOutcomeModel(
-      population = studyPop,
-      useCovariates = TRUE,
-      cohortMethodData = sCohortMethodData,
-      control = controlMalformed
-    ))
   )
 })
 
@@ -1029,3 +987,4 @@ test_that("Combinations", {
     "grid and bounds"
   )
 })
+

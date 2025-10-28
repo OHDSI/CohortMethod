@@ -133,7 +133,18 @@ fitOutcomeModel <- function(population,
   subgroupCounts <- NULL
   logLikelihoodProfile <- NULL
   status <- "NO MODEL FITTED"
-  metaData <- attr(population, "metaData")
+  outcomeModel <- attr(population, "metaData")
+  outcomeModel$outcomeModelType <- modelType
+  outcomeModel$outcomeModelStratified <- stratified
+  outcomeModel$outcomeModelUseCovariates <- useCovariates
+  outcomeModel$inversePtWeighting <- inversePtWeighting
+  if (inversePtWeighting) {
+    outcomeModel$targetEstimator <- outcomeModel$iptwEstimator
+  }
+  outcomeModel$iptwEstimator <- NULL
+  outcomeModel$populationCounts <- getCounts(population, "Population count")
+  outcomeModel$outcomeCounts <- getOutcomeCounts(population, modelType)
+  outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
 
   if (nrow(population) == 0) {
     status <- "NO SUBJECTS IN POPULATION, CANNOT FIT"
@@ -160,8 +171,8 @@ fitOutcomeModel <- function(population,
           excludeCovariateIds = excludeCovariateIds
         )
         on.exit(close(covariateData))
-        metaData$deletedRedundantCovariateIdsForOutcomeModel <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
-        metaData$deletedInfrequentCovariateIdsForOutcomeModel <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
+        outcomeModel$deletedRedundantCovariateIdsForOutcomeModel <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
+        outcomeModel$deletedInfrequentCovariateIdsForOutcomeModel <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
 
         mainEffectTerms <- covariateData$covariates %>%
           distinct(.data$covariateId) %>%
@@ -218,10 +229,10 @@ fitOutcomeModel <- function(population,
         } else {
           # TODO: check if main effect covariate exists in data
           mainEffectTermsCheck <- !is.null(covariateData$covariates %>%
-            distinct(.data$covariateId) %>%
-            inner_join(covariateData$covariateRef, by = "covariateId") %>%
-            select(id = "covariateId", name = "covariateName") %>%
-            collect())
+                                             distinct(.data$covariateId) %>%
+                                             inner_join(covariateData$covariateRef, by = "covariateId") %>%
+                                             select(id = "covariateId", name = "covariateName") %>%
+                                             collect())
 
           if (!mainEffectTermsCheck) {
             stop("No main effects exist.")
@@ -268,78 +279,83 @@ fitOutcomeModel <- function(population,
       }
 
       # Fit model -------------------------------------------------------------------------------------------
-      covariateData$outcomes <- informativePopulation
-      outcomes <- covariateData$outcomes
-      if (stratified) {
-        covariates <- covariateData$covariates %>%
-          inner_join(select(covariateData$outcomes, "rowId", "stratumId"), by = "rowId")
-      } else {
-        covariates <- covariateData$covariates
-      }
-      Andromeda::flushAndromeda(covariateData)
-      cyclopsData <- Cyclops::convertToCyclopsData(
-        outcomes = outcomes,
-        covariates = covariates,
-        addIntercept = (!stratified && !modelType == "cox"),
-        modelType = modelTypeToCyclopsModelType(
-          modelType,
-          stratified
-        ),
-        checkRowIds = FALSE,
-        normalize = NULL,
-        quiet = TRUE
-      )
-
-      if (!is.null(interactionTerms)) {
-        # Check separability:
-        separability <- Cyclops::getUnivariableSeparability(cyclopsData)
-        separability[as.character(treatmentVarId)] <- FALSE
-        if (any(separability)) {
-          removeCovariateIds <- as.numeric(names(separability)[separability])
-          # Add main effects of separable interaction effects, and the other way around:
-          if (!useCovariates) {
-            removeCovariateIds <- unique(c(
-              removeCovariateIds,
-              interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]
-            ))
-          }
-          removeCovariateIds <- unique(c(
-            removeCovariateIds,
-            interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]
-          ))
-          covariates <- covariates %>%
-            filter(!.data$covariateId %in% removeCovariateIds)
-
-          cyclopsData <- Cyclops::convertToCyclopsData(
-            outcomes = outcomes,
-            covariates = covariates,
-            addIntercept = (!stratified && !modelType == "cox"),
-            modelType = modelTypeToCyclopsModelType(
-              modelType,
-              stratified
-            ),
-            checkSorting = TRUE,
-            checkRowIds = FALSE,
-            normalize = NULL,
-            quiet = TRUE
-          )
-          warning("Separable interaction terms found and removed")
-          ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
-          message("Separable interactions:")
-          for (i in seq_len(nrow(ref))) {
-            message(paste(ref[i, ], collapse = "\t"))
-          }
-          interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
-          if (nrow(interactionTerms) == 0) {
-            interactionTerms <- NULL
-          }
-        }
-      }
-
-      if (prior$priorType != "none" && prior$useCrossValidation && control$selectorType == "byPid" &&
+      if (stratified &&
+          prior$priorType != "none" &&
+          prior$useCrossValidation &&
+          control$selectorType == "byPid" &&
           length(unique(informativePopulation$stratumId)) < control$fold) {
         fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
       } else {
+        covariateData$outcomes <- informativePopulation
+        outcomes <- covariateData$outcomes
+        if (stratified) {
+          covariates <- covariateData$covariates %>%
+            inner_join(select(covariateData$outcomes, "rowId", "stratumId"), by = "rowId")
+        } else {
+          covariates <- covariateData$covariates
+        }
+        # Free as much memory as possible before we load data into Andromeda:
+        rm(population)
+        rm(informativePopulation)
+        Andromeda::flushAndromeda(covariateData)
+        cyclopsData <- Cyclops::convertToCyclopsData(
+          outcomes = outcomes,
+          covariates = covariates,
+          addIntercept = (!stratified && !modelType == "cox"),
+          modelType = modelTypeToCyclopsModelType(
+            modelType,
+            stratified
+          ),
+          checkRowIds = FALSE,
+          normalize = NULL,
+          quiet = TRUE
+        )
+
+        if (!is.null(interactionTerms)) {
+          # Check separability:
+          separability <- Cyclops::getUnivariableSeparability(cyclopsData)
+          separability[as.character(treatmentVarId)] <- FALSE
+          if (any(separability)) {
+            removeCovariateIds <- as.numeric(names(separability)[separability])
+            # Add main effects of separable interaction effects, and the other way around:
+            if (!useCovariates) {
+              removeCovariateIds <- unique(c(
+                removeCovariateIds,
+                interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]
+              ))
+            }
+            removeCovariateIds <- unique(c(
+              removeCovariateIds,
+              interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]
+            ))
+            covariates <- covariates %>%
+              filter(!.data$covariateId %in% removeCovariateIds)
+
+            cyclopsData <- Cyclops::convertToCyclopsData(
+              outcomes = outcomes,
+              covariates = covariates,
+              addIntercept = (!stratified && !modelType == "cox"),
+              modelType = modelTypeToCyclopsModelType(
+                modelType,
+                stratified
+              ),
+              checkSorting = TRUE,
+              checkRowIds = FALSE,
+              normalize = NULL,
+              quiet = TRUE
+            )
+            warning("Separable interaction terms found and removed")
+            ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
+            message("Separable interactions:")
+            for (i in seq_len(nrow(ref))) {
+              message(paste(ref[i, ], collapse = "\t"))
+            }
+            interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
+            if (nrow(interactionTerms) == 0) {
+              interactionTerms <- NULL
+            }
+          }
+        }
         fit <- tryCatch(
           {
             Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
@@ -452,29 +468,17 @@ fitOutcomeModel <- function(population,
       }
     }
   }
-  outcomeModel <- metaData
   outcomeModel$outcomeModelTreatmentVarId <- treatmentVarId
   outcomeModel$outcomeModelCoefficients <- coefficients
   outcomeModel$logLikelihoodProfile <- logLikelihoodProfile
   outcomeModel$outcomeModelPriorVariance <- priorVariance
   outcomeModel$outcomeModelLogLikelihood <- logLikelihood
-  outcomeModel$outcomeModelType <- modelType
-  outcomeModel$outcomeModelStratified <- stratified
-  outcomeModel$outcomeModelUseCovariates <- useCovariates
-  outcomeModel$inversePtWeighting <- inversePtWeighting
-  if (inversePtWeighting) {
-    outcomeModel$targetEstimator <- outcomeModel$iptwEstimator
-  }
-  outcomeModel$iptwEstimator <- NULL
   outcomeModel$outcomeModelTreatmentEstimate <- treatmentEstimate
   outcomeModel$outcomeModelmainEffectEstimates <- mainEffectEstimates
   if (length(interactionCovariateIds) != 0) {
     outcomeModel$outcomeModelInteractionEstimates <- interactionEstimates
   }
   outcomeModel$outcomeModelStatus <- status
-  outcomeModel$populationCounts <- getCounts(population, "Population count")
-  outcomeModel$outcomeCounts <- getOutcomeCounts(population, modelType)
-  outcomeModel$timeAtRisk <- getTimeAtRisk(population, modelType)
   if (!is.null(subgroupCounts)) {
     outcomeModel$subgroupCounts <- subgroupCounts
   }
