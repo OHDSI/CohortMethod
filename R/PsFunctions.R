@@ -290,7 +290,7 @@ createPs <- function(cohortMethodData,
       propensityScore <- predict(cyclopsFit)
     }
     propensityScore <- tibble(rowId = as.numeric(names(propensityScore)),
-                              propensityScore = propensityScore)
+                              propensityScore = as.vector(propensityScore))
     population <- population |>
       inner_join(propensityScore, by = join_by("rowId"))
     metaData$psModelCoef <- coef(cyclopsFit)
