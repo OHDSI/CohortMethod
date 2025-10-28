@@ -48,7 +48,7 @@ test_that("population", {
   ## Minimal columns ----
   mod <- fitOutcomeModel(
     population = studyPop[, c(
-      "rowId", "outcomeCount", "treatment", "timeAtRisk", "personSeqId")]
+      "rowId", "outcomeCount", "treatment", "timeAtRisk", "survivalTime", "personSeqId")]
   )
 
   expect_s3_class(mod, "OutcomeModel")

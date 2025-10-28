@@ -81,7 +81,7 @@ fitOutcomeModel <- function(population,
                             )) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
-  checkmate::assertNames(names(population), must.include = c("rowId", "outcomeCount", "treatment", "timeAtRisk", "personSeqId"), add = errorMessages)
+  checkmate::assertNames(names(population), must.include = c("rowId", "outcomeCount", "treatment", "timeAtRisk", "survivalTime", "personSeqId"), add = errorMessages)
   if (!is.null(cohortMethodData)) {
     checkmate::assertNames(names(cohortMethodData), must.include = c("analysisRef", "cohorts", "covariateRef", "covariates", "outcomes"), add = errorMessages)
   }
