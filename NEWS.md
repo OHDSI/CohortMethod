@@ -1,3 +1,13 @@
+CohortMethod 5.5.2
+==================
+
+Bugfixes:
+
+1. Reorganized `createPs()` to be much more efficient for large study populations (millions of patients).
+
+2. Reorganized `fitOutcomeModel()` to be much more efficient for large study populations (millions of patients).
+
+
 CohortMethod 5.5.1
 ==================
 
