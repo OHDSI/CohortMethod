@@ -4,20 +4,7 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(
-  cohortMethodData,
-  population = NULL,
-  excludeCovariateIds = c(),
-  includeCovariateIds = c(),
-  maxCohortSizeForFitting = 250000,
-  errorOnHighCorrelation = TRUE,
-  stopOnError = TRUE,
-  prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-  control = createControl(noiseLevel = "silent", cvType = "auto", seed = 1,
-    resetCoefficients = TRUE, tolerance = 2e-07, cvRepetitions = 10, startingVariance =
-    0.01),
-  estimator = "att"
-)
+createPs(cohortMethodData, population = NULL, createPsArgs)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
@@ -29,35 +16,8 @@ createPs(
 If population is not specified, the full population in the
 \link{CohortMethodData} will be used.}
 
-\item{excludeCovariateIds}{Exclude these covariates from the propensity model.}
-
-\item{includeCovariateIds}{Include only these covariates in the propensity model.}
-
-\item{maxCohortSizeForFitting}{If the target or comparator cohort are larger than this number, they
-will be downsampled before fitting the propensity model. The model
-will be used to compute propensity scores for all subjects. The
-purpose of the sampling is to gain speed. Setting this number to 0
-means no downsampling will be applied.}
-
-\item{errorOnHighCorrelation}{If true, the function will test each covariate for correlation with
-the treatment assignment. If any covariate has an unusually high
-correlation (either positive or negative), this will throw and
-error.}
-
-\item{stopOnError}{If an error occur, should the function stop? Else, the two cohorts
-will be assumed to be perfectly separable.}
-
-\item{prior}{The prior used to fit the model. See
-\code{\link[Cyclops:createPrior]{Cyclops::createPrior()}} for details.}
-
-\item{control}{The control object used to control the cross-validation used to
-determine the hyperparameters of the prior (if applicable). See
-\code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
-
-\item{estimator}{The type of estimator for the IPTW. Options are \code{estimator = "ate"}
-for the average treatment effect, \code{estimator = "att"} for the
-average treatment effect in the treated, and \code{estimator = "ato"}
-for the average treatment effect in the overlap population.}
+\item{createPsArgs}{And object of type \code{CreatePsArgs} as created by the
+\code{\link[=createCreatePsArgs]{createCreatePsArgs()}} function}
 }
 \description{
 Creates propensity scores and inverse probability of treatment weights (IPTW) using a regularized logistic regression.

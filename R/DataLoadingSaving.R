@@ -26,21 +26,6 @@
 #' DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
 #' in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
 #' user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
-#' Covariates are automatically extracted from the appropriate tables within the CDM.
-#'
-#' **Important**: The target and comparator drug must not be included in the covariates, including any descendant
-#' concepts. You will need to manually add the drugs and descendants to the `excludedCovariateConceptIds`
-#' of the `covariateSettings` argument.
-#'
-#' The `removeduplicateSubjects` argument can have one of the following values:
-#'
-#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
-#' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
-#' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
-#'
-#' If the `covariateSettings` include cohort-based covariates, and the `covariateCohortTable` is `NULL`, the
-#' `covariateCohortDatabaseSchema` and `covariateCohortTable` will be set to the `exposureDatabaseSchema` and
-#' `exposureTable`, respectively .
 #'
 #' @param connectionDetails            An R object of type `connectionDetails` created using the
 #'                                     [DatabaseConnector::createConnectionDetails()] function.
@@ -48,9 +33,9 @@
 #'                                     instance. Requires read permissions to this database. On SQL
 #'                                     Server, this should specify both the database and the schema,
 #'                                     so for example 'cdm_instance.dbo'.
-#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
-#'                            emulate temp tables, provide a schema with write privileges where temp tables
-#'                            can be created.
+#' @param tempEmulationSchema          Some database platforms like Oracle and Impala do not truly
+#'                                     support temp tables. To emulate temp tables, provide a schema
+#'                                     with write privileges where temp tables can be created.
 #' @param targetId                     A unique identifier to define the target cohort.  If
 #'                                     exposureTable = DRUG_ERA, targetId is a concept ID and all
 #'                                     descendant concepts within that concept ID will be used to
@@ -63,17 +48,11 @@
 #'                                     is used to select the COHORT_DEFINITION_ID in the cohort-like
 #'                                     table.
 #' @param outcomeIds                   A list of cohort IDs used to define outcomes.
-#' @param studyStartDate               A calendar date specifying the minimum date that a cohort index
-#'                                     date can appear. Date format is 'yyyymmdd'.
-#' @param studyEndDate                 A calendar date specifying the maximum date that a cohort index
-#'                                     date can appear. Date format is 'yyyymmdd'. Important: the study
-#'                                     end data is also used to truncate risk windows, meaning no
-#'                                     outcomes beyond the study end date will be considered.
 #' @param exposureDatabaseSchema       The name of the database schema that is the location where the
 #'                                     exposure data used to define the exposure cohorts is available.
 #' @param exposureTable                The tablename that contains the exposure cohorts. If
-#'                                     exposureTable <> DRUG_ERA, then expectation is `exposureTable` has
-#'                                     format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+#'                                     exposureTable <> DRUG_ERA, then expectation is `exposureTable`
+#'                                     has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 #'                                     COHORT_START_DATE, COHORT_END_DATE.
 #' @param outcomeDatabaseSchema        The name of the database schema that is the location where the
 #'                                     data used to define the outcome cohorts is available.
@@ -81,24 +60,8 @@
 #'                                     outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 #'                                     outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                     SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
-#' @param cdmVersion                   Define the OMOP CDM version used: currently supports "5".
-#' @param firstExposureOnly            Should only the first exposure per subject be included? Note
-#'                                     that this is typically done in the [createStudyPopulation()]
-#'                                     function, but can already be done here for efficiency reasons.
-#' @param removeDuplicateSubjects      Remove subjects that are in both the target and comparator
-#'                                     cohort? See details for allowed values.Note that this is typically done in the
-#'                                     `createStudyPopulation` function, but can already be done
-#'                                     here for efficiency reasons.
-#' @param restrictToCommonPeriod       Restrict the analysis to the period when both treatments are observed?
-#' @param washoutPeriod                The minimum required continuous observation time prior to index
-#'                                     date for a person to be included in the cohort. Note that this
-#'                                     is typically done in the `createStudyPopulation` function,
-#'                                     but can already be done here for efficiency reasons.
-#' @param maxCohortSize                If either the target or the comparator cohort is larger than
-#'                                     this number it will be sampled to this size. `maxCohortSize = 0`
-#'                                     indicates no maximum size.
-#' @param covariateSettings            An object of type `covariateSettings` as created using the
-#'                                     [FeatureExtraction::createCovariateSettings()] function.
+#' @param getDbCohortMethodDataArgs    An object of type `GetDbCohortMethodDataArgs` as created by
+#'                                     the [createGetDbCohortMethodDataArgs()] function.
 #'
 #' @return
 #' A [CohortMethodData] object.
@@ -110,19 +73,11 @@ getDbCohortMethodData <- function(connectionDetails,
                                   targetId,
                                   comparatorId,
                                   outcomeIds,
-                                  studyStartDate = "",
-                                  studyEndDate = "",
                                   exposureDatabaseSchema = cdmDatabaseSchema,
                                   exposureTable = "drug_era",
                                   outcomeDatabaseSchema = cdmDatabaseSchema,
                                   outcomeTable = "condition_occurrence",
-                                  cdmVersion = "5",
-                                  firstExposureOnly = FALSE,
-                                  removeDuplicateSubjects = "keep all",
-                                  restrictToCommonPeriod = FALSE,
-                                  washoutPeriod = 0,
-                                  maxCohortSize = 0,
-                                  covariateSettings) {
+                                  getDbCohortMethodDataArgs) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
@@ -131,32 +86,12 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertNumeric(comparatorId, add = errorMessages)
   checkmate::assertNumeric(outcomeIds, add = errorMessages)
   checkmate::assertTRUE(all(c(targetId, comparatorId, outcomeIds) %% 1 == 0), add = errorMessages)
-  checkmate::assertCharacter(studyStartDate, len = 1, add = errorMessages)
-  checkmate::assertCharacter(studyEndDate, len = 1, add = errorMessages)
   checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
-  checkmate::assertCharacter(cdmVersion, len = 1, n.chars = 1, pattern = "^[5]$", add = errorMessages)
-  checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
-  checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
-  checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
-  checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
-  checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
-  checkmate::assertList(covariateSettings, add = errorMessages)
+  checkmate::assertR6(getDbCohortMethodDataArgs, "GetDbCohortMethodDataArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
-  dateCheck(studyStartDate)
-  dateCheck(studyEndDate)
-
-  if (studyStartDate != "" &&
-    regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyStartDate) == -1) {
-    stop("Study start date must have format YYYYMMDD")
-  }
-  if (studyEndDate != "" &&
-    regexpr("^[12][0-9]{3}[01][0-9][0-3][0-9]$", studyEndDate) == -1) {
-    stop("Study end date must have format YYYYMMDD")
-  }
 
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
@@ -172,21 +107,21 @@ getDbCohortMethodData <- function(connectionDetails,
     exposure_table = exposureTable,
     target_id = targetId,
     comparator_id = comparatorId,
-    study_start_date = studyStartDate,
-    study_end_date = studyEndDate,
-    first_only = firstExposureOnly,
-    remove_duplicate_subjects = removeDuplicateSubjects,
-    washout_period = washoutPeriod,
-    restrict_to_common_period = restrictToCommonPeriod
+    study_start_date = getDbCohortMethodDataArgs$studyStartDate,
+    study_end_date = getDbCohortMethodDataArgs$studyEndDate,
+    first_only = getDbCohortMethodDataArgs$firstExposureOnly,
+    remove_duplicate_subjects = getDbCohortMethodDataArgs$removeDuplicateSubjects,
+    washout_period = getDbCohortMethodDataArgs$washoutPeriod,
+    restrict_to_common_period = getDbCohortMethodDataArgs$restrictToCommonPeriod
   )
   DatabaseConnector::executeSql(connection, renderedSql)
 
-  if (maxCohortSize != 0) {
+  if (getDbCohortMethodDataArgs$maxCohortSize != 0) {
     outList <- downSample(
       connection = connection,
       tempEmulationSchema = tempEmulationSchema,
       targetId = targetId,
-      maxCohortSize = maxCohortSize
+      maxCohortSize = getDbCohortMethodDataArgs$maxCohortSize
     )
     sampled <- outList$sampled
     preSampleCounts <- outList$preSampleCounts
@@ -229,7 +164,9 @@ getDbCohortMethodData <- function(connectionDetails,
     studyStartDate = studyStartDate,
     studyEndDate = studyEndDate
   )
-  if (firstExposureOnly || removeDuplicateSubjects != "keep all" || washoutPeriod != 0) {
+  if (getDbCohortMethodDataArgs$firstExposureOnly ||
+      getDbCohortMethodDataArgs$removeDuplicateSubjects != "keep all" ||
+      getDbCohortMethodDataArgs$washoutPeriod != 0) {
     rawCountSql <- SqlRender::loadRenderTranslateSql(
       sqlFilename = "CountOverallExposedPopulation.sql",
       packageName = "CohortMethod",
@@ -240,8 +177,8 @@ getDbCohortMethodData <- function(connectionDetails,
       exposure_table = tolower(exposureTable),
       target_id = targetId,
       comparator_id = comparatorId,
-      study_start_date = studyStartDate,
-      study_end_date = studyEndDate
+      study_start_date = getDbCohortMethodDataArgs$studyStartDate,
+      study_end_date = getDbCohortMethodDataArgs$studyEndDate
     )
     rawCount <- DatabaseConnector::querySql(
       connection = connection,
@@ -267,19 +204,19 @@ getDbCohortMethodData <- function(connectionDetails,
     }
     metaData$attrition <- counts
     label <- c()
-    if (firstExposureOnly) {
+    if (getDbCohortMethodDataArgs$firstExposureOnly) {
       label <- c(label, "first exp. only")
     }
-    if (removeDuplicateSubjects == "remove all") {
+    if (getDbCohortMethodDataArgs$removeDuplicateSubjects == "remove all") {
       label <- c(label, "removed subs in both cohorts")
     } else if (removeDuplicateSubjects == "keep first") {
       label <- c(label, "first cohort only")
     }
 
-    if (restrictToCommonPeriod) {
+    if (getDbCohortMethodDataArgs$restrictToCommonPeriod) {
       label <- c(label, "restrict to common period")
     }
-    if (washoutPeriod) {
+    if (getDbCohortMethodDataArgs$washoutPeriod) {
       label <- c(label, paste(washoutPeriod, "days of obs. prior"))
     }
     label <- paste(label, collapse = " & ")
@@ -314,7 +251,7 @@ getDbCohortMethodData <- function(connectionDetails,
     cohortTable <- "#cohort_person"
   }
   covariateSettings <- handleCohortCovariateBuilders(
-    covariateSettings = covariateSettings,
+    covariateSettings = getDbCohortMethodDataArgs$covariateSettings,
     exposureDatabaseSchema = exposureDatabaseSchema,
     exposureTable = exposureTable
   )
@@ -326,7 +263,7 @@ getDbCohortMethodData <- function(connectionDetails,
     cohortTable = cohortTable,
     cohortTableIsTemp = TRUE,
     rowIdField = "row_id",
-    covariateSettings = covariateSettings
+    covariateSettings = getDbCohortMethodDataArgs$covariateSettings
   )
   ParallelLogger::logDebug(
     "Fetched covariates total count is ",
@@ -468,19 +405,4 @@ handleCohortCovariateBuilders <- function(covariateSettings,
   return(covariateSettings)
 }
 
-dateCheck <- function(date) {
-  if (date != "") {
-    tryCatch({
-      dateFormatted <- paste0(
-        substr(x = date, start = 1, stop = 4), "-",
-        substr(x = date, start = 5, stop = 6), "-",
-        substr(x = date, start = 7, stop = 8)
-      )
 
-      date <- as.Date(dateFormatted)
-    }, error = function(e) {
-      stop(sprintf("Date: %s (%s) is not valid", date, dateFormatted))
-    })
-    checkmate::assertDate(date, lower = "1000-01-01", upper = "2999-12-31")
-  }
-}

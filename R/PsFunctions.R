@@ -35,28 +35,8 @@
 #'                                 [CohortMethodData] covariates object and a `treatment` column.
 #'                                 If population is not specified, the full population in the
 #'                                 [CohortMethodData] will be used.
-#' @param excludeCovariateIds      Exclude these covariates from the propensity model.
-#' @param includeCovariateIds      Include only these covariates in the propensity model.
-#' @param maxCohortSizeForFitting  If the target or comparator cohort are larger than this number, they
-#'                                 will be downsampled before fitting the propensity model. The model
-#'                                 will be used to compute propensity scores for all subjects. The
-#'                                 purpose of the sampling is to gain speed. Setting this number to 0
-#'                                 means no downsampling will be applied.
-#' @param errorOnHighCorrelation   If true, the function will test each covariate for correlation with
-#'                                 the treatment assignment. If any covariate has an unusually high
-#'                                 correlation (either positive or negative), this will throw and
-#'                                 error.
-#' @param stopOnError              If an error occur, should the function stop? Else, the two cohorts
-#'                                 will be assumed to be perfectly separable.
-#' @param prior                    The prior used to fit the model. See
-#'                                 [Cyclops::createPrior()] for details.
-#' @param control                  The control object used to control the cross-validation used to
-#'                                 determine the hyperparameters of the prior (if applicable). See
-#'                                 [Cyclops::createControl()] for details.
-#' @param estimator                The type of estimator for the IPTW. Options are `estimator = "ate"`
-#'                                 for the average treatment effect, `estimator = "att"` for the
-#'                                 average treatment effect in the treated, and `estimator = "ato"`
-#'                                 for the average treatment effect in the overlap population.
+#' @param createPsArgs             And object of type `CreatePsArgs` as created by the
+#'                                 [createCreatePsArgs()] function
 #'
 #' @references
 #' Xu S, Ross C, Raebel MA, Shetterly S, Blanchette C, Smith D. Use of stabilized inverse propensity scores
@@ -71,33 +51,11 @@
 #' @export
 createPs <- function(cohortMethodData,
                      population = NULL,
-                     excludeCovariateIds = c(),
-                     includeCovariateIds = c(),
-                     maxCohortSizeForFitting = 250000,
-                     errorOnHighCorrelation = TRUE,
-                     stopOnError = TRUE,
-                     prior = createPrior("laplace", exclude = c(0), useCrossValidation = TRUE),
-                     control = createControl(
-                       noiseLevel = "silent",
-                       cvType = "auto",
-                       seed = 1,
-                       resetCoefficients = TRUE,
-                       tolerance = 2e-07,
-                       cvRepetitions = 10,
-                       startingVariance = 0.01
-                     ),
-                     estimator = "att") {
+                     createPsArgs) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
-  .assertCovariateId(excludeCovariateIds, null.ok = TRUE, add = errorMessages)
-  .assertCovariateId(includeCovariateIds, null.ok = TRUE, add = errorMessages)
-  checkmate::assertInt(maxCohortSizeForFitting, lower = 0, add = errorMessages)
-  checkmate::assertLogical(errorOnHighCorrelation, len = 1, add = errorMessages)
-  checkmate::assertLogical(stopOnError, len = 1, add = errorMessages)
-  checkmate::assertClass(prior, "cyclopsPrior", add = errorMessages)
-  checkmate::assertClass(control, "cyclopsControl", add = errorMessages)
-  checkmate::assertChoice(estimator, c("ate", "att", "ato"), add = errorMessages)
+  checkmate::assertR6(createPsArgs, "CreatePsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (is.null(population)) {
@@ -758,7 +716,7 @@ trimByPs <- function(population, trimFraction = 0.05) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
-  checkmate::assertNumber(trimFraction, lower = 0, upper = 1, add = errorMessages)
+
   checkmate::reportAssertions(collection = errorMessages)
 
   cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)

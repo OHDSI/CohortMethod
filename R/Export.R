@@ -19,55 +19,6 @@
 # maxCores <- 8
 # library(dplyr)
 
-
-#' Create CohortMethod diagnostics thresholds
-#'
-#' @description
-#' Threshold used when calling [exportToCsv()] to determine if we pass or fail diagnostics.
-#'
-#' @param mdrrThreshold         What is the maximum allowed minimum detectable relative risk
-#'                              (MDRR)?
-#' @param easeThreshold         What is the maximum allowed expected absolute systematic error
-#'                              (EASE).
-#' @param sdmThreshold          What is the maximum allowed standardized difference of mean (SDM)? If
-#'                              any covariate has an SDM exceeding this threshold, the diagnostic will
-#'                              fail.
-#' @param equipoiseThreshold    What is the minimum required equipoise?
-#' @param attritionFractionThreshold DEPRECATED. See `generalizabilitySdmThreshold` instead.
-#' @param generalizabilitySdmThreshold What is the maximum allowed standardized difference of mean
-#'                                     (SDM)when comparing the population before and after PS
-#'                                     adjustments? If the SDM is greater than this value, the diagnostic
-#'                                     will fail.
-#'
-#' @return
-#' An object of type `CmDiagnosticThresholds`.
-#'
-#' @export
-createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
-                                         easeThreshold = 0.25,
-                                         sdmThreshold = 0.1,
-                                         equipoiseThreshold = 0.2,
-                                         attritionFractionThreshold = NULL,
-                                         generalizabilitySdmThreshold = 1) {
-  errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertNumeric(mdrrThreshold, len = 1, lower = 0, add = errorMessages)
-  checkmate::assertNumeric(easeThreshold, len = 1, lower = 0, add = errorMessages)
-  checkmate::assertNumeric(sdmThreshold, len = 1, lower = 0, add = errorMessages)
-  checkmate::assertNumeric(equipoiseThreshold, len = 1, lower = 0, add = errorMessages)
-  checkmate::assertNumeric(generalizabilitySdmThreshold, len = 1, lower = 0, add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-  if (!is.null(attritionFractionThreshold)) {
-    warning("The attritionFractionThreshold argument is deprecated and will be ignored. ",
-            "See generalizabilitySdmThreshold instead.")
-  }
-  thresholds <- list()
-  for (name in names(formals(createCmDiagnosticThresholds))) {
-    thresholds[[name]] <- get(name)
-  }
-  class(thresholds) <- "CmDiagnosticThresholds"
-  return(thresholds)
-}
-
 #' Export cohort method results to CSV files
 #'
 #' @details

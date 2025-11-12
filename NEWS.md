@@ -1,3 +1,20 @@
+CohortMethod 6.0.0
+==================
+
+Changes:
+
+1. Dropped the `cdmVersion` argument in `getDbCohortMethodData()`. The version will be identified in the `cdm_source` table.
+
+2. Dropped the `trimByIptw()` and `trimByPsToEquipoise()` functions. Added `equipoiseBounds` and `maxWeight` arguments to `createTrimByPsArgs()` so functionality remains.
+
+3. Dropped `matchOnPsAndCovariates()` and added a `stratificationCovariateIds` argument to `createMatchOnPsArgs()` so functionality remains.
+
+4. Dropped `stratifyByPsAndCovariates()` and added a `stratificationCovariateIds` argument to `createStratifyByPsPsArgs()` so functionality remains.
+
+5. Renamed `createStudyPopArgs` argument of `createCmAnalysis()` to `createStudyPopulationArgs` for consistency.
+
+6. Dropping deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`.
+
 CohortMethod 5.5.2
 ==================
 
@@ -23,7 +40,7 @@ Changes:
 
 1. `createPs()` now checks if filtering of the covariate data is necessary (either because subject have been removed from the study population or because `excludeCovariateIds` or `includeCovariateIds` was specified). If no filtering is required, no extra copy of the covariate data data is created, saving IO time.
 
-2. Added `minimumCaseCount` argument to `createCohortMethodDataSimulationProfile ()`.
+2. Added `minimumCaseCount` argument to `createCohortMethodDataSimulationProfile()`.
 
 3. Preparing for `Andromeda 1.0.0`: no longer assuming Andromeda tables are sorted.
 
