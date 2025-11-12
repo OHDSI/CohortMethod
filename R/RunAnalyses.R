@@ -755,6 +755,11 @@ getPs <- function(psFile) {
     ps <- get("ps", envir = cache)
   } else {
     ps <- readRDS(psFile)
+    columnsToKeep <- c("rowId", "treatment", "personSeqId", "cohortStartDate", "propensityScore", "preferenceScore", "iptw")
+    if ("outcomeCount" %in% colnames(ps)) {
+      columnsToKeep <- c(columnsToKeep, "outcomeCount", "timeAtRisk", "survivalTime")
+    }
+    ps <- ps[, columnsToKeep]
     assign("ps", ps, envir = cache)
     assign("psFile", psFile, envir = cache)
   }
@@ -980,6 +985,7 @@ doFitOutcomeModelPlus <- function(params) {
   } else {
     ps <- studyPop
   }
+  rm(studyPop)
   ps <- applyTrimMatchStratify(ps, params$args)
   args <- params$args$fitOutcomeModelArgs
   args$population <- ps

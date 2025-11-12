@@ -103,6 +103,9 @@ createPs <- function(cohortMethodData,
   if (is.null(population)) {
     population <- cohortMethodData$cohorts |>
       collect()
+    metaData <- attr(cohortMethodData, "metaData")
+  } else {
+    metaData <- attr(population, "metaData")
   }
   if (!("rowId" %in% colnames(population))) {
     stop("Missing column rowId in population")
@@ -112,7 +115,8 @@ createPs <- function(cohortMethodData,
   }
 
   start <- Sys.time()
-  population <- population[order(population$rowId), ]
+  population <- population |>
+    arrange(.data$rowId)
   if (nrow(population) == 0) {
     error <- "No subjects in population, so cannot fit model"
     sampled <- FALSE
@@ -126,9 +130,34 @@ createPs <- function(cohortMethodData,
     sampled <- FALSE
     ref <- NULL
   } else {
+    sampled <- FALSE
+    if (maxCohortSizeForFitting != 0) {
+      set.seed(0)
+      targetRowIds <- population$rowId[population$treatment == 1]
+      if (length(targetRowIds) > maxCohortSizeForFitting) {
+        message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+        sampled <- TRUE
+      }
+      comparatorRowIds <- population$rowId[population$treatment == 0]
+      if (length(comparatorRowIds) > maxCohortSizeForFitting) {
+        message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+        sampled <- TRUE
+      }
+      if (sampled) {
+        fullPopulation <- population
+        population <- population |>
+          filter(.data$rowId %in% c(targetRowIds, comparatorRowIds)) |>
+          arrange(.data$rowId)
+      }
+    }
+
+    # For some reason GROUP BY is more efficient than DISTINCT on DuckDB:
     rowIds <- cohortMethodData$covariates |>
-      distinct(.data$rowId) |>
-      pull()
+      group_by(.data$rowId) |>
+      summarise() |>
+      pull(.data$rowId)
     if (all(rowIds %in% population$rowId) &&
         length(includeCovariateIds) == 0 &&
         length(excludeCovariateIds) == 0) {
@@ -159,46 +188,20 @@ createPs <- function(cohortMethodData,
       covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
       close(filteredCovariateData)
     }
-    on.exit(close(covariateData))
-    covariates <- covariateData$covariates
-    attr(population, "metaData")$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
-    attr(population, "metaData")$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
-    sampled <- FALSE
-    if (maxCohortSizeForFitting != 0) {
-      set.seed(0)
-      targetRowIds <- population$rowId[population$treatment == 1]
-      if (length(targetRowIds) > maxCohortSizeForFitting) {
-        message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
-        targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
-        sampled <- TRUE
-      }
-      comparatorRowIds <- population$rowId[population$treatment == 0]
-      if (length(comparatorRowIds) > maxCohortSizeForFitting) {
-        message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
-        comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
-        sampled <- TRUE
-      }
-      if (sampled) {
-        fullPopulation <- population
-        fullCovariates <- covariates
-        population <- population[population$rowId %in% c(targetRowIds, comparatorRowIds), ]
-        # Instantiate sampled covariates to prevent out-of-memory error from Cyclops:
-        covariateData$sampledCovariates <- covariates |>
-          filter(.data$rowId %in% local(population$rowId))
-        covariates <- covariateData$sampledCovariates
-      }
-    }
-    population <- population[order(population$rowId), ]
-    outcomes <- population
-    colnames(outcomes)[colnames(outcomes) == "treatment"] <- "y"
-    covariateData$outcomes <- outcomes
+    metaData$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
+    metaData$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
+
+    covariateData$outcomes <- population |>
+      rename(y = "treatment") |>
+      arrange(.data$rowId)
     floatingPoint <- getOption("floatingPoint")
     if (is.null(floatingPoint)) {
       floatingPoint <- 64
     } else {
       message("Cyclops using precision of ", floatingPoint)
     }
-    cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariates, modelType = "lr", quiet = TRUE, floatingPoint = floatingPoint)
+    Andromeda::flushAndromeda(covariateData)
+    cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariateData$covariates, modelType = "lr", floatingPoint = floatingPoint)
     error <- NULL
     ref <- NULL
     if (errorOnHighCorrelation) {
@@ -209,6 +212,7 @@ createPs <- function(cohortMethodData,
         ref <- cohortMethodData$covariateRef |>
           filter(.data$covariateId %in% covariateIds) |>
           collect()
+        metaData$psHighCorrelation <- ref
         message("High correlation between covariate(s) and treatment detected:")
         message(paste(colnames(ref), collapse = "\t"))
         for (i in 1:nrow(ref)) {
@@ -222,27 +226,28 @@ createPs <- function(cohortMethodData,
         }
       }
     }
-  }
-  if (is.null(error)) {
-    cyclopsFit <- tryCatch(
-      {
-        Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-      },
-      error = function(e) {
-        e$message
-      }
-    )
-    if (is.character(cyclopsFit)) {
-      if (stopOnError) {
-        stop(cyclopsFit)
-      } else {
-        error <- cyclopsFit
-      }
-    } else if (cyclopsFit$return_flag != "SUCCESS") {
-      if (stopOnError) {
-        stop(cyclopsFit$return_flag)
-      } else {
-        error <- cyclopsFit$return_flag
+
+    if (is.null(error)) {
+      cyclopsFit <- tryCatch(
+        {
+          Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+        },
+        error = function(e) {
+          e$message
+        }
+      )
+      if (is.character(cyclopsFit)) {
+        if (stopOnError) {
+          stop(cyclopsFit)
+        } else {
+          error <- cyclopsFit
+        }
+      } else if (cyclopsFit$return_flag != "SUCCESS") {
+        if (stopOnError) {
+          stop(cyclopsFit$return_flag)
+        } else {
+          error <- cyclopsFit$return_flag
+        }
       }
     }
   }
@@ -261,32 +266,47 @@ createPs <- function(cohortMethodData,
       delta <- log(yOdds) - log(yOddsNew)
       cfs[1] <- cfs[1] - delta # Equation (7) in King and Zeng (2001)
       cyclopsFit$estimation$estimate[1] <- cfs[1]
-      covariateData$fullOutcomes <- fullPopulation
+
       population <- fullPopulation
-      propensityScore <- predict(cyclopsFit, newOutcomes = covariateData$fullOutcomes, newCovariates = fullCovariates)
+
+      nonZeroCovariateIds <- as.numeric(names(cfs)[c(FALSE, cfs[2:length(cfs)] != 0)])
+      covariateData$covariates <- cohortMethodData$covariates |>
+        filter(.data$rowId %in% local(population$rowId),
+               .data$covariateId %in% nonZeroCovariateIds)
+      # No need to filter covariates because we already restricted to covariates
+      # That ended up in the model, so just normalizing values:
+      normCovariateData <- FeatureExtraction::tidyCovariateData(
+        covariateData = covariateData,
+        minFraction = 0,
+        normalize = TRUE,
+        removeRedundancy = FALSE
+      )
+      close(covariateData)
+      normCovariateData$outcomes <- population
+      propensityScore <- predict(cyclopsFit, newOutcomes = normCovariateData$outcomes, newCovariates = normCovariateData$covariates)
+      close(normCovariateData)
     } else {
+      close(covariateData)
       propensityScore <- predict(cyclopsFit)
     }
     propensityScore <- tibble(rowId = as.numeric(names(propensityScore)),
-                              propensityScore = propensityScore)
+                              propensityScore = as.vector(propensityScore))
     population <- population |>
       inner_join(propensityScore, by = join_by("rowId"))
-    attr(population, "metaData")$psModelCoef <- coef(cyclopsFit)
-    attr(population, "metaData")$psModelPriorVariance <- cyclopsFit$variance[1]
+    metaData$psModelCoef <- coef(cyclopsFit)
+    metaData$psModelPriorVariance <- cyclopsFit$variance[1]
   } else {
     if (sampled) {
       population <- fullPopulation
     }
     population$propensityScore <- population$treatment
-    attr(population, "metaData")$psError <- error
-    if (!is.null(ref)) {
-      attr(population, "metaData")$psHighCorrelation <- ref
-    }
+    metaData$psError <- error
   }
   population$propensityScore <- round(population$propensityScore, 10)
   population <- computePreferenceScore(population)
   population <- computeIptw(population, estimator)
-  attr(population, "metaData")$iptwEstimator <- estimator
+  metaData$iptwEstimator <- estimator
+  attr(population, "metaData") <- metaData
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
   message("Creating propensity scores took ", signif(delta, 3), " ", attr(delta, "units"))
