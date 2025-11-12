@@ -4,20 +4,19 @@
 \alias{trimByPs}
 \title{Trim persons by propensity score}
 \usage{
-trimByPs(population, trimFraction = 0.05)
+trimByPs(population, trimyByPsArgs)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}
 
-\item{trimFraction}{This fraction will be removed from each treatment group. In the target
-group, persons with the highest propensity scores will be removed, in the
-comparator group person with the lowest scores will be removed.}
+\item{trimyByPsArgs}{An object of type \code{TrimyByPsArgs} as created by the
+\code{\link[=createTrimByPsArgs]{createTrimByPsArgs()}} function.}
 }
 \value{
 Returns a tibble with the same three columns as the input.
 }
 \description{
-Use the provided propensity scores to trim subjects with extreme scores.
+Use the provided propensity scores to trim subjects with extreme scores or weights.
 }
 \details{
 The data frame should have the following three columns:
@@ -32,6 +31,8 @@ rowId <- 1:2000
 treatment <- rep(0:1, each = 1000)
 propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result <- trimByPs(data, 0.05)
+result1 <- trimByPs(data, createTrimyByPsArgs(trimFraction = 0.05))
+result2 <- trimByPs(data, createTrimyByPsArgs(equipoiseBounds = c(0.3, 0.7)))
+result3 <- trimByPs(data, createTrimyByPsArgs(maxWeight = 10))
 
 }

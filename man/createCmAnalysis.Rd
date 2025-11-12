@@ -54,21 +54,9 @@ the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function.}
 
 \item{createStudyPopArgs}{An object representing the arguments to be used when calling
 the \code{\link[=createStudyPopulation]{createStudyPopulation()}} function.}
-
-\item{trimByPsToEquipoiseArgs}{An object representing the arguments to be used when calling
-the \code{\link[=trimByPsToEquipoise]{trimByPsToEquipoise()}} function.}
-
-\item{trimByIptwArgs}{An object representing the arguments to be used when calling
-the \code{\link[=trimByIptw]{trimByIptw()}} function.}
-
-\item{matchOnPsAndCovariatesArgs}{An object representing the arguments to be used when calling
-the \code{\link[=matchOnPsAndCovariates]{matchOnPsAndCovariates()}} function.}
-
-\item{stratifyByPsAndCovariatesArgs}{An object representing the arguments to be used when calling
-the \code{\link[=stratifyByPsAndCovariates]{stratifyByPsAndCovariates()}} function.}
 }
 \value{
-An object of type \code{CmAnalysis}, to be used with the \link{runSccsAnalyses} function.
+An object of type \code{CmAnalysis}, to be used with the \link{runCmAnalyses} function.
 }
 \description{
 Create a CohortMethod analysis specification

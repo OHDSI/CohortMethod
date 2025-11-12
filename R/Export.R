@@ -34,8 +34,6 @@
 #'                      to a count before it can be included in the results. If the
 #'                      count is below this threshold, it will be set to `-minCellCount`.
 #' @param maxCores      How many parallel cores should be used?
-#' @param cmDiagnosticThresholds An object of type `CmDiagnosticThresholds` as created using
-#'                                 [createCmDiagnosticThresholds()].
 #'
 #' @return
 #' Does not return anything. Is called for the side-effect of populating the `exportFolder`
@@ -46,8 +44,7 @@ exportToCsv <- function(outputFolder,
                         exportFolder = file.path(outputFolder, "export"),
                         databaseId,
                         minCellCount = 5,
-                        maxCores = 1,
-                        cmDiagnosticThresholds = createCmDiagnosticThresholds()) {
+                        maxCores = 1) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::assertDirectoryExists(outputFolder, add = errorMessages)

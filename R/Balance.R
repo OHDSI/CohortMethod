@@ -305,22 +305,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' @template CohortMethodData
 #'
 #' @param population         A data frame containing the people that are remaining after PS adjustment.
-#' @param subgroupCovariateId  Optional: a covariate ID of a binary covariate that indicates a subgroup of
-#'                             interest. Both the before and after populations will be restricted to this
-#'                             subgroup before computing covariate balance.
-#' @param maxCohortSize  If the target or comparator cohort are larger than this number, they
-#'                                 will be downsampled before computing covariate balance to save time.
-#'                                 Setting this number to 0 means no downsampling will be applied.
-#' @param covariateFilter   Determines the covariates for which to compute covariate balance. Either a vector
-#'                          of covariate IDs, or a table 1 specifications object as generated for example using
-#'                          [FeatureExtraction::getDefaultTable1Specifications()]. If `covariateFilter = NULL`,
-#'                          balance will be computed for all variables found in the data.
-#' @param threshold   Threshold value for the absolute value of the standardized difference of means (ASDM).
-#'                    If the ASDM exceeds this threshold it will be marked as unbalanced. (Hripcsak et al. 2025)
-#' @param alpha       The family-wise alpha for testing whether the absolute value of the standardized
-#'                    difference of means is greater than the threshold. If not provided, any value greater
-#'                    than the threshold will be marked as unbalanced.
-#'                    highlighted in the plot.
+#' @param computeCovariateBalanceArgs  Settings object as created by `createComputeCovariateBalanceArgs()`.
 #' @details
 #' The population data frame should have the following three columns:
 #'
@@ -389,44 +374,31 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
 #' @export
 computeCovariateBalance <- function(population,
                                     cohortMethodData,
-                                    subgroupCovariateId = NULL,
-                                    maxCohortSize = 250000,
-                                    covariateFilter = NULL,
-                                    threshold = 0.1,
-                                    alpha = 0.05) {
+                                    computeCovariateBalanceArgs = createComputeCovariateBalanceArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
-  .assertCovariateId(subgroupCovariateId, len = 1, null.ok = TRUE, add = errorMessages)
-  checkmate::assertInt(maxCohortSize, lower = 0, add = errorMessages)
-  if (is.numeric(covariateFilter)) {
-    checkmate::assertIntegerish(covariateFilter, add = errorMessages)
-  } else if (!is.null(covariateFilter)) {
-    checkmate::assertDataFrame(covariateFilter, add = errorMessages)
-    checkmate::assertNames(colnames(covariateFilter), must.include = c("analysisId", "covariateIds"), add = errorMessages)
-  }
-  checkmate::assertNumber(threshold, lower = 0, add = errorMessages)
-  checkmate::assertNumber(alpha, lower = 0, null.ok = TRUE, add = errorMessages)
+  checkmate::assertR6(computeCovariateBalanceArgs, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   start <- Sys.time()
 
-  if (!is.null(subgroupCovariateId)) {
+  if (!is.null(computeCovariateBalanceArgs$subgroupCovariateId)) {
     subGroupCovariate <- cohortMethodData$covariates |>
-      filter(.data$covariateId == subgroupCovariateId) |>
+      filter(.data$covariateId == computeCovariateBalanceArgs$subgroupCovariateId) |>
       collect()
 
     if (nrow(subGroupCovariate) == 0) {
-      stop("Cannot find covariate with ID ", subgroupCovariateId)
+      stop("Cannot find covariate with ID ", computeCovariateBalanceArgs$subgroupCovariateId)
     }
 
     tempCohorts <- cohortMethodData$cohorts |>
       collect() |>
       filter(.data$rowId %in% subGroupCovariate$rowId) |>
-      sampleCohorts(maxCohortSize = maxCohortSize)
+      sampleCohorts(maxCohortSize = computeCovariateBalanceArgs$maxCohortSize)
 
     if (nrow(tempCohorts) == 0) {
-      stop("Cannot find covariate with ID ", subgroupCovariateId, " in population before PS adjustment")
+      stop("Cannot find covariate with ID ", computeCovariateBalanceArgs$subgroupCovariateId, " in population before PS adjustment")
     }
 
     sumTreatment <- sum(tempCohorts$treatment)
@@ -436,10 +408,10 @@ computeCovariateBalance <- function(population,
 
     tempCohortsAfterMatching <- population |>
       filter(.data$rowId %in% subGroupCovariate$rowId) |>
-      sampleCohorts(maxCohortSize = maxCohortSize)
+      sampleCohorts(maxCohortSize = computeCovariateBalanceArgs$maxCohortSize)
 
     if (nrow(tempCohortsAfterMatching) == 0) {
-      stop("Cannot find covariate with ID ", subgroupCovariateId, " in population after PS adjustment")
+      stop("Cannot find covariate with ID ", computeCovariateBalanceArgs$subgroupCovariateId, " in population after PS adjustment")
     }
     sumTreatment <- sum(tempCohortsAfterMatching$treatment)
     if (sumTreatment == 0 || sumTreatment == nrow(tempCohortsAfterMatching)) {
@@ -454,30 +426,32 @@ computeCovariateBalance <- function(population,
   } else {
     cohortMethodData$tempCohorts <- cohortMethodData$cohorts |>
       select("rowId", "treatment") |>
-      sampleCohortsAndromeda(maxCohortSize = maxCohortSize, label = "before PS adjustment")
+      sampleCohortsAndromeda(maxCohortSize = computeCovariateBalanceArgs$maxCohortSize,
+                             label = "before PS adjustment")
 
     cohortMethodData$tempCohortsAfterMatching <- population |>
       select("rowId", "treatment", matches("stratumId"), matches("iptw")) |>
-      sampleCohorts(maxCohortSize = maxCohortSize, label = "after PS adjustment")
+      sampleCohorts(maxCohortSize = computeCovariateBalanceArgs$maxCohortSize,
+                    label = "after PS adjustment")
   }
   on.exit(cohortMethodData$tempCohorts <- NULL)
   on.exit(cohortMethodData$tempCohortsAfterMatching <- NULL, add = TRUE)
 
-  beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, covariateFilter)
-  afterMatching <- computeMeansPerGroup(cohorts = cohortMethodData$tempCohortsAfterMatching, cohortMethodData, covariateFilter)
+  beforeMatching <- computeMeansPerGroup(cohortMethodData$tempCohorts, cohortMethodData, computeCovariateBalanceArgs$covariateFilter)
+  afterMatching <- computeMeansPerGroup(cohorts = cohortMethodData$tempCohortsAfterMatching, cohortMethodData, computeCovariateBalanceArgs$covariateFilter)
 
   # Bonferroni:
-  if (is.null(alpha)) {
+  if (is.null(computeCovariateBalanceArgs$alpha)) {
     useAlpha <- FALSE
   } else {
     useAlpha <- TRUE
-    correctedAlphaBefore <- alpha / nrow(beforeMatching)
-    correctedAlphaAfter <- alpha / nrow(afterMatching)
+    correctedAlphaBefore <- computeCovariateBalanceArgs$alpha / nrow(beforeMatching)
+    correctedAlphaAfter <- computeCovariateBalanceArgs$alpha / nrow(afterMatching)
   }
 
   beforeMatching <- beforeMatching |>
-    mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, threshold)) |>
-    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaBefore) else (abs(.data$stdDiff) <= threshold)) |>
+    mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, computeCovariateBalanceArgs$threshold)) |>
+    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaBefore) else (abs(.data$stdDiff) <= computeCovariateBalanceArgs$threshold)) |>
     select("covariateId",
            beforeMatchingMeanTarget = "meanTarget",
            beforeMatchingMeanComparator = "meanComparator",
@@ -492,8 +466,8 @@ computeCovariateBalance <- function(population,
            beforeMatchingSdmP = "sdmP",
            beforeMatchingBalanced = "balanced")
   afterMatching <- afterMatching |>
-    mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, threshold)) |>
-    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaAfter) else (abs(.data$stdDiff) >= threshold)) |>
+    mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, computeCovariateBalanceArgs$threshold)) |>
+    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaAfter) else (abs(.data$stdDiff) >= computeCovariateBalanceArgs$threshold)) |>
     select("covariateId",
            afterMatchingMeanTarget = "meanTarget",
            afterMatchingMeanComparator = "meanComparator",

@@ -12,14 +12,9 @@ runCmAnalyses(
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
-  cdmVersion = "5",
   outputFolder = "./CohortMethodOutput",
-  cmAnalysisList,
-  targetComparatorOutcomesList,
-  analysesToExclude = NULL,
-  refitPsForEveryOutcome = FALSE,
-  refitPsForEveryStudyPopulation = TRUE,
-  multiThreadingSettings = createMultiThreadingSettings()
+  multiThreadingSettings = createMultiThreadingSettings(),
+  cmAnalysesSpecifications
 )
 }
 \arguments{
@@ -57,32 +52,17 @@ outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
-"5".}
-
 \item{outputFolder}{Name of the folder where all the outputs will written to.}
-
-\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
-the `\link{createCmAnalysis} function.}
-
-\item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
-created using the \link{createTargetComparatorOutcomes}
-function.}
-
-\item{analysesToExclude}{Analyses to exclude. See the Analyses to Exclude section for details.}
-
-\item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
-after people who already had the outcome are removed)? If
-false, a single propensity model will be fitted, and people
-who had the outcome previously will be removed afterwards.}
-
-\item{refitPsForEveryStudyPopulation}{Should the propensity model be fitted for every study population
-definition? If false, a single propensity model will be fitted,
-and the study population criteria will be applied afterwards.}
 
 \item{multiThreadingSettings}{An object of type \code{CmMultiThreadingSettings} as created using
 the \code{\link[=createMultiThreadingSettings]{createMultiThreadingSettings()}} or
 \code{\link[=createDefaultMultiThreadingSettings]{createDefaultMultiThreadingSettings()}} functions.}
+
+\item{cmAnalysesSpecifications}{An object of type \code{CmAnalysesSpecifications} as created using
+the \code{createCmAnalysesSpecifications()}.}
+
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
+"5".}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and

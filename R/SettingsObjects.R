@@ -413,8 +413,13 @@ CreatePsArgs <- R6Class(
 #'                      group, persons with the highest propensity scores will be removed, in the
 #'                      comparator group person with the lowest scores will be removed.
 #' @param equipoiseBounds A 2-dimensional numeric vector containing the upper and lower bound on the
-#'                        preference score for keeping persons.
-#' @param maxWeight  The maximum allowed IPTW.
+#'                        preference score (Walker, 201) for keeping persons.
+#' @param maxWeight     The maximum allowed IPTW.
+#'
+#' @references
+#' Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
+#' Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
+#' Comparative Effective Research, 3, 11-20
 #'
 #' @return
 #' An object of type `TrimByPsArgs`.
@@ -550,6 +555,9 @@ MatchOnPsArgs <- R6Class(
       checkmate::assertCharacter(self$stratificationColumns, null.ok = TRUE, add = errorMessages)
       .assertCovariateId(self$stratificationCovariateIds, null.ok = TRUE, add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)
+      if (length(self$stratificationColumns) != 0 && length(self$stratificationCovariateIds)) {
+        stop("Cannot specify both stratificationColumns and stratificationCovariateIds")
+      }
     }
   )
 )
@@ -817,20 +825,12 @@ FitOutcomeModelArgs <- R6Class(
 #'                                        the [createPs()] function.
 #' @param trimByPsArgs                    An object representing the arguments to be used when calling
 #'                                        the [trimByPs()] function.
-#' @param trimByPsToEquipoiseArgs         An object representing the arguments to be used when calling
-#'                                        the [trimByPsToEquipoise()] function.
-#' @param trimByIptwArgs                  An object representing the arguments to be used when calling
-#'                                        the [trimByIptw()] function.
 #' @param truncateIptwArgs                An object representing the arguments to be used when calling
 #'                                        the [truncateIptw()] function.
 #' @param matchOnPsArgs                   An object representing the arguments to be used when calling
 #'                                        the [matchOnPs()] function.
-#' @param matchOnPsAndCovariatesArgs      An object representing the arguments to be used when calling
-#'                                        the [matchOnPsAndCovariates()] function.
 #' @param stratifyByPsArgs                An object representing the arguments to be used when calling
 #'                                        the [stratifyByPs()] function.
-#' @param stratifyByPsAndCovariatesArgs   An object representing the arguments to be used when calling
-#'                                        the [stratifyByPsAndCovariates()] function.
 #' @param computeSharedCovariateBalanceArgs  An object representing the arguments to be used when calling
 #'                                          the [computeCovariateBalance()] function per target-comparator-analysis.
 #' @param computeCovariateBalanceArgs     An object representing the arguments to be used when calling
@@ -839,7 +839,7 @@ FitOutcomeModelArgs <- R6Class(
 #'                                        the [fitOutcomeModel()] function.
 #'
 #' @return
-#' An object of type `CmAnalysis`, to be used with the [runSccsAnalyses] function.
+#' An object of type `CmAnalysis`, to be used with the [runCmAnalyses] function.
 #'
 #' @export
 createCmAnalysis <- function(analysisId = 1,
@@ -1262,6 +1262,9 @@ CmAnalysesSpecifications <- R6Class(
       uniqueAnalysisIds <- unique(analysisIds)
       if (length(uniqueAnalysisIds) != length(analysisIds)) {
         stop("Duplicate analysis IDs are not allowed")
+      }
+      if (!self$refitPsForEveryStudyPopulation && self$refitPsForEveryOutcome) {
+        stop("Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
       }
     },
     fromList = function(list, requireTyping) {

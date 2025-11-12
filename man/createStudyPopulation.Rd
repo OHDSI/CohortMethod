@@ -8,7 +8,7 @@ createStudyPopulation(
   cohortMethodData,
   population = NULL,
   outcomeId = NULL,
-  createStudyPopulationArgs
+  createStudyPopulationArgs = createCreateStudyPopulationArgs()
 )
 }
 \arguments{

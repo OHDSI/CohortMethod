@@ -4,12 +4,13 @@
 \alias{truncateIptw}
 \title{Truncate IPTW values}
 \usage{
-truncateIptw(population, maxWeight = 10)
+truncateIptw(population, truncateIptwArgs = createTruncateIptwArgs())
 }
 \arguments{
-\item{population}{A data frame with at least the two columns described in the details}
+\item{population}{A data frame with at least the two columns described in the details.}
 
-\item{maxWeight}{The maximum allowed IPTW.}
+\item{truncateIptwArgs}{An object of type \code{TruncateIptwArgs} as created by the
+\code{\link[=createTruncateIptwArgs]{createTruncateIptwArgs()}} function.}
 }
 \value{
 Returns a tibble with the same  columns as the input.

@@ -65,7 +65,7 @@ fastDuplicated <- function(data, columns) {
 createStudyPopulation <- function(cohortMethodData,
                                   population = NULL,
                                   outcomeId = NULL,
-                                  createStudyPopulationArgs) {
+                                  createStudyPopulationArgs = createCreateStudyPopulationArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
@@ -177,7 +177,7 @@ createStudyPopulation <- function(cohortMethodData,
       outcomes <- cohortMethodData$outcomes |>
         filter(.data$outcomeId == !!outcomeId) |>
         collect()
-      if (isEnd(startAnchor)) {
+      if (isEnd(createStudyPopulationArgs$startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
         priorOutcomeRowIds <- outcomes |>
           filter(

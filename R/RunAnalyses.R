@@ -177,22 +177,11 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
 #'                                       outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                       SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param outputFolder                   Name of the folder where all the outputs will written to.
-#' @param cmAnalysisList                 A list of objects of type `cmAnalysis` as created using
-#'                                       the `[createCmAnalysis] function.
-#' @param targetComparatorOutcomesList   A list of objects of type `targetComparatorOutcomes` as
-#'                                       created using the [createTargetComparatorOutcomes]
-#'                                       function.
-#' @param analysesToExclude              Analyses to exclude. See the Analyses to Exclude section for details.
-#' @param refitPsForEveryOutcome         Should the propensity model be fitted for every outcome (i.e.
-#'                                       after people who already had the outcome are removed)? If
-#'                                       false, a single propensity model will be fitted, and people
-#'                                       who had the outcome previously will be removed afterwards.
-#' @param refitPsForEveryStudyPopulation Should the propensity model be fitted for every study population
-#'                                       definition? If false, a single propensity model will be fitted,
-#'                                       and the study population criteria will be applied afterwards.
 #' @param multiThreadingSettings         An object of type `CmMultiThreadingSettings` as created using
 #'                                       the [createMultiThreadingSettings()] or
 #'                                       [createDefaultMultiThreadingSettings()] functions.
+#' @param cmAnalysesSpecifications       An object of type `CmAnalysesSpecifications` as created using
+#'                                       the `createCmAnalysesSpecifications()`.
 #'
 #' @return
 #' A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
@@ -206,14 +195,9 @@ runCmAnalyses <- function(connectionDetails,
                           exposureTable = "drug_era",
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_occurrence",
-                          cdmVersion = "5",
                           outputFolder = "./CohortMethodOutput",
-                          cmAnalysisList,
-                          targetComparatorOutcomesList,
-                          analysesToExclude = NULL,
-                          refitPsForEveryOutcome = FALSE,
-                          refitPsForEveryStudyPopulation = TRUE,
-                          multiThreadingSettings = createMultiThreadingSettings()) {
+                          multiThreadingSettings = createMultiThreadingSettings(),
+                          cmAnalysesSpecifications) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
@@ -222,48 +206,17 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
-  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
-  checkmate::assertList(cmAnalysisList, min.len = 1, types = "cmAnalysis", add = errorMessages)
-  checkmate::assertList(targetComparatorOutcomesList, min.len = 1, types = "targetComparatorOutcomes", add = errorMessages)
-  checkmate::assertDataFrame(analysesToExclude, null.ok = TRUE, add = errorMessages)
-
-  if (!is.null(analysesToExclude)) {
-    if (nrow(analysesToExclude) == 0) {
-      warning("Passed `data.frame` with 0 rows to parameter: `analysesToExclude`, no analyses excluded.")
-    }
-  }
-
-  checkmate::assertLogical(refitPsForEveryOutcome, len = 1, add = errorMessages)
-  checkmate::assertLogical(refitPsForEveryStudyPopulation, len = 1, add = errorMessages)
   checkmate::assertClass(multiThreadingSettings, "CmMultiThreadingSettings", add = errorMessages)
+  checkmate::assertR6(cmAnalysesSpecifications, "CmAnalysesSpecifications", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!refitPsForEveryStudyPopulation && refitPsForEveryOutcome) {
-    stop("Cannot have refitPsForEveryStudyPopulation = FALSE and refitPsForEveryOutcome = TRUE")
-  }
-  uniquetargetComparatorOutcomesList <- unique(ParallelLogger::selectFromList(
-    targetComparatorOutcomesList,
-    c(
-      "targetId",
-      "comparatorId",
-      "outcomes"
-    )
-  ))
-  if (length(uniquetargetComparatorOutcomesList) != length(targetComparatorOutcomesList)) {
-    stop("Duplicate target-comparator-outcomes combinations are not allowed")
-  }
-  analysisIds <- unlist(ParallelLogger::selectFromList(cmAnalysisList, "analysisId"))
-  uniqueAnalysisIds <- unique(analysisIds)
-  if (length(uniqueAnalysisIds) != length(analysisIds)) {
-    stop("Duplicate analysis IDs are not allowed")
-  }
   outputFolder <- normalizePath(outputFolder, mustWork = FALSE)
   cmAnalysisListFile <- file.path(outputFolder, "cmAnalysisList.rds")
   if (file.exists(cmAnalysisListFile)) {
     oldCmAnalysisList <- readRDS(cmAnalysisListFile)
     if (!isTRUE(all.equal(oldCmAnalysisList, cmAnalysisList))) {
-      rm(list=ls(envir = cache), envir = cache)
+      rm(list = ls(envir = cache), envir = cache)
       message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
       response <- utils::askYesNo("Do you want to delete the old files before proceeding?")
       if (is.na(response)) {
@@ -280,12 +233,12 @@ runCmAnalyses <- function(connectionDetails,
   saveRDS(cmAnalysisList, cmAnalysisListFile)
   saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   referenceTable <- createReferenceTable(
-    cmAnalysisList = cmAnalysisList,
-    targetComparatorOutcomesList = targetComparatorOutcomesList,
-    analysesToExclude = analysesToExclude,
+    cmAnalysisList = cmAnalysesSpecifications$cmAnalysisList,
+    targetComparatorOutcomesList = cmAnalysesSpecifications$targetComparatorOutcomesList,
+    analysesToExclude = cmAnalysesSpecifications$analysesToExclude,
     outputFolder = outputFolder,
-    refitPsForEveryOutcome = refitPsForEveryOutcome,
-    refitPsForEveryStudyPopulation = refitPsForEveryStudyPopulation
+    refitPsForEveryOutcome = cmAnalysesSpecifications$refitPsForEveryOutcome,
+    refitPsForEveryStudyPopulation = cmAnalysesSpecifications$refitPsForEveryStudyPopulation
   )
   referenceTable |>
     select(-"includedCovariateConceptIds", "excludedCovariateConceptIds") |>
@@ -414,7 +367,7 @@ runCmAnalyses <- function(connectionDetails,
   }
 
   # Fit propensity models ---------------------------------------
-  if (refitPsForEveryOutcome) {
+  if (cmAnalysesSpecifications$refitPsForEveryOutcome) {
     subset <- referenceTable[!duplicated(referenceTable$psFile), ]
     subset <- subset[subset$psFile != "", ]
     subset <- subset[!file.exists(file.path(outputFolder, subset$psFile)), ]

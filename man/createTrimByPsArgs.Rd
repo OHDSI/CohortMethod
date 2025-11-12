@@ -16,7 +16,7 @@ group, persons with the highest propensity scores will be removed, in the
 comparator group person with the lowest scores will be removed.}
 
 \item{equipoiseBounds}{A 2-dimensional numeric vector containing the upper and lower bound on the
-preference score for keeping persons.}
+preference score (Walker, 201) for keeping persons.}
 
 \item{maxWeight}{The maximum allowed IPTW.}
 }
@@ -29,4 +29,9 @@ Create a parameter object for the function \code{\link[=trimByPs]{trimByPs()}}
 \details{
 Create an object defining the parameter values. Set any argument to \code{NULL} to not use it for
 trimming.
+}
+\references{
+Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
+Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
+Comparative Effective Research, 3, 11-20
 }

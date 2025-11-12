@@ -89,18 +89,18 @@ createPs <- function(cohortMethodData,
     ref <- NULL
   } else {
     sampled <- FALSE
-    if (maxCohortSizeForFitting != 0) {
+    if (createPsArgs$maxCohortSizeForFitting != 0) {
       set.seed(0)
       targetRowIds <- population$rowId[population$treatment == 1]
-      if (length(targetRowIds) > maxCohortSizeForFitting) {
+      if (length(targetRowIds) > createPsArgs$maxCohortSizeForFitting) {
         message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
-        targetRowIds <- sample(targetRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+        targetRowIds <- sample(targetRowIds, size = createPsArgs$maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
       comparatorRowIds <- population$rowId[population$treatment == 0]
-      if (length(comparatorRowIds) > maxCohortSizeForFitting) {
+      if (length(comparatorRowIds) > createPsArgs$maxCohortSizeForFitting) {
         message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
-        comparatorRowIds <- sample(comparatorRowIds, size = maxCohortSizeForFitting, replace = FALSE)
+        comparatorRowIds <- sample(comparatorRowIds, size = createPsArgs$maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
       if (sampled) {
@@ -117,8 +117,8 @@ createPs <- function(cohortMethodData,
       summarise() |>
       pull(.data$rowId)
     if (all(rowIds %in% population$rowId) &&
-        length(includeCovariateIds) == 0 &&
-        length(excludeCovariateIds) == 0) {
+        length(createPsArgs$includeCovariateIds) == 0 &&
+        length(createPsArgs$excludeCovariateIds) == 0) {
       # No filtering necessary, send to tidyCovariateData:
       covariateData <- FeatureExtraction::tidyCovariateData(cohortMethodData)
     } else {
@@ -126,11 +126,11 @@ createPs <- function(cohortMethodData,
       covariates <- cohortMethodData$covariates |>
         filter(.data$rowId %in% local(population$rowId))
 
-      if (length(includeCovariateIds) != 0) {
+      if (length(createPsArgs$includeCovariateIds) != 0) {
         covariates <- covariates |>
           filter(.data$covariateId %in% includeCovariateIds)
       }
-      if (length(excludeCovariateIds) != 0) {
+      if (length(createPsArgs$excludeCovariateIds) != 0) {
         covariates <- covariates |>
           filter(!.data$covariateId %in% excludeCovariateIds)
       }
@@ -162,7 +162,7 @@ createPs <- function(cohortMethodData,
     cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariateData$covariates, modelType = "lr", floatingPoint = floatingPoint)
     error <- NULL
     ref <- NULL
-    if (errorOnHighCorrelation) {
+    if (createPsArgs$errorOnHighCorrelation) {
       suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
       suspect <- suspect[!is.na(suspect)]
       if (length(suspect) != 0) {
@@ -177,7 +177,7 @@ createPs <- function(cohortMethodData,
           message(paste(ref[i, ], collapse = "\t"))
         }
         message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
-        if (stopOnError) {
+        if (createPsArgs$stopOnError) {
           stop(message)
         } else {
           error <- message
@@ -195,13 +195,13 @@ createPs <- function(cohortMethodData,
         }
       )
       if (is.character(cyclopsFit)) {
-        if (stopOnError) {
+        if (createPsArgs$stopOnError) {
           stop(cyclopsFit)
         } else {
           error <- cyclopsFit
         }
       } else if (cyclopsFit$return_flag != "SUCCESS") {
-        if (stopOnError) {
+        if (createPsArgs$stopOnError) {
           stop(cyclopsFit$return_flag)
         } else {
           error <- cyclopsFit$return_flag
@@ -262,8 +262,8 @@ createPs <- function(cohortMethodData,
   }
   population$propensityScore <- round(population$propensityScore, 10)
   population <- computePreferenceScore(population)
-  population <- computeIptw(population, estimator)
-  metaData$iptwEstimator <- estimator
+  population <- computeIptw(population, createPsArgs$estimator)
+  metaData$iptwEstimator <- createPsArgs$estimator
   attr(population, "metaData") <- metaData
   delta <- Sys.time() - start
   ParallelLogger::logDebug("Propensity model fitting finished with status ", error)
@@ -687,12 +687,11 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' Trim persons by propensity score
 #'
 #' @description
-#' Use the provided propensity scores to trim subjects with extreme scores.
+#' Use the provided propensity scores to trim subjects with extreme scores or weights.
 #'
 #' @param population     A data frame with the three columns described below
-#' @param trimFraction   This fraction will be removed from each treatment group. In the target
-#'                       group, persons with the highest propensity scores will be removed, in the
-#'                       comparator group person with the lowest scores will be removed.
+#' @param trimyByPsArgs  An object of type `TrimyByPsArgs` as created by the
+#'                       [createTrimByPsArgs()] function.
 #'
 #' @details
 #' The data frame should have the following three columns:
@@ -709,124 +708,61 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' treatment <- rep(0:1, each = 1000)
 #' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- trimByPs(data, 0.05)
+#' result1 <- trimByPs(data, createTrimyByPsArgs(trimFraction = 0.05))
+#' result2 <- trimByPs(data, createTrimyByPsArgs(equipoiseBounds = c(0.3, 0.7)))
+#' result3 <- trimByPs(data, createTrimyByPsArgs(maxWeight = 10))
 #'
 #' @export
-trimByPs <- function(population, trimFraction = 0.05) {
+trimByPs <- function(population, trimyByPsArgs) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
-
+  checkmate::assertR6(trimyByPsArgs, "TrimyByPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
-  cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
-  result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
-                         (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
-  if (!is.null(attr(result, "metaData"))) {
-    attr(
-      result,
-      "metaData"
-    )$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
+  if (!is.null(trimyByPsArgs$trimFraction)) {
+    cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
+                             trimyByPsArgs$trimFraction)
+    cutoffComparator <- quantile(population$propensityScore[population$treatment == 0],
+                                 1 - trimyByPsArgs$trimFraction)
+    population <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
+                               (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
+    if (!is.null(attr(result, "metaData"))) {
+      attr(
+        result,
+        "metaData"
+      )$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
+    }
+    ParallelLogger::logDebug("Population size after trimming is ", nrow(result))
   }
-  ParallelLogger::logDebug("Population size after trimming is ", nrow(result))
-  return(result)
-}
 
-#' Keep only persons in clinical equipoise
-#'
-#' @description
-#' Use the preference score to trim subjects that are not in clinical equipoise
-#'
-#' @param population   A data frame with at least the three columns described below.
-#' @param bounds       The upper and lower bound on the preference score for keeping persons.
-#'
-#' @details
-#' The data frame should have the following three columns:
-#'
-#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
-#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
-#' - propensityScore (numeric): Propensity score.
-#'
-#' @return
-#' Returns a tibble with the same three columns as the input.
-#'
-#' @examples
-#' rowId <- 1:2000
-#' treatment <- rep(0:1, each = 1000)
-#' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- trimByPsToEquipoise(data)
-#'
-#' @references
-#' Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
-#' Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
-#' Comparative Effective Research, 3, 11-20
-#'
-#' @export
-trimByPsToEquipoise <- function(population, bounds = c(0.3, 0.7)) {
-  errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertDataFrame(population, add = errorMessages)
-  checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
-  checkmate::assertNumeric(bounds, len = 2, lower = 0, upper = 1, add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-
-  temp <- computePreferenceScore(population)
-  population <- population[temp$preferenceScore >= bounds[1] & temp$preferenceScore <= bounds[2], ]
-  if (!is.null(attr(population, "metaData"))) {
-    attr(
-      population,
-      "metaData"
-    )$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
+  if (!is.null(trimyByPsArgs$equipoiseBounds)) {
+    temp <- computePreferenceScore(population)
+    population <- population[temp$preferenceScore >= trimyByPsArgs$equipoiseBounds[1] &
+                               temp$preferenceScore <= trimyByPsArgs$equipoiseBounds[2], ]
+    if (!is.null(attr(population, "metaData"))) {
+      attr(
+        population,
+        "metaData"
+      )$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
+    }
+    ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   }
-  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
-  return(population)
-}
 
-
-#' Remove subjects with a high IPTW
-#'
-#' @description
-#' Remove subjects having a weight higher than the user-specified threshold.
-#'
-#' @param population   A data frame with at least the two columns described in the details
-#' @param maxWeight    The maximum allowed IPTW.
-#'
-#' @details
-#' The data frame should have the following two columns:
-#'
-#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
-#' - iptw (numeric): Propensity score.
-#'
-#' @return
-#' Returns a tibble with the same  columns as the input.
-#'
-#' @examples
-#' rowId <- 1:2000
-#' treatment <- rep(0:1, each = 1000)
-#' iptw <- 1 / c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
-#' data <- data.frame(rowId = rowId, treatment = treatment, iptw = iptw)
-#' result <- trimByIptw(data)
-#'
-#' @export
-trimByIptw <- function(population, maxWeight = 10) {
-  errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertDataFrame(population, add = errorMessages)
-  checkmate::assertNames(colnames(population), must.include = c("treatment", "iptw"), add = errorMessages)
-  checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-
-  population <- population |>
-    filter(.data$iptw <= maxWeight)
-  if (!is.null(attr(population, "metaData"))) {
-    metaData <- attr(population, "metaData")
-    metaData$attrition <- bind_rows(
-      metaData$attrition,
-      getCounts(population, paste("Trimmed by IPTW"))
-    )
-    attr(population, "metaData") <- metaData
+  if (!is.null(trimyByPsArgs$maxWeight)) {
+    population <- population |>
+      filter(.data$iptw <= trimyByPsArgs$maxWeight)
+    if (!is.null(attr(population, "metaData"))) {
+      metaData <- attr(population, "metaData")
+      metaData$attrition <- bind_rows(
+        metaData$attrition,
+        getCounts(population, paste("Trimmed by IPTW"))
+      )
+      attr(population, "metaData") <- metaData
+    }
+    ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   }
-  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
+
   return(population)
 }
 
@@ -836,8 +772,9 @@ trimByIptw <- function(population, maxWeight = 10) {
 #' Set the inverse probability of treatment weights (IPTW) to the user-specified threshold if it exceeds
 #' said threshold.
 #'
-#' @param population   A data frame with at least the two columns described in the details
-#' @param maxWeight    The maximum allowed IPTW.
+#' @param population       A data frame with at least the two columns described in the details.
+#' @param truncateIptwArgs An object of type `TruncateIptwArgs` as created by the
+#'                         [createTruncateIptwArgs()] function.
 #'
 #' @details
 #' The data frame should have the following two columns:
@@ -856,17 +793,17 @@ trimByIptw <- function(population, maxWeight = 10) {
 #' result <- truncateIptw(data)
 #'
 #' @export
-truncateIptw <- function(population, maxWeight = 10) {
+truncateIptw <- function(population, truncateIptwArgs = createTruncateIptwArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "iptw"), add = errorMessages)
-  checkmate::assertNumber(maxWeight, lower = 0, add = errorMessages)
+  checkmate::assertR6(truncateIptwArgs, "TruncateIptwArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  nTruncated <- sum(population$iptw > maxWeight)
+  nTruncated <- sum(population$iptw > truncateIptwArgs$maxWeight)
   message(sprintf("Truncating %s (%0.1f%%) IPTW values", nTruncated, 100 * nTruncated / nrow(population)))
   population <- population |>
-    mutate(iptw = ifelse(.data$iptw > maxWeight, maxWeight, .data$iptw))
+    mutate(iptw = ifelse(.data$iptw > truncateIptwArgs$maxWeight, truncateIptwArgs$maxWeight, .data$iptw))
   return(population)
 }
 
@@ -894,26 +831,9 @@ logit <- function(p) {
 #' @description
 #' Use the provided propensity scores to match target to comparator persons.
 #'
-#' @param population              A data frame with the three columns described below.
-#' @param caliper                 The caliper for matching. A caliper is the distance which is
-#'                                acceptable for any match. Observations which are outside of the
-#'                                caliper are dropped. A caliper of 0 means no caliper is used.
-#' @param caliperScale            The scale on which the caliper is defined. Three scales are supported:
-#'                                `caliperScale = 'propensity score'`, `caliperScale =
-#'                                'standardized'`, or `caliperScale = 'standardized logit'`.
-#'                                On the standardized scale, the caliper is interpreted in standard
-#'                                deviations of the propensity score distribution. 'standardized logit'
-#'                                is similar, except that the propensity score is transformed to the logit
-#'                                scale because the PS is more likely to be normally distributed on that scale
-#'                                (Austin, 2011).
-#' @param maxRatio                The maximum number of persons in the comparator arm to be matched to
-#'                                each person in the treatment arm. A maxRatio of 0 means no maximum:
-#'                                all comparators will be assigned to a target person.
-#' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
-#' @param stratificationColumns   Names or numbers of one or more columns in the `data` data.frame
-#'                                on which subjects should be stratified prior to matching. No persons
-#'                                will be matched with persons outside of the strata identified by the
-#'                                values in these columns.
+#' @param population    A data frame with the three columns described below.
+#' @param matchOnPsArgs An object of type `MatchOnPsArgs` as created by the
+#'                      [createMatchOnPsArgs()] function.
 #'
 #' @details
 #' The data frame should have the following three columns:
@@ -939,7 +859,11 @@ logit <- function(p) {
 #'   propensityScore = propensityScore,
 #'   age_group = age_group
 #' )
-#' result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
+#' result <- matchOnPs(data, createMatchOnPsArgs(
+#'   caliper = 0,
+#'   maxRatio = 1,
+#'   stratificationColumns = "age_group")
+#' )
 #'
 #' @references
 #' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
@@ -950,22 +874,14 @@ logit <- function(p) {
 #'
 #' @export
 matchOnPs <- function(population,
-                      caliper = 0.2,
-                      caliperScale = "standardized logit",
-                      maxRatio = 1,
-                      allowReverseMatch = FALSE,
-                      stratificationColumns = c()) {
+                      matchOnPsArgs = createMatchOnPsArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("rowId", "treatment", "propensityScore"), add = errorMessages)
-  checkmate::assertNumber(caliper, lower = 0, add = errorMessages)
-  checkmate::assertChoice(caliperScale, c("standardized", "propensity score", "standardized logit"), add = errorMessages)
-  checkmate::assertInt(maxRatio, lower = 0, add = errorMessages)
-  checkmate::assertLogical(allowReverseMatch, len = 1, add = errorMessages)
-  checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
+  checkmate::assertR6(matchOnPsArgs, "MatchOnPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  reverseTreatment <- (allowReverseMatch && sum(population$treatment == 1) > sum(population$treatment == 0))
+  reverseTreatment <- (matchOnPsArgs$allowReverseMatch && sum(population$treatment == 1) > sum(population$treatment == 0))
   if (reverseTreatment) {
     population$treatment <- 1 - population$treatment
   }
@@ -973,22 +889,35 @@ matchOnPs <- function(population,
   population <- population[order(population$propensityScore), ]
   propensityScore <- population$propensityScore
 
-  if (caliper <= 0 || nrow(population) == 0 || min(population$propensityScore) == max(population$propensityScore)) {
+  if (matchOnPsArgs$caliper <= 0 || nrow(population) == 0 || min(population$propensityScore) == max(population$propensityScore)) {
     caliper <- 9999
-  } else if (caliperScale == "standardized") {
-    caliper <- caliper * sd(population$propensityScore)
-  } else if (caliperScale == "standardized logit") {
+  } else if (matchOnPsArgs$caliperScale == "standardized") {
+    caliper <- matchOnPsArgs$caliper * sd(population$propensityScore)
+  } else if (matchOnPsArgs$caliperScale == "standardized logit") {
     propensityScore <- logit(propensityScore)
-    caliper <- caliper * sd(propensityScore[is.finite(propensityScore)])
+    caliper <- matchOnPsArgs$caliper * sd(propensityScore[is.finite(propensityScore)])
   }
-  if (maxRatio == 0) {
-    maxRatio <- 999
+  if (matchOnPsArgs$maxRatio == 0) {
+    matchOnPsArgs$maxRatio <- 999
   }
+  if (is.null(matchOnPsArgs$stratificationCovariateIds)) {
+    stratificationColumns <- matchOnPsArgs$stratificationColumns
+  } else {
+    population <- mergeCovariatesWithPs(population,
+                                        cohortMethodData,
+                                        matchOnPsArgs$stratificationCovariateIds)
+    stratificationColumns <- colnames(population)[
+      colnames(population) %in% paste("covariateId",
+                                      matchOnPsArgs$stratificationCovariateIds,
+                                      sep = "_")
+    ]
+  }
+
   if (length(stratificationColumns) == 0) {
     result <- matchPsInternal(
       propensityScore,
       population$treatment,
-      maxRatio,
+      matchOnPsArgs$maxRatio,
       caliper
     )
     result <- as_tibble(result)
@@ -1012,7 +941,7 @@ matchOnPs <- function(population,
       .variables = stratificationColumns,
       .drop = TRUE,
       .fun = f,
-      maxRatio = maxRatio,
+      maxRatio = matchOnPsArgs$maxRatio,
       caliper = caliper
     )
     if (length(results) == 0) {
@@ -1052,88 +981,15 @@ matchOnPs <- function(population,
   return(population)
 }
 
-#' Match by propensity score as well as other covariates
-#'
-#' @description
-#' Use the provided propensity scores and a set of covariates to match
-#' target to comparator persons.
-#'
-#' @param population         A data frame with the three columns described below.
-#' @param caliper            The caliper for matching. A caliper is the distance which is acceptable
-#'                           for any match. Observations which are outside of the caliper are dropped.
-#'                           A caliper of 0 means no caliper is used.
-#' @param caliperScale            The scale on which the caliper is defined. Three scales are supported:
-#'                                `caliperScale = 'propensity score'`, `caliperScale =
-#'                                'standardized'`, or `caliperScale = 'standardized logit'`.
-#'                                On the standardized scale, the caliper is interpreted in standard
-#'                                deviations of the propensity score distribution. 'standardized logit'
-#'                                is similar, except that the propensity score is transformed to the logit
-#'                                scale because the PS is more likely to be normally distributed on that scale
-#'                                (Austin, 2011).
-#' @param maxRatio           The maximum number of persons in the comparator arm to be matched to each
-#'                           person in the treatment arm. A maxRatio of 0 means no maximum: all
-#'                           comparators will be assigned to a target person.
-#' @param allowReverseMatch  Allows n-to-1 matching if target arm is larger
-#' @param covariateIds       One or more covariate IDs in the `cohortMethodData` object on which
-#'                           subjects should be also matched.
-#'
-#' @template CohortMethodData
-#'
-#' @details
-#' The data frame should have the following three columns:
-#'
-#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
-#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
-#' - propensityScore (numeric): Propensity score.
-#'
-#' The default caliper (0.2 on the standardized logit scale) is the one recommended by Austin (2011).
-#'
-#' @return
-#' Returns a tibble with the same columns as the input data plus one extra column: stratumId. Any
-#' rows that could not be matched are removed
-#'
-#' @references
-#' Rassen JA, Shelat AA, Myers J, Glynn RJ, Rothman KJ, Schneeweiss S. (2012) One-to-many propensity
-#' score matching in cohort studies, Pharmacoepidemiology and Drug Safety, May, 21 Suppl 2:69-80.
-#'
-#' Austin, PC. (2011) Optimal caliper widths for propensity-score matching when estimating differences in
-#' means and differences in proportions in observational studies, Pharmaceutical statistics, March, 10(2):150-161.
-#'
-#' @export
-matchOnPsAndCovariates <- function(population,
-                                   caliper = 0.2,
-                                   caliperScale = "standardized logit",
-                                   maxRatio = 1,
-                                   allowReverseMatch = FALSE,
-                                   cohortMethodData,
-                                   covariateIds) {
-  errorMessages <- checkmate::makeAssertCollection()
-  .assertCovariateId(covariateIds, min.len = 1, add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-
-  population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
-  stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
-                                                                                covariateIds,
-                                                                                sep = "_"
-  )]
-  return(matchOnPs(population, caliper, caliperScale, maxRatio, allowReverseMatch, stratificationColumns))
-}
-
 #' Stratify persons by propensity score
 #'
 #' @description
 #' Use the provided propensity scores to stratify persons. Additional
 #' stratification variables for stratifications can also be used.
 #'
-#' @param population              A data frame with the three columns described below
-#' @param numberOfStrata          How many strata? The boundaries of the strata are automatically
-#'                                defined to contain equal numbers of target persons.
-#' @param stratificationColumns   Names of one or more columns in the `data` data.frame on which
-#'                                subjects should also be stratified in addition to stratification on
-#'                                propensity score.
-#' @param baseSelection           What is the base selection of subjects where the strata bounds are
-#'                                to be determined? Strata are defined as equally-sized strata inside
-#'                                this selection. Possible values are "all", "target", and "comparator".
+#' @param population             A data frame with the three columns described below
+#' @param createStratifyByPsArgs An object of type `StratifyByPsArgs` as created by the
+#'                               `createStratifyByPsArgs()` function.
 #'
 #' @details
 #' The data frame should have the following three columns:
@@ -1153,19 +1009,17 @@ matchOnPsAndCovariates <- function(population,
 #' result <- stratifyByPs(data, 5)
 #'
 #' @export
-stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns = c(), baseSelection = "all") {
+stratifyByPs <- function(population, stratifyByPsArgs = createStratifyByPsArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
-  checkmate::assertInt(numberOfStrata, lower = 1, add = errorMessages)
-  checkmate::assertCharacter(stratificationColumns, null.ok = TRUE, add = errorMessages)
-  checkmate::assertChoice(baseSelection, c("all", "target", "comparator"), add = errorMessages)
+  checkmate::assertR6(stratifyByPsArgs, "StratifyByPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (nrow(population) == 0) {
     return(population)
   }
-  baseSelection <- tolower(baseSelection)
+  baseSelection <- tolower(stratifyByPsArgs$baseSelection)
   if (baseSelection == "all") {
     basePop <- population$propensityScore
     targetEstimator <- "ate"
@@ -1184,13 +1038,25 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
   if (length(basePop) == 0) {
     psStrata <- c()
   } else {
-    psStrata <- unique(quantile(basePop, (1:(numberOfStrata - 1)) / numberOfStrata))
+    psStrata <- unique(quantile(basePop, (1:(stratifyByPsArgs$numberOfStrata - 1)) / stratifyByPsArgs$numberOfStrata))
   }
   attr(population, "strata") <- psStrata
   breaks <- unique(c(0, psStrata, 1))
   breaks[1] <- -1 # So 0 is included in the left-most stratum
-  if (length(breaks) - 1 < numberOfStrata) {
-    warning("Specified ", numberOfStrata, " strata, but only ", length(breaks) - 1, " could be created")
+  if (length(breaks) - 1 < stratifyByPsArgs$numberOfStrata) {
+    warning("Specified ", stratifyByPsArgs$numberOfStrata, " strata, but only ", length(breaks) - 1, " could be created")
+  }
+  if (is.null(stratifyByPsArgs$stratificationCovariateIds)) {
+    stratificationColumns <- stratifyByPsArgs$stratificationColumns
+  } else {
+    population <- mergeCovariatesWithPs(population,
+                                        cohortMethodData,
+                                        stratifyByPsArgs$stratificationCovariateIds)
+    stratificationColumns <- colnames(population)[
+      colnames(population) %in% paste("covariateId",
+                                      stratifyByPsArgs$stratificationCovariateIds,
+                                      sep = "_")
+    ]
   }
   if (length(stratificationColumns) == 0) {
     if (length(breaks) - 1 == 1) {
@@ -1221,7 +1087,7 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
       .drop = TRUE,
       .fun = f,
       psStrata = psStrata,
-      numberOfStrata = numberOfStrata
+      numberOfStrata = stratifyByPsArgs$numberOfStrata
     )
     maxStratumId <- 0
     for (i in 1:length(results)) {
@@ -1236,56 +1102,4 @@ stratifyByPs <- function(population, numberOfStrata = 5, stratificationColumns =
     attr(result, "metaData") <- attr(population, "metaData")
     return(result)
   }
-}
-
-#' Stratify persons by propensity score and other covariates
-#'
-#' @description
-#' Use the provided propensity scores and covariates to stratify
-#' persons.
-#'
-#' @param population         A data frame with the three columns described below
-#' @param numberOfStrata     Into how many strata should the propensity score be divided? The
-#'                           boundaries of the strata are automatically defined to contain equal
-#'                           numbers of target persons.
-#' @param baseSelection      What is the base selection of subjects where the strata bounds are
-#'                           to be determined? Strata are defined as equally-sized strata inside
-#'                           this selection. Possible values are "all", "target", and "comparator".
-#' @param covariateIds       One or more covariate IDs in the `cohortMethodData` object on which
-#'                           subjects should also be stratified.
-#'
-#' @template CohortMethodData
-#'
-#' @details
-#' The data frame should have the following three columns:
-#'
-#' - rowId (numeric): A unique identifier for each row (e.g. the person ID).
-#' - treatment (integer): Column indicating whether the person is in the target (1) or comparator (0) group.
-#' - propensityScore (numeric): Propensity score.
-#'
-#' @return
-#' Returns a date frame with the same columns as the input population plus one extra column:
-#' stratumId.
-#'
-#' @export
-stratifyByPsAndCovariates <- function(population,
-                                      numberOfStrata = 5,
-                                      baseSelection = "all",
-                                      cohortMethodData,
-                                      covariateIds) {
-  errorMessages <- checkmate::makeAssertCollection()
-  .assertCovariateId(covariateIds, min.len = 1, add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-
-  population <- mergeCovariatesWithPs(population, cohortMethodData, covariateIds)
-  stratificationColumns <- colnames(population)[colnames(population) %in% paste("covariateId",
-                                                                                covariateIds,
-                                                                                sep = "_"
-  )]
-  return(stratifyByPs(
-    population = population,
-    numberOfStrata = numberOfStrata,
-    stratificationColumns = stratificationColumns,
-    baseSelection = baseSelection
-  ))
 }
