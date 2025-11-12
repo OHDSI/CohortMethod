@@ -258,7 +258,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       denominatorSd = sqrt((.data$sdTarget^2 + .data$sdComparator^2) / 2)
     ) |>
     mutate(
-      stdDiff = (meanTarget - meanComparator) / denominatorSd
+      stdDiff = (.data$meanTarget - .data$meanComparator) / .data$denominatorSd
     )
 
   if (useWeighting) {
