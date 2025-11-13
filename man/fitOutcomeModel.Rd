@@ -7,20 +7,7 @@
 fitOutcomeModel(
   population,
   cohortMethodData = NULL,
-  modelType = "logistic",
-  stratified = FALSE,
-  useCovariates = FALSE,
-  inversePtWeighting = FALSE,
-  bootstrapCi = FALSE,
-  bootstrapReplicates = 1000,
-  interactionCovariateIds = c(),
-  excludeCovariateIds = c(),
-  includeCovariateIds = c(),
-  profileGrid = NULL,
-  profileBounds = c(log(0.1), log(10)),
-  prior = createPrior("laplace", useCrossValidation = TRUE),
-  control = createControl(cvType = "auto", seed = 1, resetCoefficients = TRUE,
-    startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
+  fitOutcomeModelArgs = createFitOutcomeModelArgs()
 )
 }
 \arguments{

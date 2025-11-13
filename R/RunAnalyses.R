@@ -153,8 +153,6 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
 #'                                       instance. Requires read permissions to this database. On SQL
 #'                                       Server, this should specify both the database and the schema,
 #'                                       so for example 'cdm_instance.dbo'.
-#' @param cdmVersion                     Define the OMOP CDM version used: currently support "4" and
-#'                                       "5".
 #' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
 #'                            emulate temp tables, provide a schema with write privileges where temp tables
 #'                            can be created.
@@ -287,12 +285,11 @@ runCmAnalyses <- function(connectionDetails,
         exposureTable = exposureTable,
         outcomeDatabaseSchema = outcomeDatabaseSchema,
         outcomeTable = outcomeTable,
-        cdmVersion = cdmVersion,
         outcomeIds = outcomeIds,
         targetId = refRow$targetId,
-        comparatorId = refRow$comparatorId
+        comparatorId = refRow$comparatorId,
+        getDbCohortMethodDataArgs = getDbCohortMethodDataArgs
       )
-      args <- append(args, getDbCohortMethodDataArgs)
       task <- list(
         args = args,
         cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile)
@@ -318,15 +315,14 @@ runCmAnalyses <- function(connectionDetails,
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
-      args <- analysisRow$createStudyPopArgs
-      args$outcomeId <- refRow$outcomeId
+      createStudyPopulationArgs <- analysisRow$createStudyPopulationArgs
 
       # Override defaults with outcome-specific settings if provided
       tco <- ParallelLogger::matchInList(
         targetComparatorOutcomesList,
         list(
-          targetId = refRow$targetId,
-          comparatorId = refRow$comparatorId
+          comparatorId = refRow$comparatorId,
+          targetId = refRow$targetId
         )
       )[[1]]
       outcome <- ParallelLogger::matchInList(
@@ -334,26 +330,27 @@ runCmAnalyses <- function(connectionDetails,
         list(outcomeId = as.numeric(refRow$outcomeId))
       )
       if (!is.null(outcome$priorOutcomeLookback)) {
-        args$priorOutcomeLookback <- outcome$priorOutcomeLookback
+        createStudyPopulationArgs$priorOutcomeLookback <- outcome$priorOutcomeLookback
       }
       if (!is.null(outcome$riskWindowStart)) {
-        args$riskWindowStart <- outcome$riskWindowStart
+        createStudyPopulationArgs$riskWindowStart <- outcome$riskWindowStart
       }
       if (!is.null(outcome$startAnchor)) {
-        args$startAnchor <- outcome$startAnchor
+        createStudyPopulationArgs$startAnchor <- outcome$startAnchor
       }
       if (!is.null(outcome$riskWindowEnd)) {
-        args$riskWindowEnd <- outcome$riskWindowEnd
+        createStudyPopulationArgs$riskWindowEnd <- outcome$riskWindowEnd
       }
       if (!is.null(outcome$endAnchor)) {
-        args$endAnchor <- outcome$endAnchor
+        createStudyPopulationArgs$endAnchor <- outcome$endAnchor
       }
       task <- list(
         cohortMethodDataFile = file.path(
           outputFolder,
           refRow$cohortMethodDataFile
         ),
-        args = args,
+        outcomeId = refRow$outcomeId,
+        createStudyPopulationArgs = createStudyPopulationArgs,
         minimizeFileSizes = getOption("minimizeFileSizes"),
         studyPopFile = file.path(outputFolder, refRow$studyPopFile)
       )
@@ -379,8 +376,11 @@ runCmAnalyses <- function(connectionDetails,
           cmAnalysisList,
           list(analysisId = refRow$analysisId)
         )[[1]]
-        args <- analysisRow$createPsArgs
-        args$control$threads <- multiThreadingSettings$psCvThreads
+        createPsArgs = analysisRow$createPsArgs
+        createPsArgs$control$threads <- multiThreadingSettings$psCvThreads
+        args <- list(
+          createPsArgs = createPsArgs
+        )
         task <- list(
           cohortMethodDataFile = file.path(
             outputFolder,
@@ -411,7 +411,6 @@ runCmAnalyses <- function(connectionDetails,
           cmAnalysisList,
           list(analysisId = refRow$analysisId)
         )[[1]]
-
         createPsArg <- analysisRow$createPsArg
         createPsArg$control$threads <- multiThreadingSettings$psCvThreads
         task <- list(
@@ -419,8 +418,8 @@ runCmAnalyses <- function(connectionDetails,
             outputFolder,
             refRow$cohortMethodDataFile
           ),
-          createPsArg = createPsArg,
-          createStudyPopArgs = analysisRow$createStudyPopArgs,
+          args = createPsArgs,
+          createStudyPopulationArgs = analysisRow$createStudyPopulationArgs,
           sharedPsFile = file.path(outputFolder, refRow$sharedPsFile)
         )
         return(task)
@@ -428,7 +427,7 @@ runCmAnalyses <- function(connectionDetails,
       modelsToFit <- lapply(1:nrow(subset), createSharedPsTask)
       cluster <- ParallelLogger::makeCluster(min(length(modelsToFit), multiThreadingSettings$createPsThreads))
       ParallelLogger::clusterRequire(cluster, "CohortMethod")
-      dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitSharedPsModel, refitPsForEveryStudyPopulation)
+      dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitSharedPsModel, cmAnalysesSpecifications$refitPsForEveryStudyPopulation)
       ParallelLogger::stopCluster(cluster)
     }
 
@@ -649,7 +648,6 @@ runCmAnalyses <- function(connectionDetails,
         list(analysisId = refRow$analysisId)
       )[[1]]
       analysisRow$fitOutcomeModelArgs$control$threads <- multiThreadingSettings$outcomeCvThreads
-      analysisRow$createStudyPopArgs$outcomeId <- refRow$outcomeId
       prefilteredCovariatesFile <- refRow$prefilteredCovariatesFile
       if (prefilteredCovariatesFile != "") {
         prefilteredCovariatesFile <- file.path(outputFolder, refRow$prefilteredCovariatesFile)
@@ -659,7 +657,8 @@ runCmAnalyses <- function(connectionDetails,
         prefilteredCovariatesFile = prefilteredCovariatesFile,
         psFile =  file.path(outputFolder, refRow$psFile),
         sharedPsFile = file.path(outputFolder, refRow$sharedPsFile),
-        refitPsForEveryOutcome = refitPsForEveryOutcome,
+        refitPsForEveryOutcome = cmAnalysesSpecifications$refitPsForEveryOutcome,
+        outcomeId = refRow$outcomeId,
         args = analysisRow,
         outcomeModelFile = file.path(outputFolder, refRow$outcomeModelFile)
       )
@@ -730,8 +729,11 @@ doCreateCmDataObject <- function(params) {
 
 doCreateStudyPopObject <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
-  args <- params$args
-  args$cohortMethodData <- cohortMethodData
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    outcomeId = params$outcomeId,
+    createStudyPopulationArgs = params$createStudyPopulationArgs
+  )
   ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId %s",
                                    params$cohortMethodDataFile,
                                    args$outcomeId))
@@ -748,9 +750,11 @@ doCreateStudyPopObject <- function(params) {
 doFitPsModel <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   studyPop <- readRDS(params$studyPopFile)
-  args <- params$args
-  args$cohortMethodData <- cohortMethodData
-  args$population <- studyPop
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    population = studyPop,
+    createPsArgs = params$args
+  )
   ParallelLogger::logDebug(sprintf("Calling createPs() using %s and %s",
                                    params$cohortMethodDataFile,
                                    params$studyPopFile))
@@ -762,8 +766,10 @@ doFitPsModel <- function(params) {
 doFitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   if (refitPsForEveryStudyPopulation) {
-    args <- params$createStudyPopArgs
-    args$cohortMethodData <- cohortMethodData
+    args <- list(
+      cohortMethodData = cohortMethodData,
+      createStudyPopulationArgs = params$createStudyPopulationArgs
+    )
     message("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
     ParallelLogger::logDebug(sprintf("Calling createPs() for shared PS using %s",
                                      params$cohortMethodDataFile))
@@ -771,9 +777,11 @@ doFitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   } else {
     studyPop <- NULL
   }
-  args <- params$createPsArg
-  args$cohortMethodData <- cohortMethodData
-  args$population <- studyPop
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    population = studyPop,
+    createPsArgs = params$args
+  )
   ps <- do.call("createPs", args)
   saveRDS(ps, params$sharedPsFile)
   return(NULL)
@@ -812,39 +820,31 @@ addPsToStudyPopulation <- function(studyPopulation, ps) {
 
 applyTrimMatchStratify <- function(ps, arguments) {
   if (!is.null(arguments$trimByPsArgs)) {
-    functionArgs <- arguments$trimByPsArgs
-    functionArgs$population <- ps
+    functionArgs <- list(
+      population = ps,
+      trimByPsArgs = arguments$trimByPsArgs
+    )
     ps <- do.call("trimByPs", functionArgs)
-  } else if (!is.null(arguments$trimByPsToEquipoiseArgs)) {
-    functionArgs <- arguments$trimByPsToEquipoiseArgs
-    functionArgs$population <- ps
-    ps <- do.call("trimByPsToEquipoise", functionArgs)
-  } else if (!is.null(arguments$trimByIptwArgs)) {
-    functionArgs <- arguments$trimByIptwArgs
-    functionArgs$population <- ps
-    ps <- do.call("trimByIptw", functionArgs)
   }
   if (!is.null(arguments$truncateIptwArgs)) {
-    functionArgs <- arguments$truncateIptwArgs
-    functionArgs$population <- ps
+    functionArgs <- list(
+      population = ps,
+      truncateIptwArgs = arguments$truncateIptwArgs
+    )
     ps <- do.call("truncateIptw", functionArgs)
   }
   if (!is.null(arguments$matchOnPsArgs)) {
-    functionArgs <- arguments$matchOnPsArgs
-    functionArgs$population <- ps
+    functionArgs <- list(
+      population = ps,
+      matchOnPsArgs = arguments$matchOnPsArgs
+    )
     ps <- do.call("matchOnPs", functionArgs)
-  } else if (!is.null(arguments$matchOnPsAndCovariatesArgs)) {
-    functionArgs <- arguments$matchOnPsAndCovariatesArgs
-    functionArgs$population <- ps
-    ps <- do.call("matchOnPsAndCovariates", functionArgs)
   } else if (!is.null(arguments$stratifyByPsArgs)) {
-    functionArgs <- arguments$stratifyByPsArgs
-    functionArgs$population <- ps
+    functionArgs <- list(
+      population = ps,
+      stratifyByPsArgs = arguments$stratifyByPsArgs
+    )
     ps <- do.call("stratifyByPs", functionArgs)
-  } else if (!is.null(arguments$stratifyByPsAndCovariatesArgs)) {
-    functionArgs <- arguments$stratifyByPsAndCovariatesArgs
-    functionArgs$population <- ps
-    ps <- do.call("stratifyByPsAndCovariates", functionArgs)
   }
   return(ps)
 }
@@ -901,8 +901,11 @@ doFitOutcomeModel <- function(params) {
   }
   cohortMethodData <- getCohortMethodData(cohortMethodDataFile)
   studyPop <- readRDS(params$studyPopFile)
-  args <- list(cohortMethodData = cohortMethodData, population = studyPop)
-  args <- append(args, params$args)
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    population = studyPop,
+    fitOutcomeModelArgs = params$args
+  )
   ParallelLogger::logDebug(sprintf("Calling fitOutcomeModel() using %s and %s",
                                    cohortMethodDataFile,
                                    params$studyPopFile))
@@ -921,11 +924,14 @@ doFitOutcomeModelPlus <- function(params) {
 
   ParallelLogger::logDebug(sprintf("Calling createStudyPopulation(), performing matching etc., and calling fitOutcomeModel() using %s for outcomeID %s",
                                    cohortMethodDataFile,
-                                   params$args$createStudyPopArgs$outcomeId))
+                                   params$outcomeId))
 
   # Create study pop
-  args <- params$args$createStudyPopArgs
-  args$cohortMethodData <- cohortMethodData
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    outcomeId = params$outcomeId,
+    createStudyPopulationArgs = params$args$createStudyPopulationArgs
+  )
   studyPop <- do.call("createStudyPopulation", args)
 
   if (!is.null(params$args$createPsArgs)) {
@@ -940,9 +946,11 @@ doFitOutcomeModelPlus <- function(params) {
   }
   rm(studyPop)
   ps <- applyTrimMatchStratify(ps, params$args)
-  args <- params$args$fitOutcomeModelArgs
-  args$population <- ps
-  args$cohortMethodData <- cohortMethodData
+  args <- list(
+    population = ps,
+    cohortMethodData = cohortMethodData,
+    fitOutcomeModelArgs = params$args$fitOutcomeModelArgs
+  )
   outcomeModel <- do.call("fitOutcomeModel", args)
   saveRDS(outcomeModel, params$outcomeModelFile)
   return(NULL)
@@ -956,8 +964,10 @@ doComputeSharedBalance <- function(params) {
 
   # Create study pop
   message("Computing covariate balance across all outcomes (ignore messages about 'no outcome specified')")
-  args <- params$args$createStudyPopArgs
-  args$cohortMethodData <- cohortMethodData
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    createStudyPopulationArgs = params$args$createStudyPopulationArgs
+  )
   studyPop <- do.call("createStudyPopulation", args)
 
   if (!is.null(params$args$createPsArgs)) {
@@ -971,9 +981,11 @@ doComputeSharedBalance <- function(params) {
     ps <- studyPop
   }
   ps <- applyTrimMatchStratify(ps, params$args)
-  args <- params$args$computeSharedCovariateBalanceArgs
-  args$population <- ps
-  args$cohortMethodData <- cohortMethodData
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    population = ps,
+    computeCovariateBalanceArgs = params$args$computeSharedCovariateBalanceArgs
+  )
   balance <- do.call("computeCovariateBalance", args)
   saveRDS(balance, params$sharedBalanceFile)
   return(NULL)
@@ -1005,9 +1017,11 @@ doComputeBalance <- function(params) {
   }
   strataPop <- readRDS(params$strataFile)
 
-  args <- params$computeCovariateBalanceArgs
-  args$population <- strataPop
-  args$cohortMethodData <- cohortMethodData
+  args <- list(
+    cohortMethodData = cohortMethodData,
+    population = strataPop,
+    computeCovariateBalanceArgs = params$computeCovariateBalanceArgs
+  )
   ParallelLogger::logDebug(sprintf("Computing balance balance using %s and %s",
                                    params$cohortMethodDataFile,
                                    params$strataFile))
@@ -1093,7 +1107,7 @@ createReferenceTable <- function(cmAnalysisList,
   )
 
   # Add studypop filenames
-  studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopArgs"))
+  studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopulationArgs"))
   studyPopArgsList <- lapply(studyPopArgsList, function(x) {
     return(x[[1]])
   })
@@ -1102,7 +1116,7 @@ createReferenceTable <- function(cmAnalysisList,
     function(cmAnalysis, studyPopArgsList) {
       return(which.list(
         studyPopArgsList,
-        cmAnalysis$createStudyPopArgs
+        cmAnalysis$createStudyPopulationArgs
       ))
     },
     studyPopArgsList
@@ -1157,7 +1171,7 @@ createReferenceTable <- function(cmAnalysisList,
   if (!refitPsForEveryOutcome) {
     if (refitPsForEveryStudyPopulation) {
       # Find equivalent studyPopArgs, so we can reuse PS over those as well:
-      studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopArgs"))
+      studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopulationArgs"))
       studyPopArgsList <- lapply(studyPopArgsList, function(x) {
         return(x[[1]])
       })
@@ -1188,7 +1202,7 @@ createReferenceTable <- function(cmAnalysisList,
         function(cmAnalysis, studyPopArgsList) {
           return(findFirstEquivalent(
             studyPopArgsList,
-            cmAnalysis$createStudyPopArgs
+            cmAnalysis$createStudyPopulationArgs
           ))
         },
         studyPopArgsList
@@ -1218,44 +1232,33 @@ createReferenceTable <- function(cmAnalysisList,
   }
 
   # Add strata filenames
-  args <- c(
+  strataArgNames <- c(
     "trimByPsArgs",
-    "trimByPsToEquipoiseArgs",
-    "trimByIptwArgs",
     "truncateIptwArgs",
     "matchOnPsArgs",
-    "matchOnPsAndCovariatesArgs",
-    "stratifyByPsArgs",
-    "stratifyByPsAndCovariatesArgs"
+    "stratifyByPsArgs"
   )
-  normStrataArgs <- function(strataArgs) {
-    return(strataArgs[args][!is.na(names(strataArgs[args]))])
-  }
-  strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
+  strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, strataArgNames))
   strataArgsList <- strataArgsList[sapply(
     strataArgsList,
     function(strataArgs) {
       return(!is.null(strataArgs$trimByPsArgs) |
-               !is.null(strataArgs$trimByPsToEquipoiseArgs) |
-               !is.null(strataArgs$trimByIptwArgs) |
                !is.null(strataArgs$truncateIptwArgs) |
                !is.null(strataArgs$matchOnPsArgs) |
-               !is.null(strataArgs$matchOnPsAndCovariatesArgs) |
-               !is.null(strataArgs$stratifyByPsArgs) |
-               !is.null(strataArgs$stratifyByPsAndCovariatesArgs))
+               !is.null(strataArgs$stratifyByPsArgs))
     }
   )]
-  strataArgsList <- lapply(strataArgsList, normStrataArgs)
   if (length(strataArgsList) == 0) {
     referenceTable$strataArgsId <- 0
   } else {
-    strataArgsId <- sapply(cmAnalysisList, function(cmAnalysis) {
-      i <- which.list(strataArgsList, normStrataArgs(cmAnalysis))
-      if (is.null(i)) {
-        i <- 0
-      }
-      return(i)
-    })
+    strataArgsId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, strataArgNames),
+                           function(cmAnalysis) {
+                             i <- which.list(strataArgsList, cmAnalysis)
+                             if (is.null(i)) {
+                               i <- 0
+                             }
+                             return(i)
+                           })
     analysisIdToStrataArgsId <- tibble(analysisId = analyses$analysisId, strataArgsId = strataArgsId)
     referenceTable <- inner_join(referenceTable, analysisIdToStrataArgsId, by = "analysisId")
   }
@@ -1272,31 +1275,28 @@ createReferenceTable <- function(cmAnalysisList,
   )
 
   # Add shared covariate balance files (per target-comparator-analysis)
-  args <- "computeSharedCovariateBalanceArgs"
+  balanceArgName <- "computeSharedCovariateBalanceArgs"
   if (refitPsForEveryOutcome) {
     referenceTable$sharedBalanceFile <- ""
   } else {
-    normBalanceArgs <- function(balanceArgs) {
-      return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
-    }
-    balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
+    balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName))
     balanceArgsList <- balanceArgsList[sapply(
       balanceArgsList,
       function(balanceArgs) {
         return(!is.null(balanceArgs$computeSharedCovariateBalanceArgs))
       }
     )]
-    balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
     if (length(balanceArgsList) == 0) {
       referenceTable$sharedBalanceId <- 0
     } else {
-      sharedBalanceId <- sapply(cmAnalysisList, function(cmAnalysis) {
-        i <- which.list(balanceArgsList, normBalanceArgs(cmAnalysis))
-        if (is.null(i)) {
-          i <- 0
-        }
-        return(i)
-      })
+      sharedBalanceId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName),
+                                function(cmAnalysis) {
+                                  i <- which.list(balanceArgsList, cmAnalysis)
+                                  if (is.null(i)) {
+                                    i <- 0
+                                  }
+                                  return(i)
+                                })
       analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, sharedBalanceId = sharedBalanceId)
       referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
     }
@@ -1314,29 +1314,26 @@ createReferenceTable <- function(cmAnalysisList,
   }
 
   # Add covariate balance files (per target-comparator-analysis-outcome)
-  args <- "computeCovariateBalanceArgs"
-  normBalanceArgs <- function(balanceArgs) {
-    return(balanceArgs[args][!is.na(names(balanceArgs[args]))])
-  }
-  balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, args))
+  balanceArgName <- "computeCovariateBalanceArgs"
+  balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName))
   balanceArgsList <- balanceArgsList[sapply(
     balanceArgsList,
     function(balanceArgs) {
       return(!is.null(balanceArgs$computeCovariateBalanceArgs))
     }
   )]
-  balanceArgsList <- lapply(balanceArgsList, normBalanceArgs)
   if (length(balanceArgsList) == 0) {
     referenceTable$balanceId <- 0
     balanceIdsRequiringFiltering <- c()
   } else {
-    balanceId <- sapply(cmAnalysisList, function(cmAnalysis) {
-      i <- which.list(balanceArgsList, normBalanceArgs(cmAnalysis))
-      if (is.null(i)) {
-        i <- 0
-      }
-      return(i)
-    })
+    balanceId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName),
+                              function(cmAnalysis) {
+                                i <- which.list(balanceArgsList, cmAnalysis)
+                                if (is.null(i)) {
+                                  i <- 0
+                                }
+                                return(i)
+                              })
     analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, balanceId = balanceId)
     referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
 

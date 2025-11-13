@@ -3,7 +3,7 @@ CohortMethod 6.0.0
 
 Changes:
 
-1. Dropped the `cdmVersion` argument in `getDbCohortMethodData()`. The version will be identified in the `cdm_source` table.
+1. Dropped the `cdmVersion` argument in `getDbCohortMethodData()` and `runCmAnalyses()`. The version will be identified in the `cdm_source` table.
 
 2. Dropped the `trimByIptw()` and `trimByPsToEquipoise()` functions. Added `equipoiseBounds` and `maxWeight` arguments to `createTrimByPsArgs()` so functionality remains.
 
@@ -14,6 +14,8 @@ Changes:
 5. Renamed `createStudyPopArgs` argument of `createCmAnalysis()` to `createStudyPopulationArgs` for consistency.
 
 6. Dropping deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`.
+
+7. Changing default outcome model type from 'logistic' to 'cox'.
 
 CohortMethod 5.5.2
 ==================

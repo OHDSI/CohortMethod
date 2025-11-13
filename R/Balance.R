@@ -175,7 +175,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
         inner_join(cohortMethodData$w, by = c("rowId")) |>
         inner_join(result, by = c("covariateId", "treatment"), copy = TRUE) |>
         group_by(.data$covariateId, .data$treatment) |>
-        summarise(variance = sum(.data$weight^2 * (.data$covariateValue - .data$mean) ^2, na.rm = TRUE), .groups = "drop") |>
+        summarise(variance = sum(.data$weight^2 * (.data$covariateValue - .data$mean)^2, na.rm = TRUE), .groups = "drop") |>
         group_by(.data$covariateId) |>
         summarise(numerator = sum(.data$variance, na.rm = TRUE)) |>
         collect()

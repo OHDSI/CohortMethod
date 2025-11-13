@@ -5,7 +5,7 @@
 \title{Create a parameter object for the function \code{\link[=fitOutcomeModel]{fitOutcomeModel()}}}
 \usage{
 createFitOutcomeModelArgs(
-  modelType = "logistic",
+  modelType = "cox",
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,

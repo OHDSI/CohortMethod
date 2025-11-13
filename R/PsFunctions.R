@@ -188,7 +188,7 @@ createPs <- function(cohortMethodData,
     if (is.null(error)) {
       cyclopsFit <- tryCatch(
         {
-          Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+          Cyclops::fitCyclopsModel(cyclopsData, prior = createPsArgs$prior, control = createPsArgs$control)
         },
         error = function(e) {
           e$message

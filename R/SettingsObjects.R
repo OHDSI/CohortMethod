@@ -735,7 +735,7 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' An object of type `ComputeCovariateBalanceArgs`.
 #'
 #' @export
-createFitOutcomeModelArgs <- function(modelType = "logistic",
+createFitOutcomeModelArgs <- function(modelType = "cox",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
@@ -795,6 +795,21 @@ FitOutcomeModelArgs <- R6Class(
       checkmate::assertClass(self$prior, "cyclopsPrior", add = errorMessages)
       checkmate::assertClass(self$control, "cyclopsControl", add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)
+      if (any(self$excludeCovariateIds %in% self$interactionCovariateIds)) {
+        stop("Can't exclude covariates that are to be used for interaction terms")
+      }
+      if (any(self$includeCovariateIds %in% self$excludeCovariateIds)) {
+        stop("Can't exclude covariates that are to be included")
+      }
+      if (!is.null(self$profileGrid) && !is.null(self$profileBounds)) {
+        stop("Can't specify both a grid and bounds for likelihood profiling")
+      }
+      if (self$bootstrapCi && !is.null(self$interactionCovariateIds)) {
+        stop("Bootstrap confidence intervals has not been implemented for interactions")
+      }
+      if (self$bootstrapCi && self$useCovariates) {
+        stop("Bootstrap confidence intervals has not been implemented for models including other covariates")
+      }
     },
     fromList = function(list, requireTyping) {
       super$fromList(list)
@@ -1201,7 +1216,7 @@ CmDiagnosticThresholds <- R6Class(
 #' An object of type `CmAnalysesSpecifications`.
 #'
 #' @export
-createCmAnalysesSpecifications <- function(CmAnalysisList,
+createCmAnalysesSpecifications <- function(cmAnalysisList,
                                            targetComparatorOutcomesList,
                                            analysesToExclude = NULL,
                                            refitPsForEveryOutcome = FALSE,
@@ -1218,7 +1233,7 @@ CmAnalysesSpecifications <- R6Class(
   "CmAnalysesSpecifications",
   inherit = AbstractSerializableSettings,
   public = list(
-    CmAnalysisList = NULL,
+    cmAnalysisList = NULL,
     targetComparatorOutcomesList = NULL,
     analysesToExclude = NULL,
     refitPsForEveryOutcome = NULL,
@@ -1226,9 +1241,9 @@ CmAnalysesSpecifications <- R6Class(
     cmDiagnosticThresholds = NULL,
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
-      checkmate::assertList(self$CmAnalysisList, min.len = 1, add = errorMessages)
-      for (i in seq_along(self$CmAnalysisList)) {
-        checkmate::assertR6(self$CmAnalysisList[[i]], "CmAnalysis", add = errorMessages)
+      checkmate::assertList(self$cmAnalysisList, min.len = 1, add = errorMessages)
+      for (i in seq_along(self$cmAnalysisList)) {
+        checkmate::assertR6(self$cmAnalysisList[[i]], "CmAnalysis", add = errorMessages)
       }
       checkmate::assertList(self$targetComparatorOutcomesList, min.len = 1, add = errorMessages)
       for (i in 1:length(self$targetComparatorOutcomesList)) {
@@ -1270,8 +1285,8 @@ CmAnalysesSpecifications <- R6Class(
     fromList = function(list, requireTyping) {
       super$fromList(list)
       if (requireTyping) {
-        for (i in seq_along(self$CmAnalysisList)) {
-          self$CmAnalysisList[[i]] <- CmAnalysis$new(untypedList = self$CmAnalysisList[[i]])
+        for (i in seq_along(self$cmAnalysisList)) {
+          self$cmAnalysisList[[i]] <- CmAnalysis$new(untypedList = self$cmAnalysisList[[i]])
         }
         for (i in seq_along(self$targetComparatorOutcomesList)) {
           self$targetComparatorOutcomesList[[i]] <- TargetComparatorOutcomes$new(untypedList = self$targetComparatorOutcomesList[[i]])

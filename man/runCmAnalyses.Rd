@@ -60,9 +60,6 @@ the \code{\link[=createMultiThreadingSettings]{createMultiThreadingSettings()}} 
 
 \item{cmAnalysesSpecifications}{An object of type \code{CmAnalysesSpecifications} as created using
 the \code{createCmAnalysesSpecifications()}.}
-
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
-"5".}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and

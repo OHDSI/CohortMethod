@@ -161,8 +161,8 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- list(
     targetId = targetId,
     comparatorId = comparatorId,
-    studyStartDate = studyStartDate,
-    studyEndDate = studyEndDate
+    studyStartDate = getDbCohortMethodDataArgs$studyStartDate,
+    studyEndDate = getDbCohortMethodDataArgs$studyEndDate
   )
   if (getDbCohortMethodDataArgs$firstExposureOnly ||
       getDbCohortMethodDataArgs$removeDuplicateSubjects != "keep all" ||
@@ -209,7 +209,7 @@ getDbCohortMethodData <- function(connectionDetails,
     }
     if (getDbCohortMethodDataArgs$removeDuplicateSubjects == "remove all") {
       label <- c(label, "removed subs in both cohorts")
-    } else if (removeDuplicateSubjects == "keep first") {
+    } else if (getDbCohortMethodDataArgs$removeDuplicateSubjects == "keep first") {
       label <- c(label, "first cohort only")
     }
 
@@ -217,7 +217,7 @@ getDbCohortMethodData <- function(connectionDetails,
       label <- c(label, "restrict to common period")
     }
     if (getDbCohortMethodDataArgs$washoutPeriod) {
-      label <- c(label, paste(washoutPeriod, "days of obs. prior"))
+      label <- c(label, paste(getDbCohortMethodDataArgs$washoutPeriod, "days of obs. prior"))
     }
     label <- paste(label, collapse = " & ")
     substring(label, 1) <- toupper(substring(label, 1, 1))
@@ -259,7 +259,6 @@ getDbCohortMethodData <- function(connectionDetails,
     connection = connection,
     oracleTempSchema = tempEmulationSchema,
     cdmDatabaseSchema = cdmDatabaseSchema,
-    cdmVersion = cdmVersion,
     cohortTable = cohortTable,
     cohortTableIsTemp = TRUE,
     rowIdField = "row_id",

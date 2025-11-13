@@ -5,7 +5,7 @@
 \title{Create full CM analysis specifications}
 \usage{
 createCmAnalysesSpecifications(
-  CmAnalysisList,
+  cmAnalysisList,
   targetComparatorOutcomesList,
   analysesToExclude = NULL,
   refitPsForEveryOutcome = FALSE,
@@ -14,6 +14,9 @@ createCmAnalysesSpecifications(
 )
 }
 \arguments{
+\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
+the `\link{createCmAnalysis} function.}
+
 \item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
 created using the \link{createTargetComparatorOutcomes}
 function.}
@@ -31,9 +34,6 @@ and the study population criteria will be applied afterwards.}
 
 \item{cmDiagnosticThresholds}{An object of type \code{CmDiagnosticThresholds} as created using
 \code{\link[=createCmDiagnosticThresholds]{createCmDiagnosticThresholds()}}.}
-
-\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
-the `\link{createCmAnalysis} function.}
 }
 \value{
 An object of type \code{CmAnalysesSpecifications}.

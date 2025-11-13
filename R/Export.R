@@ -219,23 +219,19 @@ createEmptyResult <- function(tableName) {
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
   message("- cm__analysis table")
 
-  tempFileName <- tempfile()
-
   cmAnalysisListFile <- file.path(outputFolder, "cmAnalysisList.rds")
   cmAnalysisList <- readRDS(cmAnalysisListFile)
   cmAnalysisToRow <- function(cmAnalysis) {
-    ParallelLogger::saveSettingsToJson(cmAnalysis, tempFileName)
     row <- tibble(
       analysisId = cmAnalysis$analysisId,
       description = cmAnalysis$description,
-      definition = readChar(tempFileName, file.info(tempFileName)$size)
+      definition = as.character(cmAnalysis$toJson())
     )
     return(row)
   }
   cohortMethodAnalysis <- lapply(cmAnalysisList, cmAnalysisToRow)
   cohortMethodAnalysis <- bind_rows(cohortMethodAnalysis) |>
     distinct()
-  unlink(tempFileName)
 
   fileName <- file.path(exportFolder, "cm_analysis.csv")
   writeToCsv(cohortMethodAnalysis, fileName)
