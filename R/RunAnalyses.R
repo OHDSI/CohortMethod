@@ -210,10 +210,10 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::reportAssertions(collection = errorMessages)
 
   outputFolder <- normalizePath(outputFolder, mustWork = FALSE)
-  cmAnalysisListFile <- file.path(outputFolder, "cmAnalysisList.rds")
-  if (file.exists(cmAnalysisListFile)) {
-    oldCmAnalysisList <- readRDS(cmAnalysisListFile)
-    if (!isTRUE(all.equal(oldCmAnalysisList, cmAnalysisList))) {
+  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
+  if (file.exists(cmAnalysesSpecificationsFile)) {
+    oldCmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
+    if (!isTRUE(all.equal(oldCmAnalysesSpecifications, cmAnalysesSpecifications))) {
       rm(list = ls(envir = cache), envir = cache)
       message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
       response <- utils::askYesNo("Do you want to delete the old files before proceeding?")
@@ -228,7 +228,7 @@ runCmAnalyses <- function(connectionDetails,
   if (!file.exists(outputFolder)) {
     dir.create(outputFolder)
   }
-  saveRDS(cmAnalysisList, cmAnalysisListFile)
+  saveRDS(cmAnalysesSpecifications, cmAnalysesSpecificationsFile)
   saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   referenceTable <- createReferenceTable(
     cmAnalysisList = cmAnalysesSpecifications$cmAnalysisList,
@@ -254,7 +254,8 @@ runCmAnalyses <- function(connectionDetails,
         cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
-      getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs
+      # Create a clone because we'll alter the covariateSettings in the args object:
+      getDbCohortMethodDataArgs <- analysisRow$getDbCohortMethodDataArgs$clone()
       covariateSettings <- getDbCohortMethodDataArgs$covariateSettings
       if (is(covariateSettings, "covariateSettings")) {
         covariateSettings <- list(covariateSettings)
@@ -670,8 +671,10 @@ runCmAnalyses <- function(connectionDetails,
     dummy <- ParallelLogger::clusterApply(cluster, modelsToFit, doFitOutcomeModelPlus)
     ParallelLogger::stopCluster(cluster)
   }
+  # Summarize results ------------------------------------------------------------------------------
   mainFileName <- file.path(outputFolder, "resultsSummary.rds")
   interactionsFileName <- file.path(outputFolder, "interactionResultsSummary.rds")
+  diagnosticsSummaryFileName <- file.path(outputFolder, "diagnosticsSummary.rds")
   if (!file.exists(mainFileName)) {
     message("*** Summarizing results ***")
     summarizeResults(
@@ -679,7 +682,9 @@ runCmAnalyses <- function(connectionDetails,
       outputFolder = outputFolder,
       mainFileName = mainFileName,
       interactionsFileName = interactionsFileName,
-      calibrationThreads = multiThreadingSettings$calibrationThreads
+      diagnosticsSummaryFileName = diagnosticsSummaryFileName,
+      calibrationThreads = multiThreadingSettings$calibrationThreads,
+      cmDiagnosticThresholds = cmAnalysesSpecifications$cmDiagnosticThresholds
     )
   }
   referenceTable <- referenceTable |>
@@ -1327,13 +1332,13 @@ createReferenceTable <- function(cmAnalysisList,
     balanceIdsRequiringFiltering <- c()
   } else {
     balanceId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName),
-                              function(cmAnalysis) {
-                                i <- which.list(balanceArgsList, cmAnalysis)
-                                if (is.null(i)) {
-                                  i <- 0
-                                }
-                                return(i)
-                              })
+                        function(cmAnalysis) {
+                          i <- which.list(balanceArgsList, cmAnalysis)
+                          if (is.null(i)) {
+                            i <- 0
+                          }
+                          return(i)
+                        })
     analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, balanceId = balanceId)
     referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
 
@@ -1641,6 +1646,23 @@ getResultsSummary <- function(outputFolder) {
   return(results)
 }
 
+#' Get a summary report of the analyses diagnostics
+#'
+#' @param outputFolder       Name of the folder where all the outputs have been written to.
+#'
+#' @return
+#' A tibble containing summary diagnostics for each outcome-covariate-analysis combination.
+#'
+#' @export
+getDiagnosticsSummary <- function(outputFolder) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+  outputFolder <- normalizePath(outputFolder)
+  results <- readRDS(file.path(outputFolder, "diagnosticsSummary.rds"))
+  return(results)
+}
+
 #' Get a summary report of the analyses results
 #'
 #' @param outputFolder       Name of the folder where all the outputs have been written to.
@@ -1658,10 +1680,18 @@ getInteractionResultsSummary <- function(outputFolder) {
   return(results)
 }
 
-summarizeResults <- function(referenceTable, outputFolder, mainFileName, interactionsFileName, calibrationThreads = 1) {
+summarizeResults <- function(referenceTable,
+                             outputFolder,
+                             mainFileName,
+                             interactionsFileName,
+                             diagnosticsSummaryFileName,
+                             calibrationThreads,
+                             cmDiagnosticThresholds) {
   subset <- referenceTable |>
     filter(.data$outcomeModelFile != "")
-  mainResults <- vector("list", nrow(subset))
+  subset <- addMaxSdm(subset)
+  subset <- addEquipoise(subset)
+  results <- vector("list", nrow(subset))
   interActionResults <- list()
   pb <- txtProgressBar(style = 3)
   for (i in seq_len(nrow(subset))) {
@@ -1682,23 +1712,25 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     totalSubjects <- outcomeModel$populationCounts$targetExposures + outcomeModel$populationCounts$comparatorExposures
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
     pTarget <- outcomeModel$populationCounts$targetExposures / totalSubjects
-    mdrr <- computeMdrrFromAggregateStats(
+    mdrr <- CohortMethod:::computeMdrrFromAggregateStats(
       pTarget = pTarget,
       totalEvents = totalEvents,
       totalSubjects = totalSubjects,
       modelType = outcomeModel$outcomeModelType
     )
-    attrition <- getAttritionTable(outcomeModel)
-    # Assuming we're interest in the attrition of the target population only. Could change to depend on type
-    # of adjustment (e.g IPTW ATE should use target + comparator):
-    attritionFraction <- 1 - (attrition$targetExposures[nrow(attrition)] / attrition$targetExposures[1])
-    result <- subset[i, ] |>
+    row <- subset[i, ] |>
       select(
         "analysisId",
         "targetId",
         "comparatorId",
         "outcomeId",
-        "trueEffectSize"
+        "trueEffectSize",
+        "maxSdm",
+        "sharedMaxSdm",
+        "maxTargetSdm",
+        "maxComparatorSdm",
+        "maxTargetComparatorSdm",
+        "equipoise"
       ) |>
       bind_cols(outcomeModel$populationCounts |>
                   select(
@@ -1712,8 +1744,7 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
                   )) |>
       bind_cols(outcomeModel$outcomeCounts |>
                   select("targetOutcomes", "comparatorOutcomes"))
-
-    mainResult <- result |>
+    row <- row |>
       mutate(
         rr = if (is.null(coefficient)) NA else exp(coefficient),
         ci95Lb = if (is.null(coefficient)) NA else exp(ci[1]),
@@ -1725,15 +1756,45 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
         llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr,
         mdrr = !!mdrr,
         targetEstimator = outcomeModel$targetEstimator
-      )
-
-    mainResults[[i]] <- mainResult
+      ) |>
+      mutate(generalizabilityMaxSdm = if_else(.data$targetEstimator == "att",
+                                              .data$maxTargetSdm,
+                                              if_else(.data$targetEstimator == "atu",
+                                                      .data$maxComparatorSdm,
+                                                      .data$maxTargetComparatorSdm)))
+    row <- row |>
+      mutate(balanceDiagnostic = case_when(
+        is.na(.data$maxSdm) ~ "NOT EVALUATED",
+        .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
+        TRUE ~ "FAIL"
+      )) |>
+      mutate(sharedBalanceDiagnostic = case_when(
+        is.na(.data$sharedMaxSdm) ~ "NOT EVALUATED",
+        .data$sharedMaxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
+        TRUE ~ "FAIL"
+      )) |>
+      mutate(equipoiseDiagnostic = case_when(
+        is.na(.data$equipoise) ~ "NOT EVALUATED",
+        .data$equipoise >= cmDiagnosticThresholds$equipoiseThreshold ~ "PASS",
+        TRUE ~ "FAIL"
+      )) |>
+      mutate(mdrrDiagnostic = case_when(
+        is.na(.data$mdrr) ~ "NOT EVALUATED",
+        .data$mdrr < cmDiagnosticThresholds$mdrrThreshold ~ "PASS",
+        TRUE ~ "FAIL"
+      )) |>
+      mutate(generalizabilityDiagnostic = case_when(
+        is.na(.data$generalizabilityMaxSdm) ~ "NOT EVALUATED",
+        .data$generalizabilityMaxSdm < cmDiagnosticThresholds$generalizabilitySdmThreshold ~ "PASS",
+        TRUE ~ "FAIL"
+      ))
+    results[[i]] <- row
 
     if (!is.null(outcomeModel$outcomeModelInteractionEstimates)) {
       for (j in seq_len(nrow(outcomeModel$outcomeModelInteractionEstimates))) {
         z <- outcomeModel$outcomeModelInteractionEstimates$logRr[j] / outcomeModel$outcomeModelInteractionEstimates$seLogRr[j]
         p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
-        interActionResults[[length(interActionResults) + 1]] <- result |>
+        interActionResults[[length(interActionResults) + 1]] <- row |>
           mutate(
             interactionCovariateId = outcomeModel$outcomeModelInteractionEstimates$covariateId[j],
             rr = exp(outcomeModel$outcomeModelInteractionEstimates$logRr[j]),
@@ -1749,26 +1810,203 @@ summarizeResults <- function(referenceTable, outputFolder, mainFileName, interac
     setTxtProgressBar(pb, i / nrow(subset))
   }
   close(pb)
-  mainResults <- bind_rows(mainResults)
-  mainResults <- calibrateEstimates(
-    results = mainResults,
+  results <- bind_rows(results)
+  results <- calibrateEstimates(
+    results = results,
     calibrationThreads = calibrationThreads
   )
-  saveRDS(mainResults, mainFileName)
+  resultsSummary <- results |>
+    select("analysisId",
+           "targetId",
+           "comparatorId",
+           "outcomeId",
+           "targetSubjects",
+           "comparatorSubjects",
+           "targetDays",
+           "comparatorDays",
+           "targetOutcomes",
+           "comparatorOutcomes",
+           "rr",
+           "ci95Lb",
+           "ci95Ub",
+           "p",
+           "oneSidedP",
+           "logRr",
+           "seLogRr",
+           "llr",
+           "calibratedRr",
+           "calibratedCi95Lb",
+           "calibratedCi95Ub",
+           "calibratedP",
+           "calibratedOneSidedP",
+           "calibratedLogRr",
+           "calibratedSeLogRr",
+           "targetEstimator")
+  saveRDS(resultsSummary, mainFileName)
+
+  diagnosticsSummary <- results |>
+    mutate(easeDiagnostic = case_when(
+      is.na(.data$ease) ~ "NOT EVALUATED",
+      abs(.data$ease) < cmDiagnosticThresholds$easeThreshold ~ "PASS",
+      TRUE ~ "FAIL"
+    )) |>
+    mutate(unblindForEvidenceSynthesis = .data$unblindForCalibration & .data$easeDiagnostic != "FAIL") |>
+    mutate(unblind = .data$unblindForEvidenceSynthesis & .data$mdrrDiagnostic != "FAIL") |>
+    select("analysisId",
+           "targetId",
+           "comparatorId",
+           "outcomeId",
+           "maxSdm",
+           "balanceDiagnostic",
+           "sharedMaxSdm",
+           "sharedBalanceDiagnostic",
+           "equipoise",
+           "equipoiseDiagnostic",
+           "generalizabilityMaxSdm",
+           "generalizabilityDiagnostic",
+           "mdrr",
+           "mdrrDiagnostic",
+           "ease",
+           "easeDiagnostic",
+           "unblindForEvidenceSynthesis",
+           "unblind")
+  saveRDS(diagnosticsSummary, diagnosticsSummaryFileName)
 
   interActionResults <- bind_rows(interActionResults)
+  # interActionResults <- interActionResults |>
+  #   inner_join(diagnosticsSummary |>
+  #                select("analysisId",
+  #                       "targetId",
+  #                       "comparatorId",
+  #                       "outcomeId",
+  #                       "balanceDiagnostic",
+  #                       "sharedBalanceDiagnostic",
+  #                       "equipoiseDiagnostic",
+  #                       "generalizabilityDiagnostic"),
+  #              by = join_by("analysisId",
+  #                           "targetId",
+  #                           "comparatorId",
+  #                           "outcomeId"))
   interActionResults <- calibrateEstimates(
     results = interActionResults,
     calibrationThreads = calibrationThreads,
     interactions = TRUE
   )
+  interActionResults <- interActionResults |>
+    select("analysisId",
+           "targetId",
+           "comparatorId",
+           "outcomeId",
+           "interactionCovariateId",
+           "rr",
+           "ci95Lb",
+           "ci95Ub",
+           "p",
+           "targetSubjects",
+           "comparatorSubjects",
+           "targetDays",
+           "comparatorDays",
+           "targetOutcomes",
+           "comparatorOutcomes",
+           "logRr",
+           "seLogRr",
+           "calibratedRr",
+           "calibratedCi95Lb",
+           "calibratedCi95Ub",
+           "calibratedP",
+           "calibratedOneSidedP",
+           "calibratedLogRr",
+           "calibratedSeLogRr",
+           "targetEstimator")
   saveRDS(interActionResults, interactionsFileName)
 }
+
+addMaxSdm <- function(referenceTable) {
+  maxOrNa <- function(x) {
+    x <- x[!is.na(x)]
+    if (length(x) == 0) {
+      return(as.numeric(NA))
+    } else {
+      return(as.numeric(max(x)))
+    }
+  }
+
+  getMaxSdms <- function(balanceFile) {
+    balance <- readRDS(file.path(outputFolder, balanceFile))
+    if (nrow(balance) == 0) {
+      row <- tibble(balanceFile = !!balanceFile,
+                    maxSdm = as.numeric(NA),
+                    maxTargetSdm = as.numeric(NA),
+                    maxComparatorSdm = as.numeric(NA),
+                    maxTargetComparatorSdm = as.numeric(NA))
+      return(row)
+    } else {
+      row <- tibble(balanceFile = !!balanceFile,
+                    maxSdm = maxOrNa(abs(balance$afterMatchingStdDiff)),
+                    maxTargetSdm = maxOrNa(abs(balance$targetStdDiff)),
+                    maxComparatorSdm = maxOrNa(abs(balance$comparatorStdDiff)),
+                    maxTargetComparatorSdm = maxOrNa(abs(balance$targetComparatorStdDiff)))
+      return(row)
+    }
+  }
+
+  balanceFiles <- referenceTable |>
+    filter(.data$balanceFile != "") |>
+    distinct(.data$balanceFile) |>
+    pull()
+  maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) |>
+    select("balanceFile", "maxSdm")
+  sharedBalanceFiles <- referenceTable |>
+    filter(.data$sharedBalanceFile != "") |>
+    distinct(.data$sharedBalanceFile) |>
+    pull()
+  sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) |>
+    rename(sharedBalanceFile = "balanceFile",
+           sharedMaxSdm = "maxSdm")
+  referenceTable <- referenceTable |>
+    left_join(maxSdm,by = join_by(balanceFile)) |>
+    left_join(sharedMaxSdm, by = join_by(sharedBalanceFile))
+  return(referenceTable)
+}
+
+addEquipoise <- function(referenceTable) {
+  getEquipoise <- function(sharedPsFile) {
+    ps <- readRDS(file.path(outputFolder, sharedPsFile))
+    row <- tibble(sharedPsFile = !!sharedPsFile,
+                  equipoise = computeEquipoise(ps))
+    return(row)
+  }
+  sharedPsFiles <- referenceTable |>
+    filter(.data$sharedPsFile != "") |>
+    distinct(.data$sharedPsFile) |>
+    pull()
+  if (length(sharedPsFiles) > 0) {
+    sharedEquipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise))
+    referenceTable <- referenceTable |>
+      left_join(sharedEquipoise, by = join_by(sharedPsFile))
+  } else {
+    # Maybe fitted PS per outcome, so therefore no shared PS files?
+    psFiles <- referenceTable |>
+      filter(.data$sharedPsFile == "" & .data$psFile != "") |>
+      distinct(.data$psFile) |>
+      pull()
+    equipoise <- bind_rows(lapply(psFiles, getEquipoise))
+    referenceTable <- referenceTable |>
+      left_join(equipoise, by = join_by(psFile))
+  }
+  return(referenceTable)
+}
+
 
 calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE) {
   if (nrow(results) == 0) {
     return(results)
   }
+  results <- results |>
+    mutate(unblindForCalibration = .data$balanceDiagnostic != "FAIL" &
+             .data$sharedBalanceDiagnostic != "FAIL" &
+             .data$equipoiseDiagnostic != "FAIL" &
+             .data$generalizabilityDiagnostic != "FAIL")
   if (interactions) {
     message("Calibrating estimates for interactions")
     groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId, results$interactionCovariateId))
@@ -1785,8 +2023,8 @@ calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE
 
 # group = groups[[1]]
 calibrateGroup <- function(group) {
-  ncs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize == 1 & !is.na(group$seLogRr), ]
-  pcs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize != 1 & !is.na(group$seLogRr), ]
+  ncs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize == 1 & !is.na(group$seLogRr) & group$unblindForCalibration, ]
+  pcs <- group[!is.na(group$trueEffectSize) & group$trueEffectSize != 1 & !is.na(group$seLogRr) & group$unblindForCalibration, ]
   if (nrow(ncs) >= 5) {
     null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
     ease <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(null)

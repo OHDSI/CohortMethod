@@ -267,16 +267,14 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       mutate(sdmVariance = .data$numerator / .data$denominatorSd ^ 2) |>
       select(-"numerator")
   } else {
-    cohortCounts <- cohorts |>
-      group_by(.data$treatment) |>
+    count1 <- cohorts |>
+      filter(treatment == 1) |>
       count() |>
-      collect()
-    count1 <- cohortCounts |>
-      filter(.data$treatment == 1) |>
-      pull(.data$n)
-    count0 <- cohortCounts |>
-      filter(.data$treatment == 0) |>
-      pull(.data$n)
+      pull()
+    count0 <- cohorts |>
+      filter(treatment == 0) |>
+      count() |>
+      pull()
     result <- result |>
       mutate(sdmVariance = (count1 + count0) / (count1 * count0) + (.data$stdDiff^2) / (2 * (count1 + count0 - 2)))
   }

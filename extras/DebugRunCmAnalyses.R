@@ -1,3 +1,5 @@
+library(CohortMethod)
+
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 Eunomia::createCohorts(connectionDetails)
 
@@ -150,7 +152,9 @@ truncateIptwArgs <- createTruncateIptwArgs(maxWeight = 10)
 
 fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(
   modelType = "cox",
-  inversePtWeighting = TRUE
+  inversePtWeighting = TRUE,
+  bootstrapCi = TRUE,
+  bootstrapReplicates = 200
 )
 cmAnalysis4 <- createCmAnalysis(
   analysisId = 4,
@@ -200,5 +204,8 @@ result <- runCmAnalyses(
     analysesToExclude = analysesToExclude
   )
 )
-
+# referenceTable <- getFileReference(outputFolder)
+# cmDiagnosticThresholds <- createCmDiagnosticThresholds()
 CohortMethod::exportToCsv(outputFolder, databaseId = "Test")
+
+unlink(outputFolder)

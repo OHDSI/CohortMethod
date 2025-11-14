@@ -48,8 +48,7 @@ exportToCsv <- function(outputFolder,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::assertDirectoryExists(outputFolder, add = errorMessages)
-  checkmate::assertFileExists(file.path(outputFolder, "cmAnalysisList.rds"), add = errorMessages)
-  checkmate::assertFileExists(file.path(outputFolder, "targetComparatorOutcomesList.rds"), add = errorMessages)
+  checkmate::assertFileExists(file.path(outputFolder, "cmAnalysesSpecifications.rds"), add = errorMessages)
   checkmate::assertFileExists(file.path(outputFolder, "resultsSummary.rds"), add = errorMessages)
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
   checkmate::assertAtomic(databaseId, len = 1, add = errorMessages)
@@ -146,12 +145,12 @@ exportToCsv <- function(outputFolder,
     maxCores = maxCores
   )
 
-  exportDiagnosticsSummary(
-    outputFolder = outputFolder,
-    exportFolder = exportFolder,
-    databaseId = databaseId,
-    cmDiagnosticThresholds = cmDiagnosticThresholds
-  )
+  # exportDiagnosticsSummary(
+  #   outputFolder = outputFolder,
+  #   exportFolder = exportFolder,
+  #   databaseId = databaseId,
+  #   cmDiagnosticThresholds = cmDiagnosticThresholds
+  # )
 
   # Add all to zip file -------------------------------------------------------------------------------
   message("Adding results to zip file")
@@ -219,8 +218,8 @@ createEmptyResult <- function(tableName) {
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
   message("- cm__analysis table")
 
-  cmAnalysisListFile <- file.path(outputFolder, "cmAnalysisList.rds")
-  cmAnalysisList <- readRDS(cmAnalysisListFile)
+  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
+  cmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
   cmAnalysisToRow <- function(cmAnalysis) {
     row <- tibble(
       analysisId = cmAnalysis$analysisId,
@@ -229,7 +228,7 @@ exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
     )
     return(row)
   }
-  cohortMethodAnalysis <- lapply(cmAnalysisList, cmAnalysisToRow)
+  cohortMethodAnalysis <- lapply(cmAnalysesSpecifications$cmAnalysisList, cmAnalysisToRow)
   cohortMethodAnalysis <- bind_rows(cohortMethodAnalysis) |>
     distinct()
 
@@ -295,7 +294,8 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
 exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
   message("- target_comparator_outcome table")
 
-  tcosList <- readRDS(file.path(outputFolder, "targetComparatorOutcomesList.rds"))
+  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
+  cmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
   convertOutcomeToTable <- function(outcome) {
     table <- tibble(
       outcomeId = outcome$outcomeId,
@@ -304,7 +304,7 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
     )
     return(table)
   }
-  # tcos <- tcosList[[1]]
+  # tcos = cmAnalysesSpecifications$targetComparatorOutcomesList[[1]]
   convertToTable <- function(tcos) {
     table <- lapply(tcos$outcomes, convertOutcomeToTable) |>
       bind_rows() |>
@@ -315,7 +315,7 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
     return(table)
 
   }
-  table <- lapply(tcosList, convertToTable)
+  table <- lapply(cmAnalysesSpecifications$targetComparatorOutcomesList, convertToTable)
   table <- bind_rows(table)
 
   fileName <- file.path(exportFolder, "cm_target_comparator_outcome.csv")
@@ -390,12 +390,11 @@ exportCmFollowUpDist <- function(outputFolder,
       strataPop$survivalTime[strataPop$treatment == 0],
       c(0, 0.1, 0.25, 0.5, 0.85, 0.9, 1)
     )
-    if (nrow(strataPop) == 0) {
+    if (sum(strataPop$treatment == 1) == 0) {
       targetMinMaxDates <- tibble(
         minDate = as.Date(NA),
         maxDate = as.Date(NA)
       )
-      comparatorMinMaxDates <- targetMinMaxDates
     } else {
       targetMinMaxDates <- strataPop |>
         filter(.data$treatment == 1) |>
@@ -403,7 +402,13 @@ exportCmFollowUpDist <- function(outputFolder,
           minDate = min(.data$cohortStartDate),
           maxDate = max(.data$cohortStartDate)
         )
-
+    }
+    if (sum(strataPop$treatment == 0) == 0) {
+      comparatorMinMaxDates <- tibble(
+        minDate = as.Date(NA),
+        maxDate = as.Date(NA)
+      )
+    } else {
       comparatorMinMaxDates <- strataPop |>
         filter(.data$treatment == 0) |>
         summarise(
@@ -1016,121 +1021,11 @@ exportDiagnosticsSummary <- function(outputFolder,
                                      databaseId,
                                      cmDiagnosticThresholds) {
   message("- diagnostics_summary table")
-  reference <- getFileReference(outputFolder)
-  resultsSummary <- getResultsSummary(outputFolder)
+  results <- getDiagnosticsSummary(outputFolder) |>
+    mutate(databaseId = !!databaseId,
+           unblind = as.integer(.data$unblind),
+           unblindForEvidenceSynthesis = as.integer(.data$unblindForEvidenceSynthesis))
 
-  getMaxSdms <- function(balanceFile) {
-    balance <- readRDS(file.path(outputFolder, balanceFile))
-    if (nrow(balance) == 0) {
-      row <- tibble(balanceFile = !!balanceFile,
-                    maxSdm = as.numeric(NA),
-                    maxTargetSdm = as.numeric(NA),
-                    maxComparatorSdm = as.numeric(NA),
-                    maxTargetComparatorSdm = as.numeric(NA))
-      return(row)
-    } else {
-      row <- tibble(balanceFile = !!balanceFile,
-                    maxSdm = as.numeric(max(abs(balance$afterMatchingStdDiff), na.rm = TRUE)),
-                    maxTargetSdm = as.numeric(max(abs(balance$targetStdDiff), na.rm = TRUE)),
-                    maxComparatorSdm = as.numeric(max(abs(balance$comparatorStdDiff), na.rm = TRUE)),
-                    maxTargetComparatorSdm = as.numeric(max(abs(balance$targetComparatorStdDiff), na.rm = TRUE)))
-      return(row)
-    }
-  }
-  getEquipoise <- function(sharedPsFile) {
-    ps <- readRDS(file.path(outputFolder, sharedPsFile))
-    row <- tibble(sharedPsFile = !!sharedPsFile,
-           equipoise = computeEquipoise(ps))
-    return(row)
-  }
-
-  balanceFiles <- reference |>
-    filter(.data$balanceFile != "") |>
-    distinct(.data$balanceFile) |>
-    pull()
-  maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) |>
-    select("balanceFile", "maxSdm")
-  sharedBalanceFiles <- reference |>
-    filter(.data$sharedBalanceFile != "") |>
-    distinct(.data$sharedBalanceFile) |>
-    pull()
-  sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) |>
-    rename(sharedBalanceFile = "balanceFile",
-           sharedMaxSdm = "maxSdm")
-  sharedPsFiles <- reference |>
-    filter(.data$sharedPsFile != "") |>
-    distinct(.data$sharedPsFile) |>
-    pull()
-  equipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise))
-  results <- reference |>
-    inner_join(
-      resultsSummary,
-      by = join_by("analysisId", "targetId", "comparatorId", "outcomeId")) |>
-    left_join(maxSdm, by = "balanceFile") |>
-    left_join(sharedMaxSdm, by = "sharedBalanceFile") |>
-    mutate(generalizabilityMaxSdm = if_else(.data$targetEstimator == "att",
-                                            .data$maxTargetSdm,
-                                            if_else(.data$targetEstimator == "atu",
-                                                    .data$maxComparatorSdm,
-                                                    .data$maxTargetComparatorSdm))) |>
-    left_join(equipoise, by = "sharedPsFile") |>
-    select(
-      "analysisId",
-      "targetId",
-      "comparatorId",
-      "outcomeId",
-      "maxSdm",
-      "sharedMaxSdm",
-      "equipoise",
-      "mdrr",
-      "generalizabilityMaxSdm",
-      "ease"
-    )
-
-  # Apply diagnostics thresholds:
-  results <- results |>
-    mutate(databaseId = !!databaseId) |>
-    mutate(balanceDiagnostic = case_when(
-      is.na(.data$maxSdm) ~ "NOT EVALUATED",
-      .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
-      TRUE ~ "FAIL"
-    )) |>
-    mutate(sharedBalanceDiagnostic = case_when(
-      is.na(.data$sharedMaxSdm) ~ "NOT EVALUATED",
-      .data$sharedMaxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
-      TRUE ~ "FAIL"
-    )) |>
-    mutate(equipoiseDiagnostic = case_when(
-      is.na(.data$equipoise) ~ "NOT EVALUATED",
-      .data$equipoise >= cmDiagnosticThresholds$equipoiseThreshold ~ "PASS",
-      TRUE ~ "FAIL"
-    )) |>
-    mutate(mdrrDiagnostic = case_when(
-      is.na(.data$mdrr) ~ "NOT EVALUATED",
-      .data$mdrr < cmDiagnosticThresholds$mdrrThreshold ~ "PASS",
-      TRUE ~ "FAIL"
-    )) |>
-    mutate(generalizabilityDiagnostic = case_when(
-      is.na(.data$generalizabilityMaxSdm) ~ "NOT EVALUATED",
-      .data$generalizabilityMaxSdm < cmDiagnosticThresholds$generalizabilitySdmThreshold ~ "PASS",
-      TRUE ~ "FAIL"
-    )) |>
-    mutate(easeDiagnostic = case_when(
-      is.na(.data$ease) ~ "NOT EVALUATED",
-      abs(.data$ease) < cmDiagnosticThresholds$easeThreshold ~ "PASS",
-      TRUE ~ "FAIL"
-    )) |>
-    mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &
-                              .data$generalizabilityDiagnostic != "FAIL" &
-                              .data$easeDiagnostic != "FAIL" &
-                              .data$equipoiseDiagnostic != "FAIL" &
-                              .data$balanceDiagnostic != "FAIL" &
-                              .data$sharedBalanceDiagnostic != "FAIL", 1, 0)) |>
-    mutate(unblindForEvidenceSynthesis = ifelse(.data$generalizabilityDiagnostic != "FAIL" &
-                                                  .data$easeDiagnostic != "FAIL" &
-                                                  .data$equipoiseDiagnostic != "FAIL" &
-                                                  .data$balanceDiagnostic != "FAIL" &
-                                                  .data$sharedBalanceDiagnostic != "FAIL", 1, 0))
 
   # Add deprecated fields:
   results <- results |>

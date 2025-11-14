@@ -97,6 +97,7 @@ fitOutcomeModel <- function(population,
   treatmentVarId <- NA
   subgroupCounts <- NULL
   logLikelihoodProfile <- NULL
+  prior <- fitOutcomeModelArgs$prior
   status <- "NO MODEL FITTED"
   outcomeModel <- attr(population, "metaData")
   outcomeModel$outcomeModelType <- fitOutcomeModelArgs$modelType
@@ -156,9 +157,9 @@ fitOutcomeModel <- function(population,
         appendToTable(covariateData$covariates, treatmentCovariate)
 
         if (fitOutcomeModelArgs$stratified || fitOutcomeModelArgs$modelType == "cox") {
-          fitOutcomeModelArgs$prior$exclude <- treatmentVarId # Exclude treatment variable from regularization
+          prior$exclude <- treatmentVarId # Exclude treatment variable from regularization
         } else {
-          fitOutcomeModelArgs$prior$exclude <- c(0, treatmentVarId) # Exclude treatment variable and intercept from regularization
+          prior$exclude <- c(0, treatmentVarId) # Exclude treatment variable and intercept from regularization
         }
       } else {
         # Don't add covariates, only use treatment as covariate ----------------------------------------------
@@ -251,74 +252,8 @@ fitOutcomeModel <- function(population,
       }
 
       # Fit model -------------------------------------------------------------------------------------------
-      covariateData$outcomes <- informativePopulation
-      outcomes <- covariateData$outcomes
-      if (fitOutcomeModelArgs$stratified) {
-        covariates <- covariateData$covariates |>
-          inner_join(select(covariateData$outcomes, "rowId", "stratumId"), by = "rowId")
-      } else {
-        covariates <- covariateData$covariates
-      }
-      cyclopsData <- Cyclops::convertToCyclopsData(
-        outcomes = outcomes,
-        covariates = covariates,
-        addIntercept = (!fitOutcomeModelArgs$stratified && !fitOutcomeModelArgs$modelType == "cox"),
-        modelType = modelTypeToCyclopsModelType(
-          fitOutcomeModelArgs$modelType,
-          fitOutcomeModelArgs$stratified
-        ),
-        checkRowIds = FALSE,
-        normalize = NULL,
-        quiet = TRUE
-      )
-
-      if (!is.null(interactionTerms)) {
-        # Check separability:
-        separability <- Cyclops::getUnivariableSeparability(cyclopsData)
-        separability[as.character(treatmentVarId)] <- FALSE
-        if (any(separability)) {
-          removeCovariateIds <- as.numeric(names(separability)[separability])
-          # Add main effects of separable interaction effects, and the other way around:
-          if (!fitOutcomeModelArgs$useCovariates) {
-            removeCovariateIds <- unique(c(
-              removeCovariateIds,
-              interactionTerms$covariateId[interactionTerms$interactionId %in% removeCovariateIds]
-            ))
-          }
-          removeCovariateIds <- unique(c(
-            removeCovariateIds,
-            interactionTerms$interactionId[interactionTerms$covariateId %in% removeCovariateIds]
-          ))
-          covariates <- covariates |>
-            filter(!.data$covariateId %in% removeCovariateIds)
-
-          cyclopsData <- Cyclops::convertToCyclopsData(
-            outcomes = outcomes,
-            covariates = covariates,
-            addIntercept = (!fitOutcomeModelArgs$stratified && !fitOutcomeModelArgs$modelType == "cox"),
-            modelType = modelTypeToCyclopsModelType(
-              fitOutcomeModelArgs$modelType,
-              fitOutcomeModelArgs$stratified
-            ),
-            checkRowIds = FALSE,
-            normalize = NULL,
-            quiet = TRUE
-          )
-          warning("Separable interaction terms found and removed")
-          ref <- interactionTerms[interactionTerms$interactionId %in% removeCovariateIds, ]
-          message("Separable interactions:")
-          for (i in seq_len(nrow(ref))) {
-            message(paste(ref[i, ], collapse = "\t"))
-          }
-          interactionTerms <- interactionTerms[!(interactionTerms$interactionId %in% removeCovariateIds), ]
-          if (nrow(interactionTerms) == 0) {
-            interactionTerms <- NULL
-          }
-        }
-      }
-
-      if (fitOutcomeModelArgs$prior$priorType != "none" &&
-          isTRUE(fitOutcomeModelArgs$prior$useCrossValidation) &&
+      if (prior$priorType != "none" &&
+          isTRUE(prior$useCrossValidation) &&
           fitOutcomeModelArgs$control$selectorType == "byPid" &&
           length(unique(informativePopulation$stratumId)) < fitOutcomeModelArgs$control$fold) {
         fit <- "NUMBER OF INFORMATIVE STRATA IS SMALLER THAN THE NUMBER OF CV FOLDS, CANNOT FIT"
@@ -395,7 +330,7 @@ fitOutcomeModel <- function(population,
         }
         fit <- tryCatch(
           {
-            Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+            Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = fitOutcomeModelArgs$control)
           },
           error = function(e) {
             e$message
