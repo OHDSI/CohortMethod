@@ -153,6 +153,7 @@ cm_kaplan_meier_dist,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the
 cm_kaplan_meier_dist,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_likelihood_profile,log_rr,float,Yes,Yes,No,No,The log of the relative risk where the likelihood is sampled.
 cm_likelihood_profile,log_likelihood,float,Yes,No,No,No,The normalized log likelihood.
+cm_likelihood_profile,gradient,float,Yes,No,No,No,The gradient of the log likelihood.
 cm_likelihood_profile,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
 cm_likelihood_profile,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
 cm_likelihood_profile,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.

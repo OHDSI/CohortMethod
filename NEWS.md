@@ -15,7 +15,12 @@ Changes:
 
 6. Dropping deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`.
 
-7. Changing default outcome model type from 'logistic' to 'cox'.
+7. Changed the default outcome model type from 'logistic' to 'cox'.
+
+8. Added support for grid-with-gradient likelihood profiles.
+
+9. Now performing empirical calibration *after* removing estimates that fail diagnostics. 
+
 
 CohortMethod 5.5.2
 ==================

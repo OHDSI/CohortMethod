@@ -208,4 +208,6 @@ result <- runCmAnalyses(
 # cmDiagnosticThresholds <- createCmDiagnosticThresholds()
 CohortMethod::exportToCsv(outputFolder, databaseId = "Test")
 
-unlink(outputFolder)
+profiles <- readr::read_csv(file.path(outputFolder, "export", "cm_likelihood_profile.csv"))
+
+# unlink(outputFolder)

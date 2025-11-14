@@ -565,7 +565,8 @@ exportLikelihoodProfiles <- function(outputFolder,
         profile <- profile |>
           transmute(
             logRr = .data$point,
-            logLikelihood = .data$value - max(.data$value)
+            logLikelihood = .data$value - max(.data$value),
+            gradient = .data$derivative
           ) |>
           mutate(
             targetId = reference$targetId[i],

@@ -349,7 +349,8 @@ fitOutcomeModel <- function(population,
             x = fitOutcomeModelArgs$profileGrid,
             bounds = fitOutcomeModelArgs$profileBounds,
             tolerance = 0.1,
-            includePenalty = TRUE
+            includePenalty = TRUE,
+            returnDerivatives = TRUE
           )
         }
         if (fit$return_flag != "SUCCESS") {
