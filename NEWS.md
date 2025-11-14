@@ -31,6 +31,9 @@ Changes:
 
 14. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
 
+15. Correcting the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
+
+16. Added a vignette showing the results schema.
 
 CohortMethod 5.5.2
 ==================
