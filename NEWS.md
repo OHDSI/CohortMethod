@@ -25,6 +25,12 @@ Changes:
 
 11. Removed mention of legacy function `grepCovariateNames()` from the vignette.
 
+12. Added citation to the HADES paper to the package.
+
+13. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. `OhdsiShinyAppBuilder` should be used instead.
+
+14. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
+
 
 CohortMethod 5.5.2
 ==================

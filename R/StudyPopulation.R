@@ -248,7 +248,7 @@ createStudyPopulation <- function(cohortMethodData,
   if (createStudyPopulationArgs$minDaysAtRisk != 0) {
     message(paste("Removing subjects with less than", createStudyPopulationArgs$minDaysAtRisk, "day(s) at risk (if any)"))
     population <- population |>
-      filter(.data$riskEnd - .data$riskStart >= createStudyPopulationArgs$minDaysAtRisk)
+      filter(1 + .data$riskEnd - .data$riskStart >= createStudyPopulationArgs$minDaysAtRisk)
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
       "Have at least",
       createStudyPopulationArgs$minDaysAtRisk,

@@ -16,9 +16,15 @@ test_that("createStudyPop: washout period", {
   tmpCmd$cohorts <- cohortRow |>
     mutate(rowId = 1, daysFromObsStart = 170)
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, washoutPeriod = 160)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(washoutPeriod = 160)
+  )
   expect_equal(nrow(sp), 1)
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, washoutPeriod = 180)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(washoutPeriod = 180)
+  )
   expect_equal(nrow(sp), 0)
 })
 
@@ -29,10 +35,15 @@ test_that("createStudyPop: firstExposureOnly", {
     cohortRow |>
       mutate(rowId = 1, daysFromObsStart = 210)
   )
-
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, firstExposureOnly = FALSE)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(firstExposureOnly = FALSE)
+  )
   expect_equal(nrow(sp), 2)
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, firstExposureOnly = TRUE)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(firstExposureOnly = TRUE)
+  )
   expect_equal(nrow(sp), 1)
 })
 
@@ -43,10 +54,15 @@ test_that("createStudyPop: removeDuplicateSubjects = 'remove all'", {
     cohortRow |>
       mutate(rowId = 1, treatment = 1)
   )
-
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "keep all")
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeDuplicateSubjects = "keep all")
+  )
   expect_equal(nrow(sp), 2)
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "remove all")
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeDuplicateSubjects = "remove all")
+  )
   expect_equal(nrow(sp), 0)
 })
 
@@ -58,9 +74,15 @@ test_that("createStudyPop: removeDuplicateSubjects = 'keep first'", {
   cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2001-02-01", "2000-01-01"))
   tmpCmd$cohorts <- cohorts
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "keep first")
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeDuplicateSubjects = "keep first")
+  )
   expect_equal(sp$rowId, c(1, 3))
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "keep all")
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeDuplicateSubjects = "keep all")
+  )
   expect_equal(sp$rowId, c(1, 2, 3))
 })
 
@@ -72,9 +94,15 @@ test_that("createStudyPop: removeDuplicateSubjects = 'keep first' removing ties"
   cohorts$cohortStartDate <- as.Date(c("2000-01-01", "2001-02-01", "2000-01-01", "2000-01-01"))
   tmpCmd$cohorts <- cohorts
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "keep first")
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeDuplicateSubjects = "keep first")
+  )
   expect_equal(sp$rowId, c(1))
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, removeDuplicateSubjects = "keep all")
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeDuplicateSubjects = "keep all")
+  )
   expect_equal(sp$rowId, c(1, 2, 3, 4))
 })
 
@@ -85,9 +113,15 @@ test_that("createStudyPop: restrictToCommonPeriod", {
   cohorts$cohortStartDate <- c("2000-01-01", "2000-09-01", "2000-08-01", "2000-04-01", "2000-02-01", "2000-10-01")
   tmpCmd$cohorts <- cohorts
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, restrictToCommonPeriod = FALSE)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(restrictToCommonPeriod = FALSE)
+  )
   expect_equal(nrow(sp), 6)
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, restrictToCommonPeriod = TRUE)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(restrictToCommonPeriod = TRUE)
+  )
   expect_equal(nrow(sp), 4)
   expect_equal(sp$rowId, c(2, 3, 4, 5))
 })
@@ -103,26 +137,26 @@ test_that("createStudyPop: removeSubjectsWithPriorOutcome", {
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    removeSubjectsWithPriorOutcome = FALSE
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = FALSE)
   )
   expect_equal(nrow(sp), 1)
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    removeSubjectsWithPriorOutcome = TRUE
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE)
   )
   expect_equal(nrow(sp), 0)
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 999,
-    removeSubjectsWithPriorOutcome = TRUE
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE)
   )
   expect_equal(nrow(sp), 1)
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    removeSubjectsWithPriorOutcome = TRUE,
-    priorOutcomeLookback = 9
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
+                                                                priorOutcomeLookback = 9)
   )
   expect_equal(nrow(sp), 1)
 })
@@ -136,16 +170,26 @@ test_that("createStudyPop: minDaysAtRisk", {
 
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
-    minDaysAtRisk = 1,
-    endAnchor = "cohort end"
+    outcomeId = 999,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(minDaysAtRisk = 1,
+                                                                endAnchor = "cohort end")
   )
   expect_equal(nrow(sp), 1)
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
-    minDaysAtRisk = 20,
-    endAnchor = "cohort end"
+    outcomeId = 999,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(minDaysAtRisk = 20,
+                                                                endAnchor = "cohort end")
   )
   expect_equal(nrow(sp), 0)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    outcomeId = 999,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(minDaysAtRisk = 11,
+                                                                endAnchor = "cohort end")
+  )
+  expect_equal(nrow(sp), 1)
+
 })
 
 test_that("createStudyPop: maxDaysAtRisk", {
@@ -157,13 +201,15 @@ test_that("createStudyPop: maxDaysAtRisk", {
 
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
-    endAnchor = "cohort end"
+    outcomeId = 999,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(endAnchor = "cohort end")
   )
   expect_equal(sp$riskEnd, 10)
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
-    maxDaysAtRisk = 5,
-    endAnchor = "cohort end"
+    outcomeId = 999,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(maxDaysAtRisk = 5,
+                                                                endAnchor = "cohort end")
   )
   expect_equal(sp$riskEnd, 5)
 })
@@ -178,33 +224,32 @@ test_that("createStudyPop: risk window definition", {
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    removeSubjectsWithPriorOutcome = FALSE,
-    startAnchor = "cohort start",
-    riskWindowStart = 0,
-    endAnchor = "cohort end",
-    riskWindowEnd = 0
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = FALSE,
+                                                                startAnchor = "cohort start",
+                                                                riskWindowStart = 0,
+                                                                endAnchor = "cohort end",
+                                                                riskWindowEnd = 0)
   )
   expect_equal(sp$timeAtRisk, 11)
 
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    removeSubjectsWithPriorOutcome = FALSE,
-    startAnchor = "cohort start",
-    riskWindowStart = 1,
-    endAnchor = "cohort end",
-    riskWindowEnd = 0
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = FALSE,
+                                                                startAnchor = "cohort start",
+                                                                riskWindowStart = 1,
+                                                                endAnchor = "cohort end",
+                                                                riskWindowEnd = 0)
   )
   expect_equal(sp$timeAtRisk, 10)
-
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    removeSubjectsWithPriorOutcome = FALSE,
-    startAnchor = "cohort start",
-    riskWindowStart = 0,
-    endAnchor = "cohort start",
-    riskWindowEnd = 9999
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = FALSE,
+                                                                startAnchor = "cohort start",
+                                                                riskWindowStart = 0,
+                                                                endAnchor = "cohort end",
+                                                                riskWindowEnd = 9999)
   )
   expect_equal(sp$timeAtRisk, 21)
 })
@@ -219,9 +264,17 @@ test_that("createStudyPop: censor at new risk window start", {
   cohorts$daysToObsEnd <- c(1000, 1000, 1000)
   tmpCmd$cohorts <- cohorts
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, outcomeId = 0, censorAtNewRiskWindow = TRUE)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    outcomeId = 0,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(censorAtNewRiskWindow = TRUE)
+  )
   expect_equal(sp$timeAtRisk, c(31, 101, 101))
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, outcomeId = 0, censorAtNewRiskWindow = FALSE)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    outcomeId = 0,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(censorAtNewRiskWindow = FALSE)
+  )
   expect_equal(sp$timeAtRisk, c(101, 101, 101))
 })
 
@@ -237,8 +290,8 @@ test_that("createStudyPop: keep first when only 1 person overall", {
 
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
-    censorAtNewRiskWindow = TRUE,
-    removeDuplicateSubjects = "keep first"
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(censorAtNewRiskWindow = TRUE,
+                                                                removeDuplicateSubjects = "keep first")
   )
   expect_equal(nrow(sp), 1)
 })
@@ -255,16 +308,19 @@ test_that("createStudyPop: outcomes", {
   tmpCmd$outcomes <- outcomes
   tmpCmd$cohorts <- cohorts
 
-  sp <- createStudyPopulation(cohortMethodData = tmpCmd, outcomeId = 123, riskWindowEnd = 999)
-  expect_equal(sp$outcomeCount, 1)
-  expect_equal(sp$survivalTime, 16)
-  expect_equal(sp$daysToEvent, 15)
-
   sp <- createStudyPopulation(
     cohortMethodData = tmpCmd,
     outcomeId = 123,
-    riskWindowEnd = 0,
-    endAnchor = "cohort end"
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(riskWindowEnd = 999)
+  )
+  expect_equal(sp$outcomeCount, 1)
+  expect_equal(sp$survivalTime, 16)
+  expect_equal(sp$daysToEvent, 15)
+  sp <- createStudyPopulation(
+    cohortMethodData = tmpCmd,
+    outcomeId = 123,
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(riskWindowEnd = 0,
+                                                                endAnchor = "cohort end")
   )
   expect_equal(sp$outcomeCount, 0)
   expect_equal(sp$survivalTime, 11)
