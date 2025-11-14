@@ -1842,7 +1842,7 @@ summarizeResults <- function(referenceTable,
            "calibratedLogRr",
            "calibratedSeLogRr",
            "targetEstimator")
-  saveRDS(resultsSummary, mainFileName)
+
 
   diagnosticsSummary <- results |>
     mutate(easeDiagnostic = case_when(
@@ -1870,55 +1870,44 @@ summarizeResults <- function(referenceTable,
            "easeDiagnostic",
            "unblindForEvidenceSynthesis",
            "unblind")
-  saveRDS(diagnosticsSummary, diagnosticsSummaryFileName)
 
   interActionResults <- bind_rows(interActionResults)
-  # interActionResults <- interActionResults |>
-  #   inner_join(diagnosticsSummary |>
-  #                select("analysisId",
-  #                       "targetId",
-  #                       "comparatorId",
-  #                       "outcomeId",
-  #                       "balanceDiagnostic",
-  #                       "sharedBalanceDiagnostic",
-  #                       "equipoiseDiagnostic",
-  #                       "generalizabilityDiagnostic"),
-  #              by = join_by("analysisId",
-  #                           "targetId",
-  #                           "comparatorId",
-  #                           "outcomeId"))
-  interActionResults <- calibrateEstimates(
-    results = interActionResults,
-    calibrationThreads = calibrationThreads,
-    interactions = TRUE
-  )
-  interActionResults <- interActionResults |>
-    select("analysisId",
-           "targetId",
-           "comparatorId",
-           "outcomeId",
-           "interactionCovariateId",
-           "rr",
-           "ci95Lb",
-           "ci95Ub",
-           "p",
-           "targetSubjects",
-           "comparatorSubjects",
-           "targetDays",
-           "comparatorDays",
-           "targetOutcomes",
-           "comparatorOutcomes",
-           "logRr",
-           "seLogRr",
-           "calibratedRr",
-           "calibratedCi95Lb",
-           "calibratedCi95Ub",
-           "calibratedP",
-           "calibratedOneSidedP",
-           "calibratedLogRr",
-           "calibratedSeLogRr",
-           "targetEstimator")
+  if (nrow(interActionResults) > 0) {
+    interActionResults <- calibrateEstimates(
+      results = interActionResults,
+      calibrationThreads = calibrationThreads,
+      interactions = TRUE
+    )
+    interActionResults <- interActionResults |>
+      select("analysisId",
+             "targetId",
+             "comparatorId",
+             "outcomeId",
+             "interactionCovariateId",
+             "rr",
+             "ci95Lb",
+             "ci95Ub",
+             "p",
+             "targetSubjects",
+             "comparatorSubjects",
+             "targetDays",
+             "comparatorDays",
+             "targetOutcomes",
+             "comparatorOutcomes",
+             "logRr",
+             "seLogRr",
+             "calibratedRr",
+             "calibratedCi95Lb",
+             "calibratedCi95Ub",
+             "calibratedP",
+             "calibratedOneSidedP",
+             "calibratedLogRr",
+             "calibratedSeLogRr",
+             "targetEstimator")
+  }
   saveRDS(interActionResults, interactionsFileName)
+  saveRDS(diagnosticsSummary, diagnosticsSummaryFileName)
+  saveRDS(resultsSummary, mainFileName)
 }
 
 addMaxSdm <- function(referenceTable) {

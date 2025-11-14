@@ -210,4 +210,4 @@ CohortMethod::exportToCsv(outputFolder, databaseId = "Test")
 
 profiles <- readr::read_csv(file.path(outputFolder, "export", "cm_likelihood_profile.csv"))
 
-# unlink(outputFolder)
+unlink(outputFolder)

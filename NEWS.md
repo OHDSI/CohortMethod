@@ -21,6 +21,10 @@ Changes:
 
 9. Now performing empirical calibration *after* removing estimates that fail diagnostics. 
 
+10. If high correlation is detected when fitting a propensity model, but `stopOnError = FALSE`, the export will show the highly correlated covariates in the model with extreme coefficients.
+
+11. Removed mention of legacy function `grepCovariateNames()` from the vignette.
+
 
 CohortMethod 5.5.2
 ==================

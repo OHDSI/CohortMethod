@@ -58,6 +58,7 @@ createPs <- function(cohortMethodData,
   checkmate::assertR6(createPsArgs, "CreatePsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
+  error <- NULL
   if (is.null(population)) {
     population <- cohortMethodData$cohorts |>
       collect()
@@ -160,7 +161,6 @@ createPs <- function(cohortMethodData,
     }
     Andromeda::flushAndromeda(covariateData)
     cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes, covariateData$covariates, modelType = "lr", floatingPoint = floatingPoint)
-    error <- NULL
     ref <- NULL
     if (createPsArgs$errorOnHighCorrelation) {
       suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
@@ -258,11 +258,11 @@ createPs <- function(cohortMethodData,
       population <- fullPopulation
     }
     population$propensityScore <- population$treatment
-    metaData$psError <- error
   }
   population$propensityScore <- round(population$propensityScore, 10)
   population <- computePreferenceScore(population)
   population <- computeIptw(population, createPsArgs$estimator)
+  metaData$psError <- error
   metaData$iptwEstimator <- createPsArgs$estimator
   attr(population, "metaData") <- metaData
   delta <- Sys.time() - start
