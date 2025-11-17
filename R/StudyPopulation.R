@@ -37,12 +37,6 @@ fastDuplicated <- function(data, columns) {
 #' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
 #' window, and determining which outcomes fall inside the risk window.
 #'
-#' The `removeduplicateSubjects` argument can have one of the following values:
-#'
-#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
-#' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
-#' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
-#'
 #' @template CohortMethodData
 #'
 #' @param population                  If specified, this population will be used as the starting
@@ -88,87 +82,6 @@ createStudyPopulation <- function(cohortMethodData,
   }
   metaData$targetEstimator <- "ate"
 
-  if (createStudyPopulationArgs$firstExposureOnly) {
-    message("Keeping only first exposure per subject")
-    population <- population |>
-      arrange(.data$personSeqId, .data$treatment, .data$cohortStartDate)
-
-    idx <- fastDuplicated(population, c("personSeqId", "treatment"))
-    population <- population[!idx, ]
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, "First exposure only")
-    )
-  }
-  if (createStudyPopulationArgs$restrictToCommonPeriod) {
-    message("Restrict to common period")
-    if (nrow(population) > 0) {
-      population <- population |>
-        group_by(.data$treatment) |>
-        summarise(
-          treatmentStart = min(.data$cohortStartDate),
-          treatmentEnd = max(.data$cohortStartDate)
-        ) |>
-        ungroup() |>
-        summarise(
-          periodStart = max(.data$treatmentStart),
-          periodEnd = min(.data$treatmentEnd)
-        ) |>
-        cross_join(population) |>
-        filter(
-          population$cohortStartDate >= .data$periodStart &
-            population$cohortStartDate <= .data$periodEnd
-        ) |>
-        select(-"periodStart", -"periodEnd")
-    }
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, "Restrict to common period")
-    )
-  }
-  if (createStudyPopulationArgs$removeDuplicateSubjects == "remove all") {
-    message("Removing all subject that are in both cohorts (if any)")
-    targetSubjectIds <- population$personSeqId[population$treatment == 1]
-    comparatorSubjectIds <- population$personSeqId[population$treatment == 0]
-    duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
-    population <- population[!(population$personSeqId %in% duplicateSubjectIds), ]
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, paste("Removed subjects in both cohorts"))
-    )
-  } else if (createStudyPopulationArgs$removeDuplicateSubjects == "keep first") {
-    message("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
-    if (nrow(population) > 1) {
-      population <- population |>
-        arrange(.data$personSeqId, .data$cohortStartDate)
-      # Remove ties:
-      idx <- fastDuplicated(population, c("personSeqId", "cohortStartDate"))
-      # If duplicate, then we must remove both things that are a tie:
-      idx[seq_len(length(idx) - 1)] <- idx[seq_len(length(idx) - 1)] | idx[seq_len(length(idx))[-1]]
-      if (all(idx)) {
-        warning("All cohort entries are ties, with same subject ID and cohort start date")
-      }
-      population <- population[!idx, ]
-      # Keeping first:
-      idx <- fastDuplicated(population, "personSeqId")
-      population <- population[!idx, ]
-    }
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, paste("Restricting duplicate subjects to first cohort"))
-    )
-  }
-
-  if (createStudyPopulationArgs$washoutPeriod) {
-    message(paste("Requiring", createStudyPopulationArgs$washoutPeriod, "days of observation prior index date"))
-    population <- population |>
-      filter(.data$daysFromObsStart >= createStudyPopulationArgs$washoutPeriod)
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
-      "At least",
-      createStudyPopulationArgs$washoutPeriod,
-      "days of observation prior"
-    )))
-  }
   if (createStudyPopulationArgs$removeSubjectsWithPriorOutcome) {
     if (is.null(outcomeId)) {
       message("No outcome specified so skipping removing people with prior outcomes")

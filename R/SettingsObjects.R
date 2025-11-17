@@ -176,6 +176,12 @@ AbstractSerializableSettings <- R6Class(
 #' @details
 #' Create an object defining the parameter values.
 #'
+#' The `removeduplicateSubjects` argument can have one of the following values:
+#'
+#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
+#' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
+#' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
+#'
 #' @param studyStartDate  A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate  A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'. Important: the study end data is also used to truncate risk windows, meaning no outcomes beyond the study end date will be considered.
 #' @param firstExposureOnly  Should only the first exposure per subject be included? Note that this is typically done in the createStudyPopulation() function, but can already be done here for efficiency reasons.
@@ -253,10 +259,6 @@ GetDbCohortMethodDataArgs <- R6Class(
 #' @details
 #' Create an object defining the parameter values.
 #'
-#' @param firstExposureOnly  Should only the first exposure per subject be included?
-#' @param restrictToCommonPeriod  Restrict the analysis to the period when both exposures are observed?
-#' @param washoutPeriod  The minimum required continuous observation time prior to index date for a person to be included in the cohort.
-#' @param removeDuplicateSubjects  Remove subjects that are in both the target and comparator cohort? See details for allowed values.
 #' @param removeSubjectsWithPriorOutcome  Remove subjects that have the outcome prior to the risk window start?
 #' @param priorOutcomeLookback  How many days should we look back when identifying prior outcomes?
 #' @param minDaysAtRisk  The minimum required number of days at risk. Risk windows with fewer days than this number are removed from the analysis.
@@ -271,11 +273,7 @@ GetDbCohortMethodDataArgs <- R6Class(
 #' An object of type `CreateStudyPopulationArgs`.
 #'
 #' @export
-createCreateStudyPopulationArgs <- function(firstExposureOnly = FALSE,
-                                            restrictToCommonPeriod = FALSE,
-                                            washoutPeriod = 0,
-                                            removeDuplicateSubjects = "keep all",
-                                            removeSubjectsWithPriorOutcome = TRUE,
+createCreateStudyPopulationArgs <- function(removeSubjectsWithPriorOutcome = TRUE,
                                             priorOutcomeLookback = 99999,
                                             minDaysAtRisk = 1,
                                             maxDaysAtRisk = 99999,
@@ -295,10 +293,6 @@ CreateStudyPopulationArgs <- R6Class(
   "CreateStudyPopulationArgs",
   inherit = AbstractSerializableSettings,
   public = list(
-    firstExposureOnly = NULL,
-    restrictToCommonPeriod = NULL,
-    washoutPeriod = NULL,
-    removeDuplicateSubjects = NULL,
     removeSubjectsWithPriorOutcome = NULL,
     priorOutcomeLookback = NULL,
     minDaysAtRisk = NULL,
@@ -310,10 +304,6 @@ CreateStudyPopulationArgs <- R6Class(
     censorAtNewRiskWindow = NULL,
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
-      checkmate::assertLogical(self$firstExposureOnly, len = 1, add = errorMessages)
-      checkmate::assertLogical(self$restrictToCommonPeriod, len = 1, add = errorMessages)
-      checkmate::assertInt(self$washoutPeriod, lower = 0, add = errorMessages)
-      checkmate::assertChoice(self$removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
       checkmate::assertLogical(self$removeSubjectsWithPriorOutcome, len = 1, add = errorMessages)
       checkmate::assertInt(self$priorOutcomeLookback, lower = 0, add = errorMessages)
       checkmate::assertInt(self$minDaysAtRisk, lower = 0, add = errorMessages)

@@ -5,10 +5,6 @@
 \title{Create a parameter object for the function \code{\link[=createStudyPopulation]{createStudyPopulation()}}}
 \usage{
 createCreateStudyPopulationArgs(
-  firstExposureOnly = FALSE,
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0,
-  removeDuplicateSubjects = "keep all",
   removeSubjectsWithPriorOutcome = TRUE,
   priorOutcomeLookback = 99999,
   minDaysAtRisk = 1,
@@ -21,14 +17,6 @@ createCreateStudyPopulationArgs(
 )
 }
 \arguments{
-\item{firstExposureOnly}{Should only the first exposure per subject be included?}
-
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both exposures are observed?}
-
-\item{washoutPeriod}{The minimum required continuous observation time prior to index date for a person to be included in the cohort.}
-
-\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator cohort? See details for allowed values.}
-
 \item{removeSubjectsWithPriorOutcome}{Remove subjects that have the outcome prior to the risk window start?}
 
 \item{priorOutcomeLookback}{How many days should we look back when identifying prior outcomes?}

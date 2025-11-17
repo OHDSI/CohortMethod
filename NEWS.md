@@ -40,6 +40,13 @@ Changes:
 
 16. Added a vignette showing the results schema.
 
+17. Added ability to restrict to a nesting cohort (e.g. restricting drug exposurs to a specific indication). See the `nestingCohortId` argument in the `createGetDbCohortMethodDataArgs()` function and the `nestingCohortDatabaseSchema` and `nestingCohortTable` arguments in the `getDbCohortMethodData()` function.
+
+18. All restrictions on the study populations are now step-by-step recorded in the attrition table.
+
+19. Dropped the `firstExposureOnly`, `restrictToCommonPeriod`, `washoutPeriod`, and `removeDuplicateSubjects` arguments from `CreateStudyPopulationArgs`. These were duplicated from `getDbCohortMethodData()`, and we'll keep them only there from now on.
+
+
 
 
 

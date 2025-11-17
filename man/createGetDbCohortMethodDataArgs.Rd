@@ -43,4 +43,11 @@ Create a parameter object for the function \code{\link[=getDbCohortMethodData]{g
 }
 \details{
 Create an object defining the parameter values.
+
+The \code{removeduplicateSubjects} argument can have one of the following values:
+\itemize{
+\item \code{"keep all"}: Do not remove subjects that appear in both target and comparator cohort
+\item \code{"keep first"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
+\item \code{"remove all"}: Remove subjects that appear in both target and comparator cohort completely from the analysis."
+}
 }
