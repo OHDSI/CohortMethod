@@ -11,6 +11,7 @@ createGetDbCohortMethodDataArgs(
   removeDuplicateSubjects = "keep all",
   restrictToCommonPeriod = FALSE,
   washoutPeriod = 0,
+  nestingCohortId = NULL,
   maxCohortSize = 0,
   covariateSettings
 )
@@ -27,6 +28,8 @@ createGetDbCohortMethodDataArgs(
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
 
 \item{washoutPeriod}{The minimum required continuous observation time prior to index date for a person to be included in the cohort. Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.}
+
+\item{nestingCohortId}{A cohort definition ID identifying the records in the \code{nestingCohortTable} to use as nesting cohort.}
 
 \item{maxCohortSize}{If either the target or the comparator cohort is larger than this number it will be sampled to this size. maxCohortSize = 0 indicates no maximum size.}
 

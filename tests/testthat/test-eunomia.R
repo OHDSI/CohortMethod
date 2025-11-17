@@ -3,15 +3,7 @@ library(testthat)
 
 if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
-  connectionDetails <- Eunomia::getEunomiaConnectionDetails()
-  Eunomia::createCohorts(connectionDetails)
-
-  withr::defer(
-    {
-      unlink(connectionDetails$server())
-    },
-    testthat::teardown_env()
-  )
+  # Eunomia connection details set in setup.R
 
   test_that("Check installation", {
     expect_no_error(

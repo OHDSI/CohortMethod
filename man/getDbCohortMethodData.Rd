@@ -15,6 +15,8 @@ getDbCohortMethodData(
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
+  nestingCohortDatabaseSchema = cdmDatabaseSchema,
+  nestingCohortTable = "cohort",
   getDbCohortMethodDataArgs
 )
 }

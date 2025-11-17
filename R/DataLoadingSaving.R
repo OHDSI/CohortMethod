@@ -77,6 +77,8 @@ getDbCohortMethodData <- function(connectionDetails,
                                   exposureTable = "drug_era",
                                   outcomeDatabaseSchema = cdmDatabaseSchema,
                                   outcomeTable = "condition_occurrence",
+                                  nestingCohortDatabaseSchema = cdmDatabaseSchema,
+                                  nestingCohortTable = "cohort",
                                   getDbCohortMethodDataArgs) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
@@ -90,8 +92,12 @@ getDbCohortMethodData <- function(connectionDetails,
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(nestingCohortDatabaseSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(nestingCohortTable, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertR6(getDbCohortMethodDataArgs, "GetDbCohortMethodDataArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
+
+  useNestingCohort <- !is.null(getDbCohortMethodDataArgs$nestingCohortId)
 
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
@@ -112,7 +118,11 @@ getDbCohortMethodData <- function(connectionDetails,
     first_only = getDbCohortMethodDataArgs$firstExposureOnly,
     remove_duplicate_subjects = getDbCohortMethodDataArgs$removeDuplicateSubjects,
     washout_period = getDbCohortMethodDataArgs$washoutPeriod,
-    restrict_to_common_period = getDbCohortMethodDataArgs$restrictToCommonPeriod
+    restrict_to_common_period = getDbCohortMethodDataArgs$restrictToCommonPeriod,
+    use_nesting_cohort = useNestingCohort,
+    nesting_cohort_database_schema = nestingCohortDatabaseSchema,
+    nesting_cohort_table = nestingCohortTable,
+    nesting_cohort_id = getDbCohortMethodDataArgs$nestingCohortId
   )
   DatabaseConnector::executeSql(connection, renderedSql)
 

@@ -182,6 +182,7 @@ AbstractSerializableSettings <- R6Class(
 #' @param removeDuplicateSubjects  Remove subjects that are in both the target and comparator cohort? See details for allowed values.Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.
 #' @param restrictToCommonPeriod  Restrict the analysis to the period when both treatments are observed?
 #' @param washoutPeriod  The minimum required continuous observation time prior to index date for a person to be included in the cohort. Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.
+#' @param nestingCohortId  A cohort definition ID identifying the records in the `nestingCohortTable` to use as nesting cohort.
 #' @param maxCohortSize  If either the target or the comparator cohort is larger than this number it will be sampled to this size. maxCohortSize = 0 indicates no maximum size.
 #' @param covariateSettings  An object of type covariateSettings as created using the FeatureExtraction::createCovariateSettings() function, or a list of covariate settings objects.
 #'
@@ -195,6 +196,7 @@ createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             removeDuplicateSubjects = "keep all",
                                             restrictToCommonPeriod = FALSE,
                                             washoutPeriod = 0,
+                                            nestingCohortId = NULL,
                                             maxCohortSize = 0,
                                             covariateSettings) {
   args <- list()
@@ -214,6 +216,7 @@ GetDbCohortMethodDataArgs <- R6Class(
     removeDuplicateSubjects = NULL,
     restrictToCommonPeriod = NULL,
     washoutPeriod = NULL,
+    nestingCohortId = NULL,
     maxCohortSize = NULL,
     covariateSettings = NULL,
     validate = function() {
@@ -224,6 +227,7 @@ GetDbCohortMethodDataArgs <- R6Class(
       checkmate::assertChoice(self$removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
       checkmate::assertLogical(self$restrictToCommonPeriod, len = 1, add = errorMessages)
       checkmate::assertInt(self$washoutPeriod, lower = 0, add = errorMessages)
+      checkmate::assertNumeric(self$nestingCohortId, null.ok = TRUE, add = errorMessages)
       checkmate::assertInt(self$maxCohortSize, lower = 0, add = errorMessages)
       checkmate::assertList(self$covariateSettings, add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)

@@ -7,19 +7,24 @@ Changes:
 
 2. Dropped the `trimByIptw()` and `trimByPsToEquipoise()` functions. Added `equipoiseBounds` and `maxWeight` arguments to `createTrimByPsArgs()` so functionality remains.
 
-3. Dropped `matchOnPsAndCovariates()` and added a `stratificationCovariateIds` argument to `createMatchOnPsArgs()` so functionality remains.
+3. Dropped the `matchOnPsAndCovariates()` function and added a `stratificationCovariateIds` argument to `createMatchOnPsArgs()` so functionality remains.
 
-4. Dropped `stratifyByPsAndCovariates()` and added a `stratificationCovariateIds` argument to `createStratifyByPsPsArgs()` so functionality remains.
+4. Dropped the `stratifyByPsAndCovariates()` function and added a `stratificationCovariateIds` argument to `createStratifyByPsPsArgs()` so functionality remains.
 
 5. Renamed `createStudyPopArgs` argument of `createCmAnalysis()` to `createStudyPopulationArgs` for consistency.
 
-6. Dropping deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`.
+6. Dropping the deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`. The amount of attrition is not a good measure of generalizability. Use the generalizability diagnostic instead, which measures the similarity between the target and analytic cohort characteristcs.
 
 7. Changed the default outcome model type from 'logistic' to 'cox'.
 
-8. Added support for grid-with-gradient likelihood profiles.
+8. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
+    
+    ```r
+    profileGrid = seq(log(0.1), log(10), length.out = 8),
+    profileBounds = NULL
+    ```                                  
 
-9. Now performing empirical calibration *after* removing estimates that fail diagnostics. 
+9. Now performing empirical calibration *after* removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.
 
 10. If high correlation is detected when fitting a propensity model, but `stopOnError = FALSE`, the export will show the highly correlated covariates in the model with extreme coefficients.
 
@@ -27,13 +32,16 @@ Changes:
 
 12. Added citation to the HADES paper to the package.
 
-13. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. `OhdsiShinyAppBuilder` should be used instead.
+13. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. The `OhdsiShinyAppBuilder` package should be used directly instead.
 
 14. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
 
 15. Correcting the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
 
 16. Added a vignette showing the results schema.
+
+
+
 
 CohortMethod 5.5.2
 ==================

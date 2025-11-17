@@ -1,6 +1,4 @@
 /************************************************************************
-@file CreateCohorts.sql
-
 Copyright 2025 Observational Health Data Sciences and Informatics
 
 This file is part of CohortMethod
@@ -29,6 +27,10 @@ limitations under the License.
 {DEFAULT @washout_period = 0}
 {DEFAULT @remove_duplicate_subjects = 'keep all'}
 {DEFAULT @restrict_to_common_period = FALSE}
+{DEFAULT @use_nesting_cohort = FALSE}
+{DEFAULT @nesting_cohort_database_schema = 'CDM_SIM'}
+{DEFAULT @nesting_cohort_table = 'cohort'}
+{DEFAULT @nesting_cohort_id = ''}
 
 DROP TABLE IF EXISTS #cohort_person;
 
@@ -69,6 +71,13 @@ FROM (
 		cohort_end_date
 	FROM (
 }
+{@use_nesting_cohort} ? {
+	SELECT tmp.subject_id,
+		tmp.cohort_definition_id,
+	  tmp.cohort_start_date,
+		tmp.cohort_end_date
+	FROM (
+}
 {@first_only} ? {
 	SELECT subject_id,
 		cohort_definition_id,
@@ -77,7 +86,6 @@ FROM (
 	FROM (
 }
 {@remove_duplicate_subjects == 'keep first'} ? {
-
 		SELECT subject_id,
 		  cohort_definition_id,
 		  cohort_start_date,
@@ -97,17 +105,17 @@ FROM (
 		drug_era_end_date AS cohort_end_date
 	FROM  @exposure_database_schema.@exposure_table exposure_table
 	{@remove_duplicate_subjects == 'remove all'} ? {
-	INNER JOIN (	
+	INNER JOIN (
 		SELECT person_id,
 			COUNT(DISTINCT(drug_concept_id)) drug_count
 		FROM @exposure_database_schema.@exposure_table
 		WHERE drug_concept_id IN (@target_id, @comparator_id)
 		GROUP BY person_id
-	) temp
+	) tmp
 	ON
 		exposure_table.person_id = temp.person_id
 	WHERE
-		temp.drug_count = 1
+		tmp.drug_count = 1
 		AND
 	} : {
 	WHERE
@@ -136,15 +144,23 @@ FROM (
 		cohort_definition_id IN (@target_id, @comparator_id)
 }
 {@remove_duplicate_subjects == 'keep first'} ? {
-	) temp1
-  ) temp2
+	) tmp
+  ) tmp
   WHERE cohort_number = 1
 }
-	) raw_cohorts
+	) tmp
 {@first_only} ? {
   GROUP BY subject_id,
 	cohort_definition_id
-	) first_only
+	) tmp
+}
+{@use_nesting_cohort} ? {
+  INNER JOIN @nesting_cohort_database_schema.@nesting_cohort_table nesting
+    ON tmp.subject_id = nesting.subject_id
+      AND tmp.cohort_start_date >= nesting.cohort_start_date
+      AND tmp.cohort_start_date <= nesting.cohort_end_date
+  WHERE nesting.cohort_definition_id = @nesting_cohort_id
+  ) within_nesting
 }
 {@restrict_to_common_period} ? {
   WHERE cohort_start_date >= (
