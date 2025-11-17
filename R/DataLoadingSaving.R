@@ -104,7 +104,7 @@ getDbCohortMethodData <- function(connectionDetails,
 
   message("Constructing target and comparator cohorts")
   renderedSql <- SqlRender::loadRenderTranslateSql(
-    sqlFilename = "CreateCohorts.sql",
+    sqlFilename = "CreateOrCountCohorts.sql",
     packageName = "CohortMethod",
     dbms = connectionDetails$dbms,
     tempEmulationSchema = tempEmulationSchema,
@@ -122,21 +122,47 @@ getDbCohortMethodData <- function(connectionDetails,
     use_nesting_cohort = useNestingCohort,
     nesting_cohort_database_schema = nestingCohortDatabaseSchema,
     nesting_cohort_table = nestingCohortTable,
-    nesting_cohort_id = getDbCohortMethodDataArgs$nestingCohortId
+    nesting_cohort_id = getDbCohortMethodDataArgs$nestingCohortId,
+    action = "CREATE"
   )
   DatabaseConnector::executeSql(connection, renderedSql)
 
-  if (getDbCohortMethodDataArgs$maxCohortSize != 0) {
-    outList <- downSample(
-      connection = connection,
-      tempEmulationSchema = tempEmulationSchema,
-      targetId = targetId,
-      maxCohortSize = getDbCohortMethodDataArgs$maxCohortSize
-    )
-    sampled <- outList$sampled
-    preSampleCounts <- outList$preSampleCounts
+  renderedSql <- SqlRender::loadRenderTranslateSql(
+    sqlFilename = "CreateOrCountCohorts.sql",
+    packageName = "CohortMethod",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    cdm_database_schema = cdmDatabaseSchema,
+    exposure_database_schema = exposureDatabaseSchema,
+    exposure_table = exposureTable,
+    target_id = targetId,
+    comparator_id = comparatorId,
+    study_start_date = getDbCohortMethodDataArgs$studyStartDate,
+    study_end_date = getDbCohortMethodDataArgs$studyEndDate,
+    first_only = getDbCohortMethodDataArgs$firstExposureOnly,
+    remove_duplicate_subjects = getDbCohortMethodDataArgs$removeDuplicateSubjects,
+    washout_period = getDbCohortMethodDataArgs$washoutPeriod,
+    restrict_to_common_period = getDbCohortMethodDataArgs$restrictToCommonPeriod,
+    use_nesting_cohort = useNestingCohort,
+    nesting_cohort_database_schema = nestingCohortDatabaseSchema,
+    nesting_cohort_table = nestingCohortTable,
+    nesting_cohort_id = getDbCohortMethodDataArgs$nestingCohortId,
+    action = "COUNT"
+  )
+  attrition <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
+  attrition <- pivotAttrition(attrition, targetId)
+
+  sampled <- downSample(
+    attrition,
+    connection = connection,
+    tempEmulationSchema = tempEmulationSchema,
+    targetId = targetId,
+    maxCohortSize = getDbCohortMethodDataArgs$maxCohortSize
+  )
+  if (sampled) {
+    cohortTable <- "#cohort_sample"
   } else {
-    sampled <- FALSE
+    cohortTable <- "#cohort_person"
   }
 
   message("Fetching cohorts from server")
@@ -147,7 +173,7 @@ getDbCohortMethodData <- function(connectionDetails,
     dbms = connectionDetails$dbms,
     tempEmulationSchema = tempEmulationSchema,
     target_id = targetId,
-    sampled = sampled
+    cohortTable = cohortTable
   )
   cohorts <- DatabaseConnector::querySql(
     connection = connection,
@@ -168,98 +194,20 @@ getDbCohortMethodData <- function(connectionDetails,
   } else if (sum(cohorts$treatment == 0) == 0) {
     warning("Comparator cohort is empty")
   }
+  if (sampled) {
+    attrition <- attrition |>
+      bind_rows(getCounts(cohorts, "Random sample"))
+  }
   metaData <- list(
     targetId = targetId,
     comparatorId = comparatorId,
     studyStartDate = getDbCohortMethodDataArgs$studyStartDate,
-    studyEndDate = getDbCohortMethodDataArgs$studyEndDate
+    studyEndDate = getDbCohortMethodDataArgs$studyEndDate,
+    attrition = attrition
   )
-  if (getDbCohortMethodDataArgs$firstExposureOnly ||
-      getDbCohortMethodDataArgs$removeDuplicateSubjects != "keep all" ||
-      getDbCohortMethodDataArgs$washoutPeriod != 0) {
-    rawCountSql <- SqlRender::loadRenderTranslateSql(
-      sqlFilename = "CountOverallExposedPopulation.sql",
-      packageName = "CohortMethod",
-      dbms = connectionDetails$dbms,
-      tempEmulationSchema = tempEmulationSchema,
-      cdm_database_schema = cdmDatabaseSchema,
-      exposure_database_schema = exposureDatabaseSchema,
-      exposure_table = tolower(exposureTable),
-      target_id = targetId,
-      comparator_id = comparatorId,
-      study_start_date = getDbCohortMethodDataArgs$studyStartDate,
-      study_end_date = getDbCohortMethodDataArgs$studyEndDate
-    )
-    rawCount <- DatabaseConnector::querySql(
-      connection = connection,
-      sql = rawCountSql,
-      snakeCaseToCamelCase = TRUE
-    )
-    if (nrow(rawCount) == 0) {
-      counts <- tibble(
-        description = "Original cohorts",
-        targetPersons = 0,
-        comparatorPersons = 0,
-        targetExposures = 0,
-        comparatorExposures = 0
-      )
-    } else {
-      counts <- tibble(
-        description = "Original cohorts",
-        targetPersons = rawCount$exposedCount[rawCount$treatment == 1],
-        comparatorPersons = rawCount$exposedCount[rawCount$treatment == 0],
-        targetExposures = rawCount$exposureCount[rawCount$treatment == 1],
-        comparatorExposures = rawCount$exposureCount[rawCount$treatment == 0]
-      )
-    }
-    metaData$attrition <- counts
-    label <- c()
-    if (getDbCohortMethodDataArgs$firstExposureOnly) {
-      label <- c(label, "first exp. only")
-    }
-    if (getDbCohortMethodDataArgs$removeDuplicateSubjects == "remove all") {
-      label <- c(label, "removed subs in both cohorts")
-    } else if (getDbCohortMethodDataArgs$removeDuplicateSubjects == "keep first") {
-      label <- c(label, "first cohort only")
-    }
-
-    if (getDbCohortMethodDataArgs$restrictToCommonPeriod) {
-      label <- c(label, "restrict to common period")
-    }
-    if (getDbCohortMethodDataArgs$washoutPeriod) {
-      label <- c(label, paste(getDbCohortMethodDataArgs$washoutPeriod, "days of obs. prior"))
-    }
-    label <- paste(label, collapse = " & ")
-    substring(label, 1) <- toupper(substring(label, 1, 1))
-    if (sampled) {
-      preSampleCounts$description <- label
-      metaData$attrition <-
-        rbind(metaData$attrition, preSampleCounts)
-      metaData$attrition <-
-        rbind(metaData$attrition, getCounts(cohorts, "Random sample"))
-    } else {
-      metaData$attrition <-
-        rbind(metaData$attrition, getCounts(cohorts, label))
-    }
-  } else {
-    if (sampled) {
-      preSampleCounts$description <- "Original cohorts"
-      metaData$attrition <- preSampleCounts
-      metaData$attrition <- rbind(
-        metaData$attrition,
-        getCounts(cohorts, "Random sample")
-      )
-    } else {
-      metaData$attrition <- getCounts(cohorts, "Original cohorts")
-    }
-  }
   delta <- Sys.time() - start
   message("Fetching cohorts took ", signif(delta, 3), " ", attr(delta, "units"))
-  if (sampled) {
-    cohortTable <- "#cohort_sample"
-  } else {
-    cohortTable <- "#cohort_person"
-  }
+
   covariateSettings <- handleCohortCovariateBuilders(
     covariateSettings = getDbCohortMethodDataArgs$covariateSettings,
     exposureDatabaseSchema = exposureDatabaseSchema,
@@ -325,75 +273,43 @@ getDbCohortMethodData <- function(connectionDetails,
   return(covariateData)
 }
 
-downSample <- function(connection,
+downSample <- function(attrition,
+                       connection,
                        tempEmulationSchema,
                        targetId,
                        maxCohortSize) {
-  sampled <- FALSE
-  renderedSql <- SqlRender::loadRenderTranslateSql(
-    "CountCohorts.sql",
-    packageName = "CohortMethod",
-    dbms = connection@dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    target_id = targetId
-  )
-  counts <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
-  ParallelLogger::logDebug("Pre-sample total row count is ", sum(counts$rowCount))
-  preSampleCounts <- bind_cols(
-    countPreSample(id = 1, counts = counts),
-    countPreSample(id = 0, counts = counts)
-  )
-  if (preSampleCounts$targetExposures > maxCohortSize) {
-    message(
-      "Downsampling target cohort from ", preSampleCounts$targetExposures,
-      " to ", maxCohortSize
-    )
-    sampled <- TRUE
-  }
-  if (preSampleCounts$comparatorExposures > maxCohortSize) {
-    message(
-      "Downsampling comparator cohort from ", preSampleCounts$comparatorExposures,
-      " to ", maxCohortSize
-    )
-    sampled <- TRUE
-  }
-  if (sampled) {
-    renderedSql <- SqlRender::loadRenderTranslateSql(
-      "SampleCohorts.sql",
-      packageName = "CohortMethod",
-      dbms = connection@dbms,
-      tempEmulationSchema = tempEmulationSchema,
-      max_cohort_size = maxCohortSize
-    )
-    DatabaseConnector::executeSql(connection, renderedSql)
-  }
-  return(list(sampled = sampled, preSampleCounts = preSampleCounts))
-}
-
-countPreSample <- function(id, counts) {
-  preSampleCounts <- tibble(dummy = 0)
-  idx <- which(counts$treatment == id)
-
-  switch(id + 1,
-    {
-      personsCol <- "comparatorPersons"
-      exposuresCol <- "comparatorExposures"
-    },
-    {
-      personsCol <- "targetPersons"
-      exposuresCol <- "targetExposures"
+  if (maxCohortSize == 0) {
+    return(FALSE)
+  } else {
+    sampled <- FALSE
+    preSampleCounts <- attrition |>
+      tail(1)
+    if (preSampleCounts$targetExposures > maxCohortSize) {
+      message(
+        "Downsampling target cohort from ", preSampleCounts$targetExposures,
+        " to ", maxCohortSize
+      )
+      sampled <- TRUE
     }
-  )
-
-  preSampleCounts[personsCol] <- 0
-  preSampleCounts[exposuresCol] <- 0
-
-  if (length(idx) != 0) {
-    preSampleCounts[personsCol] <- counts$personCount[idx]
-    preSampleCounts[exposuresCol] <- counts$rowCount[idx]
+    if (preSampleCounts$comparatorExposures > maxCohortSize) {
+      message(
+        "Downsampling comparator cohort from ", preSampleCounts$comparatorExposures,
+        " to ", maxCohortSize
+      )
+      sampled <- TRUE
+    }
+    if (sampled) {
+      renderedSql <- SqlRender::loadRenderTranslateSql(
+        "SampleCohorts.sql",
+        packageName = "CohortMethod",
+        dbms = connection@dbms,
+        tempEmulationSchema = tempEmulationSchema,
+        max_cohort_size = maxCohortSize
+      )
+      DatabaseConnector::executeSql(connection, renderedSql)
+    }
+    return(sampled)
   }
-  preSampleCounts$dummy <- NULL
-  return(preSampleCounts)
 }
 
 handleCohortCovariateBuilders <- function(covariateSettings,
@@ -405,7 +321,7 @@ handleCohortCovariateBuilders <- function(covariateSettings,
   for (i in 1:length(covariateSettings)) {
     object <- covariateSettings[[i]]
     if ("covariateCohorts" %in% names(object) &&
-      is.null(object$covariateCohortTable)) {
+        is.null(object$covariateCohortTable)) {
       object$covariateCohortDatabaseSchema <- exposureDatabaseSchema
       object$covariateCohortTable <- exposureTable
       covariateSettings[[i]] <- object
@@ -414,4 +330,25 @@ handleCohortCovariateBuilders <- function(covariateSettings,
   return(covariateSettings)
 }
 
-
+pivotAttrition <- function(attrition, targetId) {
+  attrition <- inner_join(
+    attrition |>
+      filter(cohortDefinitionId == targetId) |>
+      select(
+        description = "description",
+        targetPersons = "persons",
+        targetExposures = "exposures",
+        "seqId"
+      ),
+    attrition |>
+      filter(cohortDefinitionId != targetId) |>
+      select(
+        comparatorPersons = "persons",
+        comparatorExposures = "exposures",
+        "seqId"
+      ),
+    by = join_by("seqId")
+  ) |>
+    select("description", "targetPersons", "comparatorPersons", "targetExposures", "comparatorExposures")
+  return(attrition)
+}

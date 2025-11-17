@@ -1,7 +1,7 @@
 {DEFAULT @target_id = ''}
-{DEFAULT @sampled = FALSE}
+{DEFAULT @cohortTable = 'cohort'}
 
--- Storing person_id as a VARCHAR because R doesn't support 64-bit integers. Generating 
+-- Storing person_id as a VARCHAR because R doesn't support 64-bit integers. Generating
 -- a proper integer (person_seq_id) on the fly for easy joining, etc.
 SELECT row_id,
 	person_seq_id,
@@ -11,21 +11,13 @@ SELECT row_id,
 	days_from_obs_start,
 	days_to_cohort_end,
 	days_to_obs_end
-{@sampled} ? {
-FROM #cohort_sample cohort
-} : {
-FROM #cohort_person cohort
-}
+FROM @cohortTable cohort
 INNER JOIN (
 	SELECT subject_id,
 		ROW_NUMBER() OVER (ORDER BY subject_id) AS person_seq_id
 	FROM (
 		SELECT DISTINCT subject_id
-{@sampled} ? {
-		FROM #cohort_sample
-} : {
-		FROM #cohort_person
-}
+    FROM @cohortTable cohort
 		) tmp
 	) unique_ids
 	ON cohort.subject_id = unique_ids.subject_id

@@ -3,6 +3,32 @@ library(CohortMethod)
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 Eunomia::createCohorts(connectionDetails)
 
+
+
+covSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE)
+cmd1 <- getDbCohortMethodData(
+  connectionDetails = connectionDetails,
+  cdmDatabaseSchema = "main",
+  targetId = 1,
+  comparatorId = 2,
+  outcomeIds = c(3, 4),
+  exposureDatabaseSchema = "main",
+  outcomeDatabaseSchema = "main",
+  exposureTable = "cohort",
+  outcomeTable = "cohort",
+  getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+    covariateSettings = covSettings,
+    washoutPeriod = 365,
+    restrictToCommonPeriod = TRUE,
+    firstExposureOnly = TRUE,
+    studyStartDate = "20000101",
+    studyEndDate = "2020121",
+    removeDuplicateSubjects = "keep first"
+  )
+)
+
+
+
 outputFolder <- tempfile(pattern = "cmData")
 
 tcos1 <- createTargetComparatorOutcomes(

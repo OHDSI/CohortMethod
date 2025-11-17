@@ -100,10 +100,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     expect_equal(nrow(collect(cmd$outcomes)), 3109)
     expect_equal(ncol(collect(cmd$outcomes)), 3)
-
   })
-
-
 
   test_that("studyStartDate", {
     # pattern: ^[12][0-9]{3}[01][0-9][0-3][0-9]
@@ -125,6 +122,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
         studyStartDate = "20000601"
       )
     )
+
+    meta <- attr(cmd, "metaData")
+    expect_identical(nrow(meta$attrition), 2L)
+    expect_true("Restrict to study period" %in% meta$attrition$description)
+
     minStartDate <- cmd$cohorts |>
       summarise(minStartDate = min(cohortStartDate, na.rm = TRUE)) |>
       pull()
@@ -206,6 +208,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
         studyEndDate = "20230822"
       )
     )
+    meta <- attr(cmd, "metaData")
+    expect_identical(nrow(meta$attrition), 2L)
+    expect_true("Restrict to study period" %in% meta$attrition$description)
+
     maxEndDate <- cmd$cohorts |>
       collect() |>
       summarise(maxEndDate = max(cohortStartDate + daysToCohortEnd, na.rm = TRUE)) |>
@@ -320,7 +326,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     meta2 <- attr(cmd2, "metaData")
-    expect_true("First exp. only" %in% meta2$attrition$description)
+    expect_true("First exposure only" %in% meta2$attrition$description)
     expect_identical(nrow(meta2$attrition), 2L)
 
     cohorts2 <- cmd2$cohorts |>
@@ -388,7 +394,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     meta2 <- attr(cmd2, "metaData")
     expect_identical(nrow(meta2$attrition), 2L)
-    expect_true("First cohort only" %in% meta2$attrition$description)
+    expect_true("Keep first when in both cohorts" %in% meta2$attrition$description)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
@@ -423,7 +429,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     meta3 <- attr(cmd3, "metaData")
     expect_identical(nrow(meta3$attrition), 2L)
-    expect_true("Removed subs in both cohorts" %in% meta3$attrition$description)
+    expect_true("Remove subjects in both cohorts" %in% meta3$attrition$description)
 
     cohorts3 <- cmd3$cohorts |>
       collect() |>
@@ -508,7 +514,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     meta2 <- attr(cmd2, "metaData")
     expect_identical(nrow(meta2$attrition), 2L)
-    expect_true("common period" %in% meta2$attrition$description)
+    expect_true("Restrict to common period" %in% meta2$attrition$description)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
@@ -579,7 +585,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     meta2 <- attr(cmd2, "metaData")
     expect_identical(nrow(meta2$attrition), 2L)
-    expect_true("365 days of obs. prior" %in% meta2$attrition$description)
+    expect_true("365 days of prior observation" %in% meta2$attrition$description)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
@@ -671,7 +677,6 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     expect_equal(nrow(cohorts2), 2 * 100)
 
-
     expect_error(
       getDbCohortMethodData(
         connectionDetails = connectionDetails,
@@ -745,7 +750,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     meta2 <- attr(cmd2, "metaData")
     expect_identical(nrow(meta2$attrition), 2L)
-    expect_true("Nesting cohort" %in% meta2$attrition$description)
+    expect_true("Restrict to nesting cohort" %in% meta2$attrition$description)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
@@ -794,8 +799,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     meta2 <- attr(cmd2, "metaData")
-    expect_identical(nrow(meta2$attrition), 2L)
-    expect_true("Nesting cohort" %in% meta2$attrition$description)
+    expect_identical(nrow(meta2$attrition), 7L)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
