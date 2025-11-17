@@ -145,12 +145,12 @@ exportToCsv <- function(outputFolder,
     maxCores = maxCores
   )
 
-  # exportDiagnosticsSummary(
-  #   outputFolder = outputFolder,
-  #   exportFolder = exportFolder,
-  #   databaseId = databaseId,
-  #   cmDiagnosticThresholds = cmDiagnosticThresholds
-  # )
+  exportDiagnosticsSummary(
+    outputFolder = outputFolder,
+    exportFolder = exportFolder,
+    databaseId = databaseId,
+    cmDiagnosticThresholds = cmDiagnosticThresholds
+  )
 
   # Add all to zip file -------------------------------------------------------------------------------
   message("Adding results to zip file")

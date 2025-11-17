@@ -225,11 +225,10 @@ runCmAnalyses <- function(connectionDetails,
       }
     }
   }
-  if (!file.exists(outputFolder)) {
-    dir.create(outputFolder)
+  if (!dir.exists(outputFolder)) {
+    dir.create(outputFolder, recursive = TRUE)
   }
   saveRDS(cmAnalysesSpecifications, cmAnalysesSpecificationsFile)
-  saveRDS(targetComparatorOutcomesList, file.path(outputFolder, "targetComparatorOutcomesList.rds"))
   referenceTable <- createReferenceTable(
     cmAnalysisList = cmAnalysesSpecifications$cmAnalysisList,
     targetComparatorOutcomesList = cmAnalysesSpecifications$targetComparatorOutcomesList,
@@ -379,16 +378,13 @@ runCmAnalyses <- function(connectionDetails,
         )[[1]]
         createPsArgs = analysisRow$createPsArgs
         createPsArgs$control$threads <- multiThreadingSettings$psCvThreads
-        args <- list(
-          createPsArgs = createPsArgs
-        )
         task <- list(
           cohortMethodDataFile = file.path(
             outputFolder,
             refRow$cohortMethodDataFile
           ),
           studyPopFile = file.path(outputFolder, refRow$studyPopFile),
-          args = args,
+          args = createPsArgs,
           psFile = file.path(outputFolder, refRow$psFile)
         )
         return(task)
@@ -1689,8 +1685,8 @@ summarizeResults <- function(referenceTable,
                              cmDiagnosticThresholds) {
   subset <- referenceTable |>
     filter(.data$outcomeModelFile != "")
-  subset <- addMaxSdm(subset)
-  subset <- addEquipoise(subset)
+  subset <- addMaxSdm(subset, outputFolder)
+  subset <- addEquipoise(subset, outputFolder)
   results <- vector("list", nrow(subset))
   interActionResults <- list()
   pb <- txtProgressBar(style = 3)
@@ -1910,7 +1906,7 @@ summarizeResults <- function(referenceTable,
   saveRDS(resultsSummary, mainFileName)
 }
 
-addMaxSdm <- function(referenceTable) {
+addMaxSdm <- function(referenceTable, outputFolder) {
   maxOrNa <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) {
@@ -1943,25 +1939,37 @@ addMaxSdm <- function(referenceTable) {
     filter(.data$balanceFile != "") |>
     distinct(.data$balanceFile) |>
     pull()
-  maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) |>
-    select("balanceFile", "maxSdm")
+  if (length(balanceFiles) == 0) {
+    maxSdm <- tibble(balanceFile = "NA", maxSdm = NA)
+  } else {
+    maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) |>
+      select("balanceFile", "maxSdm")
+  }
   sharedBalanceFiles <- referenceTable |>
     filter(.data$sharedBalanceFile != "") |>
     distinct(.data$sharedBalanceFile) |>
     pull()
-  sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) |>
-    rename(sharedBalanceFile = "balanceFile",
-           sharedMaxSdm = "maxSdm")
+  if (length(sharedBalanceFiles) == 0) {
+    sharedMaxSdm <- tibble(sharedBalanceFile = "NA",
+                           sharedMaxSdm = NA,
+                           maxTargetSdm = NA,
+                           maxComparatorSdm = NA,
+                           maxTargetComparatorSdm = NA)
+  } else {
+    sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) |>
+      rename(sharedBalanceFile = "balanceFile",
+             sharedMaxSdm = "maxSdm")
+  }
   referenceTable <- referenceTable |>
     left_join(maxSdm,by = join_by(balanceFile)) |>
     left_join(sharedMaxSdm, by = join_by(sharedBalanceFile))
   return(referenceTable)
 }
 
-addEquipoise <- function(referenceTable) {
-  getEquipoise <- function(sharedPsFile) {
-    ps <- readRDS(file.path(outputFolder, sharedPsFile))
-    row <- tibble(sharedPsFile = !!sharedPsFile,
+addEquipoise <- function(referenceTable, outputFolder) {
+  getEquipoise <- function(psFile) {
+    ps <- readRDS(file.path(outputFolder, psFile))
+    row <- tibble(psFile = !!psFile,
                   equipoise = computeEquipoise(ps))
     return(row)
   }
@@ -1970,7 +1978,8 @@ addEquipoise <- function(referenceTable) {
     distinct(.data$sharedPsFile) |>
     pull()
   if (length(sharedPsFiles) > 0) {
-    sharedEquipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise))
+    sharedEquipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise)) |>
+      rename(sharedPsFile = "psFile")
     referenceTable <- referenceTable |>
       left_join(sharedEquipoise, by = join_by(sharedPsFile))
   } else {
