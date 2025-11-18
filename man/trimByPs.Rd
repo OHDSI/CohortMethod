@@ -4,12 +4,12 @@
 \alias{trimByPs}
 \title{Trim persons by propensity score}
 \usage{
-trimByPs(population, trimyByPsArgs)
+trimByPs(population, trimByPsArgs)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}
 
-\item{trimyByPsArgs}{An object of type \code{TrimyByPsArgs} as created by the
+\item{trimByPsArgs}{An object of type \code{trimByPsArgs} as created by the
 \code{\link[=createTrimByPsArgs]{createTrimByPsArgs()}} function.}
 }
 \value{
@@ -30,9 +30,15 @@ The data frame should have the following three columns:
 rowId <- 1:2000
 treatment <- rep(0:1, each = 1000)
 propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
-data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result1 <- trimByPs(data, createTrimyByPsArgs(trimFraction = 0.05))
-result2 <- trimByPs(data, createTrimyByPsArgs(equipoiseBounds = c(0.3, 0.7)))
-result3 <- trimByPs(data, createTrimyByPsArgs(maxWeight = 10))
+iptw <- ifelse(treatment == 1,
+               mean(treatment == 1) / propensityScore,
+               mean(treatment == 0) / (1 - propensityScore))
+data <- data.frame(rowId = rowId,
+                   treatment = treatment,
+                   propensityScore = propensityScore,
+                   iptw = iptw)
+result1 <- trimByPs(data, createTrimByPsArgs(trimFraction = 0.05))
+result2 <- trimByPs(data, createTrimByPsArgs(equipoiseBounds = c(0.3, 0.7)))
+result3 <- trimByPs(data, createTrimByPsArgs(maxWeight = 10))
 
 }

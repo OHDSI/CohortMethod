@@ -46,10 +46,10 @@ Imports:
 	SqlRender (>= 1.18.0),
 	survival,
 	ParallelLogger (>= 3.4.2),
-	bit64,
 	checkmate,
 	EmpiricalCalibration,
-	zip
+	zip,
+	jsonlite
 Suggests:
 	testthat,
 	pROC,
@@ -60,7 +60,6 @@ Suggests:
 	R.utils,
 	RSQLite,
 	ResultModelManager,
-	OhdsiShinyAppBuilder,
 	markdown
 SystemRequirements: Java
 LinkingTo: Rcpp

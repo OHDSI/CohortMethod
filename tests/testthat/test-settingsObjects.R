@@ -1,3 +1,4 @@
+library(CohortMethod)
 library(testthat)
 
 test_that("GetDbCohortMethodDataArgs serialization and deserialization", {
@@ -77,7 +78,7 @@ test_that("MatchOnPsArgs serialization and deserialization", {
   settings2 <- MatchOnPsArgs$new(json = settings$toJson())
   expect_equal(settings, settings2)
 
-  settings <- createMatchOnPsArgs(stratificationCovariateIds = 1234)
+  settings <- createMatchOnPsArgs(matchCovariateIds = 1234)
   settings2 <- MatchOnPsArgs$new(json = settings$toJson())
   expect_equal(settings, settings2)
 })
@@ -99,6 +100,12 @@ test_that("ComputeCovariateBalanceArg serialization and deserialization", {
 
   settings <- createComputeCovariateBalanceArgs(
     covariateFilter = FeatureExtraction::getDefaultTable1Specifications()
+  )
+  settings2 <- ComputeCovariateBalanceArgs$new(json = settings$toJson())
+  expect_equal(settings, settings2)
+
+  settings <- createComputeCovariateBalanceArgs(
+    covariateFilter = c(1, 2, 3)
   )
   settings2 <- ComputeCovariateBalanceArgs$new(json = settings$toJson())
   expect_equal(settings, settings2)

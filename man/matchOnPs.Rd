@@ -4,13 +4,21 @@
 \alias{matchOnPs}
 \title{Match persons by propensity score}
 \usage{
-matchOnPs(population, matchOnPsArgs = createMatchOnPsArgs())
+matchOnPs(
+  population,
+  matchOnPsArgs = createMatchOnPsArgs(),
+  cohortMethodData = NULL
+)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below.}
 
 \item{matchOnPsArgs}{An object of type \code{MatchOnPsArgs} as created by the
 \code{\link[=createMatchOnPsArgs]{createMatchOnPsArgs()}} function.}
+
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}. Needed when additionally matching on
+covariate IDs.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
@@ -43,7 +51,7 @@ data <- data.frame(
 result <- matchOnPs(data, createMatchOnPsArgs(
   caliper = 0,
   maxRatio = 1,
-  stratificationColumns = "age_group")
+  matchColumns = "age_group")
 )
 
 }

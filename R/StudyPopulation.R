@@ -262,12 +262,6 @@ getCounts <- function(population, description = "") {
 #'                                         point instead of the cohorts in the `cohortMethodData` object.
 #' @param outcomeId                        The ID of the outcome. If NULL, no outcome-specific
 #'                                         transformations will be performed.
-#' @param firstExposureOnly                (logical) Should only the first exposure per subject be included?
-#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
-#'                                         cohort? See details for allowed values.
-#' @param restrictToCommonPeriod           (logical) Restrict the analysis to the period when both exposures are observed?
-#' @param washoutPeriod                    The minimum required continuous observation time prior to
-#'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
 #' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
@@ -297,10 +291,6 @@ getCounts <- function(population, description = "") {
 plotTimeToEvent <- function(cohortMethodData,
                             population = NULL,
                             outcomeId = NULL,
-                            firstExposureOnly = FALSE,
-                            restrictToCommonPeriod = FALSE,
-                            washoutPeriod = 0,
-                            removeDuplicateSubjects = "keep all",
                             minDaysAtRisk = 1,
                             riskWindowStart = 0,
                             startAnchor = "cohort start",
@@ -316,13 +306,6 @@ plotTimeToEvent <- function(cohortMethodData,
                             comparatorLabel = "Comparator",
                             title = NULL,
                             fileName = NULL) {
-  if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects) {
-      removeDuplicateSubjects <- "remove all"
-    } else {
-      removeDuplicateSubjects <- "keep all"
-    }
-  }
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(periodLength, lower = 0, add = errorMessages)
   checkmate::assertInt(numberOfPeriods, lower = 0, add = errorMessages)
@@ -343,10 +326,6 @@ plotTimeToEvent <- function(cohortMethodData,
     population = population,
     outcomeId = outcomeId,
     createStudyPopulationArgs = createCreateStudyPopulationArgs(
-      firstExposureOnly = firstExposureOnly,
-      restrictToCommonPeriod = restrictToCommonPeriod,
-      washoutPeriod = washoutPeriod,
-      removeDuplicateSubjects = removeDuplicateSubjects,
       removeSubjectsWithPriorOutcome = FALSE,
       minDaysAtRisk = minDaysAtRisk,
       riskWindowStart = riskWindowStart,
@@ -453,7 +432,7 @@ plotTimeToEvent <- function(cohortMethodData,
       ggplot2::geom_col(width = periodLength, alpha = 0.7, fill = rgb(0, 0, 0.8))
   }
   plot <- plot +
-    ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, size = 1) +
+    ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, linewidth = 1) +
     ggplot2::scale_fill_manual(values = c(
       rgb(0.8, 0, 0),
       rgb(0, 0, 0.8)
@@ -518,7 +497,7 @@ plotTimeToEvent <- function(cohortMethodData,
           y = .data$fit * 1000,
           group = .data$period
         ),
-        size = 1.5,
+        linewidth = 1.5,
         alpha = 0.8,
         data = curve
       )

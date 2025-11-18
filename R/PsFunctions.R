@@ -46,7 +46,7 @@
 #' @examples
 #' data(cohortMethodDataSimulationProfile)
 #' cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
-#' ps <- createPs(cohortMethodData)
+#' ps <- createPs(cohortMethodData, createPsArgs = createCreatePsArgs())
 #'
 #' @export
 createPs <- function(cohortMethodData,
@@ -94,13 +94,13 @@ createPs <- function(cohortMethodData,
       set.seed(0)
       targetRowIds <- population$rowId[population$treatment == 1]
       if (length(targetRowIds) > createPsArgs$maxCohortSizeForFitting) {
-        message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", createPsArgs$maxCohortSizeForFitting, " before fitting"))
         targetRowIds <- sample(targetRowIds, size = createPsArgs$maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
       comparatorRowIds <- population$rowId[population$treatment == 0]
       if (length(comparatorRowIds) > createPsArgs$maxCohortSizeForFitting) {
-        message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", maxCohortSizeForFitting, " before fitting"))
+        message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", createPsArgs$maxCohortSizeForFitting, " before fitting"))
         comparatorRowIds <- sample(comparatorRowIds, size = createPsArgs$maxCohortSizeForFitting, replace = FALSE)
         sampled <- TRUE
       }
@@ -129,11 +129,11 @@ createPs <- function(cohortMethodData,
 
       if (length(createPsArgs$includeCovariateIds) != 0) {
         covariates <- covariates |>
-          filter(.data$covariateId %in% includeCovariateIds)
+          filter(.data$covariateId %in% createPsArgs$includeCovariateIds)
       }
       if (length(createPsArgs$excludeCovariateIds) != 0) {
         covariates <- covariates |>
-          filter(!.data$covariateId %in% excludeCovariateIds)
+          filter(!.data$covariateId %in% createPsArgs$excludeCovariateIds)
       }
       filteredCovariateData <- Andromeda::andromeda(
         covariates = covariates,
@@ -342,20 +342,20 @@ getPsModel <- function(propensityScore, cohortMethodData) {
   coefficients <- coefficients[2:length(coefficients)]
   coefficients <- coefficients[coefficients != 0]
   if (length(coefficients) != 0) {
-    covariateIdIsInteger64 <- cohortMethodData$covariateRef |>
-      pull(.data$covariateId) |>
-      is("integer64")
-    if (covariateIdIsInteger64) {
-      coefficients <- tibble(
-        coefficient = coefficients,
-        covariateId = bit64::as.integer64(attr(coefficients, "names"))
-      )
-    } else {
-      coefficients <- tibble(
-        coefficient = coefficients,
-        covariateId = as.numeric(attr(coefficients, "names"))
-      )
-    }
+    # covariateIdIsInteger64 <- cohortMethodData$covariateRef |>
+    #   pull(.data$covariateId) |>
+    #   is("integer64")
+    # if (covariateIdIsInteger64) {
+    #   coefficients <- tibble(
+    #     coefficient = coefficients,
+    #     covariateId = bit64::as.integer64(attr(coefficients, "names"))
+    #   )
+    # } else {
+    coefficients <- tibble(
+      coefficient = coefficients,
+      covariateId = as.numeric(attr(coefficients, "names"))
+    )
+    # }
     covariateRef <- cohortMethodData$covariateRef |>
       collect()
     coefficients <- coefficients |>
@@ -690,7 +690,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' Use the provided propensity scores to trim subjects with extreme scores or weights.
 #'
 #' @param population     A data frame with the three columns described below
-#' @param trimyByPsArgs  An object of type `TrimyByPsArgs` as created by the
+#' @param trimByPsArgs  An object of type `trimByPsArgs` as created by the
 #'                       [createTrimByPsArgs()] function.
 #'
 #' @details
@@ -707,51 +707,55 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' rowId <- 1:2000
 #' treatment <- rep(0:1, each = 1000)
 #' propensityScore <- c(runif(1000, min = 0, max = 1), runif(1000, min = 0, max = 1))
-#' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result1 <- trimByPs(data, createTrimyByPsArgs(trimFraction = 0.05))
-#' result2 <- trimByPs(data, createTrimyByPsArgs(equipoiseBounds = c(0.3, 0.7)))
-#' result3 <- trimByPs(data, createTrimyByPsArgs(maxWeight = 10))
+#' iptw <- ifelse(treatment == 1,
+#'                mean(treatment == 1) / propensityScore,
+#'                mean(treatment == 0) / (1 - propensityScore))
+#' data <- data.frame(rowId = rowId,
+#'                    treatment = treatment,
+#'                    propensityScore = propensityScore,
+#'                    iptw = iptw)
+#' result1 <- trimByPs(data, createTrimByPsArgs(trimFraction = 0.05))
+#' result2 <- trimByPs(data, createTrimByPsArgs(equipoiseBounds = c(0.3, 0.7)))
+#' result3 <- trimByPs(data, createTrimByPsArgs(maxWeight = 10))
 #'
 #' @export
-trimByPs <- function(population, trimyByPsArgs) {
+trimByPs <- function(population, trimByPsArgs) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
-  checkmate::assertR6(trimyByPsArgs, "TrimyByPsArgs", add = errorMessages)
+  checkmate::assertR6(trimByPsArgs, "TrimByPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  if (!is.null(trimyByPsArgs$trimFraction)) {
+  if (!is.null(trimByPsArgs$trimFraction)) {
     cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
-                             trimyByPsArgs$trimFraction)
+                             trimByPsArgs$trimFraction)
     cutoffComparator <- quantile(population$propensityScore[population$treatment == 0],
-                                 1 - trimyByPsArgs$trimFraction)
+                                 1 - trimByPsArgs$trimFraction)
     population <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
                                (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
-    if (!is.null(attr(result, "metaData"))) {
+    if (!is.null(attr(population, "metaData"))) {
       attr(
-        result,
+        population,
         "metaData"
-      )$attrition <- rbind(attr(result, "metaData")$attrition, getCounts(result, paste("Trimmed by PS")))
+      )$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed by PS")))
     }
-    ParallelLogger::logDebug("Population size after trimming is ", nrow(result))
   }
 
-  if (!is.null(trimyByPsArgs$equipoiseBounds)) {
+  if (!is.null(trimByPsArgs$equipoiseBounds)) {
     temp <- computePreferenceScore(population)
-    population <- population[temp$preferenceScore >= trimyByPsArgs$equipoiseBounds[1] &
-                               temp$preferenceScore <= trimyByPsArgs$equipoiseBounds[2], ]
+    population <- population[temp$preferenceScore >= trimByPsArgs$equipoiseBounds[1] &
+                               temp$preferenceScore <= trimByPsArgs$equipoiseBounds[2], ]
     if (!is.null(attr(population, "metaData"))) {
       attr(
         population,
         "metaData"
       )$attrition <- rbind(attr(population, "metaData")$attrition, getCounts(population, paste("Trimmed to equipoise")))
     }
-    ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   }
 
-  if (!is.null(trimyByPsArgs$maxWeight)) {
+  if (!is.null(trimByPsArgs$maxWeight)) {
     population <- population |>
-      filter(.data$iptw <= trimyByPsArgs$maxWeight)
+      filter(.data$iptw <= trimByPsArgs$maxWeight)
     if (!is.null(attr(population, "metaData"))) {
       metaData <- attr(population, "metaData")
       metaData$attrition <- bind_rows(
@@ -760,9 +764,8 @@ trimByPs <- function(population, trimyByPsArgs) {
       )
       attr(population, "metaData") <- metaData
     }
-    ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   }
-
+  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
   return(population)
 }
 
@@ -832,6 +835,9 @@ logit <- function(p) {
 #' Use the provided propensity scores to match target to comparator persons.
 #'
 #' @param population    A data frame with the three columns described below.
+#' @param cohortMethodData         An object of type [CohortMethodData] as generated using
+#'                                 [getDbCohortMethodData()]. Needed when additionally matching on
+#'                                 covariate IDs.
 #' @param matchOnPsArgs An object of type `MatchOnPsArgs` as created by the
 #'                      [createMatchOnPsArgs()] function.
 #'
@@ -862,7 +868,7 @@ logit <- function(p) {
 #' result <- matchOnPs(data, createMatchOnPsArgs(
 #'   caliper = 0,
 #'   maxRatio = 1,
-#'   stratificationColumns = "age_group")
+#'   matchColumns = "age_group")
 #' )
 #'
 #' @references
@@ -874,13 +880,17 @@ logit <- function(p) {
 #'
 #' @export
 matchOnPs <- function(population,
-                      matchOnPsArgs = createMatchOnPsArgs()) {
+                      matchOnPsArgs = createMatchOnPsArgs(),
+                      cohortMethodData = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("rowId", "treatment", "propensityScore"), add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", null.ok = TRUE, add = errorMessages)
   checkmate::assertR6(matchOnPsArgs, "MatchOnPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
+  if (length(matchOnPsArgs$matchCovariateIds) != 0 && is.null(cohortMethodData)) {
+    stop("Must provide cohortMethodData when specifying matchCovariateIds.")
+  }
   reverseTreatment <- (matchOnPsArgs$allowReverseMatch && sum(population$treatment == 1) > sum(population$treatment == 0))
   if (reverseTreatment) {
     population$treatment <- 1 - population$treatment
@@ -896,28 +906,32 @@ matchOnPs <- function(population,
   } else if (matchOnPsArgs$caliperScale == "standardized logit") {
     propensityScore <- logit(propensityScore)
     caliper <- matchOnPsArgs$caliper * sd(propensityScore[is.finite(propensityScore)])
+  } else {
+    caliper <- matchOnPsArgs$caliper
   }
   if (matchOnPsArgs$maxRatio == 0) {
-    matchOnPsArgs$maxRatio <- 999
+    maxRatio <- 999
+  } else {
+    maxRatio <- matchOnPsArgs$maxRatio
   }
-  if (is.null(matchOnPsArgs$stratificationCovariateIds)) {
-    stratificationColumns <- matchOnPsArgs$stratificationColumns
+  if (is.null(matchOnPsArgs$matchCovariateIds)) {
+    matchColumns <- matchOnPsArgs$matchColumns
   } else {
     population <- mergeCovariatesWithPs(population,
                                         cohortMethodData,
-                                        matchOnPsArgs$stratificationCovariateIds)
-    stratificationColumns <- colnames(population)[
+                                        matchOnPsArgs$matchCovariateIds)
+    matchColumns <- colnames(population)[
       colnames(population) %in% paste("covariateId",
-                                      matchOnPsArgs$stratificationCovariateIds,
+                                      matchOnPsArgs$matchCovariateIds,
                                       sep = "_")
     ]
   }
 
-  if (length(stratificationColumns) == 0) {
+  if (length(matchColumns) == 0) {
     result <- matchPsInternal(
       propensityScore,
       population$treatment,
-      matchOnPsArgs$maxRatio,
+      maxRatio,
       caliper
     )
     result <- as_tibble(result)
@@ -938,10 +952,10 @@ matchOnPs <- function(population,
     }
     results <- plyr::dlply(
       .data = population,
-      .variables = stratificationColumns,
+      .variables = matchColumns,
       .drop = TRUE,
       .fun = f,
-      maxRatio = matchOnPsArgs$maxRatio,
+      maxRatio = maxRatio,
       caliper = caliper
     )
     if (length(results) == 0) {
@@ -988,7 +1002,10 @@ matchOnPs <- function(population,
 #' stratification variables for stratifications can also be used.
 #'
 #' @param population             A data frame with the three columns described below
-#' @param createStratifyByPsArgs An object of type `StratifyByPsArgs` as created by the
+#' @param cohortMethodData       An object of type [CohortMethodData] as generated using
+#'                               [getDbCohortMethodData()]. Needed when additionally matching on
+#'                               covariate IDs.
+#' @param stratifyByPsArgs       An object of type `StratifyByPsArgs` as created by the
 #'                               `createStratifyByPsArgs()` function.
 #'
 #' @details
@@ -1006,16 +1023,21 @@ matchOnPs <- function(population,
 #' treatment <- rep(0:1, each = 100)
 #' propensityScore <- c(runif(100, min = 0, max = 1), runif(100, min = 0, max = 1))
 #' data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-#' result <- stratifyByPs(data, 5)
+#' result <- stratifyByPs(data, createStratifyByPsArgs(numberOfStrata = 5))
 #'
 #' @export
-stratifyByPs <- function(population, stratifyByPsArgs = createStratifyByPsArgs()) {
+stratifyByPs <- function(population,
+                         stratifyByPsArgs = createStratifyByPsArgs(),
+                         cohortMethodData = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", null.ok = TRUE, add = errorMessages)
   checkmate::assertR6(stratifyByPsArgs, "StratifyByPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
+  if (length(stratifyByPsArgs$stratificationCovariateIds) != 0 && is.null(cohortMethodData)) {
+    stop("Must provide cohortMethodData when specifying stratificationCovariateIds")
+  }
   if (nrow(population) == 0) {
     return(population)
   }

@@ -455,6 +455,7 @@ runCmAnalyses <- function(connectionDetails,
       )[[1]]
       task <- list(
         psFile = file.path(outputFolder, refRow$psFile),
+        cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
         args = analysisRow,
         strataFile = file.path(outputFolder, refRow$strataFile)
       )
@@ -835,14 +836,26 @@ applyTrimMatchStratify <- function(ps, arguments) {
     ps <- do.call("truncateIptw", functionArgs)
   }
   if (!is.null(arguments$matchOnPsArgs)) {
+    if (length(arguments$matchOnPsArgs$matchCovariateIds) == 0) {
+      cohortMethodData <- NULL
+    } else {
+      cohortMethodData <- getCohortMethodData(arguments$cohortMethodDataFile)
+    }
     functionArgs <- list(
       population = ps,
+      cohortMethodData = cohortMethodData,
       matchOnPsArgs = arguments$matchOnPsArgs
     )
     ps <- do.call("matchOnPs", functionArgs)
   } else if (!is.null(arguments$stratifyByPsArgs)) {
+    if (length(arguments$stratifyByPsArgs$stratificationCovariateIds) == 0) {
+      cohortMethodData <- NULL
+    } else {
+      cohortMethodData <- getCohortMethodData(arguments$cohortMethodDataFile)
+    }
     functionArgs <- list(
       population = ps,
+      cohortMethodData = cohortMethodData,
       stratifyByPsArgs = arguments$stratifyByPsArgs
     )
     ps <- do.call("stratifyByPs", functionArgs)
@@ -1708,7 +1721,7 @@ summarizeResults <- function(referenceTable,
     totalSubjects <- outcomeModel$populationCounts$targetExposures + outcomeModel$populationCounts$comparatorExposures
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
     pTarget <- outcomeModel$populationCounts$targetExposures / totalSubjects
-    mdrr <- CohortMethod:::computeMdrrFromAggregateStats(
+    mdrr <- computeMdrrFromAggregateStats(
       pTarget = pTarget,
       totalEvents = totalEvents,
       totalSubjects = totalSubjects,
@@ -2004,8 +2017,8 @@ addBalance <- function(referenceTable, outputFolder, cmDiagnosticThresholds) {
              "maxTargetComparatorSdm")
   }
   referenceTable <- referenceTable |>
-    left_join(maxSdm,by = join_by(balanceFile)) |>
-    left_join(sharedMaxSdm, by = join_by(sharedBalanceFile))
+    left_join(maxSdm,by = join_by("balanceFile")) |>
+    left_join(sharedMaxSdm, by = join_by("sharedBalanceFile"))
   return(referenceTable)
 }
 
@@ -2024,7 +2037,7 @@ addEquipoise <- function(referenceTable, outputFolder) {
     sharedEquipoise <- bind_rows(lapply(sharedPsFiles, getEquipoise)) |>
       rename(sharedPsFile = "psFile")
     referenceTable <- referenceTable |>
-      left_join(sharedEquipoise, by = join_by(sharedPsFile))
+      left_join(sharedEquipoise, by = join_by("sharedPsFile"))
   } else {
     # Maybe fitted PS per outcome, so therefore no shared PS files?
     psFiles <- referenceTable |>
@@ -2033,7 +2046,7 @@ addEquipoise <- function(referenceTable, outputFolder) {
       pull()
     equipoise <- bind_rows(lapply(psFiles, getEquipoise))
     referenceTable <- referenceTable |>
-      left_join(equipoise, by = join_by(psFile))
+      left_join(equipoise, by = join_by("psFile"))
   }
   return(referenceTable)
 }

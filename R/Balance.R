@@ -268,11 +268,11 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       select(-"numerator")
   } else {
     count1 <- cohorts |>
-      filter(treatment == 1) |>
+      filter(.data$treatment == 1) |>
       count() |>
       pull()
     count0 <- cohorts |>
-      filter(treatment == 0) |>
+      filter(.data$treatment == 0) |>
       count() |>
       pull()
     result <- result |>

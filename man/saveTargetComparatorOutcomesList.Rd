@@ -7,10 +7,10 @@
 saveTargetComparatorOutcomesList(targetComparatorOutcomesList, file)
 }
 \arguments{
-\item{file}{The name of the file where the results will be written}
+\item{targetComparatorOutcomesList}{A list of objects of type \code{TargetComparatorOutcomes} as
+created using the \code{\link[=createTargetComparatorOutcomes]{createTargetComparatorOutcomes()}} function.}
 
-\item{exposuresOutcomeList}{A list of objects of type \code{TargetComparatorOutcomes} as created
-using the \code{\link[=createTargetComparatorOutcomes]{createTargetComparatorOutcomes()}} function.}
+\item{file}{The name of the file where the results will be written}
 }
 \description{
 Write a list of objects of type \code{TargetComparatorOutcomes} to file. The file is in JSON format.

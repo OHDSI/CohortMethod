@@ -18,43 +18,8 @@ potentially filtered by other functions.}
 \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}. Can be omitted if not using covariates and
 not using interaction terms.}
 
-\item{modelType}{The type of outcome model that will be used. Possible values are
-"logistic", "poisson", or "cox".}
-
-\item{stratified}{Should the regression be conditioned on the strata defined in the
-population object (e.g. by matching or stratifying on propensity
-scores)?}
-
-\item{useCovariates}{Whether to use the covariates in the \code{cohortMethodData}
-object in the outcome model.}
-
-\item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)}
-
-\item{bootstrapCi}{Compute confidence interval using bootstrapping instead of likelihood profiling?}
-
-\item{bootstrapReplicates}{When using bootstrapping to compute confidence intervals, how many replicates
-should be sampled?}
-
-\item{interactionCovariateIds}{An optional vector of covariate IDs to use to estimate interactions
-with the main treatment effect.}
-
-\item{excludeCovariateIds}{Exclude these covariates from the outcome model.}
-
-\item{includeCovariateIds}{Include only these covariates in the outcome model.}
-
-\item{profileGrid}{A one-dimensional grid of points on the log(relative risk) scale where
-the likelihood for coefficient of variables is sampled. See details.}
-
-\item{profileBounds}{The bounds (on the log relative risk scale) for the adaptive sampling
-of the likelihood function. See details.}
-
-\item{prior}{The prior used to fit the model. See \code{\link[Cyclops:createPrior]{Cyclops::createPrior()}}
-for details. The prior is only applied to non-treatment variables,
-so is not used when \code{useCovariates = FALSE}.}
-
-\item{control}{The control object used to control the cross-validation used to
-determine the hyperparameters of the prior (if applicable). See
-\code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
+\item{fitOutcomeModelArgs}{An object of type \code{FitOutcomeModelArgs} as generated using the
+\code{\link[=createFitOutcomeModelArgs]{createFitOutcomeModelArgs()}} function.}
 }
 \value{
 An object of class \code{OutcomeModel}. Generic function \code{print}, \code{coef}, and

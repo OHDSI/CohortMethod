@@ -60,6 +60,11 @@
 #'                                     outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 #'                                     outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                     SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
+#' @param nestingCohortDatabaseSchema  The name of the database schema that is the location where the
+#'                                     data used to define the nesting cohorts is available.
+#' @param nestingCohortTable           The tablename that contains the nesting cohorts. Must have
+#'                                     the format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+#'                                     COHORT_START_DATE, COHORT_END_DATE.
 #' @param getDbCohortMethodDataArgs    An object of type `GetDbCohortMethodDataArgs` as created by
 #'                                     the [createGetDbCohortMethodDataArgs()] function.
 #'
@@ -333,7 +338,7 @@ handleCohortCovariateBuilders <- function(covariateSettings,
 pivotAttrition <- function(attrition, targetId) {
   attrition <- inner_join(
     attrition |>
-      filter(cohortDefinitionId == targetId) |>
+      filter(.data$cohortDefinitionId == targetId) |>
       select(
         description = "description",
         targetPersons = "persons",
@@ -341,7 +346,7 @@ pivotAttrition <- function(attrition, targetId) {
         "seqId"
       ),
     attrition |>
-      filter(cohortDefinitionId != targetId) |>
+      filter(.data$cohortDefinitionId != targetId) |>
       select(
         comparatorPersons = "persons",
         comparatorExposures = "exposures",

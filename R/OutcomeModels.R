@@ -30,31 +30,8 @@
 #' @param cohortMethodData      An object of type [CohortMethodData] as generated using
 #'                              [getDbCohortMethodData()]. Can be omitted if not using covariates and
 #'                              not using interaction terms.
-#' @param modelType             The type of outcome model that will be used. Possible values are
-#'                              "logistic", "poisson", or "cox".
-#' @param stratified            Should the regression be conditioned on the strata defined in the
-#'                              population object (e.g. by matching or stratifying on propensity
-#'                              scores)?
-#' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
-#'                              object in the outcome model.
-#' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
-#' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
-#' @param bootstrapReplicates   When using bootstrapping to compute confidence intervals, how many replicates
-#'                              should be sampled?
-#' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
-#'                                 with the main treatment effect.
-#' @param excludeCovariateIds   Exclude these covariates from the outcome model.
-#' @param includeCovariateIds   Include only these covariates in the outcome model.
-#' @param profileGrid           A one-dimensional grid of points on the log(relative risk) scale where
-#'                              the likelihood for coefficient of variables is sampled. See details.
-#' @param profileBounds         The bounds (on the log relative risk scale) for the adaptive sampling
-#'                              of the likelihood function. See details.
-#' @param prior                 The prior used to fit the model. See [Cyclops::createPrior()]
-#'                              for details. The prior is only applied to non-treatment variables,
-#'                              so is not used when `useCovariates = FALSE`.
-#' @param control               The control object used to control the cross-validation used to
-#'                              determine the hyperparameters of the prior (if applicable). See
-#'                              [Cyclops::createControl()] for details.
+#' @param fitOutcomeModelArgs   An object of type `FitOutcomeModelArgs` as generated using the
+#'                              [createFitOutcomeModelArgs()] function.
 #'
 #' @return
 #' An object of class `OutcomeModel`. Generic function `print`, `coef`, and
@@ -71,6 +48,7 @@ fitOutcomeModel <- function(population,
     checkmate::assertNames(names(cohortMethodData), must.include = c("analysisRef", "cohorts", "covariateRef", "covariates", "outcomes"), add = errorMessages)
   }
   checkmate::assertClass(cohortMethodData, "CohortMethodData", null.ok = TRUE, add = errorMessages)
+  checkmate::assertR6(fitOutcomeModelArgs, "FitOutcomeModelArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   if (fitOutcomeModelArgs$stratified && nrow(population) > 0 && is.null(population$stratumId)) {
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")

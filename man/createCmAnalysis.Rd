@@ -28,6 +28,9 @@ set of analysis choices.}
 \item{getDbCohortMethodDataArgs}{An object representing the arguments to be used when calling
 the \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}} function.}
 
+\item{createStudyPopulationArgs}{An object representing the arguments to be used when calling
+the \code{\link[=createStudyPopulation]{createStudyPopulation()}} function.}
+
 \item{createPsArgs}{An object representing the arguments to be used when calling
 the \code{\link[=createPs]{createPs()}} function.}
 
@@ -51,9 +54,6 @@ the \code{\link[=computeCovariateBalance]{computeCovariateBalance()}} function p
 
 \item{fitOutcomeModelArgs}{An object representing the arguments to be used when calling
 the \code{\link[=fitOutcomeModel]{fitOutcomeModel()}} function.}
-
-\item{createStudyPopArgs}{An object representing the arguments to be used when calling
-the \code{\link[=createStudyPopulation]{createStudyPopulation()}} function.}
 }
 \value{
 An object of type \code{CmAnalysis}, to be used with the \link{runCmAnalyses} function.

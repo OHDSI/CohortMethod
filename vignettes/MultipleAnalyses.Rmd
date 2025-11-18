@@ -235,7 +235,7 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
   covariateSettings = covarSettings
 )
 
-createStudyPopArgs <- createCreateStudyPopulationArgs(
+createStudyPopulationArgs <- createCreateStudyPopulationArgs(
   removeSubjectsWithPriorOutcome = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -254,7 +254,7 @@ cmAnalysis1 <- createCmAnalysis(
   analysisId = 1,
   description = "No matching, simple outcome model",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs,
+  createStudyPopulationArgs = createStudyPopulationArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs1
 )
 ```
@@ -283,7 +283,7 @@ cmAnalysis2 <- createCmAnalysis(
   analysisId = 2,
   description = "Matching",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs,
+  createStudyPopulationArgs = createStudyPopulationArgs,
   createPsArgs = createPsArgs,
   matchOnPsArgs = matchOnPsArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
@@ -297,7 +297,7 @@ cmAnalysis3 <- createCmAnalysis(
   analysisId = 3,
   description = "Stratification",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs,
+  createStudyPopulationArgs = createStudyPopulationArgs,
   createPsArgs = createPsArgs,
   stratifyByPsArgs = stratifyByPsArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
@@ -314,7 +314,7 @@ cmAnalysis4 <- createCmAnalysis(
   analysisId = 4,
   description = "Inverse probability weighting",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs,
+  createStudyPopulationArgs = createStudyPopulationArgs,
   createPsArgs = createPsArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs3
 )
@@ -329,7 +329,7 @@ cmAnalysis5 <- createCmAnalysis(
   analysisId = 5,
   description = "Matching plus full outcome model",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs,
+  createStudyPopulationArgs = createStudyPopulationArgs,
   createPsArgs = createPsArgs,
   matchOnPsArgs = matchOnPsArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs4
@@ -351,7 +351,7 @@ cmAnalysis6 <- createCmAnalysis(
   analysisId = 6,
   description = "Stratification plus interaction terms",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs,
+  createStudyPopulationArgs = createStudyPopulationArgs,
   createPsArgs = createPsArgs,
   stratifyByPsArgs = stratifyByPsArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs5

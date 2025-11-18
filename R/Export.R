@@ -148,8 +148,7 @@ exportToCsv <- function(outputFolder,
   exportDiagnosticsSummary(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
-    databaseId = databaseId,
-    cmDiagnosticThresholds = cmDiagnosticThresholds
+    databaseId = databaseId
   )
 
   # Add all to zip file -------------------------------------------------------------------------------
@@ -1028,8 +1027,7 @@ prepareKaplanMeierForExport <- function(population) {
 
 exportDiagnosticsSummary <- function(outputFolder,
                                      exportFolder,
-                                     databaseId,
-                                     cmDiagnosticThresholds) {
+                                     databaseId) {
   message("- diagnostics_summary table")
   results <- getDiagnosticsSummary(outputFolder) |>
     mutate(databaseId = !!databaseId,

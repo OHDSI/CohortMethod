@@ -4,13 +4,21 @@
 \alias{stratifyByPs}
 \title{Stratify persons by propensity score}
 \usage{
-stratifyByPs(population, stratifyByPsArgs = createStratifyByPsArgs())
+stratifyByPs(
+  population,
+  stratifyByPsArgs = createStratifyByPsArgs(),
+  cohortMethodData = NULL
+)
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}
 
-\item{createStratifyByPsArgs}{An object of type \code{StratifyByPsArgs} as created by the
+\item{stratifyByPsArgs}{An object of type \code{StratifyByPsArgs} as created by the
 \code{createStratifyByPsArgs()} function.}
+
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}. Needed when additionally matching on
+covariate IDs.}
 }
 \value{
 Returns a tibble with the same columns as the input data plus one extra column: stratumId.
@@ -32,6 +40,6 @@ rowId <- 1:200
 treatment <- rep(0:1, each = 100)
 propensityScore <- c(runif(100, min = 0, max = 1), runif(100, min = 0, max = 1))
 data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result <- stratifyByPs(data, 5)
+result <- stratifyByPs(data, createStratifyByPsArgs(numberOfStrata = 5))
 
 }

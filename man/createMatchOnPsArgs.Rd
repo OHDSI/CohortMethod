@@ -9,8 +9,8 @@ createMatchOnPsArgs(
   caliperScale = "standardized logit",
   maxRatio = 1,
   allowReverseMatch = FALSE,
-  stratificationColumns = c(),
-  stratificationCovariateIds = c()
+  matchColumns = c(),
+  matchCovariateIds = c()
 )
 }
 \arguments{
@@ -34,12 +34,12 @@ all comparators will be assigned to a target person.}
 
 \item{allowReverseMatch}{Allows n-to-1 matching if target arm is larger}
 
-\item{stratificationColumns}{Names or numbers of one or more columns in the \code{data} data.frame
+\item{matchColumns}{Names or numbers of one or more columns in the \code{data} data.frame
 on which subjects should be stratified prior to matching. No persons
 will be matched with persons outside of the strata identified by the
 values in these columns.}
 
-\item{stratificationCovariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
+\item{matchCovariateIds}{One or more covariate IDs in the \code{cohortMethodData} object on which
 subjects should be also matched.}
 }
 \value{

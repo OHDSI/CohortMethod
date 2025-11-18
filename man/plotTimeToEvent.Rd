@@ -8,10 +8,6 @@ plotTimeToEvent(
   cohortMethodData,
   population = NULL,
   outcomeId = NULL,
-  firstExposureOnly = FALSE,
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0,
-  removeDuplicateSubjects = "keep all",
   minDaysAtRisk = 1,
   riskWindowStart = 0,
   startAnchor = "cohort start",
@@ -38,16 +34,6 @@ point instead of the cohorts in the \code{cohortMethodData} object.}
 
 \item{outcomeId}{The ID of the outcome. If NULL, no outcome-specific
 transformations will be performed.}
-
-\item{firstExposureOnly}{(logical) Should only the first exposure per subject be included?}
-
-\item{restrictToCommonPeriod}{(logical) Restrict the analysis to the period when both exposures are observed?}
-
-\item{washoutPeriod}{The minimum required continuous observation time prior to
-index date for a person to be included in the cohort.}
-
-\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.}
 
 \item{minDaysAtRisk}{The minimum required number of days at risk.}
 

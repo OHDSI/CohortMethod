@@ -506,11 +506,11 @@ TruncateIptwArgs <- R6Class(
 #'                                each person in the treatment arm. A `maxRatio` of 0 means no maximum:
 #'                                all comparators will be assigned to a target person.
 #' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
-#' @param stratificationColumns   Names or numbers of one or more columns in the `data` data.frame
+#' @param matchColumns            Names or numbers of one or more columns in the `data` data.frame
 #'                                on which subjects should be stratified prior to matching. No persons
 #'                                will be matched with persons outside of the strata identified by the
 #'                                values in these columns.
-#' @param stratificationCovariateIds One or more covariate IDs in the `cohortMethodData` object on which
+#' @param matchCovariateIds      One or more covariate IDs in the `cohortMethodData` object on which
 #'                                   subjects should be also matched.
 #'
 #' @references
@@ -525,8 +525,8 @@ createMatchOnPsArgs <- function(caliper = 0.2,
                                 caliperScale = "standardized logit",
                                 maxRatio = 1,
                                 allowReverseMatch = FALSE,
-                                stratificationColumns = c(),
-                                stratificationCovariateIds = c()) {
+                                matchColumns = c(),
+                                matchCovariateIds = c()) {
   args <- list()
   for (name in names(formals())) {
     args[[name]] <- get(name)
@@ -542,19 +542,19 @@ MatchOnPsArgs <- R6Class(
     caliperScale = NULL,
     maxRatio = NULL,
     allowReverseMatch = NULL,
-    stratificationColumns = NULL,
-    stratificationCovariateIds = NULL,
+    matchColumns = NULL,
+    matchCovariateIds = NULL,
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
       checkmate::assertNumber(self$caliper, lower = 0, add = errorMessages)
       checkmate::assertChoice(self$caliperScale, c("standardized", "propensity score", "standardized logit"), add = errorMessages)
       checkmate::assertInt(self$maxRatio, lower = 0, add = errorMessages)
       checkmate::assertLogical(self$allowReverseMatch, len = 1, add = errorMessages)
-      checkmate::assertCharacter(self$stratificationColumns, null.ok = TRUE, add = errorMessages)
-      .assertCovariateId(self$stratificationCovariateIds, null.ok = TRUE, add = errorMessages)
+      checkmate::assertCharacter(self$matchColumns, null.ok = TRUE, add = errorMessages)
+      .assertCovariateId(self$matchCovariateIds, null.ok = TRUE, add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)
-      if (length(self$stratificationColumns) != 0 && length(self$stratificationCovariateIds)) {
-        stop("Cannot specify both stratificationColumns and stratificationCovariateIds")
+      if (length(self$matchColumns) != 0 && length(self$matchCovariateIds)) {
+        stop("Cannot specify both matchColumns and matchCovariateIds")
       }
     }
   )
@@ -651,7 +651,7 @@ createComputeCovariateBalanceArgs <- function(subgroupCovariateId = NULL,
                                               alpha = 0.05) {
   # FeatureExtraction::createTable1CovariateSettings() uses vroom which creates a weird table object
   # with many attributes. Best to cast to tibble here so all unit tests work.
-  if (!is.null(covariateFilter)) {
+  if (!is.null(covariateFilter) && !is.numeric(covariateFilter)) {
     covariateFilter <- as_tibble(covariateFilter)
   }
   args <- list()
@@ -687,7 +687,7 @@ ComputeCovariateBalanceArgs <- R6Class(
     fromList = function(list, requireTyping) {
       super$fromList(list)
       if (requireTyping) {
-        if (!is.null(self$covariateFilter)) {
+        if (!is.null(self$covariateFilter) && !is.numeric(self$covariateFilter)) {
           self$covariateFilter <- as_tibble(list$covariateFilter)
         }
       }
@@ -833,7 +833,7 @@ FitOutcomeModelArgs <- R6Class(
 #' @param description                     A short description of the analysis.
 #' @param getDbCohortMethodDataArgs       An object representing the arguments to be used when calling
 #'                                        the [getDbCohortMethodData()] function.
-#' @param createStudyPopArgs              An object representing the arguments to be used when calling
+#' @param createStudyPopulationArgs       An object representing the arguments to be used when calling
 #'                                        the [createStudyPopulation()] function.
 #' @param createPsArgs                    An object representing the arguments to be used when calling
 #'                                        the [createPs()] function.
@@ -1374,9 +1374,9 @@ loadCmAnalysisList <- function(file) {
 #' @description
 #' Write a list of objects of type `TargetComparatorOutcomes` to file. The file is in JSON format.
 #'
-#' @param exposuresOutcomeList  A list of objects of type `TargetComparatorOutcomes` as created
-#'                              using the [createTargetComparatorOutcomes()] function.
-#' @param file                  The name of the file where the results will be written
+#' @param targetComparatorOutcomesList  A list of objects of type `TargetComparatorOutcomes` as
+#'                                      created using the [createTargetComparatorOutcomes()] function.
+#' @param file                          The name of the file where the results will be written
 #'
 #' @export
 saveTargetComparatorOutcomesList <- function(targetComparatorOutcomesList, file) {
