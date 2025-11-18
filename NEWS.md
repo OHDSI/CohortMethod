@@ -38,13 +38,13 @@ Changes:
 
 14. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
 
-15. Correcting the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
+15. Corrected the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
 
 16. Added a vignette showing the results schema.
 
-17. Added ability to restrict to a nesting cohort (e.g. restricting drug exposurs to a specific indication). See the `nestingCohortId` argument in the `createGetDbCohortMethodDataArgs()` function and the `nestingCohortDatabaseSchema` and `nestingCohortTable` arguments in the `getDbCohortMethodData()` function.
+17. Added ability to restrict to a nesting cohort (e.g. restricting drug exposures to a specific indication). See the `nestingCohortId` argument in the `createGetDbCohortMethodDataArgs()` function and the `nestingCohortDatabaseSchema` and `nestingCohortTable` arguments in the `getDbCohortMethodData()` function.
 
-18. All restrictions on the study populations are now step-by-step recorded in the attrition table.
+18. All restrictions on the study populations performed by `getDbCohortMethodData()` are now step-by-step recorded in the attrition table.
 
 19. Dropped the `firstExposureOnly`, `restrictToCommonPeriod`, `washoutPeriod`, and `removeDuplicateSubjects` arguments from `CreateStudyPopulationArgs`. These were duplicated from `getDbCohortMethodData()`, and we'll keep them only there from now on.
 
@@ -55,6 +55,11 @@ Changes:
 
     This adds the `sdm_family_wise_min_p` and `shared_sdm_family_wise_min_p` fields to the `cm_diagnostics_summary` table when exporting to CSV. 
     For now, the default is not to use signficance testing, but the family-wise min P can help understand if one would have passed when using it.
+    
+21. Added a new option for the `removeDuplicateSubjects` argument:  "keep first, truncate to second". This is similar to "keep first", but also truncates the first exposure to stop the day before the second starts.
+
+22. Set the defaults of `createGetDbCohortMethodDataArgs()` to those most often used.
+
 
 CohortMethod 5.5.2
 ==================

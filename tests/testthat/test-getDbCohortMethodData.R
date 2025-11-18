@@ -86,19 +86,19 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     # Dims of CohortMethodData tables
-    expect_equal(nrow(collect(cmd$cohorts)), 2630)
+    expect_equal(nrow(collect(cmd$cohorts)), 2627)
     expect_equal(ncol(collect(cmd$cohorts)), 8)
 
     expect_gte(nrow(collect(cmd$analysisRef)), 24)
     expect_equal(ncol(collect(cmd$analysisRef)), 7)
 
-    expect_gte(nrow(collect(cmd$covariateRef)), 389)
+    expect_gte(nrow(collect(cmd$covariateRef)), 388)
     expect_gte(ncol(collect(cmd$covariateRef)), 4)
 
-    expect_gte(nrow(collect(cmd$covariates)), 26923)
+    expect_gte(nrow(collect(cmd$covariates)), 20000)
     expect_equal(ncol(collect(cmd$covariates)), 3)
 
-    expect_equal(nrow(collect(cmd$outcomes)), 3109)
+    expect_equal(nrow(collect(cmd$outcomes)), 3106)
     expect_equal(ncol(collect(cmd$outcomes)), 3)
   })
 
@@ -119,12 +119,12 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        studyStartDate = "20000601"
+        studyStartDate = "20000601",
       )
     )
 
     meta <- attr(cmd, "metaData")
-    expect_identical(nrow(meta$attrition), 2L)
+    expect_identical(nrow(meta$attrition), 6L)
     expect_true("Restrict to study period" %in% meta$attrition$description)
 
     minStartDate <- cmd$cohorts |>
@@ -209,7 +209,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       )
     )
     meta <- attr(cmd, "metaData")
-    expect_identical(nrow(meta$attrition), 2L)
+    expect_identical(nrow(meta$attrition), 6L)
     expect_true("Restrict to study period" %in% meta$attrition$description)
 
     maxEndDate <- cmd$cohorts |>
@@ -291,7 +291,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        firstExposureOnly = FALSE
+        firstExposureOnly = FALSE,
+        removeDuplicateSubjects = "keep all",
+        washoutPeriod = 0,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -321,7 +324,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        firstExposureOnly = TRUE
+        firstExposureOnly = TRUE,
+        removeDuplicateSubjects = "keep all",
+        washoutPeriod = 0,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -346,7 +352,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
   })
 
   test_that("removeDuplicateSubjects", {
-    ## default: "keep all" ----
+    ## "keep all" ----
     cmd1 <- getDbCohortMethodData(
       connectionDetails = connectionDetails,
       cdmDatabaseSchema = "main",
@@ -359,7 +365,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        removeDuplicateSubjects = "keep all"
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        washoutPeriod = 0,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -375,7 +384,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
                  select(arrange(newCohort, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
                  check.attribues = FALSE)
 
-    ## "keep first" ----
+    ## "keep first, truncate to second" ----
     cmd2 <- getDbCohortMethodData(
       connectionDetails = connectionDetails,
       cdmDatabaseSchema = "main",
@@ -388,29 +397,49 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        removeDuplicateSubjects = "keep first"
+        removeDuplicateSubjects = "keep first, truncate to second",
+        firstExposureOnly = FALSE,
+        washoutPeriod = 0,
+        restrictToCommonPeriod = FALSE
       )
     )
 
     meta2 <- attr(cmd2, "metaData")
     expect_identical(nrow(meta2$attrition), 2L)
-    expect_true("Keep first when in both cohorts" %in% meta2$attrition$description)
+    expect_true("Keep first, truncate when entering second cohort" %in% meta2$attrition$description)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
       mutate(cohortDefinitionId = if_else(treatment == 1, 1, 2),
              subjectId = as.numeric(personId))
 
-    newCohortGs <- newCohort |>
+    firstPerCohort <- newCohort |>
+      group_by(subjectId, cohortDefinitionId) |>
+      arrange(cohortStartDate) |>
+      filter(row_number() == 1) |>
+      ungroup()
+    firstOverall <- firstPerCohort |>
       group_by(subjectId) |>
       arrange(cohortStartDate) |>
       filter(row_number() == 1) |>
       ungroup()
-    expect_equal(select(arrange(cohorts2, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
-                 select(arrange(newCohortGs, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+    newCohortGs <- firstOverall |>
+      left_join(firstPerCohort |>
+                  transmute(subjectId,
+                            cohortDefinitionId = if_else(cohortDefinitionId == 1, 2, 1),
+                            cohortStartDate2 = cohortStartDate),
+                by = join_by(subjectId, cohortDefinitionId)) |>
+      filter(is.na(cohortStartDate2) | cohortStartDate2 != cohortStartDate) |>
+      mutate(daysToCohortEnd = as.numeric(difftime(cohortEndDate, cohortStartDate, units = "days"))) |>
+      mutate(daysToCohortEnd = if_else(!is.na(cohortStartDate2) & cohortStartDate2 < cohortEndDate,
+                                       as.numeric(difftime(cohortStartDate2 - 1, cohortStartDate, units = "days")),
+                                       daysToCohortEnd))
+
+    expect_equal(select(arrange(cohorts2, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate, daysToCohortEnd),
+                 select(arrange(newCohortGs, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate, daysToCohortEnd),
                  check.attribues = FALSE)
 
-    ## "remove all" ----
+    ## "keep first" ----
     cmd3 <- getDbCohortMethodData(
       connectionDetails = connectionDetails,
       cdmDatabaseSchema = "main",
@@ -423,15 +452,57 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        removeDuplicateSubjects = "remove all"
+        removeDuplicateSubjects = "keep first",
+        firstExposureOnly = FALSE,
+        washoutPeriod = 0,
+        restrictToCommonPeriod = FALSE
       )
     )
 
     meta3 <- attr(cmd3, "metaData")
     expect_identical(nrow(meta3$attrition), 2L)
-    expect_true("Remove subjects in both cohorts" %in% meta3$attrition$description)
+    expect_true("Keep first when in both cohorts" %in% meta3$attrition$description)
 
     cohorts3 <- cmd3$cohorts |>
+      collect() |>
+      mutate(cohortDefinitionId = if_else(treatment == 1, 1, 2),
+             subjectId = as.numeric(personId))
+
+    newCohortGs <- newCohort |>
+      group_by(subjectId) |>
+      arrange(cohortStartDate) |>
+      filter(row_number() == 1) |>
+      ungroup()
+    expect_equal(select(arrange(cohorts3, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 select(arrange(newCohortGs, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 check.attribues = FALSE)
+
+
+    ## "remove all" ----
+    cmd4 <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "newCohort",
+      outcomeTable = "cohort",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = covSettings,
+        removeDuplicateSubjects = "remove all",
+        firstExposureOnly = FALSE,
+        washoutPeriod = 0,
+        restrictToCommonPeriod = FALSE
+      )
+    )
+
+    meta4 <- attr(cmd4, "metaData")
+    expect_identical(nrow(meta4$attrition), 2L)
+    expect_true("Remove subjects in both cohorts" %in% meta4$attrition$description)
+
+    cohorts4 <- cmd4$cohorts |>
       collect() |>
       mutate(subjectId = as.numeric(personId))
 
@@ -442,7 +513,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       pull(subjectId)
     newCohortGs <- newCohort |>
       filter(subjectId %in% subjectIdsOneTreatment)
-    expect_equal(select(arrange(cohorts3, subjectId, cohortStartDate), subjectId, cohortStartDate),
+    expect_equal(select(arrange(cohorts4, subjectId, cohortStartDate), subjectId, cohortStartDate),
                  select(arrange(newCohortGs, subjectId, cohortStartDate), subjectId, cohortStartDate),
                  check.attribues = FALSE)
 
@@ -479,7 +550,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        restrictToCommonPeriod = FALSE
+        restrictToCommonPeriod = FALSE,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        washoutPeriod = 0
       )
     )
 
@@ -508,7 +582,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        restrictToCommonPeriod = TRUE
+        restrictToCommonPeriod = TRUE,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        washoutPeriod = 0
       )
     )
 
@@ -550,7 +627,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        washoutPeriod = 0
+        washoutPeriod = 0,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -579,7 +659,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        washoutPeriod = 365
+        washoutPeriod = 365,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -633,7 +716,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        maxCohortSize = 0
+        maxCohortSize = 0,
+        washoutPeriod = 0,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -662,7 +749,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        maxCohortSize = 100
+        maxCohortSize = 100,
+        washoutPeriod = 0,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -711,7 +802,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       outcomeTable = "cohort",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        nestingCohortId = NULL
+        nestingCohortId = NULL,
+        washoutPeriod = 0,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE
       )
     )
 
@@ -744,7 +839,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       nestingCohortTable = "nesting",
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
-        nestingCohortId = 9
+        nestingCohortId = 9,
+        washoutPeriod = 0,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE
       )
     )
 

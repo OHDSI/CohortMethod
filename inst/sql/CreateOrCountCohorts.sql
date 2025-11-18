@@ -56,7 +56,52 @@ WITH raw_cohorts AS (
 }
 )
 
-{@remove_duplicate_subjects == 'keep first'} ? {
+{@remove_duplicate_subjects == 'keep first, truncate to second'} ? {
+-- remove_duplicate_subjects: keep first, truncate to second
+, remove_duplicate_subjects AS (
+  SELECT first_overall.subject_id,
+	  first_overall.cohort_definition_id,
+	  first_overall.cohort_start_date,
+	  CASE
+	    WHEN first_per_cohort.cohort_start_date IS NOT NULL AND first_per_cohort.cohort_start_date < first_overall.cohort_end_date
+	    THEN DATEADD(DAY, -1, first_per_cohort.cohort_start_date)
+	    ELSE first_overall.cohort_end_date
+	  END AS cohort_end_date
+	FROM (
+    SELECT subject_id,
+  	  cohort_definition_id,
+  		cohort_start_date,
+  		cohort_end_date
+  	FROM (
+  		SELECT subject_id,
+  		  cohort_definition_id,
+  		  cohort_start_date,
+  		  cohort_end_date,
+  		  ROW_NUMBER() OVER (PARTITION BY subject_id ORDER BY cohort_start_date) AS cohort_number
+  		FROM raw_cohorts
+    ) tmp
+    WHERE cohort_number = 1
+  ) first_overall
+  LEFT JOIN (
+    SELECT subject_id,
+  	  cohort_definition_id,
+  		cohort_start_date,
+  		cohort_end_date
+  	FROM (
+      SELECT subject_id,
+    	  cohort_definition_id,
+    		cohort_start_date,
+    		cohort_end_date,
+    		ROW_NUMBER() OVER (PARTITION BY subject_id, cohort_definition_id ORDER BY cohort_start_date) AS cohort_number
+    	FROM raw_cohorts
+    ) tmp
+    WHERE cohort_number = 1
+  ) first_per_cohort
+    ON first_overall.subject_id = first_per_cohort.subject_id
+      AND first_overall.cohort_definition_id != first_per_cohort.cohort_definition_id
+  WHERE first_per_cohort.cohort_start_date IS NULL OR first_per_cohort.cohort_start_date != first_overall.cohort_start_date
+)
+} : {{@remove_duplicate_subjects == 'keep first'} ? {
 -- remove_duplicate_subjects: keep first
 , remove_duplicate_subjects AS (
   SELECT subject_id,
@@ -92,7 +137,7 @@ WITH raw_cohorts AS (
 	WHERE
 		tmp.exposure_count = 1
 )
-}}
+}}}
 
 {@first_only} ? {
 -- first_only
@@ -107,7 +152,7 @@ WITH raw_cohorts AS (
 		  cohort_start_date,
 		  cohort_end_date,
 		  ROW_NUMBER() OVER (PARTITION BY subject_id, cohort_definition_id ORDER BY cohort_start_date) AS cohort_number
-		FROM {@remove_duplicate_subjects == 'keep first' | @remove_duplicate_subjects == 'remove all'} ? {remove_duplicate_subjects} : {raw_cohorts}
+		FROM {@remove_duplicate_subjects == 'keep first, truncate to second' | @remove_duplicate_subjects == 'keep first' | @remove_duplicate_subjects == 'remove all'} ? {remove_duplicate_subjects} : {raw_cohorts}
 	) tmp
   WHERE cohort_number = 1
 )
@@ -121,7 +166,7 @@ SELECT subject_id,
 		cohort_end_date,
 		observation_period_start_date,
 		observation_period_end_date
-	FROM {@first_only} ? {first_only} : {{@remove_duplicate_subjects == 'keep first' | @remove_duplicate_subjects == 'remove all'} ? {remove_duplicate_subjects} : {raw_cohorts}}
+	FROM {@first_only} ? {first_only} : {{@remove_duplicate_subjects == 'keep first, truncate to second' | @remove_duplicate_subjects == 'keep first' | @remove_duplicate_subjects == 'remove all'} ? {remove_duplicate_subjects} : {raw_cohorts}}
   INNER JOIN @cdm_database_schema.observation_period
 	  ON subject_id = person_id
 	 WHERE cohort_start_date <= observation_period_end_date
@@ -246,17 +291,19 @@ SELECT cohort_definition_id,
 FROM raw_cohorts
 GROUP BY cohort_definition_id
 
-{@remove_duplicate_subjects == 'keep first' | @remove_duplicate_subjects == 'remove all'} ? {
+{@remove_duplicate_subjects == 'keep first, truncate to second' | @remove_duplicate_subjects == 'keep first' | @remove_duplicate_subjects == 'remove all'} ? {
 UNION ALL
 
 SELECT cohort_definition_id,
   COUNT(*) AS exposures,
   COUNT(DISTINCT subject_id) AS persons,
-{@remove_duplicate_subjects == 'keep first'} ? {
+{@remove_duplicate_subjects == 'keep first, truncate to second'} ? {
+  'Keep first, truncate when entering second cohort' AS description,
+} : {{@remove_duplicate_subjects == 'keep first'} ? {
   'Keep first when in both cohorts' AS description,
 } : {
   'Remove subjects in both cohorts' AS description,
-}
+}}
   CAST(2 AS FLOAT) seq_id
 FROM remove_duplicate_subjects
 GROUP BY cohort_definition_id

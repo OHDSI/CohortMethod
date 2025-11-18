@@ -178,9 +178,10 @@ AbstractSerializableSettings <- R6Class(
 #'
 #' The `removeduplicateSubjects` argument can have one of the following values:
 #'
-#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
+#' - `"keep first, truncate to second"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If the other cohort starts before the first has ended, the first cohort will be truncated to stop the day before the second starts. If both cohorts start simultaneous, the person is removed from the analysis.
 #' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
 #' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
+#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
 #'
 #' @param studyStartDate  A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.
 #' @param studyEndDate  A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'. Important: the study end data is also used to truncate risk windows, meaning no outcomes beyond the study end date will be considered.
@@ -198,10 +199,10 @@ AbstractSerializableSettings <- R6Class(
 #' @export
 createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
                                             studyEndDate = "",
-                                            firstExposureOnly = FALSE,
-                                            removeDuplicateSubjects = "keep all",
-                                            restrictToCommonPeriod = FALSE,
-                                            washoutPeriod = 0,
+                                            firstExposureOnly = TRUE,
+                                            removeDuplicateSubjects = "keep first, truncate to second",
+                                            restrictToCommonPeriod = TRUE,
+                                            washoutPeriod = 65,
                                             nestingCohortId = NULL,
                                             maxCohortSize = 0,
                                             covariateSettings) {
@@ -230,7 +231,10 @@ GetDbCohortMethodDataArgs <- R6Class(
       checkmate::assertCharacter(self$studyStartDate, len = 1, add = errorMessages)
       checkmate::assertCharacter(self$studyEndDate, len = 1, add = errorMessages)
       checkmate::assertLogical(self$firstExposureOnly, len = 1, add = errorMessages)
-      checkmate::assertChoice(self$removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
+      checkmate::assertChoice(self$removeDuplicateSubjects, c("keep all",
+                                                              "keep first, truncate to second",
+                                                              "keep first",
+                                                              "remove all"), add = errorMessages)
       checkmate::assertLogical(self$restrictToCommonPeriod, len = 1, add = errorMessages)
       checkmate::assertInt(self$washoutPeriod, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$nestingCohortId, null.ok = TRUE, add = errorMessages)

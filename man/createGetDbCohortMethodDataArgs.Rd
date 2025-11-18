@@ -7,10 +7,10 @@
 createGetDbCohortMethodDataArgs(
   studyStartDate = "",
   studyEndDate = "",
-  firstExposureOnly = FALSE,
-  removeDuplicateSubjects = "keep all",
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0,
+  firstExposureOnly = TRUE,
+  removeDuplicateSubjects = "keep first, truncate to second",
+  restrictToCommonPeriod = TRUE,
+  washoutPeriod = 65,
   nestingCohortId = NULL,
   maxCohortSize = 0,
   covariateSettings
@@ -46,8 +46,9 @@ Create an object defining the parameter values.
 
 The \code{removeduplicateSubjects} argument can have one of the following values:
 \itemize{
-\item \code{"keep all"}: Do not remove subjects that appear in both target and comparator cohort
+\item \code{"keep first, truncate to second"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If the other cohort starts before the first has ended, the first cohort will be truncated to stop the day before the second starts. If both cohorts start simultaneous, the person is removed from the analysis.
 \item \code{"keep first"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
 \item \code{"remove all"}: Remove subjects that appear in both target and comparator cohort completely from the analysis."
+\item \code{"keep all"}: Do not remove subjects that appear in both target and comparator cohort
 }
 }
