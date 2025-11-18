@@ -19,6 +19,16 @@
 # @author Marc Suchard
 # @author Martijn Schuemie
 
+uniformSelect <- function(items, size) {
+  totalSize <- length(items)
+  if (size == 1) {
+    idx <- floor((totalSize + 1) / 2)
+  } else {
+    idx <- floor(1 + (0:(size - 1)) * (totalSize - 1) / (size - 1))
+  }
+  return(items[idx])
+}
+
 #' Create propensity scores
 #'
 #' @description
@@ -91,17 +101,16 @@ createPs <- function(cohortMethodData,
   } else {
     sampled <- FALSE
     if (createPsArgs$maxCohortSizeForFitting != 0) {
-      set.seed(0)
       targetRowIds <- population$rowId[population$treatment == 1]
       if (length(targetRowIds) > createPsArgs$maxCohortSizeForFitting) {
         message(paste0("Downsampling target cohort from ", length(targetRowIds), " to ", createPsArgs$maxCohortSizeForFitting, " before fitting"))
-        targetRowIds <- sample(targetRowIds, size = createPsArgs$maxCohortSizeForFitting, replace = FALSE)
+        targetRowIds <- uniformSelect(targetRowIds, size = createPsArgs$maxCohortSizeForFitting)
         sampled <- TRUE
       }
       comparatorRowIds <- population$rowId[population$treatment == 0]
       if (length(comparatorRowIds) > createPsArgs$maxCohortSizeForFitting) {
         message(paste0("Downsampling comparator cohort from ", length(comparatorRowIds), " to ", createPsArgs$maxCohortSizeForFitting, " before fitting"))
-        comparatorRowIds <- sample(comparatorRowIds, size = createPsArgs$maxCohortSizeForFitting, replace = FALSE)
+        comparatorRowIds <- uniformSelect(comparatorRowIds, size = createPsArgs$maxCohortSizeForFitting)
         sampled <- TRUE
       }
       if (sampled) {
