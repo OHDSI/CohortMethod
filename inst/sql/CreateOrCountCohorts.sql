@@ -57,7 +57,7 @@ WITH raw_cohorts AS (
 )
 
 {@remove_duplicate_subjects == 'keep first'} ? {
--- remove_duplicate_subjects
+-- remove_duplicate_subjects: keep first
 , remove_duplicate_subjects AS (
   SELECT subject_id,
 	  cohort_definition_id,
@@ -74,7 +74,7 @@ WITH raw_cohorts AS (
   WHERE cohort_number = 1
 )
 } : {{@remove_duplicate_subjects == 'remove all'} ? {
--- remove_duplicate_subjects
+-- remove_duplicate_subjects: remove all
 , remove_duplicate_subjects AS (
   SELECT raw_cohorts.subject_id,
 	  cohort_definition_id,
@@ -82,19 +82,10 @@ WITH raw_cohorts AS (
 		cohort_end_date
 	FROM raw_cohorts
 	INNER JOIN (
-{@exposure_table == 'drug_era' } ? {
-    SELECT person_id AS subject_id,
-      COUNT(DISTINCT(drug_concept_id)) exposure_count
-    FROM @exposure_database_schema.@exposure_table
-    WHERE drug_concept_id IN (@target_id, @comparator_id)
-    GROUP BY person_id
-} : {
     SELECT subject_id,
       COUNT(DISTINCT(cohort_definition_id)) exposure_count
-    FROM @exposure_database_schema.@exposure_table
-    WHERE cohort_definition_id IN (@target_id, @comparator_id)
+    FROM raw_cohorts
     GROUP BY subject_id
-}
 	) tmp
 	ON
 		raw_cohorts.subject_id = tmp.subject_id
@@ -164,35 +155,18 @@ SELECT subject_id,
   WHERE cohort_start_date >= (
 		SELECT MAX(start_date)
 		FROM (
-{@exposure_table == 'drug_era' } ? {
-			SELECT MIN(drug_era_start_date) AS start_date
-			FROM @exposure_database_schema.@exposure_table
-			WHERE drug_concept_id IN (@target_id, @comparator_id)
-			GROUP BY drug_concept_id
-} : {
 			SELECT MIN(cohort_start_date) AS start_date
-			FROM @exposure_database_schema.@exposure_table
-			WHERE cohort_definition_id IN (@target_id, @comparator_id)
+			FROM raw_cohorts
 			GROUP BY cohort_definition_id
-}
 		) tmp
-		)
-    AND cohort_start_date <= (
-			SELECT MIN(end_date)
-			FROM (
-{@exposure_table == 'drug_era' } ? {
-				SELECT MAX(drug_era_start_date) AS end_date
-				FROM @exposure_database_schema.@exposure_table
-				WHERE drug_concept_id IN (@target_id, @comparator_id)
-				GROUP BY drug_concept_id
-} : {
-				SELECT MAX(cohort_start_date) AS end_date
-				FROM @exposure_database_schema.@exposure_table
-				WHERE cohort_definition_id IN (@target_id, @comparator_id)
-				GROUP BY cohort_definition_id
-}
-			) tmp
-			)
+	) AND cohort_start_date <= (
+		SELECT MIN(end_date)
+		FROM (
+			SELECT MAX(cohort_start_date) AS end_date
+			FROM raw_cohorts
+			GROUP BY cohort_definition_id
+		) tmp
+	)
 )
 }
 

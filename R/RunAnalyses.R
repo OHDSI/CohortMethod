@@ -250,7 +250,7 @@ runCmAnalyses <- function(connectionDetails,
     createCmDataTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       # Create a clone because we'll alter the covariateSettings in the args object:
@@ -312,14 +312,14 @@ runCmAnalyses <- function(connectionDetails,
     createStudyPopTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       createStudyPopulationArgs <- analysisRow$createStudyPopulationArgs
 
       # Override defaults with outcome-specific settings if provided
       tco <- ParallelLogger::matchInList(
-        targetComparatorOutcomesList,
+        cmAnalysesSpecifications$targetComparatorOutcomesList,
         list(
           comparatorId = refRow$comparatorId,
           targetId = refRow$targetId
@@ -373,7 +373,7 @@ runCmAnalyses <- function(connectionDetails,
       createPsTask <- function(i) {
         refRow <- subset[i, ]
         analysisRow <- ParallelLogger::matchInList(
-          cmAnalysisList,
+          cmAnalysesSpecifications$cmAnalysisList,
           list(analysisId = refRow$analysisId)
         )[[1]]
         createPsArgs = analysisRow$createPsArgs
@@ -405,11 +405,11 @@ runCmAnalyses <- function(connectionDetails,
       createSharedPsTask <- function(i) {
         refRow <- subset[i, ]
         analysisRow <- ParallelLogger::matchInList(
-          cmAnalysisList,
+          cmAnalysesSpecifications$cmAnalysisList,
           list(analysisId = refRow$analysisId)
         )[[1]]
-        createPsArg <- analysisRow$createPsArg
-        createPsArg$control$threads <- multiThreadingSettings$psCvThreads
+        createPsArgs <- analysisRow$createPsArgs
+        createPsArgs$control$threads <- multiThreadingSettings$psCvThreads
         task <- list(
           cohortMethodDataFile = file.path(
             outputFolder,
@@ -450,7 +450,7 @@ runCmAnalyses <- function(connectionDetails,
     createTrimMatchStratTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       task <- list(
@@ -477,7 +477,7 @@ runCmAnalyses <- function(connectionDetails,
     createSharedBalanceTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
 
@@ -508,7 +508,7 @@ runCmAnalyses <- function(connectionDetails,
     createFilterForCovariateBalanceTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
 
@@ -536,7 +536,7 @@ runCmAnalyses <- function(connectionDetails,
     createBalanceTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       computeCovariateBalanceArgs <- analysisRow$computeCovariateBalanceArgs
@@ -570,7 +570,7 @@ runCmAnalyses <- function(connectionDetails,
     createPrefilterTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       task <- list(
@@ -602,7 +602,7 @@ runCmAnalyses <- function(connectionDetails,
     createOutcomeModelTask <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       args <- analysisRow$fitOutcomeModelArgs
@@ -641,7 +641,7 @@ runCmAnalyses <- function(connectionDetails,
     createArgs <- function(i) {
       refRow <- subset[i, ]
       analysisRow <- ParallelLogger::matchInList(
-        cmAnalysisList,
+        cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
       analysisRow$fitOutcomeModelArgs$control$threads <- multiThreadingSettings$outcomeCvThreads

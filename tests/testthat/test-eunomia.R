@@ -118,7 +118,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     createPsArgs <- createCreatePsArgs(
-      prior = createPrior("laplace", variance = 0.01),
+      prior = createPrior("laplace", variance = 0.01, exclude = c(0)),
       estimator = "att"
     )
 
@@ -295,7 +295,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     createPsArgs <- createCreatePsArgs(
-      prior = createPrior("laplace", variance = 0.01),
+      prior = createPrior("laplace", variance = 0.01, exclude = c(0)),
       estimator = "att"
     )
 
@@ -321,18 +321,22 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     cmAnalysisList <- list(cmAnalysis)
 
-    result <- runCmAnalyses(
-      connectionDetails = connectionDetails,
-      cdmDatabaseSchema = "main",
-      exposureTable = "cohort",
-      outcomeTable = "cohort",
-      outputFolder = outputFolder2,
-      cmAnalysesSpecifications = createCmAnalysesSpecifications(
-        cmAnalysisList = cmAnalysisList,
-        targetComparatorOutcomesList = targetComparatorOutcomesList,
-        analysesToExclude = analysesToExclude,
-        refitPsForEveryOutcome = TRUE
-      )
+    # Warning due to poor convergence (because data too small for outcome model)
+    expect_warning(
+      {
+        result <- runCmAnalyses(
+          connectionDetails = connectionDetails,
+          cdmDatabaseSchema = "main",
+          exposureTable = "cohort",
+          outcomeTable = "cohort",
+          outputFolder = outputFolder2,
+          cmAnalysesSpecifications = createCmAnalysesSpecifications(
+            cmAnalysisList = cmAnalysisList,
+            targetComparatorOutcomesList = targetComparatorOutcomesList,
+            refitPsForEveryOutcome = TRUE
+          )
+        )
+      }, "BLR convergence"
     )
 
     expect_equal(result$sharedPsFile, c("", ""))
