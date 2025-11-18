@@ -1685,7 +1685,7 @@ summarizeResults <- function(referenceTable,
                              cmDiagnosticThresholds) {
   subset <- referenceTable |>
     filter(.data$outcomeModelFile != "")
-  subset <- addMaxSdm(subset, outputFolder)
+  subset <- addBalance(subset, outputFolder, cmDiagnosticThresholds)
   subset <- addEquipoise(subset, outputFolder)
   results <- vector("list", nrow(subset))
   interActionResults <- list()
@@ -1722,7 +1722,11 @@ summarizeResults <- function(referenceTable,
         "outcomeId",
         "trueEffectSize",
         "maxSdm",
+        "sdmFamilyWiseMinP",
+        "balanced",
         "sharedMaxSdm",
+        "sharedSdmFamilyWiseMinP",
+        "sharedBalanced",
         "maxTargetSdm",
         "maxComparatorSdm",
         "maxTargetComparatorSdm",
@@ -1760,13 +1764,13 @@ summarizeResults <- function(referenceTable,
                                                       .data$maxTargetComparatorSdm)))
     row <- row |>
       mutate(balanceDiagnostic = case_when(
-        is.na(.data$maxSdm) ~ "NOT EVALUATED",
-        .data$maxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
+        is.na(.data$balanced) ~ "NOT EVALUATED",
+        .data$balanced ~ "PASS",
         TRUE ~ "FAIL"
       )) |>
       mutate(sharedBalanceDiagnostic = case_when(
-        is.na(.data$sharedMaxSdm) ~ "NOT EVALUATED",
-        .data$sharedMaxSdm < cmDiagnosticThresholds$sdmThreshold ~ "PASS",
+        is.na(.data$sharedBalanced) ~ "NOT EVALUATED",
+        .data$sharedBalanced ~ "PASS",
         TRUE ~ "FAIL"
       )) |>
       mutate(equipoiseDiagnostic = case_when(
@@ -1853,8 +1857,10 @@ summarizeResults <- function(referenceTable,
            "comparatorId",
            "outcomeId",
            "maxSdm",
+           "sdmFamilyWiseMinP",
            "balanceDiagnostic",
            "sharedMaxSdm",
+           "sharedSdmFamilyWiseMinP",
            "sharedBalanceDiagnostic",
            "equipoise",
            "equipoiseDiagnostic",
@@ -1906,7 +1912,7 @@ summarizeResults <- function(referenceTable,
   saveRDS(resultsSummary, mainFileName)
 }
 
-addMaxSdm <- function(referenceTable, outputFolder) {
+addBalance <- function(referenceTable, outputFolder, cmDiagnosticThresholds) {
   maxOrNa <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) {
@@ -1915,22 +1921,46 @@ addMaxSdm <- function(referenceTable, outputFolder) {
       return(as.numeric(max(x)))
     }
   }
+  minOrNa <- function(x) {
+    x <- x[!is.na(x)]
+    if (length(x) == 0) {
+      return(as.numeric(NA))
+    } else {
+      return(as.numeric(min(x)))
+    }
+  }
 
-  getMaxSdms <- function(balanceFile) {
+  getBalance <- function(balanceFile) {
     balance <- readRDS(file.path(outputFolder, balanceFile))
     if (nrow(balance) == 0) {
       row <- tibble(balanceFile = !!balanceFile,
                     maxSdm = as.numeric(NA),
                     maxTargetSdm = as.numeric(NA),
                     maxComparatorSdm = as.numeric(NA),
-                    maxTargetComparatorSdm = as.numeric(NA))
+                    maxTargetComparatorSdm = as.numeric(NA),
+                    sdmFamilyWiseMinP = as.numeric(NA),
+                    balanced = NA)
       return(row)
     } else {
+      # Report family-wise min P value, using Bonferroni correction for multiple testing:
+      nTests <- sum(!is.na(balance$afterMatchingSdmVariance))
       row <- tibble(balanceFile = !!balanceFile,
                     maxSdm = maxOrNa(abs(balance$afterMatchingStdDiff)),
                     maxTargetSdm = maxOrNa(abs(balance$targetStdDiff)),
                     maxComparatorSdm = maxOrNa(abs(balance$comparatorStdDiff)),
-                    maxTargetComparatorSdm = maxOrNa(abs(balance$targetComparatorStdDiff)))
+                    maxTargetComparatorSdm = maxOrNa(abs(balance$targetComparatorStdDiff)),
+                    sdmFamilyWiseMinP = nTests * minOrNa(computeBalanceP(
+                      sdm = balance$afterMatchingStdDiff,
+                      sdmVariance = balance$afterMatchingSdmVariance,
+                      threshold = cmDiagnosticThresholds$sdmThreshold
+                    )))
+      if (is.null(cmDiagnosticThresholds$sdmAlpha)) {
+        row <- row |>
+          mutate(balanced = .data$maxSdm > cmDiagnosticThresholds$sdmThreshold)
+      } else {
+        row <- row |>
+          mutate(balanced = .data$sdmFamilyWiseMinP < cmDiagnosticThresholds$sdmAlpha)
+      }
       return(row)
     }
   }
@@ -1940,10 +1970,16 @@ addMaxSdm <- function(referenceTable, outputFolder) {
     distinct(.data$balanceFile) |>
     pull()
   if (length(balanceFiles) == 0) {
-    maxSdm <- tibble(balanceFile = "NA", maxSdm = NA)
+    maxSdm <- tibble(balanceFile = "NA",
+                     maxSdm = NA,
+                     sdmFamilyWiseMinP = NA,
+                     balanced = NA)
   } else {
-    maxSdm <- bind_rows(lapply(balanceFiles, getMaxSdms)) |>
-      select("balanceFile", "maxSdm")
+    maxSdm <- bind_rows(lapply(balanceFiles, getBalance)) |>
+      select("balanceFile",
+             "maxSdm",
+             "sdmFamilyWiseMinP",
+             "balanced")
   }
   sharedBalanceFiles <- referenceTable |>
     filter(.data$sharedBalanceFile != "") |>
@@ -1951,14 +1987,21 @@ addMaxSdm <- function(referenceTable, outputFolder) {
     pull()
   if (length(sharedBalanceFiles) == 0) {
     sharedMaxSdm <- tibble(sharedBalanceFile = "NA",
-                           sharedMaxSdm = NA,
-                           maxTargetSdm = NA,
-                           maxComparatorSdm = NA,
-                           maxTargetComparatorSdm = NA)
+                           sharedMaxSdm = as.numeric(NA),
+                           sharedSdmFamilyWiseMinP = as.numeric(NA),
+                           sharedBalanced = NA,
+                           maxTargetSdm = as.numeric(NA),
+                           maxComparatorSdm = as.numeric(NA),
+                           maxTargetComparatorSdm = as.numeric(NA))
   } else {
-    sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getMaxSdms)) |>
-      rename(sharedBalanceFile = "balanceFile",
-             sharedMaxSdm = "maxSdm")
+    sharedMaxSdm <- bind_rows(lapply(sharedBalanceFiles, getBalance)) |>
+      select(sharedBalanceFile = "balanceFile",
+             sharedMaxSdm = "maxSdm",
+             sharedSdmFamilyWiseMinP = "sdmFamilyWiseMinP",
+             sharedBalanced = "balanced",
+             "maxTargetSdm",
+             "maxComparatorSdm",
+             "maxTargetComparatorSdm")
   }
   referenceTable <- referenceTable |>
     left_join(maxSdm,by = join_by(balanceFile)) |>

@@ -43,6 +43,7 @@ Create a parameter object for the function \code{\link[=computeCovariateBalance]
 Create an object defining the parameter values.
 }
 \references{
-Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ (2025)
-Assessing Covariate Balance with Small Sample Sizes. medRxiv. Feb 21:2024.04.23.24306230.
+Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ,
+Assessing Covariate Balance with Small Sample Sizes.
+Statistics in Medicine 44, no. 18-19 (2025): e70212
 }

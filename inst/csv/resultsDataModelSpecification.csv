@@ -117,7 +117,9 @@ cm_diagnostics_summary,comparator_id,bigint,Yes,Yes,No,No,The identifier for the
 cm_diagnostics_summary,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_diagnostics_summary,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_diagnostics_summary,max_sdm,float,No,No,No,No,The maximum absolute standardized difference of mean.
+cm_diagnostics_summary,sdm_family_wise_min _p,float,No,No,No,No,The minimum family-wise P-value for the test whether the absolute SDM exceeds the diagnostic threshold.
 cm_diagnostics_summary,shared_max_sdm,float,No,No,No,No,The maximum absolute standardized difference of mean of the shared balance (shared across outcomes).
+cm_diagnostics_summary,shared_sdm_family_wise_min _p,float,No,No,No,No,The minimum family-wise P-value for the test whether the absolute SDM exceeds the diagnostic threshold for the shared balance (across all outcomes).
 cm_diagnostics_summary,equipoise,float,No,No,No,No,The fraction of the study population with a preference score between 0.3 and 0.7.
 cm_diagnostics_summary,mdrr,float,No,No,No,No,The minimum detectable relative risk.
 cm_diagnostics_summary,attrition_fraction,float,No,No,No,Yes,DEPRECATED: The fraction of the target population lost by between initial cohort and outcome model due to various restrictions.

@@ -8,6 +8,7 @@ createCmDiagnosticThresholds(
   mdrrThreshold = 10,
   easeThreshold = 0.25,
   sdmThreshold = 0.1,
+  sdmAlpha = NULL,
   equipoiseThreshold = 0.2,
   generalizabilitySdmThreshold = 1
 )
@@ -23,6 +24,11 @@ createCmDiagnosticThresholds(
 any covariate has an SDM exceeding this threshold, the diagnostic will
 fail.}
 
+\item{sdmAlpha}{What is the alpha for testing whether the absolute SDM exceeds
+\code{sdmThreshold}? If not provided, no significance testing will be
+performed and any absolute SDM greater than the threshold will be
+considered imbalance.}
+
 \item{equipoiseThreshold}{What is the minimum required equipoise?}
 
 \item{generalizabilitySdmThreshold}{What is the maximum allowed standardized difference of mean
@@ -35,4 +41,9 @@ An object of type \code{CmDiagnosticThresholds}.
 }
 \description{
 Threshold used when calling \code{\link[=exportToCsv]{exportToCsv()}} to determine if we pass or fail diagnostics.
+}
+\details{
+The \code{sdmThreshold} and \code{sdmAlpha} arguments are independent of the \code{threshold} and \code{alpha}
+threshold provided to the \code{createComputeCovariateBalanceArgs()} function. The latter have no
+impact on blinding and diagnostics reported in the export.
 }

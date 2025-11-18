@@ -443,8 +443,8 @@ computeCovariateBalance <- function(population,
     useAlpha <- FALSE
   } else {
     useAlpha <- TRUE
-    correctedAlphaBefore <- computeCovariateBalanceArgs$alpha / nrow(beforeMatching)
-    correctedAlphaAfter <- computeCovariateBalanceArgs$alpha / nrow(afterMatching)
+    correctedAlphaBefore <- computeCovariateBalanceArgs$alpha / sum(!is.na(beforeMatching$sdmVariance))
+    correctedAlphaAfter <- computeCovariateBalanceArgs$alpha / sum(!is.na(afterMatching$sdmVariance))
   }
 
   beforeMatching <- beforeMatching |>

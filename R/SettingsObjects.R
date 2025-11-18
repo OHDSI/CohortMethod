@@ -632,8 +632,9 @@ StratifyByPsArgs <- R6Class(
 #'                    than the threshold will be marked as unbalanced.
 #'
 #' @references
-#' Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ (2025)
-#' Assessing Covariate Balance with Small Sample Sizes. medRxiv. Feb 21:2024.04.23.24306230.
+#' Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ,
+#' Assessing Covariate Balance with Small Sample Sizes.
+#' Statistics in Medicine 44, no. 18-19 (2025): e70212
 #'
 #' @return
 #' An object of type `ComputeCovariateBalanceArgs`.
@@ -1128,11 +1129,20 @@ TargetComparatorOutcomes <- R6Class(
 #' @param sdmThreshold          What is the maximum allowed standardized difference of mean (SDM)? If
 #'                              any covariate has an SDM exceeding this threshold, the diagnostic will
 #'                              fail.
+#' @param sdmAlpha              What is the alpha for testing whether the absolute SDM exceeds
+#'                              `sdmThreshold`? If not provided, no significance testing will be
+#'                              performed and any absolute SDM greater than the threshold will be
+#'                              considered imbalance.
 #' @param equipoiseThreshold    What is the minimum required equipoise?
 #' @param generalizabilitySdmThreshold What is the maximum allowed standardized difference of mean
 #'                                     (SDM)when comparing the population before and after PS
 #'                                     adjustments? If the SDM is greater than this value, the diagnostic
 #'                                     will fail.
+#'
+#' @details
+#' The `sdmThreshold` and `sdmAlpha` arguments are independent of the `threshold` and `alpha`
+#' threshold provided to the `createComputeCovariateBalanceArgs()` function. The latter have no
+#' impact on blinding and diagnostics reported in the export.
 #'
 #' @return
 #' An object of type `CmDiagnosticThresholds`.
@@ -1141,6 +1151,7 @@ TargetComparatorOutcomes <- R6Class(
 createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
                                          easeThreshold = 0.25,
                                          sdmThreshold = 0.1,
+                                         sdmAlpha = NULL,
                                          equipoiseThreshold = 0.2,
                                          generalizabilitySdmThreshold = 1) {
   args <- list()
@@ -1157,6 +1168,7 @@ CmDiagnosticThresholds <- R6Class(
     mdrrThreshold = NULL,
     easeThreshold = NULL,
     sdmThreshold = NULL,
+    sdmAlpha = NULL,
     equipoiseThreshold = NULL,
     generalizabilitySdmThreshold = NULL,
     validate = function() {
@@ -1164,6 +1176,7 @@ CmDiagnosticThresholds <- R6Class(
       checkmate::assertNumeric(self$mdrrThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$easeThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$sdmThreshold, len = 1, lower = 0, add = errorMessages)
+      checkmate::assertNumeric(self$sdmAlpha, null.ok = TRUE, len = 1, lower = 0, upper = 1, add = errorMessages)
       checkmate::assertNumeric(self$equipoiseThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$generalizabilitySdmThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)

@@ -22,7 +22,9 @@ Changes:
     ```r
     profileGrid = seq(log(0.1), log(10), length.out = 8),
     profileBounds = NULL
-    ```                                  
+    ```    
+    
+    This adds the `gradient` field to the `cm_likelihood_profile` table when exporting to CSV.
 
 9. Now performing empirical calibration *after* removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.
 
@@ -46,9 +48,13 @@ Changes:
 
 19. Dropped the `firstExposureOnly`, `restrictToCommonPeriod`, `washoutPeriod`, and `removeDuplicateSubjects` arguments from `CreateStudyPopulationArgs`. These were duplicated from `getDbCohortMethodData()`, and we'll keep them only there from now on.
 
+20. Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:
 
+    - Added the `threshold` and `alpha` arguments to the `createComputeCovariateBalanceArgs()` function. These do not impact blinding when running `runCmAnalyses` but do add columns to the balance files, for when running single studies.
+    - Added the `sdmAlpha` argument to the `createCmDiagnosticThresholds()` function. 
 
-
+    This adds the `sdm_family_wise_min_p` and `shared_sdm_family_wise_min_p` fields to the `cm_diagnostics_summary` table when exporting to CSV. 
+    For now, the default is not to use signficance testing, but the family-wise min P can help understand if one would have passed when using it.
 
 CohortMethod 5.5.2
 ==================
