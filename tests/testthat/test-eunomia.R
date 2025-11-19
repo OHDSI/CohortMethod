@@ -7,11 +7,15 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
   outputFolder1 <- tempfile(pattern = "cmData")
   outputFolder2 <- tempfile(pattern = "cmData")
+  outputFolder3 <- tempfile(pattern = "cmData")
+  outputFolder4 <- tempfile(pattern = "cmData")
   if (is_checking()) {
     withr::defer(
       {
         unlink(outputFolder1, recursive = TRUE)
         unlink(outputFolder2, recursive = TRUE)
+        unlink(outputFolder3, recursive = TRUE)
+        unlink(outputFolder4, recursive = TRUE)
       },
       testthat::teardown_env()
     )
@@ -24,6 +28,8 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
   })
 
   test_that("Multiple analyses", {
+
+    # A test for a general analyses with mutliple TCOs and analyses, with analyses to exclude
 
     tcos1 <- createTargetComparatorOutcomes(
       targetId = 1,
@@ -231,7 +237,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     expect_equal(nrow(analysisSum), 26)
 
-    CohortMethod::exportToCsv(outputFolder1, databaseId = "Test")
+    exportToCsv(outputFolder1, databaseId = "Test")
     cohortMethodResultFile <- file.path(outputFolder1, "export", "cm_result.csv")
     expect_true(file.exists(cohortMethodResultFile))
 
@@ -255,6 +261,8 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
   test_that("Multiple analyses with refit PS", {
 
+    # A test for refitting the propensity model for every outcome
+
     tcos1 <- createTargetComparatorOutcomes(
       targetId = 1,
       comparatorId = 2,
@@ -274,7 +282,10 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     targetComparatorOutcomesList <- list(tcos1)
 
-    covarSettings <- createDefaultCovariateSettings(addDescendantsToExclude = TRUE)
+    covarSettings <- createCovariateSettings(
+      useDemographicsGender = TRUE,
+      useDemographicsAge = TRUE
+    )
 
     getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
       firstExposureOnly = TRUE,
@@ -341,5 +352,192 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     expect_equal(result$sharedPsFile, c("", ""))
     expect_equal(result$psFile, c("Ps_l1_s1_p1_t1_c2_o3.rds", "Ps_l1_s1_p1_t1_c2_o4.rds"))
+  })
+
+  test_that("High correlation covariates", {
+
+    # A test to see if high-correlation covariates are handled correctly
+
+    # Not excluding drug concepts:
+    tcos1 <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(
+          outcomeId = 3
+        )
+      )
+    )
+
+    targetComparatorOutcomesList <- list(tcos1)
+
+    covarSettings <- createCovariateSettings(
+      useDrugEraShortTerm = TRUE,
+      addDescendantsToExclude = TRUE
+    )
+
+    getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
+      firstExposureOnly = TRUE,
+      restrictToCommonPeriod = FALSE,
+      removeDuplicateSubjects = "remove all",
+      washoutPeriod = 183,
+      covariateSettings = covarSettings
+    )
+
+    createStudyPopArgs <- createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = TRUE,
+      censorAtNewRiskWindow = TRUE,
+      minDaysAtRisk = 1,
+      riskWindowStart = 0,
+      startAnchor = "cohort start",
+      riskWindowEnd = 30,
+      endAnchor = "cohort end"
+    )
+
+    createPsArgs <- createCreatePsArgs(
+      prior = createPrior("laplace", variance = 0.01, exclude = c(0)),
+      estimator = "att",
+      stopOnError = FALSE
+    )
+
+    matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 1)
+
+    fitOutcomeModelArgs <- createFitOutcomeModelArgs(
+      modelType = "cox",
+      stratified = TRUE
+    )
+
+    cmAnalysis <- createCmAnalysis(
+      analysisId = 1,
+      description = "Matching",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs,
+      createPsArgs = createPsArgs,
+      matchOnPsArgs = matchOnPsArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs
+    )
+
+    cmAnalysisList <- list(cmAnalysis)
+
+    result <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder3,
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = cmAnalysisList,
+        targetComparatorOutcomesList = targetComparatorOutcomesList
+      )
+    )
+
+    exportToCsv(outputFolder3, databaseId = "Test")
+    propensityModelFile <- file.path(outputFolder3, "export", "cm_propensity_model.csv")
+    model <- readr::read_csv(propensityModelFile, show_col_types = FALSE)
+    model <- model |>
+      arrange(covariate_id)
+    expect_equal(model$covariate_id, c(1118084404, 1124300404))
+    expect_equal(model$coefficient, c(1000000, -1000000))
+  })
+
+  test_that("Match and stratify by additional covariates", {
+
+    # A test to make sure matching and stratifying by additional covariates works
+
+    tcos1 <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(
+          outcomeId = 3
+        )
+      )
+    )
+
+    targetComparatorOutcomesList <- list(tcos1)
+
+    covarSettings <- createCovariateSettings(
+      useDemographicsGender = TRUE,
+      useDemographicsAge = TRUE
+    )
+
+    getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
+      firstExposureOnly = TRUE,
+      restrictToCommonPeriod = FALSE,
+      removeDuplicateSubjects = "remove all",
+      washoutPeriod = 183,
+      covariateSettings = covarSettings
+    )
+
+    createStudyPopArgs <- createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = TRUE,
+      censorAtNewRiskWindow = TRUE,
+      minDaysAtRisk = 1,
+      riskWindowStart = 0,
+      startAnchor = "cohort start",
+      riskWindowEnd = 30,
+      endAnchor = "cohort end"
+    )
+
+    createPsArgs <- createCreatePsArgs(
+      prior = createPrior("laplace", variance = 0.01, exclude = c(0)),
+      estimator = "att"
+    )
+
+    # Additionally match on gender:
+    matchOnPsArgs <- createMatchOnPsArgs(
+      maxRatio = 1,
+      matchCovariateIds = 8532001
+    )
+
+    fitOutcomeModelArgs <- createFitOutcomeModelArgs(
+      modelType = "cox",
+      stratified = TRUE
+    )
+
+    cmAnalysis1 <- createCmAnalysis(
+      analysisId = 1,
+      description = "Matching",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs,
+      createPsArgs = createPsArgs,
+      matchOnPsArgs = matchOnPsArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs
+    )
+
+    # Additionally stratify on gender:
+    stratifyByPsArgs <- createStratifyByPsArgs(
+      numberOfStrata = 5,
+      stratificationCovariateIds = 8532001
+    )
+
+    cmAnalysis2 <- createCmAnalysis(
+      analysisId = 2,
+      description = "Stratification",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs,
+      createPsArgs = createPsArgs,
+      stratifyByPsArgs = stratifyByPsArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs
+    )
+
+    cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
+
+    result <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder4,
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = cmAnalysisList,
+        targetComparatorOutcomesList = targetComparatorOutcomesList
+      )
+    )
+    strataPop <- readRDS(file.path(outputFolder4, result$strataFile[1]))
+    expect_true("covariateId_8532001" %in% colnames(strataPop))
+
+    strataPop <- readRDS(file.path(outputFolder4, result$strataFile[2]))
+    expect_true("covariateId_8532001" %in% colnames(strataPop))
   })
 }

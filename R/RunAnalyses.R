@@ -820,43 +820,43 @@ addPsToStudyPopulation <- function(studyPopulation, ps) {
   return(studyPopulation)
 }
 
-applyTrimMatchStratify <- function(ps, arguments) {
-  if (!is.null(arguments$trimByPsArgs)) {
+applyTrimMatchStratify <- function(ps, params) {
+  if (!is.null(params$args$trimByPsArgs)) {
     functionArgs <- list(
       population = ps,
-      trimByPsArgs = arguments$trimByPsArgs
+      trimByPsArgs = params$args$trimByPsArgs
     )
     ps <- do.call("trimByPs", functionArgs)
   }
-  if (!is.null(arguments$truncateIptwArgs)) {
+  if (!is.null(params$args$truncateIptwArgs)) {
     functionArgs <- list(
       population = ps,
-      truncateIptwArgs = arguments$truncateIptwArgs
+      truncateIptwArgs = params$args$truncateIptwArgs
     )
     ps <- do.call("truncateIptw", functionArgs)
   }
-  if (!is.null(arguments$matchOnPsArgs)) {
-    if (length(arguments$matchOnPsArgs$matchCovariateIds) == 0) {
+  if (!is.null(params$args$matchOnPsArgs)) {
+    if (length(params$args$matchOnPsArgs$matchCovariateIds) == 0) {
       cohortMethodData <- NULL
     } else {
-      cohortMethodData <- getCohortMethodData(arguments$cohortMethodDataFile)
+      cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
     }
     functionArgs <- list(
       population = ps,
       cohortMethodData = cohortMethodData,
-      matchOnPsArgs = arguments$matchOnPsArgs
+      matchOnPsArgs = params$args$matchOnPsArgs
     )
     ps <- do.call("matchOnPs", functionArgs)
-  } else if (!is.null(arguments$stratifyByPsArgs)) {
-    if (length(arguments$stratifyByPsArgs$stratificationCovariateIds) == 0) {
+  } else if (!is.null(params$args$stratifyByPsArgs)) {
+    if (length(params$args$stratifyByPsArgs$stratificationCovariateIds) == 0) {
       cohortMethodData <- NULL
     } else {
-      cohortMethodData <- getCohortMethodData(arguments$cohortMethodDataFile)
+      cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
     }
     functionArgs <- list(
       population = ps,
       cohortMethodData = cohortMethodData,
-      stratifyByPsArgs = arguments$stratifyByPsArgs
+      stratifyByPsArgs = params$args$stratifyByPsArgs
     )
     ps <- do.call("stratifyByPs", functionArgs)
   }
@@ -867,7 +867,7 @@ doTrimMatchStratify <- function(params) {
   ps <- getPs(params$psFile)
   ParallelLogger::logDebug(sprintf("Performing matching etc., using %s",
                                    params$psFile))
-  ps <- applyTrimMatchStratify(ps, params$args)
+  ps <- applyTrimMatchStratify(ps, params)
   saveRDS(ps, params$strataFile)
   return(NULL)
 }
@@ -959,7 +959,7 @@ doFitOutcomeModelPlus <- function(params) {
     ps <- studyPop
   }
   rm(studyPop)
-  ps <- applyTrimMatchStratify(ps, params$args)
+  ps <- applyTrimMatchStratify(ps, params)
   args <- list(
     population = ps,
     cohortMethodData = cohortMethodData,

@@ -832,10 +832,9 @@ exportPropensityModel <- function(outputFolder,
         cross_join(model)
       return(rows)
     } else if (grepl("High correlation", metaData$psError)) {
-      model <- tibble(
-        covariateId = metaData$psHighCorrelation$covariateId,
-        coefficient = 99999
-      )
+      model <- metaData$psHighCorrelation |>
+        mutate(coefficient = .data$correlation * 1e6) |>
+        select("covariateId", "coefficient")
       rows <- rows |>
         select("targetId", "comparatorId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>

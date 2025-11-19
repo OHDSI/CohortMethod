@@ -175,15 +175,20 @@ createPs <- function(cohortMethodData,
       suspect <- Cyclops::getUnivariableCorrelation(cyclopsData, threshold = 0.5)
       suspect <- suspect[!is.na(suspect)]
       if (length(suspect) != 0) {
-        covariateIds <- as.numeric(names(suspect))
+        highCorrelation <- tibble(
+          covariateId = as.numeric(names(suspect)),
+          correlation = as.vector(suspect)
+        )
         ref <- cohortMethodData$covariateRef |>
-          filter(.data$covariateId %in% covariateIds) |>
+          filter(.data$covariateId %in% highCorrelation$covariateId) |>
           collect()
-        metaData$psHighCorrelation <- ref
+        highCorrelation <- highCorrelation |>
+          inner_join(ref, by = join_by("covariateId"))
+        metaData$psHighCorrelation <- highCorrelation
         message("High correlation between covariate(s) and treatment detected:")
-        message(paste(colnames(ref), collapse = "\t"))
-        for (i in 1:nrow(ref)) {
-          message(paste(ref[i, ], collapse = "\t"))
+        message(paste(colnames(highCorrelation), collapse = "\t"))
+        for (i in 1:nrow(highCorrelation)) {
+          message(paste(highCorrelation[i, ], collapse = "\t"))
         }
         message <- "High correlation between covariate(s) and treatment detected. Perhaps you forgot to exclude part of the exposure definition from the covariates?"
         if (createPsArgs$stopOnError) {
@@ -825,11 +830,13 @@ mergeCovariatesWithPs <- function(data, cohortMethodData, covariateIds) {
     collect()
 
   for (covariateId in covariateIds) {
-    values <- covariates[covariates$covariateId == covariateId, c("rowId", "covariateValue")]
-    colnames(values)[colnames(values) == "covariateValue"] <- paste("covariateId", covariateId, sep = "_")
-    data <- merge(data, values, all.x = TRUE)
-    col <- which(colnames(data) == paste("covariateId", covariateId, sep = "_"))
-    data[is.na(data[, col]), col] <- 0
+    values <- covariates |>
+      filter(.data$covariateId == !!covariateId) |>
+      select("rowId", "covariateValue")
+    data <- data |>
+      left_join(values, by = join_by("rowId")) |>
+      mutate(covariateValue = if_else(is.na(.data$covariateValue), 0, .data$covariateValue))
+    colnames(data)[colnames(data) == "covariateValue"] <- paste("covariateId", covariateId, sep = "_")
   }
   return(data)
 }
