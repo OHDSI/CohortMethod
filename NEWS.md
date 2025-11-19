@@ -1,23 +1,68 @@
 CohortMethod 6.0.0
 ==================
 
-Changes:
+This major release introduces many changes. The three most important ones are (1) changing the settings objects, (2) supporting nesting cohorts, and (3) covariate balance significance testing.
 
-1. Dropped the `cdmVersion` argument in `getDbCohortMethodData()` and `runCmAnalyses()`. The version will be identified in the `cdm_source` table.
 
-2. Dropped the `trimByIptw()` and `trimByPsToEquipoise()` functions. Added `equipoiseBounds` and `maxWeight` arguments to `createTrimByPsArgs()` so functionality remains.
+## Changes related to the settings objects
 
-3. Dropped the `matchOnPsAndCovariates()` function and added a `stratificationCovariateIds` argument to `createMatchOnPsArgs()` so functionality remains.
+1. All settings objects have been changed to R6 classes, and are now used both when calling functions individually and when using `runCmAnalyses()`. The main rationale is that allows 3rd parties to more easily generate valid settings.
 
-4. Dropped the `stratifyByPsAndCovariates()` function and added a `stratificationCovariateIds` argument to `createStratifyByPsPsArgs()` so functionality remains.
+2. Dropped the `cdmVersion` argument in `getDbCohortMethodData()` and `runCmAnalyses()`. The version will be identified in the `cdm_source` table.
 
-5. Renamed `createStudyPopArgs` argument of `createCmAnalysis()` to `createStudyPopulationArgs` for consistency.
+3. Dropped the `trimByIptw()` and `trimByPsToEquipoise()` functions. Added `equipoiseBounds` and `maxWeight` arguments to `createTrimByPsArgs()` so functionality remains.
 
-6. Dropping the deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`. The amount of attrition is not a good measure of generalizability. Use the generalizability diagnostic instead, which measures the similarity between the target and analytic cohort characteristcs.
+4. Dropped the `matchOnPsAndCovariates()` function and added a `stratificationCovariateIds` argument to `createMatchOnPsArgs()` so functionality remains.
 
-7. Changed the default outcome model type from 'logistic' to 'cox'.
+5. Dropped the `stratifyByPsAndCovariates()` function and added a `stratificationCovariateIds` argument to `createStratifyByPsPsArgs()` so functionality remains.
 
-8. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
+6. Renamed `createStudyPopArgs` argument of `createCmAnalysis()` to `createStudyPopulationArgs` for consistency.
+
+7. Dropping the deprecated `attritionFractionThreshold` argument of `createCmDiagnosticThresholds()`. The amount of attrition is not a good measure of generalizability. Use the generalizability diagnostic instead, which measures the similarity between the target and analytic cohort characteristcs.
+
+8. Changed the default outcome model type from 'logistic' to 'cox'.
+
+9. Set the defaults of `createGetDbCohortMethodDataArgs()` to those most often used.
+
+10. Dropped the `firstExposureOnly`, `restrictToCommonPeriod`, `washoutPeriod`, and `removeDuplicateSubjects` arguments from `CreateStudyPopulationArgs`. These were duplicated from `getDbCohortMethodData()`, and we'll keep them only there from now on.
+
+
+# Changes related to nesting cohorts
+
+11. Added ability to restrict to a nesting cohort (e.g. restricting drug exposures to a specific indication). See the `nestingCohortId` argument in the `createGetDbCohortMethodDataArgs()` and `createTargetComparatorOutcomes()` functions and the `nestingCohortDatabaseSchema` and `nestingCohortTable` arguments in the `getDbCohortMethodData()` function. 
+
+    Note that this adds the nesting cohort ID to many results tables. This will have a value of 0 when no nesting cohort is specified (because null values are not allowed in primary keys).
+
+
+## Changes related to the new covariate balance diagnostic
+
+12. Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:
+
+    - Added the `threshold` and `alpha` arguments to the `createComputeCovariateBalanceArgs()` function. These do not impact blinding when running `runCmAnalyses` but do add columns to the balance files, for when running single studies.
+    - Added the `sdmAlpha` argument to the `createCmDiagnosticThresholds()` function. 
+
+    This adds the `sdm_family_wise_min_p` and `shared_sdm_family_wise_min_p` fields to the `cm_diagnostics_summary` table when exporting to CSV. 
+    For now, the default is not to use signficance testing, but the family-wise min P can help understand if one would have passed when using it.
+
+
+## Other important changes
+
+13. Added a new option for the `removeDuplicateSubjects` argument:  "keep first, truncate to second". This is similar to "keep first", but also truncates the first exposure to stop the day before the second starts.
+
+14. Now performing empirical calibration *after* removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.
+
+15. If high correlation is detected when fitting a propensity model, but `stopOnError = FALSE`, the export will show the highly correlated covariates in the model with extreme coefficients (1e6 * correlation).
+
+16. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
+
+17. All restrictions on the study populations performed by `getDbCohortMethodData()` are now step-by-step recorded in the attrition table.
+
+18. Completely updated of all unit tests to increase coverage of functional tests, while also increasing speed.
+
+
+## Minor changes
+ 
+19. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
     
     ```r
     profileGrid = seq(log(0.1), log(10), length.out = 8),
@@ -26,39 +71,15 @@ Changes:
     
     This adds the `gradient` field to the `cm_likelihood_profile` table when exporting to CSV.
 
-9. Now performing empirical calibration *after* removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.
+20. Removed mention of legacy function `grepCovariateNames()` from the vignette.
 
-10. If high correlation is detected when fitting a propensity model, but `stopOnError = FALSE`, the export will show the highly correlated covariates in the model with extreme coefficients (1e6 * correlation).
+21. Added citation to the HADES paper to the package.
 
-11. Removed mention of legacy function `grepCovariateNames()` from the vignette.
+22. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. The `OhdsiShinyAppBuilder` package should be used directly instead.
 
-12. Added citation to the HADES paper to the package.
+23. Corrected the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
 
-13. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. The `OhdsiShinyAppBuilder` package should be used directly instead.
-
-14. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
-
-15. Corrected the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
-
-16. Added a vignette showing the results schema.
-
-17. Added ability to restrict to a nesting cohort (e.g. restricting drug exposures to a specific indication). See the `nestingCohortId` argument in the `createGetDbCohortMethodDataArgs()` function and the `nestingCohortDatabaseSchema` and `nestingCohortTable` arguments in the `getDbCohortMethodData()` function.
-
-18. All restrictions on the study populations performed by `getDbCohortMethodData()` are now step-by-step recorded in the attrition table.
-
-19. Dropped the `firstExposureOnly`, `restrictToCommonPeriod`, `washoutPeriod`, and `removeDuplicateSubjects` arguments from `CreateStudyPopulationArgs`. These were duplicated from `getDbCohortMethodData()`, and we'll keep them only there from now on.
-
-20. Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:
-
-    - Added the `threshold` and `alpha` arguments to the `createComputeCovariateBalanceArgs()` function. These do not impact blinding when running `runCmAnalyses` but do add columns to the balance files, for when running single studies.
-    - Added the `sdmAlpha` argument to the `createCmDiagnosticThresholds()` function. 
-
-    This adds the `sdm_family_wise_min_p` and `shared_sdm_family_wise_min_p` fields to the `cm_diagnostics_summary` table when exporting to CSV. 
-    For now, the default is not to use signficance testing, but the family-wise min P can help understand if one would have passed when using it.
-    
-21. Added a new option for the `removeDuplicateSubjects` argument:  "keep first, truncate to second". This is similar to "keep first", but also truncates the first exposure to stop the day before the second starts.
-
-22. Set the defaults of `createGetDbCohortMethodDataArgs()` to those most often used.
+24. Added a vignette showing the results schema.
 
 
 CohortMethod 5.5.2

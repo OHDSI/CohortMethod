@@ -214,6 +214,10 @@ createEmptyResult <- function(tableName) {
   return(result)
 }
 
+.NaToZero <- function(x) {
+  return(if_else(is.na(x), 0, x))
+}
+
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
   message("- cm__analysis table")
 
@@ -309,7 +313,8 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
       bind_rows() |>
       mutate(
         targetId = tcos$targetId,
-        comparatorId = tcos$comparatorId
+        comparatorId = tcos$comparatorId,
+        nestingCohortId = if (is.null(tcos$nestingCohortId)) 0 else tcos$nestingCohortId
       )
     return(table)
 
@@ -349,6 +354,7 @@ exportAttrition <- function(outputFolder,
       mutate(
         targetId = reference$targetId[i],
         comparatorId = reference$comparatorId[i],
+        nestingCohortId = .NaToZero(reference$nestingCohortId[i]),
         analysisId = reference$analysisId[i],
         outcomeId = reference$outcomeId[i],
         databaseId = databaseId
@@ -419,6 +425,7 @@ exportCmFollowUpDist <- function(outputFolder,
     table <- tibble(
       target_id = row$targetId,
       comparator_id = row$comparatorId,
+      nesting_cohort_id = .NaToZero(row$nestingCohortId),
       outcome_id = row$outcomeId,
       analysis_id = row$analysisId,
       target_min_days = targetDist[1],
@@ -462,10 +469,12 @@ exportCohortMethodResults <- function(outputFolder,
                                       minCellCount) {
   message("- cm__result table")
   results <- getResultsSummary(outputFolder) |>
+    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId)) |>
     select(
       "analysisId",
       "targetId",
       "comparatorId",
+      "nestingCohortId",
       "outcomeId",
       "rr",
       "ci95Lb",
@@ -509,10 +518,12 @@ exportCmInteractionResults <- function(outputFolder,
     results <- createEmptyResult("cm_interaction_result")
   } else {
     results <- results |>
+      mutate(nestingCohortId = .NaToZero(.data$nestingCohortId)) |>
       select(
         "analysisId",
         "targetId",
         "comparatorId",
+        "nestingCohortId",
         "outcomeId",
         "interactionCovariateId",
         "rr",
@@ -570,6 +581,7 @@ exportLikelihoodProfiles <- function(outputFolder,
           mutate(
             targetId = reference$targetId[i],
             comparatorId = reference$comparatorId[i],
+            nestingCohortId = .NaToZero(reference$nestingCohortId[i]),
             outcomeId = reference$outcomeId[i],
             analysisId = reference$analysisId[i],
             databaseId = !!databaseId
@@ -614,6 +626,7 @@ exportCovariateBalance <- function(outputFolder,
       databaseId = !!databaseId,
       targetId = rows$targetId[1],
       comparatorId = rows$comparatorId[1],
+      nestingCohortId = .NaToZero(reference$nestingCohortId[1]),
       outcomeId = rows$outcomeId,
       analysisId = unique(rows$analysisId)
     ) |>
@@ -638,7 +651,7 @@ exportSharedCovariateBalance <- function(outputFolder,
   message("- shared_covariate_balance table")
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedBalanceFile != "") |>
-    distinct(.data$sharedBalanceFile, .data$analysisId, .data$targetId, .data$comparatorId)
+    distinct(.data$sharedBalanceFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId)
   sharedBalanceFiles <- reference |>
     distinct(.data$sharedBalanceFile) |>
     pull()
@@ -657,6 +670,7 @@ exportSharedCovariateBalance <- function(outputFolder,
       databaseId = !!databaseId,
       targetId = rows$targetId[1],
       comparatorId = rows$comparatorId[1],
+      nestingCohortId = .NaToZero(rows$nestingCohortId[1]),
       analysisId = unique(rows$analysisId)
     ) |>
       cross_join(tidyBalance(balance, minCellCount))
@@ -765,7 +779,8 @@ exportPreferenceScoreDistribution <- function(outputFolder,
 
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedPsFile != "") |>
-    distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId)
+    distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId) |>
+    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId))
 
   # rows <- split(reference, reference$sharedPsFile)[[2]]
   preparePlot <- function(rows) {
@@ -781,7 +796,8 @@ exportPreferenceScoreDistribution <- function(outputFolder,
         select(
           "analysisId",
           "targetId",
-          "comparatorId"
+          "comparatorId",
+          "nestingCohortId"
         ) |>
         mutate(databaseId = !!databaseId) |>
         cross_join(
@@ -811,7 +827,8 @@ exportPropensityModel <- function(outputFolder,
   message("- propensity_model table")
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedPsFile != "") |>
-    distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId)
+    distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId) |>
+    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId))
 
   # rows <- split(reference, reference$sharedPsFile)[[1]]
   prepareData <- function(rows) {
@@ -827,7 +844,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) |>
         mutate(covariateId = as.numeric(.data$covariateId))
       rows <- rows |>
-        select("targetId", "comparatorId", "analysisId") |>
+        select("targetId", "comparatorId", "nestingCohortId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>
         cross_join(model)
       return(rows)
@@ -836,7 +853,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(coefficient = .data$correlation * 1e6) |>
         select("covariateId", "coefficient")
       rows <- rows |>
-        select("targetId", "comparatorId", "analysisId") |>
+        select("targetId", "comparatorId", "nestingCohortId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>
         cross_join(model)
     } else {
@@ -861,11 +878,13 @@ exportKaplanMeier <- function(outputFolder,
   message("  Computing KM curves")
   reference <- getFileReference(outputFolder) |>
     filter(.data$outcomeOfInterest) |>
+    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId)) |>
     select(
       "strataFile",
       "studyPopFile",
       "targetId",
       "comparatorId",
+      "nestingCohortId",
       "outcomeId",
       "analysisId"
     )
@@ -922,15 +941,18 @@ prepareKm <- function(task,
     task$targetId,
     ", comparator ",
     task$comparatorId,
+    ", nesting cohort ",
+    task$nestingCohortId,
     ", outcome ",
     task$outcomeId,
     ", analysis ",
     task$analysisId
   )
   outputFileName <- file.path(tempFolder, sprintf(
-    "km_t%s_c%s_o%s_a%s.rds",
+    "km_t%s_c%s_n%s_o%s_a%s.rds",
     task$targetId,
     task$comparatorId,
+    task$nestingCohortId,
     task$outcomeId,
     task$analysisId
   ))
@@ -956,6 +978,7 @@ prepareKm <- function(task,
   }
   data$targetId <- task$targetId
   data$comparatorId <- task$comparatorId
+  data$nestingCohortId <- task$nestingCohortId
   data$outcomeId <- task$outcomeId
   data$analysisId <- task$analysisId
   data$databaseId <- databaseId

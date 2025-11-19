@@ -206,6 +206,7 @@ getDbCohortMethodData <- function(connectionDetails,
   metaData <- list(
     targetId = targetId,
     comparatorId = comparatorId,
+    nestingCohortId = getDbCohortMethodDataArgs$nestingCohortId,
     studyStartDate = getDbCohortMethodDataArgs$studyStartDate,
     studyEndDate = getDbCohortMethodDataArgs$studyEndDate,
     attrition = attrition

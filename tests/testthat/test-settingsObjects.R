@@ -166,6 +166,16 @@ test_that("TargetComparatorOutcomes serialization and deserialization", {
   )
   settings2 <- TargetComparatorOutcomes$new(json = settings$toJson())
   expect_equal(settings, settings2)
+
+  settings <- createTargetComparatorOutcomes(
+    targetId = 1,
+    comparatorId = 2,
+    nestingCohortId = 3,
+    outcomes = list(createOutcome(outcomeId = 10),
+                    createOutcome(outcomeId = 11, trueEffectSize = 1))
+  )
+  settings2 <- TargetComparatorOutcomes$new(json = settings$toJson())
+  expect_equal(settings, settings2)
 })
 
 test_that("CmDiagnosticThresholds serialization and deserialization", {

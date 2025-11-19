@@ -129,23 +129,9 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
 #'
 #' After completion, a tibble containing references to all generated files can be obtained using the
 #' [getFileReference()] function. A summary of the analysis results can be obtained using the
-#' [getResultsSummary()] function.
+#' [getResultsSummary()] function. Diagnostics can be loaded using the [getDiagnosticsSummary()]
+#' function.
 #'
-#' ## Analyses to Exclude
-#'
-#' Normally, `runCmAnalyses` will run all combinations of target-comparator-outcome-analyses settings.
-#' However, sometimes we may not need all those combinations. Using the `analysesToExclude` argument,
-#' we can remove certain items from the full matrix. This argument should be a data frame with at least
-#' one of the following columns:
-#'
-#' - targetId
-#' - comparatorId
-#' - outcomeId
-#' - analysisId
-#'
-#' This data frame will be joined to the outcome model reference table before executing, and matching rows
-#' will be removed. For example, if one specifies only one target ID and analysis ID, then any analyses with
-#' that target and that analysis ID will be skipped.
 #'
 #' @param connectionDetails              An R object of type `connectionDetails` created using the
 #'                                       [DatabaseConnector::createConnectionDetails()] function.
@@ -276,6 +262,9 @@ runCmAnalyses <- function(connectionDetails,
         ))
       }
       getDbCohortMethodDataArgs$covariateSettings <- covariateSettings
+      if (!is.na(refRow$nestingCohortId)) {
+        getDbCohortMethodDataArgs$nestingCohortId <- refRow$nestingCohortId
+      }
       outcomeIds <- unique(referenceTable$outcomeId[referenceTable$cohortMethodDataFile == refRow$cohortMethodDataFile])
       args <- list(
         connectionDetails = connectionDetails,
@@ -321,6 +310,7 @@ runCmAnalyses <- function(connectionDetails,
       tco <- ParallelLogger::matchInList(
         cmAnalysesSpecifications$targetComparatorOutcomesList,
         list(
+          nestingCohortId = if (is.na(refRow$nestingCohortId)) {NULL} else {refRow$nestingCohortId},
           comparatorId = refRow$comparatorId,
           targetId = refRow$targetId
         )
@@ -1076,6 +1066,7 @@ createReferenceTable <- function(cmAnalysisList,
       mutate(
         targetId = tcos$targetId,
         comparatorId = tcos$comparatorId,
+        nestingCohortId = if (is.null(tcos$nestingCohortId)) NA else tcos$nestingCohortId,
         includedCovariateConceptIds = paste(tcos$includedCovariateConceptIds, collapse = ","),
         excludedCovariateConceptIds = paste(tcos$excludedCovariateConceptIds, collapse = ",")
       )
@@ -1117,7 +1108,8 @@ createReferenceTable <- function(cmAnalysisList,
   referenceTable$cohortMethodDataFile <- .createCohortMethodDataFileName(
     loadId = referenceTable$loadArgsId,
     targetId = referenceTable$targetId,
-    comparatorId = referenceTable$comparatorId
+    comparatorId = referenceTable$comparatorId,
+    nestingCohortId = referenceTable$nestingCohortId
   )
 
   # Add studypop filenames
@@ -1145,6 +1137,7 @@ createReferenceTable <- function(cmAnalysisList,
     studyPopId = referenceTable$studyPopArgsId,
     targetId = referenceTable$targetId,
     comparatorId = referenceTable$comparatorId,
+    nestingCohortId = referenceTable$nestingCohortId,
     outcomeId = referenceTable$outcomeId
   )
 
@@ -1179,6 +1172,7 @@ createReferenceTable <- function(cmAnalysisList,
     psId = referenceTable$psArgsId[idx],
     targetId = referenceTable$targetId[idx],
     comparatorId = referenceTable$comparatorId[idx],
+    nestingCohortId = referenceTable$nestingCohortId[idx],
     outcomeId = referenceTable$outcomeId[idx]
   )
   referenceTable$sharedPsFile <- ""
@@ -1231,7 +1225,8 @@ createReferenceTable <- function(cmAnalysisList,
         studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
         psId = referenceTable$psArgsId[idx],
         targetId = referenceTable$targetId[idx],
-        comparatorId = referenceTable$comparatorId[idx]
+        comparatorId = referenceTable$comparatorId[idx],
+        nestingCohortId = referenceTable$nestingCohortId[idx]
       )
     } else {
       # One propensity model across all study population settings:
@@ -1240,7 +1235,8 @@ createReferenceTable <- function(cmAnalysisList,
         studyPopId = NULL,
         psId = referenceTable$psArgsId[idx],
         targetId = referenceTable$targetId[idx],
-        comparatorId = referenceTable$comparatorId[idx]
+        comparatorId = referenceTable$comparatorId[idx],
+        nestingCohortId = referenceTable$nestingCohortId[idx]
       )
     }
   }
@@ -1285,6 +1281,7 @@ createReferenceTable <- function(cmAnalysisList,
     strataId = referenceTable$strataArgsId[idx],
     targetId = referenceTable$targetId[idx],
     comparatorId = referenceTable$comparatorId[idx],
+    nestingCohortId = referenceTable$nestingCohortId[idx],
     outcomeId = referenceTable$outcomeId[idx]
   )
 
@@ -1323,7 +1320,8 @@ createReferenceTable <- function(cmAnalysisList,
       strataId = referenceTable$strataArgsId[idx],
       sharedBalanceId = referenceTable$sharedBalanceId[idx],
       targetId = referenceTable$targetId[idx],
-      comparatorId = referenceTable$comparatorId[idx]
+      comparatorId = referenceTable$comparatorId[idx],
+      nestingCohortId = referenceTable$nestingCohortId[idx]
     )
   }
 
@@ -1365,7 +1363,8 @@ createReferenceTable <- function(cmAnalysisList,
     strataId = referenceTable$strataArgsId[idx],
     balanceId = referenceTable$balanceId[idx],
     targetId = referenceTable$targetId[idx],
-    comparatorId = referenceTable$comparatorId[idx]
+    comparatorId = referenceTable$comparatorId[idx],
+    nestingCohortId = referenceTable$nestingCohortId[idx]
   )
   idx <- referenceTable$balanceId != 0
   referenceTable$balanceFile <- ""
@@ -1377,6 +1376,7 @@ createReferenceTable <- function(cmAnalysisList,
     balanceId = referenceTable$balanceId[idx],
     targetId = referenceTable$targetId[idx],
     comparatorId = referenceTable$comparatorId[idx],
+    nestingCohortId = referenceTable$nestingCohortId[idx],
     outcomeId = referenceTable$outcomeId[idx]
   )
 
@@ -1450,6 +1450,7 @@ createReferenceTable <- function(cmAnalysisList,
       loadId = referenceTable$loadArgsId,
       targetId = referenceTable$targetId,
       comparatorId = referenceTable$comparatorId,
+      nestingCohortId = referenceTable$nestingCohortId,
       prefilterId = referenceTable$prefilterId
     )
   }
@@ -1461,6 +1462,7 @@ createReferenceTable <- function(cmAnalysisList,
                                        folder = .data$analysisFolder,
                                        targetId = .data$targetId,
                                        comparatorId = .data$comparatorId,
+                                       nestingCohortId = .data$nestingCohortId,
                                        outcomeId = .data$outcomeId
                                      ),
                                      ""
@@ -1471,6 +1473,7 @@ createReferenceTable <- function(cmAnalysisList,
     "analysisId",
     "targetId",
     "comparatorId",
+    "nestingCohortId",
     "outcomeId",
     "includedCovariateConceptIds",
     "excludedCovariateConceptIds",
@@ -1491,6 +1494,7 @@ createReferenceTable <- function(cmAnalysisList,
     referenceTable$analysisId,
     referenceTable$targetId,
     referenceTable$comparatorId,
+    referenceTable$nestingCohortId,
     referenceTable$outcomeId
   ), ]
 
@@ -1531,14 +1535,27 @@ createReferenceTable <- function(cmAnalysisList,
   return(format(x, scientific = FALSE, trim = TRUE))
 }
 
-.createCohortMethodDataFileName <- function(loadId, targetId, comparatorId) {
-  name <- sprintf("CmData_l%s_t%s_c%s.zip", loadId, .f(targetId), .f(comparatorId))
+.createTcnSubstring <- function(targetId, comparatorId, nestingCohortId) {
+  subString <- if_else(is.na(nestingCohortId),
+                       sprintf("_t%s_c%s", .f(targetId), .f(comparatorId)),
+                       sprintf("_t%s_c%s_n%s", .f(targetId), .f(comparatorId), .f(nestingCohortId)))
+
+  return(subString)
+}
+
+.createCohortMethodDataFileName <- function(loadId, targetId, comparatorId, nestingCohortId) {
+  name <- sprintf("CmData_l%s%s.zip",
+                  loadId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId))
   return(name)
 }
 
 
-.createPrefilteredCovariatesFileName <- function(loadId, targetId, comparatorId, prefilterId) {
-  name <- sprintf("Prefilter_l%s_t%s_c%s_p%s.zip", loadId, .f(targetId), .f(comparatorId), prefilterId)
+.createPrefilteredCovariatesFileName <- function(loadId, targetId, comparatorId, nestingCohortId, prefilterId) {
+  name <- sprintf("Prefilter_l%s%s_p%s.zip",
+                  loadId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  prefilterId)
   name[prefilterId == -1] <- rep("", sum(prefilterId == -1))
   return(name)
 }
@@ -1547,16 +1564,28 @@ createReferenceTable <- function(cmAnalysisList,
                                            studyPopId,
                                            targetId,
                                            comparatorId,
+                                           nestingCohortId,
                                            outcomeId) {
-  name <- sprintf("StudyPop_l%s_s%s_t%s_c%s_o%s.rds", loadId, studyPopId, .f(targetId), .f(comparatorId), .f(outcomeId))
+  name <- sprintf("StudyPop_l%s_s%s%s_o%s.rds",
+                  loadId,
+                  studyPopId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  .f(outcomeId))
   return(name)
 }
 
-.createPsFileName <- function(loadId, studyPopId, psId, targetId, comparatorId) {
+.createPsFileName <- function(loadId, studyPopId, psId, targetId, comparatorId, nestingCohortId) {
   if (is.null(studyPopId)) {
-    name <- sprintf("Ps_l%s_p%s_t%s_c%s.rds", loadId, psId, .f(targetId), .f(comparatorId))
+    name <- sprintf("Ps_l%s_p%s%s.rds",
+                    loadId,
+                    psId,
+                    .createTcnSubstring(targetId, comparatorId, nestingCohortId))
   } else {
-    name <- sprintf("Ps_l%s_s%s_p%s_t%s_c%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId))
+    name <- sprintf("Ps_l%s_s%s_p%s%s.rds",
+                    loadId,
+                    studyPopId,
+                    psId,
+                    .createTcnSubstring(targetId, comparatorId, nestingCohortId))
   }
   return(name)
 }
@@ -1566,8 +1595,14 @@ createReferenceTable <- function(cmAnalysisList,
                                      psId,
                                      targetId,
                                      comparatorId,
+                                     nestingCohortId,
                                      outcomeId) {
-  name <- sprintf("Ps_l%s_s%s_p%s_t%s_c%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), .f(outcomeId))
+  name <- sprintf("Ps_l%s_s%s_p%s%s_o%s.rds",
+                  loadId,
+                  studyPopId,
+                  psId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  .f(outcomeId))
   return(name)
 }
 
@@ -1577,8 +1612,15 @@ createReferenceTable <- function(cmAnalysisList,
                                          strataId,
                                          targetId,
                                          comparatorId,
+                                         nestingCohortId,
                                          outcomeId) {
-  name <- sprintf("StratPop_l%s_s%s_p%s_t%s_c%s_s%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, .f(outcomeId))
+  name <- sprintf("StratPop_l%s_s%s_p%s%s_s%s_o%s.rds",
+                  loadId,
+                  studyPopId,
+                  psId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  strataId,
+                  .f(outcomeId))
   return(name)
 }
 
@@ -1588,8 +1630,15 @@ createReferenceTable <- function(cmAnalysisList,
                                          strataId,
                                          sharedBalanceId,
                                          targetId,
-                                         comparatorId) {
-  name <- sprintf("Balance_l%s_s%s_p%s_t%s_c%s_s%s_b%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, sharedBalanceId)
+                                         comparatorId,
+                                         nestingCohortId) {
+  name <- sprintf("Balance_l%s_s%s_p%s%s_s%s_b%s.rds",
+                  loadId,
+                  studyPopId,
+                  psId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  strataId,
+                  sharedBalanceId)
   return(name)
 }
 
@@ -1599,8 +1648,15 @@ createReferenceTable <- function(cmAnalysisList,
                                             strataId,
                                             balanceId,
                                             targetId,
-                                            comparatorId) {
-  name <- sprintf("FilterForBalance_l%s_s%s_p%s_t%s_c%s_s%s_b%s.zip", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, balanceId)
+                                            comparatorId,
+                                            nestingCohortId) {
+  name <- sprintf("FilterForBalance_l%s_s%s_p%s%s_s%s_b%s.zip",
+                  loadId,
+                  studyPopId,
+                  psId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  strataId,
+                  balanceId)
   return(name)
 }
 
@@ -1611,13 +1667,23 @@ createReferenceTable <- function(cmAnalysisList,
                                    balanceId,
                                    targetId,
                                    comparatorId,
+                                   nestingCohortId,
                                    outcomeId) {
-  name <- sprintf("Balance_l%s_s%s_p%s_t%s_c%s_s%s_b%s_o%s.rds", loadId, studyPopId, psId, .f(targetId), .f(comparatorId), strataId, balanceId, .f(outcomeId))
+  name <- sprintf("Balance_l%s_s%s_p%s%s_s%s_b%s_o%s.rds",
+                  loadId,
+                  studyPopId,
+                  psId,
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  strataId,
+                  balanceId,
+                  .f(outcomeId))
   return(name)
 }
 
-.createOutcomeModelFileName <- function(folder, targetId, comparatorId, outcomeId) {
-  name <- sprintf("om_t%s_c%s_o%s.rds", .f(targetId), .f(comparatorId), .f(outcomeId))
+.createOutcomeModelFileName <- function(folder, targetId, comparatorId, nestingCohortId, outcomeId) {
+  name <- sprintf("om%s_o%s.rds",
+                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
+                  .f(outcomeId))
   return(file.path(folder, name))
 }
 
@@ -1732,6 +1798,7 @@ summarizeResults <- function(referenceTable,
         "analysisId",
         "targetId",
         "comparatorId",
+        "nestingCohortId",
         "outcomeId",
         "trueEffectSize",
         "maxSdm",
@@ -1832,6 +1899,7 @@ summarizeResults <- function(referenceTable,
     select("analysisId",
            "targetId",
            "comparatorId",
+           "nestingCohortId",
            "outcomeId",
            "targetSubjects",
            "comparatorSubjects",
@@ -1868,6 +1936,7 @@ summarizeResults <- function(referenceTable,
     select("analysisId",
            "targetId",
            "comparatorId",
+           "nestingCohortId",
            "outcomeId",
            "maxSdm",
            "sdmFamilyWiseMinP",
@@ -1897,6 +1966,7 @@ summarizeResults <- function(referenceTable,
       select("analysisId",
              "targetId",
              "comparatorId",
+             "nestingCohortId",
              "outcomeId",
              "interactionCovariateId",
              "rr",
@@ -2063,10 +2133,10 @@ calibrateEstimates <- function(results, calibrationThreads, interactions = FALSE
              .data$generalizabilityDiagnostic != "FAIL")
   if (interactions) {
     message("Calibrating estimates for interactions")
-    groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId, results$interactionCovariateId))
+    groups <- split(results, paste(results$targetId, results$comparatorId, results$nestingCohortId, results$analysisId, results$interactionCovariateId))
   } else {
     message("Calibrating estimates")
-    groups <- split(results, paste(results$targetId, results$comparatorId, results$analysisId))
+    groups <- split(results, paste(results$targetId, results$comparatorId, results$nestingCohortId, results$analysisId))
   }
   cluster <- ParallelLogger::makeCluster(min(length(groups), calibrationThreads))
   results <- ParallelLogger::clusterApply(cluster, groups, calibrateGroup)

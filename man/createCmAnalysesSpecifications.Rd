@@ -51,6 +51,7 @@ one of the following columns:
 \itemize{
 \item targetId
 \item comparatorId
+\item nestingCohortId
 \item outcomeId
 \item analysisId
 }

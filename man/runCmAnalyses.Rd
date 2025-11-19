@@ -80,22 +80,6 @@ analysis.
 
 After completion, a tibble containing references to all generated files can be obtained using the
 \code{\link[=getFileReference]{getFileReference()}} function. A summary of the analysis results can be obtained using the
-\code{\link[=getResultsSummary]{getResultsSummary()}} function.
-\subsection{Analyses to Exclude}{
-
-Normally, \code{runCmAnalyses} will run all combinations of target-comparator-outcome-analyses settings.
-However, sometimes we may not need all those combinations. Using the \code{analysesToExclude} argument,
-we can remove certain items from the full matrix. This argument should be a data frame with at least
-one of the following columns:
-\itemize{
-\item targetId
-\item comparatorId
-\item outcomeId
-\item analysisId
-}
-
-This data frame will be joined to the outcome model reference table before executing, and matching rows
-will be removed. For example, if one specifies only one target ID and analysis ID, then any analyses with
-that target and that analysis ID will be skipped.
-}
+\code{\link[=getResultsSummary]{getResultsSummary()}} function. Diagnostics can be loaded using the \code{\link[=getDiagnosticsSummary]{getDiagnosticsSummary()}}
+function.
 }

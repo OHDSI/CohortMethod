@@ -33,6 +33,7 @@
 #' @import FeatureExtraction
 #' @import Andromeda
 #' @import dplyr
+#' @import R6
 #' @useDynLib CohortMethod
 NULL
 

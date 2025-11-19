@@ -9,6 +9,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
   outputFolder2 <- tempfile(pattern = "cmData")
   outputFolder3 <- tempfile(pattern = "cmData")
   outputFolder4 <- tempfile(pattern = "cmData")
+  outputFolder5 <- tempfile(pattern = "cmData")
   if (is_checking()) {
     withr::defer(
       {
@@ -16,6 +17,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
         unlink(outputFolder2, recursive = TRUE)
         unlink(outputFolder3, recursive = TRUE)
         unlink(outputFolder4, recursive = TRUE)
+        unlink(outputFolder5, recursive = TRUE)
       },
       testthat::teardown_env()
     )
@@ -523,21 +525,182 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
 
-    result <- runCmAnalyses(
-      connectionDetails = connectionDetails,
-      cdmDatabaseSchema = "main",
-      exposureTable = "cohort",
-      outcomeTable = "cohort",
-      outputFolder = outputFolder4,
-      cmAnalysesSpecifications = createCmAnalysesSpecifications(
-        cmAnalysisList = cmAnalysisList,
-        targetComparatorOutcomesList = targetComparatorOutcomesList
-      )
+    expect_warning(
+      {
+        result <- runCmAnalyses(
+          connectionDetails = connectionDetails,
+          cdmDatabaseSchema = "main",
+          exposureTable = "cohort",
+          outcomeTable = "cohort",
+          outputFolder = outputFolder4,
+          cmAnalysesSpecifications = createCmAnalysesSpecifications(
+            cmAnalysisList = cmAnalysisList,
+            targetComparatorOutcomesList = targetComparatorOutcomesList
+          )
+        )
+      }, "zero"
     )
     strataPop <- readRDS(file.path(outputFolder4, result$strataFile[1]))
     expect_true("covariateId_8532001" %in% colnames(strataPop))
 
     strataPop <- readRDS(file.path(outputFolder4, result$strataFile[2]))
     expect_true("covariateId_8532001" %in% colnames(strataPop))
+  })
+
+
+  test_that("Combine nesting and non-nesting", {
+
+    # A test to make sure we can have the same TC with and without nesting at the same time
+
+    tcos1 <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(
+          outcomeId = 3
+        )
+      )
+    )
+
+    tcos2 <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      nestingCohortId = 4,
+      outcomes = list(
+        createOutcome(
+          outcomeId = 3
+        )
+      )
+    )
+
+    targetComparatorOutcomesList <- list(tcos1, tcos2)
+
+    covarSettings <- createCovariateSettings(
+      useDemographicsGender = TRUE,
+      useDemographicsAge = TRUE
+    )
+
+    getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
+      firstExposureOnly = TRUE,
+      restrictToCommonPeriod = FALSE,
+      removeDuplicateSubjects = "remove all",
+      washoutPeriod = 183,
+      covariateSettings = covarSettings
+    )
+
+    createStudyPopArgs <- createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = TRUE,
+      censorAtNewRiskWindow = TRUE,
+      minDaysAtRisk = 1,
+      riskWindowStart = 0,
+      startAnchor = "cohort start",
+      riskWindowEnd = 30,
+      endAnchor = "cohort end"
+    )
+
+    createPsArgs <- createCreatePsArgs(
+      prior = createPrior("laplace", variance = 0.01, exclude = c(0)),
+      estimator = "att"
+    )
+
+    matchOnPsArgs <- createMatchOnPsArgs(
+      maxRatio = 1
+    )
+
+    fitOutcomeModelArgs <- createFitOutcomeModelArgs(
+      modelType = "cox",
+      stratified = TRUE
+    )
+
+    computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
+
+    computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateFilter = FeatureExtraction::getDefaultTable1Specifications())
+
+    cmAnalysis1 <- createCmAnalysis(
+      analysisId = 1,
+      description = "Matching",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs,
+      createPsArgs = createPsArgs,
+      matchOnPsArgs = matchOnPsArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs,
+      computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+      computeCovariateBalanceArgs = computeCovBalArgs
+    )
+
+    stratifyByPsArgs <- createStratifyByPsArgs(
+      numberOfStrata = 5
+    )
+
+    cmAnalysis2 <- createCmAnalysis(
+      analysisId = 2,
+      description = "Stratification",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs,
+      createPsArgs = createPsArgs,
+      stratifyByPsArgs = stratifyByPsArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs,
+      computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+      computeCovariateBalanceArgs = computeCovBalArgs
+    )
+
+    cmAnalysisList <- list(cmAnalysis1, cmAnalysis2)
+
+    expect_warning(
+      {
+        result <- runCmAnalyses(
+          connectionDetails = connectionDetails,
+          cdmDatabaseSchema = "main",
+          exposureTable = "cohort",
+          outcomeTable = "cohort",
+          outputFolder = outputFolder5,
+          cmAnalysesSpecifications = createCmAnalysesSpecifications(
+            cmAnalysisList = cmAnalysisList,
+            targetComparatorOutcomesList = targetComparatorOutcomesList
+          )
+        )
+      }, "zero"
+    )
+    expect_equal(nrow(result), 4)
+    expect_equal(sum(result$nestingCohortId == 4, na.rm = TRUE), 2)
+
+    expect_equal(length(grep("_t1_c2_n4", result$cohortMethodDataFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$studyPopFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$sharedPsFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$psFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$strataFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$sharedBalanceFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$filteredForbalanceFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$balanceFile)), 2)
+    expect_equal(length(grep("_t1_c2_n4", result$outcomeModelFile)), 2)
+
+    uniqueCmdFiles <- result[!duplicated(result$cohortMethodDataFile), ]
+    for (i in seq_len(nrow(uniqueCmdFiles))) {
+      cmd <- loadCohortMethodData(file.path(outputFolder5, result$cohortMethodDataFile[i]))
+      nestingCohortId <- attr(cmd,"metaData")$nestingCohortId
+      if (is.null(nestingCohortId)) {
+        nestingCohortId <- as.numeric(NA)
+      }
+      expect_equal(nestingCohortId, uniqueCmdFiles$nestingCohortId[i])
+    }
+
+    for (i in seq_len(nrow(result))) {
+      strataPop <- readRDS(file.path(outputFolder5,  result$strataFile[i]))
+      nestingCohortId <- attr(strataPop,"metaData")$nestingCohortId
+      if (is.null(nestingCohortId)) {
+        nestingCohortId <- as.numeric(NA)
+      }
+      expect_equal(nestingCohortId, result$nestingCohortId[i])
+    }
+
+    resultsSummary <- getResultsSummary(outputFolder5)
+    expect_equal(nrow(resultsSummary), 4)
+    expect_equal(sum(resultsSummary$nestingCohortId == 4, na.rm = TRUE), 2)
+
+    exportToCsv(outputFolder5, databaseId = "Test")
+    cmResult <- readr::read_csv(file.path(outputFolder5, "export", "cm_result.csv"), show_col_types = FALSE)
+    expect_equal(nrow(cmResult), 4)
+    expect_equal(sum(cmResult$nesting_cohort_id == 4, na.rm = TRUE), 2)
+    expect_equal(sum(cmResult$nesting_cohort_id == 0, na.rm = TRUE), 2)
   })
 }

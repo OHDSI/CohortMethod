@@ -1056,6 +1056,8 @@ Outcome <- R6Class(
 #'                                      table.
 #' @param outcomes                      A list of object of type `Outcome` as created by
 #'                                      [createOutcome()].
+#' @param nestingCohortId               (Optional) the nesting cohort ID. If provided, this will override
+#'                                      the nesting cohort ID used in [createGetDbCohortMethodDataArgs()].
 #' @param excludedCovariateConceptIds   A list of concept IDs that cannot be used to construct
 #'                                      covariates. This argument is to be used only for exclusion
 #'                                      concepts that are specific to the target-comparator combination.
@@ -1070,6 +1072,7 @@ Outcome <- R6Class(
 createTargetComparatorOutcomes <- function(targetId,
                                            comparatorId,
                                            outcomes,
+                                           nestingCohortId = NULL,
                                            excludedCovariateConceptIds = c(),
                                            includedCovariateConceptIds = c()) {
   args <- list()
@@ -1086,6 +1089,7 @@ TargetComparatorOutcomes <- R6Class(
     targetId = NULL,
     comparatorId = NULL,
     outcomes = NULL,
+    nestingCohortId = NULL,
     excludedCovariateConceptIds = NULL,
     includedCovariateConceptIds = NULL,
     validate = function() {
@@ -1093,6 +1097,7 @@ TargetComparatorOutcomes <- R6Class(
       checkmate::assertNumeric(self$targetId, add = errorMessages)
       checkmate::assertNumeric(self$comparatorId, add = errorMessages)
       checkmate::assertTRUE(all(c(self$targetId, self$comparatorId) %% 1 == 0), add = errorMessages)
+      checkmate::assertNumeric(self$nestingCohortId, null.ok = TRUE, add = errorMessages)
       checkmate::assertList(self$outcomes, min.len = 1, add = errorMessages)
       for (i in seq_along(self$outcomes)) {
         checkmate::assertR6(self$outcomes[[i]], "Outcome", add = errorMessages)
@@ -1216,6 +1221,7 @@ CmDiagnosticThresholds <- R6Class(
 #'
 #' - targetId
 #' - comparatorId
+#' - nestingCohortId
 #' - outcomeId
 #' - analysisId
 #'
@@ -1278,11 +1284,12 @@ CmAnalysesSpecifications <- R6Class(
         c(
           "targetId",
           "comparatorId",
+          "nestingCohortId",
           "outcomes"
         )
       ))
       if (length(uniquetargetComparatorOutcomesList) != length(self$targetComparatorOutcomesList)) {
-        stop("Duplicate target-comparator-outcomes combinations are not allowed")
+        stop("Duplicate target-comparator-(nesting)-outcomes combinations are not allowed")
       }
       analysisIds <- unlist(ParallelLogger::selectFromList(self$cmAnalysisList, "analysisId"))
       uniqueAnalysisIds <- unique(analysisIds)

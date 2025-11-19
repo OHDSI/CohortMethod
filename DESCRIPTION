@@ -33,6 +33,7 @@ Depends:
 	Andromeda (>= 0.6.3)
 Imports:
 	methods,
+	utils,
 	ggplot2,
 	gridExtra,
 	grid,
@@ -40,22 +41,21 @@ Imports:
 	plyr,
 	dplyr,
 	rlang,
-	cli,
-	pillar,
 	Rcpp (>= 0.11.2),
 	SqlRender (>= 1.18.0),
 	survival,
 	ParallelLogger (>= 3.4.2),
 	checkmate,
 	EmpiricalCalibration,
-	zip,
-	jsonlite
+	jsonlite,
+	R6
 Suggests:
 	testthat,
 	pROC,
 	knitr,
 	rmarkdown,
 	Eunomia,
+	zip,
 	withr,
 	R.utils,
 	RSQLite,

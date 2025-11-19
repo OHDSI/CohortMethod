@@ -8,6 +8,7 @@ createTargetComparatorOutcomes(
   targetId,
   comparatorId,
   outcomes,
+  nestingCohortId = NULL,
   excludedCovariateConceptIds = c(),
   includedCovariateConceptIds = c()
 )
@@ -21,6 +22,9 @@ table.}
 
 \item{outcomes}{A list of object of type \code{Outcome} as created by
 \code{\link[=createOutcome]{createOutcome()}}.}
+
+\item{nestingCohortId}{(Optional) the nesting cohort ID. If provided, this will override
+the nesting cohort ID used in \code{\link[=createGetDbCohortMethodDataArgs]{createGetDbCohortMethodDataArgs()}}.}
 
 \item{excludedCovariateConceptIds}{A list of concept IDs that cannot be used to construct
 covariates. This argument is to be used only for exclusion
