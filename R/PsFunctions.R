@@ -61,7 +61,7 @@ uniformSelect <- function(items, size) {
 #' @export
 createPs <- function(cohortMethodData,
                      population = NULL,
-                     createPsArgs) {
+                     createPsArgs = createCreatePsArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
@@ -733,12 +733,15 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' result3 <- trimByPs(data, createTrimByPsArgs(maxWeight = 10))
 #'
 #' @export
-trimByPs <- function(population, trimByPsArgs) {
+trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction = 0.05)) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(population, add = errorMessages)
   checkmate::assertNames(colnames(population), must.include = c("treatment", "propensityScore"), add = errorMessages)
   checkmate::assertR6(trimByPsArgs, "TrimByPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
+
+  beforeCountTarget <- sum(population$treatment == 1)
+  beforeCountComparator <- sum(population$treatment == 0)
 
   if (!is.null(trimByPsArgs$trimFraction)) {
     cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
@@ -779,7 +782,15 @@ trimByPs <- function(population, trimByPsArgs) {
       attr(population, "metaData") <- metaData
     }
   }
-  ParallelLogger::logDebug("Population size after trimming is ", nrow(population))
+  deltaTarget <- beforeCountTarget - sum(population$treatment == 1)
+  deltaComparator <- beforeCountComparator - sum(population$treatment == 0)
+
+  message <- sprintf("Trimming removed %d (%0.1f%%) rows from the target, %d (%0.1f%%) rows from the comparator.",
+                     deltaTarget,
+                     100 * deltaTarget / beforeCountTarget,
+                     deltaComparator,
+                     100 * deltaComparator / beforeCountComparator)
+  ParallelLogger::logDebug(message)
   return(population)
 }
 

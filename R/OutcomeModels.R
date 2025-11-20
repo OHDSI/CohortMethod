@@ -338,8 +338,20 @@ fitOutcomeModel <- function(population,
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
           if (fitOutcomeModelArgs$bootstrapCi) {
-            bootstrap <- Cyclops::runBootstrap(fit, fitOutcomeModelArgs$bootstrapReplicates)
-            bootstrapSummary <- bootstrap$summary[as.character(treatmentVarId),]
+            bootstrapSummary <- tryCatch(
+              {
+                bootstrap <- Cyclops::runBootstrap(fit, fitOutcomeModelArgs$bootstrapReplicates)
+                bootstrap$summary[as.character(treatmentVarId),]
+              },
+              error = function(e) {
+                missing(e) # suppresses R CMD check note
+                list(
+                  bpi_lower = -Inf,
+                  bpi_upper = Inf,
+                  std_err = NA
+                )
+              }
+            )
             ci <- c(0, bootstrapSummary$bpi_lower, bootstrapSummary$bpi_upper)
             seLogRr <- bootstrapSummary$std_err
           } else {

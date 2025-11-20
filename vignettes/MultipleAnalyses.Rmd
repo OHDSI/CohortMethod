@@ -23,7 +23,7 @@ folderExists <- dir.exists(folder)
 ```
 # Introduction
 
-In this vignette we focus on running several different analyses on several target-comparator-outcome combinations. This can be useful when we want to explore the sensitivity to analyses choices, include controls, or run an experiment similar to the OMOP experiment to empirically identify the optimal analysis choices for a particular research question.
+In this vignette we focus on running several different analyses on several target-comparator-(nesting)- outcome combinations. This can be useful when we want to explore the sensitivity to analyses choices, include controls, or run an experiment similar to the OMOP experiment to empirically identify the optimal analysis choices for a particular research question.
 
 This vignette assumes you are already familiar with the `CohortMethod` package and are able to perform single studies. We will walk through all the steps needed to perform an exemplar set of analyses, and we have selected the well-studied topic of the effect of coxibs versus non-selective nonsteroidal anti-inflammatory drugs (NSAIDs) on gastrointestinal (GI) bleeding-related hospitalization. For simplicity, we focus on one coxib -- celecoxib -- and one non-selective NSAID -- diclofenac. We will execute various variations of an analysis for the primary outcome and a large set of negative control outcomes.
 
@@ -36,8 +36,8 @@ An analysis will be executed by calling these functions in sequence:
 1. `getDbCohortMethodData()`
 2. `createStudyPopulation()`
 2. `createPs()` (optional)
-3. `trimByPs()` or `trimByPsToEquipoise()` (optional)
-4. `matchOnPs()`, `matchOnPsAndCovariates()`, `stratifyByPs()`, or `stratifyByPsAndCovariates()` (optional)
+3. `trimByPs()` (optional)
+4. `matchOnPs()` or `stratifyByPs()` (optional)
 5. `computeCovariateBalance()` (optional)
 5. `fitOutcomeModel()` (optional)
 
@@ -45,12 +45,12 @@ When you provide several analyses to the `CohortMethod` package, it will determi
 
 The function arguments you need to define have been divided into four groups:
 
-1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of target, comparator, and outcome.
+1. **Hypothesis of interest**: arguments that are specific to a hypothesis of interest, in the case of the cohort method this is a combination of target, comparator, nesting cohort (optional) and outcome.
 2. **Analyses**: arguments that are not directly specific to a hypothesis of interest, such as the washout window, whether to include drugs as covariates, etc.
 3. Arguments that are the output of a previous function in the `CohortMethod` package, such as the `cohortMethodData` argument of the `createPs` function. These cannot be specified by the user.
 4. Arguments that are specific to an environment, such as the connection details for connecting to the server, and the name of the schema holding the CDM data.
 
-There are a two arguments (`excludedCovariateConceptIds`, and `includedCovariateConceptIds` of the `getDbCohortMethodData()` function) that can be argued to be part both of group 1 and 2. These arguments are therefore present in both groups, and when executing the analysis the union of the two lists of concept IDs will be used.
+There are a two arguments (`excludedCovariateConceptIds`, and `includedCovariateConceptIds` of the `covariateSettings` argument of `getDbCohortMethodData()`) that can be argued to be part both of group 1 and 2. These arguments are therefore present in both groups, and when executing the analysis the union of the two lists of concept IDs will be used.
 
 # Preparation for the example
 
@@ -70,54 +70,62 @@ options(sqlRenderTempEmulationSchema = NULL)
 
 The last few lines define the `cdmDatabaseSchema`, `cohortDatabaseSchema`, and `cohortTable` variables. We'll use these later to tell R where the data in CDM format live, and where we want to write intermediate tables. Note that for Microsoft SQL Server, databaseschemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`. For database platforms that do not support temp tables, such as Oracle, it is also necessary to provide a schema where the user has write access that can be used to emulate temp tables. PostgreSQL supports temp tables, so we can set `options(sqlRenderTempEmulationSchema = NULL)` (or not set the `sqlRenderTempEmulationSchema` at all.)
 
-We need to define the exposures and outcomes for our study. Here, we will define our exposures using the OHDSI `Capr` package. We define two cohorts, one for celecoxib and one for diclofenac. For each cohort we require a prior diagnosis of 'osteoarthritis of knee', and 365 days of continuous prior observation.  we restrict to the first exposure per person:
+## Preparing the exposures and outcome(s)
+
+We need to define the exposures and outcomes for our study. Here, we will define our exposures using the OHDSI `Capr` package. We define two exposure cohorts, one for celecoxib and one for diclofenac. It is often a good idea to restrict your analysis to a specific indication, to maximize the comparability of the two cohorts. In this case, we will restrict to osteoarthritis of the knee. We will create a cohort for this indication, starting a the first ever diagnosis, and ending at observation period end. 
 
 ```{r eval=FALSE}
 library(Capr)
 
-osteoArthritisOfKneeConceptId <- 4079750
 celecoxibConceptId <- 1118084
 diclofenacConceptId <- 1124300
-osteoArthritisOfKnee <- cs(
-  descendants(osteoArthritisOfKneeConceptId),
-  name = "Osteoarthritis of knee"
-)
-attrition = attrition(
-  "prior osteoarthritis of knee" = withAll(
-    atLeast(1, conditionOccurrence(osteoArthritisOfKnee), 
-            duringInterval(eventStarts(-Inf, 0)))
-  )
-)
+osteoArthritisOfKneeConceptId <- 4079750
+
 celecoxib <- cs(
   descendants(celecoxibConceptId),
   name = "Celecoxib"
 )
-diclofenac  <- cs(
-  descendants(diclofenacConceptId),
-  name = "Diclofenac"
-)
+
 celecoxibCohort <- cohort(
   entry = entry(
-    drugExposure(celecoxib, firstOccurrence()),
-    observationWindow = continuousObservation(priorDays = 365)
+    drugExposure(celecoxib)
   ),
-  attrition = attrition,
   exit = exit(endStrategy = drugExit(celecoxib,
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+
 diclofenacCohort <- cohort(
   entry = entry(
-    drugExposure(diclofenac, firstOccurrence()),
-    observationWindow = continuousObservation(priorDays = 365)
+    drugExposure(diclofenac)
   ),
-  attrition = attrition,
   exit = exit(endStrategy = drugExit(diclofenac,
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
-# Note: this will automatically assign cohort IDs 1 and 2, respectively:
-exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
+
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
+)
+
+osteoArthritisOfKneeCohort <- cohort(
+  entry = entry(
+    conditionOccurrence(osteoArthritisOfKnee, firstOccurrence())
+  ),
+  exit = exit(
+    endStrategy = observationExit()
+  )
+)
+# Note: this will automatically assign cohort IDs 1,2, and 3, respectively:
+exposuresAndIndicationCohorts <- makeCohortSet(celecoxibCohort, 
+                                               diclofenacCohort, 
+                                               osteoArthritisOfKneeCohort)
 ```
 
 We'll pull the outcome definition from the OHDSI `PhenotypeLibrary`:
@@ -127,7 +135,7 @@ library(PhenotypeLibrary)
 outcomeCohorts <- getPlCohortDefinitionSet(77) # GI bleed
 ```
 
-In addition to the outcome of interest, we also want to include a large set of negative control outcomes:
+In addition to the outcome of interest, we also want to include a large set of negative control outcomes. For simplicity we define each negative control as a concept and all of its descendants:
 ```{r eval=FALSE}
 negativeControlIds <- c(29735, 140673, 197494,
                         198185, 198199, 200528, 257315,
@@ -145,13 +153,12 @@ negativeControlCohorts <- tibble(
 )
 ```
 
-We combine the exposure and outcome cohort definitions, and use `CohortGenerator` to generate the cohorts:
+We combine the exposure, indication and outcome cohort definitions, and use `CohortGenerator` to generate the cohorts:
 
 ```{r eval=FALSE}
-allCohorts <- bind_rows(outcomeCohorts,
-                        exposureCohorts)
-
 library(CohortGenerator)
+allCohorts <- bind_rows(outcomeCohorts,
+                        exposuresAndIndicationCohorts)
 cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
 createCohortTables(connectionDetails = connectionDetails,
                    cohortDatabaseSchema = cohortDatabaseSchema,
@@ -161,26 +168,26 @@ generateCohortSet(connectionDetails = connectionDetails,
                   cohortDatabaseSchema = cohortDatabaseSchema,
                   cohortTableNames = cohortTableNames,
                   cohortDefinitionSet = allCohorts)
-generateNegativeControlOutcomeCohorts(
-  connectionDetails = connectionDetails,
-  cdmDatabaseSchema = cdmDatabaseSchema,
-  cohortDatabaseSchema = cohortDatabaseSchema,
-  cohortTable = cohortTable,
-  negativeControlOutcomeCohortSet = negativeControlCohorts
-)
+generateNegativeControlOutcomeCohorts(connectionDetails = connectionDetails,
+                                      cdmDatabaseSchema = cdmDatabaseSchema,
+                                      cohortDatabaseSchema = cohortDatabaseSchema,
+                                      cohortTableNames  = cohortTableNames,
+                                      negativeControlOutcomeCohortSet = negativeControlCohorts)
 ```
 
 If all went well, we now have a table with the cohorts of interest. We can see how many entries per cohort:
 
 ```{r eval=FALSE}
 connection <- DatabaseConnector::connect(connectionDetails)
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count
+FROM @cohortDatabaseSchema.@cohortTable
+GROUP BY cohort_definition_id"
 DatabaseConnector::renderTranslateQuerySql(
-  connection = connection, 
-  sql = sql,  
-  cohortDatabaseSchema = cohortDatabaseSchema, 
+  connection = connection,
+  sql = sql,
+  cohortDatabaseSchema = cohortDatabaseSchema,
   cohortTable = cohortTable
-)
+  )
 DatabaseConnector::disconnect(connection)
 ```
 ```{r echo=FALSE,message=FALSE}
@@ -191,7 +198,7 @@ if (folderExists) {
 
 # Specifying hypotheses of interest
 
-The first group of arguments define the target, comparator, and outcome. Here we demonstrate how to create one set, and add that set to a list:
+The first group of arguments define the target, comparator, nesting(optional), and outcome. Here we demonstrate how to create one set, and add that set to a list:
 
 ```{r eval=FALSE}
 outcomeOfInterest <- createOutcome(outcomeId = 77,
@@ -205,37 +212,36 @@ negativeControlOutcomes <- lapply(
 tcos <- createTargetComparatorOutcomes(
   targetId = 1,
   comparatorId = 2,
+  nestingCohortId = 3,
   outcomes = append(list(outcomeOfInterest),
-                    negativeControlOutcomes)
+                    negativeControlOutcomes),
+  excludedCovariateConceptIds = c(1118084, 1124300)
 )
 targetComparatorOutcomesList <- list(tcos)
 ```
 
-We first define the outcome of interest (GI-bleed, cohort ID 77), explicitly stating this is an outcome of interest (`outcomeOfInterest = TRUE`), meaning we want the full set of artifacts generated for this outcome. We then create a set of negative control outcomes. Because we specify `outcomeOfInterest = FALSE`, many of the artifacts will not be saved (like the matched population), or even not generated at all (like the covariate balance). This can save a lot of compute time and disk space. We also provide the true effect size for these controls, which will be used later for empirical calibration. We set the target to be celecoxib (cohort ID 1), and the comparator to be diclofenac (cohort ID 2).
+We first define the outcome of interest (GI-bleed, cohort ID 77), explicitly stating this is an outcome of interest (`outcomeOfInterest = TRUE`), meaning we want the full set of artifacts generated for this outcome. We then create a set of negative control outcomes. Because we specify `outcomeOfInterest = FALSE`, many of the artifacts will not be saved (like the matched population), or even not generated at all (like the covariate balance). This can save a lot of compute time and disk space. We also provide the true effect size for these controls, which will be used later for empirical calibration. We set the target to be celecoxib (cohort ID 1), the comparator to be diclofenac (cohort ID 2), and the nesting cohort to osteoarthritis of the knee (cohort ID 3).
 
 A convenient way to save `targetComparatorOutcomesList` to file is by using the `saveTargetComparatorOutcomesList` function, and we can load it again using the `loadTargetComparatorOutcomesList` function.
 
 # Specifying analyses
 
-The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. For each function that will be called during the execution of the analyses, a companion function is available that has (almost) the same arguments. For example, for the `trimByPs()` function there is the `createTrimByPsArgs()` function. These companion functions can be used to create the arguments to be used during execution:
+The second group of arguments are not specific to a hypothesis of interest, and comprise the majority of arguments. You can recognize these arguments because they are created by a separate 'create...Args' function. For example, for the `gtDbCohortMethodData()` function there is the `createGetDbCohortMethodDataArgs()` function. These settings functions can be used to create the arguments to be used during execution:
 
 ```{r eval=TRUE}
 covarSettings <- createDefaultCovariateSettings(
-  excludedCovariateConceptIds = c(1118084, 1124300),
   addDescendantsToExclude = TRUE
 )
 
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
-  washoutPeriod = 183,
-  restrictToCommonPeriod = FALSE,
+  removeDuplicateSubjects = "keep first, truncate to second",
   firstExposureOnly = TRUE,
-  removeDuplicateSubjects = "remove all",
-  studyStartDate = "",
-  studyEndDate = "",
+  washoutPeriod = 183,
+  restrictToCommonPeriod = TRUE,
   covariateSettings = covarSettings
 )
 
-createStudyPopulationArgs <- createCreateStudyPopulationArgs(
+createStudyPopArgs <- createCreateStudyPopulationArgs(
   removeSubjectsWithPriorOutcome = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -244,8 +250,12 @@ createStudyPopulationArgs <- createCreateStudyPopulationArgs(
   endAnchor = "cohort end"
 )
 
-fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(
+  modelType = "cox"
+)
 ```
+
+Note that, when calling `createDefaultCovariateSettings()`, we do not specify the covariates to exclude. When running the analysis, `CohortMethod` will automatically add the `excludedCovariateConceptIds` specified earlier when calling `createTargetComparatorOutcomes()`. This allows the same analyses settings to be used for multiple TCOs.
 
 Any argument that is not explicitly specified by the user will assume the default value specified in the function. We can now combine the arguments for the various functions into a single analysis:
 
@@ -254,7 +264,7 @@ cmAnalysis1 <- createCmAnalysis(
   analysisId = 1,
   description = "No matching, simple outcome model",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopulationArgs = createStudyPopulationArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs1
 )
 ```
@@ -266,12 +276,14 @@ We can easily create more analyses, for example by using matching, stratificatio
 ```{r eval=TRUE}
 createPsArgs <- createCreatePsArgs() # Use default settings only
 
-matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
+matchOnPsArgs <- createMatchOnPsArgs(
+  maxRatio = 100
+)
 
 computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
 
 computeCovBalArgs <- createComputeCovariateBalanceArgs(
-  covariateFilter = getDefaultCmTable1Specifications()
+  covariateFilter = CohortMethod::getDefaultCmTable1Specifications()
 )
 
 fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(
@@ -283,7 +295,7 @@ cmAnalysis2 <- createCmAnalysis(
   analysisId = 2,
   description = "Matching",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopulationArgs = createStudyPopulationArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
   matchOnPsArgs = matchOnPsArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
@@ -291,13 +303,15 @@ cmAnalysis2 <- createCmAnalysis(
   fitOutcomeModelArgs = fitOutcomeModelArgs2
 )
 
-stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
+stratifyByPsArgs <- createStratifyByPsArgs(
+  numberOfStrata = 5
+)
 
 cmAnalysis3 <- createCmAnalysis(
   analysisId = 3,
   description = "Stratification",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopulationArgs = createStudyPopulationArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
   stratifyByPsArgs = stratifyByPsArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
@@ -305,17 +319,25 @@ cmAnalysis3 <- createCmAnalysis(
   fitOutcomeModelArgs = fitOutcomeModelArgs2
 )
 
+trimByPsArgs <- createTrimByPsArgs(
+  maxWeight = 10
+)
+
 fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(
   modelType = "cox",
-  inversePtWeighting = TRUE
+  inversePtWeighting = TRUE,
+  bootstrapCi = TRUE
 )
 
 cmAnalysis4 <- createCmAnalysis(
   analysisId = 4,
   description = "Inverse probability weighting",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopulationArgs = createStudyPopulationArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
+  trimByPsArgs = trimByPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs3
 )
 
@@ -329,17 +351,15 @@ cmAnalysis5 <- createCmAnalysis(
   analysisId = 5,
   description = "Matching plus full outcome model",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopulationArgs = createStudyPopulationArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
   matchOnPsArgs = matchOnPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs4
 )
 
-interactionCovariateIds <- c(
-  8532001, # Female
-  201826210, # T2DM
-  21600960413 # concurrent use of antithrombotic agents
-)
+interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
 
 fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(
   modelType = "cox",
@@ -351,11 +371,14 @@ cmAnalysis6 <- createCmAnalysis(
   analysisId = 6,
   description = "Stratification plus interaction terms",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopulationArgs = createStudyPopulationArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
   stratifyByPsArgs = stratifyByPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs5
 )
+
 ```
 
 These analyses can be combined in a list:
@@ -389,10 +412,14 @@ result <- runCmAnalyses(
   exposureTable = cohortTable,
   outcomeDatabaseSchema = cohortDatabaseSchema,
   outcomeTable = cohortTable,
+  nestingCohortDatabaseSchema = cohortDatabaseSchema,
+  nestingCohortTable = cohortTable,
   outputFolder = folder,
-  cmAnalysisList = cmAnalysisList,
-  targetComparatorOutcomesList = targetComparatorOutcomesList,
-  multiThreadingSettings = multiThreadingSettings
+  multiThreadingSettings = multiThreadingSettings,
+  cmAnalysesSpecifications = createCmAnalysesSpecifications(
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList
+  )
 )
 ```
 
@@ -446,12 +473,56 @@ resultsSum
 ```
 ```{r echo=FALSE,message=FALSE}
 if (folderExists) {
-  resultsSum <- readRDS(file.path(folder, "resultsSummary.rds"))
+  resultsSum <- getResultsSummary(folder)
   resultsSum
 }
 ```
 
 This tells us, per target-comparator-outcome-analysis combination, the estimated relative risk and 95% confidence interval, as well as the number of people in the treated and comparator group (after trimming and matching if applicable), and the number of outcomes observed for those groups within the specified risk windows.
+
+## Diagnostics
+
+`CohorMethod` will have automatically executed a set of diagnostics for each target-comparator-(nesting)-outcome:
+
+- **Equipoise**: Pass if the equipose is greater than 0.2, meaning the two cohorts are sufficiently comparable even before PS adjustment.
+- **Balance**: Pass if the absolute standardized difference of means of all covariates is smaller than 0.1. We compute balance for both the shared balance (across all outcomes), and the per-outcome balance (which often only contains a small subset of covariates), and only pass if we pass for both. 
+- **Generalizability**: Pass if the standardized difference of means when comparing the analytic cohorts (e.g. after PS matching) to the original cohorts is smaller than some threshold for all covariates. We currently don't set a threshold for this diagnostic, as we believe even less generalizable findings can still be meaningful.
+- **Systematic error**: Pass is the expected absolute systematic error (EASE) is smaller than 0.25. EASE is computed by first fitting a normal distribution to the negative control estimates, and then integrating over the absolute value of this distribution. If EASE equals 0, all varation in negative control estimates can be explained by random error (as expressed in the confidence intervals) alone. Higher EASE scores indicate there is systematic error.
+- **Power**: Pass if the minimum detectable relative risk is smaller than 10; We do not show estimates that have extremely low power because many people have trouble interpreting very wide confidence intervals. Underpowered estimates do still contribute to calibration, and when running across multiple databases, to the meta-analysis.
+
+These diagnostics rely in threshold that can be specified using the `createCmDiagnosticThresholds()`, which can be used in the `createCmAnalysesSpecifications()` when invoking `runCmAnalyses()`.
+
+Note that we are moving to balance diagnostic based on signficance testing to avoid failing the balance diagnostics on smaller data sets. Currently the default is still to use the traditional balance approach.
+
+We can retrieve the diagnostics:
+
+```{r eval=FALSE}
+diagnostics <- getDiagnosticsSummary(folder)
+diagnostics
+```
+```{r echo=FALSE,message=FALSE}
+if (folderExists) {
+  diagnostics <- getDiagnosticsSummary(folder)
+  diagnostics
+}
+```
+
+The 'unblind' column tells us whether we have passed all diagnostics. We can see for how many TCOs we pass diagnostics per analyses:
+
+```{r eval=FALSE}
+diagnostics |>
+  group_by(analysisId) |>
+  summarise(passing = sum(unblind))
+```
+```{r echo=FALSE,message=FALSE}
+if (folderExists) {
+  diagnostics |>
+  group_by(analysisId) |>
+  summarise(passing = sum(unblind))
+}
+```
+
+Here we see we pass diagnostics for many outcomes (including the negative controls) for all analyses except analysis 1. That analysis does not use propensity score adjustment, and therefore fails the EASE diagnostic because of residual systematic error (confounding).
 
 ## Empirical calibration and negative control distribution
 
@@ -674,42 +745,6 @@ Information on the data model used to generate the CSV files can be retrieved us
 
 ```{r}
 getResultsDataModelSpecifications()
-```
-
-# View results in a Shiny app
-
-Finally, we can view the results in a Shiny app. For this we must first load the CSV files produced by `exportToCsv()` into a database. We could use the `uploadExportedResults()` function for this. However, if we just want to view the results ourselves we can create a small SQLite database ourselves without having to set up a database server. In any case we need to specify the names of the exposure and outcome cohorts we used in our study. We can create the SQLite database using:
-
-```{r eval=FALSE}
-cohorts <- data.frame(
-  cohortDefinitionId = c(
-    1,
-    2,
-    77),
-  cohortName = c(
-    "Celecoxib",
-    "Diclofenac",
-    "GI Bleed"
-  )
-)
-
-insertExportedResultsInSqlite(
-  sqliteFileName = file.path(folder, "myResults.sqlite"), 
-  exportFolder = file.path(folder, "export"), 
-  cohorts = cohorts
-)
-
-```
-
-Next we launch the Shiny app using:
-```{r eval=FALSE}
-launchResultsViewerUsingSqlite(
-  sqliteFileName = file.path(folder, "myResults.sqlite")
-)
-```
-
-```{r echo=FALSE, fig.cap="CohortMethod Shiny app", out.width = '80%'}
-knitr::include_graphics("shinyApp.png")
 ```
 
 # Acknowledgments

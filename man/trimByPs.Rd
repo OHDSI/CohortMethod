@@ -4,7 +4,7 @@
 \alias{trimByPs}
 \title{Trim persons by propensity score}
 \usage{
-trimByPs(population, trimByPsArgs)
+trimByPs(population, trimByPsArgs = createTrimByPsArgs(trimFraction = 0.05))
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}

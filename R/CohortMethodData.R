@@ -97,6 +97,9 @@ setMethod("show", "CohortMethodData", function(object) {
   writeLines("")
   writeLines(paste("Target cohort ID:", metaData$targetId))
   writeLines(paste("Comparator cohort ID:", metaData$comparatorId))
+  if (!is.null(metaData$nestingCohortId)) {
+    writeLines(paste("Nesting cohort ID:", metaData$nestingCohortId))
+  }
   writeLines(paste(
     "Outcome cohort ID(s):",
     paste(metaData$outcomeIds, collapse = ",")
@@ -152,6 +155,9 @@ print.summary.CohortMethodData <- function(x, ...) {
   writeLines("")
   writeLines(paste("Target cohort ID:", x$metaData$targetId))
   writeLines(paste("Comparator cohort ID:", x$metaData$comparatorId))
+  if (!is.null(x$metaData$nestingCohortId)) {
+    writeLines(paste("Nesting cohort ID:", x$metaData$nestingCohortId))
+  }
   writeLines(paste("Outcome cohort ID(s):", x$metaData$outcomeIds, collapse = ","))
   writeLines("")
   writeLines(paste("Target persons:", paste(x$targetPersons)))

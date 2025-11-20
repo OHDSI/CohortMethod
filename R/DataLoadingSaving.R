@@ -26,6 +26,8 @@
 #' DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
 #' in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
 #' user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
+#' Optionally, the target and comparator cohorts can be restricted to be within a nesting cohort,
+#' which can reside in a  different database schema and table.
 #'
 #' @param connectionDetails            An R object of type `connectionDetails` created using the
 #'                                     [DatabaseConnector::createConnectionDetails()] function.
@@ -84,7 +86,7 @@ getDbCohortMethodData <- function(connectionDetails,
                                   outcomeTable = "condition_occurrence",
                                   nestingCohortDatabaseSchema = cdmDatabaseSchema,
                                   nestingCohortTable = "cohort",
-                                  getDbCohortMethodDataArgs) {
+                                  getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
@@ -221,7 +223,7 @@ getDbCohortMethodData <- function(connectionDetails,
   )
   covariateData <- FeatureExtraction::getDbCovariateData(
     connection = connection,
-    oracleTempSchema = tempEmulationSchema,
+    tempEmulationSchema = tempEmulationSchema,
     cdmDatabaseSchema = cdmDatabaseSchema,
     cohortTable = cohortTable,
     cohortTableIsTemp = TRUE,

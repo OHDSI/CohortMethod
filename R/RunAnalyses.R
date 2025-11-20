@@ -161,6 +161,11 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
 #'                                       outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 #'                                       SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param outputFolder                   Name of the folder where all the outputs will written to.
+#' @param nestingCohortDatabaseSchema  The name of the database schema that is the location where the
+#'                                     data used to define the nesting cohorts is available.
+#' @param nestingCohortTable           The tablename that contains the nesting cohorts. Must have
+#'                                     the format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+#'                                     COHORT_START_DATE, COHORT_END_DATE.
 #' @param multiThreadingSettings         An object of type `CmMultiThreadingSettings` as created using
 #'                                       the [createMultiThreadingSettings()] or
 #'                                       [createDefaultMultiThreadingSettings()] functions.
@@ -179,6 +184,8 @@ runCmAnalyses <- function(connectionDetails,
                           exposureTable = "drug_era",
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_occurrence",
+                          nestingCohortDatabaseSchema = cdmDatabaseSchema,
+                          nestingCohortTable = "cohort",
                           outputFolder = "./CohortMethodOutput",
                           multiThreadingSettings = createMultiThreadingSettings(),
                           cmAnalysesSpecifications) {
@@ -190,6 +197,8 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
   checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(nestingCohortDatabaseSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(nestingCohortTable, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::assertClass(multiThreadingSettings, "CmMultiThreadingSettings", add = errorMessages)
   checkmate::assertR6(cmAnalysesSpecifications, "CmAnalysesSpecifications", add = errorMessages)
@@ -274,6 +283,8 @@ runCmAnalyses <- function(connectionDetails,
         exposureTable = exposureTable,
         outcomeDatabaseSchema = outcomeDatabaseSchema,
         outcomeTable = outcomeTable,
+        nestingCohortDatabaseSchema = nestingCohortDatabaseSchema,
+        nestingCohortTable = nestingCohortTable,
         outcomeIds = outcomeIds,
         targetId = refRow$targetId,
         comparatorId = refRow$comparatorId,

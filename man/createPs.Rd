@@ -4,7 +4,11 @@
 \alias{createPs}
 \title{Create propensity scores}
 \usage{
-createPs(cohortMethodData, population = NULL, createPsArgs)
+createPs(
+  cohortMethodData,
+  population = NULL,
+  createPsArgs = createCreatePsArgs()
+)
 }
 \arguments{
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using

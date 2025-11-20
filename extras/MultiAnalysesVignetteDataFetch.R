@@ -31,7 +31,7 @@ connectionDetails <- createConnectionDetails(
   user = "token",
   password = keyring::key_get("databricksToken")
 )
-cdmDatabaseSchema <- "merative_mdcr.cdm_merative_mdcr_v3618"
+cdmDatabaseSchema <- "merative_mdcr.cdm_merative_mdcr_v3788"
 cohortDatabaseSchema <- "scratch.scratch_mschuemi"
 cohortTable  <- "cm_vignette"
 options(sqlRenderTempEmulationSchema = "scratch.scratch_mschuemi")
@@ -39,47 +39,56 @@ options(sqlRenderTempEmulationSchema = "scratch.scratch_mschuemi")
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)
 
-osteoArthritisOfKneeConceptId <- 4079750
 celecoxibConceptId <- 1118084
 diclofenacConceptId <- 1124300
-osteoArthritisOfKnee <- cs(
-  descendants(osteoArthritisOfKneeConceptId),
-  name = "Osteoarthritis of knee"
-)
-attrition <- attrition(
-  "prior osteoarthritis of knee" = withAll(
-    atLeast(1, conditionOccurrence(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
-  )
-)
+osteoArthritisOfKneeConceptId <- 4079750
+
 celecoxib <- cs(
   descendants(celecoxibConceptId),
   name = "Celecoxib"
 )
-diclofenac  <- cs(
-  descendants(diclofenacConceptId),
-  name = "Diclofenac"
-)
+
 celecoxibCohort <- cohort(
   entry = entry(
-    drugExposure(celecoxib, firstOccurrence()),
-    observationWindow = continuousObservation(priorDays = 365)
+    drugExposure(celecoxib)
   ),
-  attrition = attrition,
   exit = exit(endStrategy = drugExit(celecoxib,
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+
 diclofenacCohort <- cohort(
   entry = entry(
-    drugExposure(diclofenac, firstOccurrence()),
-    observationWindow = continuousObservation(priorDays = 365)
+    drugExposure(diclofenac)
   ),
-  attrition = attrition,
   exit = exit(endStrategy = drugExit(diclofenac,
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
-exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
+
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
+)
+
+osteoArthritisOfKneeCohort <- cohort(
+  entry = entry(
+    conditionOccurrence(osteoArthritisOfKnee, firstOccurrence())
+  ),
+  exit = exit(
+    endStrategy = observationExit()
+  )
+)
+# Note: this will automatically assign cohort IDs 1,2, and 3, respectively:
+
+exposuresAndIndicationCohorts <- makeCohortSet(celecoxibCohort,
+                                               diclofenacCohort,
+                                               osteoArthritisOfKneeCohort)
 
 # Define outcome cohort --------------------------------------------------------
 library(PhenotypeLibrary)
@@ -103,7 +112,7 @@ negativeControlCohorts <- tibble(cohortId = negativeControlIds,
 # Generate cohorts -------------------------------------------------------------
 library(CohortGenerator)
 allCohorts <- bind_rows(outcomeCohorts,
-                        exposureCohorts)
+                        exposuresAndIndicationCohorts)
 cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
 createCohortTables(connectionDetails = connectionDetails,
                    cohortDatabaseSchema = cohortDatabaseSchema,
@@ -116,13 +125,20 @@ generateCohortSet(connectionDetails = connectionDetails,
 generateNegativeControlOutcomeCohorts(connectionDetails = connectionDetails,
                                       cdmDatabaseSchema = cdmDatabaseSchema,
                                       cohortDatabaseSchema = cohortDatabaseSchema,
-                                      cohortTable = cohortTable,
+                                      cohortTableNames  = cohortTableNames,
                                       negativeControlOutcomeCohortSet = negativeControlCohorts)
 
 # Check number of subjects per cohort:
 connection <- DatabaseConnector::connect(connectionDetails)
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
-cohortCounts <- DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count
+FROM @cohortDatabaseSchema.@cohortTable
+GROUP BY cohort_definition_id"
+cohortCounts <- DatabaseConnector::renderTranslateQuerySql(
+  connection = connection,
+  sql = sql,
+  cohortDatabaseSchema = cohortDatabaseSchema,
+  cohortTable = cohortTable
+)
 saveRDS(cohortCounts, file.path(folder, "cohortCounts.rds"))
 DatabaseConnector::disconnect(connection)
 cohortCounts
@@ -130,129 +146,178 @@ cohortCounts
 # Create analysis specifications -----------------------------------------------
 outcomeOfInterest <- createOutcome(outcomeId = 77,
                                    outcomeOfInterest = TRUE)
-negativeControlOutcomes <- lapply(negativeControlIds,
-                                  function(outcomeId) createOutcome(outcomeId = outcomeId,
-                                                                    outcomeOfInterest = FALSE,
-                                                                    trueEffectSize = 1))
-tcos <- createTargetComparatorOutcomes(targetId = 1,
-                                       comparatorId = 2,
-                                       outcomes = append(list(outcomeOfInterest),
-                                                         negativeControlOutcomes))
+negativeControlOutcomes <- lapply(
+  negativeControlIds,
+  function(outcomeId) createOutcome(outcomeId = outcomeId,
+                                    outcomeOfInterest = FALSE,
+                                    trueEffectSize = 1)
+)
+tcos <- createTargetComparatorOutcomes(
+  targetId = 1,
+  comparatorId = 2,
+  nestingCohortId = 3,
+  outcomes = append(list(outcomeOfInterest),
+                    negativeControlOutcomes),
+  excludedCovariateConceptIds = c(1118084, 1124300)
+)
 targetComparatorOutcomesList <- list(tcos)
 
-covarSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = c(1118084, 1124300),
-                                                addDescendantsToExclude = TRUE)
+covarSettings <- createDefaultCovariateSettings(
+  addDescendantsToExclude = TRUE
+)
 
-getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutPeriod = 183,
-                                                   restrictToCommonPeriod = TRUE,
-                                                   firstExposureOnly = TRUE,
-                                                   removeDuplicateSubjects = "remove all",
-                                                   covariateSettings = covarSettings)
+getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
+  removeDuplicateSubjects = "keep first, truncate to second",
+  firstExposureOnly = TRUE,
+  washoutPeriod = 183,
+  restrictToCommonPeriod = TRUE,
+  covariateSettings = covarSettings
+)
 
-createStudyPopArgs <- createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
-                                                      minDaysAtRisk = 1,
-                                                      riskWindowStart = 0,
-                                                      startAnchor = "cohort start",
-                                                      riskWindowEnd = 30,
-                                                      endAnchor = "cohort end")
+createStudyPopArgs <- createCreateStudyPopulationArgs(
+  removeSubjectsWithPriorOutcome = TRUE,
+  minDaysAtRisk = 1,
+  riskWindowStart = 0,
+  startAnchor = "cohort start",
+  riskWindowEnd = 30,
+  endAnchor = "cohort end"
+)
 
-fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(modelType = "cox")
+fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(
+  modelType = "cox"
+)
 
-cmAnalysis1 <- createCmAnalysis(analysisId = 1,
-                                description = "No matching, simple outcome model",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs1)
+cmAnalysis1 <- createCmAnalysis(
+  analysisId = 1,
+  description = "No matching, simple outcome model",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs1
+)
 
-createPsArgs <- createCreatePsArgs(maxCohortSizeForFitting = 100000,
-                                   control = createControl(cvType = "auto",
-                                                           startingVariance = 0.01,
-                                                           tolerance = 1E-5,
-                                                           noiseLevel = "quiet",
-                                                           cvRepetitions = 1))
+createPsArgs <- createCreatePsArgs(
+  maxCohortSizeForFitting = 100000,
+  control = createControl(cvType = "auto",
+                          startingVariance = 0.01,
+                          tolerance = 1E-5,
+                          noiseLevel = "quiet",
+                          cvRepetitions = 1)
+)
 
-matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
+matchOnPsArgs <- createMatchOnPsArgs(
+  maxRatio = 100
+)
 
 computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
 
-computeCovBalArgs <- createComputeCovariateBalanceArgs(covariateFilter = CohortMethod::getDefaultCmTable1Specifications())
+computeCovBalArgs <- createComputeCovariateBalanceArgs(
+  covariateFilter = CohortMethod::getDefaultCmTable1Specifications()
+)
 
-fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                  stratified = TRUE)
+fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  stratified = TRUE
+)
 
-cmAnalysis2 <- createCmAnalysis(analysisId = 2,
-                                description = "Matching",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPsArgs = createPsArgs,
-                                matchOnPsArgs = matchOnPsArgs,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
+cmAnalysis2 <- createCmAnalysis(
+  analysisId = 2,
+  description = "Matching",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  matchOnPsArgs = matchOnPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs2
+)
 
-stratifyByPsArgs <- createStratifyByPsArgs(numberOfStrata = 5)
+stratifyByPsArgs <- createStratifyByPsArgs(
+  numberOfStrata = 5
+)
 
-cmAnalysis3 <- createCmAnalysis(analysisId = 3,
-                                description = "Stratification",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPsArgs = createPsArgs,
-                                stratifyByPsArgs = stratifyByPsArgs,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs2)
+cmAnalysis3 <- createCmAnalysis(
+  analysisId = 3,
+  description = "Stratification",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  stratifyByPsArgs = stratifyByPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs2
+)
 
-fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                  inversePtWeighting = TRUE)
+trimByPsArgs <- createTrimByPsArgs(
+  maxWeight = 10
+)
 
-trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.01)
+fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  inversePtWeighting = TRUE,
+  bootstrapCi = TRUE
+)
 
-cmAnalysis4 <- createCmAnalysis(analysisId = 4,
-                                description = "Inverse probability weighting",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPsArgs = createPsArgs,
-                                trimByPsArgs = trimByPsArgs,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs3)
+cmAnalysis4 <- createCmAnalysis(
+  analysisId = 4,
+  description = "Inverse probability weighting",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  trimByPsArgs = trimByPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs3
+)
 
-fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(useCovariates = TRUE,
-                                                  modelType = "cox",
-                                                  stratified = TRUE,
-                                                  control = createControl(cvType = "auto",
-                                                                          startingVariance = 0.01,
-                                                                          selectorType = "byPid",
-                                                                          cvRepetitions = 1,
-                                                                          noiseLevel = "quiet"))
+fitOutcomeModelArgs4 <- createFitOutcomeModelArgs(
+  useCovariates = TRUE,
+  modelType = "cox",
+  stratified = TRUE,
+  control = createControl(cvType = "auto",
+                          startingVariance = 0.01,
+                          selectorType = "byPid",
+                          cvRepetitions = 1,
+                          noiseLevel = "quiet")
+)
 
-cmAnalysis5 <- createCmAnalysis(analysisId = 5,
-                                description = "Matching plus full outcome model",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPsArgs = createPsArgs,
-                                matchOnPsArgs = matchOnPsArgs,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs4)
+cmAnalysis5 <- createCmAnalysis(
+  analysisId = 5,
+  description = "Matching plus full outcome model",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  matchOnPsArgs = matchOnPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs4
+)
 
 interactionCovariateIds <- c(8532001, 201826210, 21600960413) # Female, T2DM, concurent use of antithrombotic agents
 
-fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(modelType = "cox",
-                                                  stratified = TRUE,
-                                                  interactionCovariateIds = interactionCovariateIds,
-                                                  control = createControl(threads = 6))
+fitOutcomeModelArgs5 <- createFitOutcomeModelArgs(
+  modelType = "cox",
+  stratified = TRUE,
+  interactionCovariateIds = interactionCovariateIds,
+  control = createControl(threads = 6)
+)
 
-cmAnalysis6 <- createCmAnalysis(analysisId = 6,
-                                description = "Stratification plus interaction terms",
-                                getDbCohortMethodDataArgs = getDbCmDataArgs,
-                                createStudyPopArgs = createStudyPopArgs,
-                                createPsArgs = createPsArgs,
-                                stratifyByPsArgs = stratifyByPsArgs,
-                                computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
-                                computeCovariateBalanceArgs = computeCovBalArgs,
-                                fitOutcomeModelArgs = fitOutcomeModelArgs5)
-cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
+cmAnalysis6 <- createCmAnalysis(
+  analysisId = 6,
+  description = "Stratification plus interaction terms",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  stratifyByPsArgs = stratifyByPsArgs,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs5
+)
+cmAnalysisList <- list(cmAnalysis1,
+                       cmAnalysis2,
+                       cmAnalysis3,
+                       cmAnalysis4,
+                       cmAnalysis5,
+                       cmAnalysis6)
 
 saveCmAnalysisList(cmAnalysisList, file.path(folder, "cmAnalysisList.json"))
 saveTargetComparatorOutcomesList(targetComparatorOutcomesList, file.path(folder, "targetComparatorOutcomesList.json"))
@@ -269,11 +334,25 @@ result <- runCmAnalyses(
   exposureTable = cohortTable,
   outcomeDatabaseSchema = cohortDatabaseSchema,
   outcomeTable = cohortTable,
+  nestingCohortDatabaseSchema = cohortDatabaseSchema,
+  nestingCohortTable = cohortTable,
   outputFolder = folder,
-  cmAnalysisList = cmAnalysisList,
-  targetComparatorOutcomesList = targetComparatorOutcomesList,
-  multiThreadingSettings = multiThreadingSettings
+  multiThreadingSettings = multiThreadingSettings,
+  cmAnalysesSpecifications = createCmAnalysesSpecifications(
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList
+  )
 )
+
+
+diagnostics <- getDiagnosticsSummary(folder)
+diagnostics
+
+resultsSum <- getResultsSummary(folder)
+
+ref <- getFileReference(folder)
+balance <- readRDS(file.path(folder, "Balance_l6_s6_p6_t1_c2_n3_s5_b5.rds"))
+unlink(file.path(folder, "Balance_l6_s6_p6_t1_c2_n3_s5_b5.rds"))
 
 # Export to CSV ----------------------------------------------------------------
 exportToCsv(

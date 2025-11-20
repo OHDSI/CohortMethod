@@ -27,19 +27,6 @@ folderExists <- dir.exists(outputFolder)
 
 This vignette describes how you can use the `CohortMethod` package to perform a single new-user cohort study. We will walk through all the steps needed to perform an exemplar study, and we have selected the well-studied topic of the effect of coxibs versus non-selective non-steroidal anti-inflammatory drugs (NSAIDs) on gastrointestinal (GI) bleeding-related hospitalization. For simplicity, we focus on one coxib -- celecoxib -- and one non-selective NSAID -- diclofenac.
 
-# Installation instructions
-
-Before installing the `CohortMethod` package make sure you have Java available.  For Windows users, RTools is also necessary. See [these instructions](https://ohdsi.github.io/Hades/rSetup.html) for properly configuring your R environment.
-
-The `CohortMethod` package is currently maintained in a [Github repository](https://github.com/OHDSI/CohortMethod), and has dependencies on other packages in Github. All of these packages can be downloaded and installed from within R using the `drat` package:
-
-```{r eval=FALSE}
-install.packages("remotes")
-remotes::install_github("ohdsi/CohortMethod")
-```
-
-Once installed, you can type `library(CohortMethod)` to load the package.
-
 # Data extraction
 
 The first step in running the `CohortMethod` is extracting all necessary data from the database server holding the data in the Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM) format.
@@ -49,6 +36,7 @@ The first step in running the `CohortMethod` is extracting all necessary data fr
 We need to tell R how to connect to the server where the data are. `CohortMethod` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). For example, one might connect to a PostgreSQL database using this code:
 
 ```{r eval=FALSE}
+library(CohortMethod)
 connectionDetails <- createConnectionDetails(dbms = "postgresql",
                                              server = "localhost/ohdsi",
                                              user = "joe",
@@ -64,53 +52,60 @@ The last few lines define the `cdmDatabaseSchema`, `cohortDatabaseSchema`, and `
 
 ## Preparing the exposures and outcome(s)
 
-We need to define the exposures and outcomes for our study. Here, we will define our exposures using the OHDSI `Capr` package. We define two cohorts, one for celecoxib and one for diclofenac. For each cohort we require a prior diagnosis of 'osteoarthritis of knee', and 365 days of continuous prior observation.  we restrict to the first exposure per person:
+We need to define the exposures and outcomes for our study. Here, we will define our exposures using the OHDSI `Capr` package. We define two exposure cohorts, one for celecoxib and one for diclofenac. It is often a good idea to restrict your analysis to a specific indication, to maximize the comparability of the two cohorts. In this case, we will restrict to osteoarthritis of the knee. We will create a cohort for this indication, starting a the first ever diagnosis, and ending at observation period end. 
 
 ```{r eval=FALSE}
 library(Capr)
 
-osteoArthritisOfKneeConceptId <- 4079750
 celecoxibConceptId <- 1118084
 diclofenacConceptId <- 1124300
-osteoArthritisOfKnee <- cs(
-  descendants(osteoArthritisOfKneeConceptId),
-  name = "Osteoarthritis of knee"
-)
-attrition = attrition(
-  "prior osteoarthritis of knee" = withAll(
-    atLeast(1, conditionOccurrence(osteoArthritisOfKnee), duringInterval(eventStarts(-Inf, 0)))
-  )
-)
+osteoArthritisOfKneeConceptId <- 4079750
+
 celecoxib <- cs(
   descendants(celecoxibConceptId),
   name = "Celecoxib"
 )
-diclofenac  <- cs(
-  descendants(diclofenacConceptId),
-  name = "Diclofenac"
-)
+
 celecoxibCohort <- cohort(
   entry = entry(
-    drugExposure(celecoxib, firstOccurrence()),
-    observationWindow = continuousObservation(priorDays = 365)
+    drugExposure(celecoxib)
   ),
-  attrition = attrition,
   exit = exit(endStrategy = drugExit(celecoxib,
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
+
+diclofenac  <- cs(
+  descendants(diclofenacConceptId),
+  name = "Diclofenac"
+)
+
 diclofenacCohort <- cohort(
   entry = entry(
-    drugExposure(diclofenac, firstOccurrence()),
-    observationWindow = continuousObservation(priorDays = 365)
+    drugExposure(diclofenac)
   ),
-  attrition = attrition,
   exit = exit(endStrategy = drugExit(diclofenac,
                                      persistenceWindow = 30,
                                      surveillanceWindow = 0))
 )
-# Note: this will automatically assign cohort IDs 1 and 2, respectively:
-exposureCohorts <- makeCohortSet(celecoxibCohort, diclofenacCohort)
+
+osteoArthritisOfKnee <- cs(
+  descendants(osteoArthritisOfKneeConceptId),
+  name = "Osteoarthritis of knee"
+)
+
+osteoArthritisOfKneeCohort <- cohort(
+  entry = entry(
+    conditionOccurrence(osteoArthritisOfKnee, firstOccurrence())
+  ),
+  exit = exit(
+    endStrategy = observationExit()
+  )
+)
+# Note: this will automatically assign cohort IDs 1,2, and 3, respectively:
+exposuresAndIndicationCohorts <- makeCohortSet(celecoxibCohort, 
+                                               diclofenacCohort, 
+                                               osteoArthritisOfKneeCohort)
 ```
 
 We'll pull the outcome definition from the OHDSI `PhenotypeLibrary`:
@@ -124,7 +119,7 @@ We combine the exposure and outcome cohort definitions, and use `CohortGenerator
 
 ```{r eval=FALSE}
 allCohorts <- bind_rows(outcomeCohorts,
-                        exposureCohorts)
+                        exposuresAndIndicationCohorts)
 
 library(CohortGenerator)
 cohortTableNames <- getCohortTableNames(cohortTable = cohortTable)
@@ -142,12 +137,19 @@ If all went well, we now have a table with the cohorts of interest. We can see h
 
 ```{r eval=FALSE}
 connection <- DatabaseConnector::connect(connectionDetails)
-sql <- "SELECT cohort_definition_id, COUNT(*) AS count FROM @cohortDatabaseSchema.@cohortTable GROUP BY cohort_definition_id"
-DatabaseConnector::renderTranslateQuerySql(connection, sql,  cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
+sql <- "SELECT cohort_definition_id, COUNT(*) AS count
+FROM @cohortDatabaseSchema.@cohortTable
+GROUP BY cohort_definition_id"
+cohortCounts <- DatabaseConnector::renderTranslateQuerySql(
+  connection = connection,
+  sql = sql,
+  cohortDatabaseSchema = cohortDatabaseSchema,
+  cohortTable = cohortTable
+  )
 DatabaseConnector::disconnect(connection)
 ```
 ```{r echo=FALSE,message=FALSE}
-data.frame(cohort_concept_id = c(1,2,77),count = c(109307,176675,733601))
+data.frame(cohort_concept_id = c(1, 2, 3, 77),count = c(917230, 1791695, 993116, 1123643))
 ```
 
 ## Extracting the data from the server
@@ -174,7 +176,16 @@ cohortMethodData <- getDbCohortMethodData(
   exposureTable = cohortTable,
   outcomeDatabaseSchema = cohortDatabaseSchema,
   outcomeTable = cohortTable,
-  covariateSettings = covSettings
+  nestingCohortDatabaseSchema = cohortDatabaseSchema,
+  nestingCohortTable = cohortTable,
+  getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+    removeDuplicateSubjects = "keep first, truncate to second",
+    firstExposureOnly = TRUE,
+    washoutPeriod = 365,
+    restrictToCommonPeriod = TRUE,
+    nestingCohortId = 3,
+    covariateSettings = covSettings
+  )
 )
 cohortMethodData
 ```
@@ -193,9 +204,36 @@ if (folderExists) {
 \fontsize{10}{12}
 \selectfont
 
-There are many parameters, but they are all documented in the `CohortMethod` manual. The `createDefaultCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator and outcome. We instruct that the default set of covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date. To customize the set of covariates, please refer to the `FeatureExtraction` package vignette by typing `vignette("UsingFeatureExtraction", package="FeatureExtraction")`.
+There are many parameters, but they are all documented in the `CohortMethod` manual. The `createDefaultCovariateSettings` function is described in the `FeatureExtraction` package. In short, we are pointing the function to the table created earlier and indicating which concept IDs in that table identify the target, comparator, nesting cohort and outcome. We instruct that the default set of covariates should be constructed, including covariates for all conditions, drug exposures, and procedures that were found on or before the index date. To customize the set of covariates, please refer to the `FeatureExtraction` package vignette by typing `vignette("UsingFeatureExtraction", package="FeatureExtraction")`.
 
-All data about the cohorts, outcomes, and covariates are extracted from the server and stored in the `cohortMethodData` object. This object uses the `Andromeda` package to store information in a way that ensures R does not run out of memory, even when the data are large. We can use the generic `summary()` function to view some more information of the data we extracted:
+We let the `CohortMethod` package construct our sets of new users:
+- For those patients who have exposure to both the target and the comparator, we keep whichever is their first, and truncate their exposure at the start of the second (if the first occurrences of the  target and comparator start simultaneously the patient is removed).
+- We restrict to the first exposure overall (in this case redundant with the previous step).
+- We require a washout period of 365 days, meaning any patients with less than 365 days of prior observation are removed.
+- We restrict to the period in time when both drugs were observed in the database. This can be especially helpful when one of the exposures is new to the market.
+- We restrict to the nesting cohort, in this case our indication. Only exposures within the nesting cohort are kept.
+
+We can see how many persons and exposures were left after each of these steps:
+
+```{r eval=FALSE}
+getAttritionTable(cohortMethodData)
+```
+\fontsize{8}{10}
+\selectfont
+```{r echo=FALSE,message=FALSE}
+if (folderExists) {
+  table <- getAttritionTable(cohortMethodData)
+  truncLeft <- function(x, n){
+    nc <- nchar(x)
+    x[nc > (n - 3)] <- paste(substr(table$description[nc > (n - 3)], 1, n - 3), '...')
+    x
+  }
+  table$description <- truncLeft(table$description,30)
+  table
+}
+```
+
+The `cohortMethodData() function extracts all data about the exposures, outcomes, and covariates from the server and stores them in the `cohortMethodData` object. This object uses the `Andromeda` package to store information in a way that ensures R does not run out of memory, even when the data are large. We can use the generic `summary()` function to view some more information of the data we extracted:
 
 ```{r eval=FALSE}
 summary(cohortMethodData)
@@ -216,15 +254,6 @@ saveCohortMethodData(cohortMethodData, "coxibVsNonselVsGiBleed.zip")
 
 We can use the `loadCohortMethodData()` function to load the data in a future session.
 
-### Defining new users ###
-
-Typically, a new user is defined as first time use of a drug (either target or comparator), and typically a washout period (a minimum number of days prior first use) is used to make sure it is truly first use. When using the `CohortMethod` package, you can enforce the necessary requirements for new use in three ways:
-
-1. When creating the cohorts in the database, for example using `Capr`.
-2. When loading the cohorts using the `getDbCohortMethodData` function, you can use the `firstExposureOnly`, `removeDuplicateSubjects`, `restrictToCommonPeriod`, and `washoutPeriod` arguments. (As shown in the example above).
-3. When defining the study population using the `createStudyPopulation` function (see below) using the `firstExposureOnly`, `removeDuplicateSubjects`, `restrictToCommonPeriod`, and `washoutPeriod` arguments.
-
-The advantage of option 1 is that the input cohorts are already fully defined outside of the `CohortMethod` package, and for example external cohort characterization tools can be used on the same cohorts used in this package. The advantage of options 2 and 3 is that it saves you the trouble of limiting to first use yourself, for example allowing you to directly use the `drug_era` table in the CDM. Option 2 is more efficient than 3, since only data for first use will be fetched, while option 3 is less efficient but allows you to compare the original cohorts to the study population.
 
 # Defining the study population
 
@@ -233,21 +262,20 @@ Typically, the exposure cohorts and outcome cohorts will be defined independentl
 ```{r eval=FALSE}
 studyPop <- createStudyPopulation(
   cohortMethodData = cohortMethodData,
-  outcomeId = 3,
-  firstExposureOnly = FALSE,
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0,
-  removeDuplicateSubjects = "keep all",
-  removeSubjectsWithPriorOutcome = TRUE,
-  minDaysAtRisk = 1,
-  riskWindowStart = 0,
-  startAnchor = "cohort start",
-  riskWindowEnd = 30,
-  endAnchor = "cohort end"
+  outcomeId = 77,
+  createStudyPopulationArgs = createCreateStudyPopulationArgs(
+    removeSubjectsWithPriorOutcome = TRUE,
+    priorOutcomeLookback = 365,
+    minDaysAtRisk = 1,
+    riskWindowStart = 0,
+    startAnchor = "cohort start",
+    riskWindowEnd = 30,
+    endAnchor = "cohort end"
+  )
 )
 ```
 
-Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. During loading we set `restrictToCommonPeriod` to FALSE, and we do the same here because we do not want to force the comparison to restrict only to time when both drugs are recorded. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the cohort start date (the index date, `riskWindowStart = 0` and `startAnchor = "cohort start"`), and the risk windows ends 30 days after the cohort ends (`riskWindowEnd = 30` and `endAnchor = "cohort end"`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
+We specify the outcome ID we will use, and that people who had the outcomes in the 365 days before the risk window start date will be removed. The risk window is defined as starting at the cohort start date (the index date, `riskWindowStart = 0` and `startAnchor = "cohort start"`), and the risk windows ends 30 days after the cohort ends (`riskWindowEnd = 30` and `endAnchor = "cohort end"`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
 
 ```{r eval=FALSE}
 getAttritionTable(studyPop)
@@ -270,11 +298,9 @@ if (folderExists) {
 \fontsize{10}{12}
 \selectfont
 
-One additional filtering step that is often used is matching or trimming on propensity scores, as will be discussed next.
-
 # Propensity scores
 
-The `CohortMethod` can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handful of predefined covariates, `CohortMethod` typically uses thousands to millions of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
+The `CohortMethod` can use propensity scores to adjust for potential confounders. Instead of the traditional approach of using a handful of predefined covariates, `CohortMethod` typically uses tens of thousands of covariates that are automatically constructed based on conditions, procedures and drugs in the records of the subjects.
 
 ## Fitting a propensity model
 
@@ -302,22 +328,28 @@ computePsAuc(ps)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  0.81;#computePsAuc(ps)
+  readRDS(file.path(outputFolder, "auc.rds"))
 }
 ```
 
-We can also plot the propensity score distribution, although we prefer the preference score distribution:
+We can also plot the propensity score distribution. By defeault, the `plotPS()` function shows the preference score, a transformation of the propensity score that adjusts for differences in sizes between the target and comparator:
 
 ```{r eval=FALSE}
-plotPs(ps, 
-       scale = "preference", 
-       showCountsLabel = TRUE, 
-       showAucLabel = TRUE, 
+plotPs(ps,
+       targetLabel = "Celexocib",
+       comparatorLabel = "Diclofenac",
+       showCountsLabel = TRUE,
+       showAucLabel = TRUE,
        showEquiposeLabel = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
-  plotPs(ps, scale = "preference", showCountsLabel = TRUE, showAucLabel = TRUE, showEquiposeLabel = TRUE)
+plotPs(ps,
+       targetLabel = "Celexocib",
+       comparatorLabel = "Diclofenac",
+       showCountsLabel = TRUE,
+       showAucLabel = TRUE,
+       showEquiposeLabel = TRUE)
 }
 ```
 
@@ -356,46 +388,64 @@ A low equipoise indicates there is little overlap between the target and compara
 
 ## Using the propensity score
 
-We can use the propensity scores to trim, stratify, match, or weigh our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.25 and 0.75 are kept:
+We can use the propensity scores to trim, stratify, match, or weigh our population. For example, one could  trim to equipoise, meaning only subjects with a preference score between 0.3 and 0.7 are kept:
 
 ```{r eval=FALSE}
-trimmedPop <- trimByPsToEquipoise(ps)
-plotPs(trimmedPop, ps, scale = "preference")
+trimmedPop <- trimByPs(ps,
+                       trimByPsArgs = createTrimByPsArgs(
+                         equipoiseBounds = c(0.3, 0.7)
+                       ))
+# Note: we need to also provide the original PS object so the preference score
+# is computed using the original relative sizes of the cohorts:
+plotPs(trimmedPop, ps)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  trimmedPop <- trimByPsToEquipoise(ps)
-  plotPs(trimmedPop, ps, scale = "preference")
+  trimmedPop <- trimByPs(ps,
+                         trimByPsArgs = createTrimByPsArgs(
+                           equipoiseBounds = c(0.3, 0.7)
+                         ))
+  plotPs(trimmedPop, ps)
 }
 ```
 
 Instead (or additionally), we could stratify the population based on the propensity score:
 
 ```{r eval=FALSE}
-stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
-plotPs(stratifiedPop, ps, scale = "preference")
+stratifiedPop <- stratifyByPs(ps, 
+                              stratifyByPsArgs = createStratifyByPsArgs(
+                                numberOfStrata = 5
+                              ))
+plotPs(stratifiedPop)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  stratifiedPop <- stratifyByPs(ps, numberOfStrata = 5)
-  plotPs(stratifiedPop, ps, scale = "preference")
+  stratifiedPop <- stratifyByPs(ps, 
+                                stratifyByPsArgs = createStratifyByPsArgs(
+                                  numberOfStrata = 5
+                                ))
+  plotPs(stratifiedPop)
 }
 ```
 
-We can also match subjects based on propensity scores. In this example, we're using one-to-one matching:
+We can also match subjects based on propensity scores. In this example, we're using one-to-one matching. By default, `createPs()` will use a caliper of 0.2 on the standardized logit scale:
 
 ```{r eval=FALSE}
-  matchedPop <- matchOnPs(ps, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 1)
-  plotPs(matchedPop, ps)
+matchedPop <- matchOnPs(ps,
+                        matchOnPsArgs = createMatchOnPsArgs(
+                          maxRatio = 1
+                        ))
+plotPs(matchedPop, ps)
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  matchedPop <- matchOnPs(ps, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 1)
+  matchedPop <- matchOnPs(ps,
+                          matchOnPsArgs = createMatchOnPsArgs(
+                            maxRatio = 1
+                          ))
   plotPs(matchedPop, ps)
 }
 ```
-
-Note that for both stratification and matching it is possible to specify additional matching criteria such as age and sex using the `stratifyByPsAndCovariates()` and `matchOnPsAndCovariates()` functions, respectively.
 
 We can see the effect of trimming and/or matching on the population using the `getAttritionTable` function:
 
@@ -425,7 +475,7 @@ Or, if we like, we can plot an attrition diagram:
 ```{r eval=FALSE}
 drawAttritionDiagram(matchedPop)
 ```
-```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=5,fig.height=6}
+```{r echo=FALSE,message=FALSE,eval=TRUE,fig.width=6,fig.height=8.5,out.width="60%"}
 if (folderExists) {
   drawAttritionDiagram(matchedPop)
 }
@@ -444,7 +494,9 @@ if (folderExists) {
 }
 ```
 ```{r eval=FALSE}
-plotCovariateBalanceScatterPlot(balance, showCovariateCountLabel = TRUE, showMaxLabel = TRUE)
+plotCovariateBalanceScatterPlot(balance, 
+                                showCovariateCountLabel = TRUE, 
+                                showMaxLabel = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,warnings=FALSE,eval=TRUE,fig.width=7,fig.height=4.5}
 if (folderExists) {
@@ -462,7 +514,7 @@ if (folderExists) {
 }
 ```
 
-The 'before matching' population is the population as extracted by the `getDbCohortMethodData` function, so before any further filtering steps.
+The 'before matching' population is the population as extracted by the `getDbCohortMethodData` function, so before any further filtering steps. We typically consider the populations to be balanced if, after PS adjustment, all covariates have a standardized difference of means smaller than 0.1.
 
 ## Inspecting select population characteristics
 
@@ -592,8 +644,12 @@ The outcome model is a model describing which variables are associated with the 
 In theory we could fit an outcome model without using the propensity scores. In this example we are fitting an outcome model using a Cox regression:
 
 ```{r eval=FALSE}
-outcomeModel <- fitOutcomeModel(population = studyPop,
-                                modelType = "cox")
+outcomeModel <- fitOutcomeModel(
+  population = studyPop,
+  fitOutcomeModelArgs = createFitOutcomeModelArgs(
+    modelType = "cox"
+  )
+)
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
@@ -606,9 +662,12 @@ if (folderExists) {
 But of course we want to make use of the matching done on the propensity score:
 
 ```{r eval=FALSE}
-outcomeModel <- fitOutcomeModel(population = matchedPop,
-                                modelType = "cox",
-                                stratified = TRUE)
+outcomeModel <- fitOutcomeModel(
+  population = matchedPop,
+  fitOutcomeModelArgs = createFitOutcomeModelArgs(
+    modelType = "cox"
+  )
+)
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
@@ -618,21 +677,28 @@ if (folderExists) {
 }
 ```
 
-Note that we define the sub-population to be only those in the `matchedPop` object, which we created earlier by matching on the propensity score. We also now use a stratified Cox model, conditioning on the propensity score match sets.
+Note that we define the sub-population to be only those in the `matchedPop` object, which we created earlier by matching on the propensity score. 
 
 Instead of matching or stratifying we can also perform Inverse Probability of Treatment Weighting (IPTW):
 ```{r eval=FALSE}
-outcomeModel <- fitOutcomeModel(population = ps,
-                                modelType = "cox",
-                                inversePtWeighting = TRUE)
+outcomeModel <- fitOutcomeModel(
+  population = ps,
+  fitOutcomeModelArgs = createFitOutcomeModelArgs(
+    modelType = "cox",
+    inversePtWeighting = TRUE,
+    bootstrapCi = TRUE
+  )
+)
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel2w.rds"))
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel3.rds"))
   outcomeModel
 }
 ```
+
+Note that in this case we may want to use a bootrap to compute the confidence interval.
 
 
 ## Adding interaction terms
@@ -644,10 +710,14 @@ interactionCovariateIds <- c(8532001, 201826210, 21600960413)
 # 8532001 = Female
 # 201826210 = Type 2 Diabetes
 # 21600960413 = Concurent use of antithrombotic agents
-outcomeModel <- fitOutcomeModel(population = matchedPop,
-                                modelType = "cox",
-                                stratified = TRUE,
-                                interactionCovariateIds = interactionCovariateIds)
+outcomeModel <- fitOutcomeModel(
+  population = matchedPop,
+  cohortMethodData = cohortMethodData,
+  fitOutcomeModelArgs = createFitOutcomeModelArgs(
+    modelType = "cox",
+    interactionCovariateIds = interactionCovariateIds
+  )
+)
 outcomeModel
 ```
 \fontsize{5.5}{5.5}
@@ -664,9 +734,13 @@ if (folderExists) {
 It is prudent to verify that covariate balance has also been achieved in the subgroups of interest. For example, we can check the covariate balance in the subpopulation of females:
 
 ```{r eval=FALSE}
-balanceFemale <- computeCovariateBalance(population = matchedPop, 
-                                         cohortMethodData = cohortMethodData, 
-                                         subgroupCovariateId = 8532001)
+balanceFemale <- computeCovariateBalance(
+  population,
+  cohortMethodData,
+  computeCovariateBalanceArgs = createComputeCovariateBalanceArgs(
+    subgroupCovariateId = 8532001
+  )
+)
 plotCovariateBalanceScatterPlot(balanceFemale)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE,fig.width=8,fig.height=5}
@@ -681,16 +755,19 @@ if (folderExists) {
 One final refinement would be to use the same covariates we used to fit the propensity model to also fit the outcome model. This way we are more robust against misspecification of the model, and more likely to remove bias. For this we use the regularized Cox regression in the `Cyclops` package. (Note that the treatment variable is automatically excluded from regularization.)
 
 ```{r eval=FALSE}
-outcomeModel <- fitOutcomeModel(population = matchedPop,
-                                cohortMethodData = cohortMethodData,
-                                modelType = "cox",
-                                stratified = TRUE,
-                                useCovariates = TRUE)
+outcomeModel <- fitOutcomeModel(
+  population = matchedPop,
+  cohortMethodData = cohortMethodData,
+  fitOutcomeModelArgs = createFitOutcomeModelArgs(
+    modelType = "cox",
+    useCovariates = TRUE,
+  )
+)
 outcomeModel
 ```
 ```{r echo=FALSE,message=FALSE,eval=TRUE}
 if (folderExists) {
-  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel3.rds"))
+  outcomeModel <- readRDS(file.path(outputFolder, "OutcomeModel5.rds"))
   outcomeModel
 }
 ```
@@ -755,30 +832,27 @@ Note that the Kaplan-Meier plot will automatically adjust for any stratification
 We can also plot time-to-event, showing both events before and after the index date, and events during and outside the defined time-at-risk window. This plot can provide insight into the temporal pattern of the outcome relative to the exposures:
 
 ```{r eval=FALSE}
-plotTimeToEvent(cohortMethodData = cohortMethodData,
-                outcomeId = 77,
-                firstExposureOnly = FALSE,
-                washoutPeriod = 0,
-                removeDuplicateSubjects = "keep all",
-                minDaysAtRisk = 1,
-                riskWindowStart = 0,
-                startAnchor = "cohort start",
-                riskWindowEnd = 30,
-                endAnchor = "cohort end")
-
+plotTimeToEvent(
+  cohortMethodData = cohortMethodData,
+  outcomeId = 77,
+  minDaysAtRisk = 1,
+  riskWindowStart = 0,
+  startAnchor = "cohort start",
+  riskWindowEnd = 30,
+  endAnchor = "cohort end"
+)
 ```
 ```{r echo=FALSE, message=FALSE, results='hide'}
 if (folderExists) {
-  plotTimeToEvent(cohortMethodData = cohortMethodData,
-                  outcomeId = 77,
-                  firstExposureOnly = FALSE,
-                  washoutPeriod = 0,
-                  removeDuplicateSubjects = "keep all",
-                  minDaysAtRisk = 1,
-                  riskWindowStart = 0,
-                  startAnchor = "cohort start",
-                  riskWindowEnd = 30,
-                  endAnchor = "cohort end")
+  plotTimeToEvent(
+    cohortMethodData = cohortMethodData,
+    outcomeId = 77,
+    minDaysAtRisk = 1,
+    riskWindowStart = 0,
+    startAnchor = "cohort start",
+    riskWindowEnd = 30,
+    endAnchor = "cohort end"
+  )
   
 }
 ```

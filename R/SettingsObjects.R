@@ -197,13 +197,13 @@ AbstractSerializableSettings <- R6Class(
 #' An object of type `GetDbCohortMethodDataArgs`.
 #'
 #' @export
-createGetDbCohortMethodDataArgs <- function(studyStartDate = "",
-                                            studyEndDate = "",
+createGetDbCohortMethodDataArgs <- function(removeDuplicateSubjects = "keep first, truncate to second",
                                             firstExposureOnly = TRUE,
-                                            removeDuplicateSubjects = "keep first, truncate to second",
-                                            restrictToCommonPeriod = TRUE,
-                                            washoutPeriod = 65,
+                                            washoutPeriod = 365,
                                             nestingCohortId = NULL,
+                                            restrictToCommonPeriod = TRUE,
+                                            studyStartDate = "",
+                                            studyEndDate = "",
                                             maxCohortSize = 0,
                                             covariateSettings) {
   args <- list()
@@ -739,7 +739,7 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
                                       bootstrapCi = FALSE,
-                                      bootstrapReplicates = 1000,
+                                      bootstrapReplicates = 200,
                                       interactionCovariateIds = c(),
                                       excludeCovariateIds = c(),
                                       includeCovariateIds = c(),
@@ -1162,7 +1162,7 @@ createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
                                          sdmThreshold = 0.1,
                                          sdmAlpha = NULL,
                                          equipoiseThreshold = 0.2,
-                                         generalizabilitySdmThreshold = 1) {
+                                         generalizabilitySdmThreshold = Inf) {
   args <- list()
   for (name in names(formals())) {
     args[[name]] <- get(name)

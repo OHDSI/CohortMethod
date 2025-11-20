@@ -5,31 +5,31 @@
 \title{Create a parameter object for the function \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}}
 \usage{
 createGetDbCohortMethodDataArgs(
+  removeDuplicateSubjects = "keep first, truncate to second",
+  firstExposureOnly = TRUE,
+  washoutPeriod = 365,
+  nestingCohortId = NULL,
+  restrictToCommonPeriod = TRUE,
   studyStartDate = "",
   studyEndDate = "",
-  firstExposureOnly = TRUE,
-  removeDuplicateSubjects = "keep first, truncate to second",
-  restrictToCommonPeriod = TRUE,
-  washoutPeriod = 65,
-  nestingCohortId = NULL,
   maxCohortSize = 0,
   covariateSettings
 )
 }
 \arguments{
-\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.}
-
-\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'. Important: the study end data is also used to truncate risk windows, meaning no outcomes beyond the study end date will be considered.}
-
-\item{firstExposureOnly}{Should only the first exposure per subject be included? Note that this is typically done in the createStudyPopulation() function, but can already be done here for efficiency reasons.}
-
 \item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator cohort? See details for allowed values.Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.}
 
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
+\item{firstExposureOnly}{Should only the first exposure per subject be included? Note that this is typically done in the createStudyPopulation() function, but can already be done here for efficiency reasons.}
 
 \item{washoutPeriod}{The minimum required continuous observation time prior to index date for a person to be included in the cohort. Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.}
 
 \item{nestingCohortId}{A cohort definition ID identifying the records in the \code{nestingCohortTable} to use as nesting cohort.}
+
+\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
+
+\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.}
+
+\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index date can appear. Date format is 'yyyymmdd'. Important: the study end data is also used to truncate risk windows, meaning no outcomes beyond the study end date will be considered.}
 
 \item{maxCohortSize}{If either the target or the comparator cohort is larger than this number it will be sampled to this size. maxCohortSize = 0 indicates no maximum size.}
 

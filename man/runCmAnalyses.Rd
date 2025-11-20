@@ -12,6 +12,8 @@ runCmAnalyses(
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
+  nestingCohortDatabaseSchema = cdmDatabaseSchema,
+  nestingCohortTable = "cohort",
   outputFolder = "./CohortMethodOutput",
   multiThreadingSettings = createMultiThreadingSettings(),
   cmAnalysesSpecifications
@@ -51,6 +53,13 @@ this database.}
 outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+
+\item{nestingCohortDatabaseSchema}{The name of the database schema that is the location where the
+data used to define the nesting cohorts is available.}
+
+\item{nestingCohortTable}{The tablename that contains the nesting cohorts. Must have
+the format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outputFolder}{Name of the folder where all the outputs will written to.}
 

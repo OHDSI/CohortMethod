@@ -17,7 +17,7 @@ getDbCohortMethodData(
   outcomeTable = "condition_occurrence",
   nestingCohortDatabaseSchema = cdmDatabaseSchema,
   nestingCohortTable = "cohort",
-  getDbCohortMethodDataArgs
+  getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs()
 )
 }
 \arguments{
@@ -87,4 +87,6 @@ occurring in exposed subjects. The treatment and comparator cohorts can be ident
 DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
 in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
 user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
+Optionally, the target and comparator cohorts can be restricted to be within a nesting cohort,
+which can reside in a  different database schema and table.
 }

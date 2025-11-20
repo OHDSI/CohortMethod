@@ -13,11 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# @author Observational Health Data Sciences and Informatics
-# @author Patrick Ryan
-# @author Marc Suchard
-# @author Martijn Schuemie
 
 filterCovariates <- function(covariates, covariateRef, covariateFilter) {
   if (is.null(covariateFilter)) {
@@ -45,6 +40,11 @@ filterCovariates <- function(covariates, covariateRef, covariateFilter) {
   } else {
     stop("Unknown covariateFilter type")
   }
+}
+
+.InfToNa <- function(x) {
+  x <- if_else(is.infinite(x), as.numeric(NA), x)
+  return(x)
 }
 
 computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
@@ -258,7 +258,7 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       denominatorSd = sqrt((.data$sdTarget^2 + .data$sdComparator^2) / 2)
     ) |>
     mutate(
-      stdDiff = (.data$meanTarget - .data$meanComparator) / .data$denominatorSd
+      stdDiff = .InfToNa((.data$meanTarget - .data$meanComparator) / .data$denominatorSd)
     )
 
   if (useWeighting) {
@@ -489,9 +489,9 @@ computeCovariateBalance <- function(population,
                  collect() |>
                  mutate(domainId = as.factor(.data$domainId)), by = "analysisId") |>
     mutate(
-      targetStdDiff = (.data$beforeMatchingMeanTarget - .data$afterMatchingMeanTarget) / sqrt((.data$beforeMatchingSdTarget^2 + .data$afterMatchingSdTarget^2) / 2),
-      comparatorStdDiff = (.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / sqrt((.data$beforeMatchingSdComparator^2 + .data$afterMatchingSdComparator^2) / 2),
-      targetComparatorStdDiff = (.data$beforeMatchingMean - .data$afterMatchingMean) / sqrt((.data$beforeMatchingSd^2 + .data$beforeMatchingSd^2) / 2)
+      targetStdDiff = .InfToNa((.data$beforeMatchingMeanTarget - .data$afterMatchingMeanTarget) / sqrt((.data$beforeMatchingSdTarget^2 + .data$afterMatchingSdTarget^2) / 2)),
+      comparatorStdDiff = .InfToNa((.data$beforeMatchingMeanComparator - .data$afterMatchingMeanComparator) / sqrt((.data$beforeMatchingSdComparator^2 + .data$afterMatchingSdComparator^2) / 2)),
+      targetComparatorStdDiff = .InfToNa((.data$beforeMatchingMean - .data$afterMatchingMean) / sqrt((.data$beforeMatchingSd^2 + .data$beforeMatchingSd^2) / 2))
     ) |>
     arrange(desc(abs(.data$beforeMatchingStdDiff)))
 

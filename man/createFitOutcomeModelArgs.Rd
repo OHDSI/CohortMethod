@@ -10,7 +10,7 @@ createFitOutcomeModelArgs(
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
   bootstrapCi = FALSE,
-  bootstrapReplicates = 1000,
+  bootstrapReplicates = 200,
   interactionCovariateIds = c(),
   excludeCovariateIds = c(),
   includeCovariateIds = c(),
