@@ -10,7 +10,7 @@ createCmDiagnosticThresholds(
   sdmThreshold = 0.1,
   sdmAlpha = NULL,
   equipoiseThreshold = 0.2,
-  generalizabilitySdmThreshold = 1
+  generalizabilitySdmThreshold = 999
 )
 }
 \arguments{

@@ -1162,7 +1162,7 @@ createCmDiagnosticThresholds <- function(mdrrThreshold = 10,
                                          sdmThreshold = 0.1,
                                          sdmAlpha = NULL,
                                          equipoiseThreshold = 0.2,
-                                         generalizabilitySdmThreshold = Inf) {
+                                         generalizabilitySdmThreshold = 999) {
   args <- list()
   for (name in names(formals())) {
     args[[name]] <- get(name)
