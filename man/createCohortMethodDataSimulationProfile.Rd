@@ -10,7 +10,7 @@ createCohortMethodDataSimulationProfile(cohortMethodData, minCellCount = 5)
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
 \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
-\item{minCellCount}{If > 0, willset to zero all low-prevalence covariates in
+\item{minCellCount}{If > 0, will set to zero all low-prevalence covariates in
 the supplied simulation table in order to prevent identification of persons.}
 }
 \value{

@@ -14,30 +14,21 @@ test_that("Subsampling cohort throws no error", {
       riskWindowEnd = 99999
     )
   )
-  # Set Cyclops prior to guarantee all coefficients to be zero.
-  prior_var <- 1 / 2^1023
-  cyclops_control <- Cyclops::createControl(
-    lowerLimit = prior_var,
-    upperLimit = prior_var,
-    minCVData = 0,
-    fold = 1
-  )
+  prior <- createPrior("laplace", 0.1, exclude = 0)
 
-  # Ensure subsampling took place
+  # Ensure subsampling takes place
   targetPopSize <- length(population$rowId[population$treatment == 1])
   comparatorPopSize <- length(population$rowId[population$treatment == 0])
-  expect_true(min(targetPopSize, comparatorPopSize) > 10)
+  expect_true(min(targetPopSize, comparatorPopSize) > 100)
 
-  expect_error(
-    createPs(
+  ps <- createPs(
       cohortMethodData = cohortMethodData,
       population = population,
       createPsArgs = createCreatePsArgs(
         errorOnHighCorrelation = FALSE,
-        maxCohortSizeForFitting = 10,
-        control = cyclops_control
+        maxCohortSizeForFitting = 100,
+        prior = prior
       )
-    ),
-    "ILLCONDITIONED"
-  )
+    )
+  expect_s3_class(ps, "data.frame")
 })

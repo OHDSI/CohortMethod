@@ -145,6 +145,50 @@ test_that("CmAnalysis serialization and deserialization", {
   )
   settings2 <- CmAnalysis$new(json = settings$toJson())
   expect_equal(settings, settings2, tolerance = 0.0001)
+
+  # Save and load CmAnalysisList
+  cmAnalysisList <- list(
+    createCmAnalysis(
+      analysisId = 1,
+      description = "Cm",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = FeatureExtraction::createDefaultCovariateSettings(
+          addDescendantsToExclude = TRUE
+        )
+      ),
+      createStudyPopulationArgs = createCreateStudyPopulationArgs(),
+      createPsArgs = createCreatePsArgs(),
+      matchOnPsArgs = createMatchOnPsArgs(),
+      computeSharedCovariateBalanceArgs = createComputeCovariateBalanceArgs(),
+      computeCovariateBalanceArgs = createComputeCovariateBalanceArgs(
+        covariateFilter = FeatureExtraction::getDefaultTable1Specifications()
+      ),
+      fitOutcomeModelArgs = createFitOutcomeModelArgs()
+    ),
+    createCmAnalysis(
+      analysisId = 2,
+      description = "Cm 2",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = FeatureExtraction::createDefaultCovariateSettings(
+          addDescendantsToExclude = TRUE
+        )
+      ),
+      createStudyPopulationArgs = createCreateStudyPopulationArgs(),
+      createPsArgs = createCreatePsArgs(),
+      stratifyByPsArgs = createStratifyByPsArgs(),
+      computeSharedCovariateBalanceArgs = createComputeCovariateBalanceArgs(),
+      computeCovariateBalanceArgs = createComputeCovariateBalanceArgs(
+        covariateFilter = FeatureExtraction::getDefaultTable1Specifications()
+      ),
+      fitOutcomeModelArgs = createFitOutcomeModelArgs()
+    )
+  )
+
+  tempFile <- tempfile(fileext = ".json")
+  saveCmAnalysisList(cmAnalysisList, tempFile)
+  cmAnalysisList2 <- loadCmAnalysisList(tempFile)
+  expect_equal(cmAnalysisList, cmAnalysisList2, tolerance = 0.0001)
+  unlink(tempFile)
 })
 
 test_that("Outcome serialization and deserialization", {
@@ -176,6 +220,28 @@ test_that("TargetComparatorOutcomes serialization and deserialization", {
   )
   settings2 <- TargetComparatorOutcomes$new(json = settings$toJson())
   expect_equal(settings, settings2)
+
+  # Save and load TargetComparatorOutcomesList
+  targetComparatorOutcomesList = list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(createOutcome(outcomeId = 10),
+                      createOutcome(outcomeId = 11, trueEffectSize = 1))
+    ),
+    createTargetComparatorOutcomes(
+      targetId = 3,
+      comparatorId = 4,
+      outcomes = list(createOutcome(outcomeId = 10),
+                      createOutcome(outcomeId = 11, trueEffectSize = 1))
+    )
+  )
+
+  tempFile <- tempfile(fileext = ".json")
+  saveTargetComparatorOutcomesList(targetComparatorOutcomesList, tempFile)
+  targetComparatorOutcomesList2 <- loadTargetComparatorOutcomesList(tempFile)
+  expect_equal(targetComparatorOutcomesList, targetComparatorOutcomesList2, tolerance = 0.0001)
+  unlink(tempFile)
 })
 
 test_that("CmDiagnosticThresholds serialization and deserialization", {

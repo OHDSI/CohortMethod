@@ -213,15 +213,15 @@ plotPs(ps,
        comparatorLabel = "Diclofenac",
        showCountsLabel = TRUE,
        showAucLabel = TRUE,
-       showEquiposeLabel = TRUE)
+       showEquipoiseLabel = TRUE)
 
 model <- getPsModel(ps, cohortMethodData)
 model[grepl("age group*", model$covariateName), ]
 
 plotPs(ps, showAucLabel = TRUE, showCountsLabel = TRUE, fileName = "extras/ps.png")
 plotPs(ps)
-plotPs(ps, scale = "propensity", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
-plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, showEquiposeLabel = TRUE)
+plotPs(ps, scale = "propensity", showCountsLabel = TRUE, showEquipoiseLabel = TRUE)
+plotPs(ps, scale = "propensity", type = "histogram", showCountsLabel = TRUE, showEquipoiseLabel = TRUE)
 
 trimmedPop <- trimByPs(ps,
                        trimByPsArgs = createTrimByPsArgs(

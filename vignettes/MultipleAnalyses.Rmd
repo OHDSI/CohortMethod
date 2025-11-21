@@ -484,15 +484,15 @@ This tells us, per target-comparator-outcome-analysis combination, the estimated
 
 `CohorMethod` will have automatically executed a set of diagnostics for each target-comparator-(nesting)-outcome:
 
-- **Equipoise**: Pass if the equipose is greater than 0.2, meaning the two cohorts are sufficiently comparable even before PS adjustment.
+- **Equipoise**: Pass if the equipoise is greater than 0.2, meaning the two cohorts are sufficiently comparable even before PS adjustment.
 - **Balance**: Pass if the absolute standardized difference of means of all covariates is smaller than 0.1. We compute balance for both the shared balance (across all outcomes), and the per-outcome balance (which often only contains a small subset of covariates), and only pass if we pass for both. 
 - **Generalizability**: Pass if the standardized difference of means when comparing the analytic cohorts (e.g. after PS matching) to the original cohorts is smaller than some threshold for all covariates. We currently don't set a threshold for this diagnostic, as we believe even less generalizable findings can still be meaningful.
-- **Systematic error**: Pass is the expected absolute systematic error (EASE) is smaller than 0.25. EASE is computed by first fitting a normal distribution to the negative control estimates, and then integrating over the absolute value of this distribution. If EASE equals 0, all varation in negative control estimates can be explained by random error (as expressed in the confidence intervals) alone. Higher EASE scores indicate there is systematic error.
+- **Systematic error**: Pass is the expected absolute systematic error (EASE) is smaller than 0.25. EASE is computed by first fitting a normal distribution to the negative control estimates, and then integrating over the absolute value of this distribution. If EASE equals 0, all variation in negative control estimates can be explained by random error (as expressed in the confidence intervals) alone. Higher EASE scores indicate there is systematic error.
 - **Power**: Pass if the minimum detectable relative risk is smaller than 10; We do not show estimates that have extremely low power because many people have trouble interpreting very wide confidence intervals. Underpowered estimates do still contribute to calibration, and when running across multiple databases, to the meta-analysis.
 
 These diagnostics rely in threshold that can be specified using the `createCmDiagnosticThresholds()`, which can be used in the `createCmAnalysesSpecifications()` when invoking `runCmAnalyses()`.
 
-Note that we are moving to balance diagnostic based on signficance testing to avoid failing the balance diagnostics on smaller data sets. Currently the default is still to use the traditional balance approach.
+Note that we are moving to balance diagnostic based on significance testing to avoid failing the balance diagnostics on smaller data sets. Currently the default is still to use the traditional balance approach.
 
 We can retrieve the diagnostics:
 

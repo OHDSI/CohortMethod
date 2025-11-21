@@ -456,7 +456,7 @@ prefer the preference score distribution:</p>
 <span>       scale <span class="op">=</span> <span class="st">"preference"</span>, </span>
 <span>       showCountsLabel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>       showAucLabel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
-<span>       showEquiposeLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span>       showEquipoiseLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="SingleStudies_files/figure-html/unnamed-chunk-23-1.png" width="700"></p>
 <p>It is also possible to inspect the propensity model itself by showing
 the covariates that have non-zero coefficients:</p>
@@ -656,20 +656,176 @@ effect modification is present). The
 differences:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
-<pre><code> [38;5;246m# A tibble: 93,004 × 5 [39m
+<pre><code>
+[38;5;246m# A tibble: 93,004 × 5
+[39m
    covariateId covariateName                     beforeMatchingMean afterMatchingMean stdDiff
-          [3m [38;5;246m&lt;dbl&gt; [39m [23m  [3m [38;5;246m&lt;chr&gt; [39m [23m                                           [3m [38;5;246m&lt;dbl&gt; [39m [23m              [3m [38;5;246m&lt;dbl&gt; [39m [23m    [3m [38;5;246m&lt;dbl&gt; [39m [23m
- [38;5;250m 1 [39m   [4m4 [24m160 [4m4 [24m [4m3 [24m [4m9 [24m504 ...: Administration of anesthesia              0.161           0.029 [4m6 [24m    0.358
- [38;5;250m 2 [39m   [4m2 [24m105 [4m1 [24m [4m0 [24m [4m3 [24m504 ...cing (total knee arthroplasty)              0.119           0.009 [4m7 [24m [4m5 [24m   0.336
- [38;5;250m 3 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m6 [24m [4m2 [24m804 ...s and Devices - Other Implants              0.129           0.017 [4m5 [24m    0.333
- [38;5;250m 4 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m0 [24m [4m8 [24m804 ...vices - General Classification              0.145           0.029 [4m8 [24m    0.327
- [38;5;250m 5 [39m  [4m3 [24m [4m8 [24m003 [4m3 [24m [4m9 [24m [4m0 [24m804 ... Room - General Classification              0.138           0.027 [4m9 [24m    0.318
- [38;5;250m 6 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m1 [24m [4m3 [24m804 ...hesia - General Classification              0.125           0.024 [4m9 [24m    0.303
- [38;5;250m 7 [39m   764 [4m6 [24m [4m0 [24m [4m8 [24m504 ...dex: Preprocedural examination              0.107           0.014 [4m9 [24m    0.297
- [38;5;250m 8 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m3 [24m [4m8 [24m804 ...rmacy - General Classification              0.179           0.068 [4m0 [24m    0.290
- [38;5;250m 9 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m4 [24m [4m5 [24m804 ... - Evaluation Or Re-Evaluation              0.124           0.030 [4m5 [24m    0.284
- [38;5;250m10 [39m   [4m2 [24m105 [4m1 [24m [4m0 [24m [4m3 [24m502 ...cing (total knee arthroplasty)              0.171           0.068 [4m5 [24m    0.272
- [38;5;246m# ℹ 92,994 more rows [39m</code></pre>
+         
+[3m
+[38;5;246m&lt;dbl&gt;
+[39m
+[23m 
+[3m
+[38;5;246m&lt;chr&gt;
+[39m
+[23m                                          
+[3m
+[38;5;246m&lt;dbl&gt;
+[39m
+[23m             
+[3m
+[38;5;246m&lt;dbl&gt;
+[39m
+[23m   
+[3m
+[38;5;246m&lt;dbl&gt;
+[39m
+[23m
+
+[38;5;250m 1
+[39m  
+[4m4
+[24m160
+[4m4
+[24m
+[4m3
+[24m
+[4m9
+[24m504 ...: Administration of anesthesia              0.161           0.029
+[4m6
+[24m    0.358
+
+[38;5;250m 2
+[39m  
+[4m2
+[24m105
+[4m1
+[24m
+[4m0
+[24m
+[4m3
+[24m504 ...cing (total knee arthroplasty)              0.119           0.009
+[4m7
+[24m
+[4m5
+[24m   0.336
+
+[38;5;250m 3
+[39m 
+[4m3
+[24m
+[4m8
+[24m003
+[4m1
+[24m
+[4m6
+[24m
+[4m2
+[24m804 ...s and Devices - Other Implants              0.129           0.017
+[4m5
+[24m    0.333
+
+[38;5;250m 4
+[39m 
+[4m3
+[24m
+[4m8
+[24m003
+[4m2
+[24m
+[4m0
+[24m
+[4m8
+[24m804 ...vices - General Classification              0.145           0.029
+[4m8
+[24m    0.327
+
+[38;5;250m 5
+[39m 
+[4m3
+[24m
+[4m8
+[24m003
+[4m3
+[24m
+[4m9
+[24m
+[4m0
+[24m804 ... Room - General Classification              0.138           0.027
+[4m9
+[24m    0.318
+
+[38;5;250m 6
+[39m 
+[4m3
+[24m
+[4m8
+[24m003
+[4m2
+[24m
+[4m1
+[24m
+[4m3
+[24m804 ...hesia - General Classification              0.125           0.024
+[4m9
+[24m    0.303
+
+[38;5;250m 7
+[39m   764
+[4m6
+[24m
+[4m0
+[24m
+[4m8
+[24m504 ...dex: Preprocedural examination              0.107           0.014
+[4m9
+[24m    0.297
+
+[38;5;250m 8
+[39m 
+[4m3
+[24m
+[4m8
+[24m003
+[4m1
+[24m
+[4m3
+[24m
+[4m8
+[24m804 ...rmacy - General Classification              0.179           0.068
+[4m0
+[24m    0.290
+
+[38;5;250m 9
+[39m 
+[4m3
+[24m
+[4m8
+[24m003
+[4m2
+[24m
+[4m4
+[24m
+[4m5
+[24m804 ... - Evaluation Or Re-Evaluation              0.124           0.030
+[4m5
+[24m    0.284
+
+[38;5;250m10
+[39m  
+[4m2
+[24m105
+[4m1
+[24m
+[4m0
+[24m
+[4m3
+[24m502 ...cing (total knee arthroplasty)              0.171           0.068
+[4m5
+[24m    0.272
+
+[38;5;246m# ℹ 92,994 more rows
+[39m</code></pre>
 <p>In this case, because we used PS matching, we are likely aiming to
 estimate the average treatment effect in the treated (ATT). For this
 reason, the <code><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code> function

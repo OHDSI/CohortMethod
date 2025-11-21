@@ -36,7 +36,7 @@ runOneSimulation <- function(seed, settings, strategy = "unadjusted") {
   population <- tibble(rowId = 1:settings$n,
                        treatment = as.integer(runif(settings$n, 0,1) < propensityScore),
                        propensityScore = propensityScore)
-  # plotPs(population, showEquiposeLabel = TRUE, showAucLabel = TRUE)
+  # plotPs(population, showEquipoiseLabel = TRUE, showAucLabel = TRUE)
   # mean(population$treatment)
   population$hr <- if_else(population$treatment == 1, hazardRatio(population$propensityScore), 1)
   population$hazard <- baselineHazard(population$propensityScore) * population$hr

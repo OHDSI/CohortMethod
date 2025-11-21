@@ -453,7 +453,7 @@ computeEquipoise <- function(data, equipoiseBounds = c(0.3, 0.7)) {
 #' @param comparatorLabel   A label to us for the comparator cohort.
 #' @param showCountsLabel   Show subject counts?
 #' @param showAucLabel      Show the AUC?
-#' @param showEquiposeLabel Show the percentage of the population in equipoise?
+#' @param showEquipoiseLabel Show the percentage of the population in equipoise?
 #' @param equipoiseBounds   The bounds on the preference score to determine whether a subject is in
 #'                          equipoise.
 #' @param unitOfAnalysis    The unit of analysis in the input data. Defaults to 'subjects'.
@@ -493,7 +493,7 @@ plotPs <- function(data,
                    comparatorLabel = "Comparator",
                    showCountsLabel = FALSE,
                    showAucLabel = FALSE,
-                   showEquiposeLabel = FALSE,
+                   showEquipoiseLabel = FALSE,
                    equipoiseBounds = c(0.3, 0.7),
                    unitOfAnalysis = "subjects",
                    title = NULL,
@@ -512,7 +512,7 @@ plotPs <- function(data,
   checkmate::assertCharacter(comparatorLabel, len = 1, add = errorMessages)
   checkmate::assertLogical(showCountsLabel, len = 1, add = errorMessages)
   checkmate::assertLogical(showAucLabel, len = 1, add = errorMessages)
-  checkmate::assertLogical(showEquiposeLabel, len = 1, add = errorMessages)
+  checkmate::assertLogical(showEquipoiseLabel, len = 1, add = errorMessages)
   checkmate::assertNumeric(equipoiseBounds, lower = 0, upper = 1, len = 2, add = errorMessages)
   checkmate::assertCharacter(unitOfAnalysis, len = 1, add = errorMessages)
   checkmate::assertCharacter(title, len = 1, null.ok = TRUE, add = errorMessages)
@@ -531,7 +531,7 @@ plotPs <- function(data,
     data$score <- data$propensityScore
     label <- "Propensity score"
   }
-  if (showAucLabel || showCountsLabel || showEquiposeLabel) {
+  if (showAucLabel || showCountsLabel || showEquipoiseLabel) {
     yMultiplier <- 1.25
   } else {
     yMultiplier <- 1
@@ -609,7 +609,7 @@ plotPs <- function(data,
       ggplot2::scale_y_continuous(paste(yAxisScale, "of", unitOfAnalysis), limits = c(0, max(d$y) * 1.25)) +
       ggplot2::theme(legend.title = ggplot2::element_blank(), legend.position = "top")
   }
-  if (showAucLabel || showCountsLabel || showEquiposeLabel) {
+  if (showAucLabel || showCountsLabel || showEquipoiseLabel) {
     labelsLeft <- c()
     labelsRight <- c()
     if (showCountsLabel) {
@@ -621,7 +621,7 @@ plotPs <- function(data,
       auc <- computePsAuc(data, confidenceIntervals = FALSE)
       labelsRight <- c(labelsRight, sprintf("AUC:\t\t%0.2f", auc))
     }
-    if (showEquiposeLabel) {
+    if (showEquipoiseLabel) {
       if (is.null(data$preferenceScore)) {
         data <- computePreferenceScore(data, unfilteredData)
       }

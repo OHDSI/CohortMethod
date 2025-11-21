@@ -99,6 +99,8 @@ test_that("Propensity score functions", {
       expect_s3_class(p, "ggplot")
     }
   }
+  p <- plotPs(ps, showCountsLabel = TRUE, showEquipoiseLabel = TRUE, showAucLabel = TRUE)
+  expect_s3_class(p, "ggplot")
 
   psTrimmed <- trimByPs(ps, trimByPsArgs = createTrimByPsArgs(trimFraction = 0.05))
   expect_s3_class(psTrimmed, "data.frame")
@@ -199,6 +201,32 @@ test_that("Balance functions", {
                                      ))
   expect_s3_class(balance, "data.frame")
   expect_true(all(balance$covariateId %in% covariateIds))
+
+  # Test sampling for balance:
+  expect_no_error({
+    balanceSampled <- computeCovariateBalance(strata,
+                                              cohortMethodData,
+                                              computeCovariateBalanceArgs = createComputeCovariateBalanceArgs(
+                                                maxCohortSize = 100
+                                              ))
+
+  })
+  expect_s3_class(balanceSampled, "data.frame")
+
+  # Test balance for subgroup
+  expect_no_error({
+    balanceSubgroup <- computeCovariateBalance(strata,
+                                               cohortMethodData,
+                                               computeCovariateBalanceArgs = createComputeCovariateBalanceArgs(
+                                                 subgroupCovariateId = 8532001 # Female
+                                               ))
+
+  })
+  expect_s3_class(balanceSubgroup, "data.frame")
+  expect_true(nrow(balanceSubgroup) != nrow(balance))
+
+  table <- getGeneralizabilityTable(balance)
+  expect_s3_class(table, "data.frame")
 })
 
 test_that("Outcome functions", {

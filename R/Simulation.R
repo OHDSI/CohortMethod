@@ -61,7 +61,7 @@
 #' characteristics.
 #'
 #' @template CohortMethodData
-#' @param minCellCount If > 0, willset to zero all low-prevalence covariates in
+#' @param minCellCount If > 0, will set to zero all low-prevalence covariates in
 #' the supplied simulation table in order to prevent identification of persons.
 #'
 #' @details

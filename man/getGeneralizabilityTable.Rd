@@ -35,7 +35,7 @@ our metric of generalizability. (Lipton et al., 2017)
 
 Depending on our target estimand, we need to consider a different base population for
 generalizability. For example, if we aim to estimate the average treatment effect in
-thetreated (ATT), our base population should be the target population, meaning we
+the treated (ATT), our base population should be the target population, meaning we
 should consider the covariate distribution before and after PS adjustment in the target
 population only. By default this function will attempt to select the right base
 population based on what operations have been performed on the population. For example,

@@ -332,7 +332,7 @@ if (folderExists) {
 }
 ```
 
-We can also plot the propensity score distribution. By defeault, the `plotPS()` function shows the preference score, a transformation of the propensity score that adjusts for differences in sizes between the target and comparator:
+We can also plot the propensity score distribution. By default, the `plotPS()` function shows the preference score, a transformation of the propensity score that adjusts for differences in sizes between the target and comparator:
 
 ```{r eval=FALSE}
 plotPs(ps,
@@ -340,7 +340,7 @@ plotPs(ps,
        comparatorLabel = "Diclofenac",
        showCountsLabel = TRUE,
        showAucLabel = TRUE,
-       showEquiposeLabel = TRUE)
+       showEquipoiseLabel = TRUE)
 ```
 ```{r echo=FALSE,message=FALSE,warning=FALSE,eval=TRUE}
 if (folderExists) {
@@ -349,7 +349,7 @@ plotPs(ps,
        comparatorLabel = "Diclofenac",
        showCountsLabel = TRUE,
        showAucLabel = TRUE,
-       showEquiposeLabel = TRUE)
+       showEquipoiseLabel = TRUE)
 }
 ```
 
@@ -373,7 +373,7 @@ if (folderExists) {
 
 One advantage of using the regularization when fitting the propensity model is that most coefficients will shrink to zero and fall out of the model. It is a good idea to inspect the remaining variables for anything that should not be there, for example variations of the drugs of interest that we forgot to exclude.
 
-Finally, we can inspect the percent of the population in equipoise, meaning they have a prefence score between 0.3 and 0.7:
+Finally, we can inspect the percent of the population in equipoise, meaning they have a preference score between 0.3 and 0.7:
 
 ```{r eval=FALSE}
 CohortMethod::computeEquipoise(ps)
@@ -698,7 +698,7 @@ if (folderExists) {
 }
 ```
 
-Note that in this case we may want to use a bootrap to compute the confidence interval.
+Note that in this case we may want to use a bootstrap to compute the confidence interval.
 
 
 ## Adding interaction terms

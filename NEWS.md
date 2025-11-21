@@ -27,7 +27,7 @@ This major release introduces many changes. The three most important ones are (1
 10. Dropped the `firstExposureOnly`, `restrictToCommonPeriod`, `washoutPeriod`, and `removeDuplicateSubjects` arguments from `CreateStudyPopulationArgs`. These were duplicated from `getDbCohortMethodData()`, and we'll keep them only there from now on.
 
 
-# Changes related to nesting cohorts
+## Changes related to nesting cohorts
 
 11. Added ability to restrict to a nesting cohort (e.g. restricting drug exposures to a specific indication). See the `nestingCohortId` argument in the `createGetDbCohortMethodDataArgs()` and `createTargetComparatorOutcomes()` functions and the `nestingCohortDatabaseSchema` and `nestingCohortTable` arguments in the `getDbCohortMethodData()` function. 
 
@@ -42,7 +42,7 @@ This major release introduces many changes. The three most important ones are (1
     - Added the `sdmAlpha` argument to the `createCmDiagnosticThresholds()` function. 
 
     This adds the `sdm_family_wise_min_p` and `shared_sdm_family_wise_min_p` fields to the `cm_diagnostics_summary` table when exporting to CSV. 
-    For now, the default is not to use signficance testing, but the family-wise min P can help understand if one would have passed when using it.
+    For now, the default is not to use significance testing, but the family-wise min P can help understand if one would have passed when using it.
 
 
 ## Other important changes
@@ -58,6 +58,8 @@ This major release introduces many changes. The three most important ones are (1
 17. All restrictions on the study populations performed by `getDbCohortMethodData()` are now step-by-step recorded in the attrition table.
 
 18. Completely updated of all unit tests to increase coverage of functional tests, while also increasing speed.
+
+19. Renamed the `showEquipoiseLabel` argument of `plotPs()` to `showEquipoiseLabel`.
 
 
 ## Minor changes
@@ -282,7 +284,7 @@ Changes:
   
 Bug fixes:
 
-1. Fixed error when using integer `maxWeight` when performng IPTW.
+1. Fixed error when using integer `maxWeight` when performing IPTW.
 
 
 CohortMethod 4.2.3
