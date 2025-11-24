@@ -61,6 +61,12 @@ exportToCsv <- function(outputFolder,
   }
   start <- Sys.time()
   message("Exporting results to CSV")
+
+  targetComparator <- exportTargetComparator(
+    outputFolder = outputFolder,
+    exportFolder = exportFolder
+  )
+
   exportCohortMethodAnalyses(
     outputFolder = outputFolder,
     exportFolder = exportFolder
@@ -74,13 +80,15 @@ exportToCsv <- function(outputFolder,
 
   exportTargetComparatorOutcomes(
     outputFolder = outputFolder,
-    exportFolder = exportFolder
+    exportFolder = exportFolder,
+    targetComparator = targetComparator
   )
 
   exportAttrition(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount
   )
 
@@ -88,6 +96,7 @@ exportToCsv <- function(outputFolder,
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount
   )
 
@@ -95,6 +104,7 @@ exportToCsv <- function(outputFolder,
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount
   )
 
@@ -102,19 +112,22 @@ exportToCsv <- function(outputFolder,
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount
   )
 
   exportLikelihoodProfiles(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
-    databaseId = databaseId
+    databaseId = databaseId,
+    targetComparator = targetComparator
   )
 
   exportCovariateBalance(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount
   )
 
@@ -122,18 +135,21 @@ exportToCsv <- function(outputFolder,
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount
   )
 
   exportPreferenceScoreDistribution(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
+    targetComparator = targetComparator,
     databaseId = databaseId
   )
 
   exportPropensityModel(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
+    targetComparator = targetComparator,
     databaseId = databaseId
   )
 
@@ -141,6 +157,7 @@ exportToCsv <- function(outputFolder,
     outputFolder = outputFolder,
     exportFolder = exportFolder,
     databaseId = databaseId,
+    targetComparator = targetComparator,
     minCellCount = minCellCount,
     maxCores = maxCores
   )
@@ -148,7 +165,8 @@ exportToCsv <- function(outputFolder,
   exportDiagnosticsSummary(
     outputFolder = outputFolder,
     exportFolder = exportFolder,
-    databaseId = databaseId
+    databaseId = databaseId,
+    targetComparator = targetComparator
   )
 
   # Add all to zip file -------------------------------------------------------------------------------
@@ -162,6 +180,20 @@ exportToCsv <- function(outputFolder,
   delta <- Sys.time() - start
   message("Exporting to CSV took ", signif(delta, 3), " ", attr(delta, "units"))
   message("Results are ready for sharing at:", zipName)
+}
+
+getTargetComparatorId <- function(targetId, comparatorId, nestingCohortId, targetComparator) {
+  tcId <- targetComparator |>
+    filter(
+      .data$targetId == !!targetId,
+      .data$comparatorId == !!comparatorId,
+      if (is.null(!!nestingCohortId) || is.na(!!nestingCohortId))
+        is.na(.data$nestingCohortId)
+      else
+        .data$nestingCohortId == !!nestingCohortId
+    ) |>
+    pull(.data$targetComparatorId)
+  return(tcId)
 }
 
 writeToCsv <- function(data, fileName, append = FALSE) {
@@ -214,10 +246,6 @@ createEmptyResult <- function(tableName) {
   return(result)
 }
 
-.NaToZero <- function(x) {
-  return(if_else(is.na(x), 0, x))
-}
-
 exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
   message("- cm__analysis table")
 
@@ -237,6 +265,36 @@ exportCohortMethodAnalyses <- function(outputFolder, exportFolder) {
 
   fileName <- file.path(exportFolder, "cm_analysis.csv")
   writeToCsv(cohortMethodAnalysis, fileName)
+}
+
+
+exportTargetComparator <- function(outputFolder, exportFolder) {
+  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
+  cmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
+  targetComparatorOutcomesList <- cmAnalysesSpecifications$targetComparatorOutcomesList
+
+  # targetComparatorOutcomes = targetComparatorOutcomesList[[1]]
+  createHash <- function(targetComparatorOutcomes) {
+    row <- tibble(
+      targetId = targetComparatorOutcomes$targetId,
+      comparatorId = targetComparatorOutcomes$comparatorId,
+      nestingCohortId = if (is.null(targetComparatorOutcomes$nestingCohortId))
+        as.numeric(NA)
+      else
+        targetComparatorOutcomes$nestingCohortId
+    )
+    hashString <- paste(row$targetId, row$comparatorId, row$nestingCohortId)
+    hash <- as.integer(as.numeric(paste0("0x", digest::digest(hashString, algo = "murmur32", serialize = FALSE))) - 2^31)
+    row$targetComparatorId <- hash
+    return(row)
+  }
+  targetComparator <- lapply(targetComparatorOutcomesList, createHash)
+  targetComparator <- bind_rows(targetComparator)
+
+  fileName <- file.path(exportFolder, "cm_target_comparator.csv")
+  writeToCsv(targetComparator, fileName)
+
+  return(targetComparator)
 }
 
 exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
@@ -294,7 +352,7 @@ exportFromCohortMethodData <- function(outputFolder, exportFolder, databaseId) {
   writeToCsv(covariates, fileName)
 }
 
-exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
+exportTargetComparatorOutcomes <- function(outputFolder, exportFolder, targetComparator) {
   message("- target_comparator_outcome table")
 
   cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
@@ -307,14 +365,22 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
     )
     return(table)
   }
-  # tcos = cmAnalysesSpecifications$targetComparatorOutcomesList[[1]]
+  # tcos = cmAnalysesSpecifications$targetComparatorOutcomesList[[2]]
   convertToTable <- function(tcos) {
+    tcId <- getTargetComparatorId(targetId = tcos$targetId,
+                                  comparatorId = tcos$comparatorId,
+                                  nestingCohortId = tcos$nestingCohortId,
+                                  targetComparator = targetComparator)
     table <- lapply(tcos$outcomes, convertOutcomeToTable) |>
       bind_rows() |>
       mutate(
+        targetComparatorId = tcId
+      )
+    # Add deprecated fields:
+    table <- table |>
+      mutate(
         targetId = tcos$targetId,
-        comparatorId = tcos$comparatorId,
-        nestingCohortId = if (is.null(tcos$nestingCohortId)) 0 else tcos$nestingCohortId
+        comparatorId = tcos$comparatorId
       )
     return(table)
 
@@ -329,6 +395,7 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder) {
 exportAttrition <- function(outputFolder,
                             exportFolder,
                             databaseId,
+                            targetComparator,
                             minCellCount) {
   message("- attrition table")
   fileName <- file.path(exportFolder, "cm_attrition.csv")
@@ -336,7 +403,8 @@ exportAttrition <- function(outputFolder,
     unlink(fileName)
   }
   reference <- getFileReference(outputFolder) |>
-    filter(.data$outcomeOfInterest)
+    filter(.data$outcomeOfInterest) |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
   first <- !file.exists(fileName)
   pb <- txtProgressBar(style = 3)
   for (i in seq_len(nrow(reference))) {
@@ -352,14 +420,19 @@ exportAttrition <- function(outputFolder,
       mutate(exposureId = reference$comparatorId[i])
     attrition <- bind_rows(attritionTarget, attritionComparator) |>
       mutate(
-        targetId = reference$targetId[i],
-        comparatorId = reference$comparatorId[i],
-        nestingCohortId = .NaToZero(reference$nestingCohortId[i]),
+        targetComparatorId = reference$targetComparatorId[i],
         analysisId = reference$analysisId[i],
         outcomeId = reference$outcomeId[i],
         databaseId = databaseId
       ) |>
       enforceMinCellValue("subjects", minCellCount, silent = TRUE)
+
+    # Add deprecated fields:
+    attrition <- attrition |>
+      mutate(
+        targetId = reference$targetId[i],
+        comparatorId = reference$comparatorId[i]
+      )
 
     writeToCsv(attrition, fileName, append = !first)
     first <- FALSE
@@ -378,6 +451,7 @@ exportAttrition <- function(outputFolder,
 exportCmFollowUpDist <- function(outputFolder,
                                  exportFolder,
                                  databaseId,
+                                 targetComparator,
                                  minCellCount) {
   message("- cm_follow_up_dist table")
   # row = rows[1, ]
@@ -421,11 +495,8 @@ exportCmFollowUpDist <- function(outputFolder,
           maxDate = max(.data$cohortStartDate)
         )
     }
-
     table <- tibble(
-      target_id = row$targetId,
-      comparator_id = row$comparatorId,
-      nesting_cohort_id = .NaToZero(row$nestingCohortId),
+      target_comparator_id = row$targetComparatorId,
       outcome_id = row$outcomeId,
       analysis_id = row$analysisId,
       target_min_days = targetDist[1],
@@ -447,11 +518,18 @@ exportCmFollowUpDist <- function(outputFolder,
       comparatorMinDate = comparatorMinMaxDates$minDate,
       comparatorMaxDate = comparatorMinMaxDates$maxDate
     )
+    # Add deprecated fields:
+    table <- table |>
+      mutate(
+        targetId = row$targetId,
+        comparatorId = row$comparatorId
+      )
     return(table)
   }
   reference <- getFileReference(outputFolder)
-  rows <- reference |>
-    filter(.data$outcomeOfInterest)
+  rows <- getFileReference(outputFolder) |>
+    filter(.data$outcomeOfInterest) |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
   results <- lapply(split(rows, 1:nrow(rows)), getFollowUpDist)
   results <- bind_rows(results)
   results$database_id <- databaseId
@@ -466,15 +544,15 @@ exportCmFollowUpDist <- function(outputFolder,
 exportCohortMethodResults <- function(outputFolder,
                                       exportFolder,
                                       databaseId,
+                                      targetComparator,
                                       minCellCount) {
   message("- cm__result table")
-  results <- getResultsSummary(outputFolder) |>
-    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId)) |>
+  results <- getResultsSummary(outputFolder)
+  results <- results |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId")) |>
     select(
       "analysisId",
-      "targetId",
-      "comparatorId",
-      "nestingCohortId",
+      "targetComparatorId",
       "outcomeId",
       "rr",
       "ci95Lb",
@@ -497,13 +575,16 @@ exportCohortMethodResults <- function(outputFolder,
       "calibratedOneSidedP",
       "calibratedLogRr",
       "calibratedSeLogRr",
-      "targetEstimator"
+      "targetEstimator",
+      "targetId",
+      "comparatorId"
     ) |>
     mutate(databaseId = !!databaseId) |>
     enforceMinCellValue("targetSubjects", minCellCount) |>
     enforceMinCellValue("comparatorSubjects", minCellCount) |>
     enforceMinCellValue("targetOutcomes", minCellCount) |>
     enforceMinCellValue("comparatorOutcomes", minCellCount)
+
   fileName <- file.path(exportFolder, "cm_result.csv")
   writeToCsv(results, fileName)
 }
@@ -511,6 +592,7 @@ exportCohortMethodResults <- function(outputFolder,
 exportCmInteractionResults <- function(outputFolder,
                                        exportFolder,
                                        databaseId,
+                                       targetComparator,
                                        minCellCount) {
   message("- cm_interaction_result table")
   results <- getInteractionResultsSummary(outputFolder)
@@ -518,12 +600,10 @@ exportCmInteractionResults <- function(outputFolder,
     results <- createEmptyResult("cm_interaction_result")
   } else {
     results <- results |>
-      mutate(nestingCohortId = .NaToZero(.data$nestingCohortId)) |>
+      inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId")) |>
       select(
         "analysisId",
-        "targetId",
-        "comparatorId",
-        "nestingCohortId",
+        "targetComparatorId",
         "outcomeId",
         "interactionCovariateId",
         "rr",
@@ -544,7 +624,9 @@ exportCmInteractionResults <- function(outputFolder,
         "calibratedP",
         "calibratedLogRr",
         "calibratedSeLogRr",
-        "targetEstimator"
+        "targetEstimator",
+        "targetId",
+        "comparatorId"
       ) |>
       mutate(databaseId = !!databaseId) |>
       enforceMinCellValue("targetSubjects", minCellCount) |>
@@ -558,9 +640,12 @@ exportCmInteractionResults <- function(outputFolder,
 
 exportLikelihoodProfiles <- function(outputFolder,
                                      exportFolder,
-                                     databaseId) {
+                                     databaseId,
+                                     targetComparator) {
   message("- likelihood_profile table")
   reference <- getFileReference(outputFolder)
+  reference <- reference |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
   fileName <- file.path(exportFolder, "cm_likelihood_profile.csv")
   if (file.exists(fileName)) {
     unlink(fileName)
@@ -579,12 +664,16 @@ exportLikelihoodProfiles <- function(outputFolder,
             gradient = .data$derivative
           ) |>
           mutate(
-            targetId = reference$targetId[i],
-            comparatorId = reference$comparatorId[i],
-            nestingCohortId = .NaToZero(reference$nestingCohortId[i]),
+            targetComparatorId = reference$targetComparatorId[i],
             outcomeId = reference$outcomeId[i],
             analysisId = reference$analysisId[i],
             databaseId = !!databaseId
+          )
+        # Add deprecated fields:
+        profile <- profile |>
+          mutate(
+            targetId = reference$targetId[i],
+            comparatorId = reference$comparatorId[i]
           )
         writeToCsv(profile, fileName, append = !first)
         first <- FALSE
@@ -603,10 +692,12 @@ exportLikelihoodProfiles <- function(outputFolder,
 exportCovariateBalance <- function(outputFolder,
                                    exportFolder,
                                    databaseId,
+                                   targetComparator,
                                    minCellCount) {
   message("- covariate_balance table")
   reference <- getFileReference(outputFolder) |>
-    filter(.data$balanceFile != "")
+    filter(.data$balanceFile != "") |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
   balanceFiles <- reference |>
     distinct(.data$balanceFile) |>
     pull()
@@ -617,20 +708,24 @@ exportCovariateBalance <- function(outputFolder,
   }
   first <- TRUE
   pb <- txtProgressBar(style = 3)
-
   for (i in seq_along(balanceFiles)) {
     rows <- reference |>
       filter(.data$balanceFile == !!balanceFiles[i])
     balance <- readRDS(file.path(outputFolder, balanceFiles[i]))
     balance <- tibble(
       databaseId = !!databaseId,
-      targetId = rows$targetId[1],
-      comparatorId = rows$comparatorId[1],
-      nestingCohortId = .NaToZero(reference$nestingCohortId[1]),
+      targetComparatorId = rows$targetComparatorId[1],
       outcomeId = rows$outcomeId,
       analysisId = unique(rows$analysisId)
     ) |>
       cross_join(tidyBalance(balance, minCellCount))
+
+    # Add deprecated fields:
+    balance <- balance |>
+      mutate(
+        targetId = rows$targetId[1],
+        comparatorId = rows$comparatorId[1]
+      )
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(balanceFiles))
@@ -647,11 +742,13 @@ exportCovariateBalance <- function(outputFolder,
 exportSharedCovariateBalance <- function(outputFolder,
                                          exportFolder,
                                          databaseId,
+                                         targetComparator,
                                          minCellCount) {
   message("- shared_covariate_balance table")
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedBalanceFile != "") |>
-    distinct(.data$sharedBalanceFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId)
+    distinct(.data$sharedBalanceFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId) |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
   sharedBalanceFiles <- reference |>
     distinct(.data$sharedBalanceFile) |>
     pull()
@@ -668,12 +765,16 @@ exportSharedCovariateBalance <- function(outputFolder,
     balance <- readRDS(file.path(outputFolder, sharedBalanceFiles[i]))
     balance <- tibble(
       databaseId = !!databaseId,
-      targetId = rows$targetId[1],
-      comparatorId = rows$comparatorId[1],
-      nestingCohortId = .NaToZero(rows$nestingCohortId[1]),
+      targetComparatorId = rows$targetComparatorId[1],
       analysisId = unique(rows$analysisId)
     ) |>
       cross_join(tidyBalance(balance, minCellCount))
+    # Add deprecated fields:
+    balance <- balance |>
+      mutate(
+        targetId = rows$targetId[1],
+        comparatorId = rows$comparatorId[1]
+      )
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(sharedBalanceFiles))
@@ -774,13 +875,14 @@ tidyBalance <- function(balance, minCellCount) {
 
 exportPreferenceScoreDistribution <- function(outputFolder,
                                               exportFolder,
-                                              databaseId) {
+                                              databaseId,
+                                              targetComparator) {
   message("- preference_score_dist table")
 
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedPsFile != "") |>
     distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId) |>
-    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId))
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
 
   # rows <- split(reference, reference$sharedPsFile)[[2]]
   preparePlot <- function(rows) {
@@ -795,9 +897,9 @@ exportPreferenceScoreDistribution <- function(outputFolder,
       result <- rows |>
         select(
           "analysisId",
+          "targetComparatorId",
           "targetId",
-          "comparatorId",
-          "nestingCohortId"
+          "comparatorId"
         ) |>
         mutate(databaseId = !!databaseId) |>
         cross_join(
@@ -823,12 +925,13 @@ exportPreferenceScoreDistribution <- function(outputFolder,
 
 exportPropensityModel <- function(outputFolder,
                                   exportFolder,
-                                  databaseId) {
+                                  databaseId,
+                                  targetComparator) {
   message("- propensity_model table")
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedPsFile != "") |>
     distinct(.data$sharedPsFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId) |>
-    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId))
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
 
   # rows <- split(reference, reference$sharedPsFile)[[1]]
   prepareData <- function(rows) {
@@ -844,7 +947,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) |>
         mutate(covariateId = as.numeric(.data$covariateId))
       rows <- rows |>
-        select("targetId", "comparatorId", "nestingCohortId", "analysisId") |>
+        select("targetComparatorId", "targetId", "comparatorId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>
         cross_join(model)
       return(rows)
@@ -853,7 +956,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(coefficient = .data$correlation * 1e6) |>
         select("covariateId", "coefficient")
       rows <- rows |>
-        select("targetId", "comparatorId", "nestingCohortId", "analysisId") |>
+        select("targetComparatorId", "targetId", "comparatorId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>
         cross_join(model)
     } else {
@@ -872,21 +975,22 @@ exportPropensityModel <- function(outputFolder,
 exportKaplanMeier <- function(outputFolder,
                               exportFolder,
                               databaseId,
+                              targetComparator,
                               minCellCount,
                               maxCores) {
   message("- kaplan_meier_dist table")
   message("  Computing KM curves")
   reference <- getFileReference(outputFolder) |>
     filter(.data$outcomeOfInterest) |>
-    mutate(nestingCohortId = .NaToZero(.data$nestingCohortId)) |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId")) |>
     select(
       "strataFile",
       "studyPopFile",
-      "targetId",
-      "comparatorId",
-      "nestingCohortId",
+      "targetComparatorId",
       "outcomeId",
-      "analysisId"
+      "analysisId",
+      "targetId",
+      "comparatorId"
     )
 
   tempFolder <- file.path(exportFolder, "temp")
@@ -937,22 +1041,16 @@ prepareKm <- function(task,
                       databaseId,
                       minCellCount) {
   ParallelLogger::logTrace(
-    "Preparing KM plot for target ",
-    task$targetId,
-    ", comparator ",
-    task$comparatorId,
-    ", nesting cohort ",
-    task$nestingCohortId,
+    "Preparing KM plot for target_comparator ",
+    task$targetComparatorId,
     ", outcome ",
     task$outcomeId,
     ", analysis ",
     task$analysisId
   )
   outputFileName <- file.path(tempFolder, sprintf(
-    "km_t%s_c%s_n%s_o%s_a%s.rds",
-    task$targetId,
-    task$comparatorId,
-    task$nestingCohortId,
+    "km_tc%s_o%s_a%s.rds",
+    task$targetComparatorId,
     task$outcomeId,
     task$analysisId
   ))
@@ -976,12 +1074,13 @@ prepareKm <- function(task,
     # No shared strata
     return(NULL)
   }
-  data$targetId <- task$targetId
-  data$comparatorId <- task$comparatorId
-  data$nestingCohortId <- task$nestingCohortId
+  data$targetComparatorId <- task$targetComparatorId
   data$outcomeId <- task$outcomeId
   data$analysisId <- task$analysisId
   data$databaseId <- databaseId
+  # Add deprecated fields:
+  data$targetId <- task$targetId
+  data$comparatorId <- task$comparatorId
   data <- enforceMinCellValue(data, "targetAtRisk", minCellCount)
   data <- enforceMinCellValue(data, "comparatorAtRisk", minCellCount)
 
@@ -1049,13 +1148,15 @@ prepareKaplanMeierForExport <- function(population) {
 
 exportDiagnosticsSummary <- function(outputFolder,
                                      exportFolder,
-                                     databaseId) {
+                                     databaseId,
+                                     targetComparator) {
   message("- diagnostics_summary table")
   results <- getDiagnosticsSummary(outputFolder) |>
+    inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId")) |>
+    select(-"nestingCohortId") |>
     mutate(databaseId = !!databaseId,
            unblind = as.integer(.data$unblind),
            unblindForEvidenceSynthesis = as.integer(.data$unblindForEvidenceSynthesis))
-
 
   # Add deprecated fields:
   results <- results |>

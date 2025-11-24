@@ -48,7 +48,8 @@ Imports:
 	checkmate,
 	EmpiricalCalibration,
 	jsonlite,
-	R6
+	R6,
+	digest
 Suggests:
 	testthat,
 	pROC,

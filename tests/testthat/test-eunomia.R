@@ -699,8 +699,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     exportToCsv(outputFolder5, databaseId = "Test")
     cmResult <- readr::read_csv(file.path(outputFolder5, "export", "cm_result.csv"), show_col_types = FALSE)
+    cmTargetComparator <- readr::read_csv(file.path(outputFolder5, "export", "cm_target_comparator.csv"), show_col_types = FALSE)
+    cmResult <- cmResult |>
+      inner_join(cmTargetComparator, by = join_by(target_id, comparator_id, target_comparator_id))
     expect_equal(nrow(cmResult), 4)
     expect_equal(sum(cmResult$nesting_cohort_id == 4, na.rm = TRUE), 2)
-    expect_equal(sum(cmResult$nesting_cohort_id == 0, na.rm = TRUE), 2)
+    expect_equal(sum(is.na(cmResult$nesting_cohort_id), na.rm = TRUE), 2)
   })
 }

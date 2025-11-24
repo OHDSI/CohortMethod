@@ -3,15 +3,13 @@ cm_attrition,sequence_number,int,Yes,Yes,No,No,The place in the sequence of step
 cm_attrition,description,varchar,Yes,No,No,No,"A description of the last restriction, e.g. ""Removing persons with the outcome prior"". "
 cm_attrition,subjects,int,Yes,No,Yes,No,The number of subjects in the cohort.
 cm_attrition,exposure_id,bigint,Yes,Yes,No,No,The identifier of the exposure cohort to which the attrition applies. Can be either the target or comparator cohort ID.
-cm_attrition,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_attrition,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_attrition,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_attrition,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_attrition,analysis_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_attrition,outcome_id,bigint,Yes,Yes,No,No,Foreign key referencing the cm_analysis table.
 cm_attrition,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
-cm_follow_up_dist,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_follow_up_dist,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_follow_up_dist,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_attrition,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_attrition,comparator_id,bigint,No,No,No,Yes,DEPRECATED
+cm_follow_up_dist,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_follow_up_dist,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_follow_up_dist,analysis_id,int,Yes,Yes,No,No,Foreign key referencing the cm_analysis table.
 cm_follow_up_dist,target_min_days,float,No,No,No,No,The minimum number of observation days for a person.
@@ -33,13 +31,13 @@ cm_follow_up_dist,target_max_date,Date,No,No,No,No,The last start date of the ta
 cm_follow_up_dist,comparator_min_date,Date,No,No,No,No,The first start date of the comparator cohort observed in the data (after applying all restrictions).
 cm_follow_up_dist,comparator_max_date,Date,No,No,No,No,The last start date of the comparator cohort observed in the data (after applying all restrictions).
 cm_follow_up_dist,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
+cm_follow_up_dist,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_follow_up_dist,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_analysis,analysis_id,int,Yes,Yes,No,No,A unique identifier for an analysis.
 cm_analysis,description,varchar,Yes,No,No,No,"A description for an analysis, e.g. 'On-treatment'."
 cm_analysis,definition,varchar,Yes,No,No,No,A CohortMethod JSON object specifying the analysis.
 cm_result,analysis_id,int,Yes,Yes,No,No,Foreign key referencing the cm_analysis table.
-cm_result,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_result,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_result,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_result,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_result,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_result,rr,float,No,No,No,No,The estimated relative risk (e.g. the hazard ratio).
 cm_result,ci_95_lb,float,No,No,No,No,The lower bound of the 95% confidence interval of the relative risk.
@@ -64,10 +62,10 @@ cm_result,calibrated_log_rr,float,No,No,No,No,The log of the calibrated relative
 cm_result,calibrated_se_log_rr,float,No,No,No,No,The standard error of the log of the calibrated relative risk.
 cm_result,target_estimator,varchar,Yes,No,No,No,"The target estimator, for example ""att"", ""ate"", ""atu"" or ""ato""."
 cm_result,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
+cm_result,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_result,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_interaction_result,analysis_id,int,Yes,Yes,No,No,Foreign key referencing the cm_analysis table.
-cm_interaction_result,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_interaction_result,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_interaction_result,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_interaction_result,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_interaction_result,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_interaction_result,interaction_covariate_id,int,Yes,Yes,No,No,Foreign key referencing the cm_covariate table.
 cm_interaction_result,rr,float,Yes,No,No,No,The estimated relative risk (e.g. the ratio of hazard ratios).
@@ -90,6 +88,8 @@ cm_interaction_result,calibrated_log_rr,float,No,No,No,No,The log of the calibra
 cm_interaction_result,calibrated_se_log_rr,float,No,No,No,No,The standard error of the log of the calibrated relative risk.
 cm_interaction_result,target_estimator,varchar,Yes,No,No,No,"The target estimator, for example ""att"", ""ate"", ""atu"" or ""ato""."
 cm_interaction_result,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
+cm_interaction_result,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_interaction_result,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_covariate,covariate_id,bigint,Yes,Yes,No,No,A unique identified for a covariate.
 cm_covariate,covariate_name,varchar,Yes,No,No,No,"A name for a covariate, e.g. 'Age group: 20-25 years'."
 cm_covariate,analysis_id,int,Yes,Yes,No,No,Foreign key referencing the cm_analysis table.
@@ -99,9 +99,7 @@ cm_covariate_analysis,covariate_analysis_id,int,Yes,Yes,No,No,A unique identifie
 cm_covariate_analysis,covariate_analysis_name,varchar,Yes,No,No,No,"A name for a covariate analysis, e.g. 'Demographics: age group'."
 cm_covariate_analysis,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
 cm_covariate_balance,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
-cm_covariate_balance,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_covariate_balance,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_covariate_balance,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_covariate_balance,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_covariate_balance,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_covariate_balance,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
 cm_covariate_balance,covariate_id,bigint,Yes,Yes,No,No,A foreign key referencing the cm_covariate table.
@@ -116,10 +114,10 @@ cm_covariate_balance,std_diff_after,float,No,No,No,No,The standardized differenc
 cm_covariate_balance,target_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the target cohort.
 cm_covariate_balance,comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the comparator cohort.
 cm_covariate_balance,target_comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the union of the target and comparator cohorts.
+cm_covariate_balance,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_covariate_balance,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_diagnostics_summary,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
-cm_diagnostics_summary,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_diagnostics_summary,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_diagnostics_summary,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_diagnostics_summary,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_diagnostics_summary,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_diagnostics_summary,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_diagnostics_summary,max_sdm,float,No,No,No,No,The maximum absolute standardized difference of mean.
@@ -140,12 +138,14 @@ cm_diagnostics_summary,generalizability_diagnostic,varchar(20),Yes,No,No,No,Pass
 cm_diagnostics_summary,ease_diagnostic,varchar(20),Yes,No,No,No,Pass / warning / fail classification of the EASE diagnostic.
 cm_diagnostics_summary,unblind,int,Yes,No,No,No,"Is unblinding the result recommended? (1 = yes, 0 = no)"
 cm_diagnostics_summary,unblind_for_evidence_synthesis,int,Yes,No,No,No,"Is unblinding the result for inclusion in evidence synthesis recommended? This ignores the MDRR diagnostic. (1 = yes, 0 = no)"
+cm_diagnostics_summary,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_diagnostics_summary,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_target_comparator_outcome,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_target_comparator_outcome,outcome_of_interest,int,Yes,No,No,No,"Is the outcome of interest (1 = yes, 0 = no)"
 cm_target_comparator_outcome,true_effect_size,float,No,No,No,No,The true effect size for the target-comparator-outcome. For negatitive controls this equals 1.
-cm_target_comparator_outcome,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_target_comparator_outcome,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_target_comparator_outcome,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_target_comparator_outcome,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
+cm_target_comparator_outcome,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_target_comparator_outcome,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_kaplan_meier_dist,time_day,int,Yes,Yes,No,No,Time in days since cohort start.
 cm_kaplan_meier_dist,target_survival,float,Yes,No,No,No,The estimated survival fraction in the target cohort.
 cm_kaplan_meier_dist,target_survival_lb,float,Yes,No,No,No,The lower bound of the 95% confidence interval of the survival fraction in the target cohort.
@@ -155,40 +155,38 @@ cm_kaplan_meier_dist,comparator_survival_lb,float,Yes,No,No,No,The lower bound o
 cm_kaplan_meier_dist,comparator_survival_ub,float,Yes,No,No,No,The upper bound of the 95% confidence interval of the survival fraction in the comparator cohort.
 cm_kaplan_meier_dist,target_at_risk,int,No,No,Yes,No,The number of subjects still at risk in the target cohort.
 cm_kaplan_meier_dist,comparator_at_risk,int,No,No,Yes,No,The number of subjects still at risk in the comparator cohort.
-cm_kaplan_meier_dist,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_kaplan_meier_dist,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_kaplan_meier_dist,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_kaplan_meier_dist,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_kaplan_meier_dist,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_kaplan_meier_dist,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
 cm_kaplan_meier_dist,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
+cm_kaplan_meier_dist,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_kaplan_meier_dist,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_likelihood_profile,log_rr,float,Yes,Yes,No,No,The log of the relative risk where the likelihood is sampled.
 cm_likelihood_profile,log_likelihood,float,Yes,No,No,No,The normalized log likelihood.
 cm_likelihood_profile,gradient,float,Yes,No,No,No,The gradient of the log likelihood.
-cm_likelihood_profile,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_likelihood_profile,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_likelihood_profile,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_likelihood_profile,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_likelihood_profile,outcome_id,bigint,Yes,Yes,No,No,The identifier for the outcome cohort.
 cm_likelihood_profile,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
 cm_likelihood_profile,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
+cm_likelihood_profile,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_likelihood_profile,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_preference_score_dist,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
-cm_preference_score_dist,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_preference_score_dist,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_preference_score_dist,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_preference_score_dist,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_preference_score_dist,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_preference_score_dist,preference_score,float,Yes,Yes,No,No,A preference score value.
 cm_preference_score_dist,target_density,float,Yes,No,No,No,The distribution density for the target cohort at the given preference score.
 cm_preference_score_dist,comparator_density,float,Yes,No,No,No,The distribution density for the comparator cohort at the given preference score.
-cm_propensity_model,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_propensity_model,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_propensity_model,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_preference_score_dist,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_preference_score_dist,comparator_id,bigint,No,No,No,Yes,DEPRECATED
+cm_propensity_model,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_propensity_model,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
 cm_propensity_model,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
 cm_propensity_model,covariate_id,bigint,Yes,Yes,No,No,Foreign key referencing the cm_covariate table. 0 is reserved for the intercept.
 cm_propensity_model,coefficient,float,Yes,No,No,No,The coefficient (beta) for the covariate in the propensity model.
+cm_propensity_model,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_propensity_model,comparator_id,bigint,No,No,No,Yes,DEPRECATED
 cm_shared_covariate_balance,database_id,varchar,Yes,Yes,No,No,Foreign key referencing the database.
-cm_shared_covariate_balance,target_id,bigint,Yes,Yes,No,No,The identifier for the target cohort.
-cm_shared_covariate_balance,comparator_id,bigint,Yes,Yes,No,No,The identifier for the comparator cohort.
-cm_shared_covariate_balance,nesting_cohort_id,bigint,Yes,Yes,No,No,The identifier for the nesting cohort. Will be 0 if not nested.
+cm_shared_covariate_balance,target_comparator_id,bigint,Yes,Yes,No,No,A foreign key referencing the target_comparator table.
 cm_shared_covariate_balance,analysis_id,int,Yes,Yes,No,No,A foreign key referencing the cm_analysis table.
 cm_shared_covariate_balance,covariate_id,bigint,Yes,Yes,No,No,A foreign key referencing the cm_covariate table.
 cm_shared_covariate_balance,mean_before,float,No,No,Yes,No,The mean value of the covariate in the union of the target and comparator cohort before propensity score adjustment.
@@ -202,3 +200,9 @@ cm_shared_covariate_balance,std_diff_after,float,No,No,No,No,The standardized di
 cm_shared_covariate_balance,target_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the target cohort.
 cm_shared_covariate_balance,comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the comparator cohort.
 cm_shared_covariate_balance,target_comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the union of the target and comparator cohorts.
+cm_shared_covariate_balance,target_id,bigint,No,No,No,Yes,DEPRECATED
+cm_shared_covariate_balance,comparator_id,bigint,No,No,No,Yes,DEPRECATED
+cm_target_comparator,target_comparator_id,bigint,Yes,Yes,No,No,Primary key for identifying a target-comparator-(nesting cohort) combination
+cm_target_comparator,target_id,bigint,Yes,No,No,No,The identifier for the target cohort.
+cm_target_comparator,comparator_id,bigint,Yes,No,No,No,The identifier for the comparator cohort.
+cm_target_comparator,nesting_cohort_id,bigint,No,No,No,No,The identifier for the nesting cohort. Null if not nested.

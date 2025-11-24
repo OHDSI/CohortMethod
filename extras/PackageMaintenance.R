@@ -54,6 +54,6 @@ pkgdown::build_site()
 OhdsiRTools::fixHadesLogo()
 
 ResultModelManager::generateSqlSchema(
-  csvFilepath = "d:/temp/resultsDataModelSpecification.csv",
-  sqlOutputPath = "d:/temp",
+  csvFilepath = "inst/csv/resultsDataModelSpecification.csv",
+  sqlOutputPath = "extras/results_data_model.sql",
   overwrite = TRUE)
