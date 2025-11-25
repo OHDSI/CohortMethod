@@ -583,7 +583,7 @@ MatchOnPsArgs <- R6Class(
 #' An object of type `StratifyByPsArgs`.
 #'
 #' @export
-createStratifyByPsArgs <- function(numberOfStrata = 5,
+createStratifyByPsArgs <- function(numberOfStrata = 10,
                                    baseSelection = "all",
                                    stratificationColumns = c(),
                                    stratificationCovariateIds = c()) {

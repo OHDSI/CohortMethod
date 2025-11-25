@@ -995,7 +995,7 @@ doComputeSharedBalance <- function(params) {
   } else {
     ps <- studyPop
   }
-  ps <- applyTrimMatchStratify(ps, params$args)
+  ps <- applyTrimMatchStratify(ps, params)
   args <- list(
     cohortMethodData = cohortMethodData,
     population = ps,

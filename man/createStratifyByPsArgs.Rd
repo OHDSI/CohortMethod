@@ -5,7 +5,7 @@
 \title{Create a parameter object for the function \code{\link[=stratifyByPs]{stratifyByPs()}}}
 \usage{
 createStratifyByPsArgs(
-  numberOfStrata = 5,
+  numberOfStrata = 10,
   baseSelection = "all",
   stratificationColumns = c(),
   stratificationCovariateIds = c()
