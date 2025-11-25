@@ -1097,24 +1097,13 @@ createReferenceTable <- function(cmAnalysisList,
       }
     }, list, object)))
   }
-  loadingArgsList <- unique(ParallelLogger::selectFromList(
-    cmAnalysisList,
-    "getDbCohortMethodDataArgs"
-  ))
-  loadingArgsList <- lapply(loadingArgsList, function(x) {
-    return(x[[1]])
-  })
-  loadArgsId <- sapply(
-    cmAnalysisList,
-    function(cmAnalysis, loadingArgsList) {
-      return(which.list(
-        loadingArgsList,
-        cmAnalysis$getDbCohortMethodDataArgs
-      ))
-    },
-    loadingArgsList
+  loadArgsJsons <- lapply(cmAnalysisList,
+                          function(x) x$getDbCohortMethodDataArgs$toJson())
+  uniqueLoadArgsJSons <- unique(loadArgsJsons)
+  analysisIdToLoadArgsId <- tibble(
+    analysisId = analyses$analysisId,
+    loadArgsId = match(loadArgsJsons, uniqueLoadArgsJSons)
   )
-  analysisIdToLoadArgsId <- tibble(analysisId = analyses$analysisId, loadArgsId = loadArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToLoadArgsId, by = "analysisId")
   referenceTable$cohortMethodDataFile <- .createCohortMethodDataFileName(
     loadId = referenceTable$loadArgsId,
@@ -1124,23 +1113,12 @@ createReferenceTable <- function(cmAnalysisList,
   )
 
   # Add studypop filenames
-  studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopulationArgs"))
-  studyPopArgsList <- lapply(studyPopArgsList, function(x) {
-    return(x[[1]])
-  })
-  studyPopArgsId <- sapply(
-    cmAnalysisList,
-    function(cmAnalysis, studyPopArgsList) {
-      return(which.list(
-        studyPopArgsList,
-        cmAnalysis$createStudyPopulationArgs
-      ))
-    },
-    studyPopArgsList
-  )
+  studyPopArgsJsons <- lapply(cmAnalysisList,
+                              function(x) x$createStudyPopulationArgs$toJson())
+  uniqueStudyPopArgsJsons <- unique(studyPopArgsJsons)
   analysisIdToStudyPopArgsId <- tibble(
     analysisId = analyses$analysisId,
-    studyPopArgsId = studyPopArgsId
+    studyPopArgsId = match(studyPopArgsJsons, uniqueStudyPopArgsJsons)
   )
   referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsId, by = "analysisId")
   referenceTable$studyPopFile <- .createStudyPopulationFileName(
@@ -1153,318 +1131,214 @@ createReferenceTable <- function(cmAnalysisList,
   )
 
   # Add PS filenames
-  psArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createPsArgs"))
-  psArgsList <- lapply(
-    psArgsList,
-    function(x) {
-      return(if (length(x) > 0) {
-        return(x[[1]])
-      } else {
-        return(NULL)
-      })
-    }
-  )
-  noPsIds <- which(sapply(psArgsList, is.null))
-  psArgsId <- sapply(
+  createPsArgsJsons <- lapply(
     cmAnalysisList,
-    function(cmAnalysis,
-             psArgsList) {
-      return(which.list(psArgsList, cmAnalysis$createPsArgs))
-    },
-    psArgsList
+    function(x) if (is.null(x$createPsArgs)) "" else x$createPsArgs$toJson()
+    )
+  uniqueCreatePsArgsJsons <- unique(createPsArgsJsons)
+  analysisIdToPsArgsId <- tibble(
+    analysisId = analyses$analysisId,
+    psArgsId = match(createPsArgsJsons, uniqueCreatePsArgsJsons)
   )
-  analysisIdToPsArgsId <- tibble(analysisId = analyses$analysisId, psArgsId = psArgsId)
   referenceTable <- inner_join(referenceTable, analysisIdToPsArgsId, by = "analysisId")
-  idx <- !(referenceTable$psArgsId %in% noPsIds)
+  noPsIds <- which(uniqueCreatePsArgsJsons == "")
+  idxWithPs <- !(referenceTable$psArgsId %in% noPsIds)
   referenceTable$psFile <- ""
-  referenceTable$psFile[idx] <- .createPsOutcomeFileName(
-    loadId = referenceTable$loadArgsId[idx],
-    studyPopId = referenceTable$studyPopArgsId[idx],
-    psId = referenceTable$psArgsId[idx],
-    targetId = referenceTable$targetId[idx],
-    comparatorId = referenceTable$comparatorId[idx],
-    nestingCohortId = referenceTable$nestingCohortId[idx],
-    outcomeId = referenceTable$outcomeId[idx]
+  referenceTable$psFile[idxWithPs] <- .createPsOutcomeFileName(
+    loadId = referenceTable$loadArgsId[idxWithPs],
+    studyPopId = referenceTable$studyPopArgsId[idxWithPs],
+    psId = referenceTable$psArgsId[idxWithPs],
+    targetId = referenceTable$targetId[idxWithPs],
+    comparatorId = referenceTable$comparatorId[idxWithPs],
+    nestingCohortId = referenceTable$nestingCohortId[idxWithPs],
+    outcomeId = referenceTable$outcomeId[idxWithPs]
   )
   referenceTable$sharedPsFile <- ""
   if (!refitPsForEveryOutcome) {
     if (refitPsForEveryStudyPopulation) {
       # Find equivalent studyPopArgs, so we can reuse PS over those as well:
-      studyPopArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, "createStudyPopulationArgs"))
-      studyPopArgsList <- lapply(studyPopArgsList, function(x) {
-        return(x[[1]])
-      })
       equivalent <- function(studyPopArgs1, studyPopArgs2) {
-        if (identical(studyPopArgs1, studyPopArgs2)) {
-          return(TRUE)
-        }
-        if (studyPopArgs1$firstExposureOnly != studyPopArgs2$firstExposureOnly ||
-            studyPopArgs1$restrictToCommonPeriod != studyPopArgs2$restrictToCommonPeriod ||
-            studyPopArgs1$washoutPeriod != studyPopArgs2$washoutPeriod ||
-            studyPopArgs1$removeDuplicateSubjects != studyPopArgs2$removeDuplicateSubjects ||
-            studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
-            studyPopArgs1$minDaysAtRisk != 0) {
+        if (studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk) {
           return(FALSE)
         } else {
           return(TRUE)
         }
       }
-      findFirstEquivalent <- function(studyPopArgsList, studyPopArgs) {
-        for (i in 1:length(studyPopArgsList)) {
-          if (equivalent(studyPopArgsList[[i]], studyPopArgs)) {
-            return(i)
+      studyPopArgsEquivalentId <- seq_along(cmAnalysisList)
+      for (i in seq_along(cmAnalysisList)) {
+        for (j in seq_len(i - 1)) {
+          if (equivalent(cmAnalysisList[[i]]$createStudyPopulationArgs,
+                         cmAnalysisList[[j]]$createStudyPopulationArgs)) {
+            studyPopArgsEquivalentId[i] <- j
+            break
           }
         }
       }
-      studyPopArgsEquivalentId <- sapply(
-        cmAnalysisList,
-        function(cmAnalysis, studyPopArgsList) {
-          return(findFirstEquivalent(
-            studyPopArgsList,
-            cmAnalysis$createStudyPopulationArgs
-          ))
-        },
-        studyPopArgsList
-      )
       analysisIdToStudyPopArgsEquivalentId <- tibble(
         analysisId = analyses$analysisId,
         studyPopArgsEquivalentId = studyPopArgsEquivalentId
       )
       referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsEquivalentId, by = "analysisId")
-      referenceTable$sharedPsFile[idx] <- .createPsFileName(
-        loadId = referenceTable$loadArgsId[idx],
-        studyPopId = referenceTable$studyPopArgsEquivalentId[idx],
-        psId = referenceTable$psArgsId[idx],
-        targetId = referenceTable$targetId[idx],
-        comparatorId = referenceTable$comparatorId[idx],
-        nestingCohortId = referenceTable$nestingCohortId[idx]
+      referenceTable$sharedPsFile[idxWithPs] <- .createPsFileName(
+        loadId = referenceTable$loadArgsId[idxWithPs],
+        studyPopId = referenceTable$studyPopArgsEquivalentId[idxWithPs],
+        psId = referenceTable$psArgsId[idxWithPs],
+        targetId = referenceTable$targetId[idxWithPs],
+        comparatorId = referenceTable$comparatorId[idxWithPs],
+        nestingCohortId = referenceTable$nestingCohortId[idxWithPs]
       )
     } else {
       # One propensity model across all study population settings:
-      referenceTable$sharedPsFile[idx] <- .createPsFileName(
-        loadId = referenceTable$loadArgsId[idx],
+      referenceTable$sharedPsFile[idxWithPs] <- .createPsFileName(
+        loadId = referenceTable$loadArgsId[idxWithPs],
         studyPopId = NULL,
-        psId = referenceTable$psArgsId[idx],
-        targetId = referenceTable$targetId[idx],
-        comparatorId = referenceTable$comparatorId[idx],
-        nestingCohortId = referenceTable$nestingCohortId[idx]
+        psId = referenceTable$psArgsId[idxWithPs],
+        targetId = referenceTable$targetId[idxWithPs],
+        comparatorId = referenceTable$comparatorId[idxWithPs],
+        nestingCohortId = referenceTable$nestingCohortId[idxWithPs]
       )
     }
   }
 
   # Add strata filenames
-  strataArgNames <- c(
-    "trimByPsArgs",
-    "truncateIptwArgs",
-    "matchOnPsArgs",
-    "stratifyByPsArgs"
+  strataArgsJsons <- lapply(
+    cmAnalysisList,
+    function(x) paste0(
+      if (is.null(x$trimByPsArgs)) "" else x$trimByPsArgs$toJson(),
+      if (is.null(x$truncateIptwArgs)) "" else x$truncateIptwArgs$toJson(),
+      if (is.null(x$matchOnPsArgs)) "" else x$matchOnPsArgs$toJson(),
+      if (is.null(x$stratifyByPsArgs)) "" else x$stratifyByPsArgs$toJson()
+  ))
+  uniqueStrataArgsJsons <- unique(strataArgsJsons)
+  analysisIdToStrataArgsId <- tibble(
+    analysisId = analyses$analysisId,
+    strataArgsId = match(strataArgsJsons, uniqueStrataArgsJsons)
   )
-  strataArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, strataArgNames))
-  strataArgsList <- strataArgsList[sapply(
-    strataArgsList,
-    function(strataArgs) {
-      return(!is.null(strataArgs$trimByPsArgs) |
-               !is.null(strataArgs$truncateIptwArgs) |
-               !is.null(strataArgs$matchOnPsArgs) |
-               !is.null(strataArgs$stratifyByPsArgs))
-    }
-  )]
-  if (length(strataArgsList) == 0) {
-    referenceTable$strataArgsId <- 0
-  } else {
-    strataArgsId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, strataArgNames),
-                           function(cmAnalysis) {
-                             i <- which.list(strataArgsList, cmAnalysis)
-                             if (is.null(i)) {
-                               i <- 0
-                             }
-                             return(i)
-                           })
-    analysisIdToStrataArgsId <- tibble(analysisId = analyses$analysisId, strataArgsId = strataArgsId)
-    referenceTable <- inner_join(referenceTable, analysisIdToStrataArgsId, by = "analysisId")
-  }
-  idx <- referenceTable$strataArgsId != 0
+  referenceTable <- inner_join(referenceTable, analysisIdToStrataArgsId, by = "analysisId")
+  noStrataIds <- which(uniqueStrataArgsJsons == "")
+  idxWithStrata <- !(referenceTable$strataArgsId %in% noStrataIds)
   referenceTable$strataFile <- ""
-  referenceTable$strataFile[idx] <- .createStratifiedPopFileName(
-    loadId = referenceTable$loadArgsId[idx],
-    studyPopId = referenceTable$studyPopArgsId[idx],
-    psId = referenceTable$psArgsId[idx],
-    strataId = referenceTable$strataArgsId[idx],
-    targetId = referenceTable$targetId[idx],
-    comparatorId = referenceTable$comparatorId[idx],
-    nestingCohortId = referenceTable$nestingCohortId[idx],
-    outcomeId = referenceTable$outcomeId[idx]
+  referenceTable$strataFile[idxWithStrata] <- .createStratifiedPopFileName(
+    loadId = referenceTable$loadArgsId[idxWithStrata],
+    studyPopId = referenceTable$studyPopArgsId[idxWithStrata],
+    psId = referenceTable$psArgsId[idxWithStrata],
+    strataId = referenceTable$strataArgsId[idxWithStrata],
+    targetId = referenceTable$targetId[idxWithStrata],
+    comparatorId = referenceTable$comparatorId[idxWithStrata],
+    nestingCohortId = referenceTable$nestingCohortId[idxWithStrata],
+    outcomeId = referenceTable$outcomeId[idxWithStrata]
   )
 
   # Add shared covariate balance files (per target-comparator-analysis)
-  balanceArgName <- "computeSharedCovariateBalanceArgs"
   if (refitPsForEveryOutcome) {
     referenceTable$sharedBalanceFile <- ""
   } else {
-    balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName))
-    balanceArgsList <- balanceArgsList[sapply(
-      balanceArgsList,
-      function(balanceArgs) {
-        return(!is.null(balanceArgs$computeSharedCovariateBalanceArgs))
-      }
-    )]
-    if (length(balanceArgsList) == 0) {
-      referenceTable$sharedBalanceId <- 0
-    } else {
-      sharedBalanceId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName),
-                                function(cmAnalysis) {
-                                  i <- which.list(balanceArgsList, cmAnalysis)
-                                  if (is.null(i)) {
-                                    i <- 0
-                                  }
-                                  return(i)
-                                })
-      analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, sharedBalanceId = sharedBalanceId)
-      referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
-    }
-    idx <- referenceTable$sharedBalanceId != 0
+    sharedBalanceArgsJsons <- lapply(
+      cmAnalysisList,
+      function(x) if (is.null(x$computeSharedCovariateBalanceArgs)) "" else x$computeSharedCovariateBalanceArgs$toJson()
+    )
+    uniqueSharedBalanceArgsJSons <- unique(sharedBalanceArgsJsons)
+    analysisIdToSharedBalanceArgsId <- tibble(
+      analysisId = analyses$analysisId,
+      sharedBalanceId = match(sharedBalanceArgsJsons, uniqueSharedBalanceArgsJSons)
+    )
+    referenceTable <- inner_join(referenceTable, analysisIdToSharedBalanceArgsId, by = "analysisId")
+    noSharedBalanceIds <- which(uniqueSharedBalanceArgsJSons == "")
+    idxWithSharedBalance <- !(referenceTable$sharedBalanceId %in% noSharedBalanceIds)
     referenceTable$sharedBalanceFile <- ""
-    referenceTable$sharedBalanceFile[idx] <- .createsharedBalanceFileName(
-      loadId = referenceTable$loadArgsId[idx],
-      studyPopId = referenceTable$studyPopArgsId[idx],
-      psId = referenceTable$psArgsId[idx],
-      strataId = referenceTable$strataArgsId[idx],
-      sharedBalanceId = referenceTable$sharedBalanceId[idx],
-      targetId = referenceTable$targetId[idx],
-      comparatorId = referenceTable$comparatorId[idx],
-      nestingCohortId = referenceTable$nestingCohortId[idx]
+    referenceTable$sharedBalanceFile[idxWithSharedBalance] <- .createsharedBalanceFileName(
+      loadId = referenceTable$loadArgsId[idxWithSharedBalance],
+      studyPopId = referenceTable$studyPopArgsId[idxWithSharedBalance],
+      psId = referenceTable$psArgsId[idxWithSharedBalance],
+      strataId = referenceTable$strataArgsId[idxWithSharedBalance],
+      sharedBalanceId = referenceTable$sharedBalanceId[idxWithSharedBalance],
+      targetId = referenceTable$targetId[idxWithSharedBalance],
+      comparatorId = referenceTable$comparatorId[idxWithSharedBalance],
+      nestingCohortId = referenceTable$nestingCohortId[idxWithSharedBalance]
     )
   }
 
   # Add covariate balance files (per target-comparator-analysis-outcome)
-  balanceArgName <- "computeCovariateBalanceArgs"
-  balanceArgsList <- unique(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName))
-  balanceArgsList <- balanceArgsList[sapply(
-    balanceArgsList,
-    function(balanceArgs) {
-      return(!is.null(balanceArgs$computeCovariateBalanceArgs))
-    }
-  )]
-  if (length(balanceArgsList) == 0) {
-    referenceTable$balanceId <- 0
-    balanceIdsRequiringFiltering <- c()
-  } else {
-    balanceId <- sapply(ParallelLogger::selectFromList(cmAnalysisList, balanceArgName),
-                        function(cmAnalysis) {
-                          i <- which.list(balanceArgsList, cmAnalysis)
-                          if (is.null(i)) {
-                            i <- 0
-                          }
-                          return(i)
-                        })
-    analysisIdToBalanceArgsId <- tibble(analysisId = analyses$analysisId, balanceId = balanceId)
-    referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
-
-    balanceIdsRequiringFiltering <- sapply(
-      1:length(balanceArgsList),
-      function(i) ifelse(is.null(balanceArgsList[[i]]$computeCovariateBalanceArgs$covariateFilter), NA, i)
-    )
-  }
-  idx <- referenceTable$balanceId %in% balanceIdsRequiringFiltering
-  referenceTable$filteredForbalanceFile <- ""
-  referenceTable$filteredForbalanceFile[idx] <- .createFilterForBalanceFileName(
-    loadId = referenceTable$loadArgsId[idx],
-    studyPopId = referenceTable$studyPopArgsId[idx],
-    psId = referenceTable$psArgsId[idx],
-    strataId = referenceTable$strataArgsId[idx],
-    balanceId = referenceTable$balanceId[idx],
-    targetId = referenceTable$targetId[idx],
-    comparatorId = referenceTable$comparatorId[idx],
-    nestingCohortId = referenceTable$nestingCohortId[idx]
+  balanceArgsJsons <- lapply(
+    cmAnalysisList,
+    function(x) if (is.null(x$computeCovariateBalanceArgs)) "" else x$computeCovariateBalanceArgs$toJson()
   )
-  idx <- referenceTable$balanceId != 0
+  uniqueBalanceArgsJSons <- unique(balanceArgsJsons)
+  analysisIdToBalanceArgsId <- tibble(
+    analysisId = analyses$analysisId,
+    balanceId = match(balanceArgsJsons, uniqueBalanceArgsJSons)
+  )
+  referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
+
+  balanceIdsRequiringFiltering <- c()
+  for (i in seq_along(cmAnalysisList)) {
+    if (!is.null(cmAnalysisList[[i]]$computeCovariateBalanceArgs) &&
+        !is.null(cmAnalysisList[[i]]$computeCovariateBalanceArgs$covariateFilter)) {
+      balanceIdsRequiringFiltering <- c(balanceIdsRequiringFiltering, analysisIdToBalanceArgsId$balanceId[i])
+    }
+  }
+  idxFilter <- referenceTable$balanceId %in% balanceIdsRequiringFiltering
+  referenceTable$filteredForbalanceFile <- ""
+  referenceTable$filteredForbalanceFile[idxFilter] <- .createFilterForBalanceFileName(
+    loadId = referenceTable$loadArgsId[idxFilter],
+    balanceId = referenceTable$balanceId[idxFilter],
+    targetId = referenceTable$targetId[idxFilter],
+    comparatorId = referenceTable$comparatorId[idxFilter],
+    nestingCohortId = referenceTable$nestingCohortId[idxFilter]
+  )
+  noBalanceIds <- which(uniqueBalanceArgsJSons == "")
+  idxWithBalance <- !(referenceTable$balanceId %in% noBalanceIds)
   referenceTable$balanceFile <- ""
-  referenceTable$balanceFile[idx] <- .createBalanceFileName(
-    loadId = referenceTable$loadArgsId[idx],
-    studyPopId = referenceTable$studyPopArgsId[idx],
-    psId = referenceTable$psArgsId[idx],
-    strataId = referenceTable$strataArgsId[idx],
-    balanceId = referenceTable$balanceId[idx],
-    targetId = referenceTable$targetId[idx],
-    comparatorId = referenceTable$comparatorId[idx],
-    nestingCohortId = referenceTable$nestingCohortId[idx],
-    outcomeId = referenceTable$outcomeId[idx]
+  referenceTable$balanceFile[idxWithBalance] <- .createBalanceFileName(
+    loadId = referenceTable$loadArgsId[idxWithBalance],
+    studyPopId = referenceTable$studyPopArgsId[idxWithBalance],
+    psId = referenceTable$psArgsId[idxWithBalance],
+    strataId = referenceTable$strataArgsId[idxWithBalance],
+    balanceId = referenceTable$balanceId[idxWithBalance],
+    targetId = referenceTable$targetId[idxWithBalance],
+    comparatorId = referenceTable$comparatorId[idxWithBalance],
+    nestingCohortId = referenceTable$nestingCohortId[idxWithBalance],
+    outcomeId = referenceTable$outcomeId[idxWithBalance]
   )
 
   # Add prefiltered covariate files
-  loadingFittingArgsList <- unique(ParallelLogger::selectFromList(
+  preFilterArgJsons <- lapply(
     cmAnalysisList,
-    c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")
-  ))
-  needsFilter <- function(loadingFittingArgs) {
-    if (!"fitOutcomeModelArgs" %in% names(loadingFittingArgs)) {
-      return(NULL)
-    }
-    keep <- (loadingFittingArgs$fitOutcomeModelArgs$useCovariates & (length(loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
-                                                                       length(loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
-      length(loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds) != 0
-    if (keep) {
-      loadingFittingArgs$relevantFields <- list(
-        useCovariates = loadingFittingArgs$fitOutcomeModelArgs$useCovariates,
-        excludeCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$excludeCovariateIds,
-        includeCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$includeCovariateIds,
-        interactionCovariateIds = loadingFittingArgs$fitOutcomeModelArgs$interactionCovariateIds
-      )
-      return(loadingFittingArgs)
-    } else {
-      return(NULL)
-    }
-  }
-  loadingFittingArgsList <- plyr::compact(lapply(loadingFittingArgsList, needsFilter))
-  referenceTable$prefilteredCovariatesFile <- ""
-  if (length(loadingFittingArgsList) != 0) {
-    # Filtering needed
-    relevantArgsList <- ParallelLogger::selectFromList(
-      loadingFittingArgsList,
-      c("getDbCohortMethodDataArgs", "relevantFields")
-    )
-    uniqueRelevantArgsList <- unique(relevantArgsList)
-    prefilterIds <- sapply(
-      relevantArgsList,
-      function(relevantArgs, uniqueRelevantArgsList) {
-        return(which.list(
-          uniqueRelevantArgsList,
-          relevantArgs
-        ))
-      },
-      uniqueRelevantArgsList
-    )
-    matchableArgsList <- ParallelLogger::selectFromList(
-      loadingFittingArgsList,
-      c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")
-    )
+    function(x) {
+      if (!"fitOutcomeModelArgs" %in% names(x)) {
+      return("")
+      } else if ((x$fitOutcomeModelArgs$useCovariates &
+                 (length(x$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
+                  length(x$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
+      length(x$fitOutcomeModelArgs$interactionCovariateIds) != 0) {
+        return(jsonlite::toJSON(list(
+        useCovariates = x$fitOutcomeModelArgs$useCovariates,
+        excludeCovariateIds = x$fitOutcomeModelArgs$excludeCovariateIds,
+        includeCovariateIds = x$fitOutcomeModelArgs$includeCovariateIds,
+        interactionCovariateIds = x$fitOutcomeModelArgs$interactionCovariateIds
+      )))
+      } else {
+        return("")
+      }
+  })
+  uniquePreFilterArgsJsons <- unique(preFilterArgJsons)
+  analysisIdToFilterArgsId <- tibble(
+    analysisId = analyses$analysisId,
+    prefilterId = match(preFilterArgJsons, uniquePreFilterArgsJsons)
+  )
+  referenceTable <- inner_join(referenceTable, analysisIdToFilterArgsId, by = "analysisId")
+  noPreFilterIds <- which(uniquePreFilterArgsJsons == "")
+  idxWithPreFilter <- !(referenceTable$prefilterId %in% noPreFilterIds)
 
-    matchingIds <- sapply(
-      ParallelLogger::selectFromList(
-        cmAnalysisList,
-        c("getDbCohortMethodDataArgs", "fitOutcomeModelArgs")
-      ),
-      function(cmAnalysis, matchableArgs) {
-        return(which.list(
-          matchableArgs,
-          cmAnalysis
-        ))
-      },
-      matchableArgsList
-    )
-    analysisIdToPrefilterId <- tibble(
-      analysisId = analyses$analysisId,
-      prefilterId = sapply(matchingIds, function(matchingId, prefilterIds) if (is.null(matchingId)) -1 else prefilterIds[matchingId], prefilterIds)
-    )
-    referenceTable <- inner_join(referenceTable, analysisIdToPrefilterId, by = "analysisId")
-    referenceTable$prefilteredCovariatesFile <- .createPrefilteredCovariatesFileName(
-      loadId = referenceTable$loadArgsId,
-      targetId = referenceTable$targetId,
-      comparatorId = referenceTable$comparatorId,
-      nestingCohortId = referenceTable$nestingCohortId,
-      prefilterId = referenceTable$prefilterId
-    )
-  }
+  referenceTable$prefilteredCovariatesFile <- ""
+  referenceTable$prefilteredCovariatesFile[idxWithPreFilter] <- .createPrefilteredCovariatesFileName(
+    loadId = referenceTable$loadArgsId[idxWithPreFilter],
+    targetId = referenceTable$targetId[idxWithPreFilter],
+    comparatorId = referenceTable$comparatorId[idxWithPreFilter],
+    nestingCohortId = referenceTable$nestingCohortId[idxWithPreFilter],
+    prefilterId = referenceTable$prefilterId[idxWithPreFilter]
+  )
+
 
   # Add outcome model file names
   referenceTable <- referenceTable |>
@@ -1654,19 +1528,13 @@ createReferenceTable <- function(cmAnalysisList,
 }
 
 .createFilterForBalanceFileName <- function(loadId,
-                                            studyPopId,
-                                            psId,
-                                            strataId,
                                             balanceId,
                                             targetId,
                                             comparatorId,
                                             nestingCohortId) {
-  name <- sprintf("FilterForBalance_l%s_s%s_p%s%s_s%s_b%s.zip",
+  name <- sprintf("FilterForBalance_l%s%s_b%s.zip",
                   loadId,
-                  studyPopId,
-                  psId,
                   .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  strataId,
                   balanceId)
   return(name)
 }
