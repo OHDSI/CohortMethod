@@ -36,7 +36,8 @@ INSERT INTO @database_schema.@table_prefixcm_target_comparator (
   target_id,
   comparator_id
 )
-SELECT target_id * 1000000 + comparator_id AS target_comparator_id,
+SELECT (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   target_id,
   comparator_id
 FROM @database_schema.@table_prefixcm_result
@@ -56,8 +57,6 @@ CREATE TABLE @database_schema.@table_prefixcm_attrition_new (
   analysis_id INT NOT NULL,
   outcome_id BIGINT NOT NULL,
   database_id VARCHAR NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(sequence_number,exposure_id,target_comparator_id,analysis_id,outcome_id,database_id)
 );
 
@@ -69,19 +68,16 @@ INSERT INTO @database_schema.@table_prefixcm_attrition_new (sequence_number,
   target_comparator_id,
   analysis_id,
   outcome_id,
-  database_id ,
-  target_id,
-  comparator_id)
+  database_id)
 SELECT sequence_number,
   description,
   subjects,
   exposure_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   analysis_id,
   outcome_id,
-  database_id ,
-  target_id,
-  comparator_id
+  database_id
 FROM @database_schema.@table_prefixcm_attrition;
 
 DROP TABLE @database_schema.@table_prefixcm_attrition;
@@ -116,8 +112,6 @@ CREATE TABLE @database_schema.@table_prefixcm_follow_up_dist_new (
   comparator_min_date DATE,
   comparator_max_date DATE,
   database_id VARCHAR NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(target_comparator_id,outcome_id,analysis_id,database_id)
 );
 
@@ -143,10 +137,9 @@ INSERT INTO @database_schema.@table_prefixcm_follow_up_dist_new (
   target_max_date,
   comparator_min_date,
   comparator_max_date,
-  database_id,
-  target_id,
-  comparator_id)
-SELECT target_id * 1000000 + comparator_id AS target_comparator_id,
+  database_id)
+SELECT (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   analysis_id,
   target_min_days,
@@ -167,9 +160,7 @@ SELECT target_id * 1000000 + comparator_id AS target_comparator_id,
   target_max_date,
   comparator_min_date,
   comparator_max_date,
-  database_id,
-  target_id,
-  comparator_id
+  database_id
 FROM @database_schema.@table_prefixcm_follow_up_dist;
 
 DROP TABLE @database_schema.@table_prefixcm_follow_up_dist;
@@ -208,8 +199,6 @@ CREATE TABLE @database_schema.@table_prefixcm_result_new (
   calibrated_se_log_rr FLOAT,
   target_estimator VARCHAR,
   database_id VARCHAR NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(analysis_id,target_comparator_id,outcome_id,database_id)
 );
 
@@ -239,11 +228,10 @@ INSERT INTO @database_schema.@table_prefixcm_result_new (
   calibrated_log_rr,
   calibrated_se_log_rr,
   target_estimator,
-  database_id,
-  target_id,
-  comparator_id)
+  database_id)
 SELECT analysis_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   rr,
   ci_95_lb,
@@ -267,9 +255,7 @@ SELECT analysis_id,
   calibrated_log_rr,
   calibrated_se_log_rr,
   target_estimator,
-  database_id,
-  target_id,
-  comparator_id
+  database_id
 FROM @database_schema.@table_prefixcm_result;
 
 DROP TABLE @database_schema.@table_prefixcm_result;
@@ -306,8 +292,6 @@ CREATE TABLE @database_schema.@table_prefixcm_interaction_result_new (
   calibrated_se_log_rr FLOAT,
   target_estimator VARCHAR,
   database_id VARCHAR NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(analysis_id,target_comparator_id,outcome_id,interaction_covariate_id,database_id)
 );
 
@@ -335,11 +319,10 @@ INSERT INTO @database_schema.@table_prefixcm_interaction_result_new (
   calibrated_log_rr,
   calibrated_se_log_rr,
   target_estimator,
-  database_id,
-  target_id,
-  comparator_id)
+  database_id)
 SELECT analysis_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   interaction_covariate_id,
   rr,
@@ -361,9 +344,7 @@ SELECT analysis_id,
   calibrated_log_rr,
   calibrated_se_log_rr,
   target_estimator,
-  database_id,
-  target_id,
-  comparator_id
+  database_id
 FROM @database_schema.@table_prefixcm_interaction_result;
 
 DROP TABLE @database_schema.@table_prefixcm_interaction_result;
@@ -392,8 +373,6 @@ CREATE TABLE @database_schema.@table_prefixcm_covariate_balance_new (
   target_std_diff FLOAT,
   comparator_std_diff FLOAT,
   target_comparator_std_diff FLOAT,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(database_id,target_comparator_id,outcome_id,analysis_id,covariate_id)
 );
 
@@ -413,11 +392,10 @@ INSERT INTO @database_schema.@table_prefixcm_covariate_balance_new (
   std_diff_after,
   target_std_diff,
   comparator_std_diff,
-  target_comparator_std_diff,
-  target_id,
-  comparator_id)
+  target_comparator_std_diff)
 SELECT database_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   analysis_id,
   covariate_id,
@@ -431,9 +409,7 @@ SELECT database_id,
   std_diff_after,
   target_std_diff,
   comparator_std_diff,
-  target_comparator_std_diff,
-  target_id,
-  comparator_id
+  target_comparator_std_diff
 FROM @database_schema.@table_prefixcm_covariate_balance;
 
 DROP TABLE @database_schema.@table_prefixcm_covariate_balance;
@@ -468,8 +444,6 @@ CREATE TABLE @database_schema.@table_prefixcm_diagnostics_summary_new (
   ease_diagnostic VARCHAR(20),
   unblind INT,
   unblind_for_evidence_synthesis INT,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(analysis_id,target_comparator_id,outcome_id,database_id)
 );
 
@@ -495,11 +469,10 @@ INSERT INTO @database_schema.@table_prefixcm_diagnostics_summary_new (
   generalizability_diagnostic,
   ease_diagnostic,
   unblind,
-  unblind_for_evidence_synthesis,
-  target_id,
-  comparator_id)
+  unblind_for_evidence_synthesis)
 SELECT analysis_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   database_id,
   max_sdm,
@@ -519,9 +492,7 @@ SELECT analysis_id,
   generalizability_diagnostic,
   ease_diagnostic,
   unblind,
-  unblind_for_evidence_synthesis,
-  target_id,
-  comparator_id
+  unblind_for_evidence_synthesis
 FROM @database_schema.@table_prefixcm_diagnostics_summary;
 
 DROP TABLE @database_schema.@table_prefixcm_diagnostics_summary;
@@ -538,8 +509,6 @@ CREATE TABLE @database_schema.@table_prefixcm_target_comparator_outcome_new (
   outcome_of_interest INT,
   true_effect_size FLOAT,
   target_comparator_id BIGINT NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(outcome_id,target_comparator_id)
 );
 
@@ -547,15 +516,12 @@ INSERT INTO @database_schema.@table_prefixcm_target_comparator_outcome_new (
   outcome_id,
   outcome_of_interest,
   true_effect_size,
-  target_comparator_id,
-  target_id,
-  comparator_id)
+  target_comparator_id)
 SELECT outcome_id,
   outcome_of_interest,
   true_effect_size,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
-  target_id,
-  comparator_id
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id
 FROM @database_schema.@table_prefixcm_target_comparator_outcome;
 
 DROP TABLE @database_schema.@table_prefixcm_target_comparator_outcome;
@@ -581,8 +547,6 @@ CREATE TABLE @database_schema.@table_prefixcm_kaplan_meier_dist_new (
   outcome_id BIGINT NOT NULL,
   analysis_id INT NOT NULL,
   database_id VARCHAR NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(time_day,target_comparator_id,outcome_id,analysis_id,database_id)
 );
 
@@ -599,9 +563,7 @@ INSERT INTO @database_schema.@table_prefixcm_kaplan_meier_dist_new (
   target_comparator_id,
   outcome_id,
   analysis_id,
-  database_id,
-  target_id,
-  comparator_id)
+  database_id)
 SELECT time_day,
   target_survival,
   target_survival_lb,
@@ -611,12 +573,11 @@ SELECT time_day,
   comparator_survival_ub,
   target_at_risk,
   comparator_at_risk,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   analysis_id,
-  database_id,
-  target_id,
-  comparator_id
+  database_id
 FROM @database_schema.@table_prefixcm_kaplan_meier_dist;
 
 DROP TABLE @database_schema.@table_prefixcm_kaplan_meier_dist;
@@ -636,8 +597,6 @@ CREATE TABLE @database_schema.@table_prefixcm_likelihood_profile_new (
   outcome_id BIGINT NOT NULL,
   analysis_id INT NOT NULL,
   database_id VARCHAR NOT NULL,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(log_rr,target_comparator_id,outcome_id,analysis_id,database_id)
 );
 
@@ -648,18 +607,15 @@ INSERT INTO @database_schema.@table_prefixcm_likelihood_profile_new (
   target_comparator_id,
   outcome_id,
   analysis_id,
-  database_id,
-  target_id,
-  comparator_id)
+  database_id)
 SELECT log_rr,
   log_likelihood,
   gradient,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   outcome_id,
   analysis_id,
-  database_id,
-  target_id,
-  comparator_id
+  database_id
 FROM @database_schema.@table_prefixcm_likelihood_profile;
 
 DROP TABLE @database_schema.@table_prefixcm_likelihood_profile;
@@ -678,8 +634,6 @@ CREATE TABLE @database_schema.@table_prefixcm_preference_score_dist_new (
   preference_score FLOAT NOT NULL,
   target_density FLOAT,
   comparator_density FLOAT,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(analysis_id,target_comparator_id,database_id,preference_score)
 );
 
@@ -689,17 +643,14 @@ INSERT INTO @database_schema.@table_prefixcm_preference_score_dist_new (
   database_id,
   preference_score,
   target_density,
-  comparator_density,
-  target_id,
-  comparator_id)
+  comparator_density)
 SELECT analysis_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   database_id,
   preference_score,
   target_density,
-  comparator_density,
-  target_id,
-  comparator_id
+  comparator_density
 FROM @database_schema.@table_prefixcm_preference_score_dist;
 
 DROP TABLE @database_schema.@table_prefixcm_preference_score_dist;
@@ -717,8 +668,6 @@ CREATE TABLE @database_schema.@table_prefixcm_propensity_model_new (
   database_id VARCHAR NOT NULL,
   covariate_id BIGINT NOT NULL,
   coefficient FLOAT,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(target_comparator_id,analysis_id,database_id,covariate_id)
 );
 
@@ -727,16 +676,13 @@ INSERT INTO @database_schema.@table_prefixcm_propensity_model_new (
   analysis_id,
   database_id,
   covariate_id,
-  coefficient,
-  target_id,
-  comparator_id)
-SELECT target_id * 1000000 + comparator_id AS target_comparator_id,
+  coefficient)
+SELECT (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   analysis_id,
   database_id,
   covariate_id,
-  coefficient,
-  target_id,
-  comparator_id
+  coefficient
 FROM @database_schema.@table_prefixcm_propensity_model;
 
 DROP TABLE @database_schema.@table_prefixcm_propensity_model;
@@ -764,8 +710,6 @@ CREATE TABLE @database_schema.@table_prefixcm_shared_covariate_balance_new (
   target_std_diff FLOAT,
   comparator_std_diff FLOAT,
   target_comparator_std_diff FLOAT,
-  target_id BIGINT,
-  comparator_id BIGINT,
   PRIMARY KEY(database_id,target_comparator_id,analysis_id,covariate_id)
 );
 
@@ -784,11 +728,10 @@ INSERT INTO @database_schema.@table_prefixcm_shared_covariate_balance_new (
   std_diff_after,
   target_std_diff,
   comparator_std_diff,
-  target_comparator_std_diff,
-  target_id,
-  comparator_id)
+  target_comparator_std_diff)
 SELECT database_id,
-  target_id * 1000000 + comparator_id AS target_comparator_id,
+  (CAST(target_id * 2654435769 / 4096 AS BIGINT) & 1048575)*4194304 +
+    (CAST(comparator_id * 2654435769 / 1024 AS BIGINT) & 4194303) AS target_comparator_id,
   analysis_id,
   covariate_id,
   mean_before,
@@ -801,9 +744,7 @@ SELECT database_id,
   std_diff_after,
   target_std_diff,
   comparator_std_diff,
-  target_comparator_std_diff,
-  target_id,
-  comparator_id
+  target_comparator_std_diff
 FROM @database_schema.@table_prefixcm_shared_covariate_balance;
 
 DROP TABLE @database_schema.@table_prefixcm_shared_covariate_balance;

@@ -376,12 +376,6 @@ exportTargetComparatorOutcomes <- function(outputFolder, exportFolder, targetCom
       mutate(
         targetComparatorId = tcId
       )
-    # Add deprecated fields:
-    table <- table |>
-      mutate(
-        targetId = tcos$targetId,
-        comparatorId = tcos$comparatorId
-      )
     return(table)
 
   }
@@ -426,14 +420,6 @@ exportAttrition <- function(outputFolder,
         databaseId = databaseId
       ) |>
       enforceMinCellValue("subjects", minCellCount, silent = TRUE)
-
-    # Add deprecated fields:
-    attrition <- attrition |>
-      mutate(
-        targetId = reference$targetId[i],
-        comparatorId = reference$comparatorId[i]
-      )
-
     writeToCsv(attrition, fileName, append = !first)
     first <- FALSE
     if (i %% 100 == 10) {
@@ -518,12 +504,6 @@ exportCmFollowUpDist <- function(outputFolder,
       comparatorMinDate = comparatorMinMaxDates$minDate,
       comparatorMaxDate = comparatorMinMaxDates$maxDate
     )
-    # Add deprecated fields:
-    table <- table |>
-      mutate(
-        targetId = row$targetId,
-        comparatorId = row$comparatorId
-      )
     return(table)
   }
   reference <- getFileReference(outputFolder)
@@ -575,9 +555,7 @@ exportCohortMethodResults <- function(outputFolder,
       "calibratedOneSidedP",
       "calibratedLogRr",
       "calibratedSeLogRr",
-      "targetEstimator",
-      "targetId",
-      "comparatorId"
+      "targetEstimator"
     ) |>
     mutate(databaseId = !!databaseId) |>
     enforceMinCellValue("targetSubjects", minCellCount) |>
@@ -624,9 +602,7 @@ exportCmInteractionResults <- function(outputFolder,
         "calibratedP",
         "calibratedLogRr",
         "calibratedSeLogRr",
-        "targetEstimator",
-        "targetId",
-        "comparatorId"
+        "targetEstimator"
       ) |>
       mutate(databaseId = !!databaseId) |>
       enforceMinCellValue("targetSubjects", minCellCount) |>
@@ -668,12 +644,6 @@ exportLikelihoodProfiles <- function(outputFolder,
             outcomeId = reference$outcomeId[i],
             analysisId = reference$analysisId[i],
             databaseId = !!databaseId
-          )
-        # Add deprecated fields:
-        profile <- profile |>
-          mutate(
-            targetId = reference$targetId[i],
-            comparatorId = reference$comparatorId[i]
           )
         writeToCsv(profile, fileName, append = !first)
         first <- FALSE
@@ -719,13 +689,6 @@ exportCovariateBalance <- function(outputFolder,
       analysisId = unique(rows$analysisId)
     ) |>
       cross_join(tidyBalance(balance, minCellCount))
-
-    # Add deprecated fields:
-    balance <- balance |>
-      mutate(
-        targetId = rows$targetId[1],
-        comparatorId = rows$comparatorId[1]
-      )
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(balanceFiles))
@@ -769,12 +732,6 @@ exportSharedCovariateBalance <- function(outputFolder,
       analysisId = unique(rows$analysisId)
     ) |>
       cross_join(tidyBalance(balance, minCellCount))
-    # Add deprecated fields:
-    balance <- balance |>
-      mutate(
-        targetId = rows$targetId[1],
-        comparatorId = rows$comparatorId[1]
-      )
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(sharedBalanceFiles))
@@ -897,9 +854,7 @@ exportPreferenceScoreDistribution <- function(outputFolder,
       result <- rows |>
         select(
           "analysisId",
-          "targetComparatorId",
-          "targetId",
-          "comparatorId"
+          "targetComparatorId"
         ) |>
         mutate(databaseId = !!databaseId) |>
         cross_join(
@@ -947,7 +902,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(covariateId = ifelse(.data$covariateId == "(Intercept)", 0, .data$covariateId)) |>
         mutate(covariateId = as.numeric(.data$covariateId))
       rows <- rows |>
-        select("targetComparatorId", "targetId", "comparatorId", "analysisId") |>
+        select("targetComparatorId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>
         cross_join(model)
       return(rows)
@@ -956,7 +911,7 @@ exportPropensityModel <- function(outputFolder,
         mutate(coefficient = .data$correlation * 1e6) |>
         select("covariateId", "coefficient")
       rows <- rows |>
-        select("targetComparatorId", "targetId", "comparatorId", "analysisId") |>
+        select("targetComparatorId", "analysisId") |>
         mutate(databaseId = !!databaseId) |>
         cross_join(model)
     } else {
@@ -988,9 +943,7 @@ exportKaplanMeier <- function(outputFolder,
       "studyPopFile",
       "targetComparatorId",
       "outcomeId",
-      "analysisId",
-      "targetId",
-      "comparatorId"
+      "analysisId"
     )
 
   tempFolder <- file.path(exportFolder, "temp")
@@ -1078,9 +1031,6 @@ prepareKm <- function(task,
   data$outcomeId <- task$outcomeId
   data$analysisId <- task$analysisId
   data$databaseId <- databaseId
-  # Add deprecated fields:
-  data$targetId <- task$targetId
-  data$comparatorId <- task$comparatorId
   data <- enforceMinCellValue(data, "targetAtRisk", minCellCount)
   data <- enforceMinCellValue(data, "comparatorAtRisk", minCellCount)
 
@@ -1153,7 +1103,7 @@ exportDiagnosticsSummary <- function(outputFolder,
   message("- diagnostics_summary table")
   results <- getDiagnosticsSummary(outputFolder) |>
     inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId")) |>
-    select(-"nestingCohortId") |>
+    select(-"nestingCohortId", -"targetId", -"comparatorId") |>
     mutate(databaseId = !!databaseId,
            unblind = as.integer(.data$unblind),
            unblindForEvidenceSynthesis = as.integer(.data$unblindForEvidenceSynthesis))
