@@ -260,6 +260,17 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     # Check if there is data for the Kaplan Meier curves:
     km <- readr::read_csv(file.path(outputFolder1, "export", "cm_kaplan_meier_dist.csv"), show_col_types = FALSE)
     expect_true(nrow(km) > 0)
+
+    # Verify exported CSV files match model specifications:
+    specs <- getResultsDataModelSpecifications()
+    specs <- split(specs, specs$tableName)
+    # tableSpecs = specs[[1]]
+    for (tableSpecs in specs) {
+      fileName <- file.path(outputFolder1, "export", sprintf("%s.csv", tableSpecs$tableName[1]))
+      expect_true(file.exists(fileName))
+      table <- readr::read_csv(fileName, show_col_types = FALSE)
+      expect_setequal(colnames(table), tableSpecs$columnName)
+    }
   })
 
 

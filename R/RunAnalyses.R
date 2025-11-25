@@ -1099,10 +1099,10 @@ createReferenceTable <- function(cmAnalysisList,
   }
   loadArgsJsons <- lapply(cmAnalysisList,
                           function(x) x$getDbCohortMethodDataArgs$toJson())
-  uniqueLoadArgsJSons <- unique(loadArgsJsons)
+  uniqueLoadArgsJsons <- unique(loadArgsJsons)
   analysisIdToLoadArgsId <- tibble(
     analysisId = analyses$analysisId,
-    loadArgsId = match(loadArgsJsons, uniqueLoadArgsJSons)
+    loadArgsId = match(loadArgsJsons, uniqueLoadArgsJsons)
   )
   referenceTable <- inner_join(referenceTable, analysisIdToLoadArgsId, by = "analysisId")
   referenceTable$cohortMethodDataFile <- .createCohortMethodDataFileName(
@@ -1237,13 +1237,13 @@ createReferenceTable <- function(cmAnalysisList,
       cmAnalysisList,
       function(x) if (is.null(x$computeSharedCovariateBalanceArgs)) "" else x$computeSharedCovariateBalanceArgs$toJson()
     )
-    uniqueSharedBalanceArgsJSons <- unique(sharedBalanceArgsJsons)
+    uniqueSharedBalanceArgsJsons <- unique(sharedBalanceArgsJsons)
     analysisIdToSharedBalanceArgsId <- tibble(
       analysisId = analyses$analysisId,
-      sharedBalanceId = match(sharedBalanceArgsJsons, uniqueSharedBalanceArgsJSons)
+      sharedBalanceId = match(sharedBalanceArgsJsons, uniqueSharedBalanceArgsJsons)
     )
     referenceTable <- inner_join(referenceTable, analysisIdToSharedBalanceArgsId, by = "analysisId")
-    noSharedBalanceIds <- which(uniqueSharedBalanceArgsJSons == "")
+    noSharedBalanceIds <- which(uniqueSharedBalanceArgsJsons == "")
     idxWithSharedBalance <- !(referenceTable$sharedBalanceId %in% noSharedBalanceIds)
     referenceTable$sharedBalanceFile <- ""
     referenceTable$sharedBalanceFile[idxWithSharedBalance] <- .createsharedBalanceFileName(
@@ -1263,10 +1263,10 @@ createReferenceTable <- function(cmAnalysisList,
     cmAnalysisList,
     function(x) if (is.null(x$computeCovariateBalanceArgs)) "" else x$computeCovariateBalanceArgs$toJson()
   )
-  uniqueBalanceArgsJSons <- unique(balanceArgsJsons)
+  uniqueBalanceArgsJsons <- unique(balanceArgsJsons)
   analysisIdToBalanceArgsId <- tibble(
     analysisId = analyses$analysisId,
-    balanceId = match(balanceArgsJsons, uniqueBalanceArgsJSons)
+    balanceId = match(balanceArgsJsons, uniqueBalanceArgsJsons)
   )
   referenceTable <- inner_join(referenceTable, analysisIdToBalanceArgsId, by = "analysisId")
 
@@ -1286,7 +1286,7 @@ createReferenceTable <- function(cmAnalysisList,
     comparatorId = referenceTable$comparatorId[idxFilter],
     nestingCohortId = referenceTable$nestingCohortId[idxFilter]
   )
-  noBalanceIds <- which(uniqueBalanceArgsJSons == "")
+  noBalanceIds <- which(uniqueBalanceArgsJsons == "")
   idxWithBalance <- !(referenceTable$balanceId %in% noBalanceIds)
   referenceTable$balanceFile <- ""
   referenceTable$balanceFile[idxWithBalance] <- .createBalanceFileName(
