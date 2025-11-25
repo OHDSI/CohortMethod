@@ -53,7 +53,17 @@ rmarkdown::render("vignettes/ResultsSchema.Rmd",
 pkgdown::build_site()
 OhdsiRTools::fixHadesLogo()
 
+pkgdown::build_reference()
+
+# For debugging: generate SQL schema from CSV ----------------------------------
 ResultModelManager::generateSqlSchema(
   csvFilepath = "inst/csv/resultsDataModelSpecification.csv",
   sqlOutputPath = "extras/results_data_model.sql",
   overwrite = TRUE)
+
+# Release package --------------------------------------------------------------
+devtools::check_win_devel()
+
+rhub::rc_submit(platforms = "atlas")
+
+devtools::release()
