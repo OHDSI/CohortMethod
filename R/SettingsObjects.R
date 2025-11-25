@@ -1141,7 +1141,8 @@ TargetComparatorOutcomes <- R6Class(
 #' @param sdmAlpha              What is the alpha for testing whether the absolute SDM exceeds
 #'                              `sdmThreshold`? If not provided, no significance testing will be
 #'                              performed and any absolute SDM greater than the threshold will be
-#'                              considered imbalance.
+#'                              considered imbalance. Note that a Bonferroni adjustment will
+#'                              automatically be applied to adjust for the number of tests performed.
 #' @param equipoiseThreshold    What is the minimum required equipoise?
 #' @param generalizabilitySdmThreshold What is the maximum allowed standardized difference of mean
 #'                                     (SDM)when comparing the population before and after PS
@@ -1185,7 +1186,7 @@ CmDiagnosticThresholds <- R6Class(
       checkmate::assertNumeric(self$mdrrThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$easeThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$sdmThreshold, len = 1, lower = 0, add = errorMessages)
-      checkmate::assertNumeric(self$sdmAlpha, null.ok = TRUE, len = 1, lower = 0, upper = 1, add = errorMessages)
+      checkmate::assertNumeric(self$sdmAlpha, null.ok = TRUE, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$equipoiseThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$generalizabilitySdmThreshold, len = 1, lower = 0, add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)

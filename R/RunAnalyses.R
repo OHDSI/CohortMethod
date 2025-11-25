@@ -2050,10 +2050,10 @@ addBalance <- function(referenceTable, outputFolder, cmDiagnosticThresholds) {
                     )))
       if (is.null(cmDiagnosticThresholds$sdmAlpha)) {
         row <- row |>
-          mutate(balanced = .data$maxSdm > cmDiagnosticThresholds$sdmThreshold)
+          mutate(balanced = .data$maxSdm < cmDiagnosticThresholds$sdmThreshold)
       } else {
         row <- row |>
-          mutate(balanced = .data$sdmFamilyWiseMinP < cmDiagnosticThresholds$sdmAlpha)
+          mutate(balanced = .data$sdmFamilyWiseMinP > cmDiagnosticThresholds$sdmAlpha)
       }
       return(row)
     }

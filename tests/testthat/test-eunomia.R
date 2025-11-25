@@ -10,6 +10,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
   outputFolder3 <- tempfile(pattern = "cmData")
   outputFolder4 <- tempfile(pattern = "cmData")
   outputFolder5 <- tempfile(pattern = "cmData")
+  outputFolder6 <- tempfile(pattern = "cmData")
   if (is_checking()) {
     withr::defer(
       {
@@ -18,6 +19,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
         unlink(outputFolder3, recursive = TRUE)
         unlink(outputFolder4, recursive = TRUE)
         unlink(outputFolder5, recursive = TRUE)
+        unlink(outputFolder6, recursive = TRUE)
       },
       testthat::teardown_env()
     )
@@ -705,5 +707,107 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     expect_equal(nrow(cmResult), 4)
     expect_equal(sum(cmResult$nesting_cohort_id == 4, na.rm = TRUE), 2)
     expect_equal(sum(is.na(cmResult$nesting_cohort_id), na.rm = TRUE), 2)
+  })
+
+  test_that("Use new covariate balance diagnostic threshold", {
+
+    # A test to make sure we use the alpha threshold for SDM when specified
+
+    tcos1 <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(
+          outcomeId = 3
+        )
+      )
+    )
+
+    targetComparatorOutcomesList <- list(tcos1)
+
+    covarSettings <- createCovariateSettings(
+      useDemographicsGender = TRUE,
+      useDemographicsAge = TRUE
+    )
+
+    getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
+      firstExposureOnly = TRUE,
+      restrictToCommonPeriod = FALSE,
+      removeDuplicateSubjects = "remove all",
+      washoutPeriod = 183,
+      covariateSettings = covarSettings
+    )
+
+    createStudyPopArgs <- createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = TRUE,
+      censorAtNewRiskWindow = TRUE,
+      minDaysAtRisk = 1,
+      riskWindowStart = 0,
+      startAnchor = "cohort start",
+      riskWindowEnd = 30,
+      endAnchor = "cohort end"
+    )
+
+    createPsArgs <- createCreatePsArgs(
+      prior = createPrior("laplace", variance = 0.01, exclude = c(0)),
+      estimator = "att"
+    )
+
+    matchOnPsArgs <- createMatchOnPsArgs(
+      maxRatio = 1
+    )
+
+    fitOutcomeModelArgs <- createFitOutcomeModelArgs(
+      modelType = "cox"
+    )
+
+    computeSharedCovBalArgs <- createComputeCovariateBalanceArgs()
+
+    cmAnalysis1 <- createCmAnalysis(
+      analysisId = 1,
+      description = "Matching",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs,
+      createPsArgs = createPsArgs,
+      computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+      matchOnPsArgs = matchOnPsArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs
+    )
+
+    cmAnalysisList <- list(cmAnalysis1)
+
+    # Use crazy high family-wise p-value threshold to ensure we fail:
+    cmDiagnosticThresholds <- createCmDiagnosticThresholds(
+      sdmThreshold = 0.1,
+      sdmAlpha = 5
+    )
+
+    expect_warning(
+      {
+        result <- runCmAnalyses(
+          connectionDetails = connectionDetails,
+          cdmDatabaseSchema = "main",
+          exposureTable = "cohort",
+          outcomeTable = "cohort",
+          outputFolder = outputFolder6,
+          cmAnalysesSpecifications = createCmAnalysesSpecifications(
+            cmAnalysisList = cmAnalysisList,
+            targetComparatorOutcomesList = targetComparatorOutcomesList,
+            cmDiagnosticThresholds = cmDiagnosticThresholds
+          )
+        )
+      }, "zero"
+    )
+    diagnosticsSummary <- getDiagnosticsSummary(outputFolder6)
+
+    expect_equal(diagnosticsSummary$sharedBalanceDiagnostic, "FAIL")
+    # Check if we indeed did not meet our crazy high threshold:
+    expect_lt(diagnosticsSummary$sharedSdmFamilyWiseMinP, 5)
+
+    exportToCsv(outputFolder6, databaseId = "Eunomia")
+
+    diagnosticsSummaryExport <- readr::read_csv(file.path(outputFolder6, "export", "cm_diagnostics_summary.csv"), show_col_types = FALSE)
+
+    expect_equal(diagnosticsSummaryExport$shared_balance_diagnostic, "FAIL")
   })
 }

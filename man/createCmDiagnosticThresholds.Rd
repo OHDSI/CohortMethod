@@ -27,7 +27,8 @@ fail.}
 \item{sdmAlpha}{What is the alpha for testing whether the absolute SDM exceeds
 \code{sdmThreshold}? If not provided, no significance testing will be
 performed and any absolute SDM greater than the threshold will be
-considered imbalance.}
+considered imbalance. Note that a Bonferroni adjustment will
+automatically be applied to adjust for the number of tests performed.}
 
 \item{equipoiseThreshold}{What is the minimum required equipoise?}
 
