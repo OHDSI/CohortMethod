@@ -23,7 +23,7 @@ Description: Functions for performing new-user cohort studies
 	the stratification or matching.
 License: Apache License 2.0
 VignetteBuilder: knitr
-URL: https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod
+URL: https://ohdsi.github.io/CohortMethod/, https://github.com/OHDSI/CohortMethod
 BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
 	R (>= 4.1.0),

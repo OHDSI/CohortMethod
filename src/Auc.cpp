@@ -105,7 +105,7 @@ namespace ohdsi {
         mean += localMean / n;
 			}
 			mean /= m;
-			double vr10[m];
+			std::vector<double> vr10(m);
 			for (unsigned int i = 0; i < m; i++) {
 				double sum = 0;
 				for (unsigned int j = 0; j < n; j++) {
@@ -113,14 +113,14 @@ namespace ohdsi {
 				}
 				vr10[i] = sum / n;
 			}
-      
-			double vr01[n];
+
+      std::vector<double> vr01(n);
 			for (unsigned int i = 0; i < n; i++) {
 				double sum = 0;
 				for (unsigned int j = 0; j < m; j++) {
           sum += mannWhitneyKernel(cases.at(j), controls.at(i));
 				}
-					
+
 				vr01[i] = sum / m;
 			}
 
