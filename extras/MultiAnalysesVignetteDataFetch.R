@@ -169,7 +169,7 @@ covarSettings <- createDefaultCovariateSettings(
 getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
   removeDuplicateSubjects = "keep first, truncate to second",
   firstExposureOnly = TRUE,
-  washoutPeriod = 183,
+  washoutPeriod = 365,
   restrictToCommonPeriod = TRUE,
   covariateSettings = covarSettings
 )
@@ -196,12 +196,13 @@ cmAnalysis1 <- createCmAnalysis(
 )
 
 createPsArgs <- createCreatePsArgs(
-  maxCohortSizeForFitting = 100000,
-  control = createControl(cvType = "auto",
-                          startingVariance = 0.01,
-                          tolerance = 1E-5,
-                          noiseLevel = "quiet",
-                          cvRepetitions = 1)
+  control = createControl(noiseLevel = "silent",
+                          cvType = "auto",
+                          seed = 1,
+                          resetCoefficients = TRUE,
+                          tolerance = 2e-07,
+                          cvRepetitions = 1,
+                          startingVariance = 0.01),
 )
 
 matchOnPsArgs <- createMatchOnPsArgs(
@@ -232,7 +233,7 @@ cmAnalysis2 <- createCmAnalysis(
 )
 
 stratifyByPsArgs <- createStratifyByPsArgs(
-  numberOfStrata = 5
+  numberOfStrata = 10
 )
 
 cmAnalysis3 <- createCmAnalysis(
@@ -247,7 +248,7 @@ cmAnalysis3 <- createCmAnalysis(
   fitOutcomeModelArgs = fitOutcomeModelArgs2
 )
 
-trimByPsArgs <- createTrimByPsArgs(
+truncateIptwArgs <- createTruncateIptwArgs(
   maxWeight = 10
 )
 
@@ -263,7 +264,7 @@ cmAnalysis4 <- createCmAnalysis(
   getDbCohortMethodDataArgs = getDbCmDataArgs,
   createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
-  trimByPsArgs = trimByPsArgs,
+  truncateIptwArgs = truncateIptwArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
   computeCovariateBalanceArgs = computeCovBalArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs3
@@ -343,18 +344,21 @@ result <- runCmAnalyses(
     targetComparatorOutcomesList = targetComparatorOutcomesList
   )
 )
-
+# unlink(file.path(folder, "resultsSummary.rds"))
 
 diagnostics <- getDiagnosticsSummary(folder)
 diagnostics
 
 resultsSum <- getResultsSummary(folder)
+resultsSum
 
-ref <- getFileReference(folder)
-balance <- readRDS(file.path(folder, "Balance_l6_s6_p6_t1_c2_n3_s5_b5.rds"))
-unlink(file.path(folder, "Balance_l6_s6_p6_t1_c2_n3_s5_b5.rds"))
+row <- result |>
+  filter(analysisId == 3, outcomeOfInterest)
 
-# Export to CSV ----------------------------------------------------------------
+balance <- readRDS(file.path(folder, row$sharedBalanceFile))
+plotCovariateBalanceScatterPlot(balance)
+plotCovariateBalanceOfTopVariables(balance)
+# Export to CSV --model.extract()# Export to CSV ----------------------------------------------------------------
 exportToCsv(
   outputFolder = folder,
   minCellCount = 5,
@@ -367,30 +371,6 @@ sql <- "DROP TABLE @cohortDatabaseSchema.@cohortTable;"
 connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::renderTranslateExecuteSql(connection, sql, cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
 DatabaseConnector::disconnect(connection)
-
-# Shiny app --------------------------------------------------------------------
-folder <- "e:/temp/cohortMethodVignette2"
-cohorts <- data.frame(
-  cohortDefinitionId = c(
-    1,
-    2,
-    77),
-  cohortName = c(
-    "Celecoxib",
-    "Diclofenac",
-    "GI Bleed"
-  )
-)
-
-insertExportedResultsInSqlite(
-  sqliteFileName = file.path(folder, "myResults.sqlite"),
-  exportFolder = file.path(folder, "export"),
-  cohorts = cohorts
-)
-
-launchResultsViewerUsingSqlite(
-  sqliteFileName = file.path(folder, "myResults.sqlite")
-)
 
 # Upload results to SQLite using RMM -------------------------------------------
 library(CohortMethod)

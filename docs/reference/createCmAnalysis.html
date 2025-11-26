@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/MultipleAnalyses.html">Running multiple analyses at once using the CohortMethod package</a></li>
+    <li><a class="dropdown-item" href="../articles/ResultsSchema.html">Results schema of the CohortMethod package</a></li>
     <li><a class="dropdown-item" href="../articles/SingleStudies.html">Single studies using the CohortMethod package</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -33,7 +34,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Create a CohortMethod analysis specification</h1>
-      <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/R/Analyses.R" class="external-link"><code>R/Analyses.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/R/SettingsObjects.R" class="external-link"><code>R/SettingsObjects.R</code></a></small>
       <div class="d-none name"><code>createCmAnalysis.Rd</code></div>
     </div>
 
@@ -47,16 +48,12 @@
 <span>  analysisId <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  <span class="va">getDbCohortMethodDataArgs</span>,</span>
-<span>  <span class="va">createStudyPopArgs</span>,</span>
+<span>  <span class="va">createStudyPopulationArgs</span>,</span>
 <span>  createPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  trimByPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  trimByPsToEquipoiseArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  trimByIptwArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  truncateIptwArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  matchOnPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  matchOnPsAndCovariatesArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  stratifyByPsArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  stratifyByPsAndCovariatesArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  computeSharedCovariateBalanceArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  computeCovariateBalanceArgs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fitOutcomeModelArgs <span class="op">=</span> <span class="cn">NULL</span></span>
@@ -81,7 +78,7 @@ set of analysis choices.</p></dd>
 the <code><a href="getDbCohortMethodData.html">getDbCohortMethodData()</a></code> function.</p></dd>
 
 
-<dt id="arg-createstudypopargs">createStudyPopArgs<a class="anchor" aria-label="anchor" href="#arg-createstudypopargs"></a></dt>
+<dt id="arg-createstudypopulationargs">createStudyPopulationArgs<a class="anchor" aria-label="anchor" href="#arg-createstudypopulationargs"></a></dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="createStudyPopulation.html">createStudyPopulation()</a></code> function.</p></dd>
 
@@ -96,16 +93,6 @@ the <code><a href="createPs.html">createPs()</a></code> function.</p></dd>
 the <code><a href="trimByPs.html">trimByPs()</a></code> function.</p></dd>
 
 
-<dt id="arg-trimbypstoequipoiseargs">trimByPsToEquipoiseArgs<a class="anchor" aria-label="anchor" href="#arg-trimbypstoequipoiseargs"></a></dt>
-<dd><p>An object representing the arguments to be used when calling
-the <code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code> function.</p></dd>
-
-
-<dt id="arg-trimbyiptwargs">trimByIptwArgs<a class="anchor" aria-label="anchor" href="#arg-trimbyiptwargs"></a></dt>
-<dd><p>An object representing the arguments to be used when calling
-the <code><a href="trimByIptw.html">trimByIptw()</a></code> function.</p></dd>
-
-
 <dt id="arg-truncateiptwargs">truncateIptwArgs<a class="anchor" aria-label="anchor" href="#arg-truncateiptwargs"></a></dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="truncateIptw.html">truncateIptw()</a></code> function.</p></dd>
@@ -116,19 +103,9 @@ the <code><a href="truncateIptw.html">truncateIptw()</a></code> function.</p></d
 the <code><a href="matchOnPs.html">matchOnPs()</a></code> function.</p></dd>
 
 
-<dt id="arg-matchonpsandcovariatesargs">matchOnPsAndCovariatesArgs<a class="anchor" aria-label="anchor" href="#arg-matchonpsandcovariatesargs"></a></dt>
-<dd><p>An object representing the arguments to be used when calling
-the <code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code> function.</p></dd>
-
-
 <dt id="arg-stratifybypsargs">stratifyByPsArgs<a class="anchor" aria-label="anchor" href="#arg-stratifybypsargs"></a></dt>
 <dd><p>An object representing the arguments to be used when calling
 the <code><a href="stratifyByPs.html">stratifyByPs()</a></code> function.</p></dd>
-
-
-<dt id="arg-stratifybypsandcovariatesargs">stratifyByPsAndCovariatesArgs<a class="anchor" aria-label="anchor" href="#arg-stratifybypsandcovariatesargs"></a></dt>
-<dd><p>An object representing the arguments to be used when calling
-the <code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code> function.</p></dd>
 
 
 <dt id="arg-computesharedcovariatebalanceargs">computeSharedCovariateBalanceArgs<a class="anchor" aria-label="anchor" href="#arg-computesharedcovariatebalanceargs"></a></dt>
@@ -147,6 +124,10 @@ the <code><a href="fitOutcomeModel.html">fitOutcomeModel()</a></code> function.<
 
 </dl></div>
     <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    <p>An object of type <code>CmAnalysis</code>, to be used with the <a href="runCmAnalyses.html">runCmAnalyses</a> function.</p>
+    </div>
+    <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Create a set of analysis choices, to be used with the <code><a href="runCmAnalyses.html">runCmAnalyses()</a></code> function.</p>
 <p>Providing a NULL value for any of the argument applies the corresponding step will not be executed.
@@ -162,7 +143,7 @@ For example, if <code>createPsArgs = NULL</code>, no propensity scores will be c
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

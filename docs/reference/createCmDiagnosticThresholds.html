@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/MultipleAnalyses.html">Running multiple analyses at once using the CohortMethod package</a></li>
+    <li><a class="dropdown-item" href="../articles/ResultsSchema.html">Results schema of the CohortMethod package</a></li>
     <li><a class="dropdown-item" href="../articles/SingleStudies.html">Single studies using the CohortMethod package</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -33,7 +34,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Create CohortMethod diagnostics thresholds</h1>
-      <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/R/Export.R" class="external-link"><code>R/Export.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/R/SettingsObjects.R" class="external-link"><code>R/SettingsObjects.R</code></a></small>
       <div class="d-none name"><code>createCmDiagnosticThresholds.Rd</code></div>
     </div>
 
@@ -47,9 +48,9 @@
 <span>  mdrrThreshold <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  easeThreshold <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  sdmThreshold <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  sdmAlpha <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  equipoiseThreshold <span class="op">=</span> <span class="fl">0.2</span>,</span>
-<span>  attritionFractionThreshold <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  generalizabilitySdmThreshold <span class="op">=</span> <span class="fl">1</span></span>
+<span>  generalizabilitySdmThreshold <span class="op">=</span> <span class="fl">999</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -73,12 +74,16 @@ any covariate has an SDM exceeding this threshold, the diagnostic will
 fail.</p></dd>
 
 
+<dt id="arg-sdmalpha">sdmAlpha<a class="anchor" aria-label="anchor" href="#arg-sdmalpha"></a></dt>
+<dd><p>What is the alpha for testing whether the absolute SDM exceeds
+<code>sdmThreshold</code>? If not provided, no significance testing will be
+performed and any absolute SDM greater than the threshold will be
+considered imbalance. Note that a Bonferroni adjustment will
+automatically be applied to adjust for the number of tests performed.</p></dd>
+
+
 <dt id="arg-equipoisethreshold">equipoiseThreshold<a class="anchor" aria-label="anchor" href="#arg-equipoisethreshold"></a></dt>
 <dd><p>What is the minimum required equipoise?</p></dd>
-
-
-<dt id="arg-attritionfractionthreshold">attritionFractionThreshold<a class="anchor" aria-label="anchor" href="#arg-attritionfractionthreshold"></a></dt>
-<dd><p>DEPRECATED. See <code>generalizabilitySdmThreshold</code> instead.</p></dd>
 
 
 <dt id="arg-generalizabilitysdmthreshold">generalizabilitySdmThreshold<a class="anchor" aria-label="anchor" href="#arg-generalizabilitysdmthreshold"></a></dt>
@@ -92,6 +97,12 @@ will fail.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of type <code>CmDiagnosticThresholds</code>.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The <code>sdmThreshold</code> and <code>sdmAlpha</code> arguments are independent of the <code>threshold</code> and <code>alpha</code>
+threshold provided to the <code><a href="createComputeCovariateBalanceArgs.html">createComputeCovariateBalanceArgs()</a></code> function. The latter have no
+impact on blinding and diagnostics reported in the export.</p>
+    </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
@@ -102,7 +113,7 @@ will fail.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

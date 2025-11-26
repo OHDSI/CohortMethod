@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/MultipleAnalyses.html">Running multiple analyses at once using the CohortMethod package</a></li>
+    <li><a class="dropdown-item" href="../articles/ResultsSchema.html">Results schema of the CohortMethod package</a></li>
     <li><a class="dropdown-item" href="../articles/SingleStudies.html">Single studies using the CohortMethod package</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -37,6 +38,61 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="6.0.0" id="cohortmethod-600">CohortMethod 6.0.0<a class="anchor" aria-label="anchor" href="#cohortmethod-600"></a></h2>
+<p>This major release introduces many changes. The three most important ones are (1) changing the settings objects, (2) supporting nesting cohorts, and (3) covariate balance significance testing.</p>
+<div class="section level3">
+<h3 id="changes-related-to-the-settings-objects-6-0-0">Changes related to the settings objects<a class="anchor" aria-label="anchor" href="#changes-related-to-the-settings-objects-6-0-0"></a></h3>
+<ol style="list-style-type: decimal"><li><p>All settings objects have been changed to R6 classes, and are now used both when calling functions individually and when using <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code>. The main rationale is that allows 3rd parties to more easily generate valid settings.</p></li>
+<li><p>Dropped the <code>cdmVersion</code> argument in <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code> and <code><a href="../reference/runCmAnalyses.html">runCmAnalyses()</a></code>. The version will be identified in the <code>cdm_source</code> table.</p></li>
+<li><p>Dropped the <code>trimByIptw()</code> and <code>trimByPsToEquipoise()</code> functions. Added <code>equipoiseBounds</code> and <code>maxWeight</code> arguments to <code><a href="../reference/createTrimByPsArgs.html">createTrimByPsArgs()</a></code> so functionality remains.</p></li>
+<li><p>Dropped the <code>matchOnPsAndCovariates()</code> function and added a <code>stratificationCovariateIds</code> argument to <code><a href="../reference/createMatchOnPsArgs.html">createMatchOnPsArgs()</a></code> so functionality remains.</p></li>
+<li><p>Dropped the <code>stratifyByPsAndCovariates()</code> function and added a <code>stratificationCovariateIds</code> argument to <code>createStratifyByPsPsArgs()</code> so functionality remains.</p></li>
+<li><p>Renamed <code>createStudyPopArgs</code> argument of <code><a href="../reference/createCmAnalysis.html">createCmAnalysis()</a></code> to <code>createStudyPopulationArgs</code> for consistency.</p></li>
+<li><p>Dropping the deprecated <code>attritionFractionThreshold</code> argument of <code><a href="../reference/createCmDiagnosticThresholds.html">createCmDiagnosticThresholds()</a></code>. The amount of attrition is not a good measure of generalizability. Use the generalizability diagnostic instead, which measures the similarity between the target and analytic cohort characteristcs.</p></li>
+<li><p>Changed the default outcome model type from ‘logistic’ to ‘cox’.</p></li>
+<li><p>Set the defaults of <code><a href="../reference/createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs()</a></code> to those most often used.</p></li>
+<li><p>Dropped the <code>firstExposureOnly</code>, <code>restrictToCommonPeriod</code>, <code>washoutPeriod</code>, and <code>removeDuplicateSubjects</code> arguments from <code>CreateStudyPopulationArgs</code>. These were duplicated from <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code>, and we’ll keep them only there from now on.</p></li>
+</ol></div>
+<div class="section level3">
+<h3 id="changes-related-to-nesting-cohorts-6-0-0">Changes related to nesting cohorts<a class="anchor" aria-label="anchor" href="#changes-related-to-nesting-cohorts-6-0-0"></a></h3>
+<ol start="11" style="list-style-type: decimal"><li><p>Added ability to restrict to a nesting cohort (e.g. restricting drug exposures to a specific indication). See the <code>nestingCohortId</code> argument in the <code><a href="../reference/createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs()</a></code> and <code><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code> functions and the <code>nestingCohortDatabaseSchema</code> and <code>nestingCohortTable</code> arguments in the <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code> function.</p></li>
+<li><p>The results schema now includes the <code>target_comparator</code> table that combines the <code>target_id</code>, <code>comparator_id</code>, and <code>nesting_cohort_id</code> into a single unique <code>target_comparator_id</code>. This new ID is a hash of its components, allowing results from multiple runs to be combined into a single database.</p></li>
+</ol></div>
+<div class="section level3">
+<h3 id="changes-related-to-the-new-covariate-balance-diagnostic-6-0-0">Changes related to the new covariate balance diagnostic<a class="anchor" aria-label="anchor" href="#changes-related-to-the-new-covariate-balance-diagnostic-6-0-0"></a></h3>
+<ol start="13" style="list-style-type: decimal"><li>
+<p>Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:</p>
+<ul><li>Added the <code>threshold</code> and <code>alpha</code> arguments to the <code><a href="../reference/createComputeCovariateBalanceArgs.html">createComputeCovariateBalanceArgs()</a></code> function. These do not impact blinding when running <code>runCmAnalyses</code> but do add columns to the balance files, for when running single studies.</li>
+<li>Added the <code>sdmAlpha</code> argument to the <code><a href="../reference/createCmDiagnosticThresholds.html">createCmDiagnosticThresholds()</a></code> function.</li>
+</ul><p>This adds the <code>sdm_family_wise_min_p</code> and <code>shared_sdm_family_wise_min_p</code> fields to the <code>cm_diagnostics_summary</code> table when exporting to CSV. For now, the default is not to use significance testing, but the family-wise min P can help understand if one would have passed when using it.</p>
+</li>
+</ol></div>
+<div class="section level3">
+<h3 id="other-important-changes-6-0-0">Other important changes<a class="anchor" aria-label="anchor" href="#other-important-changes-6-0-0"></a></h3>
+<ol start="14" style="list-style-type: decimal"><li><p>Added a new option for the <code>removeDuplicateSubjects</code> argument: “keep first, truncate to second”. This is similar to “keep first”, but also truncates the first exposure to stop the day before the second starts.</p></li>
+<li><p>Now performing empirical calibration <em>after</em> removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.</p></li>
+<li><p>If high correlation is detected when fitting a propensity model, but <code>stopOnError = FALSE</code>, the export will show the highly correlated covariates in the model with extreme coefficients (1e6 * correlation).</p></li>
+<li><p>Added the ability to use bootstrap for computing confidence intervals. See the <code>bootstrapCi</code> and <code>bootstrapReplicates</code> arguments of <code><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs()</a></code>.</p></li>
+<li><p>All restrictions on the study populations performed by <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code> are now step-by-step recorded in the attrition table.</p></li>
+<li><p>Completely updated of all unit tests to increase coverage of functional tests, while also increasing speed.</p></li>
+<li><p>Renamed the <code>showEquipoiseLabel</code> argument of <code><a href="../reference/plotPs.html">plotPs()</a></code> to <code>showEquipoiseLabel</code>.</p></li>
+</ol></div>
+<div class="section level3">
+<h3 id="minor-changes-6-0-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-6-0-0"></a></h3>
+<ol start="21" style="list-style-type: decimal"><li>
+<p>Added support for grid-with-gradient likelihood profiles. Use the following arguments in <code><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs()</a></code> to use:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>profileGrid <span class="ot">=</span> <span class="fu">seq</span>(<span class="fu">log</span>(<span class="fl">0.1</span>), <span class="fu">log</span>(<span class="dv">10</span>), <span class="at">length.out =</span> <span class="dv">8</span>),</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>profileBounds <span class="ot">=</span> <span class="cn">NULL</span></span></code></pre></div>
+<p>This adds the <code>gradient</code> field to the <code>cm_likelihood_profile</code> table when exporting to CSV.</p>
+</li>
+<li><p>Removed mention of legacy function <code>grepCovariateNames()</code> from the vignette.</p></li>
+<li><p>Added citation to the HADES paper to the package.</p></li>
+<li><p>Dropped <code>insertExportedResultsInSqlite()</code>, <code>launchResultsViewerUsingSqlite</code>, and <code>launchResultsViewer()</code>. The <code>OhdsiShinyAppBuilder</code> package should be used directly instead.</p></li>
+<li><p>Corrected the <code>minDaysAtRisk</code> argument. Days at risk is now computed as end - start + 1 (end day inclusive).</p></li>
+<li><p>Added a vignette showing the results schema.</p></li>
+</ol></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="5.5.2" id="cohortmethod-552">CohortMethod 5.5.2<a class="anchor" aria-label="anchor" href="#cohortmethod-552"></a></h2>
 <p>Bugfixes:</p>
 <ol style="list-style-type: decimal"><li><p>Reorganized <code><a href="../reference/createPs.html">createPs()</a></code> to be much more efficient for large study populations (millions of patients).</p></li>
@@ -51,7 +107,7 @@
 <h2 class="pkg-version" data-toc-text="5.5.0" id="cohortmethod-550">CohortMethod 5.5.0<a class="anchor" aria-label="anchor" href="#cohortmethod-550"></a></h2>
 <p>Changes:</p>
 <ol style="list-style-type: decimal"><li><p><code><a href="../reference/createPs.html">createPs()</a></code> now checks if filtering of the covariate data is necessary (either because subject have been removed from the study population or because <code>excludeCovariateIds</code> or <code>includeCovariateIds</code> was specified). If no filtering is required, no extra copy of the covariate data data is created, saving IO time.</p></li>
-<li><p>Added <code>minimumCaseCount</code> argument to <code><a href="../reference/createCohortMethodDataSimulationProfile.html">createCohortMethodDataSimulationProfile ()</a></code>.</p></li>
+<li><p>Added <code>minimumCaseCount</code> argument to <code><a href="../reference/createCohortMethodDataSimulationProfile.html">createCohortMethodDataSimulationProfile()</a></code>.</p></li>
 <li><p>Preparing for <code>Andromeda 1.0.0</code>: no longer assuming Andromeda tables are sorted.</p></li>
 <li><p>Changing dependency from <code>ShinyAppBuilder</code> to <code>OhdsiShinyAppBuilder</code>.</p></li>
 </ol><p>Bugfixes:</p>
@@ -63,7 +119,7 @@
 <p>Changes:</p>
 <ol style="list-style-type: decimal"><li><p>Updating viewer code to work with newer versions of <code>OhdsiShinyModules</code> and <code>ShinyAppBuilder</code>.</p></li>
 <li><p>Dropped <code>uploadExportedResults()</code> function.</p></li>
-<li><p>The <code>cohorts</code> argument of <code><a href="../reference/insertExportedResultsInSqlite.html">insertExportedResultsInSqlite()</a></code> has column <code>cohortId</code> renamed to <code>cohortDefinitionId</code>.</p></li>
+<li><p>The <code>cohorts</code> argument of <code>insertExportedResultsInSqlite()</code> has column <code>cohortId</code> renamed to <code>cohortDefinitionId</code>.</p></li>
 <li><p>Added computation of MDRR for logistic models.</p></li>
 </ol></div>
     <div class="section level2">
@@ -147,9 +203,9 @@
 <li><p>Dropping arguments like <code>createPs</code> and <code>fitOutcomeModel</code> from the <code><a href="../reference/createCmAnalysis.html">createCmAnalysis()</a></code> function. Instead, not providing <code>createPsArgs</code> or <code>fitOutcomeModelArgs</code> is assumed to mean skipping propensity score creation or outcome model fitting, respectively.</p></li>
 </ul></li>
 <li><p>Added the <code><a href="../reference/exportToCsv.html">exportToCsv()</a></code> function for exporting study results to CSV files that do not contain patient-level information and can therefore be shared between sites. The <code>getResultsDataModel()</code> function returns the data model for these CSV files.</p></li>
-<li><p>Added the <code>uploadExportedResults()</code> and <code><a href="../reference/insertExportedResultsInSqlite.html">insertExportedResultsInSqlite()</a></code> functions for uploading the results from the CSV files in a database. The <code><a href="../reference/launchResultsViewer.html">launchResultsViewer()</a></code> and <code><a href="../reference/launchResultsViewerUsingSqlite.html">launchResultsViewerUsingSqlite()</a></code> functions were added for launching a Shiny app to view the results in the (SQLite) database.</p></li>
+<li><p>Added the <code>uploadExportedResults()</code> and <code>insertExportedResultsInSqlite()</code> functions for uploading the results from the CSV files in a database. The <code>launchResultsViewer()</code> and <code>launchResultsViewerUsingSqlite()</code> functions were added for launching a Shiny app to view the results in the (SQLite) database.</p></li>
 </ol><p>Bug fixes:</p>
-<ol style="list-style-type: decimal"><li>Fixed error when using integer <code>maxWeight</code> when performng IPTW.</li>
+<ol style="list-style-type: decimal"><li>Fixed error when using integer <code>maxWeight</code> when performing IPTW.</li>
 </ol></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="4.2.3" id="cohortmethod-423">CohortMethod 4.2.3<a class="anchor" aria-label="anchor" href="#cohortmethod-423"></a></h2>
@@ -180,7 +236,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="4.2.0" id="cohortmethod-420">CohortMethod 4.2.0<a class="anchor" aria-label="anchor" href="#cohortmethod-420"></a></h2>
 <p>Changes:</p>
-<ol style="list-style-type: decimal"><li><p>Adding the <code><a href="../reference/trimByIptw.html">trimByIptw()</a></code> function.</p></li>
+<ol style="list-style-type: decimal"><li><p>Adding the <code>trimByIptw()</code> function.</p></li>
 <li><p>Adding the <code>estimator</code> argument to the <code><a href="../reference/fitOutcomeModel.html">fitOutcomeModel()</a></code> function to select ‘ate’ (average treatment effect) or ‘att’ (average treatment effect in the treated) when performing IPTW.</p></li>
 <li><p>Added the <code>maxWeight</code> argument to the <code><a href="../reference/fitOutcomeModel.html">fitOutcomeModel()</a></code> function. Weights greater than this value will be set to this value.</p></li>
 <li><p>Adding option to use adaptive likelihood profiling, and making this the default.</p></li>
@@ -250,7 +306,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

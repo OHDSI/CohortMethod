@@ -1,0 +1,374 @@
+# CohortMethod
+
+[![Build
+Status](https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check)
+[![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main)](https://codecov.io/github/OHDSI/CohortMethod?branch=main)
+
+CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
+
+# Introduction
+
+CohortMethod is an R package for performing new-user cohort studies in
+an observational database in the OMOP Common Data Model.
+
+# Features
+
+- Extracts the necessary data from a database in OMOP Common Data Model
+  format.
+- Uses a large set of covariates for both the propensity and outcome
+  model, including for example all drugs, diagnoses, procedures, as well
+  as age, comorbidity indexes, etc.
+- Large scale regularized regression to fit the propensity and outcome
+  models.
+- Includes function for trimming, stratifying, matching, and weighting
+  on propensity scores.
+- Includes diagnostic functions, including propensity score distribution
+  plots and plots showing covariate balance before and after matching
+  and/or trimming.
+- Supported outcome models are (conditional) logistic regression,
+  (conditional) Poisson regression, and (conditional) Cox regression.
+
+# Screenshots
+
+|  |  |
+|----|----|
+| ![](https://github.com/OHDSI/CohortMethod/raw/main/extras/ps.png) | ![](https://github.com/OHDSI/CohortMethod/raw/main/extras/balanceScatterplot.png) |
+| Propensity (preference score) distribution | Covariate balance plot |
+
+# Technology
+
+CohortMethod is an R package, with some functions implemented in C++.
+
+# System Requirements
+
+Requires R (version 3.6.0 or higher). Installation on Windows requires
+[RTools](https://cran.r-project.org/bin/windows/Rtools/). Libraries used
+in CohortMethod require Java.
+
+# Installation
+
+1.  See the instructions
+    [here](https://ohdsi.github.io/Hades/rSetup.html) for configuring
+    your R environment, including RTools and Java.
+
+2.  In R, use the following commands to download and install
+    CohortMethod:
+
+``` r
+install.packages("remotes")
+remotes::install_github("ohdsi/CohortMethod")
+```
+
+3.  Optionally, run this to check if CohortMethod was correctly
+    installed:
+
+``` r
+connectionDetails <- createConnectionDetails(dbms="postgresql",
+                                             server="my_server.org",
+                                             user = "joe",
+                                             password = "super_secret")
+
+checkCmInstallation(connectionDetails)
+```
+
+Where dbms, server, user, and password need to be changed to the
+settings for your database environment. Type
+
+``` r
+?createConnectionDetails
+```
+
+for more details on how to configure your database connection.
+
+# User Documentation
+
+Documentation can be found on the [package
+website](https://ohdsi.github.io/CohortMethod).
+
+PDF versions of the documentation are also available:
+
+- Vignette: [Single studies using the CohortMethod
+  package](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/inst/doc/SingleStudies.pdf)
+- Vignette: [Running multiple analyses at once using the CohortMethod
+  package](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/inst/doc/MultipleAnalyses.pdf)
+- Package manual:
+  [CohortMethod.pdf](https://raw.githubusercontent.com/OHDSI/CohortMethod/main/extras/CohortMethod.pdf)
+
+# Support
+
+- Developer questions/comments/feedback: [OHDSI
+  Forum](http://forums.ohdsi.org/c/developers)
+- We use the [GitHub issue
+  tracker](https://github.com/OHDSI/CohortMethod/issues) for all
+  bugs/issues/enhancements
+
+# Contributing
+
+Read [here](https://ohdsi.github.io/Hades/contribute.html) how you can
+contribute to this package.
+
+# License
+
+CohortMethod is licensed under Apache License 2.0
+
+# Development
+
+CohortMethod is being developed in R Studio.
+
+### Development status
+
+CohortMethod is actively being used in several studies and is ready for
+use.
+
+# Acknowledgements
+
+- This project is supported in part through the National Science
+  Foundation grant IIS 1251151.
+
+# Package index
+
+## Getting data and creating a study population
+
+Functions for getting the necessary data from the database in Common
+Data Model, and creating a study population.
+
+- [`getDbCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/getDbCohortMethodData.md)
+  : Get the cohort data from the server
+- [`show(`*`<CohortMethodData>`*`)`](https://ohdsi.github.io/CohortMethod/reference/CohortMethodData-class.md)
+  [`summary(`*`<CohortMethodData>`*`)`](https://ohdsi.github.io/CohortMethod/reference/CohortMethodData-class.md)
+  : Cohort Method Data
+- [`isCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/isCohortMethodData.md)
+  : Check whether an object is a CohortMethodData object
+- [`saveCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/saveCohortMethodData.md)
+  : Save the cohort method data to file
+- [`loadCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/loadCohortMethodData.md)
+  : Load the cohort method data from a file
+- [`createStudyPopulation()`](https://ohdsi.github.io/CohortMethod/reference/createStudyPopulation.md)
+  : Create a study population
+
+## Propensity scores
+
+Functions for creating and using propensity scores.
+
+- [`createPs()`](https://ohdsi.github.io/CohortMethod/reference/createPs.md)
+  : Create propensity scores
+- [`getPsModel()`](https://ohdsi.github.io/CohortMethod/reference/getPsModel.md)
+  : Get the propensity model
+- [`matchOnPs()`](https://ohdsi.github.io/CohortMethod/reference/matchOnPs.md)
+  : Match persons by propensity score
+- [`trimByPs()`](https://ohdsi.github.io/CohortMethod/reference/trimByPs.md)
+  : Trim persons by propensity score
+- [`stratifyByPs()`](https://ohdsi.github.io/CohortMethod/reference/stratifyByPs.md)
+  : Stratify persons by propensity score
+- [`truncateIptw()`](https://ohdsi.github.io/CohortMethod/reference/truncateIptw.md)
+  : Truncate IPTW values
+
+## Outcome models
+
+Functions for creating and viewing outcome models.
+
+- [`fitOutcomeModel()`](https://ohdsi.github.io/CohortMethod/reference/fitOutcomeModel.md)
+  : Create an outcome model, and compute the relative risk
+- [`getOutcomeModel()`](https://ohdsi.github.io/CohortMethod/reference/getOutcomeModel.md)
+  : Get the outcome model
+- [`adjustedKm()`](https://ohdsi.github.io/CohortMethod/reference/adjustedKm.md)
+  : Compute a weight-adjusted Kaplan-Meier curve
+- [`plotKaplanMeier()`](https://ohdsi.github.io/CohortMethod/reference/plotKaplanMeier.md)
+  : Plot the Kaplan-Meier curve
+
+## Diagnostics
+
+Functions for producing various study diagnostics.
+
+- [`computeMdrr()`](https://ohdsi.github.io/CohortMethod/reference/computeMdrr.md)
+  : Compute the minimum detectable relative risk
+- [`getAttritionTable()`](https://ohdsi.github.io/CohortMethod/reference/getAttritionTable.md)
+  : Get the attrition table for a population
+- [`drawAttritionDiagram()`](https://ohdsi.github.io/CohortMethod/reference/drawAttritionDiagram.md)
+  : Draw the attrition diagram
+- [`plotFollowUpDistribution()`](https://ohdsi.github.io/CohortMethod/reference/plotFollowUpDistribution.md)
+  : Plot the distribution of follow-up time
+- [`createCmTable1()`](https://ohdsi.github.io/CohortMethod/reference/createCmTable1.md)
+  : Create a table 1
+- [`getDefaultCmTable1Specifications()`](https://ohdsi.github.io/CohortMethod/reference/getDefaultCmTable1Specifications.md)
+  : Get the default table 1 specifications
+- [`getFollowUpDistribution()`](https://ohdsi.github.io/CohortMethod/reference/getFollowUpDistribution.md)
+  : Get the distribution of follow-up time
+- [`plotPs()`](https://ohdsi.github.io/CohortMethod/reference/plotPs.md)
+  : Plot the propensity score distribution
+- [`computeEquipoise()`](https://ohdsi.github.io/CohortMethod/reference/computeEquipoise.md)
+  : Compute fraction in equipoise
+- [`computePsAuc()`](https://ohdsi.github.io/CohortMethod/reference/computePsAuc.md)
+  : Compute the area under the ROC curve
+- [`computeCovariateBalance()`](https://ohdsi.github.io/CohortMethod/reference/computeCovariateBalance.md)
+  : Compute covariate balance before and after PS adjustment
+- [`plotCovariateBalanceOfTopVariables()`](https://ohdsi.github.io/CohortMethod/reference/plotCovariateBalanceOfTopVariables.md)
+  : Plot variables with largest imbalance
+- [`plotCovariateBalanceScatterPlot()`](https://ohdsi.github.io/CohortMethod/reference/plotCovariateBalanceScatterPlot.md)
+  : Create a scatterplot of the covariate balance
+- [`plotCovariatePrevalence()`](https://ohdsi.github.io/CohortMethod/reference/plotCovariatePrevalence.md)
+  : Plot covariate prevalence
+- [`plotTimeToEvent()`](https://ohdsi.github.io/CohortMethod/reference/plotTimeToEvent.md)
+  : Plot time-to-event
+- [`getGeneralizabilityTable()`](https://ohdsi.github.io/CohortMethod/reference/getGeneralizabilityTable.md)
+  : Get information on generalizability
+
+## Running multiple analyses
+
+Functions for running multiple analyses in an efficient way.
+
+- [`createComputeCovariateBalanceArgs()`](https://ohdsi.github.io/CohortMethod/reference/createComputeCovariateBalanceArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`computeCovariateBalance()`](https://ohdsi.github.io/CohortMethod/reference/computeCovariateBalance.md)
+
+- [`createCreatePsArgs()`](https://ohdsi.github.io/CohortMethod/reference/createCreatePsArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`createPs()`](https://ohdsi.github.io/CohortMethod/reference/createPs.md)
+
+- [`createCreateStudyPopulationArgs()`](https://ohdsi.github.io/CohortMethod/reference/createCreateStudyPopulationArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`createStudyPopulation()`](https://ohdsi.github.io/CohortMethod/reference/createStudyPopulation.md)
+
+- [`createFitOutcomeModelArgs()`](https://ohdsi.github.io/CohortMethod/reference/createFitOutcomeModelArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`fitOutcomeModel()`](https://ohdsi.github.io/CohortMethod/reference/fitOutcomeModel.md)
+
+- [`createGetDbCohortMethodDataArgs()`](https://ohdsi.github.io/CohortMethod/reference/createGetDbCohortMethodDataArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`getDbCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/getDbCohortMethodData.md)
+
+- [`createMatchOnPsArgs()`](https://ohdsi.github.io/CohortMethod/reference/createMatchOnPsArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`matchOnPs()`](https://ohdsi.github.io/CohortMethod/reference/matchOnPs.md)
+
+- [`createStratifyByPsArgs()`](https://ohdsi.github.io/CohortMethod/reference/createStratifyByPsArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`stratifyByPs()`](https://ohdsi.github.io/CohortMethod/reference/stratifyByPs.md)
+
+- [`createTrimByPsArgs()`](https://ohdsi.github.io/CohortMethod/reference/createTrimByPsArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`trimByPs()`](https://ohdsi.github.io/CohortMethod/reference/trimByPs.md)
+
+- [`createTruncateIptwArgs()`](https://ohdsi.github.io/CohortMethod/reference/createTruncateIptwArgs.md)
+  :
+
+  Create a parameter object for the function
+  [`truncateIptw()`](https://ohdsi.github.io/CohortMethod/reference/truncateIptw.md)
+
+- [`createCmAnalysis()`](https://ohdsi.github.io/CohortMethod/reference/createCmAnalysis.md)
+  : Create a CohortMethod analysis specification
+
+- [`saveCmAnalysisList()`](https://ohdsi.github.io/CohortMethod/reference/saveCmAnalysisList.md)
+  : Save a list of CmAnalysis to file
+
+- [`loadCmAnalysisList()`](https://ohdsi.github.io/CohortMethod/reference/loadCmAnalysisList.md)
+  : Load a list of CmAnalysis from file
+
+- [`createOutcome()`](https://ohdsi.github.io/CohortMethod/reference/createOutcome.md)
+  : Create outcome definition
+
+- [`createTargetComparatorOutcomes()`](https://ohdsi.github.io/CohortMethod/reference/createTargetComparatorOutcomes.md)
+  : Create target-comparator-outcomes combinations.
+
+- [`saveTargetComparatorOutcomesList()`](https://ohdsi.github.io/CohortMethod/reference/saveTargetComparatorOutcomesList.md)
+  :
+
+  Save a list of `TargetComparatorOutcomes` to file
+
+- [`loadTargetComparatorOutcomesList()`](https://ohdsi.github.io/CohortMethod/reference/loadTargetComparatorOutcomesList.md)
+  :
+
+  Load a list of `TargetComparatorOutcomes` from file
+
+- [`createCmDiagnosticThresholds()`](https://ohdsi.github.io/CohortMethod/reference/createCmDiagnosticThresholds.md)
+  : Create CohortMethod diagnostics thresholds
+
+- [`createCmAnalysesSpecifications()`](https://ohdsi.github.io/CohortMethod/reference/createCmAnalysesSpecifications.md)
+  : Create full CM analysis specifications
+
+- [`convertUntypedListToCmAnalysesSpecifications()`](https://ohdsi.github.io/CohortMethod/reference/convertUntypedListToCmAnalysesSpecifications.md)
+  : Convert untyped list to SccsAnalysesSpecifications
+
+- [`createMultiThreadingSettings()`](https://ohdsi.github.io/CohortMethod/reference/createMultiThreadingSettings.md)
+  : Create CohortMethod multi-threading settings
+
+- [`createDefaultMultiThreadingSettings()`](https://ohdsi.github.io/CohortMethod/reference/createDefaultMultiThreadingSettings.md)
+  : Create default CohortMethod multi-threading settings
+
+- [`runCmAnalyses()`](https://ohdsi.github.io/CohortMethod/reference/runCmAnalyses.md)
+  : Run a list of analyses
+
+- [`getFileReference()`](https://ohdsi.github.io/CohortMethod/reference/getFileReference.md)
+  : Get file reference
+
+- [`getResultsSummary()`](https://ohdsi.github.io/CohortMethod/reference/getResultsSummary.md)
+  : Get a summary report of the analyses results
+
+- [`getInteractionResultsSummary()`](https://ohdsi.github.io/CohortMethod/reference/getInteractionResultsSummary.md)
+  : Get a summary report of the analyses results
+
+- [`getDiagnosticsSummary()`](https://ohdsi.github.io/CohortMethod/reference/getDiagnosticsSummary.md)
+  : Get a summary report of the analyses diagnostics
+
+- [`exportToCsv()`](https://ohdsi.github.io/CohortMethod/reference/exportToCsv.md)
+  : Export cohort method results to CSV files
+
+## Results upload
+
+Uploading results to a database.
+
+- [`getResultsDataModelSpecifications()`](https://ohdsi.github.io/CohortMethod/reference/getResultsDataModelSpecifications.md)
+  : Get specifications for CohortMethod results data model
+- [`createResultsDataModel()`](https://ohdsi.github.io/CohortMethod/reference/createResultsDataModel.md)
+  : Create the results data model tables on a database server.
+- [`migrateDataModel()`](https://ohdsi.github.io/CohortMethod/reference/migrateDataModel.md)
+  : Migrate Data model
+- [`getDataMigrator()`](https://ohdsi.github.io/CohortMethod/reference/getDataMigrator.md)
+  : Get database migrations instance
+- [`uploadResults()`](https://ohdsi.github.io/CohortMethod/reference/uploadResults.md)
+  : Upload results to the database server.
+
+## Simulation
+
+Functions for simulating cohort method data objects.
+
+- [`createCohortMethodDataSimulationProfile()`](https://ohdsi.github.io/CohortMethod/reference/createCohortMethodDataSimulationProfile.md)
+  : Create simulation profile
+- [`simulateCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/simulateCohortMethodData.md)
+  : Generate simulated data
+- [`cohortMethodDataSimulationProfile`](https://ohdsi.github.io/CohortMethod/reference/cohortMethodDataSimulationProfile.md)
+  : A simulation profile
+
+## Helper functions
+
+Various helper functions
+
+- [`checkCmInstallation()`](https://ohdsi.github.io/CohortMethod/reference/checkCmInstallation.md)
+  : Check is CohortMethod and its dependencies are correctly installed
+
+# Articles
+
+### All vignettes
+
+- [Running multiple analyses at once using the CohortMethod
+  package](https://ohdsi.github.io/CohortMethod/articles/MultipleAnalyses.md):
+- [Results schema of the CohortMethod
+  package](https://ohdsi.github.io/CohortMethod/articles/ResultsSchema.md):
+- [Single studies using the CohortMethod
+  package](https://ohdsi.github.io/CohortMethod/articles/SingleStudies.md):

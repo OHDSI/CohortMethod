@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/MultipleAnalyses.html">Running multiple analyses at once using the CohortMethod package</a></li>
+    <li><a class="dropdown-item" href="../articles/ResultsSchema.html">Results schema of the CohortMethod package</a></li>
     <li><a class="dropdown-item" href="../articles/SingleStudies.html">Single studies using the CohortMethod package</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -40,8 +41,7 @@
 
       <div class="section-desc"><p>Functions for getting the necessary data from the database in Common Data Model, and creating a study population.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -52,31 +52,36 @@
 
         </dt>
         <dd>Get the cohort data from the server</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="CohortMethodData-class.html">show(<i>&lt;CohortMethodData&gt;</i>)</a></code> <code><a href="CohortMethodData-class.html">summary(<i>&lt;CohortMethodData&gt;</i>)</a></code>
 
         </dt>
         <dd>Cohort Method Data</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="isCohortMethodData.html">isCohortMethodData()</a></code>
 
         </dt>
         <dd>Check whether an object is a CohortMethodData object</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="saveCohortMethodData.html">saveCohortMethodData()</a></code>
 
         </dt>
         <dd>Save the cohort method data to file</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="loadCohortMethodData.html">loadCohortMethodData()</a></code>
 
         </dt>
         <dd>Load the cohort method data from a file</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="createStudyPopulation.html">createStudyPopulation()</a></code>
 
@@ -87,8 +92,7 @@
 
       <div class="section-desc"><p>Functions for creating and using propensity scores.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -99,55 +103,36 @@
 
         </dt>
         <dd>Create propensity scores</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getPsModel.html">getPsModel()</a></code>
 
         </dt>
         <dd>Get the propensity model</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="matchOnPs.html">matchOnPs()</a></code>
 
         </dt>
         <dd>Match persons by propensity score</dd>
-      </dl><dl><dt>
 
-          <code><a href="matchOnPsAndCovariates.html">matchOnPsAndCovariates()</a></code>
-
-        </dt>
-        <dd>Match by propensity score as well as other covariates</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="trimByPs.html">trimByPs()</a></code>
 
         </dt>
         <dd>Trim persons by propensity score</dd>
-      </dl><dl><dt>
 
-          <code><a href="trimByPsToEquipoise.html">trimByPsToEquipoise()</a></code>
-
-        </dt>
-        <dd>Keep only persons in clinical equipoise</dd>
-      </dl><dl><dt>
-
-          <code><a href="trimByIptw.html">trimByIptw()</a></code>
-
-        </dt>
-        <dd>Remove subjects with a high IPTW</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="stratifyByPs.html">stratifyByPs()</a></code>
 
         </dt>
         <dd>Stratify persons by propensity score</dd>
-      </dl><dl><dt>
 
-          <code><a href="stratifyByPsAndCovariates.html">stratifyByPsAndCovariates()</a></code>
-
-        </dt>
-        <dd>Stratify persons by propensity score and other covariates</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="truncateIptw.html">truncateIptw()</a></code>
 
@@ -158,8 +143,7 @@
 
       <div class="section-desc"><p>Functions for creating and viewing outcome models.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -170,19 +154,22 @@
 
         </dt>
         <dd>Create an outcome model, and compute the relative risk</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getOutcomeModel.html">getOutcomeModel()</a></code>
 
         </dt>
         <dd>Get the outcome model</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="adjustedKm.html">adjustedKm()</a></code>
 
         </dt>
         <dd>Compute a weight-adjusted Kaplan-Meier curve</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotKaplanMeier.html">plotKaplanMeier()</a></code>
 
@@ -193,8 +180,7 @@
 
       <div class="section-desc"><p>Functions for producing various study diagnostics.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -205,91 +191,106 @@
 
         </dt>
         <dd>Compute the minimum detectable relative risk</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getAttritionTable.html">getAttritionTable()</a></code>
 
         </dt>
         <dd>Get the attrition table for a population</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="drawAttritionDiagram.html">drawAttritionDiagram()</a></code>
 
         </dt>
         <dd>Draw the attrition diagram</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotFollowUpDistribution.html">plotFollowUpDistribution()</a></code>
 
         </dt>
         <dd>Plot the distribution of follow-up time</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="createCmTable1.html">createCmTable1()</a></code>
 
         </dt>
         <dd>Create a table 1</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getDefaultCmTable1Specifications.html">getDefaultCmTable1Specifications()</a></code>
 
         </dt>
         <dd>Get the default table 1 specifications</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getFollowUpDistribution.html">getFollowUpDistribution()</a></code>
 
         </dt>
         <dd>Get the distribution of follow-up time</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotPs.html">plotPs()</a></code>
 
         </dt>
         <dd>Plot the propensity score distribution</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="computeEquipoise.html">computeEquipoise()</a></code>
 
         </dt>
         <dd>Compute fraction in equipoise</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="computePsAuc.html">computePsAuc()</a></code>
 
         </dt>
         <dd>Compute the area under the ROC curve</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="computeCovariateBalance.html">computeCovariateBalance()</a></code>
 
         </dt>
         <dd>Compute covariate balance before and after PS adjustment</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables()</a></code>
 
         </dt>
         <dd>Plot variables with largest imbalance</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot()</a></code>
 
         </dt>
         <dd>Create a scatterplot of the covariate balance</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotCovariatePrevalence.html">plotCovariatePrevalence()</a></code>
 
         </dt>
         <dd>Plot covariate prevalence</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="plotTimeToEvent.html">plotTimeToEvent()</a></code>
 
         </dt>
         <dd>Plot time-to-event</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getGeneralizabilityTable.html">getGeneralizabilityTable()</a></code>
 
@@ -300,8 +301,7 @@
 
       <div class="section-desc"><p>Functions for running multiple analyses in an efficient way.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -311,235 +311,239 @@
           <code><a href="createComputeCovariateBalanceArgs.html">createComputeCovariateBalanceArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function computeCovariateBalance</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/computeCovariateBalance.html">computeCovariateBalance()</a></code></dd>
+
+        <dt>
 
           <code><a href="createCreatePsArgs.html">createCreatePsArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function createPs</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/createPs.html">createPs()</a></code></dd>
+
+        <dt>
 
           <code><a href="createCreateStudyPopulationArgs.html">createCreateStudyPopulationArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function createStudyPopulation</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/createStudyPopulation.html">createStudyPopulation()</a></code></dd>
+
+        <dt>
 
           <code><a href="createFitOutcomeModelArgs.html">createFitOutcomeModelArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function fitOutcomeModel</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/fitOutcomeModel.html">fitOutcomeModel()</a></code></dd>
+
+        <dt>
 
           <code><a href="createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function getDbCohortMethodData</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code></dd>
 
-          <code><a href="createMatchOnPsAndCovariatesArgs.html">createMatchOnPsAndCovariatesArgs()</a></code>
-
-        </dt>
-        <dd>Create a parameter object for the function matchOnPsAndCovariates</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="createMatchOnPsArgs.html">createMatchOnPsArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function matchOnPs</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/matchOnPs.html">matchOnPs()</a></code></dd>
 
-          <code><a href="createStratifyByPsAndCovariatesArgs.html">createStratifyByPsAndCovariatesArgs()</a></code>
-
-        </dt>
-        <dd>Create a parameter object for the function stratifyByPsAndCovariates</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="createStratifyByPsArgs.html">createStratifyByPsArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function stratifyByPs</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/stratifyByPs.html">stratifyByPs()</a></code></dd>
 
-          <code><a href="createTrimByIptwArgs.html">createTrimByIptwArgs()</a></code>
-
-        </dt>
-        <dd>Create a parameter object for the function trimByIptw</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="createTrimByPsArgs.html">createTrimByPsArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function trimByPs</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/trimByPs.html">trimByPs()</a></code></dd>
 
-          <code><a href="createTrimByPsToEquipoiseArgs.html">createTrimByPsToEquipoiseArgs()</a></code>
-
-        </dt>
-        <dd>Create a parameter object for the function trimByPsToEquipoise</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="createTruncateIptwArgs.html">createTruncateIptwArgs()</a></code>
 
         </dt>
-        <dd>Create a parameter object for the function truncateIptw</dd>
-      </dl><dl><dt>
+        <dd>Create a parameter object for the function <code><a href="../reference/truncateIptw.html">truncateIptw()</a></code></dd>
+
+        <dt>
 
           <code><a href="createCmAnalysis.html">createCmAnalysis()</a></code>
 
         </dt>
         <dd>Create a CohortMethod analysis specification</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="saveCmAnalysisList.html">saveCmAnalysisList()</a></code>
 
         </dt>
-        <dd>Save a list of cmAnalysis to file</dd>
-      </dl><dl><dt>
+        <dd>Save a list of CmAnalysis to file</dd>
+
+        <dt>
 
           <code><a href="loadCmAnalysisList.html">loadCmAnalysisList()</a></code>
 
         </dt>
-        <dd>Load a list of cmAnalysis from file</dd>
-      </dl><dl><dt>
+        <dd>Load a list of CmAnalysis from file</dd>
+
+        <dt>
 
           <code><a href="createOutcome.html">createOutcome()</a></code>
 
         </dt>
         <dd>Create outcome definition</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code>
 
         </dt>
         <dd>Create target-comparator-outcomes combinations.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="saveTargetComparatorOutcomesList.html">saveTargetComparatorOutcomesList()</a></code>
 
         </dt>
-        <dd>Save a list of targetComparatorOutcomes to file</dd>
-      </dl><dl><dt>
+        <dd>Save a list of <code>TargetComparatorOutcomes</code> to file</dd>
+
+        <dt>
 
           <code><a href="loadTargetComparatorOutcomesList.html">loadTargetComparatorOutcomesList()</a></code>
 
         </dt>
-        <dd>Load a list of targetComparatorOutcomes from file</dd>
-      </dl><dl><dt>
+        <dd>Load a list of <code>TargetComparatorOutcomes</code> from file</dd>
+
+        <dt>
+
+          <code><a href="createCmDiagnosticThresholds.html">createCmDiagnosticThresholds()</a></code>
+
+        </dt>
+        <dd>Create CohortMethod diagnostics thresholds</dd>
+
+        <dt>
+
+          <code><a href="createCmAnalysesSpecifications.html">createCmAnalysesSpecifications()</a></code>
+
+        </dt>
+        <dd>Create full CM analysis specifications</dd>
+
+        <dt>
+
+          <code><a href="convertUntypedListToCmAnalysesSpecifications.html">convertUntypedListToCmAnalysesSpecifications()</a></code>
+
+        </dt>
+        <dd>Convert untyped list to SccsAnalysesSpecifications</dd>
+
+        <dt>
 
           <code><a href="createMultiThreadingSettings.html">createMultiThreadingSettings()</a></code>
 
         </dt>
         <dd>Create CohortMethod multi-threading settings</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="createDefaultMultiThreadingSettings.html">createDefaultMultiThreadingSettings()</a></code>
 
         </dt>
         <dd>Create default CohortMethod multi-threading settings</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="runCmAnalyses.html">runCmAnalyses()</a></code>
 
         </dt>
         <dd>Run a list of analyses</dd>
+
+        <dt>
+
+          <code><a href="getFileReference.html">getFileReference()</a></code>
+
+        </dt>
+        <dd>Get file reference</dd>
+
+        <dt>
+
+          <code><a href="getResultsSummary.html">getResultsSummary()</a></code>
+
+        </dt>
+        <dd>Get a summary report of the analyses results</dd>
+
+        <dt>
+
+          <code><a href="getInteractionResultsSummary.html">getInteractionResultsSummary()</a></code>
+
+        </dt>
+        <dd>Get a summary report of the analyses results</dd>
+
+        <dt>
+
+          <code><a href="getDiagnosticsSummary.html">getDiagnosticsSummary()</a></code>
+
+        </dt>
+        <dd>Get a summary report of the analyses diagnostics</dd>
+
+        <dt>
+
+          <code><a href="exportToCsv.html">exportToCsv()</a></code>
+
+        </dt>
+        <dd>Export cohort method results to CSV files</dd>
       </dl></div><div class="section level2">
-      <h2 id="results-of-multiple-analyses">Results of multiple analyses<a class="anchor" aria-label="anchor" href="#results-of-multiple-analyses"></a></h2>
+      <h2 id="results-upload">Results upload<a class="anchor" aria-label="anchor" href="#results-upload"></a></h2>
 
-      <div class="section-desc"><p>Functions for viewing results of multiple analyses.</p></div>
+      <div class="section-desc"><p>Uploading results to a database.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
 
       <dl><dt>
 
-          <code><a href="getFileReference.html">getFileReference()</a></code>
-
-        </dt>
-        <dd>Get file reference</dd>
-      </dl><dl><dt>
-
-          <code><a href="getResultsSummary.html">getResultsSummary()</a></code>
-
-        </dt>
-        <dd>Get a summary report of the analyses results</dd>
-      </dl><dl><dt>
-
-          <code><a href="getInteractionResultsSummary.html">getInteractionResultsSummary()</a></code>
-
-        </dt>
-        <dd>Get a summary report of the analyses results</dd>
-      </dl><dl><dt>
-
-          <code><a href="createCmDiagnosticThresholds.html">createCmDiagnosticThresholds()</a></code>
-
-        </dt>
-        <dd>Create CohortMethod diagnostics thresholds</dd>
-      </dl><dl><dt>
-
-          <code><a href="exportToCsv.html">exportToCsv()</a></code>
-
-        </dt>
-        <dd>Export cohort method results to CSV files</dd>
-      </dl><dl><dt>
-
           <code><a href="getResultsDataModelSpecifications.html">getResultsDataModelSpecifications()</a></code>
 
         </dt>
         <dd>Get specifications for CohortMethod results data model</dd>
-      </dl><dl><dt>
 
-          <code><a href="insertExportedResultsInSqlite.html">insertExportedResultsInSqlite()</a></code>
-
-        </dt>
-        <dd>Insert exported results into a SQLite database</dd>
-      </dl><dl><dt>
-
-          <code><a href="launchResultsViewerUsingSqlite.html">launchResultsViewerUsingSqlite()</a></code>
-
-        </dt>
-        <dd>Launch Shiny app using a SQLite database</dd>
-      </dl><dl><dt>
+        <dt>
 
           <code><a href="createResultsDataModel.html">createResultsDataModel()</a></code>
 
         </dt>
         <dd>Create the results data model tables on a database server.</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="migrateDataModel.html">migrateDataModel()</a></code>
 
         </dt>
         <dd>Migrate Data model</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="getDataMigrator.html">getDataMigrator()</a></code>
 
         </dt>
         <dd>Get database migrations instance</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="uploadResults.html">uploadResults()</a></code>
 
         </dt>
         <dd>Upload results to the database server.</dd>
-      </dl><dl><dt>
-
-          <code><a href="launchResultsViewer.html">launchResultsViewer()</a></code>
-
-        </dt>
-        <dd>Launch Shiny app using</dd>
       </dl></div><div class="section level2">
       <h2 id="simulation">Simulation<a class="anchor" aria-label="anchor" href="#simulation"></a></h2>
 
       <div class="section-desc"><p>Functions for simulating cohort method data objects.</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -550,13 +554,15 @@
 
         </dt>
         <dd>Create simulation profile</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="simulateCohortMethodData.html">simulateCohortMethodData()</a></code>
 
         </dt>
         <dd>Generate simulated data</dd>
-      </dl><dl><dt>
+
+        <dt>
 
           <code><a href="cohortMethodDataSimulationProfile.html">cohortMethodDataSimulationProfile</a></code>
 
@@ -567,8 +573,7 @@
 
       <div class="section-desc"><p>Various helper functions</p></div>
 
-
-    </div><div class="section level2">
+      <dl></dl></div><div class="section level2">
 
 
 
@@ -589,7 +594,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

@@ -304,7 +304,7 @@ cmAnalysis2 <- createCmAnalysis(
 )
 
 stratifyByPsArgs <- createStratifyByPsArgs(
-  numberOfStrata = 5
+  numberOfStrata = 10
 )
 
 cmAnalysis3 <- createCmAnalysis(
@@ -319,7 +319,7 @@ cmAnalysis3 <- createCmAnalysis(
   fitOutcomeModelArgs = fitOutcomeModelArgs2
 )
 
-trimByPsArgs <- createTrimByPsArgs(
+truncateIptwArgs <- createTruncateIptwArgs(
   maxWeight = 10
 )
 
@@ -335,7 +335,7 @@ cmAnalysis4 <- createCmAnalysis(
   getDbCohortMethodDataArgs = getDbCmDataArgs,
   createStudyPopulationArgs = createStudyPopArgs,
   createPsArgs = createPsArgs,
-  trimByPsArgs = trimByPsArgs,
+  truncateIptwArgs = truncateIptwArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
   computeCovariateBalanceArgs = computeCovBalArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs3
@@ -522,7 +522,7 @@ if (folderExists) {
 }
 ```
 
-Here we see we pass diagnostics for many outcomes (including the negative controls) for all analyses except analysis 1. That analysis does not use propensity score adjustment, and therefore fails the EASE diagnostic because of residual systematic error (confounding).
+Here we see we pass diagnostics for many outcomes (including the negative controls) for both analyses using matching, but fail for all others. We can drill down into the diagnostics why this is (in this case we fail because we don't achieve covariate balance).
 
 ## Empirical calibration and negative control distribution
 
