@@ -59,6 +59,8 @@ ResultModelManager::generateSqlSchema(
   sqlOutputPath = "extras/results_data_model.sql",
   overwrite = TRUE)
 
+
+
 # Release package --------------------------------------------------------------
 devtools::check_win_devel()
 

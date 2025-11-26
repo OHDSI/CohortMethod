@@ -1105,6 +1105,7 @@ exportDiagnosticsSummary <- function(outputFolder,
     inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId")) |>
     select(-"nestingCohortId", -"targetId", -"comparatorId") |>
     mutate(databaseId = !!databaseId,
+           mdrr = if_else(is.infinite(.data$mdrr), as.numeric(NA), .data$mdrr),
            unblind = as.integer(.data$unblind),
            unblindForEvidenceSynthesis = as.integer(.data$unblindForEvidenceSynthesis))
 

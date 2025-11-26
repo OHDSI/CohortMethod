@@ -27,12 +27,20 @@ if (Sys.getenv("CDM5_POSTGRESQL_SERVER") != "") {
 
   postgresResultsDatabaseSchema <- paste0("r", Sys.getpid(), format(Sys.time(), "%s"), sample(1:100, 1))
 
-  databaseFile <- tempfile(fileext = ".sqlite")
+  sqliteFile <- tempfile(fileext = ".sqlite")
   sqliteConnectionDetails <- DatabaseConnector::createConnectionDetails(
     dbms = "sqlite",
-    server = databaseFile
+    server = sqliteFile
   )
   sqliteResultsDatabaseSchema <- "main"
+
+  # Disabling DuckDB unit tests until SqlRender 1.19.4 has been released:
+  # duckDbFile <- tempfile(fileext = ".duckdb")
+  # duckDbConnectionDetails <- DatabaseConnector::createConnectionDetails(
+  #   dbms = "duckdb",
+  #   server = duckDbFile
+  # )
+  # duckDbResultsDatabaseSchema <- "main"
 
   withr::defer({
     connection <- DatabaseConnector::connect(connectionDetails = postgresConnectionDetails)
@@ -44,7 +52,8 @@ if (Sys.getenv("CDM5_POSTGRESQL_SERVER") != "") {
     )
 
     DatabaseConnector::disconnect(connection)
-    unlink(databaseFile, force = TRUE)
+    unlink(sqliteFile, force = TRUE)
+    # unlink(duckDbFile, force = TRUE)
   },
   testthat::teardown_env()
   )
@@ -52,7 +61,7 @@ if (Sys.getenv("CDM5_POSTGRESQL_SERVER") != "") {
   testCreateSchema <- function(connectionDetails, resultsDatabaseSchema) {
     connection <- DatabaseConnector::connect(connectionDetails)
     on.exit(DatabaseConnector::disconnect(connection))
-    if (connectionDetails$dbms != "sqlite") {
+    if (!connectionDetails$dbms %in% c("sqlite", "duckdb")) {
       sql <- "CREATE SCHEMA @resultsDatabaseSchema;"
       DatabaseConnector::renderTranslateExecuteSql(
         sql = sql,
@@ -85,6 +94,8 @@ if (Sys.getenv("CDM5_POSTGRESQL_SERVER") != "") {
                      resultsDatabaseSchema = postgresResultsDatabaseSchema)
     testCreateSchema(connectionDetails = sqliteConnectionDetails,
                      resultsDatabaseSchema = sqliteResultsDatabaseSchema)
+    # testCreateSchema(connectionDetails = duckDbConnectionDetails,
+    #                 resultsDatabaseSchema = duckDbResultsDatabaseSchema)
   })
 
   testUploadResults <- function(connectionDetails, resultsDatabaseSchema) {
@@ -125,6 +136,8 @@ if (Sys.getenv("CDM5_POSTGRESQL_SERVER") != "") {
                       resultsDatabaseSchema = postgresResultsDatabaseSchema)
     testUploadResults(connectionDetails = sqliteConnectionDetails,
                       resultsDatabaseSchema = sqliteResultsDatabaseSchema)
+    # testUploadResults(connectionDetails = duckDbConnectionDetails,
+    #                  resultsDatabaseSchema = duckDbResultsDatabaseSchema)
   })
 
 }

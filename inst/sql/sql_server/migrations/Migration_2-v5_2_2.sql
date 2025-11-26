@@ -1,0 +1,676 @@
+-- Generated SQL statements to alter columns to BIGINT data type
+
+-- Alter columns (and primary key) in cm_attrition
+
+CREATE TABLE @database_schema.@table_prefixcm_attrition_new (
+  sequence_number INT NOT NULL,
+  description VARCHAR NOT NULL,
+  subjects INT NOT NULL,
+  exposure_id BIGINT NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  database_id VARCHAR NOT NULL,
+  PRIMARY KEY (sequence_number, exposure_id, target_id, comparator_id, analysis_id, outcome_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_attrition_new (
+  sequence_number,
+  description,
+  subjects,
+  exposure_id,
+  target_id,
+  comparator_id,
+  analysis_id,
+  outcome_id,
+  database_id
+) SELECT   sequence_number,
+  description,
+  subjects,
+  exposure_id,
+  target_id,
+  comparator_id,
+  analysis_id,
+  outcome_id,
+  database_id
+FROM @database_schema.@table_prefixcm_attrition;
+
+DROP TABLE @database_schema.@table_prefixcm_attrition;
+ALTER TABLE @database_schema.@table_prefixcm_attrition_new RENAME TO @table_prefixcm_attrition;
+
+-- Alter columns (and primary key) in cm_follow_up_dist
+
+CREATE TABLE @database_schema.@table_prefixcm_follow_up_dist_new (
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  target_min_days FLOAT,
+  target_p_10_days FLOAT,
+  target_p_25_days FLOAT,
+  target_median_days FLOAT,
+  target_p_75_days FLOAT,
+  target_p_90_days FLOAT,
+  target_max_days FLOAT,
+  comparator_min_days FLOAT,
+  comparator_p_10_days FLOAT,
+  comparator_p_25_days FLOAT,
+  comparator_median_days FLOAT,
+  comparator_p_75_days FLOAT,
+  comparator_p_90_days FLOAT,
+  comparator_max_days FLOAT,
+  target_min_date DATE,
+  target_max_date DATE,
+  comparator_min_date DATE,
+  comparator_max_date DATE,
+  database_id VARCHAR NOT NULL,
+  PRIMARY KEY (target_id, comparator_id, outcome_id, analysis_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_follow_up_dist_new (
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  target_min_days,
+  target_p_10_days,
+  target_p_25_days,
+  target_median_days,
+  target_p_75_days,
+  target_p_90_days,
+  target_max_days,
+  comparator_min_days,
+  comparator_p_10_days,
+  comparator_p_25_days,
+  comparator_median_days,
+  comparator_p_75_days,
+  comparator_p_90_days,
+  comparator_max_days,
+  target_min_date,
+  target_max_date,
+  comparator_min_date,
+  comparator_max_date,
+  database_id
+) SELECT   target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  target_min_days,
+  target_p_10_days,
+  target_p_25_days,
+  target_median_days,
+  target_p_75_days,
+  target_p_90_days,
+  target_max_days,
+  comparator_min_days,
+  comparator_p_10_days,
+  comparator_p_25_days,
+  comparator_median_days,
+  comparator_p_75_days,
+  comparator_p_90_days,
+  comparator_max_days,
+  target_min_date,
+  target_max_date,
+  comparator_min_date,
+  comparator_max_date,
+  database_id
+FROM @database_schema.@table_prefixcm_follow_up_dist;
+
+DROP TABLE @database_schema.@table_prefixcm_follow_up_dist;
+ALTER TABLE @database_schema.@table_prefixcm_follow_up_dist_new RENAME TO @table_prefixcm_follow_up_dist;
+
+-- Alter columns (and primary key) in cm_result
+
+CREATE TABLE @database_schema.@table_prefixcm_result_new (
+  analysis_id INT NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  rr FLOAT,
+  ci_95_lb FLOAT,
+  ci_95_ub FLOAT,
+  p FLOAT,
+  one_sided_p FLOAT,
+  target_subjects INT NOT NULL,
+  comparator_subjects INT NOT NULL,
+  target_days INT NOT NULL,
+  comparator_days INT NOT NULL,
+  target_outcomes INT NOT NULL,
+  comparator_outcomes INT NOT NULL,
+  log_rr FLOAT,
+  se_log_rr FLOAT,
+  llr FLOAT,
+  calibrated_rr FLOAT,
+  calibrated_ci_95_lb FLOAT,
+  calibrated_ci_95_ub FLOAT,
+  calibrated_p FLOAT,
+  calibrated_one_sided_p FLOAT,
+  calibrated_log_rr FLOAT,
+  calibrated_se_log_rr FLOAT,
+  target_estimator VARCHAR NOT NULL,
+  database_id VARCHAR NOT NULL,
+  PRIMARY KEY (analysis_id, target_id, comparator_id, outcome_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_result_new (
+  analysis_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  rr,
+  ci_95_lb,
+  ci_95_ub,
+  p,
+  one_sided_p,
+  target_subjects,
+  comparator_subjects,
+  target_days,
+  comparator_days,
+  target_outcomes,
+  comparator_outcomes,
+  log_rr,
+  se_log_rr,
+  llr,
+  calibrated_rr,
+  calibrated_ci_95_lb,
+  calibrated_ci_95_ub,
+  calibrated_p,
+  calibrated_one_sided_p,
+  calibrated_log_rr,
+  calibrated_se_log_rr,
+  target_estimator,
+  database_id
+) SELECT   analysis_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  rr,
+  ci_95_lb,
+  ci_95_ub,
+  p,
+  one_sided_p,
+  target_subjects,
+  comparator_subjects,
+  target_days,
+  comparator_days,
+  target_outcomes,
+  comparator_outcomes,
+  log_rr,
+  se_log_rr,
+  llr,
+  calibrated_rr,
+  calibrated_ci_95_lb,
+  calibrated_ci_95_ub,
+  calibrated_p,
+  calibrated_one_sided_p,
+  calibrated_log_rr,
+  calibrated_se_log_rr,
+  target_estimator,
+  database_id
+FROM @database_schema.@table_prefixcm_result;
+
+DROP TABLE @database_schema.@table_prefixcm_result;
+ALTER TABLE @database_schema.@table_prefixcm_result_new RENAME TO @table_prefixcm_result;
+
+-- Alter columns (and primary key) in cm_interaction_result
+
+CREATE TABLE @database_schema.@table_prefixcm_interaction_result_new (
+  analysis_id INT NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  interaction_covariate_id INT NOT NULL,
+  rr FLOAT NOT NULL,
+  ci_95_lb FLOAT NOT NULL,
+  ci_95_ub FLOAT NOT NULL,
+  p FLOAT NOT NULL,
+  target_subjects INT NOT NULL,
+  comparator_subjects INT NOT NULL,
+  target_days INT NOT NULL,
+  comparator_days INT NOT NULL,
+  target_outcomes INT NOT NULL,
+  comparator_outcomes INT NOT NULL,
+  log_rr FLOAT,
+  se_log_rr FLOAT,
+  calibrated_rr FLOAT,
+  calibrated_ci_95_lb FLOAT,
+  calibrated_ci_95_ub FLOAT,
+  calibrated_p FLOAT,
+  calibrated_log_rr FLOAT,
+  calibrated_se_log_rr FLOAT,
+  target_estimator VARCHAR NOT NULL,
+  database_id VARCHAR NOT NULL,
+  PRIMARY KEY (analysis_id, target_id, comparator_id, outcome_id, interaction_covariate_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_interaction_result_new (
+  analysis_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  interaction_covariate_id,
+  rr,
+  ci_95_lb,
+  ci_95_ub,
+  p,
+  target_subjects,
+  comparator_subjects,
+  target_days,
+  comparator_days,
+  target_outcomes,
+  comparator_outcomes,
+  log_rr,
+  se_log_rr,
+  calibrated_rr,
+  calibrated_ci_95_lb,
+  calibrated_ci_95_ub,
+  calibrated_p,
+  calibrated_log_rr,
+  calibrated_se_log_rr,
+  target_estimator,
+  database_id
+) SELECT   analysis_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  interaction_covariate_id,
+  rr,
+  ci_95_lb,
+  ci_95_ub,
+  p,
+  target_subjects,
+  comparator_subjects,
+  target_days,
+  comparator_days,
+  target_outcomes,
+  comparator_outcomes,
+  log_rr,
+  se_log_rr,
+  calibrated_rr,
+  calibrated_ci_95_lb,
+  calibrated_ci_95_ub,
+  calibrated_p,
+  calibrated_log_rr,
+  calibrated_se_log_rr,
+  target_estimator,
+  database_id
+FROM @database_schema.@table_prefixcm_interaction_result;
+
+DROP TABLE @database_schema.@table_prefixcm_interaction_result;
+ALTER TABLE @database_schema.@table_prefixcm_interaction_result_new RENAME TO @table_prefixcm_interaction_result;
+
+-- Alter columns (and primary key) in cm_covariate_balance
+
+CREATE TABLE @database_schema.@table_prefixcm_covariate_balance_new (
+  database_id VARCHAR NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  covariate_id BIGINT NOT NULL,
+  target_mean_before FLOAT,
+  comparator_mean_before FLOAT,
+  mean_before FLOAT,
+  std_diff_before FLOAT,
+  mean_after FLOAT,
+  target_mean_after FLOAT,
+  comparator_mean_after FLOAT,
+  std_diff_after FLOAT,
+  target_std_diff FLOAT,
+  comparator_std_diff FLOAT,
+  target_comparator_std_diff FLOAT,
+  PRIMARY KEY (database_id, target_id, comparator_id, outcome_id, analysis_id, covariate_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_covariate_balance_new (
+  database_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  covariate_id,
+  target_mean_before,
+  comparator_mean_before,
+  mean_before,
+  std_diff_before,
+  mean_after,
+  target_mean_after,
+  comparator_mean_after,
+  std_diff_after,
+  target_std_diff,
+  comparator_std_diff,
+  target_comparator_std_diff
+) SELECT   database_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  covariate_id,
+  target_mean_before,
+  comparator_mean_before,
+  mean_before,
+  std_diff_before,
+  mean_after,
+  target_mean_after,
+  comparator_mean_after,
+  std_diff_after,
+  target_std_diff,
+  comparator_std_diff,
+  target_comparator_std_diff
+FROM @database_schema.@table_prefixcm_covariate_balance;
+
+DROP TABLE @database_schema.@table_prefixcm_covariate_balance;
+ALTER TABLE @database_schema.@table_prefixcm_covariate_balance_new RENAME TO @table_prefixcm_covariate_balance;
+
+-- Alter columns (and primary key) in cm_diagnostics_summary
+
+CREATE TABLE @database_schema.@table_prefixcm_diagnostics_summary_new (
+  analysis_id INT NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  database_id VARCHAR NOT NULL,
+  max_sdm FLOAT,
+  shared_max_sdm FLOAT,
+  equipoise FLOAT,
+  mdrr FLOAT,
+  attrition_fraction FLOAT,
+  generalizability_max_sdm FLOAT,
+  ease FLOAT,
+  balance_diagnostic VARCHAR(20) NOT NULL,
+  shared_balance_diagnostic VARCHAR(20) NOT NULL,
+  equipoise_diagnostic VARCHAR(20) NOT NULL,
+  mdrr_diagnostic VARCHAR(20) NOT NULL,
+  attrition_diagnostic VARCHAR(20),
+  generalizability_diagnostic VARCHAR(20) NOT NULL,
+  ease_diagnostic VARCHAR(20) NOT NULL,
+  unblind INT NOT NULL,
+  unblind_for_evidence_synthesis INT NOT NULL,
+  PRIMARY KEY (analysis_id, target_id, comparator_id, outcome_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_diagnostics_summary_new (
+  analysis_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  database_id,
+  max_sdm,
+  shared_max_sdm,
+  equipoise,
+  mdrr,
+  attrition_fraction,
+  generalizability_max_sdm,
+  ease,
+  balance_diagnostic,
+  shared_balance_diagnostic,
+  equipoise_diagnostic,
+  mdrr_diagnostic,
+  attrition_diagnostic,
+  generalizability_diagnostic,
+  ease_diagnostic,
+  unblind,
+  unblind_for_evidence_synthesis
+) SELECT   analysis_id,
+  target_id,
+  comparator_id,
+  outcome_id,
+  database_id,
+  max_sdm,
+  shared_max_sdm,
+  equipoise,
+  mdrr,
+  attrition_fraction,
+  generalizability_max_sdm,
+  ease,
+  balance_diagnostic,
+  shared_balance_diagnostic,
+  equipoise_diagnostic,
+  mdrr_diagnostic,
+  attrition_diagnostic,
+  generalizability_diagnostic,
+  ease_diagnostic,
+  unblind,
+  unblind_for_evidence_synthesis
+FROM @database_schema.@table_prefixcm_diagnostics_summary;
+
+DROP TABLE @database_schema.@table_prefixcm_diagnostics_summary;
+ALTER TABLE @database_schema.@table_prefixcm_diagnostics_summary_new RENAME TO @table_prefixcm_diagnostics_summary;
+
+-- Alter columns (and primary key) in cm_target_comparator_outcome
+
+CREATE TABLE @database_schema.@table_prefixcm_target_comparator_outcome_new (
+  outcome_id BIGINT NOT NULL,
+  outcome_of_interest INT NOT NULL,
+  true_effect_size FLOAT,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  PRIMARY KEY (outcome_id, target_id, comparator_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_target_comparator_outcome_new (
+  outcome_id,
+  outcome_of_interest,
+  true_effect_size,
+  target_id,
+  comparator_id
+) SELECT   outcome_id,
+  outcome_of_interest,
+  true_effect_size,
+  target_id,
+  comparator_id
+FROM @database_schema.@table_prefixcm_target_comparator_outcome;
+
+DROP TABLE @database_schema.@table_prefixcm_target_comparator_outcome;
+ALTER TABLE @database_schema.@table_prefixcm_target_comparator_outcome_new RENAME TO @table_prefixcm_target_comparator_outcome;
+
+-- Alter columns (and primary key) in cm_kaplan_meier_dist
+
+CREATE TABLE @database_schema.@table_prefixcm_kaplan_meier_dist_new (
+  time_day INT NOT NULL,
+  target_survival FLOAT NOT NULL,
+  target_survival_lb FLOAT NOT NULL,
+  target_survival_ub FLOAT NOT NULL,
+  comparator_survival FLOAT NOT NULL,
+  comparator_survival_lb FLOAT NOT NULL,
+  comparator_survival_ub FLOAT NOT NULL,
+  target_at_risk INT,
+  comparator_at_risk INT,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  database_id VARCHAR NOT NULL,
+  PRIMARY KEY (time_day, target_id, comparator_id, outcome_id, analysis_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_kaplan_meier_dist_new (
+  time_day,
+  target_survival,
+  target_survival_lb,
+  target_survival_ub,
+  comparator_survival,
+  comparator_survival_lb,
+  comparator_survival_ub,
+  target_at_risk,
+  comparator_at_risk,
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  database_id
+) SELECT   time_day,
+  target_survival,
+  target_survival_lb,
+  target_survival_ub,
+  comparator_survival,
+  comparator_survival_lb,
+  comparator_survival_ub,
+  target_at_risk,
+  comparator_at_risk,
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  database_id
+FROM @database_schema.@table_prefixcm_kaplan_meier_dist;
+
+DROP TABLE @database_schema.@table_prefixcm_kaplan_meier_dist;
+ALTER TABLE @database_schema.@table_prefixcm_kaplan_meier_dist_new RENAME TO @table_prefixcm_kaplan_meier_dist;
+
+-- Alter columns (and primary key) in cm_likelihood_profile
+
+CREATE TABLE @database_schema.@table_prefixcm_likelihood_profile_new (
+  log_rr FLOAT NOT NULL,
+  log_likelihood FLOAT NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  outcome_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  database_id VARCHAR NOT NULL,
+  PRIMARY KEY (log_rr, target_id, comparator_id, outcome_id, analysis_id, database_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_likelihood_profile_new (
+  log_rr,
+  log_likelihood,
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  database_id
+) SELECT   log_rr,
+  log_likelihood,
+  target_id,
+  comparator_id,
+  outcome_id,
+  analysis_id,
+  database_id
+FROM @database_schema.@table_prefixcm_likelihood_profile;
+
+DROP TABLE @database_schema.@table_prefixcm_likelihood_profile;
+ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile_new RENAME TO @table_prefixcm_likelihood_profile;
+
+-- Alter columns (and primary key) in cm_preference_score_dist
+
+CREATE TABLE @database_schema.@table_prefixcm_preference_score_dist_new (
+  analysis_id INT NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  database_id VARCHAR NOT NULL,
+  preference_score FLOAT NOT NULL,
+  target_density FLOAT NOT NULL,
+  comparator_density FLOAT NOT NULL,
+  PRIMARY KEY (analysis_id, target_id, comparator_id, database_id, preference_score)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_preference_score_dist_new (
+  analysis_id,
+  target_id,
+  comparator_id,
+  database_id,
+  preference_score,
+  target_density,
+  comparator_density
+) SELECT   analysis_id,
+  target_id,
+  comparator_id,
+  database_id,
+  preference_score,
+  target_density,
+  comparator_density
+FROM @database_schema.@table_prefixcm_preference_score_dist;
+
+DROP TABLE @database_schema.@table_prefixcm_preference_score_dist;
+ALTER TABLE @database_schema.@table_prefixcm_preference_score_dist_new RENAME TO @table_prefixcm_preference_score_dist;
+
+-- Alter columns (and primary key) in cm_propensity_model
+
+CREATE TABLE @database_schema.@table_prefixcm_propensity_model_new (
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  database_id VARCHAR NOT NULL,
+  covariate_id BIGINT NOT NULL,
+  coefficient FLOAT NOT NULL,
+  PRIMARY KEY (target_id, comparator_id, analysis_id, database_id, covariate_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_propensity_model_new (
+  target_id,
+  comparator_id,
+  analysis_id,
+  database_id,
+  covariate_id,
+  coefficient
+) SELECT   target_id,
+  comparator_id,
+  analysis_id,
+  database_id,
+  covariate_id,
+  coefficient
+FROM @database_schema.@table_prefixcm_propensity_model;
+
+DROP TABLE @database_schema.@table_prefixcm_propensity_model;
+ALTER TABLE @database_schema.@table_prefixcm_propensity_model_new RENAME TO @table_prefixcm_propensity_model;
+
+-- Alter columns (and primary key) in cm_shared_covariate_balance
+
+CREATE TABLE @database_schema.@table_prefixcm_shared_covariate_balance_new (
+  database_id VARCHAR NOT NULL,
+  target_id BIGINT NOT NULL,
+  comparator_id BIGINT NOT NULL,
+  analysis_id INT NOT NULL,
+  covariate_id BIGINT NOT NULL,
+  mean_before FLOAT,
+  target_mean_before FLOAT,
+  comparator_mean_before FLOAT,
+  std_diff_before FLOAT,
+  mean_after FLOAT,
+  target_mean_after FLOAT,
+  comparator_mean_after FLOAT,
+  std_diff_after FLOAT,
+  target_std_diff FLOAT,
+  comparator_std_diff FLOAT,
+  target_comparator_std_diff FLOAT,
+  PRIMARY KEY (database_id, target_id, comparator_id, analysis_id, covariate_id)
+);
+
+INSERT INTO @database_schema.@table_prefixcm_shared_covariate_balance_new (
+  database_id,
+  target_id,
+  comparator_id,
+  analysis_id,
+  covariate_id,
+  mean_before,
+  target_mean_before,
+  comparator_mean_before,
+  std_diff_before,
+  mean_after,
+  target_mean_after,
+  comparator_mean_after,
+  std_diff_after,
+  target_std_diff,
+  comparator_std_diff,
+  target_comparator_std_diff
+) SELECT   database_id,
+  target_id,
+  comparator_id,
+  analysis_id,
+  covariate_id,
+  mean_before,
+  target_mean_before,
+  comparator_mean_before,
+  std_diff_before,
+  mean_after,
+  target_mean_after,
+  comparator_mean_after,
+  std_diff_after,
+  target_std_diff,
+  comparator_std_diff,
+  target_comparator_std_diff
+FROM @database_schema.@table_prefixcm_shared_covariate_balance;
+
+DROP TABLE @database_schema.@table_prefixcm_shared_covariate_balance;
+ALTER TABLE @database_schema.@table_prefixcm_shared_covariate_balance_new RENAME TO @table_prefixcm_shared_covariate_balance;
