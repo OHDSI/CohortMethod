@@ -389,7 +389,7 @@ createResultsDataModel(
 uploadResults(
   connectionDetails = connectionDetails,
   schema = "main",
-  zipFileName = file.path(folder, "export", "Results_MDCD.zip"),
+  zipFileName = file.path(folder, "export", "Results_MDCR.zip"),
   purgeSiteDataBeforeUploading = FALSE
 )
 # Add cohort and database tables:
@@ -423,9 +423,9 @@ DatabaseConnector::insertTable(
   camelCaseToSnakeCase = TRUE
 )
 databases <- tibble(
-  database_id = "MDCD",
-  cdm_source_name = "Merative Marketscan MDCD",
-  cdm_source_abbreviation = "MDCD"
+  database_id = "MDCR",
+  cdm_source_name = "Merative Marketscan MDCR",
+  cdm_source_abbreviation = "MDCR"
 )
 DatabaseConnector::insertTable(
   connection = connection,
