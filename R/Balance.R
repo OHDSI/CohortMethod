@@ -982,6 +982,10 @@ getGeneralizabilityTable <- function(balance, baseSelection = "auto") {
 }
 
 computeBalanceP <- function(sdm, sdmVariance, threshold) {
-  p <- pnorm((abs(sdm) - threshold)/sqrt(sdmVariance), lower.tail = FALSE)
+  zUpper <- (abs(sdm) - threshold) / sqrt(sdmVariance)
+  pUpper <- pnorm(zUpper, lower.tail = FALSE)
+  zLower <- (-abs(sdm) - threshold) / sqrt(sdmVariance)
+  pLower <- pnorm(zLower, lower.tail = TRUE)
+  p <- pUpper + pLower
   return(p)
 }

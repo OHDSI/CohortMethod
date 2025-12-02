@@ -409,14 +409,12 @@ simulateOne <- function(seed) {
     summarise(sum(s)) |>
     pull()
   varSdm <- numerator / sd^2
-
-  t <- (abs(sdm) - threshold)/sqrt(varSdm)
-  p <- (1 - pnorm(t))*2
+  p <- CohortMethod:::computeBalanceP(sdm, varSdm, threshold)
   return(p)
 }
-ps <- sapply(1:1000, simulateOne)
+ps <- sapply(1:5000, simulateOne)
 mean(ps<0.05, na.rm = TRUE)
-# [1] 0.078
+# [1] 0.0708
 
 # Simulation under the null, continuous, stratification, sparse covariates
 threshold <- 0
@@ -564,8 +562,7 @@ simulateOne <- function(seed) {
     cohortMethodData = cohortMethodData,
     covariateFilter = NULL
   )
-  t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
-  p <- (1 - pnorm(t))*2
+  p <- CohortMethod:::computeBalanceP(balance$stdDiff, balance$sdmVariance, threshold)
   return(p)
 }
 cluster <- ParallelLogger::makeCluster(10)
@@ -596,13 +593,12 @@ simulateOne <- function(seed) {
   sd <- sqrt((sd1 ^ 2 + sd0^2) / 2)
   sdm <- (mean1 - mean0) / sd
   varSdm <- (n1 + n0) / (n1*n0) + (sdm^2) / (2*(n1 + n0 - 2))
-  t <- (abs(sdm) - threshold)/sqrt(varSdm)
-  p <- pnorm(t, lower.tail = FALSE)
+  p <- CohortMethod:::computeBalanceP(sdm, varSdm, threshold)
   return(p)
 }
 ps <- sapply(1:10000, simulateOne)
-mean(ps<0.05/2, na.rm = TRUE) # Divide by 2 because we take absolute value
-# [1] 0.053 #
+mean(ps<0.05, na.rm = TRUE)
+# [1] 0.053
 
 # Simulation under the null, continuous, no stratification, sparse, use code in package
 simulateOne <- function(seed) {
@@ -634,8 +630,7 @@ simulateOne <- function(seed) {
     cohortMethodData = cohortMethodData,
     covariateFilter = NULL
   )
-  t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
-  p <- (1 - pnorm(t))*2
+  p <- CohortMethod:::computeBalanceP(balance$stdDiff, balance$sdmVariance, threshold)
   return(p)
 }
 cluster <- ParallelLogger::makeCluster(10)
@@ -686,8 +681,7 @@ simulateOne <- function(seed) {
     cohortMethodData = cohortMethodData,
     covariateFilter = NULL
   )
-  t <- (abs(balance$stdDiff) - threshold)/sqrt(balance$sdmVariance)
-  p <- (1 - pnorm(t))*2
+  p <- CohortMethod:::computeBalanceP(balance$stdDiff, balance$sdmVariance, threshold)
   return(p)
 }
 cluster <- ParallelLogger::makeCluster(10)
