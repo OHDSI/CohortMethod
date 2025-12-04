@@ -18,6 +18,7 @@
 --   - cm_preference_score_dist
 --   - cm_propensity_model
 --   - cm_shared_covariate_balance
+-- 6. Changes the data type of the interaction_covariate_id field in the cm_interaction_result table from INT to BIGINT.
 
 ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile ADD gradient FLOAT;
 ALTER TABLE @database_schema.@table_prefixcm_diagnostics_summary ADD sdm_family_wise_min_p FLOAT;
@@ -271,7 +272,7 @@ CREATE TABLE @database_schema.@table_prefixcm_interaction_result_new (
   analysis_id INT NOT NULL,
   target_comparator_id BIGINT NOT NULL,
   outcome_id BIGINT NOT NULL,
-  interaction_covariate_id INT NOT NULL,
+  interaction_covariate_id BIGINT NOT NULL,
   rr FLOAT,
   ci_95_lb FLOAT,
   ci_95_ub FLOAT,

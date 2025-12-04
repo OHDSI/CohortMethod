@@ -372,23 +372,42 @@ connection <- DatabaseConnector::connect(connectionDetails)
 DatabaseConnector::renderTranslateExecuteSql(connection, sql, cohortDatabaseSchema = cohortDatabaseSchema, cohortTable = cohortTable)
 DatabaseConnector::disconnect(connection)
 
-# Upload results to SQLite using RMM -------------------------------------------
+# Upload results to SQLite or Postgres using RMM -------------------------------
 library(CohortMethod)
 folder <- "e:/temp/cohortMethodVignette2"
+
+# SQLite
 databaseFile <-  file.path(folder, "export", "CohortMethodResults.sqlite")
-# print(unlink(databaseFile))
+unlink(databaseFile)
 connectionDetails <- DatabaseConnector::createConnectionDetails(
   dbms = "sqlite",
   server = databaseFile
 )
+databaseSchema <- "main"
+
+# Postgres
+connectionDetails <- DatabaseConnector::createConnectionDetails(
+  dbms = "postgresql",
+  server = Sys.getenv("OHDA_RESULTS_SERVER"),
+  user = Sys.getenv("OHDA_RESULTS_USER"),
+  password = Sys.getenv("OHDA_RESULTS_PASSWORD")
+)
+databaseSchema <- "cohort_method_vignette"
+connection <- connect(connectionDetails)
+renderTranslateExecuteSql(connection, "DROP SCHEMA IF EXISTS @schema CASCADE;", schema = databaseSchema)
+renderTranslateExecuteSql(connection, "CREATE SCHEMA @schema;", schema = databaseSchema)
+# renderTranslateExecuteSql(connection, "GRANT USAGE ON SCHEMA @schema TO ohda-project-ro;", schema = databaseSchema)
+disconnect(connection)
+
+# Upload
 createResultsDataModel(
   connectionDetails = connectionDetails,
-  databaseSchema = "main",
+  databaseSchema = databaseSchema,
   tablePrefix = ""
 )
 uploadResults(
   connectionDetails = connectionDetails,
-  schema = "main",
+  schema = databaseSchema,
   zipFileName = file.path(folder, "export", "Results_MDCR.zip"),
   purgeSiteDataBeforeUploading = FALSE
 )
@@ -404,18 +423,11 @@ cohorts <- tibble(
     "Celecoxib",
     "Diclofenac",
     "GI Bleed"
-  ),
-  # subsetParent = NA,
-  # isSubset = 0,
-  # subsetDefinitionId = NA,
-  # isCohort = 0,
-  # description = "",
-  # json = "{}",
-  # sqlCommand = ""
+  )
 )
 DatabaseConnector::insertTable(
   connection = connection,
-  databaseSchema = "main",
+  databaseSchema = databaseSchema,
   tableName = "cg_cohort_definition",
   data = cohorts,
   dropTableIfExists = TRUE,
@@ -429,7 +441,7 @@ databases <- tibble(
 )
 DatabaseConnector::insertTable(
   connection = connection,
-  databaseSchema = "main",
+  databaseSchema = databaseSchema,
   tableName = "database_meta_data",
   data = databases,
   dropTableIfExists = TRUE,
@@ -438,7 +450,7 @@ DatabaseConnector::insertTable(
 DatabaseConnector::disconnect(connection)
 
 # Launch Shiny app
-# databaseSchema <- "main"
+# databaseSchema <- databaseSchema
 # sqliteFileName <- databaseFile
 # launchResultsViewerUsingSqlite(sqliteFileName = databaseFile)
 
@@ -448,7 +460,7 @@ resultDatabaseDetails <- list(
   tablePrefix = 'cm_',
   cohortTablePrefix = 'cg_',
   databaseTablePrefix = '',
-  schema =  "main",
+  schema =  databaseSchema,
   databaseTable = 'DATABASE_META_DATA'
 )
 estimationModule <- OhdsiShinyAppBuilder::createDefaultEstimationConfig()

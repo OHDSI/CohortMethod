@@ -83,6 +83,8 @@ This major release introduces many changes. The three most important ones are (1
 
 26. Added a vignette showing the results schema.
 
+27. Changed the data type of the `interaction_covariate_id` field in the `cm_interaction_result` table from `INT` to `BIGINT`.
+
 
 CohortMethod 5.5.2
 ==================
