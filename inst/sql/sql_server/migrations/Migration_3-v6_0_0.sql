@@ -19,6 +19,7 @@
 --   - cm_propensity_model
 --   - cm_shared_covariate_balance
 -- 6. Changes the data type of the interaction_covariate_id field in the cm_interaction_result table from INT to BIGINT.
+-- 7. Add the std_diff_var_before, balanced_before, std_diff_var_after, and balanced_after fields to the cm_covariate_balance and cm_shared_covariate_balance tables.
 
 ALTER TABLE @database_schema.@table_prefixcm_likelihood_profile ADD gradient FLOAT;
 ALTER TABLE @database_schema.@table_prefixcm_diagnostics_summary ADD sdm_family_wise_min_p FLOAT;
@@ -367,10 +368,14 @@ CREATE TABLE @database_schema.@table_prefixcm_covariate_balance_new (
   comparator_mean_before FLOAT,
   mean_before FLOAT,
   std_diff_before FLOAT,
+  std_diff_var_before FLOAT,
+  balanced_before INT,
   mean_after FLOAT,
   target_mean_after FLOAT,
   comparator_mean_after FLOAT,
   std_diff_after FLOAT,
+  std_diff_var_after FLOAT,
+  balanced_after INT,
   target_std_diff FLOAT,
   comparator_std_diff FLOAT,
   target_comparator_std_diff FLOAT,
@@ -704,10 +709,14 @@ CREATE TABLE @database_schema.@table_prefixcm_shared_covariate_balance_new (
   target_mean_before FLOAT,
   comparator_mean_before FLOAT,
   std_diff_before FLOAT,
+  std_diff_var_before FLOAT,
+  balanced_before INT,
   mean_after FLOAT,
   target_mean_after FLOAT,
   comparator_mean_after FLOAT,
   std_diff_after FLOAT,
+  std_diff_var_after FLOAT,
+  balanced_after INT,
   target_std_diff FLOAT,
   comparator_std_diff FLOAT,
   target_comparator_std_diff FLOAT,

@@ -99,10 +99,14 @@ cm_covariate_balance,target_mean_before,float,No,No,Yes,No,The mean value of the
 cm_covariate_balance,comparator_mean_before,float,No,No,Yes,No,The mean value of the covariate in the comparator cohort before propensity score adjustment.
 cm_covariate_balance,mean_before,float,No,No,Yes,No,The mean value of the covariate in the union of the target and comparator cohort before propensity score adjustment.
 cm_covariate_balance,std_diff_before,float,No,No,No,No,The standardized difference of the means between the target and comparator cohort before propensity score adjustment.
+cm_covariate_balance,std_diff_var_before,float,No,No,No,No,The variance of the standardized difference of the means between the target and comparator cohort before propensity score adjustment.
+cm_covariate_balance,balanced_before,int,No,No,No,No,"Is the covariate balanced before propensity score adjustment? (1 = yes, 0 = no)"
 cm_covariate_balance,mean_after,float,No,No,Yes,No,The mean value of the covariate in the union of the target and comparator cohort after propensity score adjustment.
 cm_covariate_balance,target_mean_after,float,No,No,Yes,No,The mean value of the covariate in the target cohort after propensity score adjustment.
 cm_covariate_balance,comparator_mean_after,float,No,No,Yes,No,The mean value of the covariate in the comparator cohort after propensity score adjustment.
 cm_covariate_balance,std_diff_after,float,No,No,No,No,The standardized difference of the means between the target and comparator cohort after propensity score adjustment.
+cm_covariate_balance,std_diff_var_after,float,No,No,No,No,The variance of the standardized difference of the means between the target and comparator cohort after propensity score adjustment.
+cm_covariate_balance,balanced_after,int,No,No,No,No,"Is the covariate balanced after propensity score adjustment? (1 = yes, 0 = no)"
 cm_covariate_balance,target_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the target cohort.
 cm_covariate_balance,comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the comparator cohort.
 cm_covariate_balance,target_comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the union of the target and comparator cohorts.
@@ -171,10 +175,14 @@ cm_shared_covariate_balance,mean_before,float,No,No,Yes,No,The mean value of the
 cm_shared_covariate_balance,target_mean_before,float,No,No,Yes,No,The mean value of the covariate in the target cohort before propensity score adjustment.
 cm_shared_covariate_balance,comparator_mean_before,float,No,No,Yes,No,The mean value of the covariate in the comparator cohort before propensity score adjustment.
 cm_shared_covariate_balance,std_diff_before,float,No,No,No,No,The standardized difference of the means between the target and comparator cohort before propensity score adjustment.
+cm_shared_covariate_balance,std_diff_var_before,float,No,No,No,No,The variance of the standardized difference of the means between the target and comparator cohort before propensity score adjustment.
+cm_shared_covariate_balance,balanced_before,int,No,No,No,No,"Is the covariate balanced before propensity score adjustment? (1 = yes, 0 = no)"
 cm_shared_covariate_balance,mean_after,float,No,No,Yes,No,The mean value of the covariate in the union of the target and comparator cohort after propensity score adjustment.
 cm_shared_covariate_balance,target_mean_after,float,No,No,Yes,No,The mean value of the covariate in the target cohort after propensity score adjustment.
 cm_shared_covariate_balance,comparator_mean_after,float,No,No,Yes,No,The mean value of the covariate in the comparator cohort after propensity score adjustment.
 cm_shared_covariate_balance,std_diff_after,float,No,No,No,No,The standardized difference of the means between the target and comparator cohort after propensity score adjustment.
+cm_shared_covariate_balance,std_diff_var_after,float,No,No,No,No,The variance of the standardized difference of the means between the target and comparator cohort after propensity score adjustment.
+cm_shared_covariate_balance,balanced_after,int,No,No,No,No,"Is the covariate balanced after propensity score adjustment? (1 = yes, 0 = no)"
 cm_shared_covariate_balance,target_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the target cohort.
 cm_shared_covariate_balance,comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the comparator cohort.
 cm_shared_covariate_balance,target_comparator_std_diff,float,No,No,No,No,The standardized difference of the means before and after propensity score adjustment in  the union of the target and comparator cohorts.

@@ -665,6 +665,9 @@ exportCovariateBalance <- function(outputFolder,
                                    targetComparator,
                                    minCellCount) {
   message("- covariate_balance table")
+  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
+  cmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
+  cmDiagnosticThresholds <- cmAnalysesSpecifications$cmDiagnosticThresholds
   reference <- getFileReference(outputFolder) |>
     filter(.data$balanceFile != "") |>
     inner_join(targetComparator, by = join_by("targetId", "comparatorId", "nestingCohortId"))
@@ -688,7 +691,7 @@ exportCovariateBalance <- function(outputFolder,
       outcomeId = rows$outcomeId,
       analysisId = unique(rows$analysisId)
     ) |>
-      cross_join(tidyBalance(balance, minCellCount))
+      cross_join(tidyBalance(balance, minCellCount, cmDiagnosticThresholds))
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(balanceFiles))
@@ -708,6 +711,9 @@ exportSharedCovariateBalance <- function(outputFolder,
                                          targetComparator,
                                          minCellCount) {
   message("- shared_covariate_balance table")
+  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
+  cmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
+  cmDiagnosticThresholds <- cmAnalysesSpecifications$cmDiagnosticThresholds
   reference <- getFileReference(outputFolder) |>
     filter(.data$sharedBalanceFile != "") |>
     distinct(.data$sharedBalanceFile, .data$analysisId, .data$targetId, .data$comparatorId, .data$nestingCohortId) |>
@@ -731,7 +737,7 @@ exportSharedCovariateBalance <- function(outputFolder,
       targetComparatorId = rows$targetComparatorId[1],
       analysisId = unique(rows$analysisId)
     ) |>
-      cross_join(tidyBalance(balance, minCellCount))
+      cross_join(tidyBalance(balance, minCellCount, cmDiagnosticThresholds))
     writeToCsv(balance, fileName, append = !first)
     first <- FALSE
     setTxtProgressBar(pb, i / length(sharedBalanceFiles))
@@ -744,20 +750,38 @@ exportSharedCovariateBalance <- function(outputFolder,
   close(pb)
 }
 
-tidyBalance <- function(balance, minCellCount) {
+tidyBalance <- function(balance, minCellCount, cmDiagnosticThresholds) {
   inferredTargetBeforeSize <- mean(balance$beforeMatchingSumTarget / balance$beforeMatchingMeanTarget, na.rm = TRUE)
   inferredComparatorBeforeSize <- mean(balance$beforeMatchingSumComparator / balance$beforeMatchingMeanComparator, na.rm = TRUE)
   inferredTargetAfterSize <- mean(balance$afterMatchingSumTarget / balance$afterMatchingMeanTarget, na.rm = TRUE)
   inferredComparatorAfterSize <- mean(balance$afterMatchingSumComparator / balance$afterMatchingMeanComparator, na.rm = TRUE)
 
+  # Need to recompute balanced indicator because cmDiagnosticsThreshold may have different values from
+  # computeCovariateBalanceArgs:
+  isBalanced <- function(sdm, sdmVariance) {
+    if (is.null(cmDiagnosticThresholds$sdmAlpha)) {
+      return(if_else(abs(sdm) < cmDiagnosticThresholds$sdmThreshold, 1, 0))
+    } else {
+      correctedAlpha <- cmDiagnosticThresholds$sdmAlpha / sum(!is.na(sdmVariance))
+      p <- computeBalanceP(sdm, sdmVariance, cmDiagnosticThresholds$sdmThreshold)
+      return(if_else(p > correctedAlpha, 1, 0))
+    }
+  }
+
   balance <- balance |>
+    mutate(beforeMatchingBalanced = isBalanced(.data$beforeMatchingStdDiff, .data$beforeMatchingSdmVariance),
+           afterMatchingBalanced =  isBalanced(.data$afterMatchingStdDiff, .data$afterMatchingSdmVariance)) |>
     select("covariateId",
            targetMeanBefore = "beforeMatchingMeanTarget",
            comparatorMeanBefore = "beforeMatchingMeanComparator",
            stdDiffBefore = "beforeMatchingStdDiff",
+           stdDiffVarBefore = "beforeMatchingSdmVariance",
+           balancedBefore = "beforeMatchingBalanced",
            targetMeanAfter = "afterMatchingMeanTarget",
            comparatorMeanAfter = "afterMatchingMeanComparator",
            stdDiffAfter = "afterMatchingStdDiff",
+           stdDiffVarAfter = "afterMatchingSdmVariance",
+           balancedAfter = "afterMatchingBalanced",
            meanBefore = "beforeMatchingMean",
            meanAfter = "afterMatchingMean",
            "targetStdDiff",
@@ -769,9 +793,13 @@ tidyBalance <- function(balance, minCellCount) {
       targetMeanBefore = ifelse(is.na(.data$targetMeanBefore), 0, .data$targetMeanBefore),
       comparatorMeanBefore = ifelse(is.na(.data$comparatorMeanBefore), 0, .data$comparatorMeanBefore),
       stdDiffBefore = ifelse(is.na(.data$stdDiffBefore), 0, .data$stdDiffBefore),
+      stdDiffVarBefore = ifelse(is.na(.data$stdDiffVarBefore), 0, .data$stdDiffVarBefore),
+      balancedBefore = ifelse(is.na(.data$balancedBefore), 1, .data$balancedBefore),
       targetMeanAfter = ifelse(is.na(.data$targetMeanAfter), 0, .data$targetMeanAfter),
       comparatorMeanAfter = ifelse(is.na(.data$comparatorMeanAfter), 0, .data$comparatorMeanAfter),
       stdDiffAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$stdDiffAfter),
+      stdDiffVarAfter = ifelse(is.na(.data$stdDiffVarAfter), 0, .data$stdDiffVarAfter),
+      balancedAfter = ifelse(is.na(.data$balancedAfter), 1, .data$balancedAfter),
       meanBefore = ifelse(is.na(.data$meanBefore), 0, .data$meanBefore),
       meanAfter = ifelse(is.na(.data$stdDiffAfter), 0, .data$meanAfter),
       targetStdDiff = ifelse(is.na(.data$targetStdDiff), 0, .data$targetStdDiff),
