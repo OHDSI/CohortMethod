@@ -465,7 +465,7 @@ computeCovariateBalance <- function(population,
            beforeMatchingBalanced = "balanced")
   afterMatching <- afterMatching |>
     mutate(sdmP = computeBalanceP(.data$stdDiff, .data$sdmVariance, computeCovariateBalanceArgs$threshold)) |>
-    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaAfter) else (abs(.data$stdDiff) >= computeCovariateBalanceArgs$threshold)) |>
+    mutate(balanced = if (useAlpha) (.data$sdmP >= correctedAlphaAfter) else (abs(.data$stdDiff) <= computeCovariateBalanceArgs$threshold)) |>
     select("covariateId",
            afterMatchingMeanTarget = "meanTarget",
            afterMatchingMeanComparator = "meanComparator",
