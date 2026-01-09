@@ -19,22 +19,43 @@ library(CohortMethod)
 library(dplyr)
 options(andromedaTempFolder = "e:/andromedaTemp")
 
+
+
+# Set connection details -------------------------------------------------------
+
+# MDCR on DataBricks
 folder <- "e:/temp/cohortMethodVignette2"
 # unlink(folder, recursive = TRUE)
 # dir.create(folder)
-
-# Set connection details -------------------------------------------------------
-# MDCR on DataBricks
 connectionDetails <- createConnectionDetails(
   dbms = "spark",
   connectionString = keyring::key_get("databricksConnectionString"),
   user = "token",
   password = keyring::key_get("databricksToken")
 )
+databaseId <- "MDCR"
 cdmDatabaseSchema <- "merative_mdcr.cdm_merative_mdcr_v3788"
 cohortDatabaseSchema <- "scratch.scratch_mschuemi"
 cohortTable  <- "cm_vignette"
 options(sqlRenderTempEmulationSchema = "scratch.scratch_mschuemi")
+
+
+# MDCD on DataBricks
+folder <- "e:/temp/cohortMethodVignette2Mdcd"
+# unlink(folder, recursive = TRUE)
+# dir.create(folder)
+connectionDetails <- createConnectionDetails(
+  dbms = "spark",
+  connectionString = keyring::key_get("databricksConnectionString"),
+  user = "token",
+  password = keyring::key_get("databricksToken")
+)
+databaseId <- "MDCD"
+cdmDatabaseSchema <- "merative_mdcd.cdm_merative_mdcd_v3644"
+cohortDatabaseSchema <- "scratch.scratch_mschuemi"
+cohortTable  <- "cm_vignette_mdcd"
+options(sqlRenderTempEmulationSchema = "scratch.scratch_mschuemi")
+
 
 # Define exposure cohorts ------------------------------------------------------
 library(Capr)
@@ -358,12 +379,12 @@ row <- result |>
 balance <- readRDS(file.path(folder, row$sharedBalanceFile))
 plotCovariateBalanceScatterPlot(balance)
 plotCovariateBalanceOfTopVariables(balance)
-# Export to CSV --model.extract()# Export to CSV ----------------------------------------------------------------
+v# Export to CSV --model.extract()# Export to CSV ----------------------------------------------------------------
 exportToCsv(
   outputFolder = folder,
   minCellCount = 5,
   maxCores = 5,
-  databaseId = "MDCR"
+  databaseId = databaseId
 )
 
 # Cleanup ----------------------------------------------------------------------
@@ -374,10 +395,11 @@ DatabaseConnector::disconnect(connection)
 
 # Upload results to SQLite or Postgres using RMM -------------------------------
 library(CohortMethod)
-folder <- "e:/temp/cohortMethodVignette2"
+exportFolders <- c("e:/temp/cohortMethodVignette2/export",
+                   "e:/temp/cohortMethodVignette2Mdcd/export")
 
 # SQLite
-databaseFile <-  file.path(folder, "export", "CohortMethodResults.sqlite")
+databaseFile <-  file.path(exportFolders[1], "CohortMethodResults.sqlite")
 unlink(databaseFile)
 connectionDetails <- DatabaseConnector::createConnectionDetails(
   dbms = "sqlite",
@@ -400,17 +422,20 @@ renderTranslateExecuteSql(connection, "CREATE SCHEMA @schema;", schema = databas
 disconnect(connection)
 
 # Upload
-createResultsDataModel(
+CohortMethod::createResultsDataModel(
   connectionDetails = connectionDetails,
   databaseSchema = databaseSchema,
   tablePrefix = ""
 )
-uploadResults(
-  connectionDetails = connectionDetails,
-  schema = databaseSchema,
-  zipFileName = file.path(folder, "export", "Results_MDCR.zip"),
-  purgeSiteDataBeforeUploading = FALSE
-)
+for (exportFolder in exportFolders) {
+  zipFileName <- list.files(exportFolder, "Results_.*.zip", full.names = TRUE)
+  CohortMethod::uploadResults(
+    connectionDetails = connectionDetails,
+    schema = databaseSchema,
+    zipFileName = zipFileName,
+    purgeSiteDataBeforeUploading = FALSE
+  )
+}
 # Add cohort and database tables:
 connection <- DatabaseConnector::connect(connectionDetails)
 cohorts <- tibble(
@@ -425,19 +450,32 @@ cohorts <- tibble(
     "GI Bleed"
   )
 )
+negativeControlIds <- c(29735, 140673, 197494,
+                        198185, 198199, 200528, 257315,
+                        314658, 317376, 321319, 380731,
+                        432661, 432867, 433516, 433701,
+                        433753, 435140, 435459, 435524,
+                        435783, 436665, 436676, 442619,
+                        444252, 444429, 4131756, 4134120,
+                        4134454, 4152280, 4165112, 4174262,
+                        4182210, 4270490, 4286201, 4289933)
+negativeControlCohorts <- tibble(
+  cohortDefinitionId = negativeControlIds,
+  cohortName = sprintf("Negative control %d", negativeControlIds)
+)
 DatabaseConnector::insertTable(
   connection = connection,
   databaseSchema = databaseSchema,
   tableName = "cg_cohort_definition",
-  data = cohorts,
+  data = bind_rows(cohorts, negativeControlCohorts),
   dropTableIfExists = TRUE,
   createTable = TRUE,
   camelCaseToSnakeCase = TRUE
 )
 databases <- tibble(
-  database_id = "MDCR",
-  cdm_source_name = "Merative Marketscan MDCR",
-  cdm_source_abbreviation = "MDCR"
+  database_id = c("MDCR", "MDCD"),
+  cdm_source_name = c("Merative Marketscan MDCR", "Merative Marketscan MDCD"),
+  cdm_source_abbreviation = c("MDCR", "MDCD")
 )
 DatabaseConnector::insertTable(
   connection = connection,
