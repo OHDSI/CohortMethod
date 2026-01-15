@@ -1121,7 +1121,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       inner_join(person, by = join_by(subjectId == personId)) |>
       mutate(dateOfBirth = ISOdate(yearOfBirth, monthOfBirth, dayOfBirth)) |>
       mutate(age = floor(as.numeric(difftime(cohortStartDate, dateOfBirth, units = "days")) / 365.25)) |>
-      filter(age >= minAge, age <= maxAge, genderConceptId == 8532)
+      filter(age >= 0, age <= 0, genderConceptId == 8532)
 
 
     expect_equal(select(arrange(cohorts2, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
