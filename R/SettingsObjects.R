@@ -188,6 +188,9 @@ AbstractSerializableSettings <- R6Class(
 #' @param firstExposureOnly  Should only the first exposure per subject be included? Note that this is typically done in the createStudyPopulation() function, but can already be done here for efficiency reasons.
 #' @param removeDuplicateSubjects  Remove subjects that are in both the target and comparator cohort? See details for allowed values.Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.
 #' @param restrictToCommonPeriod  Restrict the analysis to the period when both treatments are observed?
+#' @param minAge  Minimum age at index date at which patient time will be included in the analysis. If not specified, no minimum age restriction will be applied.
+#' @param maxAge  Maximum age at index date at which patient time will be included in the analysis. If not specified, no maximum age restriction will be applied.
+#' @param genderConceptIds  Set of gender concept IDs to restrict the population to. If not specified, no restriction on gender will be applied.
 #' @param washoutPeriod  The minimum required continuous observation time prior to index date for a person to be included in the cohort. Note that this is typically done in the createStudyPopulation function, but can already be done here for efficiency reasons.
 #' @param nestingCohortId  A cohort definition ID identifying the records in the `nestingCohortTable` to use as nesting cohort.
 #' @param maxCohortSize  If either the target or the comparator cohort is larger than this number it will be sampled to this size. maxCohortSize = 0 indicates no maximum size.
@@ -202,6 +205,9 @@ createGetDbCohortMethodDataArgs <- function(removeDuplicateSubjects = "keep firs
                                             washoutPeriod = 365,
                                             nestingCohortId = NULL,
                                             restrictToCommonPeriod = TRUE,
+                                            minAge = NULL,
+                                            maxAge = NULL,
+                                            genderConceptIds = NULL,
                                             studyStartDate = "",
                                             studyEndDate = "",
                                             maxCohortSize = 0,
@@ -222,6 +228,9 @@ GetDbCohortMethodDataArgs <- R6Class(
     firstExposureOnly = NULL,
     removeDuplicateSubjects = NULL,
     restrictToCommonPeriod = NULL,
+    minAge = NULL,
+    maxAge = NULL,
+    genderConceptIds = NULL,
     washoutPeriod = NULL,
     nestingCohortId = NULL,
     maxCohortSize = NULL,
@@ -236,6 +245,9 @@ GetDbCohortMethodDataArgs <- R6Class(
                                                               "keep first",
                                                               "remove all"), add = errorMessages)
       checkmate::assertLogical(self$restrictToCommonPeriod, len = 1, add = errorMessages)
+      checkmate::assertNumeric(self$minAge, lower = 0, len = 1, null.ok = TRUE, add = errorMessages)
+      checkmate::assertNumeric(self$maxAge, lower = 0, len = 1, null.ok = TRUE, add = errorMessages)
+      checkmate::assertIntegerish(self$genderConceptIds, lower = 0, null.ok = TRUE, add = errorMessages)
       checkmate::assertInt(self$washoutPeriod, lower = 0, add = errorMessages)
       checkmate::assertNumeric(self$nestingCohortId, null.ok = TRUE, add = errorMessages)
       checkmate::assertInt(self$maxCohortSize, lower = 0, add = errorMessages)

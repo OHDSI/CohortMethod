@@ -10,6 +10,9 @@ createGetDbCohortMethodDataArgs(
   washoutPeriod = 365,
   nestingCohortId = NULL,
   restrictToCommonPeriod = TRUE,
+  minAge = NULL,
+  maxAge = NULL,
+  genderConceptIds = NULL,
   studyStartDate = "",
   studyEndDate = "",
   maxCohortSize = 0,
@@ -26,6 +29,12 @@ createGetDbCohortMethodDataArgs(
 \item{nestingCohortId}{A cohort definition ID identifying the records in the \code{nestingCohortTable} to use as nesting cohort.}
 
 \item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
+
+\item{minAge}{Minimum age at index date at which patient time will be included in the analysis. If not specified, no minimum age restriction will be applied.}
+
+\item{maxAge}{Maximum age at index date at which patient time will be included in the analysis. If not specified, no maximum age restriction will be applied.}
+
+\item{genderConceptIds}{Set of gender concept IDs to restrict the population to. If not specified, no restriction on gender will be applied.}
 
 \item{studyStartDate}{A calendar date specifying the minimum date that a cohort index date can appear. Date format is 'yyyymmdd'.}
 

@@ -26,6 +26,9 @@ limitations under the License.
 {DEFAULT @first_only = FALSE}
 {DEFAULT @washout_period = 0}
 {DEFAULT @remove_duplicate_subjects = 'keep all'}
+{DEFAULT @min_age = ''}
+{DEFAULT @max_age = ''}
+{DEFAULT @gender_concept_ids = ''}
 {DEFAULT @restrict_to_common_period = FALSE}
 {DEFAULT @use_nesting_cohort = FALSE}
 {DEFAULT @nesting_cohort_database_schema = 'CDM_SIM'}
@@ -215,6 +218,51 @@ SELECT subject_id,
 )
 }
 
+{@min_age != '' | @max_age != '' | @gender_concept_ids != ''} ? {
+--joined_with_person
+, joined_with_person AS (
+	SELECT subject_id,
+		cohort_definition_id,
+		cohort_start_date,
+		cohort_end_date,
+		observation_period_start_date,
+		observation_period_end_date,
+{@min_age != '' | @max_age != ''} ? {		DATEFROMPARTS(year_of_birth, COALESCE(month_of_birth, 1), COALESCE(day_of_birth, 1)) AS date_of_birth,}
+		gender_concept_id
+	FROM {@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}} cohorts
+	INNER JOIN @cdm_database_schema.person
+		ON cohorts.subject_id = person.person_id
+)
+{@min_age != '' | @max_age != ''} ? {
+--restrict_by_age
+, restrict_by_age AS (
+	SELECT subject_id,
+		cohort_definition_id,
+		cohort_start_date,
+		cohort_end_date,
+		observation_period_start_date,
+		observation_period_end_date,
+		gender_concept_id
+	FROM joined_with_person
+{@min_age != ''} ? {	WHERE DATEDIFF(DAY, date_of_birth, cohort_start_date) / 365.25 >= @min_age}
+{@max_age != ''} ? {{@min_age != ''} ? {		AND} : {		WHERE} DATEDIFF(DAY, date_of_birth, cohort_start_date) / 365.25 < @max_age + 1}
+)
+}
+{@gender_concept_ids != ''} ? {
+--restrict_by_gender
+, restrict_by_gender AS (
+	SELECT subject_id,
+		cohort_definition_id,
+		cohort_start_date,
+		cohort_end_date,
+		observation_period_start_date,
+		observation_period_end_date
+	FROM {@min_age != '' | @max_age != ''} ? {restrict_by_age} : {joined_with_person}
+	WHERE gender_concept_id IN (@gender_concept_ids)
+)
+}
+}
+
 {@use_nesting_cohort} ? {
 -- use_nesting_cohort
 , use_nesting_cohort AS (
@@ -224,7 +272,7 @@ SELECT subject_id,
 		cohorts.cohort_end_date,
 		observation_period_start_date,
 		observation_period_end_date
-	FROM {@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}} cohorts
+	FROM {@gender_concept_ids != ''} ? {restrict_by_gender} : {{@min_age != '' | @max_age != ''} ? {restrict_by_age} : {{@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}}}} cohorts
   INNER JOIN @nesting_cohort_database_schema.@nesting_cohort_table nesting
     ON cohorts.subject_id = nesting.subject_id
       AND cohorts.cohort_start_date >= nesting.cohort_start_date
@@ -242,7 +290,7 @@ SELECT subject_id,
 		cohort_end_date,
 		observation_period_start_date,
 		observation_period_end_date
-	FROM {@use_nesting_cohort} ? {use_nesting_cohort} : {{@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}}}
+	FROM {@use_nesting_cohort} ? {use_nesting_cohort} : {{@gender_concept_ids != ''} ? {restrict_by_gender} : {{@min_age != '' | @max_age != ''} ? {restrict_by_age} : {{@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}}}}}
 {@study_start_date != '' } ? {  WHERE cohort_start_date >= CAST('@study_start_date' AS DATE)}
 {@study_end_date != '' } ? {
 {@study_start_date != '' } ? {    AND} : {  WHERE} cohort_start_date <= CAST('@study_end_date' AS DATE)
@@ -280,7 +328,7 @@ SELECT ROW_NUMBER() OVER (ORDER BY subject_id, cohort_start_date) AS row_id,
 	} AS days_to_obs_end,
 	cohort_end_date
 INTO #cohort_person
-FROM {@study_start_date != '' | @study_end_date != ''} ? {restrict_to_study_period} : {{@use_nesting_cohort} ? {use_nesting_cohort} : {{@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}}}}
+FROM {@study_start_date != '' | @study_end_date != ''} ? {restrict_to_study_period} : {{@use_nesting_cohort} ? {use_nesting_cohort} : {{@gender_concept_ids != ''} ? {restrict_by_gender} : {{@min_age != '' | @max_age != ''} ? {restrict_by_age} : {{@restrict_to_common_period} ? {restrict_to_common_period} : {{@washout_period != 0} ? {washout_period} : {joined_with_obs_period}}}}}}
 } : {
 -- Count the cohort sizes at the various stages
 SELECT cohort_definition_id,
@@ -345,6 +393,30 @@ FROM restrict_to_common_period
 GROUP BY cohort_definition_id
 }
 
+{@min_age != '' | @max_age != ''} ? {
+UNION ALL
+
+SELECT cohort_definition_id,
+  COUNT(*) AS exposures,
+  COUNT(DISTINCT subject_id) AS persons,
+  'Restrict by age' AS description,
+  CAST(6 AS FLOAT) seq_id
+FROM restrict_by_age
+GROUP BY cohort_definition_id
+}
+
+{@gender_concept_ids != ''} ? {
+UNION ALL
+
+SELECT cohort_definition_id,
+  COUNT(*) AS exposures,
+  COUNT(DISTINCT subject_id) AS persons,
+  'Restrict by gender' AS description,
+  CAST(7 AS FLOAT) seq_id
+FROM restrict_by_gender
+GROUP BY cohort_definition_id
+}
+
 {@use_nesting_cohort} ? {
 UNION ALL
 
@@ -352,7 +424,7 @@ SELECT cohort_definition_id,
   COUNT(*) AS exposures,
   COUNT(DISTINCT subject_id) AS persons,
   'Restrict to nesting cohort' AS description,
-  CAST(6 AS FLOAT) seq_id
+  CAST(8 AS FLOAT) seq_id
 FROM use_nesting_cohort
 GROUP BY cohort_definition_id
 }
@@ -364,7 +436,7 @@ SELECT cohort_definition_id,
   COUNT(*) AS exposures,
   COUNT(DISTINCT subject_id) AS persons,
   'Restrict to study period' AS description,
-  CAST(7 AS FLOAT) seq_id
+  CAST(9 AS FLOAT) seq_id
 FROM restrict_to_study_period
 GROUP BY cohort_definition_id
 }

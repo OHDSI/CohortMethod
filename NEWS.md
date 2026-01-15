@@ -33,10 +33,12 @@ This major release introduces many changes. The three most important ones are (1
 
 12. The results schema now includes the `target_comparator` table that combines the `target_id`, `comparator_id`, and `nesting_cohort_id` into a single unique `target_comparator_id`. This new ID is a hash of its components, allowing results from multiple runs to be combined into a single database. 
 
+13. In addition to restricting to a nesting cohort the population can now also be restricted by age and gender using the `minAge`, `maxAge`, and `genderConceptIds` arguments of `createGetDbCohortMethodDataArgs()`.
+
 
 ## Changes related to the new covariate balance diagnostic
 
-13. Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:
+14. Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:
 
     - Added the `threshold` and `alpha` arguments to the `createComputeCovariateBalanceArgs()` function. These do not impact blinding when running `runCmAnalyses` but do add columns to the balance files, for when running single studies.
     - Added the `sdmAlpha` argument to the `createCmDiagnosticThresholds()` function. 
@@ -47,24 +49,24 @@ This major release introduces many changes. The three most important ones are (1
 
 ## Other important changes
 
-14. Added a new option for the `removeDuplicateSubjects` argument:  "keep first, truncate to second". This is similar to "keep first", but also truncates the first exposure to stop the day before the second starts.
+15. Added a new option for the `removeDuplicateSubjects` argument:  "keep first, truncate to second". This is similar to "keep first", but also truncates the first exposure to stop the day before the second starts.
 
-15. Now performing empirical calibration *after* removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.
+16. Now performing empirical calibration *after* removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.
 
-16. If high correlation is detected when fitting a propensity model, but `stopOnError = FALSE`, the export will show the highly correlated covariates in the model with extreme coefficients (1e6 * correlation).
+17. If high correlation is detected when fitting a propensity model, but `stopOnError = FALSE`, the export will show the highly correlated covariates in the model with extreme coefficients (1e6 * correlation).
 
-17. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
+18. Added the ability to use bootstrap for computing confidence intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments of `createFitOutcomeModelArgs()`.
 
-18. All restrictions on the study populations performed by `getDbCohortMethodData()` are now step-by-step recorded in the attrition table.
+19. All restrictions on the study populations performed by `getDbCohortMethodData()` are now step-by-step recorded in the attrition table.
 
-19. Completely updated of all unit tests to increase coverage of functional tests, while also increasing speed.
+20. Completely updated of all unit tests to increase coverage of functional tests, while also increasing speed.
 
-20. Renamed the `showEquipoiseLabel` argument of `plotPs()` to `showEquipoiseLabel`.
+21. Renamed the `showEquipoiseLabel` argument of `plotPs()` to `showEquipoiseLabel`.
 
 
 ## Minor changes
  
-21. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
+22. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
     
     ```r
     profileGrid = seq(log(0.1), log(10), length.out = 8),
@@ -73,17 +75,17 @@ This major release introduces many changes. The three most important ones are (1
     
     This adds the `gradient` field to the `cm_likelihood_profile` table when exporting to CSV.
 
-22. Removed mention of legacy function `grepCovariateNames()` from the vignette.
+23. Removed mention of legacy function `grepCovariateNames()` from the vignette.
 
-23. Added citation to the HADES paper to the package.
+24. Added citation to the HADES paper to the package.
 
-24. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. The `OhdsiShinyAppBuilder` package should be used directly instead.
+25. Dropped `insertExportedResultsInSqlite()`, `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. The `OhdsiShinyAppBuilder` package should be used directly instead.
 
-25. Corrected the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
+26. Corrected the `minDaysAtRisk` argument. Days at risk is now computed as end - start + 1 (end day inclusive).
 
-26. Added a vignette showing the results schema.
+27. Added a vignette showing the results schema.
 
-27. Changed the data type of the `interaction_covariate_id` field in the `cm_interaction_result` table from `INT` to `BIGINT`.
+28. Changed the data type of the `interaction_covariate_id` field in the `cm_interaction_result` table from `INT` to `BIGINT`.
 
 
 CohortMethod 5.5.2

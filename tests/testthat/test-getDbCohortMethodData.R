@@ -23,6 +23,14 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
                                            sql = "SELECT * FROM main.observation_period;",
                                            snakeCaseToCamelCase = TRUE) |>
     as_tibble()
+  person <- DatabaseConnector::querySql(connection = connection,
+                                        sql = "SELECT * FROM main.person;",
+                                        snakeCaseToCamelCase = TRUE) |>
+    as_tibble()
+  # Not all persons in observation period table are in the person table:
+  observationPeriod <- observationPeriod |>
+    filter(personId %in% c(person$personId))
+
   groups <- observationPeriod |>
     filter(observationPeriodEndDate - observationPeriodStartDate > 600) |>
     slice_sample(n = 1000) |>
@@ -613,6 +621,160 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
                  check.attribues = FALSE)
   })
 
+  test_that("restrictByAge", {
+    ## default: NULL ----
+    cmd1 <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "newCohort",
+      outcomeTable = "cohort",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = covSettings,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE,
+        minAge = NULL,
+        maxAge = NULL,
+        washoutPeriod = 0
+      )
+    )
+
+    meta1 <- attr(cmd1, "metaData")
+    expect_identical(nrow(meta1$attrition), 1L)
+
+    cohorts1 <- cmd1$cohorts |>
+      collect() |>
+      mutate(cohortDefinitionId = if_else(treatment == 1, 1, 2),
+             subjectId = as.numeric(personId))
+
+    expect_equal(select(arrange(cohorts1, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 select(arrange(newCohort, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 check.attribues = FALSE)
+
+    ## 0-0 ----
+    # Everyone has age 0 or 1, so set max to 0 to have some attrition:
+    minAge <- 0
+    maxAge <- 0
+    cmd2 <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "newCohort",
+      outcomeTable = "cohort",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = covSettings,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE,
+        minAge = minAge,
+        maxAge = maxAge,
+        washoutPeriod = 0
+      )
+    )
+
+    meta2 <- attr(cmd2, "metaData")
+    expect_identical(nrow(meta2$attrition), 2L)
+    expect_true("Restrict by age" %in% meta2$attrition$description)
+
+    cohorts2 <- cmd2$cohorts |>
+      collect() |>
+      mutate(cohortDefinitionId = if_else(treatment == 1, 1, 2),
+             subjectId = as.numeric(personId))
+
+    newCohortGs <- newCohort |>
+      inner_join(person, by = join_by(subjectId == personId)) |>
+      mutate(dateOfBirth = ISOdate(yearOfBirth, monthOfBirth, dayOfBirth)) |>
+      mutate(age = floor(as.numeric(difftime(cohortStartDate, dateOfBirth, units = "days")) / 365.25)) |>
+      filter(age >= minAge, age <= maxAge)
+
+    expect_equal(select(arrange(cohorts2, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 select(arrange(newCohortGs, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 check.attribues = FALSE)
+  })
+
+  test_that("restrictByGender", {
+    ## default: NULL ----
+    cmd1 <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "newCohort",
+      outcomeTable = "cohort",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = covSettings,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE,
+        genderConceptIds = NULL,
+        washoutPeriod = 0
+      )
+    )
+
+    meta1 <- attr(cmd1, "metaData")
+    expect_identical(nrow(meta1$attrition), 1L)
+
+    cohorts1 <- cmd1$cohorts |>
+      collect() |>
+      mutate(cohortDefinitionId = if_else(treatment == 1, 1, 2),
+             subjectId = as.numeric(personId))
+
+    expect_equal(select(arrange(cohorts1, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 select(arrange(newCohort, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 check.attribues = FALSE)
+
+    ## 8532 ----
+    conceptId <- 8532
+    cmd2 <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = c(3, 4),
+      exposureDatabaseSchema = "main",
+      outcomeDatabaseSchema = "main",
+      exposureTable = "newCohort",
+      outcomeTable = "cohort",
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        covariateSettings = covSettings,
+        removeDuplicateSubjects = "keep all",
+        firstExposureOnly = FALSE,
+        restrictToCommonPeriod = FALSE,
+        genderConceptIds = conceptId,
+        washoutPeriod = 0
+      )
+    )
+
+    meta2 <- attr(cmd2, "metaData")
+    expect_identical(nrow(meta2$attrition), 2L)
+    expect_true("Restrict by gender" %in% meta2$attrition$description)
+
+    cohorts2 <- cmd2$cohorts |>
+      collect() |>
+      mutate(cohortDefinitionId = if_else(treatment == 1, 1, 2),
+             subjectId = as.numeric(personId))
+
+    newCohortGs <- newCohort |>
+      inner_join(person, by = join_by(subjectId == personId)) |>
+      filter(genderConceptId == conceptId)
+
+    expect_equal(select(arrange(cohorts2, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 select(arrange(newCohortGs, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
+                 check.attribues = FALSE)
+  })
+
   test_that("washoutPeriod", {
     ## default: 0 ----
     cmd1 <- getDbCohortMethodData(
@@ -888,17 +1050,20 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
         covariateSettings = covSettings,
         firstExposureOnly = TRUE,
-        washoutPeriod = 365,
+        washoutPeriod = 30,
         removeDuplicateSubjects = "keep first",
         restrictToCommonPeriod = TRUE,
-        studyStartDate = "20000101",
-        studyEndDate = "20201231",
+        minAge = 0,
+        maxAge = 0,
+        genderConceptIds = 8532,
+        studyStartDate = "19200101",
+        studyEndDate = "19751231",
         nestingCohortId = 9
       )
     )
 
     meta2 <- attr(cmd2, "metaData")
-    expect_identical(nrow(meta2$attrition), 7L)
+    expect_identical(nrow(meta2$attrition), 9L)
 
     cohorts2 <- cmd2$cohorts |>
       collect() |>
@@ -922,7 +1087,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     # Washout
     newCohortGs <- newCohortGs |>
       inner_join(observationPeriod, by = join_by(subjectId == personId)) |>
-      filter(difftime(cohortStartDate, observationPeriodStartDate, units = "days") >= 365)
+      filter(difftime(cohortStartDate, observationPeriodStartDate, units = "days") >= 30)
 
     # Nesting
     newCohortGs <- newCohortGs |>
@@ -948,11 +1113,21 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     # Study period
     newCohortGs <- newCohortGs |>
-      filter(cohortStartDate >= as.Date("2000-01-01"),
-             cohortStartDate <= as.Date("2020-12-31"))
+      filter(cohortStartDate >= as.Date("1920-01-01"),
+             cohortStartDate <= as.Date("1975-12-31"))
+
+    # Age and gender
+    newCohortGs <- newCohortGs |>
+      inner_join(person, by = join_by(subjectId == personId)) |>
+      mutate(dateOfBirth = ISOdate(yearOfBirth, monthOfBirth, dayOfBirth)) |>
+      mutate(age = floor(as.numeric(difftime(cohortStartDate, dateOfBirth, units = "days")) / 365.25)) |>
+      filter(age >= minAge, age <= maxAge, genderConceptId == 8532)
+
 
     expect_equal(select(arrange(cohorts2, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
                  select(arrange(newCohortGs, subjectId, cohortStartDate), cohortDefinitionId, subjectId, cohortStartDate),
                  check.attribues = FALSE)
+
+
   })
 }
