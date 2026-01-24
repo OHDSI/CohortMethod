@@ -761,10 +761,10 @@ trimByPs <- function(population, trimFraction = 0.05) {
   checkmate::assertNumber(trimFraction, lower = 0, upper = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], trimFraction)
-  cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 1 - trimFraction)
-  result <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
-                         (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
+  cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], 1 - trimFraction)
+  cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], trimFraction)
+  result <- population[(population$propensityScore <= cutoffTarget & population$treatment == 1) |
+                         (population$propensityScore >= cutoffComparator & population$treatment == 0), ]
   if (!is.null(attr(result, "metaData"))) {
     attr(
       result,
