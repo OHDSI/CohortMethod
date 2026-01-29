@@ -920,7 +920,7 @@ exportPropensityModel <- function(outputFolder,
   prepareData <- function(rows) {
     ps <- readRDS(file.path(outputFolder, rows$sharedPsFile[1]))
     metaData <- attr(ps, "metaData")
-    if (is.null(metaData$psError)) {
+    if (is.null(metaData$psError) || metaData$psError == "OK") {
       model <- metaData$psModelCoef
       model <- tibble(
         covariateId = names(metaData$psModelCoef),
