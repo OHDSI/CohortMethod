@@ -14,7 +14,7 @@ plotPs(
   comparatorLabel = "Comparator",
   showCountsLabel = FALSE,
   showAucLabel = FALSE,
-  showEquiposeLabel = FALSE,
+  showEquipoiseLabel = FALSE,
   equipoiseBounds = c(0.3, 0.7),
   unitOfAnalysis = "subjects",
   title = NULL,
@@ -44,7 +44,7 @@ or \code{type = 'histogramProportion'}. \code{'histogram'} defaults to \code{'hi
 
 \item{showAucLabel}{Show the AUC?}
 
-\item{showEquiposeLabel}{Show the percentage of the population in equipoise?}
+\item{showEquipoiseLabel}{Show the percentage of the population in equipoise?}
 
 \item{equipoiseBounds}{The bounds on the preference score to determine whether a subject is in
 equipoise.}

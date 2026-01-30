@@ -160,11 +160,14 @@ drawAttritionDiagram <- function(object,
     return(p)
   }
   label <- function(p, x, y, text, hjust = 0) {
-    p <- p + ggplot2::geom_text(ggplot2::aes(x = !!x, y = !!y, label = !!paste("\"", text, "\"",
-      sep = ""
-    )),
-    hjust = hjust,
-    size = 3.7
+    # p <- p + ggplot2::geom_text(ggplot2::aes(x = !!x, y = !!y, label = !!paste("\"", text, "\"",
+    #   sep = ""
+    # )),
+    p <- p + ggplot2::geom_text(ggplot2::aes(x = !!x,
+                                             y = !!y,
+                                             label = !!text,
+                                             hjust = hjust,
+                                             size = 3.7)
     )
     return(p)
   }
@@ -203,7 +206,7 @@ drawAttritionDiagram <- function(object,
   )
 
   if (!is.null(fileName)) {
-    ggplot2::ggsave(p, filename = fileName, width = 6, height = 7, dpi = 400)
+    ggplot2::ggsave(p, filename = fileName, width = 7, height = 1 + nSteps, dpi = 400)
   }
   return(p)
 }

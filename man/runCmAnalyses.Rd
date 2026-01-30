@@ -12,14 +12,11 @@ runCmAnalyses(
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
-  cdmVersion = "5",
+  nestingCohortDatabaseSchema = cdmDatabaseSchema,
+  nestingCohortTable = "cohort",
   outputFolder = "./CohortMethodOutput",
-  cmAnalysisList,
-  targetComparatorOutcomesList,
-  analysesToExclude = NULL,
-  refitPsForEveryOutcome = FALSE,
-  refitPsForEveryStudyPopulation = TRUE,
-  multiThreadingSettings = createMultiThreadingSettings()
+  multiThreadingSettings = createMultiThreadingSettings(),
+  cmAnalysesSpecifications
 )
 }
 \arguments{
@@ -57,32 +54,21 @@ outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
-"5".}
+\item{nestingCohortDatabaseSchema}{The name of the database schema that is the location where the
+data used to define the nesting cohorts is available.}
+
+\item{nestingCohortTable}{The tablename that contains the nesting cohorts. Must have
+the format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outputFolder}{Name of the folder where all the outputs will written to.}
-
-\item{cmAnalysisList}{A list of objects of type \code{cmAnalysis} as created using
-the `\link{createCmAnalysis} function.}
-
-\item{targetComparatorOutcomesList}{A list of objects of type \code{targetComparatorOutcomes} as
-created using the \link{createTargetComparatorOutcomes}
-function.}
-
-\item{analysesToExclude}{Analyses to exclude. See the Analyses to Exclude section for details.}
-
-\item{refitPsForEveryOutcome}{Should the propensity model be fitted for every outcome (i.e.
-after people who already had the outcome are removed)? If
-false, a single propensity model will be fitted, and people
-who had the outcome previously will be removed afterwards.}
-
-\item{refitPsForEveryStudyPopulation}{Should the propensity model be fitted for every study population
-definition? If false, a single propensity model will be fitted,
-and the study population criteria will be applied afterwards.}
 
 \item{multiThreadingSettings}{An object of type \code{CmMultiThreadingSettings} as created using
 the \code{\link[=createMultiThreadingSettings]{createMultiThreadingSettings()}} or
 \code{\link[=createDefaultMultiThreadingSettings]{createDefaultMultiThreadingSettings()}} functions.}
+
+\item{cmAnalysesSpecifications}{An object of type \code{CmAnalysesSpecifications} as created using
+the \code{createCmAnalysesSpecifications()}.}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
@@ -103,22 +89,6 @@ analysis.
 
 After completion, a tibble containing references to all generated files can be obtained using the
 \code{\link[=getFileReference]{getFileReference()}} function. A summary of the analysis results can be obtained using the
-\code{\link[=getResultsSummary]{getResultsSummary()}} function.
-\subsection{Analyses to Exclude}{
-
-Normally, \code{runCmAnalyses} will run all combinations of target-comparator-outcome-analyses settings.
-However, sometimes we may not need all those combinations. Using the \code{analysesToExclude} argument,
-we can remove certain items from the full matrix. This argument should be a data frame with at least
-one of the following columns:
-\itemize{
-\item targetId
-\item comparatorId
-\item outcomeId
-\item analysisId
-}
-
-This data frame will be joined to the outcome model reference table before executing, and matching rows
-will be removed. For example, if one specifies only one target ID and analysis ID, then any analyses with
-that target and that analysis ID will be skipped.
-}
+\code{\link[=getResultsSummary]{getResultsSummary()}} function. Diagnostics can be loaded using the \code{\link[=getDiagnosticsSummary]{getDiagnosticsSummary()}}
+function.
 }

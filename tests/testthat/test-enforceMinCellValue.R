@@ -1,3 +1,6 @@
+library(testthat)
+library(CohortMethod)
+
 test_that("enforceMinCellValue works as expected", {
   test_data <- data.frame(
     A = c(1, 2, 3, NA, 0)

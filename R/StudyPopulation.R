@@ -37,40 +37,14 @@ fastDuplicated <- function(data, columns) {
 #' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
 #' window, and determining which outcomes fall inside the risk window.
 #'
-#' The `removeduplicateSubjects` argument can have one of the following values:
-#'
-#' - `"keep all"`: Do not remove subjects that appear in both target and comparator cohort
-#' - `"keep first"`: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time. If both cohorts start simultaneous, the person is removed from the analysis.
-#' - `"remove all"`: Remove subjects that appear in both target and comparator cohort completely from the analysis."
-#'
 #' @template CohortMethodData
 #'
-#' @param population                       If specified, this population will be used as the starting
-#'                                         point instead of the cohorts in the `cohortMethodData` object.
-#' @param outcomeId                        The ID of the outcome. If NULL, no outcome-specific
-#'                                         transformations will be performed.
-#' @param firstExposureOnly                Should only the first exposure per subject be included?
-#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
-#'                                         cohort? See details for allowed values.
-#' @param restrictToCommonPeriod           Restrict the analysis to the period when both exposures are observed?
-#' @param washoutPeriod                    The minimum required continuous observation time prior to
-#'                                         index date for a person to be included in the cohort.
-#' @param removeSubjectsWithPriorOutcome   Remove subjects that have the outcome prior to the risk
-#'                                         window start?
-#' @param priorOutcomeLookback             How many days should we look back when identifying prior
-#'                                         outcomes?
-#' @param minDaysAtRisk                    The minimum required number of days at risk. Risk windows with fewer
-#'                                         days than this number are removed from the analysis.
-#' @param maxDaysAtRisk                    The maximum allowed number of days at risk. Risk windows that are
-#'                                         longer will be truncated to this number of days.
-#' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
-#' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
-#'                                         or `"cohort end"`.
-#' @param riskWindowEnd                    The end of the risk window (in days) relative to the `endAnchor`.
-#' @param endAnchor                        The anchor point for the end of the risk window. Can be `"cohort start"`
-#'                                         or `"cohort end"`.
-#' @param censorAtNewRiskWindow            If a subject is in multiple cohorts, should time-at-risk be censored
-#'                                         when the new time-at-risk starts to prevent overlap?
+#' @param population                  If specified, this population will be used as the starting
+#'                                    point instead of the cohorts in the `cohortMethodData` object.
+#' @param outcomeId                   The ID of the outcome. If NULL, no outcome-specific
+#'                                    transformations will be performed.
+#' @param createStudyPopulationArgs   An object of type `CreateStudyPopulationArgs` as created by
+#'                                    the [createCreateStudyPopulationArgs()] function.
 #' @return
 #' A `tibble` specifying the study population. This `tibble` will have the following columns:
 #'
@@ -85,162 +59,54 @@ fastDuplicated <- function(data, columns) {
 createStudyPopulation <- function(cohortMethodData,
                                   population = NULL,
                                   outcomeId = NULL,
-                                  firstExposureOnly = FALSE,
-                                  restrictToCommonPeriod = FALSE,
-                                  washoutPeriod = 0,
-                                  removeDuplicateSubjects = "keep all",
-                                  removeSubjectsWithPriorOutcome = TRUE,
-                                  priorOutcomeLookback = 99999,
-                                  minDaysAtRisk = 1,
-                                  maxDaysAtRisk = 99999,
-                                  riskWindowStart = 0,
-                                  startAnchor = "cohort start",
-                                  riskWindowEnd = 0,
-                                  endAnchor = "cohort end",
-                                  censorAtNewRiskWindow = FALSE) {
+                                  createStudyPopulationArgs = createCreateStudyPopulationArgs()) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
   checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
   checkmate::assertNumeric(outcomeId, null.ok = TRUE, add = errorMessages)
   if (!is.null(outcomeId)) checkmate::assertTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
-  checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
-  checkmate::assertLogical(restrictToCommonPeriod, len = 1, add = errorMessages)
-  checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
-  checkmate::assertChoice(removeDuplicateSubjects, c("keep all", "keep first", "remove all"), add = errorMessages)
-  checkmate::assertLogical(removeSubjectsWithPriorOutcome, len = 1, add = errorMessages)
-  checkmate::assertInt(priorOutcomeLookback, lower = 0, add = errorMessages)
-  checkmate::assertInt(minDaysAtRisk, lower = 0, add = errorMessages)
-  checkmate::assertInt(maxDaysAtRisk, lower = 0, add = errorMessages)
-  checkmate::assertInt(riskWindowStart, add = errorMessages)
-  checkmate::assertInt(riskWindowEnd, add = errorMessages)
-  checkmate::assertLogical(censorAtNewRiskWindow, add = errorMessages)
+  checkmate::assertR6(createStudyPopulationArgs, "CreateStudyPopulationArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  if (!grepl("start$|end$", startAnchor, ignore.case = TRUE)) {
-    stop("startAnchor should have value 'cohort start' or 'cohort end'")
-  }
-  if (!grepl("start$|end$", endAnchor, ignore.case = TRUE)) {
-    stop("endAnchor should have value 'cohort start' or 'cohort end'")
-  }
+
   isEnd <- function(anchor) {
     return(grepl("end$", anchor, ignore.case = TRUE))
   }
 
   if (is.null(population)) {
     metaData <- attr(cohortMethodData, "metaData")
-    population <- cohortMethodData$cohorts %>%
-      collect() %>%
+    population <- cohortMethodData$cohorts |>
+      collect() |>
       select(-"personId")
   } else {
     metaData <- attr(population, "metaData")
   }
   metaData$targetEstimator <- "ate"
 
-  if (firstExposureOnly) {
-    message("Keeping only first exposure per subject")
-    population <- population %>%
-      arrange(.data$personSeqId, .data$treatment, .data$cohortStartDate)
-
-    idx <- fastDuplicated(population, c("personSeqId", "treatment"))
-    population <- population[!idx, ]
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, "First exposure only")
-    )
-  }
-  if (restrictToCommonPeriod) {
-    message("Restrict to common period")
-    if (nrow(population) > 0) {
-      population <- population %>%
-        group_by(.data$treatment) %>%
-        summarise(
-          treatmentStart = min(.data$cohortStartDate),
-          treatmentEnd = max(.data$cohortStartDate)
-        ) %>%
-        ungroup() %>%
-        summarise(
-          periodStart = max(.data$treatmentStart),
-          periodEnd = min(.data$treatmentEnd)
-        ) %>%
-        cross_join(population) %>%
-        filter(
-          population$cohortStartDate >= .data$periodStart &
-            population$cohortStartDate <= .data$periodEnd
-        ) %>%
-        select(-"periodStart", -"periodEnd")
-    }
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, "Restrict to common period")
-    )
-  }
-  if (removeDuplicateSubjects == "remove all") {
-    message("Removing all subject that are in both cohorts (if any)")
-    targetSubjectIds <- population$personSeqId[population$treatment == 1]
-    comparatorSubjectIds <- population$personSeqId[population$treatment == 0]
-    duplicateSubjectIds <- targetSubjectIds[targetSubjectIds %in% comparatorSubjectIds]
-    population <- population[!(population$personSeqId %in% duplicateSubjectIds), ]
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, paste("Removed subjects in both cohorts"))
-    )
-  } else if (removeDuplicateSubjects == "keep first") {
-    message("For subject that are in both cohorts, keeping only whichever cohort is first in time.")
-    if (nrow(population) > 1) {
-      population <- population %>%
-        arrange(.data$personSeqId, .data$cohortStartDate)
-      # Remove ties:
-      idx <- fastDuplicated(population, c("personSeqId", "cohortStartDate"))
-      # If duplicate, then we must remove both things that are a tie:
-      idx[seq_len(length(idx) - 1)] <- idx[seq_len(length(idx) - 1)] | idx[seq_len(length(idx))[-1]]
-      if (all(idx)) {
-        warning("All cohort entries are ties, with same subject ID and cohort start date")
-      }
-      population <- population[!idx, ]
-      # Keeping first:
-      idx <- fastDuplicated(population, "personSeqId")
-      population <- population[!idx, ]
-    }
-    metaData$attrition <- rbind(
-      metaData$attrition,
-      getCounts(population, paste("Restricting duplicate subjects to first cohort"))
-    )
-  }
-
-  if (washoutPeriod) {
-    message(paste("Requiring", washoutPeriod, "days of observation prior index date"))
-    population <- population %>%
-      filter(.data$daysFromObsStart >= washoutPeriod)
-    metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
-      "At least",
-      washoutPeriod,
-      "days of observation prior"
-    )))
-  }
-  if (removeSubjectsWithPriorOutcome) {
+  if (createStudyPopulationArgs$removeSubjectsWithPriorOutcome) {
     if (is.null(outcomeId)) {
       message("No outcome specified so skipping removing people with prior outcomes")
     } else {
       message("Removing subjects with prior outcomes (if any)")
-      outcomes <- cohortMethodData$outcomes %>%
-        filter(.data$outcomeId == !!outcomeId) %>%
+      outcomes <- cohortMethodData$outcomes |>
+        filter(.data$outcomeId == !!outcomeId) |>
         collect()
-      if (isEnd(startAnchor)) {
+      if (isEnd(createStudyPopulationArgs$startAnchor)) {
         outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
-        priorOutcomeRowIds <- outcomes %>%
+        priorOutcomeRowIds <- outcomes |>
           filter(
-            .data$daysToEvent > -priorOutcomeLookback &
-              outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart
-          ) %>%
+            .data$daysToEvent > -createStudyPopulationArgs$priorOutcomeLookback &
+              outcomes$daysToEvent < outcomes$daysToCohortEnd + createStudyPopulationArgs$riskWindowStart
+          ) |>
           pull("rowId")
       } else {
-        priorOutcomeRowIds <- outcomes %>%
+        priorOutcomeRowIds <- outcomes |>
           filter(
-            .data$daysToEvent > -priorOutcomeLookback &
-              .data$daysToEvent < riskWindowStart
-          ) %>%
+            .data$daysToEvent > -createStudyPopulationArgs$priorOutcomeLookback &
+              .data$daysToEvent < createStudyPopulationArgs$riskWindowStart
+          ) |>
           pull("rowId")
       }
-      population <- population %>%
+      population <- population |>
         filter(!(.data$rowId %in% priorOutcomeRowIds))
       metaData$attrition <- rbind(
         metaData$attrition,
@@ -249,33 +115,33 @@ createStudyPopulation <- function(cohortMethodData,
     }
   }
   # Create risk windows:
-  population$riskStart <- rep(riskWindowStart, nrow(population))
-  if (isEnd(startAnchor)) {
+  population$riskStart <- rep(createStudyPopulationArgs$riskWindowStart, nrow(population))
+  if (isEnd(createStudyPopulationArgs$startAnchor)) {
     population$riskStart <- population$riskStart + population$daysToCohortEnd
   }
-  population$riskEnd <- rep(riskWindowEnd, nrow(population))
-  if (isEnd(endAnchor)) {
+  population$riskEnd <- rep(createStudyPopulationArgs$riskWindowEnd, nrow(population))
+  if (isEnd(createStudyPopulationArgs$endAnchor)) {
     population$riskEnd <- population$riskEnd + population$daysToCohortEnd
   }
   idx <- population$riskEnd > population$daysToObsEnd
   population$riskEnd[idx] <- population$daysToObsEnd[idx]
 
-  if (!missing(maxDaysAtRisk) && !is.null(maxDaysAtRisk)) {
-    idx <- population$riskEnd > population$riskStart + maxDaysAtRisk
+  if (!is.null(createStudyPopulationArgs$maxDaysAtRisk)) {
+    idx <- population$riskEnd > population$riskStart + createStudyPopulationArgs$maxDaysAtRisk
     if (any(idx)) {
-      population$riskEnd[idx] <- population$riskStart[idx] + maxDaysAtRisk
+      population$riskEnd[idx] <- population$riskStart[idx] + createStudyPopulationArgs$maxDaysAtRisk
     }
   }
-  if (censorAtNewRiskWindow) {
+  if (createStudyPopulationArgs$censorAtNewRiskWindow) {
     message("Censoring time at risk of recurrent subjects at start of new time at risk")
     if (nrow(population) > 1) {
       population$startDate <- population$cohortStartDate + population$riskStart
       population$endDate <- population$cohortStartDate + population$riskEnd
-      population <- population %>%
+      population <- population |>
         arrange(.data$personSeqId, .data$riskStart)
       idx <- seq_len(nrow(population) - 1)
       idx <- which(population$endDate[idx] >= population$startDate[idx + 1] &
-        population$personSeqId[idx] == population$personSeqId[idx + 1])
+                     population$personSeqId[idx] == population$personSeqId[idx + 1])
       if (length(idx) > 0) {
         population$endDate[idx] <- population$startDate[idx + 1] - 1
         population$riskEnd[idx] <- population$endDate[idx] - population$cohortStartDate[idx]
@@ -292,13 +158,13 @@ createStudyPopulation <- function(cohortMethodData,
       )
     }
   }
-  if (minDaysAtRisk != 0) {
-    message(paste("Removing subjects with less than", minDaysAtRisk, "day(s) at risk (if any)"))
-    population <- population %>%
-      filter(.data$riskEnd - .data$riskStart >= minDaysAtRisk)
+  if (createStudyPopulationArgs$minDaysAtRisk != 0) {
+    message(paste("Removing subjects with less than", createStudyPopulationArgs$minDaysAtRisk, "day(s) at risk (if any)"))
+    population <- population |>
+      filter(1 + .data$riskEnd - .data$riskStart >= createStudyPopulationArgs$minDaysAtRisk)
     metaData$attrition <- rbind(metaData$attrition, getCounts(population, paste(
       "Have at least",
-      minDaysAtRisk,
+      createStudyPopulationArgs$minDaysAtRisk,
       "days at risk"
     )))
   }
@@ -306,11 +172,11 @@ createStudyPopulation <- function(cohortMethodData,
     message("No outcome specified so not creating outcome and time variables")
   } else {
     # Select outcomes during time at risk
-    outcomes <- cohortMethodData$outcomes %>%
-      filter(.data$outcomeId == !!outcomeId) %>%
+    outcomes <- cohortMethodData$outcomes |>
+      filter(.data$outcomeId == !!outcomeId) |>
       collect()
     outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
-    outcomes <- outcomes %>%
+    outcomes <- outcomes |>
       filter(
         .data$daysToEvent >= .data$riskStart &
           .data$daysToEvent <= .data$riskEnd
@@ -320,8 +186,8 @@ createStudyPopulation <- function(cohortMethodData,
     if (nrow(outcomes) == 0) {
       population$outcomeCount <- rep(0, nrow(population))
     } else {
-      outcomeCount <- outcomes %>%
-        group_by(.data$rowId) %>%
+      outcomeCount <- outcomes |>
+        group_by(.data$rowId) |>
         summarise(outcomeCount = length(.data$outcomeId))
       population$outcomeCount <- 0
       population$outcomeCount[match(outcomeCount$rowId, population$rowId)] <- outcomeCount$outcomeCount
@@ -331,14 +197,14 @@ createStudyPopulation <- function(cohortMethodData,
     population$timeAtRisk <- population$riskEnd - population$riskStart + 1
 
     # Create survival time column
-    firstOutcomes <- outcomes %>%
-      arrange(.data$rowId, .data$daysToEvent) %>%
+    firstOutcomes <- outcomes |>
+      arrange(.data$rowId, .data$daysToEvent) |>
       filter(!duplicated(.data$rowId))
     population$daysToEvent <- rep(NA, nrow(population))
     population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
     population$survivalTime <- population$timeAtRisk
     population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
-      0] - population$riskStart[population$outcomeCount != 0] + 1
+                                                                                      0] - population$riskStart[population$outcomeCount != 0] + 1
   }
   attr(population, "metaData") <- metaData
   ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
@@ -396,12 +262,6 @@ getCounts <- function(population, description = "") {
 #'                                         point instead of the cohorts in the `cohortMethodData` object.
 #' @param outcomeId                        The ID of the outcome. If NULL, no outcome-specific
 #'                                         transformations will be performed.
-#' @param firstExposureOnly                (logical) Should only the first exposure per subject be included?
-#' @param removeDuplicateSubjects          Remove subjects that are in both the target and comparator
-#'                                         cohort? See details for allowed values.
-#' @param restrictToCommonPeriod           (logical) Restrict the analysis to the period when both exposures are observed?
-#' @param washoutPeriod                    The minimum required continuous observation time prior to
-#'                                         index date for a person to be included in the cohort.
 #' @param minDaysAtRisk                    The minimum required number of days at risk.
 #' @param riskWindowStart                  The start of the risk window (in days) relative to the `startAnchor`.
 #' @param startAnchor                      The anchor point for the start of the risk window. Can be `"cohort start"`
@@ -431,10 +291,6 @@ getCounts <- function(population, description = "") {
 plotTimeToEvent <- function(cohortMethodData,
                             population = NULL,
                             outcomeId = NULL,
-                            firstExposureOnly = FALSE,
-                            restrictToCommonPeriod = FALSE,
-                            washoutPeriod = 0,
-                            removeDuplicateSubjects = "keep all",
                             minDaysAtRisk = 1,
                             riskWindowStart = 0,
                             startAnchor = "cohort start",
@@ -450,13 +306,6 @@ plotTimeToEvent <- function(cohortMethodData,
                             comparatorLabel = "Comparator",
                             title = NULL,
                             fileName = NULL) {
-  if (is.logical(removeDuplicateSubjects)) {
-    if (removeDuplicateSubjects) {
-      removeDuplicateSubjects <- "remove all"
-    } else {
-      removeDuplicateSubjects <- "keep all"
-    }
-  }
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertInt(periodLength, lower = 0, add = errorMessages)
   checkmate::assertInt(numberOfPeriods, lower = 0, add = errorMessages)
@@ -469,35 +318,33 @@ plotTimeToEvent <- function(cohortMethodData,
   checkmate::assertCharacter(fileName, len = 1, null.ok = TRUE, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   if (is.null(population)) {
-    population <- cohortMethodData$cohorts %>%
+    population <- cohortMethodData$cohorts |>
       collect()
   }
   population <- createStudyPopulation(
     cohortMethodData = cohortMethodData,
     population = population,
     outcomeId = outcomeId,
-    firstExposureOnly = firstExposureOnly,
-    restrictToCommonPeriod = restrictToCommonPeriod,
-    washoutPeriod = washoutPeriod,
-    removeDuplicateSubjects = removeDuplicateSubjects,
-    removeSubjectsWithPriorOutcome = FALSE,
-    minDaysAtRisk = minDaysAtRisk,
-    riskWindowStart = riskWindowStart,
-    startAnchor = startAnchor,
-    riskWindowEnd = riskWindowEnd,
-    endAnchor = endAnchor,
-    censorAtNewRiskWindow = censorAtNewRiskWindow
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = FALSE,
+      minDaysAtRisk = minDaysAtRisk,
+      riskWindowStart = riskWindowStart,
+      startAnchor = startAnchor,
+      riskWindowEnd = riskWindowEnd,
+      endAnchor = endAnchor,
+      censorAtNewRiskWindow = censorAtNewRiskWindow
+    )
   )
-  outcomes <- cohortMethodData$outcomes %>%
-    filter(.data$outcomeId == !!outcomeId) %>%
-    select("rowId", "daysToEvent") %>%
+  outcomes <- cohortMethodData$outcomes |>
+    filter(.data$outcomeId == !!outcomeId) |>
+    select("rowId", "daysToEvent") |>
     collect()
 
-  outcomes <- outcomes %>%
+  outcomes <- outcomes |>
     inner_join(select(population, "rowId", "treatment", "daysFromObsStart", "daysToObsEnd", "riskStart", "riskEnd"),
-      by = "rowId"
-    ) %>%
-    filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) %>%
+               by = "rowId"
+    ) |>
+    filter(-.data$daysFromObsStart <= .data$daysToEvent & .data$daysToObsEnd >= .data$daysToEvent) |>
     mutate(exposed = .data$daysToEvent >= .data$riskStart & .data$daysToEvent <= .data$riskEnd)
 
   idxExposed <- outcomes$exposed == 1
@@ -524,8 +371,8 @@ plotTimeToEvent <- function(cohortMethodData,
   }
   periods <- lapply(-floor(numberOfPeriods / 2):ceiling(numberOfPeriods / 2), createPeriod)
   periods <- do.call("rbind", periods)
-  periods <- periods %>%
-    filter(.data$observedTarget > 0) %>%
+  periods <- periods |>
+    filter(.data$observedTarget > 0) |>
     mutate(
       rateExposedTarget = .data$eventsExposedTarget / .data$observedTarget,
       rateUnexposedTarget = .data$eventsUnexposedTarget / .data$observedTarget,
@@ -535,7 +382,7 @@ plotTimeToEvent <- function(cohortMethodData,
       rateComparator = (.data$eventsExposedComparator + .data$eventsUnexposedComparator) / .data$observedComparator
     )
   if (!includePostIndexTime) {
-    periods <- periods %>%
+    periods <- periods |>
       filter(.data$end <= 0)
   }
   vizData <- rbind(
@@ -585,7 +432,7 @@ plotTimeToEvent <- function(cohortMethodData,
       ggplot2::geom_col(width = periodLength, alpha = 0.7, fill = rgb(0, 0, 0.8))
   }
   plot <- plot +
-    ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, size = 1) +
+    ggplot2::geom_vline(xintercept = 0, colour = "#000000", lty = 1, linewidth = 1) +
     ggplot2::scale_fill_manual(values = c(
       rgb(0.8, 0, 0),
       rgb(0, 0, 0.8)
@@ -624,7 +471,7 @@ plotTimeToEvent <- function(cohortMethodData,
       postComparator$period <- "Post"
       curve <- bind_rows(curve, postTarget, postComparator)
     }
-    curve <- curve %>%
+    curve <- curve |>
       mutate(
         rate = 0,
         status = "Exposed events",
@@ -650,7 +497,7 @@ plotTimeToEvent <- function(cohortMethodData,
           y = .data$fit * 1000,
           group = .data$period
         ),
-        size = 1.5,
+        linewidth = 1.5,
         alpha = 0.8,
         data = curve
       )

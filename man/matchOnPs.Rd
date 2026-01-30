@@ -6,38 +6,19 @@
 \usage{
 matchOnPs(
   population,
-  caliper = 0.2,
-  caliperScale = "standardized logit",
-  maxRatio = 1,
-  allowReverseMatch = FALSE,
-  stratificationColumns = c()
+  matchOnPsArgs = createMatchOnPsArgs(),
+  cohortMethodData = NULL
 )
 }
 \arguments{
 \item{population}{A data frame with the three columns described below.}
 
-\item{caliper}{The caliper for matching. A caliper is the distance which is
-acceptable for any match. Observations which are outside of the
-caliper are dropped. A caliper of 0 means no caliper is used.}
+\item{matchOnPsArgs}{An object of type \code{MatchOnPsArgs} as created by the
+\code{\link[=createMatchOnPsArgs]{createMatchOnPsArgs()}} function.}
 
-\item{caliperScale}{The scale on which the caliper is defined. Three scales are supported:
-\code{caliperScale = 'propensity score'}, \code{caliperScale = 'standardized'}, or \code{caliperScale = 'standardized logit'}.
-On the standardized scale, the caliper is interpreted in standard
-deviations of the propensity score distribution. 'standardized logit'
-is similar, except that the propensity score is transformed to the logit
-scale because the PS is more likely to be normally distributed on that scale
-(Austin, 2011).}
-
-\item{maxRatio}{The maximum number of persons in the comparator arm to be matched to
-each person in the treatment arm. A maxRatio of 0 means no maximum:
-all comparators will be assigned to a target person.}
-
-\item{allowReverseMatch}{Allows n-to-1 matching if target arm is larger}
-
-\item{stratificationColumns}{Names or numbers of one or more columns in the \code{data} data.frame
-on which subjects should be stratified prior to matching. No persons
-will be matched with persons outside of the strata identified by the
-values in these columns.}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}. Needed when additionally matching on
+covariate IDs.}
 }
 \value{
 Returns a date frame with the same columns as the input data plus one extra column: stratumId. Any
@@ -67,7 +48,11 @@ data <- data.frame(
   propensityScore = propensityScore,
   age_group = age_group
 )
-result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = "age_group")
+result <- matchOnPs(data, createMatchOnPsArgs(
+  caliper = 0,
+  maxRatio = 1,
+  matchColumns = "age_group")
+)
 
 }
 \references{

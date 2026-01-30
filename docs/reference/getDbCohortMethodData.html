@@ -9,7 +9,7 @@ extract the data needed to perform the analysis."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">5.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,6 +21,7 @@ extract the data needed to perform the analysis."></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/MultipleAnalyses.html">Running multiple analyses at once using the CohortMethod package</a></li>
+    <li><a class="dropdown-item" href="../articles/ResultsSchema.html">Results schema of the CohortMethod package</a></li>
     <li><a class="dropdown-item" href="../articles/SingleStudies.html">Single studies using the CohortMethod package</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -53,19 +54,13 @@ extract the data needed to perform the analysis.</p>
 <span>  <span class="va">targetId</span>,</span>
 <span>  <span class="va">comparatorId</span>,</span>
 <span>  <span class="va">outcomeIds</span>,</span>
-<span>  studyStartDate <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  studyEndDate <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
 <span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
 <span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
 <span>  outcomeTable <span class="op">=</span> <span class="st">"condition_occurrence"</span>,</span>
-<span>  cdmVersion <span class="op">=</span> <span class="st">"5"</span>,</span>
-<span>  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  removeDuplicateSubjects <span class="op">=</span> <span class="st">"keep all"</span>,</span>
-<span>  restrictToCommonPeriod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  washoutPeriod <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  maxCohortSize <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  <span class="va">covariateSettings</span></span>
+<span>  nestingCohortDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  nestingCohortTable <span class="op">=</span> <span class="st">"cohort"</span>,</span>
+<span>  getDbCohortMethodDataArgs <span class="op">=</span> <span class="fu"><a href="createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -86,9 +81,9 @@ so for example 'cdm_instance.dbo'.</p></dd>
 
 
 <dt id="arg-tempemulationschema">tempEmulationSchema<a class="anchor" aria-label="anchor" href="#arg-tempemulationschema"></a></dt>
-<dd><p>Some database platforms like Oracle and Impala do not truly support temp tables. To
-emulate temp tables, provide a schema with write privileges where temp tables
-can be created.</p></dd>
+<dd><p>Some database platforms like Oracle and Impala do not truly
+support temp tables. To emulate temp tables, provide a schema
+with write privileges where temp tables can be created.</p></dd>
 
 
 <dt id="arg-targetid">targetId<a class="anchor" aria-label="anchor" href="#arg-targetid"></a></dt>
@@ -112,18 +107,6 @@ table.</p></dd>
 <dd><p>A list of cohort IDs used to define outcomes.</p></dd>
 
 
-<dt id="arg-studystartdate">studyStartDate<a class="anchor" aria-label="anchor" href="#arg-studystartdate"></a></dt>
-<dd><p>A calendar date specifying the minimum date that a cohort index
-date can appear. Date format is 'yyyymmdd'.</p></dd>
-
-
-<dt id="arg-studyenddate">studyEndDate<a class="anchor" aria-label="anchor" href="#arg-studyenddate"></a></dt>
-<dd><p>A calendar date specifying the maximum date that a cohort index
-date can appear. Date format is 'yyyymmdd'. Important: the study
-end data is also used to truncate risk windows, meaning no
-outcomes beyond the study end date will be considered.</p></dd>
-
-
 <dt id="arg-exposuredatabaseschema">exposureDatabaseSchema<a class="anchor" aria-label="anchor" href="#arg-exposuredatabaseschema"></a></dt>
 <dd><p>The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.</p></dd>
@@ -131,8 +114,8 @@ exposure data used to define the exposure cohorts is available.</p></dd>
 
 <dt id="arg-exposuretable">exposureTable<a class="anchor" aria-label="anchor" href="#arg-exposuretable"></a></dt>
 <dd><p>The tablename that contains the exposure cohorts. If
-exposureTable &lt;&gt; DRUG_ERA, then expectation is <code>exposureTable</code> has
-format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+exposureTable &lt;&gt; DRUG_ERA, then expectation is <code>exposureTable</code>
+has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.</p></dd>
 
 
@@ -148,43 +131,20 @@ outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.</p></dd>
 
 
-<dt id="arg-cdmversion">cdmVersion<a class="anchor" aria-label="anchor" href="#arg-cdmversion"></a></dt>
-<dd><p>Define the OMOP CDM version used: currently supports "5".</p></dd>
+<dt id="arg-nestingcohortdatabaseschema">nestingCohortDatabaseSchema<a class="anchor" aria-label="anchor" href="#arg-nestingcohortdatabaseschema"></a></dt>
+<dd><p>The name of the database schema that is the location where the
+data used to define the nesting cohorts is available.</p></dd>
 
 
-<dt id="arg-firstexposureonly">firstExposureOnly<a class="anchor" aria-label="anchor" href="#arg-firstexposureonly"></a></dt>
-<dd><p>Should only the first exposure per subject be included? Note
-that this is typically done in the <code><a href="createStudyPopulation.html">createStudyPopulation()</a></code>
-function, but can already be done here for efficiency reasons.</p></dd>
+<dt id="arg-nestingcohorttable">nestingCohortTable<a class="anchor" aria-label="anchor" href="#arg-nestingcohorttable"></a></dt>
+<dd><p>The tablename that contains the nesting cohorts. Must have
+the format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.</p></dd>
 
 
-<dt id="arg-removeduplicatesubjects">removeDuplicateSubjects<a class="anchor" aria-label="anchor" href="#arg-removeduplicatesubjects"></a></dt>
-<dd><p>Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.Note that this is typically done in the
-<code>createStudyPopulation</code> function, but can already be done
-here for efficiency reasons.</p></dd>
-
-
-<dt id="arg-restricttocommonperiod">restrictToCommonPeriod<a class="anchor" aria-label="anchor" href="#arg-restricttocommonperiod"></a></dt>
-<dd><p>Restrict the analysis to the period when both treatments are observed?</p></dd>
-
-
-<dt id="arg-washoutperiod">washoutPeriod<a class="anchor" aria-label="anchor" href="#arg-washoutperiod"></a></dt>
-<dd><p>The minimum required continuous observation time prior to index
-date for a person to be included in the cohort. Note that this
-is typically done in the <code>createStudyPopulation</code> function,
-but can already be done here for efficiency reasons.</p></dd>
-
-
-<dt id="arg-maxcohortsize">maxCohortSize<a class="anchor" aria-label="anchor" href="#arg-maxcohortsize"></a></dt>
-<dd><p>If either the target or the comparator cohort is larger than
-this number it will be sampled to this size. <code>maxCohortSize = 0</code>
-indicates no maximum size.</p></dd>
-
-
-<dt id="arg-covariatesettings">covariateSettings<a class="anchor" aria-label="anchor" href="#arg-covariatesettings"></a></dt>
-<dd><p>An object of type <code>covariateSettings</code> as created using the
-<code><a href="https://rdrr.io/pkg/FeatureExtraction/man/createCovariateSettings.html" class="external-link">FeatureExtraction::createCovariateSettings()</a></code> function.</p></dd>
+<dt id="arg-getdbcohortmethoddataargs">getDbCohortMethodDataArgs<a class="anchor" aria-label="anchor" href="#arg-getdbcohortmethoddataargs"></a></dt>
+<dd><p>An object of type <code>GetDbCohortMethodDataArgs</code> as created by
+the <code><a href="createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs()</a></code> function.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -198,16 +158,8 @@ occurring in exposed subjects. The treatment and comparator cohorts can be ident
 DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
 in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
 user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
-Covariates are automatically extracted from the appropriate tables within the CDM.</p>
-<p><strong>Important</strong>: The target and comparator drug must not be included in the covariates, including any descendant
-concepts. You will need to manually add the drugs and descendants to the <code>excludedCovariateConceptIds</code>
-of the <code>covariateSettings</code> argument.</p>
-<p>The <code>removeduplicateSubjects</code> argument can have one of the following values:</p><ul><li><p><code>"keep all"</code>: Do not remove subjects that appear in both target and comparator cohort</p></li>
-<li><p><code>"keep first"</code>: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.</p></li>
-<li><p><code>"remove all"</code>: Remove subjects that appear in both target and comparator cohort completely from the analysis."</p></li>
-</ul><p>If the <code>covariateSettings</code> include cohort-based covariates, and the <code>covariateCohortTable</code> is <code>NULL</code>, the
-<code>covariateCohortDatabaseSchema</code> and <code>covariateCohortTable</code> will be set to the <code>exposureDatabaseSchema</code> and
-<code>exposureTable</code>, respectively .</p>
+Optionally, the target and comparator cohorts can be restricted to be within a nesting cohort,
+which can reside in a  different database schema and table.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -219,7 +171,7 @@ of the <code>covariateSettings</code> argument.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

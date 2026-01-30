@@ -28,12 +28,8 @@ reference:
       - createPs
       - getPsModel
       - matchOnPs
-      - matchOnPsAndCovariates
       - trimByPs
-      - trimByPsToEquipoise
-      - trimByIptw
       - stratifyByPs
-      - stratifyByPsAndCovariates
       - truncateIptw
   - title: "Outcome models"
     desc: >
@@ -75,26 +71,26 @@ reference:
       - createTargetComparatorOutcomes
       - saveTargetComparatorOutcomesList
       - loadTargetComparatorOutcomesList
+      - createCmDiagnosticThresholds
+      - createCmAnalysesSpecifications
+      - convertUntypedListToCmAnalysesSpecifications
       - createMultiThreadingSettings
       - createDefaultMultiThreadingSettings
       - runCmAnalyses
-  - title: "Results of multiple analyses"
-    desc: >
-      Functions for viewing results of multiple analyses.
-    contents:
       - getFileReference
       - getResultsSummary
       - getInteractionResultsSummary
-      - createCmDiagnosticThresholds
+      - getDiagnosticsSummary
       - exportToCsv
+  - title: "Results upload"
+    desc: >
+      Uploading results to a database.
+    contents:
       - getResultsDataModelSpecifications
-      - insertExportedResultsInSqlite
-      - launchResultsViewerUsingSqlite
       - createResultsDataModel
       - migrateDataModel
       - getDataMigrator
       - uploadResults
-      - launchResultsViewer
   - title: "Simulation"
     desc: >
       Functions for simulating cohort method data objects.
@@ -115,4 +111,3 @@ navbar:
     hades:
       text: hadesLogo
       href: https://ohdsi.github.io/Hades
-

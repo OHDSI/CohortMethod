@@ -125,7 +125,7 @@ plotKaplanMeier <- function(population,
   }
 
   plot <- plot +
-    ggplot2::geom_step(size = 1) +
+    ggplot2::geom_step(linewidth = 1) +
     ggplot2::scale_color_manual(values = c(
       rgb(0.8, 0, 0, alpha = 0.8),
       rgb(0, 0, 0.8, alpha = 0.8)

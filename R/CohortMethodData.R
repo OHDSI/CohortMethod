@@ -93,16 +93,19 @@ loadCohortMethodData <- function(file) {
 #' @rdname CohortMethodData-class
 setMethod("show", "CohortMethodData", function(object) {
   metaData <- attr(object, "metaData")
-  cli::cat_line(pillar::style_subtle("# CohortMethodData object"))
-  cli::cat_line("")
-  cli::cat_line(paste("Target cohort ID:", metaData$targetId))
-  cli::cat_line(paste("Comparator cohort ID:", metaData$comparatorId))
-  cli::cat_line(paste(
+  writeLines("# CohortMethodData object")
+  writeLines("")
+  writeLines(paste("Target cohort ID:", metaData$targetId))
+  writeLines(paste("Comparator cohort ID:", metaData$comparatorId))
+  if (!is.null(metaData$nestingCohortId)) {
+    writeLines(paste("Nesting cohort ID:", metaData$nestingCohortId))
+  }
+  writeLines(paste(
     "Outcome cohort ID(s):",
     paste(metaData$outcomeIds, collapse = ",")
   ))
-  cli::cat_line("")
-  cli::cat_line(pillar::style_subtle("Inherits from CovariateData:"))
+  writeLines("")
+  writeLines("Inherits from CovariateData:")
   class(object) <- "CovariateData"
   attr(class(object), "package") <- "FeatureExtraction"
   show(object)
@@ -118,7 +121,7 @@ setMethod("summary", "CohortMethodData", function(object) {
   if (!Andromeda::isValidAndromeda(object)) {
     stop("Object is not valid. Probably the Andromeda object was closed.")
   }
-  cohorts <- object$cohorts %>%
+  cohorts <- object$cohorts |>
     collect()
   metaData <- attr(object, "metaData")
   targetPersons <- length(unique(cohorts$personSeqId[cohorts$treatment == 1]))
@@ -128,7 +131,7 @@ setMethod("summary", "CohortMethodData", function(object) {
     eventCount = 0,
     personCount = 0
   )
-  outcomes <- object$outcomes %>%
+  outcomes <- object$outcomes |>
     collect()
   for (i in 1:nrow(outcomeCounts)) {
     outcomeCounts$eventCount[i] <- sum(outcomes$outcomeId == metaData$outcomeIds[i])
@@ -152,6 +155,9 @@ print.summary.CohortMethodData <- function(x, ...) {
   writeLines("")
   writeLines(paste("Target cohort ID:", x$metaData$targetId))
   writeLines(paste("Comparator cohort ID:", x$metaData$comparatorId))
+  if (!is.null(x$metaData$nestingCohortId)) {
+    writeLines(paste("Nesting cohort ID:", x$metaData$nestingCohortId))
+  }
   writeLines(paste("Outcome cohort ID(s):", x$metaData$outcomeIds, collapse = ","))
   writeLines("")
   writeLines(paste("Target persons:", paste(x$targetPersons)))

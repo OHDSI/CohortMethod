@@ -211,7 +211,7 @@ plotFollowUpDistribution <- function(population,
     ggplot2::aes(x = .data$followUp, y = .data$sumCount, group = .data$label, color = .data$label)
   ) +
     ggplot2::geom_hline(yintercept = 0) +
-    ggplot2::geom_step(size = 1) +
+    ggplot2::geom_step(linewidth = 1) +
     ggplot2::scale_color_manual(values = c(
       rgb(0.8, 0, 0, alpha = 0.5),
       rgb(0, 0, 0.8, alpha = 0.5)

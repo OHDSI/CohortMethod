@@ -11,7 +11,7 @@ Functions for performing new-user cohort studies in an observational database in
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://ohdsi.github.io/CohortMethod}
+  \item \url{https://ohdsi.github.io/CohortMethod/}
   \item \url{https://github.com/OHDSI/CohortMethod}
   \item Report bugs at \url{https://github.com/OHDSI/CohortMethod/issues}
 }

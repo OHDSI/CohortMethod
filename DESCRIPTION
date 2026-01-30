@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
-Version: 5.5.2
-Date: 2025-10-30
+Version: 6.0.0
+Date: 2025-11-25
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
@@ -23,16 +23,17 @@ Description: Functions for performing new-user cohort studies
 	the stratification or matching.
 License: Apache License 2.0
 VignetteBuilder: knitr
-URL: https://ohdsi.github.io/CohortMethod, https://github.com/OHDSI/CohortMethod
+URL: https://ohdsi.github.io/CohortMethod/, https://github.com/OHDSI/CohortMethod
 BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
 	R (>= 4.1.0),
 	DatabaseConnector (>= 6.0.0),
-	Cyclops (>= 3.1.2),
+	Cyclops (>= 3.6.0),
 	FeatureExtraction  (>= 3.0.0),
 	Andromeda (>= 0.6.3)
 Imports:
 	methods,
+	utils,
 	ggplot2,
 	gridExtra,
 	grid,
@@ -40,27 +41,26 @@ Imports:
 	plyr,
 	dplyr,
 	rlang,
-	cli,
-	pillar,
 	Rcpp (>= 0.11.2),
 	SqlRender (>= 1.18.0),
 	survival,
 	ParallelLogger (>= 3.4.2),
-	bit64,
 	checkmate,
 	EmpiricalCalibration,
-	zip
+	jsonlite,
+	R6,
+	digest
 Suggests:
 	testthat,
 	pROC,
 	knitr,
 	rmarkdown,
 	Eunomia,
+	zip,
 	withr,
 	R.utils,
 	RSQLite,
 	ResultModelManager,
-	OhdsiShinyAppBuilder,
 	markdown
 SystemRequirements: Java
 LinkingTo: Rcpp

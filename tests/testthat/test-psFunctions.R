@@ -1,12 +1,17 @@
-library("testthat")
-library("pROC")
+library(CohortMethod)
+library(testthat)
+library(pROC)
 
 test_that("Simple 1-on-1 matching", {
   rowId <- 1:5
   treatment <- c(1, 0, 1, 0, 1)
   propensityScore <- c(0, 0.1, 0.3, 0.4, 1)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 1)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 1
+                      ))
   expect_equal(result$stratumId, c(0, 0, 1, 1))
 })
 
@@ -15,7 +20,11 @@ test_that("Simple 1-on-n matching", {
   treatment <- c(0, 1, 0, 0, 1, 0)
   propensityScore <- c(0, 0.1, 0.12, 0.85, 0.9, 1)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 100)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 100
+                      ))
   expect_equal(result$stratumId, c(0, 0, 0, 1, 1, 1))
 })
 
@@ -41,7 +50,11 @@ test_that("Simple 1-on-n matching", {
   treatment <- c(0, 1, 1, 1, 0)
   propensityScore <- rowId / 5
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 100)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 100
+                      ))
   expect_equal(result$stratumId, c(1, 1, 0, 0))
 })
 
@@ -50,7 +63,11 @@ test_that("Simple 1-on-n matching", {
   treatment <- c(0, 1, 0, 0, 0, 0, 1, 0)
   propensityScore <- c(0, 0.1, 0.11, 0.12, 0.13, 0.85, 0.9, 1)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 100)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 100
+                      ))
   expect_equal(result$stratumId, c(1, 0, 0, 0, 0, 1, 1, 1))
 })
 
@@ -59,7 +76,11 @@ test_that("Medium 1-on-n matching", {
   treatment <- rep(0:1, 5000)
   propensityScore <- (1:10000) / 10000
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 100)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 100
+                      ))
   expect_equal(max(result$stratumId), 4999)
 })
 
@@ -68,7 +89,12 @@ test_that("Medium n-on-1 matching", {
   treatment <- rep(c(1, 1, 1, 0), 2500)
   propensityScore <- (1:10000) / 10000
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 2, allowReverseMatch = TRUE)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 2,
+                        allowReverseMatch = TRUE
+                      ))
   expect_equal(nrow(result), 7500)
   expect_equal(data[data$rowId == 3, "treatment"], result[result$rowId == 3, "treatment"])
 })
@@ -78,7 +104,11 @@ test_that("Large 1-on-n matching", {
   treatment <- rep(0:1, 5e+05)
   propensityScore <- (1:1e+06) / 1e+06
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0, maxRatio = 100)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 100
+                      ))
   expect_equal(max(result$stratumId), 499999)
 })
 
@@ -87,7 +117,12 @@ test_that("Standardized caliper", {
   treatment <- c(rep(0, 9999), 1)
   propensityScore <- c(rnorm(9999, 0.5, 0.25), 0.8)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0.2, caliperScale = "standardized", maxRatio = 10000)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0.2,
+                        caliperScale = "standardized",
+                        maxRatio = 10000
+                      ))
   maxDistance <- max(abs(result$propensityScore - 0.8))
   expect_lt(maxDistance, 0.2 * sd(propensityScore))
 })
@@ -101,7 +136,12 @@ test_that("Standardized logit caliper", {
   treatment <- c(rep(0, 9999), 1)
   propensityScore <- invLogit(c(rnorm(9999, 0, 5), 8))
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- matchOnPs(data, caliper = 0.2, caliperScale = "standardized logit", maxRatio = 10000)
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0.2,
+                        caliperScale = "standardized logit",
+                        maxRatio = 10000
+                      ))
   logit <- function(p) {
     log(p / (1 - p))
   }
@@ -114,7 +154,7 @@ test_that("Trimming", {
   treatment <- rep(0:1, each = 100)
   propensityScore <- rep(1:100, 2) / 100
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- trimByPs(data, 0.05)
+  result <- trimByPs(data, trimByPsArgs = createTrimByPsArgs(trimFraction = 0.05))
   expect_equal(min(result$propensityScore[result$treatment == 0]), 0.01)
   expect_equal(max(result$propensityScore[result$treatment == 1]), 1)
   expect_equal(min(result$propensityScore[result$treatment == 1]), 0.06)
@@ -126,7 +166,7 @@ test_that("Stratification", {
   treatment <- rep(0:1, each = 100)
   propensityScore <- rep(1:100, 2) / 100
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- stratifyByPs(data, 10)
+  result <- stratifyByPs(data, stratifyByPsArgs = createStratifyByPsArgs(numberOfStrata = 10))
 
   paste(result$rowId[result$stratumId == 1], collapse = ",")
   expect_equal(
@@ -167,7 +207,12 @@ test_that("matching with extra variable", {
     propensityScore = propensityScore,
     age = floor(99:0 / 10)
   )
-  result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = c("age"))
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 1,
+                        matchColumns = "age"
+                      ))
   expect_equal(max(result$stratumId), 49)
   for (i in 0:max(result$stratumId)) {
     expect_equal(max(result$age[result$stratumId == i]), min(result$age[result$stratumId == i]))
@@ -185,12 +230,17 @@ test_that("matching with extra two variables", {
     age = floor(99:0 / 10),
     gender = rep(c(0, 1), each = 5, times = 10)
   )
-  result <- matchOnPs(data, caliper = 0, maxRatio = 1, stratificationColumns = c("age", "gender"))
+  result <- matchOnPs(population = data,
+                      matchOnPsArgs = createMatchOnPsArgs(
+                        caliper = 0,
+                        maxRatio = 1,
+                        matchColumns = c("age", "gender")
+                      ))
   expect_equal(max(result$stratumId), 39)
   for (i in 0:max(result$stratumId)) {
     expect_equal(max(result$age[result$stratumId == i]), min(result$age[result$stratumId == i]))
     expect_equal(max(result$gender[result$stratumId == i]), min(result$gender[result$stratumId ==
-      i]))
+                                                                                i]))
   }
 })
 
@@ -200,8 +250,8 @@ test_that("Error messages for wrong input", {
   treatment <- c(1, 0, 1, 0, 1)
   propensityScore <- c(0, 0.1, 0.3, 0.4, 1)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  expect_error(matchOnPs(data, caliper = 0.1, maxRatio = 1, caliperScale = "qwerty"))
-  strata <- matchOnPs(data, caliper = 0.25, maxRatio = 1, caliperScale = "propensity score")
+  expect_error(matchOnPs(data, matchOnPsArgs = createMatchOnPsArgs(caliperScale = "qwerty")))
+  strata <- matchOnPs(data, matchOnPsArgs = createMatchOnPsArgs())
   expect_error(plotPs(data, scale = "qwerty"))
   expect_error(plotPs(data, type = "qwerty"))
 })
@@ -212,7 +262,7 @@ test_that("IPTW ATT", {
   treatment <- c(1, 0, 1, 0, 1)
   propensityScore <- c(0.1, 0.2, 0.3, 0.4, 0.5)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  w <- computeIptw(data, estimator = "att")$iptw
+  w <- CohortMethod:::computeIptw(data, estimator = "att")$iptw
   wGoldStandard <- mean(treatment == 1) * treatment + mean(treatment == 0) * (1 - treatment) * propensityScore / (1 - propensityScore)
   expect_equal(w, wGoldStandard)
 })
@@ -222,7 +272,7 @@ test_that("IPTW ATO", {
   treatment <- c(1, 0, 1, 0, 1)
   propensityScore <- c(0.1, 0.2, 0.3, 0.4, 0.5)
   data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  w <- computeIptw(data, estimator = "ato")$iptw
+  w <- CohortMethod:::computeIptw(data, estimator = "ato")$iptw
   wGoldStandard <- (treatment == 1)*(1 - propensityScore) + (treatment == 0)*propensityScore
   expect_equal(w, wGoldStandard)
 })

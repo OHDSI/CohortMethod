@@ -23,9 +23,9 @@ system.time(
 # user  system elapsed
 # 49.89    4.90   56.78
 
-joined <- balance %>%
-  select("covariateId", old = "afterMatchingStdDiff") %>%
-  inner_join(balance2 %>%
+joined <- balance |>
+  select("covariateId", old = "afterMatchingStdDiff") |>
+  inner_join(balance2 |>
                select("covariateId", new = "afterMatchingStdDiff"))
 plot(joined$old, joined$new)
 
@@ -55,9 +55,9 @@ system.time(
 #    user  system elapsed
 #   51.09    4.51   59.84
 
-joined <- balance %>%
-  select(covariateId, old = afterMatchingStdDiff) %>%
-  inner_join(balance2 %>%
+joined <- balance |>
+  select(covariateId, old = afterMatchingStdDiff) |>
+  inner_join(balance2 |>
                select("covariateId", new = "afterMatchingStdDiff"))
 plot(joined$old, joined$new)
 

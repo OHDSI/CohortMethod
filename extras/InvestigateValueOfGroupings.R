@@ -135,8 +135,8 @@ saveCohortMethodData(cohortMethodData, file.path(folder, "cohortMethodData.zip")
 cohortMethodData <- loadCohortMethodData(file.path(folder, "cohortMethodData.zip"))
 
 # Without grouping variables -----------------------------------------------
-groupingCovariates <- cohortMethodData$covariateRef %>%
-  collect() %>%
+groupingCovariates <- cohortMethodData$covariateRef |>
+  collect() |>
   filter(grepl("drug_era group", .data$covariateName) |
            grepl("condition_era group", .data$covariateName) )
 
@@ -198,14 +198,14 @@ EmpiricalCalibration::plotCalibrationEffect(logRrNegatives = ncs$logRr,
 ncsWithoutGroups <- ncs
 
 # With grouping variables -----------------------------------------------
-# verbatimCovariates <- cohortMethodData$covariateRef %>%
-#   collect() %>%
+# verbatimCovariates <- cohortMethodData$covariateRef |>
+#   collect() |>
 #   filter(grepl("drug_exposure", .data$covariateName) |
 #            grepl("condition_occurrence", .data$covariateName) )
 #
-# erroneousConceptIds <- verbatimCovariates %>%
+# erroneousConceptIds <- verbatimCovariates |>
 #   filter(grepl("diclofenac", .data$covariateName) |
-#            grepl("celecoxib", .data$covariateName)) %>%
+#            grepl("celecoxib", .data$covariateName)) |>
 #   pull(conceptId)
 # writeLines(paste(erroneousConceptIds, collapse = ", "))
 

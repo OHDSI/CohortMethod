@@ -2,6 +2,7 @@
 <url><loc>https://ohdsi.github.io/CohortMethod/404.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/articles/index.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/articles/MultipleAnalyses.html</loc></url>
+<url><loc>https://ohdsi.github.io/CohortMethod/articles/ResultsSchema.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/articles/SingleStudies.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/authors.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/index.html</loc></url>
@@ -17,6 +18,8 @@
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/computeMdrr.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/computePsAuc.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/constructEras.html</loc></url>
+<url><loc>https://ohdsi.github.io/CohortMethod/reference/convertUntypedListToCmAnalysesSpecifications.html</loc></url>
+<url><loc>https://ohdsi.github.io/CohortMethod/reference/createCmAnalysesSpecifications.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/createCmAnalysis.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/createCmDiagnosticThresholds.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/createCmTable1.html</loc></url>
@@ -48,6 +51,7 @@
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/getDataMigrator.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/getDbCohortMethodData.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/getDefaultCmTable1Specifications.html</loc></url>
+<url><loc>https://ohdsi.github.io/CohortMethod/reference/getDiagnosticsSummary.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/getFileReference.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/getFollowUpDistribution.html</loc></url>
 <url><loc>https://ohdsi.github.io/CohortMethod/reference/getGeneralizabilityTable.html</loc></url>

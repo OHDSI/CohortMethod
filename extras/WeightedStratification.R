@@ -36,7 +36,7 @@ runOneSimulation <- function(seed, settings, strategy = "unadjusted") {
   population <- tibble(rowId = 1:settings$n,
                        treatment = as.integer(runif(settings$n, 0,1) < propensityScore),
                        propensityScore = propensityScore)
-  # plotPs(population, showEquiposeLabel = TRUE, showAucLabel = TRUE)
+  # plotPs(population, showEquipoiseLabel = TRUE, showAucLabel = TRUE)
   # mean(population$treatment)
   population$hr <- if_else(population$treatment == 1, hazardRatio(population$propensityScore), 1)
   population$hazard <- baselineHazard(population$propensityScore) * population$hr
@@ -93,13 +93,13 @@ runOneSimulation <- function(seed, settings, strategy = "unadjusted") {
     # fit <- fitCyclopsModel(cyclopsData, weights = population$weights)
   } else if (strategy == "weighted stratification") {
     strataPop <- stratifyByPs(population, numberOfStrata = 10)
-    counts <- strataPop %>%
-      group_by(stratumId, treatment) %>%
-      summarize(subjects = n(), outcomes = sum(y), .groups = "drop") %>%
+    counts <- strataPop |>
+      group_by(stratumId, treatment) |>
+      summarize(subjects = n(), outcomes = sum(y), .groups = "drop") |>
       ungroup()
-    strataPop <- strataPop %>%
-      group_by(stratumId) %>%
-      mutate(weight = mean(treatment)) %>%
+    strataPop <- strataPop |>
+      group_by(stratumId) |>
+      mutate(weight = mean(treatment)) |>
       ungroup()
     cyclopsData <- createCyclopsData(Surv(survivalTime, y) ~ treatment + strata(stratumId),
                                      data = strataPop,

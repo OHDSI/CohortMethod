@@ -7,9 +7,7 @@
 computeCovariateBalance(
   population,
   cohortMethodData,
-  subgroupCovariateId = NULL,
-  maxCohortSize = 250000,
-  covariateFilter = NULL
+  computeCovariateBalanceArgs = createComputeCovariateBalanceArgs()
 )
 }
 \arguments{
@@ -18,18 +16,7 @@ computeCovariateBalance(
 \item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
 \code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}.}
 
-\item{subgroupCovariateId}{Optional: a covariate ID of a binary covariate that indicates a subgroup of
-interest. Both the before and after populations will be restricted to this
-subgroup before computing covariate balance.}
-
-\item{maxCohortSize}{If the target or comparator cohort are larger than this number, they
-will be downsampled before computing covariate balance to save time.
-Setting this number to 0 means no downsampling will be applied.}
-
-\item{covariateFilter}{Determines the covariates for which to compute covariate balance. Either a vector
-of covariate IDs, or a table 1 specifications object as generated for example using
-\code{\link[FeatureExtraction:getDefaultTable1Specifications]{FeatureExtraction::getDefaultTable1Specifications()}}. If \code{covariateFilter = NULL},
-balance will be computed for all variables found in the data.}
+\item{computeCovariateBalanceArgs}{Settings object as created by \code{createComputeCovariateBalanceArgs()}.}
 }
 \value{
 Returns a tibble describing the covariate balance before and after PS adjustment,
@@ -44,6 +31,13 @@ and the following additional columns:
 \item beforeMatchingSdComparator: The standard deviation of the value in the comparator before PS adjustment.
 \item beforeMatchingMean: The mean of the value across target and comparator before PS adjustment.
 \item beforeMatchingSd: The standard deviation of the value across target and comparator before PS adjustment.
+\item beforeMatchingStdDiff: The standardized difference of means when comparing the target to
+the comparator before PS adjustment.
+\item beforeMatchingSdmVariance: The variance of the standardized difference of the means when comparing the target to
+the comparator before PS adjustment.
+\item beforeMatchingSdmP : The P-value for whether abs(beforeMatchingStdDiff) exceeds the threshold.
+\item beforeMatchingBalanced : TRUE if the covariate is considered balanced between the target and comparator before PS
+adjustment (depending on the threshold and alpha settings).
 \item afterMatchingMeanTarget: The (weighted) mean value in the target after PS adjustment.
 \item afterMatchingMeanComparator: The (weighted) mean value in the comparator after PS adjustment.
 \item afterMatchingSumTarget: The (weighted) sum value in the target after PS adjustment.
@@ -52,10 +46,13 @@ and the following additional columns:
 \item afterMatchingSdComparator: The standard deviation of the value in the comparator after PS adjustment.
 \item afterMatchingMean: The mean of the value across target and comparator after PS adjustment.
 \item afterMatchingSd: The standard deviation of the value across target and comparator after PS adjustment.
-\item beforeMatchingStdDiff: The standardized difference of means when comparing the target to
-the comparator before PS adjustment.
 \item afterMatchingStdDiff: The standardized difference of means when comparing the target to
 the comparator after PS adjustment.
+\item afterMatchingSdmVariance: The variance of the standardized difference of the means when comparing the target to
+the comparator after PS adjustment.
+\item afteMatchingSdmP : The P-value for whether abs(beforeMatchingStdDiff) exceeds the threshold.
+\item afteMatchingBalanced : TRUE if the covariate is considered balanced between the target and comparator before PS
+adjustment (depending on the threshold and alpha settings).
 \item targetStdDiff: The standardized difference of means when comparing the target
 before PS adjustment to the target after PS adjustment.
 \item comparatorStdDiff: The standardized difference of means when comparing the comparator
@@ -88,6 +85,9 @@ The population data frame should have the following three columns:
 }
 }
 \references{
-Austin, P.C. (2008) Assessing balance in measured baseline covariates when using many-to-one
+Austin, PC (2008) Assessing balance in measured baseline covariates when using many-to-one
 matching on the propensity-score. Pharmacoepidemiology and Drug Safety, 17: 1218-1225.
+
+Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ (2025)
+Assessing Covariate Balance with Small Sample Sizes. Stat Med. 2025 Aug;44(18-19):e70212.
 }

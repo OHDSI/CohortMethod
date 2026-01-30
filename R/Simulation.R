@@ -15,41 +15,41 @@
 # limitations under the License.
 
 .truncateSimulationProfile <- function(profile, minCellCount = 5) {
-    checkmate::assertClass(profile, "CohortDataSimulationProfile")
-    checkmate::assertIntegerish(minCellCount, lower = 0L, upper = profile$metaData$populationSize)
+  checkmate::assertClass(profile, "CohortDataSimulationProfile")
+  checkmate::assertIntegerish(minCellCount, lower = 0L, upper = profile$metaData$populationSize)
 
-    if (minCellCount == 0) {
-        warning("No truncation was done on low-prevalence covariates. Object may include low cell counts that enable identification of persons.")
-        return(profile)
-    }
-
-    minObservedNonzeroPrevalence <- profile$covariatePrevalence |>
-        filter(.data$prevalence > 0) |>
-        summarize(min(.data$prevalence)) |>
-        pull()
-
-    message(sprintf("Before truncating simulation profile, lowest non-zero covariate prevalence is %.08f (%.0f / %.0f)",
-            minObservedNonzeroPrevalence,
-            round(minObservedNonzeroPrevalence * profile$metaData$populationSize),
-            profile$metaData$populationSize))
-
-    minimumAllowedPrevalence <- minCellCount / profile$metaData$populationSize
-
-    profile$covariatePrevalence <- profile$covariatePrevalence |>
-        mutate(prevalence = ifelse(.data$prevalence < minimumAllowedPrevalence,
-                                   0, .data$prevalence))
-
-    truncatedMinObservedNonzeroPrevalence <- profile$covariatePrevalence |>
-        filter(.data$prevalence > 0) |>
-        summarize(min(.data$prevalence)) |>
-        pull()
-
-    message(sprintf("After truncating simulation profile, lowest non-zero covariate prevalence is %.08f (%.0f / %.0f)",
-            truncatedMinObservedNonzeroPrevalence,
-            round(truncatedMinObservedNonzeroPrevalence * profile$metaData$populationSize),
-            profile$metaData$populationSize))
-
+  if (minCellCount == 0) {
+    warning("No truncation was done on low-prevalence covariates. Object may include low cell counts that enable identification of persons.")
     return(profile)
+  }
+
+  minObservedNonzeroPrevalence <- profile$covariatePrevalence |>
+    filter(.data$prevalence > 0) |>
+    summarize(min(.data$prevalence)) |>
+    pull()
+
+  message(sprintf("Before truncating simulation profile, lowest non-zero covariate prevalence is %.08f (%.0f / %.0f)",
+                  minObservedNonzeroPrevalence,
+                  round(minObservedNonzeroPrevalence * profile$metaData$populationSize),
+                  profile$metaData$populationSize))
+
+  minimumAllowedPrevalence <- minCellCount / profile$metaData$populationSize
+
+  profile$covariatePrevalence <- profile$covariatePrevalence |>
+    mutate(prevalence = ifelse(.data$prevalence < minimumAllowedPrevalence,
+                               0, .data$prevalence))
+
+  truncatedMinObservedNonzeroPrevalence <- profile$covariatePrevalence |>
+    filter(.data$prevalence > 0) |>
+    summarize(min(.data$prevalence)) |>
+    pull()
+
+  message(sprintf("After truncating simulation profile, lowest non-zero covariate prevalence is %.08f (%.0f / %.0f)",
+                  truncatedMinObservedNonzeroPrevalence,
+                  round(truncatedMinObservedNonzeroPrevalence * profile$metaData$populationSize),
+                  profile$metaData$populationSize))
+
+  return(profile)
 }
 
 
@@ -61,7 +61,7 @@
 #' characteristics.
 #'
 #' @template CohortMethodData
-#' @param minCellCount If > 0, willset to zero all low-prevalence covariates in
+#' @param minCellCount If > 0, will set to zero all low-prevalence covariates in
 #' the supplied simulation table in order to prevent identification of persons.
 #'
 #' @details
@@ -108,8 +108,10 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData,
 
   message("Computing propensity model")
   propensityScore <- createPs(cohortMethodData,
-                              maxCohortSizeForFitting = 25000,
-                              prior = Cyclops::createPrior("laplace", 0.1, exclude = 0)
+                              createPsArgs = createCreatePsArgs(
+                                maxCohortSizeForFitting = 25000,
+                                prior = Cyclops::createPrior("laplace", 0.1, exclude = 0)
+                              )
   )
   propensityModel <- attr(propensityScore, "metaData")$psModelCoef
 
@@ -121,20 +123,31 @@ createCohortMethodDataSimulationProfile <- function(cohortMethodData,
     studyPop <- createStudyPopulation(
       cohortMethodData = cohortMethodData,
       population = propensityScore,
-      minDaysAtRisk = 1,
-      removeSubjectsWithPriorOutcome = FALSE,
-      outcomeId = outcomeId
+      outcomeId = outcomeId,
+      createStudyPopulationArgs = createCreateStudyPopulationArgs(
+        minDaysAtRisk = 1,
+        removeSubjectsWithPriorOutcome = FALSE
+      )
     )
-    studyPop <- matchOnPs(studyPop, caliper = 0.25, caliperScale = "standardized", maxRatio = 1)
+    studyPop <- matchOnPs(
+      population = studyPop,
+      matchOnPsArgs = createMatchOnPsArgs(
+        caliper = 0.25,
+        caliperScale = "standardized",
+        maxRatio = 1
+      )
+    )
     outcomeModel <- fitOutcomeModel(
       population = studyPop,
       cohortMethodData = cohortMethodData,
-      modelType = "poisson",
-      stratified = FALSE,
-      useCovariates = TRUE,
-      prior = Cyclops::createPrior("laplace", 0.1, exclude = 0),
-      control = Cyclops::createControl(threads = 2),
-      profileBounds = NULL
+      fitOutcomeModelArgs = createFitOutcomeModelArgs(
+        modelType = "poisson",
+        stratified = FALSE,
+        useCovariates = TRUE,
+        prior = Cyclops::createPrior("laplace", 0.1, exclude = 0),
+        control = Cyclops::createControl(threads = 2),
+        profileBounds = NULL
+      )
     )
     outcomeModels[[i]] <- outcomeModel$outcomeModelCoefficients[outcomeModel$outcomeModelCoefficients != 0]
   }

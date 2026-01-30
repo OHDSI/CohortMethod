@@ -54,10 +54,6 @@ getDbCmDataArgs <- createGetDbCohortMethodDataArgs(
 # Duplicating some operations from createGetDbCohortMethodDataArgs just so we test them:
 createStudyPopArgs1 <- createCreateStudyPopulationArgs(
   removeSubjectsWithPriorOutcome = TRUE,
-  firstExposureOnly = TRUE,
-  restrictToCommonPeriod = TRUE,
-  removeDuplicateSubjects = "remove all",
-  washoutPeriod = 183,
   censorAtNewRiskWindow = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -68,10 +64,6 @@ createStudyPopArgs1 <- createCreateStudyPopulationArgs(
 
 createStudyPopArgs2 <- createCreateStudyPopulationArgs(
   removeSubjectsWithPriorOutcome = TRUE,
-  firstExposureOnly = TRUE,
-  restrictToCommonPeriod = TRUE,
-  removeDuplicateSubjects = "keep first",
-  washoutPeriod = 183,
   censorAtNewRiskWindow = TRUE,
   minDaysAtRisk = 1,
   riskWindowStart = 0,
@@ -86,7 +78,7 @@ cmAnalysis1 <- createCmAnalysis(
   analysisId = 1,
   description = "No matching, simple outcome model",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs1,
+  createStudyPopulationArgs = createStudyPopArgs1,
   fitOutcomeModelArgs = fitOutcomeModelArgs1
 )
 
@@ -111,7 +103,7 @@ cmAnalysis2 <- createCmAnalysis(
   analysisId = 2,
   description = "Matching",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs2,
+  createStudyPopulationArgs = createStudyPopArgs2,
   createPsArgs = createPsArgs,
   matchOnPsArgs = matchOnPsArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
@@ -129,7 +121,7 @@ cmAnalysis3 <- createCmAnalysis(
   analysisId = 3,
   description = "IPTW",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs2,
+  createStudyPopulationArgs = createStudyPopArgs2,
   createPsArgs = createPsArgs,
   truncateIptwArgs = truncateIptwArgs,
   computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
@@ -146,7 +138,7 @@ cmAnalysis4 <- createCmAnalysis(
   analysisId = 4,
   description = "Matching with gender interaction",
   getDbCohortMethodDataArgs = getDbCmDataArgs,
-  createStudyPopArgs = createStudyPopArgs2,
+  createStudyPopulationArgs = createStudyPopArgs2,
   createPsArgs = createPsArgs,
   matchOnPsArgs = matchOnPsArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs4
@@ -165,9 +157,11 @@ result <- runCmAnalyses(
   exposureTable = "cohort",
   outcomeTable = "cohort",
   outputFolder = outputFolder,
-  cmAnalysisList = cmAnalysisList,
-  targetComparatorOutcomesList = targetComparatorOutcomesList,
-  analysesToExclude = analysesToExclude
+  cmAnalysesSpecifications = createCmAnalysesSpecifications(
+    cmAnalysisList = cmAnalysisList,
+    targetComparatorOutcomesList = targetComparatorOutcomesList,
+    analysesToExclude = analysesToExclude
+  )
 )
 
 

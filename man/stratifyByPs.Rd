@@ -6,24 +6,19 @@
 \usage{
 stratifyByPs(
   population,
-  numberOfStrata = 5,
-  stratificationColumns = c(),
-  baseSelection = "all"
+  stratifyByPsArgs = createStratifyByPsArgs(),
+  cohortMethodData = NULL
 )
 }
 \arguments{
 \item{population}{A data frame with the three columns described below}
 
-\item{numberOfStrata}{How many strata? The boundaries of the strata are automatically
-defined to contain equal numbers of target persons.}
+\item{stratifyByPsArgs}{An object of type \code{StratifyByPsArgs} as created by the
+\code{createStratifyByPsArgs()} function.}
 
-\item{stratificationColumns}{Names of one or more columns in the \code{data} data.frame on which
-subjects should also be stratified in addition to stratification on
-propensity score.}
-
-\item{baseSelection}{What is the base selection of subjects where the strata bounds are
-to be determined? Strata are defined as equally-sized strata inside
-this selection. Possible values are "all", "target", and "comparator".}
+\item{cohortMethodData}{An object of type \link{CohortMethodData} as generated using
+\code{\link[=getDbCohortMethodData]{getDbCohortMethodData()}}. Needed when additionally matching on
+covariate IDs.}
 }
 \value{
 Returns a tibble with the same columns as the input data plus one extra column: stratumId.
@@ -45,6 +40,6 @@ rowId <- 1:200
 treatment <- rep(0:1, each = 100)
 propensityScore <- c(runif(100, min = 0, max = 1), runif(100, min = 0, max = 1))
 data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-result <- stratifyByPs(data, 5)
+result <- stratifyByPs(data, createStratifyByPsArgs(numberOfStrata = 5))
 
 }

@@ -11,3 +11,5 @@ compare_versions
 .github
 docs
 .idea
+^cran-comments.md$
+^CRAN-SUBMISSION$

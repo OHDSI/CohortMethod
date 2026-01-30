@@ -1,5 +1,6 @@
-library("testthat")
-library("survival")
+library(CohortMethod)
+library(testthat)
+library(survival)
 
 
 test_that("Unweighted Kaplan-Meier", {

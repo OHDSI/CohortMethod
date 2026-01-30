@@ -11,19 +11,13 @@ getDbCohortMethodData(
   targetId,
   comparatorId,
   outcomeIds,
-  studyStartDate = "",
-  studyEndDate = "",
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "condition_occurrence",
-  cdmVersion = "5",
-  firstExposureOnly = FALSE,
-  removeDuplicateSubjects = "keep all",
-  restrictToCommonPeriod = FALSE,
-  washoutPeriod = 0,
-  maxCohortSize = 0,
-  covariateSettings
+  nestingCohortDatabaseSchema = cdmDatabaseSchema,
+  nestingCohortTable = "cohort",
+  getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs()
 )
 }
 \arguments{
@@ -35,9 +29,9 @@ instance. Requires read permissions to this database. On SQL
 Server, this should specify both the database and the schema,
 so for example 'cdm_instance.dbo'.}
 
-\item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
-emulate temp tables, provide a schema with write privileges where temp tables
-can be created.}
+\item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly
+support temp tables. To emulate temp tables, provide a schema
+with write privileges where temp tables can be created.}
 
 \item{targetId}{A unique identifier to define the target cohort.  If
 exposureTable = DRUG_ERA, targetId is a concept ID and all
@@ -54,20 +48,12 @@ table.}
 
 \item{outcomeIds}{A list of cohort IDs used to define outcomes.}
 
-\item{studyStartDate}{A calendar date specifying the minimum date that a cohort index
-date can appear. Date format is 'yyyymmdd'.}
-
-\item{studyEndDate}{A calendar date specifying the maximum date that a cohort index
-date can appear. Date format is 'yyyymmdd'. Important: the study
-end data is also used to truncate risk windows, meaning no
-outcomes beyond the study end date will be considered.}
-
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.}
 
 \item{exposureTable}{The tablename that contains the exposure cohorts. If
-exposureTable <> DRUG_ERA, then expectation is \code{exposureTable} has
-format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+exposureTable <> DRUG_ERA, then expectation is \code{exposureTable}
+has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where the
@@ -78,30 +64,15 @@ outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table: COHORT_DEFINITION_ID,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently supports "5".}
+\item{nestingCohortDatabaseSchema}{The name of the database schema that is the location where the
+data used to define the nesting cohorts is available.}
 
-\item{firstExposureOnly}{Should only the first exposure per subject be included? Note
-that this is typically done in the \code{\link[=createStudyPopulation]{createStudyPopulation()}}
-function, but can already be done here for efficiency reasons.}
+\item{nestingCohortTable}{The tablename that contains the nesting cohorts. Must have
+the format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.}
 
-\item{removeDuplicateSubjects}{Remove subjects that are in both the target and comparator
-cohort? See details for allowed values.Note that this is typically done in the
-\code{createStudyPopulation} function, but can already be done
-here for efficiency reasons.}
-
-\item{restrictToCommonPeriod}{Restrict the analysis to the period when both treatments are observed?}
-
-\item{washoutPeriod}{The minimum required continuous observation time prior to index
-date for a person to be included in the cohort. Note that this
-is typically done in the \code{createStudyPopulation} function,
-but can already be done here for efficiency reasons.}
-
-\item{maxCohortSize}{If either the target or the comparator cohort is larger than
-this number it will be sampled to this size. \code{maxCohortSize = 0}
-indicates no maximum size.}
-
-\item{covariateSettings}{An object of type \code{covariateSettings} as created using the
-\code{\link[FeatureExtraction:createCovariateSettings]{FeatureExtraction::createCovariateSettings()}} function.}
+\item{getDbCohortMethodDataArgs}{An object of type \code{GetDbCohortMethodDataArgs} as created by
+the \code{\link[=createGetDbCohortMethodDataArgs]{createGetDbCohortMethodDataArgs()}} function.}
 }
 \value{
 A \link{CohortMethodData} object.
@@ -116,20 +87,6 @@ occurring in exposed subjects. The treatment and comparator cohorts can be ident
 DRUG_ERA table, or through user-defined cohorts in a cohort table either inside the CDM schema or
 in a separate schema. Similarly, outcomes are identified using the CONDITION_ERA table or through
 user-defined cohorts in a cohort table either inside the CDM schema or in a separate schema.
-Covariates are automatically extracted from the appropriate tables within the CDM.
-
-\strong{Important}: The target and comparator drug must not be included in the covariates, including any descendant
-concepts. You will need to manually add the drugs and descendants to the \code{excludedCovariateConceptIds}
-of the \code{covariateSettings} argument.
-
-The \code{removeduplicateSubjects} argument can have one of the following values:
-\itemize{
-\item \code{"keep all"}: Do not remove subjects that appear in both target and comparator cohort
-\item \code{"keep first"}: When a subjects appear in both target and comparator cohort, only keep whichever cohort is first in time.
-\item \code{"remove all"}: Remove subjects that appear in both target and comparator cohort completely from the analysis."
-}
-
-If the \code{covariateSettings} include cohort-based covariates, and the \code{covariateCohortTable} is \code{NULL}, the
-\code{covariateCohortDatabaseSchema} and \code{covariateCohortTable} will be set to the \code{exposureDatabaseSchema} and
-\code{exposureTable}, respectively .
+Optionally, the target and comparator cohorts can be restricted to be within a nesting cohort,
+which can reside in a  different database schema and table.
 }
