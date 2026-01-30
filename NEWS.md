@@ -87,6 +87,8 @@ This major release introduces many changes. The three most important ones are (1
 
 28. Changed the data type of the `interaction_covariate_id` field in the `cm_interaction_result` table from `INT` to `BIGINT`.
 
+29. Fixed trimming by IPTW using `trimFraction` argument.
+
 
 CohortMethod 5.5.2
 ==================
