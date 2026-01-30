@@ -740,16 +740,13 @@ trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction 
   checkmate::assertR6(trimByPsArgs, "TrimByPsArgs", add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
-  beforeCountTarget <- sum(population$treatment == 1)
-  beforeCountComparator <- sum(population$treatment == 0)
-
   if (!is.null(trimByPsArgs$trimFraction)) {
-    cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
-                             trimByPsArgs$trimFraction)
-    cutoffComparator <- quantile(population$propensityScore[population$treatment == 0],
-                                 1 - trimByPsArgs$trimFraction)
-    population <- population[(population$propensityScore >= cutoffTarget & population$treatment == 1) |
-                               (population$propensityScore <= cutoffComparator & population$treatment == 0), ]
+    cutoffTarget <- quantile(population$propensityScore[population$treatment == 1], 
+                             1 - trimFraction)
+    cutoffComparator <- quantile(population$propensityScore[population$treatment == 0], 
+                                 trimFraction)
+    population <- population[(population$propensityScore <= cutoffTarget & population$treatment == 1) |
+                         (population$propensityScore >= cutoffComparator & population$treatment == 0), ]
     if (!is.null(attr(population, "metaData"))) {
       attr(
         population,
