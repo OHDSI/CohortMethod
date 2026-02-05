@@ -126,6 +126,7 @@ createPs <- function(cohortMethodData,
       group_by(.data$rowId) |>
       summarise() |>
       pull(.data$rowId)
+
     if (all(rowIds %in% population$rowId) &&
         length(createPsArgs$includeCovariateIds) == 0 &&
         length(createPsArgs$excludeCovariateIds) == 0) {
@@ -156,12 +157,14 @@ createPs <- function(cohortMethodData,
       covariateData <- FeatureExtraction::tidyCovariateData(filteredCovariateData)
       close(filteredCovariateData)
     }
+
     metaData$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
     metaData$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
 
     covariateData$outcomes <- population |>
       rename(y = "treatment") |>
       arrange(.data$rowId)
+
     floatingPoint <- getOption("floatingPoint")
     if (is.null(floatingPoint)) {
       floatingPoint <- 64
@@ -706,7 +709,6 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' @param population     A data frame with the three columns described below
 #' @param trimByPsArgs  An object of type `trimByPsArgs` as created by the
 #'                       [createTrimByPsArgs()] function.
-#'
 #' @details
 #' The data frame should have the following three columns:
 #'
@@ -732,6 +734,7 @@ computePsAuc <- function(data, confidenceIntervals = FALSE, maxRows = 100000) {
 #' result2 <- trimByPs(data, createTrimByPsArgs(equipoiseBounds = c(0.3, 0.7)))
 #' result3 <- trimByPs(data, createTrimByPsArgs(maxWeight = 10))
 #'
+
 #' @export
 trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction = 0.05)) {
   errorMessages <- checkmate::makeAssertCollection()
@@ -744,12 +747,59 @@ trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction 
   beforeCountComparator <- sum(population$treatment == 0)
 
   if (!is.null(trimByPsArgs$trimFraction)) {
-    cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
-                             1 - trimByPsArgs$trimFraction)
-    cutoffComparator <- quantile(population$propensityScore[population$treatment == 0],
-                                 trimByPsArgs$trimFraction)
-    population <- population[(population$propensityScore <= cutoffTarget & population$treatment == 1) |
-                         (population$propensityScore >= cutoffComparator & population$treatment == 0), ]
+    if (trimByPsArgs$trimMethod %in% c("asymmetric", "reverse asymmetric")){
+      # Remove overlapping patients
+      bounds <- population |>
+        group_by(treatment) |>
+        summarise(minPs = min(propensityScore),
+                  maxPs = max(propensityScore),
+                  .groups = "drop"
+        )
+      lower <- max(bounds$minPs)
+      upper <- min(bounds$maxPs)
+      population <- population |>
+        filter(propensityScore >= lower,
+               propensityScore <= upper)
+
+      deltaTarget <- beforeCountTarget - sum(population$treatment == 1)
+      deltaComparator <- beforeCountComparator - sum(population$treatment == 0)
+
+      message <- sprintf("Removed %d (%0.1f%%) rows from the target, %d (%0.1f%%) rows from the comparator not in overlap.",
+                         deltaTarget,
+                         100 * deltaTarget / beforeCountTarget,
+                         deltaComparator,
+                         100 * deltaComparator / beforeCountComparator)
+      ParallelLogger::logDebug(message)
+    }
+
+    if (trimByPsArgs$trimMethod == "symmetric"){
+      population <- population |>
+        filter(propensityScore > trimByPsArgs$trimFraction,
+               propensityScore < (1 - trimByPsArgs$trimFraction))
+    } else if (trimByPsArgs$trimMethod == "asymmetric"){
+      cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
+                               trimByPsArgs$trimFraction)
+      cutoffComparator <- quantile(population$propensityScore[population$treatment == 0],
+                                   1 - trimByPsArgs$trimFraction)
+      population <- population[(population$propensityScore >= cutoffTarget &
+                                  population$treatment == 1) |
+                                 (population$propensityScore <= cutoffComparator &
+                                    population$treatment == 0), ]
+    } else if (trimByPsArgs$trimMethod == "reverse asymmetric"){
+      cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
+                               1 - trimByPsArgs$trimFraction)
+      cutoffComparator <- quantile(population$propensityScore[population$treatment == 0],
+                                   trimByPsArgs$trimFraction)
+      population <- population[(population$propensityScore <= cutoffTarget &
+                                  population$treatment == 1) |
+                                 (population$propensityScore >= cutoffComparator &
+                                    population$treatment == 0), ]
+    }
+
+    # check if we removed an entire treatment group:
+    if (all(population$treatment == 0) || all(population$treatment == 1)) {
+      warning("One or more groups removed after trimming, consider updating trimFraction")
+    }
     if (!is.null(attr(population, "metaData"))) {
       attr(
         population,
@@ -785,7 +835,7 @@ trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction 
   deltaTarget <- beforeCountTarget - sum(population$treatment == 1)
   deltaComparator <- beforeCountComparator - sum(population$treatment == 0)
 
-  message <- sprintf("Trimming removed %d (%0.1f%%) rows from the target, %d (%0.1f%%) rows from the comparator.",
+  message <- sprintf("Trimming removed %d (%0.1f%%) rows from the target, %d (%0.1f%%) rows from the comparator in total.",
                      deltaTarget,
                      100 * deltaTarget / beforeCountTarget,
                      deltaComparator,

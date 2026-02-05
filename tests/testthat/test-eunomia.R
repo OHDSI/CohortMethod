@@ -204,7 +204,25 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       fitOutcomeModelArgs = fitOutcomeModelArgs5
     )
 
-    cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5)
+    trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.01,
+                                       trimMethod = "asymmetric")
+
+    fitOutcomeModelArgs6 <- createFitOutcomeModelArgs(
+      modelType = "cox",
+      inversePtWeighting = TRUE
+    )
+    cmAnalysis6 <- createCmAnalysis(
+      analysisId = 6,
+      description = "IPTW with asymmetric trimming",
+      getDbCohortMethodDataArgs = getDbCmDataArgs,
+      createStudyPopulationArgs = createStudyPopArgs2,
+      createPsArgs = createPsArgs,
+      trimByPsArgs = trimByPsArgs,
+      computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+      fitOutcomeModelArgs = fitOutcomeModelArgs6
+    )
+
+    cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3, cmAnalysis4, cmAnalysis5, cmAnalysis6)
 
     analysesToExclude <- data.frame(
       targetId = c(998, 998),
@@ -231,7 +249,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     ref <- getFileReference(outputFolder1)
-    expect_equal(nrow(ref), 26)
+    expect_equal(nrow(ref), 32)
 
     # analysesToExclude was enforced:
     expect_false(any(ref$targetId == 998 & ref$analysisId == 3))
@@ -239,7 +257,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     analysisSum <- getResultsSummary(outputFolder1)
 
-    expect_equal(nrow(analysisSum), 26)
+    expect_equal(nrow(analysisSum), 32)
 
     exportToCsv(outputFolder1, databaseId = "Test")
     cohortMethodResultFile <- file.path(outputFolder1, "export", "cm_result.csv")
