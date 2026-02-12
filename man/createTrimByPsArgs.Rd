@@ -25,10 +25,10 @@ preference score (Walker, 2013) for keeping persons.}
 \item{trimMethod}{The trimming method to be performed. Three methods are supported:
 \itemize{
 \item symmetric: trims all units with estimated PS outside the interval
-(\code{trimFraction},1−\code{trimFraction}), following Crump et al. (2009).
+(\code{trimFraction},1-\code{trimFraction}), following Crump et al. (2009).
 \item asymmetric: removes all units not in the overlap PS range and trims the
 \code{trimFraction} target persons with the lowest propensity scores and comparator
-persons with the highest propensity scores, following Stürmer et al. (2010).
+persons with the highest propensity scores, following Sturmer et al. (2010).
 \item reverse asymmetric: removes all units not in the overlap PS range and trims the
 \code{trimFraction} target persons with the highest propensity scores and comparator
 persons with the lowest propensity scores (not suggested).
@@ -52,7 +52,7 @@ Comparative Effective Research, 3, 11-20
 Crump, Richard K., V. Joseph Hotz, Guido W. Imbens, and Oscar A. Mitnik. 2009. Dealing
 with limited overlap in estimation of average treatment effects. Biometrika 96(1): 187-199.
 
-Stürmer T, Rothman KJ, Avorn J, Glynn RJ. Treatment effects in the presence of unmeasured
+Sturmer T, Rothman KJ, Avorn J, Glynn RJ. Treatment effects in the presence of unmeasured
 confounding: dealing with observations in the tails of the propensity score distribution--a simulation study.
 Am J Epidemiol. 2010 Oct 1;172(7):843-54.
 }

@@ -2,7 +2,7 @@ Package: CohortMethod
 Type: Package
 Title: New-User Cohort Method with Large Scale Propensity and Outcome Models
 Version: 6.0.0
-Date: 2025-11-25
+Date: 2026-02-13
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
@@ -61,7 +61,8 @@ Suggests:
 	R.utils,
 	RSQLite,
 	ResultModelManager,
-	markdown
+	markdown,
+	PSweight
 SystemRequirements: Java
 LinkingTo: Rcpp
 NeedsCompilation: yes

@@ -750,16 +750,16 @@ trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction 
     if (trimByPsArgs$trimMethod %in% c("asymmetric", "reverse asymmetric")){
       # Remove overlapping patients
       bounds <- population |>
-        group_by(treatment) |>
-        summarise(minPs = min(propensityScore),
-                  maxPs = max(propensityScore),
+        group_by(.data$treatment) |>
+        summarise(minPs = min(.data$propensityScore),
+                  maxPs = max(.data$propensityScore),
                   .groups = "drop"
         )
       lower <- max(bounds$minPs)
       upper <- min(bounds$maxPs)
       population <- population |>
-        filter(propensityScore >= lower,
-               propensityScore <= upper)
+        filter(.data$propensityScore >= lower,
+               .data$propensityScore <= upper)
 
       deltaTarget <- beforeCountTarget - sum(population$treatment == 1)
       deltaComparator <- beforeCountComparator - sum(population$treatment == 0)

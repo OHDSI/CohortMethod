@@ -429,10 +429,10 @@ CreatePsArgs <- R6Class(
 #' @param trimMethod     The trimming method to be performed. Three methods are supported:
 #'
 #' - symmetric: trims all units with estimated PS outside the interval
-#' (`trimFraction`,1−`trimFraction`), following Crump et al. (2009).
+#' (`trimFraction`,1-`trimFraction`), following Crump et al. (2009).
 #' - asymmetric: removes all units not in the overlap PS range and trims the
 #' `trimFraction` target persons with the lowest propensity scores and comparator
-#' persons with the highest propensity scores, following Stürmer et al. (2010).
+#' persons with the highest propensity scores, following Sturmer et al. (2010).
 #' - reverse asymmetric: removes all units not in the overlap PS range and trims the
 #' `trimFraction` target persons with the highest propensity scores and comparator
 #' persons with the lowest propensity scores (not suggested).
@@ -445,7 +445,7 @@ CreatePsArgs <- R6Class(
 #' Crump, Richard K., V. Joseph Hotz, Guido W. Imbens, and Oscar A. Mitnik. 2009. Dealing
 #' with limited overlap in estimation of average treatment effects. Biometrika 96(1): 187-199.
 #'
-#' Stürmer T, Rothman KJ, Avorn J, Glynn RJ. Treatment effects in the presence of unmeasured
+#' Sturmer T, Rothman KJ, Avorn J, Glynn RJ. Treatment effects in the presence of unmeasured
 #' confounding: dealing with observations in the tails of the propensity score distribution--a simulation study.
 #' Am J Epidemiol. 2010 Oct 1;172(7):843-54.
 #'

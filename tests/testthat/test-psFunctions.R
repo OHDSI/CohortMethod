@@ -1,7 +1,7 @@
 library(CohortMethod)
 library(testthat)
 library(pROC)
-library(PSweight)
+# library(PSweight)
 
 test_that("Simple 1-on-1 matching", {
   rowId <- 1:5
@@ -267,6 +267,7 @@ test_that("IPTW ATO", {
 })
 
 test_that("Trimming symmetric", {
+  skip_if_not_installed("PSweight")
   rowId <- 1:10000
   treatment <- rep(c(1, 1, 1, 0), 2500)
   propensityScore <- (1:10000) / 10000
@@ -275,7 +276,7 @@ test_that("Trimming symmetric", {
                                      trimMethod = "symmetric")
   result <- trimByPs(data,
                      trimByPsArgs = trimByPsArgs)
-  gold <- PStrim(data = data,
+  gold <- PSweight::PStrim(data = data,
                  zname = "treatment",
                  ps.estimate = data$propensityScore,
                  delta = 0.1)
@@ -305,6 +306,7 @@ test_that("Trimming removing an entire treatment group", {
 })
 
 test_that("Trimming symmetric", {
+  skip_if_not_installed("PSweight")
   rowId <- 1:10000
   treatment <- rep(c(1, 1, 1, 0), 2500)
   propensityScore <- (1:10000) / 10000
@@ -313,7 +315,7 @@ test_that("Trimming symmetric", {
                                      trimMethod = "symmetric")
   result <- trimByPs(data,
                      trimByPsArgs = trimByPsArgs)
-  gold <- PStrim(data = data,
+  gold <- PSweight::PStrim(data = data,
                  zname = "treatment",
                  ps.estimate = data$propensityScore,
                  delta = 0.1)
