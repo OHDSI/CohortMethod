@@ -63,10 +63,12 @@ This major release introduces many changes. The three most important ones are (1
 
 21. Renamed the `showEquipoiseLabel` argument of `plotPs()` to `showEquipoiseLabel`.
 
+22. Updated the `trimByPs()` function. This now supports three different trimming functions as described in the literature.
+
 
 ## Minor changes
  
-22. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
+23. Added support for grid-with-gradient likelihood profiles. Use the following arguments in `createFitOutcomeModelArgs()` to use:
     
     ```r
     profileGrid = seq(log(0.1), log(10), length.out = 8),
