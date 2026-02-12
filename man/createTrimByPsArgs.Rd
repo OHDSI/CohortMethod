@@ -7,18 +7,32 @@
 createTrimByPsArgs(
   trimFraction = NULL,
   equipoiseBounds = NULL,
-  maxWeight = NULL
+  maxWeight = NULL,
+  trimMethod = "symmetric"
 )
 }
 \arguments{
-\item{trimFraction}{This fraction will be removed from each treatment group. In the target
-group, persons with the highest propensity scores will be removed, in the
-comparator group person with the lowest scores will be removed.}
+\item{trimFraction}{For \code{trimFraction = symmetric}: the PS cut-off value.
+For \code{trimFraction = asymmetric} or \verb{reverse asymmetric}: the
+fraction that will be removed from each treatment group.
+See \code{trimMethod} for more details.}
 
 \item{equipoiseBounds}{A 2-dimensional numeric vector containing the upper and lower bound on the
-preference score (Walker, 201) for keeping persons.}
+preference score (Walker, 2013) for keeping persons.}
 
 \item{maxWeight}{The maximum allowed IPTW.}
+
+\item{trimMethod}{The trimming method to be performed. Three methods are supported:
+\itemize{
+\item symmetric: trims all units with estimated PS outside the interval
+(\code{trimFraction},1−\code{trimFraction}), following Crump et al. (2009).
+\item asymmetric: removes all units not in the overlap PS range and trims the
+\code{trimFraction} target persons with the lowest propensity scores and comparator
+persons with the highest propensity scores, following Stürmer et al. (2010).
+\item reverse asymmetric: removes all units not in the overlap PS range and trims the
+\code{trimFraction} target persons with the highest propensity scores and comparator
+persons with the lowest propensity scores (not suggested).
+}}
 }
 \value{
 An object of type \code{TrimByPsArgs}.
@@ -34,4 +48,11 @@ trimming.
 Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
 Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
 Comparative Effective Research, 3, 11-20
+
+Crump, Richard K., V. Joseph Hotz, Guido W. Imbens, and Oscar A. Mitnik. 2009. Dealing
+with limited overlap in estimation of average treatment effects. Biometrika 96(1): 187-199.
+
+Stürmer T, Rothman KJ, Avorn J, Glynn RJ. Treatment effects in the presence of unmeasured
+confounding: dealing with observations in the tails of the propensity score distribution--a simulation study.
+Am J Epidemiol. 2010 Oct 1;172(7):843-54.
 }

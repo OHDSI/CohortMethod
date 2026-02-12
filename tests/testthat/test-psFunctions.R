@@ -1,6 +1,7 @@
 library(CohortMethod)
 library(testthat)
 library(pROC)
+library(PSweight)
 
 test_that("Simple 1-on-1 matching", {
   rowId <- 1:5
@@ -149,18 +150,6 @@ test_that("Standardized logit caliper", {
   expect_lt(maxDistance, 0.2 * sd(logit(propensityScore)))
 })
 
-test_that("Trimming", {
-  rowId <- 1:200
-  treatment <- rep(0:1, each = 100)
-  propensityScore <- rep(1:100, 2) / 100
-  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
-  result <- trimByPs(data, trimByPsArgs = createTrimByPsArgs(trimFraction = 0.05))
-  expect_equal(min(result$propensityScore[result$treatment == 0]), 0.01)
-  expect_equal(max(result$propensityScore[result$treatment == 1]), 1)
-  expect_equal(min(result$propensityScore[result$treatment == 1]), 0.06)
-  expect_equal(max(result$propensityScore[result$treatment == 0]), 0.95)
-})
-
 test_that("Stratification", {
   rowId <- 1:200
   treatment <- rep(0:1, each = 100)
@@ -275,4 +264,139 @@ test_that("IPTW ATO", {
   w <- CohortMethod:::computeIptw(data, estimator = "ato")$iptw
   wGoldStandard <- (treatment == 1)*(1 - propensityScore) + (treatment == 0)*propensityScore
   expect_equal(w, wGoldStandard)
+})
+
+test_that("Trimming symmetric", {
+  rowId <- 1:10000
+  treatment <- rep(c(1, 1, 1, 0), 2500)
+  propensityScore <- (1:10000) / 10000
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.1,
+                                     trimMethod = "symmetric")
+  result <- trimByPs(data,
+                     trimByPsArgs = trimByPsArgs)
+  gold <- PStrim(data = data,
+                 zname = "treatment",
+                 ps.estimate = data$propensityScore,
+                 delta = 0.1)
+
+  rownames(result) <- NULL
+  rownames(gold$data) <- NULL
+
+  expect_equal(result, gold$data)
+  expect_true(max(result$propensityScore) < 0.9)
+  expect_true(min(result$propensityScore) > 0.1)
+})
+
+test_that("Trimming removing an entire treatment group", {
+  rowId <- 1:100
+  treatment <- c(rep(0, 30), rep(1, 70))
+  propensityScore <- c(rep(1:10/100, 3), 1:70/100)
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.1,
+                                     trimMethod = "symmetric")
+  expect_warning(
+    {
+      result <- trimByPs(data,
+                         trimByPsArgs = trimByPsArgs)
+    },
+    "One or more groups removed after trimming, consider updating trimFraction"
+  )
+})
+
+test_that("Trimming symmetric", {
+  rowId <- 1:10000
+  treatment <- rep(c(1, 1, 1, 0), 2500)
+  propensityScore <- (1:10000) / 10000
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.1,
+                                     trimMethod = "symmetric")
+  result <- trimByPs(data,
+                     trimByPsArgs = trimByPsArgs)
+  gold <- PStrim(data = data,
+                 zname = "treatment",
+                 ps.estimate = data$propensityScore,
+                 delta = 0.1)
+
+  rownames(result) <- NULL
+  rownames(gold$data) <- NULL
+
+  expect_equal(result, gold$data)
+  expect_true(max(result$propensityScore) < 0.9)
+  expect_true(min(result$propensityScore) > 0.1)
+})
+
+test_that("Asymmetric trimming remove overlap", {
+  rowId <- 1:100
+  treatment <- c(rep(0, 49), 1, 0, rep(1, 49))
+  propensityScore <- (1:100) / 100
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  trimByPsArgs <- createTrimByPsArgs(trimFraction = 0,
+                                     trimMethod = "asymmetric")
+  result <- trimByPs(data,
+                     trimByPsArgs = trimByPsArgs)
+
+  expect_equal(nrow(result), 2)
+})
+
+test_that("Asymmetric trimming remove middle", {
+  rowId <- 1:10000
+  propensityScore <- (1:10000) / 10000
+  treatment <- rep(c(1, 1, 1, 0), 2500)
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.05,
+                                     trimMethod = "asymmetric")
+  result <- trimByPs(data,
+                     trimByPsArgs = trimByPsArgs)
+
+  # Check lower end of target is removed
+  target_lb <- quantile(
+    data$propensityScore[data$treatment == 1],
+    0.05
+  )
+  target_ps <- result |>
+    filter(treatment == 1) |>
+    pull(propensityScore)
+  expect_true(min(target_ps) > target_lb)
+
+  # Check upper end of comparator is removed
+  comparator_ub <- quantile(
+    data$propensityScore[data$treatment == 0],
+    0.95
+  )
+  comparator_ps <- result |>
+    filter(treatment == 0) |>
+    pull(propensityScore)
+  expect_true(max(comparator_ps) < comparator_ub)
+})
+
+test_that("Reverse asymmetric trimming keep middle", {
+  rowId <- 1:10000
+  propensityScore <- (1:10000) / 10000
+  treatment <- rep(c(1, 1, 1, 0), 2500)
+  data <- data.frame(rowId = rowId, treatment = treatment, propensityScore = propensityScore)
+  trimByPsArgs <- createTrimByPsArgs(trimFraction = 0.05,
+                                     trimMethod = "reverse asymmetric")
+  result <- trimByPs(data,
+                     trimByPsArgs = trimByPsArgs)
+
+  # Check lower end of comparator is removed
+  comparator_lb <- quantile(
+    data$propensityScore[data$treatment == 0],
+    0.05
+  )
+  comparator_ps <- result |>
+    filter(treatment == 0) |>
+    pull(propensityScore)
+  expect_true(min(comparator_ps) > comparator_lb)
+
+  # Check upper end of target is removed
+  target_ub <- quantile(
+    data$propensityScore[data$treatment == 1],
+    0.95
+  )
+  target_ps <- result |>
+    filter(treatment == 1) |>
+    pull(propensityScore)
+  expect_true(max(target_ps) < target_ub)
 })
