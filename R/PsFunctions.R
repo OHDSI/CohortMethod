@@ -774,8 +774,8 @@ trimByPs <- function(population, trimByPsArgs = createTrimByPsArgs(trimFraction 
 
     if (trimByPsArgs$trimMethod == "symmetric"){
       population <- population |>
-        filter(propensityScore > trimByPsArgs$trimFraction,
-               propensityScore < (1 - trimByPsArgs$trimFraction))
+        filter(.data$propensityScore > trimByPsArgs$trimFraction,
+               .data$propensityScore < (1 - trimByPsArgs$trimFraction))
     } else if (trimByPsArgs$trimMethod == "asymmetric"){
       cutoffTarget <- quantile(population$propensityScore[population$treatment == 1],
                                trimByPsArgs$trimFraction)
