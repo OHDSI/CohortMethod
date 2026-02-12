@@ -208,7 +208,7 @@ runCmAnalyses <- function(connectionDetails,
   cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
   if (file.exists(cmAnalysesSpecificationsFile)) {
     oldCmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
-    if (!isTRUE(all.equal(oldCmAnalysesSpecifications, cmAnalysesSpecifications))) {
+    if (!isTRUE(all.equal(oldCmAnalysesSpecifications$toList(), cmAnalysesSpecifications$toList()))) {
       rm(list = ls(envir = cache), envir = cache)
       message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
       response <- utils::askYesNo("Do you want to delete the old files before proceeding?")
