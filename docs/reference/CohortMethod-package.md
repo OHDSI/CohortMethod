@@ -19,7 +19,7 @@ stratification or matching.
 
 Useful links:
 
-- <https://ohdsi.github.io/CohortMethod>
+- <https://ohdsi.github.io/CohortMethod/>
 
 - <https://github.com/OHDSI/CohortMethod>
 

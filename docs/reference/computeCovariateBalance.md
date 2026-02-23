@@ -154,5 +154,5 @@ using many-to-one matching on the propensity-score. Pharmacoepidemiology
 and Drug Safety, 17: 1218-1225.
 
 Hripcsak G, Zhang L, Chen Y, Li K, Suchard MA, Ryan PB, Schuemie MJ
-(2025) Assessing Covariate Balance with Small Sample Sizes. medRxiv. Feb
-21:2024.04.23.24306230.
+(2025) Assessing Covariate Balance with Small Sample Sizes. Stat Med.
+2025 Aug;44(18-19):e70212.

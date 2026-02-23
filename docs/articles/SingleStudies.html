@@ -60,7 +60,7 @@
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2025-11-26</h4>
+            <h4 data-toc-skip class="date">2026-02-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/SingleStudies.Rmd" class="external-link"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="d-none name"><code>SingleStudies.Rmd</code></div>
@@ -97,7 +97,7 @@ settings required for the various database management systems (DBMS).
 For example, one might connect to a PostgreSQL database using this
 code:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CohortMethod">CohortMethod</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ohdsi.github.io/CohortMethod/">CohortMethod</a></span><span class="op">)</span></span>
 <span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/createConnectionDetails.html" class="external-link">createConnectionDetails</a></span><span class="op">(</span>dbms <span class="op">=</span> <span class="st">"postgresql"</span>,</span>
 <span>                                             server <span class="op">=</span> <span class="st">"localhost/ohdsi"</span>,</span>
 <span>                                             user <span class="op">=</span> <span class="st">"joe"</span>,</span>
@@ -280,7 +280,7 @@ and specify <code>addDescendantsToExclude = TRUE</code>:</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## <span style="color: #949494;">Inherits from Andromeda:</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># Andromeda object</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpKM2hKL\file9986f2f17e6.duckdb</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpCKhGHH\file26a050c99f3.duckdb</span></span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Tables:</span></span>
 <span><span class="co">## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)</span></span>
@@ -454,7 +454,7 @@ sizes between the target and comparator:</p>
 <span>       showCountsLabel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>       showAucLabel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>       showEquipoiseLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" width="700"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-24-1.png" class="r-plt" alt="" width="700"></p>
 <p>It is also possible to inspect the propensity model itself by showing
 the covariates that have non-zero coefficients:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
@@ -495,8 +495,8 @@ subjects with a preference score between 0.3 and 0.7 are kept:</p>
 <span><span class="co"># Note: we need to also provide the original PS object so the preference score</span></span>
 <span><span class="co"># is computed using the original relative sizes of the cohorts:</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">trimmedPop</span>, <span class="va">ps</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Trimming removed 55955 (63.5%) rows from the target, 70779 (56.0%) rows from the comparator.</span></span></code></pre>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" width="700"></p>
+<pre><code><span><span class="co">## Trimming removed 55955 (63.5%) rows from the target, 70779 (56.0%) rows from the comparator in total.</span></span></code></pre>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-30-1.png" class="r-plt" alt="" width="700"></p>
 <p>Instead (or additionally), we could stratify the population based on
 the propensity score:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
@@ -505,7 +505,7 @@ the propensity score:</p>
 <span>                                numberOfStrata <span class="op">=</span> <span class="fl">5</span></span>
 <span>                              <span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">stratifiedPop</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" width="700"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-32-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can also match subjects based on propensity scores. In this
 example, we’re using one-to-one matching. By default,
 <code><a href="../reference/createPs.html">createPs()</a></code> will use a caliper of 0.2 on the standardized
@@ -517,7 +517,7 @@ logit scale:</p>
 <span>                        <span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">matchedPop</span>, <span class="va">ps</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Population size after matching is 96046</span></span></code></pre>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" width="700"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-34-1.png" class="r-plt" alt="" width="700"></p>
 <p>We can see the effect of trimming and/or matching on the population
 using the <code>getAttritionTable</code> function:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
@@ -533,7 +533,7 @@ using the <code>getAttritionTable</code> function:</p>
 <p>Or, if we like, we can plot an attrition diagram:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/drawAttritionDiagram.html">drawAttritionDiagram</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" width="60%"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-38-1.png" class="r-plt" alt="" width="60%"></p>
 </div>
 <div class="section level3">
 <h3 id="evaluating-covariate-balance">Evaluating covariate balance<a class="anchor" aria-label="anchor" href="#evaluating-covariate-balance"></a>
@@ -547,10 +547,10 @@ before and after trimming, matching, and/or stratifying:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot</a></span><span class="op">(</span><span class="va">balance</span>, </span>
 <span>                                showCovariateCountLabel <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>                                showMaxLabel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-42-1.png" class="r-plt" width="672"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-42-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCovariateBalanceOfTopVariables.html">plotCovariateBalanceOfTopVariables</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" width="768"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-44-1.png" class="r-plt" alt="" width="768"></p>
 <p>The ‘before matching’ population is the population as extracted by
 the <code>getDbCohortMethodData</code> function, so before any further
 filtering steps. We typically consider the populations to be balanced
@@ -746,7 +746,7 @@ overview:</p>
 the study population has. We can also plot the distribution:</p>
 <div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotFollowUpDistribution.html">plotFollowUpDistribution</a></span><span class="op">(</span>population <span class="op">=</span> <span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" width="768"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-56-1.png" class="r-plt" alt="" width="768"></p>
 </div>
 <div class="section level2">
 <h2 id="outcome-models">Outcome models<a class="anchor" aria-label="anchor" href="#outcome-models"></a>
@@ -867,7 +867,7 @@ balance in the subpopulation of females:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotCovariateBalanceScatterPlot.html">plotCovariateBalanceScatterPlot</a></span><span class="op">(</span><span class="va">balanceFemale</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-66-1.png" class="r-plt" width="768"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-66-1.png" class="r-plt" alt="" width="768"></p>
 </div>
 <div class="section level3">
 <h3 id="adding-covariates-to-the-outcome-model">Adding covariates to the outcome model<a class="anchor" aria-label="anchor" href="#adding-covariates-to-the-outcome-model"></a>
@@ -923,7 +923,7 @@ model:</p>
 <p>We can create the Kaplan-Meier plot:</p>
 <div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plotKaplanMeier.html">plotKaplanMeier</a></span><span class="op">(</span><span class="va">matchedPop</span>, includeZero <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-76-1.png" class="r-plt" width="700"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-76-1.png" class="r-plt" alt="" width="700"></p>
 <p>Note that the Kaplan-Meier plot will automatically adjust for any
 stratification, matching, or trimming that may have been applied.</p>
 </div>
@@ -944,7 +944,7 @@ outcome relative to the exposures:</p>
 <span>  riskWindowEnd <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  endAnchor <span class="op">=</span> <span class="st">"cohort end"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="SingleStudies_files/figure-html/unnamed-chunk-78-1.png" class="r-plt" width="700"></p>
+<p><img src="SingleStudies_files/figure-html/unnamed-chunk-78-1.png" class="r-plt" alt="" width="700"></p>
 <p>Note that this plot does not show any adjustment for the propensity
 score.</p>
 </div>

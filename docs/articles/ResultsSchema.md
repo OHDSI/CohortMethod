@@ -75,10 +75,14 @@ In this section you will find the list of tables and their fields.
 | comparator_mean_before | float | No | Yes | No | The mean value of the covariate in the comparator cohort before propensity score adjustment. |
 | mean_before | float | No | Yes | No | The mean value of the covariate in the union of the target and comparator cohort before propensity score adjustment. |
 | std_diff_before | float | No | No | No | The standardized difference of the means between the target and comparator cohort before propensity score adjustment. |
+| std_diff_var_before | float | No | No | No | The variance of the standardized difference of the means between the target and comparator cohort before propensity score adjustment. |
+| balanced_before | int | No | No | No | Is the covariate balanced before propensity score adjustment? (1 = yes, 0 = no) |
 | mean_after | float | No | Yes | No | The mean value of the covariate in the union of the target and comparator cohort after propensity score adjustment. |
 | target_mean_after | float | No | Yes | No | The mean value of the covariate in the target cohort after propensity score adjustment. |
 | comparator_mean_after | float | No | Yes | No | The mean value of the covariate in the comparator cohort after propensity score adjustment. |
 | std_diff_after | float | No | No | No | The standardized difference of the means between the target and comparator cohort after propensity score adjustment. |
+| std_diff_var_after | float | No | No | No | The variance of the standardized difference of the means between the target and comparator cohort after propensity score adjustment. |
+| balanced_after | int | No | No | No | Is the covariate balanced after propensity score adjustment? (1 = yes, 0 = no) |
 | target_std_diff | float | No | No | No | The standardized difference of the means before and after propensity score adjustment in the target cohort. |
 | comparator_std_diff | float | No | No | No | The standardized difference of the means before and after propensity score adjustment in the comparator cohort. |
 | target_comparator_std_diff | float | No | No | No | The standardized difference of the means before and after propensity score adjustment in the union of the target and comparator cohorts. |
@@ -144,7 +148,7 @@ In this section you will find the list of tables and their fields.
 | analysis_id | int | Yes | No | No | Foreign key referencing the cm_analysis table. |
 | target_comparator_id | bigint | Yes | No | No | A foreign key referencing the target_comparator table. |
 | outcome_id | bigint | Yes | No | No | The identifier for the outcome cohort. |
-| interaction_covariate_id | int | Yes | No | No | Foreign key referencing the cm_covariate table. |
+| interaction_covariate_id | bigint | Yes | No | No | Foreign key referencing the cm_covariate table. |
 | rr | float | No | No | No | The estimated relative risk (e.g. the ratio of hazard ratios). |
 | ci_95_lb | float | No | No | No | The lower bound of the 95% confidence interval of the relative risk. |
 | ci_95_ub | float | No | No | No | The upper bound of the 95% confidence interval of the relative risk. |
@@ -260,10 +264,14 @@ In this section you will find the list of tables and their fields.
 | target_mean_before | float | No | Yes | No | The mean value of the covariate in the target cohort before propensity score adjustment. |
 | comparator_mean_before | float | No | Yes | No | The mean value of the covariate in the comparator cohort before propensity score adjustment. |
 | std_diff_before | float | No | No | No | The standardized difference of the means between the target and comparator cohort before propensity score adjustment. |
+| std_diff_var_before | float | No | No | No | The variance of the standardized difference of the means between the target and comparator cohort before propensity score adjustment. |
+| balanced_before | int | No | No | No | Is the covariate balanced before propensity score adjustment? (1 = yes, 0 = no) |
 | mean_after | float | No | Yes | No | The mean value of the covariate in the union of the target and comparator cohort after propensity score adjustment. |
 | target_mean_after | float | No | Yes | No | The mean value of the covariate in the target cohort after propensity score adjustment. |
 | comparator_mean_after | float | No | Yes | No | The mean value of the covariate in the comparator cohort after propensity score adjustment. |
 | std_diff_after | float | No | No | No | The standardized difference of the means between the target and comparator cohort after propensity score adjustment. |
+| std_diff_var_after | float | No | No | No | The variance of the standardized difference of the means between the target and comparator cohort after propensity score adjustment. |
+| balanced_after | int | No | No | No | Is the covariate balanced after propensity score adjustment? (1 = yes, 0 = no) |
 | target_std_diff | float | No | No | No | The standardized difference of the means before and after propensity score adjustment in the target cohort. |
 | comparator_std_diff | float | No | No | No | The standardized difference of the means before and after propensity score adjustment in the comparator cohort. |
 | target_comparator_std_diff | float | No | No | No | The standardized difference of the means before and after propensity score adjustment in the union of the target and comparator cohorts. |

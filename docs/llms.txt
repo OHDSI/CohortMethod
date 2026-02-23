@@ -2,9 +2,9 @@
 
 [![Build
 Status](https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check)
-[![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main)](https://codecov.io/github/OHDSI/CohortMethod?branch=main)
+[![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main)](https://app.codecov.io/github/OHDSI/CohortMethod?branch=main)
 
-CohortMethod is part of [HADES](https://ohdsi.github.io/Hades).
+CohortMethod is part of [HADES](https://ohdsi.github.io/Hades/).
 
 # Introduction
 

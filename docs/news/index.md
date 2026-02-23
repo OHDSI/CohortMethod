@@ -75,9 +75,14 @@ cohorts, and (3) covariate balance significance testing.
     of its components, allowing results from multiple runs to be
     combined into a single database.
 
+13. In addition to restricting to a nesting cohort the population can
+    now also be restricted by age and gender using the `minAge`,
+    `maxAge`, and `genderConceptIds` arguments of
+    [`createGetDbCohortMethodDataArgs()`](https://ohdsi.github.io/CohortMethod/reference/createGetDbCohortMethodDataArgs.md).
+
 ### Changes related to the new covariate balance diagnostic
 
-13. Added optional significance testing to covariate balance. This
+14. Added optional significance testing to covariate balance. This
     avoids failing the balance diagnostic on smaller databases just
     because of random chance, and was found to be superior in our
     methods research. This introduces the following changes to the
@@ -100,39 +105,44 @@ cohorts, and (3) covariate balance significance testing.
 
 ### Other important changes
 
-14. Added a new option for the `removeDuplicateSubjects` argument: “keep
+15. Added a new option for the `removeDuplicateSubjects` argument: “keep
     first, truncate to second”. This is similar to “keep first”, but
     also truncates the first exposure to stop the day before the second
     starts.
 
-15. Now performing empirical calibration *after* removing estimates that
+16. Now performing empirical calibration *after* removing estimates that
     fail diagnostics. In general this should lead to narrower calibrated
     confidence intervals.
 
-16. If high correlation is detected when fitting a propensity model, but
+17. If high correlation is detected when fitting a propensity model, but
     `stopOnError = FALSE`, the export will show the highly correlated
     covariates in the model with extreme coefficients (1e6 \*
     correlation).
 
-17. Added the ability to use bootstrap for computing confidence
+18. Added the ability to use bootstrap for computing confidence
     intervals. See the `bootstrapCi` and `bootstrapReplicates` arguments
     of
     [`createFitOutcomeModelArgs()`](https://ohdsi.github.io/CohortMethod/reference/createFitOutcomeModelArgs.md).
 
-18. All restrictions on the study populations performed by
+19. All restrictions on the study populations performed by
     [`getDbCohortMethodData()`](https://ohdsi.github.io/CohortMethod/reference/getDbCohortMethodData.md)
     are now step-by-step recorded in the attrition table.
 
-19. Completely updated of all unit tests to increase coverage of
+20. Completely updated of all unit tests to increase coverage of
     functional tests, while also increasing speed.
 
-20. Renamed the `showEquipoiseLabel` argument of
+21. Renamed the `showEquipoiseLabel` argument of
     [`plotPs()`](https://ohdsi.github.io/CohortMethod/reference/plotPs.md)
     to `showEquipoiseLabel`.
 
+22. Updated the
+    [`trimByPs()`](https://ohdsi.github.io/CohortMethod/reference/trimByPs.md)
+    function. This now supports three different trimming functions as
+    described in the literature.
+
 ### Minor changes
 
-21. Added support for grid-with-gradient likelihood profiles. Use the
+23. Added support for grid-with-gradient likelihood profiles. Use the
     following arguments in
     [`createFitOutcomeModelArgs()`](https://ohdsi.github.io/CohortMethod/reference/createFitOutcomeModelArgs.md)
     to use:
@@ -145,19 +155,24 @@ cohorts, and (3) covariate balance significance testing.
     This adds the `gradient` field to the `cm_likelihood_profile` table
     when exporting to CSV.
 
-22. Removed mention of legacy function `grepCovariateNames()` from the
+24. Removed mention of legacy function `grepCovariateNames()` from the
     vignette.
 
-23. Added citation to the HADES paper to the package.
+25. Added citation to the HADES paper to the package.
 
-24. Dropped `insertExportedResultsInSqlite()`,
+26. Dropped `insertExportedResultsInSqlite()`,
     `launchResultsViewerUsingSqlite`, and `launchResultsViewer()`. The
     `OhdsiShinyAppBuilder` package should be used directly instead.
 
-25. Corrected the `minDaysAtRisk` argument. Days at risk is now computed
+27. Corrected the `minDaysAtRisk` argument. Days at risk is now computed
     as end - start + 1 (end day inclusive).
 
-26. Added a vignette showing the results schema.
+28. Added a vignette showing the results schema.
+
+29. Changed the data type of the `interaction_covariate_id` field in the
+    `cm_interaction_result` table from `INT` to `BIGINT`.
+
+30. Fixed trimming by IPTW using `trimFraction` argument.
 
 ## CohortMethod 5.5.2
 

@@ -223,7 +223,7 @@ cohortMethodData
     ## 
     ## Inherits from Andromeda:
     ## # Andromeda object
-    ## # Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpKM2hKL\file9986f2f17e6.duckdb
+    ## # Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpCKhGHH\file26a050c99f3.duckdb
     ## 
     ## Tables:
     ## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)
@@ -474,7 +474,7 @@ trimmedPop <- trimByPs(ps,
 plotPs(trimmedPop, ps)
 ```
 
-    ## Trimming removed 55955 (63.5%) rows from the target, 70779 (56.0%) rows from the comparator.
+    ## Trimming removed 55955 (63.5%) rows from the target, 70779 (56.0%) rows from the comparator in total.
 
 ![](SingleStudies_files/figure-html/unnamed-chunk-30-1.png)
 

@@ -65,7 +65,7 @@ ps <- createPs(cohortMethodData, createPsArgs = createCreatePsArgs())
 #> Removing 1 redundant covariates
 #> Removing 0 infrequent covariates
 #> Normalizing covariates
-#> Tidying covariates took 4.55 secs
+#> Tidying covariates took 4.01 secs
 #> Propensity model fitting finished with status OK
-#> Creating propensity scores took 14.4 secs
+#> Creating propensity scores took 13.7 secs
 ```

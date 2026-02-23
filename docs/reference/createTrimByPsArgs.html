@@ -47,7 +47,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">createTrimByPsArgs</span><span class="op">(</span></span>
 <span>  trimFraction <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  equipoiseBounds <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  maxWeight <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  maxWeight <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  trimMethod <span class="op">=</span> <span class="st">"symmetric"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -56,18 +57,31 @@
 
 
 <dl><dt id="arg-trimfraction">trimFraction<a class="anchor" aria-label="anchor" href="#arg-trimfraction"></a></dt>
-<dd><p>This fraction will be removed from each treatment group. In the target
-group, persons with the highest propensity scores will be removed, in the
-comparator group person with the lowest scores will be removed.</p></dd>
+<dd><p>For <code>trimFraction = symmetric</code>: the PS cut-off value.
+For <code>trimFraction = asymmetric</code> or <code>reverse asymmetric</code>: the
+fraction that will be removed from each treatment group.
+See <code>trimMethod</code> for more details.</p></dd>
 
 
 <dt id="arg-equipoisebounds">equipoiseBounds<a class="anchor" aria-label="anchor" href="#arg-equipoisebounds"></a></dt>
 <dd><p>A 2-dimensional numeric vector containing the upper and lower bound on the
-preference score (Walker, 201) for keeping persons.</p></dd>
+preference score (Walker, 2013) for keeping persons.</p></dd>
 
 
 <dt id="arg-maxweight">maxWeight<a class="anchor" aria-label="anchor" href="#arg-maxweight"></a></dt>
 <dd><p>The maximum allowed IPTW.</p></dd>
+
+
+<dt id="arg-trimmethod">trimMethod<a class="anchor" aria-label="anchor" href="#arg-trimmethod"></a></dt>
+<dd><p>The trimming method to be performed. Three methods are supported:</p><ul><li><p>symmetric: trims all units with estimated PS outside the interval
+(<code>trimFraction</code>,1-<code>trimFraction</code>), following Crump et al. (2009).</p></li>
+<li><p>asymmetric: removes all units not in the overlap PS range and trims the
+<code>trimFraction</code> target persons with the lowest propensity scores and comparator
+persons with the highest propensity scores, following Sturmer et al. (2010).</p></li>
+<li><p>reverse asymmetric: removes all units not in the overlap PS range and trims the
+<code>trimFraction</code> target persons with the highest propensity scores and comparator
+persons with the lowest propensity scores (not suggested).</p></li>
+</ul></dd>
 
 </dl></div>
     <div class="section level2">
@@ -84,6 +98,11 @@ trimming.</p>
     <p>Walker AM, Patrick AR, Lauer MS, Hornbrook MC, Marin MG, Platt R, Roger VL, Stang P, and
 Schneeweiss S. (2013) A tool for assessing the feasibility of comparative effectiveness research,
 Comparative Effective Research, 3, 11-20</p>
+<p>Crump, Richard K., V. Joseph Hotz, Guido W. Imbens, and Oscar A. Mitnik. 2009. Dealing
+with limited overlap in estimation of average treatment effects. Biometrika 96(1): 187-199.</p>
+<p>Sturmer T, Rothman KJ, Avorn J, Glynn RJ. Treatment effects in the presence of unmeasured
+confounding: dealing with observations in the tails of the propensity score distribution–a simulation study.
+Am J Epidemiol. 2010 Oct 1;172(7):843-54.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

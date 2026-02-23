@@ -84,11 +84,11 @@
 <span class="r-in"><span>                   propensityScore <span class="op">=</span> <span class="va">propensityScore</span>,</span></span>
 <span class="r-in"><span>                   iptw <span class="op">=</span> <span class="va">iptw</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result1</span> <span class="op">&lt;-</span> <span class="fu">trimByPs</span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="createTrimByPsArgs.html">createTrimByPsArgs</a></span><span class="op">(</span>trimFraction <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Trimming removed 50 (5.0%) rows from the target, 50 (5.0%) rows from the comparator.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trimming removed 96 (9.6%) rows from the target, 99 (9.9%) rows from the comparator in total.</span>
 <span class="r-in"><span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">trimByPs</span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="createTrimByPsArgs.html">createTrimByPsArgs</a></span><span class="op">(</span>equipoiseBounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.7</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Trimming removed 597 (59.7%) rows from the target, 592 (59.2%) rows from the comparator.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trimming removed 597 (59.7%) rows from the target, 592 (59.2%) rows from the comparator in total.</span>
 <span class="r-in"><span><span class="va">result3</span> <span class="op">&lt;-</span> <span class="fu">trimByPs</span><span class="op">(</span><span class="va">data</span>, <span class="fu"><a href="createTrimByPsArgs.html">createTrimByPsArgs</a></span><span class="op">(</span>maxWeight <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Trimming removed 51 (5.1%) rows from the target, 49 (4.9%) rows from the comparator.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Trimming removed 51 (5.1%) rows from the target, 49 (4.9%) rows from the comparator in total.</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

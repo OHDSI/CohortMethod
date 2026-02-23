@@ -12,6 +12,9 @@ createGetDbCohortMethodDataArgs(
   washoutPeriod = 365,
   nestingCohortId = NULL,
   restrictToCommonPeriod = TRUE,
+  minAge = NULL,
+  maxAge = NULL,
+  genderConceptIds = NULL,
   studyStartDate = "",
   studyEndDate = "",
   maxCohortSize = 0,
@@ -49,6 +52,23 @@ createGetDbCohortMethodDataArgs(
 - restrictToCommonPeriod:
 
   Restrict the analysis to the period when both treatments are observed?
+
+- minAge:
+
+  Minimum age at index date at which patient time will be included in
+  the analysis. If not specified, no minimum age restriction will be
+  applied.
+
+- maxAge:
+
+  Maximum age at index date at which patient time will be included in
+  the analysis. If not specified, no maximum age restriction will be
+  applied.
+
+- genderConceptIds:
+
+  Set of gender concept IDs to restrict the population to. If not
+  specified, no restriction on gender will be applied.
 
 - studyStartDate:
 

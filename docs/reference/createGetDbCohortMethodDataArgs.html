@@ -50,6 +50,9 @@
 <span>  washoutPeriod <span class="op">=</span> <span class="fl">365</span>,</span>
 <span>  nestingCohortId <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  restrictToCommonPeriod <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  minAge <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  maxAge <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  genderConceptIds <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  studyStartDate <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  studyEndDate <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  maxCohortSize <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -79,6 +82,18 @@
 
 <dt id="arg-restricttocommonperiod">restrictToCommonPeriod<a class="anchor" aria-label="anchor" href="#arg-restricttocommonperiod"></a></dt>
 <dd><p>Restrict the analysis to the period when both treatments are observed?</p></dd>
+
+
+<dt id="arg-minage">minAge<a class="anchor" aria-label="anchor" href="#arg-minage"></a></dt>
+<dd><p>Minimum age at index date at which patient time will be included in the analysis. If not specified, no minimum age restriction will be applied.</p></dd>
+
+
+<dt id="arg-maxage">maxAge<a class="anchor" aria-label="anchor" href="#arg-maxage"></a></dt>
+<dd><p>Maximum age at index date at which patient time will be included in the analysis. If not specified, no maximum age restriction will be applied.</p></dd>
+
+
+<dt id="arg-genderconceptids">genderConceptIds<a class="anchor" aria-label="anchor" href="#arg-genderconceptids"></a></dt>
+<dd><p>Set of gender concept IDs to restrict the population to. If not specified, no restriction on gender will be applied.</p></dd>
 
 
 <dt id="arg-studystartdate">studyStartDate<a class="anchor" aria-label="anchor" href="#arg-studystartdate"></a></dt>

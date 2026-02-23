@@ -60,7 +60,7 @@
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie</h4>
             
-            <h4 data-toc-skip class="date">2025-11-26</h4>
+            <h4 data-toc-skip class="date">2026-02-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/ResultsSchema.Rmd" class="external-link"><code>vignettes/ResultsSchema.Rmd</code></a></small>
       <div class="d-none name"><code>ResultsSchema.Rmd</code></div>
@@ -414,6 +414,25 @@ target and comparator cohort before propensity score adjustment.</td>
 target and comparator cohort before propensity score adjustment.</td>
 </tr>
 <tr class="even">
+<td align="left">std_diff_var_before</td>
+<td align="left">float</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">The variance of the standardized difference of the
+means between the target and comparator cohort before propensity score
+adjustment.</td>
+</tr>
+<tr class="odd">
+<td align="left">balanced_before</td>
+<td align="left">int</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">Is the covariate balanced before propensity score
+adjustment? (1 = yes, 0 = no)</td>
+</tr>
+<tr class="even">
 <td align="left">mean_after</td>
 <td align="left">float</td>
 <td align="left">No</td>
@@ -448,6 +467,25 @@ cohort after propensity score adjustment.</td>
 <td align="left">No</td>
 <td align="left">The standardized difference of the means between the
 target and comparator cohort after propensity score adjustment.</td>
+</tr>
+<tr class="even">
+<td align="left">std_diff_var_after</td>
+<td align="left">float</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">The variance of the standardized difference of the
+means between the target and comparator cohort after propensity score
+adjustment.</td>
+</tr>
+<tr class="odd">
+<td align="left">balanced_after</td>
+<td align="left">int</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">Is the covariate balanced after propensity score
+adjustment? (1 = yes, 0 = no)</td>
 </tr>
 <tr class="even">
 <td align="left">target_std_diff</td>
@@ -943,7 +981,7 @@ table.</td>
 </tr>
 <tr class="even">
 <td align="left">interaction_covariate_id</td>
-<td align="left">int</td>
+<td align="left">bigint</td>
 <td align="left">Yes</td>
 <td align="left">No</td>
 <td align="left">No</td>
@@ -1776,6 +1814,25 @@ cohort before propensity score adjustment.</td>
 target and comparator cohort before propensity score adjustment.</td>
 </tr>
 <tr class="odd">
+<td align="left">std_diff_var_before</td>
+<td align="left">float</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">The variance of the standardized difference of the
+means between the target and comparator cohort before propensity score
+adjustment.</td>
+</tr>
+<tr class="even">
+<td align="left">balanced_before</td>
+<td align="left">int</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">Is the covariate balanced before propensity score
+adjustment? (1 = yes, 0 = no)</td>
+</tr>
+<tr class="odd">
 <td align="left">mean_after</td>
 <td align="left">float</td>
 <td align="left">No</td>
@@ -1810,6 +1867,25 @@ cohort after propensity score adjustment.</td>
 <td align="left">No</td>
 <td align="left">The standardized difference of the means between the
 target and comparator cohort after propensity score adjustment.</td>
+</tr>
+<tr class="odd">
+<td align="left">std_diff_var_after</td>
+<td align="left">float</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">The variance of the standardized difference of the
+means between the target and comparator cohort after propensity score
+adjustment.</td>
+</tr>
+<tr class="even">
+<td align="left">balanced_after</td>
+<td align="left">int</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">No</td>
+<td align="left">Is the covariate balanced after propensity score
+adjustment? (1 = yes, 0 = no)</td>
 </tr>
 <tr class="odd">
 <td align="left">target_std_diff</td>

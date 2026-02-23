@@ -57,10 +57,11 @@
 <h3 id="changes-related-to-nesting-cohorts-6-0-0">Changes related to nesting cohorts<a class="anchor" aria-label="anchor" href="#changes-related-to-nesting-cohorts-6-0-0"></a></h3>
 <ol start="11" style="list-style-type: decimal"><li><p>Added ability to restrict to a nesting cohort (e.g. restricting drug exposures to a specific indication). See the <code>nestingCohortId</code> argument in the <code><a href="../reference/createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs()</a></code> and <code><a href="../reference/createTargetComparatorOutcomes.html">createTargetComparatorOutcomes()</a></code> functions and the <code>nestingCohortDatabaseSchema</code> and <code>nestingCohortTable</code> arguments in the <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code> function.</p></li>
 <li><p>The results schema now includes the <code>target_comparator</code> table that combines the <code>target_id</code>, <code>comparator_id</code>, and <code>nesting_cohort_id</code> into a single unique <code>target_comparator_id</code>. This new ID is a hash of its components, allowing results from multiple runs to be combined into a single database.</p></li>
+<li><p>In addition to restricting to a nesting cohort the population can now also be restricted by age and gender using the <code>minAge</code>, <code>maxAge</code>, and <code>genderConceptIds</code> arguments of <code><a href="../reference/createGetDbCohortMethodDataArgs.html">createGetDbCohortMethodDataArgs()</a></code>.</p></li>
 </ol></div>
 <div class="section level3">
 <h3 id="changes-related-to-the-new-covariate-balance-diagnostic-6-0-0">Changes related to the new covariate balance diagnostic<a class="anchor" aria-label="anchor" href="#changes-related-to-the-new-covariate-balance-diagnostic-6-0-0"></a></h3>
-<ol start="13" style="list-style-type: decimal"><li>
+<ol start="14" style="list-style-type: decimal"><li>
 <p>Added optional significance testing to covariate balance. This avoids failing the balance diagnostic on smaller databases just because of random chance, and was found to be superior in our methods research. This introduces the following changes to the interface:</p>
 <ul><li>Added the <code>threshold</code> and <code>alpha</code> arguments to the <code><a href="../reference/createComputeCovariateBalanceArgs.html">createComputeCovariateBalanceArgs()</a></code> function. These do not impact blinding when running <code>runCmAnalyses</code> but do add columns to the balance files, for when running single studies.</li>
 <li>Added the <code>sdmAlpha</code> argument to the <code><a href="../reference/createCmDiagnosticThresholds.html">createCmDiagnosticThresholds()</a></code> function.</li>
@@ -69,17 +70,18 @@
 </ol></div>
 <div class="section level3">
 <h3 id="other-important-changes-6-0-0">Other important changes<a class="anchor" aria-label="anchor" href="#other-important-changes-6-0-0"></a></h3>
-<ol start="14" style="list-style-type: decimal"><li><p>Added a new option for the <code>removeDuplicateSubjects</code> argument: “keep first, truncate to second”. This is similar to “keep first”, but also truncates the first exposure to stop the day before the second starts.</p></li>
+<ol start="15" style="list-style-type: decimal"><li><p>Added a new option for the <code>removeDuplicateSubjects</code> argument: “keep first, truncate to second”. This is similar to “keep first”, but also truncates the first exposure to stop the day before the second starts.</p></li>
 <li><p>Now performing empirical calibration <em>after</em> removing estimates that fail diagnostics. In general this should lead to narrower calibrated confidence intervals.</p></li>
 <li><p>If high correlation is detected when fitting a propensity model, but <code>stopOnError = FALSE</code>, the export will show the highly correlated covariates in the model with extreme coefficients (1e6 * correlation).</p></li>
 <li><p>Added the ability to use bootstrap for computing confidence intervals. See the <code>bootstrapCi</code> and <code>bootstrapReplicates</code> arguments of <code><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs()</a></code>.</p></li>
 <li><p>All restrictions on the study populations performed by <code><a href="../reference/getDbCohortMethodData.html">getDbCohortMethodData()</a></code> are now step-by-step recorded in the attrition table.</p></li>
 <li><p>Completely updated of all unit tests to increase coverage of functional tests, while also increasing speed.</p></li>
 <li><p>Renamed the <code>showEquipoiseLabel</code> argument of <code><a href="../reference/plotPs.html">plotPs()</a></code> to <code>showEquipoiseLabel</code>.</p></li>
+<li><p>Updated the <code><a href="../reference/trimByPs.html">trimByPs()</a></code> function. This now supports three different trimming functions as described in the literature.</p></li>
 </ol></div>
 <div class="section level3">
 <h3 id="minor-changes-6-0-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-6-0-0"></a></h3>
-<ol start="21" style="list-style-type: decimal"><li>
+<ol start="23" style="list-style-type: decimal"><li>
 <p>Added support for grid-with-gradient likelihood profiles. Use the following arguments in <code><a href="../reference/createFitOutcomeModelArgs.html">createFitOutcomeModelArgs()</a></code> to use:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>profileGrid <span class="ot">=</span> <span class="fu">seq</span>(<span class="fu">log</span>(<span class="fl">0.1</span>), <span class="fu">log</span>(<span class="dv">10</span>), <span class="at">length.out =</span> <span class="dv">8</span>),</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>profileBounds <span class="ot">=</span> <span class="cn">NULL</span></span></code></pre></div>
@@ -90,6 +92,8 @@
 <li><p>Dropped <code>insertExportedResultsInSqlite()</code>, <code>launchResultsViewerUsingSqlite</code>, and <code>launchResultsViewer()</code>. The <code>OhdsiShinyAppBuilder</code> package should be used directly instead.</p></li>
 <li><p>Corrected the <code>minDaysAtRisk</code> argument. Days at risk is now computed as end - start + 1 (end day inclusive).</p></li>
 <li><p>Added a vignette showing the results schema.</p></li>
+<li><p>Changed the data type of the <code>interaction_covariate_id</code> field in the <code>cm_interaction_result</code> table from <code>INT</code> to <code>BIGINT</code>.</p></li>
+<li><p>Fixed trimming by IPTW using <code>trimFraction</code> argument.</p></li>
 </ol></div>
 </div>
     <div class="section level2">

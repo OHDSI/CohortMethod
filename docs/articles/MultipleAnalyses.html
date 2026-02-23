@@ -60,7 +60,7 @@
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2025-11-26</h4>
+            <h4 data-toc-skip class="date">2026-02-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/MultipleAnalyses.Rmd" class="external-link"><code>vignettes/MultipleAnalyses.Rmd</code></a></small>
       <div class="d-none name"><code>MultipleAnalyses.Rmd</code></div>
@@ -300,38 +300,38 @@ We can see how many entries per cohort:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="fu">DatabaseConnector</span><span class="fu">::</span><span class="fu"><a href="https://ohdsi.github.io/DatabaseConnector/reference/disconnect.html" class="external-link">disconnect</a></span><span class="op">(</span><span class="va">connection</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##    cohort_definition_id    count</span></span>
-<span><span class="co">## 1                433701    90997</span></span>
-<span><span class="co">## 2                435783   178528</span></span>
-<span><span class="co">## 3                380731   106693</span></span>
-<span><span class="co">## 4               4134120    51817</span></span>
-<span><span class="co">## 5                433516   236503</span></span>
-<span><span class="co">## 6                197494   114327</span></span>
-<span><span class="co">## 7                432867 37075900</span></span>
-<span><span class="co">## 8                436665   717207</span></span>
-<span><span class="co">## 9                432661      990</span></span>
-<span><span class="co">## 10               436676   431672</span></span>
-<span><span class="co">## 11              4152280  2125215</span></span>
-<span><span class="co">## 12               257315   982236</span></span>
-<span><span class="co">## 13               200528   979211</span></span>
-<span><span class="co">## 14               444429   170621</span></span>
-<span><span class="co">## 15               433753   496482</span></span>
-<span><span class="co">## 16               435524   356849</span></span>
-<span><span class="co">## 17               442619     1036</span></span>
-<span><span class="co">## 18              4134454    17972</span></span>
-<span><span class="co">## 19               435459   155207</span></span>
-<span><span class="co">## 20               317376    74848</span></span>
-<span><span class="co">## 21               314658  3305406</span></span>
-<span><span class="co">## 22                29735   324877</span></span>
-<span><span class="co">## 23               198199   215692</span></span>
-<span><span class="co">## 24              4182210  4430749</span></span>
-<span><span class="co">## 25              4174262  1332706</span></span>
-<span><span class="co">## 26              4286201   216303</span></span>
-<span><span class="co">## 27               140673  8957971</span></span>
-<span><span class="co">## 28                    2   993116</span></span>
-<span><span class="co">## 29                    1   917230</span></span>
+<span><span class="co">## 1               4182210  4430749</span></span>
+<span><span class="co">## 2               4134120    51817</span></span>
+<span><span class="co">## 3               4152280  2125215</span></span>
+<span><span class="co">## 4                257315   982236</span></span>
+<span><span class="co">## 5                317376    74848</span></span>
+<span><span class="co">## 6                314658  3305406</span></span>
+<span><span class="co">## 7               4174262  1332706</span></span>
+<span><span class="co">## 8               4286201   216303</span></span>
+<span><span class="co">## 9               4134454    17972</span></span>
+<span><span class="co">## 10               433701    90997</span></span>
+<span><span class="co">## 11               435783   178528</span></span>
+<span><span class="co">## 12               140673  8957971</span></span>
+<span><span class="co">## 13               380731   106693</span></span>
+<span><span class="co">## 14               433516   236503</span></span>
+<span><span class="co">## 15               197494   114327</span></span>
+<span><span class="co">## 16               432867 37075900</span></span>
+<span><span class="co">## 17               198199   215692</span></span>
+<span><span class="co">## 18               436665   717207</span></span>
+<span><span class="co">## 19               436676   431672</span></span>
+<span><span class="co">## 20               200528   979211</span></span>
+<span><span class="co">## 21               444429   170621</span></span>
+<span><span class="co">## 22               433753   496482</span></span>
+<span><span class="co">## 23               435524   356849</span></span>
+<span><span class="co">## 24               442619     1036</span></span>
+<span><span class="co">## 25               435459   155207</span></span>
+<span><span class="co">## 26                29735   324877</span></span>
+<span><span class="co">## 27               432661      990</span></span>
+<span><span class="co">## 28                    3  1791695</span></span>
+<span><span class="co">## 29                    2   993116</span></span>
 <span><span class="co">## 30               321319  1337722</span></span>
-<span><span class="co">## 31                   77  1123643</span></span>
-<span><span class="co">## 32                    3  1791695</span></span></code></pre>
+<span><span class="co">## 31                    1   917230</span></span>
+<span><span class="co">## 32                   77  1123643</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
@@ -647,7 +647,7 @@ last analysis:</p>
 <span>  <span class="fu">pull</span><span class="op">(</span><span class="va">psFile</span><span class="op">)</span></span>
 <span><span class="va">ps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">folder</span>, <span class="va">psFile</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plotPs.html">plotPs</a></span><span class="op">(</span><span class="va">ps</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="700"></p>
 <p>Note that some of the file names will appear several times in the
 table. For example, analysis 3 and 5 only differ in terms of the outcome
 model, and will share the same propensity score and stratification
@@ -802,7 +802,7 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-25-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-25-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 2: Matching</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op">|&gt;</span></span>
@@ -816,7 +816,7 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-27-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 3: Stratification</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op">|&gt;</span></span>
@@ -830,7 +830,7 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-29-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-29-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 4: Inverse probability of treatment weighting</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op">|&gt;</span></span>
@@ -844,7 +844,7 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-31-1.png" class="r-plt" alt="" width="700"></p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Analysis 5: Stratification plus full outcome model</span></span>
 <span><span class="va">ncs</span> <span class="op">&lt;-</span> <span class="va">resultsSum</span> <span class="op">|&gt;</span></span>
@@ -858,7 +858,7 @@ controls between the dashed lines (ie. 95% should have p &gt; .05).</p>
 <span>                      seLogRrNegatives <span class="op">=</span> <span class="va">ncs</span><span class="op">$</span><span class="va">seLogRr</span>, </span>
 <span>                      logRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">logRr</span>, </span>
 <span>                      seLogRrPositives <span class="op">=</span> <span class="va">hoi</span><span class="op">$</span><span class="va">seLogRr</span>, <span class="va">null</span><span class="op">)</span></span></code></pre></div>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-33-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-33-1.png" class="r-plt" alt="" width="700"></p>
 <p>Analysis 6 explored interactions with certain variables. The
 estimates for these interaction terms are stored in a separate results
 summary. We can examine whether these estimates are also consistent with
@@ -891,7 +891,7 @@ use of antithrombotic agents’ (covariate ID 21600960413):</p>
 <span><span class="co">## (`geom_vline()`).</span></span></code></pre>
 <pre><code><span><span class="co">## Warning: Removed 1 row containing missing values or values outside the scale range</span></span>
 <span><span class="co">## (`geom_point()`).</span></span></code></pre>
-<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" width="700"></p>
+<p><img src="MultipleAnalyses_files/figure-html/unnamed-chunk-35-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 </div>
 <div class="section level2">
@@ -924,7 +924,7 @@ which in the Shiny app will be displayed as ‘&lt;5’.</p>
 retrieved using <code><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications()</a></code>:</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getResultsDataModelSpecifications.html">getResultsDataModelSpecifications</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 183 × 8</span></span></span>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 191 × 8</span></span></span>
 <span><span class="co">##    tableName   columnName dataType isRequired primaryKey minCellCount deprecated</span></span>
 <span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;"> 1</span> cm_attriti… sequence_… int      Yes        Yes        No           No        </span></span>
@@ -937,7 +937,7 @@ retrieved using <code><a href="../reference/getResultsDataModelSpecifications.ht
 <span><span class="co">## <span style="color: #BCBCBC;"> 8</span> cm_attriti… database_… varchar  Yes        Yes        No           No        </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;"> 9</span> cm_follow_… target_co… bigint   Yes        Yes        No           No        </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">10</span> cm_follow_… outcome_id bigint   Yes        Yes        No           No        </span></span>
-<span><span class="co">## <span style="color: #949494;"># ℹ 173 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 181 more rows</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: description &lt;chr&gt;</span></span></span></code></pre>
 </div>
 <div class="section level2">
