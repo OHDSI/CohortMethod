@@ -1,3 +1,8 @@
+CohortMethod 6.0.1
+==================
+
+- Adding CohortMethod to CRAN.
+
 CohortMethod 6.0.0
 ==================
 

@@ -78,7 +78,7 @@ Installation
 
 User Documentation
 ==================
-Documentation can be found on the [package website](https://ohdsi.github.io/CohortMethod).
+Documentation can be found on the [package website](https://ohdsi.github.io/CohortMethod/).
 
 PDF versions of the documentation are also available:
 

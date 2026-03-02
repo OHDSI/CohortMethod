@@ -13,3 +13,4 @@ docs
 .idea
 ^cran-comments.md$
 ^CRAN-SUBMISSION$
+.vscode
