@@ -46,7 +46,7 @@ DataFrame matchPsInternal(std::vector<double> propensityScores, std::vector<int>
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);
 	} catch (...) {
-		::Rf_error("c++ exception (unknown reason)");
+		Rcpp::stop("c++ exception (unknown reason)");
 	}
 	return DataFrame::create();
 }
@@ -62,7 +62,7 @@ std::vector<double> aucWithCi(std::vector<double> propensityScores, std::vector<
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);
 	} catch (...) {
-		::Rf_error("c++ exception (unknown reason)");
+		Rcpp::stop("c++ exception (unknown reason)");
 	}
   std::vector<double> auc(3,0);
 	return auc;
@@ -79,7 +79,7 @@ double aucWithoutCi(std::vector<double> propensityScores, std::vector<int> treat
 	} catch (std::exception &e) {
 		forward_exception_to_r(e);
 	} catch (...) {
-		::Rf_error("c++ exception (unknown reason)");
+	  Rcpp::stop("c++ exception (unknown reason)");
 	}
 	return 0.0;
 }
@@ -104,7 +104,7 @@ DataFrame adjustedKm(const std::vector<double> &weight, const std::vector<int> &
   } catch (std::exception &e) {
     forward_exception_to_r(e);
   } catch (...) {
-    ::Rf_error("c++ exception (unknown reason)");
+    Rcpp::stop("c++ exception (unknown reason)");
   }
   return DataFrame::create();
 }
