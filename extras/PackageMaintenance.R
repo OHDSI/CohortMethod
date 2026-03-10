@@ -33,6 +33,7 @@ devtools::spell_check()
 unlink("extras/CohortMethod.pdf")
 system("R CMD Rd2pdf ./ --output=extras/CohortMethod.pdf")
 
+dir.create("inst/doc", showWarnings = FALSE)
 rmarkdown::render("vignettes/SingleStudies.Rmd",
                   output_file = "../inst/doc/SingleStudies.pdf",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",

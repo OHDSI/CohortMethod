@@ -209,21 +209,13 @@ cohortMethodData <- getDbCohortMethodData(
 cohortMethodData
 ```
 
-    ## # CohortMethodData object
-    ## 
-    ## Target cohort ID: 1
-    ## Comparator cohort ID: 2
-    ## Nesting cohort ID: 3
-    ## Outcome cohort ID(s): 77
-    ## 
-    ## Inherits from CovariateData:
     ## # CovariateData object
     ## 
     ## All cohorts
     ## 
     ## Inherits from Andromeda:
     ## # Andromeda object
-    ## # Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpCKhGHH\file26a050c99f3.duckdb
+    ## # Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpGCZFmm\file35fc628130b1.duckdb
     ## 
     ## Tables:
     ## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)
@@ -264,13 +256,20 @@ steps:
 getAttritionTable(cohortMethodData)
 ```
 
-    ##                       description targetPersons comparatorPersons targetExposures comparatorExposures
-    ## 1                Original cohorts        917230            993116          917230              993116
-    ## 2 Keep first, truncate when e ...        845385            873667          845385              873667
-    ## 3             First exposure only        845385            873667          845385              873667
-    ## 4 365 days of prior observati ...        358646            515193          358646              515193
-    ## 5       Restrict to common period        358646            515193          358646              515193
-    ## 6      Restrict to nesting cohort         89318            128301           89318              128301
+    ##                       description targetPersons comparatorPersons
+    ## 1                Original cohorts        917230            993116
+    ## 2 Keep first, truncate when e ...        845385            873667
+    ## 3             First exposure only        845385            873667
+    ## 4 365 days of prior observati ...        358646            515193
+    ## 5       Restrict to common period        358646            515193
+    ## 6      Restrict to nesting cohort         89318            128301
+    ##   targetExposures comparatorExposures
+    ## 1          917230              993116
+    ## 2          845385              873667
+    ## 3          845385              873667
+    ## 4          358646              515193
+    ## 5          358646              515193
+    ## 6           89318              128301
 
 The
 `cohortMethodData() function extracts all data about the exposures, outcomes, and covariates from the server and stores them in the`cohortMethodData`object. This object uses the`Andromeda`package to store information in a way that ensures R does not run out of memory, even when the data are large. We can use the generic`summary()\`
@@ -280,23 +279,8 @@ function to view some more information of the data we extracted:
 summary(cohortMethodData)
 ```
 
-    ## CohortMethodData object summary
-    ## 
-    ## Target cohort ID: 1
-    ## Comparator cohort ID: 2
-    ## Nesting cohort ID: 3
-    ## Outcome cohort ID(s): 77
-    ## 
-    ## Target persons: 89318
-    ## Comparator persons: 128301
-    ## 
-    ## Outcome counts:
     ##    Event count Person count
     ## 77       37448        20123
-    ## 
-    ## Covariates:
-    ## Number of covariates: 85838
-    ## Number of non-zero covariate values: 111096472
 
 #### Saving the data to file
 
@@ -355,15 +339,24 @@ the `getAttritionTable` function:
 getAttritionTable(studyPop)
 ```
 
-    ##                       description targetPersons comparatorPersons targetExposures comparatorExposures
-    ## 1                Original cohorts        917230            993116          917230              993116
-    ## 2 Keep first, truncate when e ...        845385            873667          845385              873667
-    ## 3             First exposure only        845385            873667          845385              873667
-    ## 4 365 days of prior observati ...        358646            515193          358646              515193
-    ## 5       Restrict to common period        358646            515193          358646              515193
-    ## 6      Restrict to nesting cohort         89318            128301           89318              128301
-    ## 7                No prior outcome         88134            126316           88134              126316
-    ## 8 Have at least 1 days at ris ...         88134            126316           88134              126316
+    ##                       description targetPersons comparatorPersons
+    ## 1                Original cohorts        917230            993116
+    ## 2 Keep first, truncate when e ...        845385            873667
+    ## 3             First exposure only        845385            873667
+    ## 4 365 days of prior observati ...        358646            515193
+    ## 5       Restrict to common period        358646            515193
+    ## 6      Restrict to nesting cohort         89318            128301
+    ## 7                No prior outcome         88134            126316
+    ## 8 Have at least 1 days at ris ...         88134            126316
+    ##   targetExposures comparatorExposures
+    ## 1          917230              993116
+    ## 2          845385              873667
+    ## 3          845385              873667
+    ## 4          358646              515193
+    ## 5          358646              515193
+    ## 6           89318              128301
+    ## 7           88134              126316
+    ## 8           88134              126316
 
 ## Propensity scores
 
@@ -515,14 +508,22 @@ using the `getAttritionTable` function:
 getAttritionTable(matchedPop)
 ```
 
-    ##                       description targetPersons comparatorPersons targetExposures comparatorExposures
-    ## 1                Original cohorts        917230            993116          917230              993116
-    ## 2 Keep first, truncate when e ...        845385            873667          845385              873667
-    ## 3             First exposure only        845385            873667          845385              873667
-    ## 4 365 days of prior observati ...        358646            515193          358646              515193
-    ## 5       Restrict to common period        358646            515193          358646              515193
-    ## 6      Restrict to nesting cohort         89318            128301           89318              128301
-    ## 7     Matched on propensity score         48023             48023           48023               48023
+    ##                       description targetPersons comparatorPersons
+    ## 1                Original cohorts        917230            993116
+    ## 2 Keep first, truncate when e ...        845385            873667
+    ## 3             First exposure only        845385            873667
+    ## 4 365 days of prior observati ...        358646            515193
+    ## 5       Restrict to common period        358646            515193
+    ## 6      Restrict to nesting cohort         89318            128301
+    ## 7     Matched on propensity score         48023             48023
+    ##   targetExposures comparatorExposures
+    ## 1          917230              993116
+    ## 2          845385              873667
+    ## 3          845385              873667
+    ## 4          358646              515193
+    ## 5          358646              515193
+    ## 6           89318              128301
+    ## 7           48023               48023
 
 Or, if we like, we can plot an attrition diagram:
 
@@ -678,18 +679,18 @@ getGeneralizabilityTable(balance)
 ```
 
      [38;5;246m# A tibble: 85,838 × 5 [39m
-       covariateId covariateName                     beforeMatchingMean afterMatchingMean stdDiff
-              [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<chr> [39m [23m                                           [3m [38;5;246m<dbl> [39m [23m              [3m [38;5;246m<dbl> [39m [23m    [3m [38;5;246m<dbl> [39m [23m
-     [38;5;250m 1 [39m   [4m4 [24m160 [4m4 [24m [4m3 [24m [4m9 [24m504 ...: Administration of anesthesia             0.157             0.029 [4m9 [24m   0.447
-     [38;5;250m 2 [39m   [4m2 [24m105 [4m1 [24m [4m0 [24m [4m3 [24m504 ...cing (total knee arthroplasty)             0.116             0.010 [4m2 [24m   0.446
-     [38;5;250m 3 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m6 [24m [4m2 [24m804 ...s and Devices - Other Implants             0.124             0.018 [4m5 [24m   0.420
-     [38;5;250m 4 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m0 [24m [4m8 [24m804 ...vices - General Classification             0.139             0.029 [4m6 [24m   0.401
-     [38;5;250m 5 [39m  [4m3 [24m [4m8 [24m003 [4m3 [24m [4m9 [24m [4m0 [24m804 ... Room - General Classification             0.132             0.027 [4m9 [24m   0.391
-     [38;5;250m 6 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m1 [24m [4m3 [24m804 ...hesia - General Classification             0.120             0.024 [4m7 [24m   0.374
-     [38;5;250m 7 [39m   764 [4m6 [24m [4m0 [24m [4m8 [24m504 ...dex: Preprocedural examination             0.097 [4m8 [24m            0.015 [4m6 [24m   0.361
-     [38;5;250m 8 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m4 [24m [4m5 [24m804 ... - Evaluation Or Re-Evaluation             0.118             0.030 [4m2 [24m   0.339
-     [38;5;250m 9 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m3 [24m [4m8 [24m804 ...rmacy - General Classification             0.175             0.069 [4m2 [24m   0.326
-     [38;5;250m10 [39m   [4m4 [24m002 [4m0 [24m [4m1 [24m [4m4 [24m212 ...ndex: Pain following procedure             0.075 [4m3 [24m            0.011 [4m0 [24m   0.321
+       covariateId covariateName        beforeMatchingMean afterMatchingMean stdDiff
+              [3m [38;5;246m<dbl> [39m [23m  [3m [38;5;246m<chr> [39m [23m                              [3m [38;5;246m<dbl> [39m [23m              [3m [38;5;246m<dbl> [39m [23m    [3m [38;5;246m<dbl> [39m [23m
+     [38;5;250m 1 [39m   [4m4 [24m160 [4m4 [24m [4m3 [24m [4m9 [24m504 ...: Administration…             0.157             0.029 [4m9 [24m   0.447
+     [38;5;250m 2 [39m   [4m2 [24m105 [4m1 [24m [4m0 [24m [4m3 [24m504 ...cing (total knee…             0.116             0.010 [4m2 [24m   0.446
+     [38;5;250m 3 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m6 [24m [4m2 [24m804 ...s and Devices - …             0.124             0.018 [4m5 [24m   0.420
+     [38;5;250m 4 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m0 [24m [4m8 [24m804 ...vices - General …             0.139             0.029 [4m6 [24m   0.401
+     [38;5;250m 5 [39m  [4m3 [24m [4m8 [24m003 [4m3 [24m [4m9 [24m [4m0 [24m804 ... Room - General …             0.132             0.027 [4m9 [24m   0.391
+     [38;5;250m 6 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m1 [24m [4m3 [24m804 ...hesia - General …             0.120             0.024 [4m7 [24m   0.374
+     [38;5;250m 7 [39m   764 [4m6 [24m [4m0 [24m [4m8 [24m504 ...dex: Preprocedur…             0.097 [4m8 [24m            0.015 [4m6 [24m   0.361
+     [38;5;250m 8 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m4 [24m [4m5 [24m804 ... - Evaluation Or…             0.118             0.030 [4m2 [24m   0.339
+     [38;5;250m 9 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m3 [24m [4m8 [24m804 ...rmacy - General …             0.175             0.069 [4m2 [24m   0.326
+     [38;5;250m10 [39m   [4m4 [24m002 [4m0 [24m [4m1 [24m [4m4 [24m212 ...ndex: Pain follo…             0.075 [4m3 [24m            0.011 [4m0 [24m   0.321
      [38;5;246m# ℹ 85,828 more rows [39m
 
 In this case, because we used PS matching, we are likely aiming to
@@ -724,8 +725,10 @@ computeMdrr(
 )
 ```
 
-    ##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr         se
-    ## 1         88134            126316           88134              126316   12087401        9619724          1252 1.174598 0.05744113
+    ##   targetPersons comparatorPersons targetExposures comparatorExposures
+    ## 1         88134            126316           88134              126316
+    ##   targetDays comparatorDays totalOutcomes     mdrr         se
+    ## 1   12087401        9619724          1252 1.174598 0.05744113
 
 In this example we used the `studyPop` object, so the population before
 any matching or trimming. If we want to know the MDRR after matching, we
@@ -741,8 +744,10 @@ computeMdrr(
 )
 ```
 
-    ##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr         se
-    ## 1         48023             48023           48023               48023    6752916        3896834           597 1.257748 0.08185455
+    ##   targetPersons comparatorPersons targetExposures comparatorExposures
+    ## 1         48023             48023           48023               48023
+    ##   targetDays comparatorDays totalOutcomes     mdrr         se
+    ## 1    6752916        3896834           597 1.257748 0.08185455
 
 Even thought the MDRR in the matched population is higher, meaning we
 have less power, we should of course not be fooled: matching most likely
@@ -791,13 +796,6 @@ outcomeModel <- fitOutcomeModel(
 outcomeModel
 ```
 
-    ## Model type: cox
-    ## Stratified: FALSE
-    ## Use covariates: FALSE
-    ## Use inverse probability of treatment weighting: FALSE
-    ## Target estimand: ate
-    ## Status: OK
-    ## 
     ##            Estimate lower .95 upper .95     logRr seLogRr
     ## treatment  0.961778  0.856018  1.080701 -0.038971  0.0595
 
@@ -814,13 +812,6 @@ outcomeModel <- fitOutcomeModel(
 outcomeModel
 ```
 
-    ## Model type: cox
-    ## Stratified: FALSE
-    ## Use covariates: FALSE
-    ## Use inverse probability of treatment weighting: FALSE
-    ## Target estimand: att
-    ## Status: OK
-    ## 
     ##           Estimate lower .95 upper .95    logRr seLogRr
     ## treatment  0.84469   0.71412   1.00030 -0.16878   0.086
 
@@ -843,13 +834,6 @@ outcomeModel <- fitOutcomeModel(
 outcomeModel
 ```
 
-    ## Model type: cox
-    ## Stratified: FALSE
-    ## Use covariates: FALSE
-    ## Use inverse probability of treatment weighting: TRUE
-    ## Target estimand: att
-    ## Status: OK
-    ## 
     ##           Estimate lower .95 upper .95    logRr seLogRr
     ## treatment  0.66899   0.47331   0.97783 -0.40199   0.178
 
@@ -878,18 +862,31 @@ outcomeModel <- fitOutcomeModel(
 outcomeModel
 ```
 
-    ## Model type: cox
-    ## Stratified: FALSE
-    ## Use covariates: FALSE
-    ## Use inverse probability of treatment weighting: FALSE
-    ## Target estimand: att
-    ## Status: OK
-    ## 
-    ##                                                                                                                                         Estimate lower .95 upper .95     logRr seLogRr
-    ## treatment                                                                                                                               0.809658  0.590267  1.113710 -0.211144  0.1620
-    ## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.860438  0.601425  1.233185 -0.150314  0.1832
-    ## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               1.011228  0.701484  1.462634  0.011166  0.1875
-    ## treatment * gender = FEMALE                                                                                                             1.111761  0.791320  1.560599  0.105946  0.1732
+    ##                                                                                                                                         Estimate
+    ## treatment                                                                                                                               0.809658
+    ## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.860438
+    ## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               1.011228
+    ## treatment * gender = FEMALE                                                                                                             1.111761
+    ##                                                                                                                                        lower .95
+    ## treatment                                                                                                                               0.590267
+    ## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.601425
+    ## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               0.701484
+    ## treatment * gender = FEMALE                                                                                                             0.791320
+    ##                                                                                                                                        upper .95
+    ## treatment                                                                                                                               1.113710
+    ## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  1.233185
+    ## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               1.462634
+    ## treatment * gender = FEMALE                                                                                                             1.560599
+    ##                                                                                                                                            logRr
+    ## treatment                                                                                                                              -0.211144
+    ## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus -0.150314
+    ## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               0.011166
+    ## treatment * gender = FEMALE                                                                                                             0.105946
+    ##                                                                                                                                        seLogRr
+    ## treatment                                                                                                                               0.1620
+    ## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.1832
+    ## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               0.1875
+    ## treatment * gender = FEMALE                                                                                                             0.1732
 
 It is prudent to verify that covariate balance has also been achieved in
 the subgroups of interest. For example, we can check the covariate
@@ -929,14 +926,6 @@ outcomeModel <- fitOutcomeModel(
 outcomeModel
 ```
 
-    ## Model type: cox
-    ## Stratified: TRUE
-    ## Use covariates: TRUE
-    ## Use inverse probability of treatment weighting: FALSE
-    ## Target estimand: att
-    ## Status: OK
-    ## Prior variance: 0.0281314772156526
-    ## 
     ##            Estimate lower .95 upper .95     logRr seLogRr
     ## treatment  0.925449  0.717305  1.194886 -0.077476  0.1302
 
@@ -1014,9 +1003,13 @@ citation("CohortMethod")
 
     ## To cite CohortMethod in publications use:
     ## 
-    ##   Schuemie MJ, Reps JM, Black A, DeFalco F, Evans L, Fridgeirsson E, Gilbert JP, Knoll C, Lavallee M, Rao G, Rijnbeek P, Sadowski K, Sena A, Swerdel J, Williams RD, Suchard MA
-    ##   (2024). "Health-analytics data to evidence suite (HADES): open-source software for observational research." _Studies in Health Technology and Informatics_, *310*, 966-970.
-    ##   doi:10.3233/SHTI231108 <https://doi.org/10.3233/SHTI231108>, <https://doi.org/10.3233/shti231108>.
+    ##   Schuemie MJ, Reps JM, Black A, DeFalco F, Evans L, Fridgeirsson E,
+    ##   Gilbert JP, Knoll C, Lavallee M, Rao G, Rijnbeek P, Sadowski K, Sena
+    ##   A, Swerdel J, Williams RD, Suchard MA (2024). "Health-analytics data
+    ##   to evidence suite (HADES): open-source software for observational
+    ##   research." _Studies in Health Technology and Informatics_, *310*,
+    ##   966-970. doi:10.3233/SHTI231108 <https://doi.org/10.3233/SHTI231108>,
+    ##   <https://doi.org/10.3233/shti231108>.
     ## 
     ## A BibTeX entry for LaTeX users is
     ## 
@@ -1039,8 +1032,11 @@ citation("Cyclops")
 
     ## To cite Cyclops in publications use:
     ## 
-    ##   Suchard MA, Simpson SE, Zorych I, Ryan P, Madigan D (2013). "Massive parallelization of serial inference algorithms for complex generalized linear models." _ACM Transactions on
-    ##   Modeling and Computer Simulation_, *23*, 10. doi:10.1145/2414416.2414791 <https://doi.org/10.1145/2414416.2414791>.
+    ##   Suchard MA, Simpson SE, Zorych I, Ryan P, Madigan D (2013). "Massive
+    ##   parallelization of serial inference algorithms for complex
+    ##   generalized linear models." _ACM Transactions on Modeling and
+    ##   Computer Simulation_, *23*, 10. doi:10.1145/2414416.2414791
+    ##   <https://doi.org/10.1145/2414416.2414791>.
     ## 
     ## A BibTeX entry for LaTeX users is
     ## 

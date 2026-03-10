@@ -1,5 +1,15 @@
 # Changelog
 
+## CohortMethod 6.0.1
+
+Changes:
+
+- Adding CohortMethod to CRAN. Required changes:
+  - Using [`message()`](https://rdrr.io/r/base/message.html) instead of
+    [`writeLines()`](https://rdrr.io/r/base/writeLines.html) in printing
+    functions.
+  - Minor changes to documentation and vignettes.
+
 ## CohortMethod 6.0.0
 
 This major release introduces many changes. The three most important

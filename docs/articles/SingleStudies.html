@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,7 @@
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie, Marc A. Suchard and Patrick Ryan</h4>
             
-            <h4 data-toc-skip class="date">2026-02-23</h4>
+            <h4 data-toc-skip class="date">2026-03-10</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/CohortMethod/blob/HEAD/vignettes/SingleStudies.Rmd" class="external-link"><code>vignettes/SingleStudies.Rmd</code></a></small>
       <div class="d-none name"><code>SingleStudies.Rmd</code></div>
@@ -266,21 +266,13 @@ and specify <code>addDescendantsToExclude = TRUE</code>:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">cohortMethodData</span></span></code></pre></div>
-<pre><code><span><span class="co">## # CohortMethodData object</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Target cohort ID: 1</span></span>
-<span><span class="co">## Comparator cohort ID: 2</span></span>
-<span><span class="co">## Nesting cohort ID: 3</span></span>
-<span><span class="co">## Outcome cohort ID(s): 77</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Inherits from CovariateData:</span></span>
-<span><span class="co">## <span style="color: #949494;"># CovariateData object</span></span></span>
+<pre><code><span><span class="co">## <span style="color: #949494;"># CovariateData object</span></span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## All cohorts</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## <span style="color: #949494;">Inherits from Andromeda:</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># Andromeda object</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpCKhGHH\file26a050c99f3.duckdb</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># Physical location:  C:\Users\admin_mschuemi.EU\AppData\Local\Temp\2\RtmpGCZFmm\file35fc628130b1.duckdb</span></span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Tables:</span></span>
 <span><span class="co">## $analysisRef (analysisId, analysisName, domainId, startDay, endDay, isBinary, missingMeansZero)</span></span>
@@ -316,35 +308,27 @@ indication. Only exposures within the nesting cohort are kept.</p>
 these steps:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##                       description targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
-<span><span class="co">## 1                Original cohorts        917230            993116          917230              993116</span></span>
-<span><span class="co">## 2 Keep first, truncate when e ...        845385            873667          845385              873667</span></span>
-<span><span class="co">## 3             First exposure only        845385            873667          845385              873667</span></span>
-<span><span class="co">## 4 365 days of prior observati ...        358646            515193          358646              515193</span></span>
-<span><span class="co">## 5       Restrict to common period        358646            515193          358646              515193</span></span>
-<span><span class="co">## 6      Restrict to nesting cohort         89318            128301           89318              128301</span></span></code></pre>
+<pre><code><span><span class="co">##                       description targetPersons comparatorPersons</span></span>
+<span><span class="co">## 1                Original cohorts        917230            993116</span></span>
+<span><span class="co">## 2 Keep first, truncate when e ...        845385            873667</span></span>
+<span><span class="co">## 3             First exposure only        845385            873667</span></span>
+<span><span class="co">## 4 365 days of prior observati ...        358646            515193</span></span>
+<span><span class="co">## 5       Restrict to common period        358646            515193</span></span>
+<span><span class="co">## 6      Restrict to nesting cohort         89318            128301</span></span>
+<span><span class="co">##   targetExposures comparatorExposures</span></span>
+<span><span class="co">## 1          917230              993116</span></span>
+<span><span class="co">## 2          845385              873667</span></span>
+<span><span class="co">## 3          845385              873667</span></span>
+<span><span class="co">## 4          358646              515193</span></span>
+<span><span class="co">## 5          358646              515193</span></span>
+<span><span class="co">## 6           89318              128301</span></span></code></pre>
 <p>The
 <code>cohortMethodData() function extracts all data about the exposures, outcomes, and covariates from the server and stores them in the</code>cohortMethodData<code>object. This object uses the</code>Andromeda<code>package to store information in a way that ensures R does not run out of memory, even when the data are large. We can use the generic</code>summary()`
 function to view some more information of the data we extracted:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">cohortMethodData</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## CohortMethodData object summary</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Target cohort ID: 1</span></span>
-<span><span class="co">## Comparator cohort ID: 2</span></span>
-<span><span class="co">## Nesting cohort ID: 3</span></span>
-<span><span class="co">## Outcome cohort ID(s): 77</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Target persons: 89318</span></span>
-<span><span class="co">## Comparator persons: 128301</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Outcome counts:</span></span>
-<span><span class="co">##    Event count Person count</span></span>
-<span><span class="co">## 77       37448        20123</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Covariates:</span></span>
-<span><span class="co">## Number of covariates: 85838</span></span>
-<span><span class="co">## Number of non-zero covariate values: 111096472</span></span></code></pre>
+<pre><code><span><span class="co">##    Event count Person count</span></span>
+<span><span class="co">## 77       37448        20123</span></span></code></pre>
 <div class="section level4">
 <h4 id="saving-the-data-to-file">Saving the data to file<a class="anchor" aria-label="anchor" href="#saving-the-data-to-file"></a>
 </h4>
@@ -398,15 +382,24 @@ left in the study population we can always use the
 <code>getAttritionTable</code> function:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">studyPop</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##                       description targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
-<span><span class="co">## 1                Original cohorts        917230            993116          917230              993116</span></span>
-<span><span class="co">## 2 Keep first, truncate when e ...        845385            873667          845385              873667</span></span>
-<span><span class="co">## 3             First exposure only        845385            873667          845385              873667</span></span>
-<span><span class="co">## 4 365 days of prior observati ...        358646            515193          358646              515193</span></span>
-<span><span class="co">## 5       Restrict to common period        358646            515193          358646              515193</span></span>
-<span><span class="co">## 6      Restrict to nesting cohort         89318            128301           89318              128301</span></span>
-<span><span class="co">## 7                No prior outcome         88134            126316           88134              126316</span></span>
-<span><span class="co">## 8 Have at least 1 days at ris ...         88134            126316           88134              126316</span></span></code></pre>
+<pre><code><span><span class="co">##                       description targetPersons comparatorPersons</span></span>
+<span><span class="co">## 1                Original cohorts        917230            993116</span></span>
+<span><span class="co">## 2 Keep first, truncate when e ...        845385            873667</span></span>
+<span><span class="co">## 3             First exposure only        845385            873667</span></span>
+<span><span class="co">## 4 365 days of prior observati ...        358646            515193</span></span>
+<span><span class="co">## 5       Restrict to common period        358646            515193</span></span>
+<span><span class="co">## 6      Restrict to nesting cohort         89318            128301</span></span>
+<span><span class="co">## 7                No prior outcome         88134            126316</span></span>
+<span><span class="co">## 8 Have at least 1 days at ris ...         88134            126316</span></span>
+<span><span class="co">##   targetExposures comparatorExposures</span></span>
+<span><span class="co">## 1          917230              993116</span></span>
+<span><span class="co">## 2          845385              873667</span></span>
+<span><span class="co">## 3          845385              873667</span></span>
+<span><span class="co">## 4          358646              515193</span></span>
+<span><span class="co">## 5          358646              515193</span></span>
+<span><span class="co">## 6           89318              128301</span></span>
+<span><span class="co">## 7           88134              126316</span></span>
+<span><span class="co">## 8           88134              126316</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="propensity-scores">Propensity scores<a class="anchor" aria-label="anchor" href="#propensity-scores"></a>
@@ -522,14 +515,22 @@ logit scale:</p>
 using the <code>getAttritionTable</code> function:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getAttritionTable.html">getAttritionTable</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##                       description targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
-<span><span class="co">## 1                Original cohorts        917230            993116          917230              993116</span></span>
-<span><span class="co">## 2 Keep first, truncate when e ...        845385            873667          845385              873667</span></span>
-<span><span class="co">## 3             First exposure only        845385            873667          845385              873667</span></span>
-<span><span class="co">## 4 365 days of prior observati ...        358646            515193          358646              515193</span></span>
-<span><span class="co">## 5       Restrict to common period        358646            515193          358646              515193</span></span>
-<span><span class="co">## 6      Restrict to nesting cohort         89318            128301           89318              128301</span></span>
-<span><span class="co">## 7     Matched on propensity score         48023             48023           48023               48023</span></span></code></pre>
+<pre><code><span><span class="co">##                       description targetPersons comparatorPersons</span></span>
+<span><span class="co">## 1                Original cohorts        917230            993116</span></span>
+<span><span class="co">## 2 Keep first, truncate when e ...        845385            873667</span></span>
+<span><span class="co">## 3             First exposure only        845385            873667</span></span>
+<span><span class="co">## 4 365 days of prior observati ...        358646            515193</span></span>
+<span><span class="co">## 5       Restrict to common period        358646            515193</span></span>
+<span><span class="co">## 6      Restrict to nesting cohort         89318            128301</span></span>
+<span><span class="co">## 7     Matched on propensity score         48023             48023</span></span>
+<span><span class="co">##   targetExposures comparatorExposures</span></span>
+<span><span class="co">## 1          917230              993116</span></span>
+<span><span class="co">## 2          845385              873667</span></span>
+<span><span class="co">## 3          845385              873667</span></span>
+<span><span class="co">## 4          358646              515193</span></span>
+<span><span class="co">## 5          358646              515193</span></span>
+<span><span class="co">## 6           89318              128301</span></span>
+<span><span class="co">## 7           48023               48023</span></span></code></pre>
 <p>Or, if we like, we can plot an attrition diagram:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/drawAttritionDiagram.html">drawAttritionDiagram</a></span><span class="op">(</span><span class="va">matchedPop</span><span class="op">)</span></span></code></pre></div>
@@ -669,18 +670,18 @@ differences:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/getGeneralizabilityTable.html">getGeneralizabilityTable</a></span><span class="op">(</span><span class="va">balance</span><span class="op">)</span></span></code></pre></div>
 <pre><code> [38;5;246m# A tibble: 85,838 × 5 [39m
-   covariateId covariateName                     beforeMatchingMean afterMatchingMean stdDiff
-          [3m [38;5;246m&lt;dbl&gt; [39m [23m  [3m [38;5;246m&lt;chr&gt; [39m [23m                                           [3m [38;5;246m&lt;dbl&gt; [39m [23m              [3m [38;5;246m&lt;dbl&gt; [39m [23m    [3m [38;5;246m&lt;dbl&gt; [39m [23m
- [38;5;250m 1 [39m   [4m4 [24m160 [4m4 [24m [4m3 [24m [4m9 [24m504 ...: Administration of anesthesia             0.157             0.029 [4m9 [24m   0.447
- [38;5;250m 2 [39m   [4m2 [24m105 [4m1 [24m [4m0 [24m [4m3 [24m504 ...cing (total knee arthroplasty)             0.116             0.010 [4m2 [24m   0.446
- [38;5;250m 3 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m6 [24m [4m2 [24m804 ...s and Devices - Other Implants             0.124             0.018 [4m5 [24m   0.420
- [38;5;250m 4 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m0 [24m [4m8 [24m804 ...vices - General Classification             0.139             0.029 [4m6 [24m   0.401
- [38;5;250m 5 [39m  [4m3 [24m [4m8 [24m003 [4m3 [24m [4m9 [24m [4m0 [24m804 ... Room - General Classification             0.132             0.027 [4m9 [24m   0.391
- [38;5;250m 6 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m1 [24m [4m3 [24m804 ...hesia - General Classification             0.120             0.024 [4m7 [24m   0.374
- [38;5;250m 7 [39m   764 [4m6 [24m [4m0 [24m [4m8 [24m504 ...dex: Preprocedural examination             0.097 [4m8 [24m            0.015 [4m6 [24m   0.361
- [38;5;250m 8 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m4 [24m [4m5 [24m804 ... - Evaluation Or Re-Evaluation             0.118             0.030 [4m2 [24m   0.339
- [38;5;250m 9 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m3 [24m [4m8 [24m804 ...rmacy - General Classification             0.175             0.069 [4m2 [24m   0.326
- [38;5;250m10 [39m   [4m4 [24m002 [4m0 [24m [4m1 [24m [4m4 [24m212 ...ndex: Pain following procedure             0.075 [4m3 [24m            0.011 [4m0 [24m   0.321
+   covariateId covariateName        beforeMatchingMean afterMatchingMean stdDiff
+          [3m [38;5;246m&lt;dbl&gt; [39m [23m  [3m [38;5;246m&lt;chr&gt; [39m [23m                              [3m [38;5;246m&lt;dbl&gt; [39m [23m              [3m [38;5;246m&lt;dbl&gt; [39m [23m    [3m [38;5;246m&lt;dbl&gt; [39m [23m
+ [38;5;250m 1 [39m   [4m4 [24m160 [4m4 [24m [4m3 [24m [4m9 [24m504 ...: Administration…             0.157             0.029 [4m9 [24m   0.447
+ [38;5;250m 2 [39m   [4m2 [24m105 [4m1 [24m [4m0 [24m [4m3 [24m504 ...cing (total knee…             0.116             0.010 [4m2 [24m   0.446
+ [38;5;250m 3 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m6 [24m [4m2 [24m804 ...s and Devices - …             0.124             0.018 [4m5 [24m   0.420
+ [38;5;250m 4 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m0 [24m [4m8 [24m804 ...vices - General …             0.139             0.029 [4m6 [24m   0.401
+ [38;5;250m 5 [39m  [4m3 [24m [4m8 [24m003 [4m3 [24m [4m9 [24m [4m0 [24m804 ... Room - General …             0.132             0.027 [4m9 [24m   0.391
+ [38;5;250m 6 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m1 [24m [4m3 [24m804 ...hesia - General …             0.120             0.024 [4m7 [24m   0.374
+ [38;5;250m 7 [39m   764 [4m6 [24m [4m0 [24m [4m8 [24m504 ...dex: Preprocedur…             0.097 [4m8 [24m            0.015 [4m6 [24m   0.361
+ [38;5;250m 8 [39m  [4m3 [24m [4m8 [24m003 [4m2 [24m [4m4 [24m [4m5 [24m804 ... - Evaluation Or…             0.118             0.030 [4m2 [24m   0.339
+ [38;5;250m 9 [39m  [4m3 [24m [4m8 [24m003 [4m1 [24m [4m3 [24m [4m8 [24m804 ...rmacy - General …             0.175             0.069 [4m2 [24m   0.326
+ [38;5;250m10 [39m   [4m4 [24m002 [4m0 [24m [4m1 [24m [4m4 [24m212 ...ndex: Pain follo…             0.075 [4m3 [24m            0.011 [4m0 [24m   0.321
  [38;5;246m# ℹ 85,828 more rows [39m</code></pre>
 <p>In this case, because we used PS matching, we are likely aiming to
 estimate the average treatment effect in the treated (ATT). For this
@@ -713,8 +714,10 @@ instead:</p>
 <span>  power <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  twoSided <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr         se</span></span>
-<span><span class="co">## 1         88134            126316           88134              126316   12087401        9619724          1252 1.174598 0.05744113</span></span></code></pre>
+<pre><code><span><span class="co">##   targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
+<span><span class="co">## 1         88134            126316           88134              126316</span></span>
+<span><span class="co">##   targetDays comparatorDays totalOutcomes     mdrr         se</span></span>
+<span><span class="co">## 1   12087401        9619724          1252 1.174598 0.05744113</span></span></code></pre>
 <p>In this example we used the <code>studyPop</code> object, so the
 population before any matching or trimming. If we want to know the MDRR
 after matching, we use the <code>matchedPop</code> object we created
@@ -727,8 +730,10 @@ earlier instead:</p>
 <span>  power <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  twoSided <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   targetPersons comparatorPersons targetExposures comparatorExposures targetDays comparatorDays totalOutcomes     mdrr         se</span></span>
-<span><span class="co">## 1         48023             48023           48023               48023    6752916        3896834           597 1.257748 0.08185455</span></span></code></pre>
+<pre><code><span><span class="co">##   targetPersons comparatorPersons targetExposures comparatorExposures</span></span>
+<span><span class="co">## 1         48023             48023           48023               48023</span></span>
+<span><span class="co">##   targetDays comparatorDays totalOutcomes     mdrr         se</span></span>
+<span><span class="co">## 1    6752916        3896834           597 1.257748 0.08185455</span></span></code></pre>
 <p>Even thought the MDRR in the matched population is higher, meaning we
 have less power, we should of course not be fooled: matching most likely
 eliminates confounding, and is therefore preferred to not matching.</p>
@@ -767,14 +772,7 @@ regression:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: FALSE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Target estimand: ate</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##            Estimate lower .95 upper .95     logRr seLogRr</span></span>
+<pre><code><span><span class="co">##            Estimate lower .95 upper .95     logRr seLogRr</span></span>
 <span><span class="co">## treatment  0.961778  0.856018  1.080701 -0.038971  0.0595</span></span></code></pre>
 <p>But of course we want to make use of the matching done on the
 propensity score:</p>
@@ -786,14 +784,7 @@ propensity score:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: FALSE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Target estimand: att</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##           Estimate lower .95 upper .95    logRr seLogRr</span></span>
+<pre><code><span><span class="co">##           Estimate lower .95 upper .95    logRr seLogRr</span></span>
 <span><span class="co">## treatment  0.84469   0.71412   1.00030 -0.16878   0.086</span></span></code></pre>
 <p>Note that we define the sub-population to be only those in the
 <code>matchedPop</code> object, which we created earlier by matching on
@@ -810,14 +801,7 @@ Probability of Treatment Weighting (IPTW):</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: FALSE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: TRUE</span></span>
-<span><span class="co">## Target estimand: att</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##           Estimate lower .95 upper .95    logRr seLogRr</span></span>
+<pre><code><span><span class="co">##           Estimate lower .95 upper .95    logRr seLogRr</span></span>
 <span><span class="co">## treatment  0.66899   0.47331   0.97783 -0.40199   0.178</span></span></code></pre>
 <p>Note that in this case we may want to use a bootstrap to compute the
 confidence interval.</p>
@@ -843,18 +827,31 @@ terms:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: FALSE</span></span>
-<span><span class="co">## Use covariates: FALSE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Target estimand: att</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##                                                                                                                                         Estimate lower .95 upper .95     logRr seLogRr</span></span>
-<span><span class="co">## treatment                                                                                                                               0.809658  0.590267  1.113710 -0.211144  0.1620</span></span>
-<span><span class="co">## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.860438  0.601425  1.233185 -0.150314  0.1832</span></span>
-<span><span class="co">## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               1.011228  0.701484  1.462634  0.011166  0.1875</span></span>
-<span><span class="co">## treatment * gender = FEMALE                                                                                                             1.111761  0.791320  1.560599  0.105946  0.1732</span></span></code></pre>
+<pre><code><span><span class="co">##                                                                                                                                         Estimate</span></span>
+<span><span class="co">## treatment                                                                                                                               0.809658</span></span>
+<span><span class="co">## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.860438</span></span>
+<span><span class="co">## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               1.011228</span></span>
+<span><span class="co">## treatment * gender = FEMALE                                                                                                             1.111761</span></span>
+<span><span class="co">##                                                                                                                                        lower .95</span></span>
+<span><span class="co">## treatment                                                                                                                               0.590267</span></span>
+<span><span class="co">## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.601425</span></span>
+<span><span class="co">## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               0.701484</span></span>
+<span><span class="co">## treatment * gender = FEMALE                                                                                                             0.791320</span></span>
+<span><span class="co">##                                                                                                                                        upper .95</span></span>
+<span><span class="co">## treatment                                                                                                                               1.113710</span></span>
+<span><span class="co">## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  1.233185</span></span>
+<span><span class="co">## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               1.462634</span></span>
+<span><span class="co">## treatment * gender = FEMALE                                                                                                             1.560599</span></span>
+<span><span class="co">##                                                                                                                                            logRr</span></span>
+<span><span class="co">## treatment                                                                                                                              -0.211144</span></span>
+<span><span class="co">## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus -0.150314</span></span>
+<span><span class="co">## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               0.011166</span></span>
+<span><span class="co">## treatment * gender = FEMALE                                                                                                             0.105946</span></span>
+<span><span class="co">##                                                                                                                                        seLogRr</span></span>
+<span><span class="co">## treatment                                                                                                                               0.1620</span></span>
+<span><span class="co">## treatment * condition_era group (ConditionGroupEraLongTerm) during day -365 through 0 days relative to index: Type 2 diabetes mellitus  0.1832</span></span>
+<span><span class="co">## treatment * drug_era group (DrugGroupEraOverlapping) during day 0 through 0 days relative to index: ANTITHROMBOTIC AGENTS               0.1875</span></span>
+<span><span class="co">## treatment * gender = FEMALE                                                                                                             0.1732</span></span></code></pre>
 <p>It is prudent to verify that covariate balance has also been achieved
 in the subgroups of interest. For example, we can check the covariate
 balance in the subpopulation of females:</p>
@@ -888,15 +885,7 @@ automatically excluded from regularization.)</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">outcomeModel</span></span></code></pre></div>
-<pre><code><span><span class="co">## Model type: cox</span></span>
-<span><span class="co">## Stratified: TRUE</span></span>
-<span><span class="co">## Use covariates: TRUE</span></span>
-<span><span class="co">## Use inverse probability of treatment weighting: FALSE</span></span>
-<span><span class="co">## Target estimand: att</span></span>
-<span><span class="co">## Status: OK</span></span>
-<span><span class="co">## Prior variance: 0.0281314772156526</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">##            Estimate lower .95 upper .95     logRr seLogRr</span></span>
+<pre><code><span><span class="co">##            Estimate lower .95 upper .95     logRr seLogRr</span></span>
 <span><span class="co">## treatment  0.925449  0.717305  1.194886 -0.077476  0.1302</span></span></code></pre>
 </div>
 <div class="section level3">
@@ -958,9 +947,13 @@ score.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## To cite CohortMethod in publications use:</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##   Schuemie MJ, Reps JM, Black A, DeFalco F, Evans L, Fridgeirsson E, Gilbert JP, Knoll C, Lavallee M, Rao G, Rijnbeek P, Sadowski K, Sena A, Swerdel J, Williams RD, Suchard MA</span></span>
-<span><span class="co">##   (2024). "Health-analytics data to evidence suite (HADES): open-source software for observational research." _Studies in Health Technology and Informatics_, *310*, 966-970.</span></span>
-<span><span class="co">##   doi:10.3233/SHTI231108 &lt;https://doi.org/10.3233/SHTI231108&gt;, &lt;https://doi.org/10.3233/shti231108&gt;.</span></span>
+<span><span class="co">##   Schuemie MJ, Reps JM, Black A, DeFalco F, Evans L, Fridgeirsson E,</span></span>
+<span><span class="co">##   Gilbert JP, Knoll C, Lavallee M, Rao G, Rijnbeek P, Sadowski K, Sena</span></span>
+<span><span class="co">##   A, Swerdel J, Williams RD, Suchard MA (2024). "Health-analytics data</span></span>
+<span><span class="co">##   to evidence suite (HADES): open-source software for observational</span></span>
+<span><span class="co">##   research." _Studies in Health Technology and Informatics_, *310*,</span></span>
+<span><span class="co">##   966-970. doi:10.3233/SHTI231108 &lt;https://doi.org/10.3233/SHTI231108&gt;,</span></span>
+<span><span class="co">##   &lt;https://doi.org/10.3233/shti231108&gt;.</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## A BibTeX entry for LaTeX users is</span></span>
 <span><span class="co">## </span></span>
@@ -980,8 +973,11 @@ score.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"Cyclops"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## To cite Cyclops in publications use:</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##   Suchard MA, Simpson SE, Zorych I, Ryan P, Madigan D (2013). "Massive parallelization of serial inference algorithms for complex generalized linear models." _ACM Transactions on</span></span>
-<span><span class="co">##   Modeling and Computer Simulation_, *23*, 10. doi:10.1145/2414416.2414791 &lt;https://doi.org/10.1145/2414416.2414791&gt;.</span></span>
+<span><span class="co">##   Suchard MA, Simpson SE, Zorych I, Ryan P, Madigan D (2013). "Massive</span></span>
+<span><span class="co">##   parallelization of serial inference algorithms for complex</span></span>
+<span><span class="co">##   generalized linear models." _ACM Transactions on Modeling and</span></span>
+<span><span class="co">##   Computer Simulation_, *23*, 10. doi:10.1145/2414416.2414791</span></span>
+<span><span class="co">##   &lt;https://doi.org/10.1145/2414416.2414791&gt;.</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## A BibTeX entry for LaTeX users is</span></span>
 <span><span class="co">## </span></span>

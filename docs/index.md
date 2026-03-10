@@ -83,7 +83,7 @@ for more details on how to configure your database connection.
 # User Documentation
 
 Documentation can be found on the [package
-website](https://ohdsi.github.io/CohortMethod).
+website](https://ohdsi.github.io/CohortMethod/).
 
 PDF versions of the documentation are also available:
 

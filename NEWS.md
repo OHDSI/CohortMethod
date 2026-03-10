@@ -1,7 +1,11 @@
 CohortMethod 6.0.1
 ==================
 
-- Adding CohortMethod to CRAN.
+Changes: 
+
+- Adding CohortMethod to CRAN. Required changes:
+    - Using `message()` instead of `writeLines()` in printing functions.
+    - Minor changes to documentation and vignettes.
 
 CohortMethod 6.0.0
 ==================

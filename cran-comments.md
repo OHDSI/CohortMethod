@@ -10,7 +10,7 @@ Thank you for the review. In response:
 read the data there for inclusion in the vignette if it does. These data are too large to be included in the package. If
 not present, the vignettes will still render, just without the plots and tables.
 
-5. We now no longer change user options in the vignette.
+5. We now reset user options in the vignette.
 
 6. We have removed the call to installed.packages().
 
