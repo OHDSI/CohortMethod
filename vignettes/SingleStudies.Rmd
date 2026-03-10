@@ -18,7 +18,7 @@ editor_options:
 ---
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
-options(width = 200)
+#options(width = 200)
 library(CohortMethod)
 outputFolder <- "e:/temp/cohortMethodVignette"
 folderExists <- dir.exists(outputFolder)

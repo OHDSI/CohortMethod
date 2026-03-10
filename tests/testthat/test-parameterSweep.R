@@ -9,11 +9,11 @@ sampleSize <- 1000
 cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = sampleSize)
 
 test_that("cohortMethodData functions", {
-  expect_output(print(cohortMethodData), "CohortMethodData object.*")
+  expect_message(print(cohortMethodData), "CohortMethodData object.*")
   s <- summary(cohortMethodData)
   expect_s3_class(s, "summary.CohortMethodData")
   expect_equal(s$targetPersons + s$comparatorPersons, sampleSize)
-  expect_output(print(s), "CohortMethodData object summary.*")
+  expect_message(print(s), "CohortMethodData object summary.*")
 
   file <- tempfile()
   cmd1 <- Andromeda::copyAndromeda(cohortMethodData)
@@ -342,8 +342,7 @@ test_that("Functions on outcome model", {
       prior = createPrior("laplace", 0.1)
     )
   )
-
-  expect_output(print(outcomeModel), "Model type: cox.*")
+  expect_message(print(outcomeModel), "Model type: cox.*")
 
   p <- plotKaplanMeier(strata)
   expect_s3_class(p, "grob")

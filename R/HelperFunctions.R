@@ -81,17 +81,3 @@ nrow_temp <- function(x) {
     return(nrow(x))
   }
 }
-
-ensureInstalled <- function(pkgs) {
-  notInstalled <- pkgs[!(pkgs %in% rownames(installed.packages()))]
-
-  if (interactive() & length(notInstalled) > 0) {
-    message("Package(s): ", paste(notInstalled, collapse = ", "), " not installed")
-    if (!isTRUE(utils::askYesNo("Would you like to install them?"))) {
-      return(invisible(NULL))
-    }
-  }
-  for (package in notInstalled) {
-    install.packages(package)
-  }
-}

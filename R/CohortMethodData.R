@@ -55,7 +55,7 @@ saveCohortMethodData <- function(cohortMethodData, file) {
   checkmate::reportAssertions(collection = errorMessages)
 
   Andromeda::saveAndromeda(cohortMethodData, file)
-  writeLines("To use this CohortMethodData object, you will have to load it from file (using loadCohortMethodData).")
+  message("To use this CohortMethodData object, you will have to load it from file (using loadCohortMethodData).")
 }
 
 #' Load the cohort method data from a file
@@ -93,19 +93,19 @@ loadCohortMethodData <- function(file) {
 #' @rdname CohortMethodData-class
 setMethod("show", "CohortMethodData", function(object) {
   metaData <- attr(object, "metaData")
-  writeLines("# CohortMethodData object")
-  writeLines("")
-  writeLines(paste("Target cohort ID:", metaData$targetId))
-  writeLines(paste("Comparator cohort ID:", metaData$comparatorId))
+  message("# CohortMethodData object")
+  message("")
+  message(paste("Target cohort ID:", metaData$targetId))
+  message(paste("Comparator cohort ID:", metaData$comparatorId))
   if (!is.null(metaData$nestingCohortId)) {
-    writeLines(paste("Nesting cohort ID:", metaData$nestingCohortId))
+    message(paste("Nesting cohort ID:", metaData$nestingCohortId))
   }
-  writeLines(paste(
+  message(paste(
     "Outcome cohort ID(s):",
     paste(metaData$outcomeIds, collapse = ",")
   ))
-  writeLines("")
-  writeLines("Inherits from CovariateData:")
+  message("")
+  message("Inherits from CovariateData:")
   class(object) <- "CovariateData"
   attr(class(object), "package") <- "FeatureExtraction"
   show(object)
@@ -151,28 +151,28 @@ setMethod("summary", "CohortMethodData", function(object) {
 
 #' @export
 print.summary.CohortMethodData <- function(x, ...) {
-  writeLines("CohortMethodData object summary")
-  writeLines("")
-  writeLines(paste("Target cohort ID:", x$metaData$targetId))
-  writeLines(paste("Comparator cohort ID:", x$metaData$comparatorId))
+  message("CohortMethodData object summary")
+  message("")
+  message(paste("Target cohort ID:", x$metaData$targetId))
+  message(paste("Comparator cohort ID:", x$metaData$comparatorId))
   if (!is.null(x$metaData$nestingCohortId)) {
-    writeLines(paste("Nesting cohort ID:", x$metaData$nestingCohortId))
+    message(paste("Nesting cohort ID:", x$metaData$nestingCohortId))
   }
-  writeLines(paste("Outcome cohort ID(s):", x$metaData$outcomeIds, collapse = ","))
-  writeLines("")
-  writeLines(paste("Target persons:", paste(x$targetPersons)))
-  writeLines(paste("Comparator persons:", paste(x$comparatorPersons)))
-  writeLines("")
-  writeLines("Outcome counts:")
+  message(paste("Outcome cohort ID(s):", x$metaData$outcomeIds, collapse = ","))
+  message("")
+  message(paste("Target persons:", paste(x$targetPersons)))
+  message(paste("Comparator persons:", paste(x$comparatorPersons)))
+  message("")
+  message("Outcome counts:")
   outcomeCounts <- x$outcomeCounts
   rownames(outcomeCounts) <- outcomeCounts$outcomeId
   outcomeCounts$outcomeId <- NULL
   colnames(outcomeCounts) <- c("Event count", "Person count")
   printCoefmat(outcomeCounts)
-  writeLines("")
-  writeLines("Covariates:")
-  writeLines(paste("Number of covariates:", x$covariateCount))
-  writeLines(paste("Number of non-zero covariate values:", x$covariateValueCount))
+  message("")
+  message("Covariates:")
+  message(paste("Number of covariates:", x$covariateCount))
+  message(paste("Number of non-zero covariate values:", x$covariateValueCount))
 }
 
 #' Check whether an object is a CohortMethodData object

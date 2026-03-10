@@ -627,16 +627,16 @@ confint.OutcomeModel <- function(object, parm, level = 0.95, ...) {
 
 #' @export
 print.OutcomeModel <- function(x, ...) {
-  writeLines(paste("Model type:", x$outcomeModelType))
-  writeLines(paste("Stratified:", x$outcomeModelStratified))
-  writeLines(paste("Use covariates:", x$outcomeModelUseCovariates))
-  writeLines(paste("Use inverse probability of treatment weighting:", x$inversePtWeighting))
-  writeLines(paste("Target estimand:", x$targetEstimator))
-  writeLines(paste("Status:", x$outcomeModelStatus))
+  message(paste("Model type:", x$outcomeModelType))
+  message(paste("Stratified:", x$outcomeModelStratified))
+  message(paste("Use covariates:", x$outcomeModelUseCovariates))
+  message(paste("Use inverse probability of treatment weighting:", x$inversePtWeighting))
+  message(paste("Target estimand:", x$targetEstimator))
+  message(paste("Status:", x$outcomeModelStatus))
   if (!is.null(x$outcomeModelPriorVariance) && !is.na(x$outcomeModelPriorVariance)) {
-    writeLines(paste("Prior variance:", x$outcomeModelPriorVariance))
+    message(paste("Prior variance:", x$outcomeModelPriorVariance))
   }
-  writeLines("")
+  message("")
   d <- x$outcomeModelTreatmentEstimate
   if (!is.null(d)) {
     rns <- "treatment"

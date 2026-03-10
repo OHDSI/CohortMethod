@@ -1,6 +1,18 @@
-Although this is a new submission to CRAN, but this package has been in use by the Observational Health Data Science and Informatics (OHDSI) community for a long time.
-It implements the comparative cohort design and can extract all required data from the user's database in the OMOP Common Data Model.
-This package has already been used in many influential studies that have been published and have impacted regulatory decisions.
+Thank you for the review. In response:
+
+1. Added the long form of OMOP to DESCRIPTION.
+
+2. Added two references to our papers to the DESCRIPTION.
+
+3. Repaced all writeLines() with message().
+
+4. Note that the vignettes do not write to the user's filespace. Instead, they check if a specific folder exists, and 
+read the data there for inclusion in the vignette if it does. These data are too large to be included in the package. If
+not present, the vignettes will still render, just without the plots and tables.
+
+5. We now no longer change user options in the vignette.
+
+6. We have removed the call to installed.packages().
 
 ---
 
