@@ -14,6 +14,8 @@ not present, the vignettes will still render, just without the plots and tables.
 
 6. We have removed the call to installed.packages().
 
+7. To our knowledge we do not install packages in our functions, examples, or vignettes. (The call to install.packages() in MultipleAnalyses.Rmd is explicitly not evaluated).
+
 ---
 
 ## Test environments
