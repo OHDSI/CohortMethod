@@ -3,6 +3,9 @@ CohortMethod
 
 [![Build Status](https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check)
 [![codecov.io](https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main)](https://app.codecov.io/github/OHDSI/CohortMethod?branch=main)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/CohortMethod)](https://cran.r-project.org/package=CohortMethod)
+[![CRAN_Status_Badge](https://cranlogs.r-pkg.org/badges/CohortMethod)](https://cran.r-project.org/package=CohortMethod)
+
 
 CohortMethod is part of [HADES](https://ohdsi.github.io/Hades/).
 
@@ -44,37 +47,36 @@ CohortMethod is an R package, with some functions implemented in C++.
 
 System Requirements
 ============
-Requires R (version 3.6.0 or higher). Installation on Windows requires [RTools](https://cran.r-project.org/bin/windows/Rtools/). Libraries used in CohortMethod require Java.
+Requires R (version 4.0.0 or higher). Libraries used in CohortMethod require Java.
 
 Installation
 =============
 1. See the instructions [here](https://ohdsi.github.io/Hades/rSetup.html) for configuring your R environment, including RTools and Java.
 
-2. In R, use the following commands to download and install CohortMethod:
+2. To install the latest stable version, install from CRAN:
 
-  ```r
-  install.packages("remotes")
-  remotes::install_github("ohdsi/CohortMethod")
-  ```
+    ```r
+    install.packages("CohortMethod")
+    ```
   
 3. Optionally, run this to check if CohortMethod was correctly installed:
 
-  ```r
-  connectionDetails <- createConnectionDetails(dbms="postgresql",
-                                               server="my_server.org",
-                                               user = "joe",
-                                               password = "super_secret")
-
-  checkCmInstallation(connectionDetails)
-  ```
+    ```r
+    connectionDetails <- createConnectionDetails(dbms="postgresql",
+                                                 server="my_server.org",
+                                                 user = "joe",
+                                                 password = "super_secret")
+    
+    checkCmInstallation(connectionDetails)
+    ```
   
-  Where dbms, server, user, and password need to be changed to the settings for your database environment. Type
-  
-  ```r
-  ?createConnectionDetails
-  ``` 
-  
-  for more details on how to configure your database connection.
+    Where dbms, server, user, and password need to be changed to the settings for your database environment. Type
+    
+    ```r
+    ?createConnectionDetails
+    ``` 
+    
+    for more details on how to configure your database connection.
 
 User Documentation
 ==================
