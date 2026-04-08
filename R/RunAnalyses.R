@@ -1158,7 +1158,14 @@ createReferenceTable <- function(cmAnalysisList,
     if (refitPsForEveryStudyPopulation) {
       # Find equivalent studyPopArgs, so we can reuse PS over those as well:
       equivalent <- function(studyPopArgs1, studyPopArgs2) {
-        if (studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk) {
+        if (studyPopArgs1$minDaysAtRisk == 0 && studyPopArgs2$minDaysAtRisk == 0) {
+          return(TRUE)
+        } else if (studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
+                   studyPopArgs1$riskWindowStart != studyPopArgs2$riskWindowStart ||
+                   studyPopArgs1$startAnchor != studyPopArgs2$startAnchor ||
+                   studyPopArgs1$riskWindowEnd != studyPopArgs2$riskWindowEnd ||
+                   studyPopArgs1$endAnchor != studyPopArgs2$endAnchor ||
+                   studyPopArgs1$censorAtNewRiskWindow != studyPopArgs2$censorAtNewRiskWindow) {
           return(FALSE)
         } else {
           return(TRUE)
