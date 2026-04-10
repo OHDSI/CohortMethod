@@ -292,7 +292,7 @@ downSample <- function(attrition,
                        tempEmulationSchema,
                        targetId,
                        maxCohortSize) {
-  if (maxCohortSize == 0) {
+  if (maxCohortSize == 0 || length(attrition$targetPersons) == 0) {
     return(FALSE)
   } else {
     sampled <- FALSE
