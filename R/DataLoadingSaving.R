@@ -164,6 +164,15 @@ getDbCohortMethodData <- function(connectionDetails,
   )
   attrition <- DatabaseConnector::querySql(connection, renderedSql, snakeCaseToCamelCase = TRUE)
   attrition <- pivotAttrition(attrition, targetId)
+  if (nrow(attrition) == 0) {
+    attrition <- tibble(
+      description = "Original cohorts",
+      targetPersons = 0,
+      comparatorPersons = 0,
+      targetExposures = 0,
+      comparatorExposures = 0
+    )
+  }
 
   sampled <- downSample(
     attrition,
@@ -345,7 +354,7 @@ handleCohortCovariateBuilders <- function(covariateSettings,
 }
 
 pivotAttrition <- function(attrition, targetId) {
-  attrition <- inner_join(
+  attrition <- full_join(
     attrition |>
       filter(.data$cohortDefinitionId == targetId) |>
       select(
@@ -363,6 +372,12 @@ pivotAttrition <- function(attrition, targetId) {
       ),
     by = join_by("seqId")
   ) |>
+    mutate(
+      targetPersons = if_else(is.na(.data$targetPersons), 0, .data$targetPersons),
+      comparatorPersons = if_else(is.na(.data$comparatorPersons), 0, .data$comparatorPersons),
+      targetExposures = if_else(is.na(.data$targetExposures), 0, .data$targetExposures),
+      comparatorExposures = if_else(is.na(.data$comparatorExposures), 0, .data$comparatorExposures)
+    ) |>
     select("description", "targetPersons", "comparatorPersons", "targetExposures", "comparatorExposures")
   return(attrition)
 }
