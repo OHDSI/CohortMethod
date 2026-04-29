@@ -209,14 +209,70 @@ runCmAnalyses <- function(connectionDetails,
   if (file.exists(cmAnalysesSpecificationsFile)) {
     oldCmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
     if (!isTRUE(all.equal(oldCmAnalysesSpecifications$toList(), cmAnalysesSpecifications$toList()))) {
-      rm(list = ls(envir = cache), envir = cache)
-      message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
-      response <- utils::askYesNo("Do you want to delete the old files before proceeding?")
-      if (is.na(response)) {
-        # Cancel:
-        return()
-      } else if (response == TRUE) {
-        unlink(outputFolder, recursive = TRUE)
+      # Use intelligent invalidation policy to determine what needs to be deleted
+      hasher <- SettingsHasher$new()
+      changedComponents <- hasher$compareSettingsComponents(
+        oldCmAnalysesSpecifications,
+        cmAnalysesSpecifications
+      )
+
+      if (any(as.logical(changedComponents))) {
+        # Determine minimal set of files to delete based on what changed
+        policy <- InvalidationPolicy$new()
+        filePatternsToDelete <- policy$computeInvalidationScope(changedComponents)
+
+        if (length(filePatternsToDelete) > 0) {
+          # Get human-readable message about what will be deleted
+          message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
+          message(policy$getInvalidationMessage(changedComponents))
+
+          # Show some affected files to user
+          affectedFiles <- c()
+          for (pattern in filePatternsToDelete) {
+            matchedFiles <- list.files(outputFolder, pattern = pattern, full.names = FALSE)
+            affectedFiles <- c(affectedFiles, matchedFiles)
+          }
+
+          if (length(affectedFiles) > 0) {
+            message(sprintf(
+              "Files to be deleted: %d file(s) matching %d pattern(s)",
+              length(affectedFiles),
+              length(filePatternsToDelete)
+            ))
+            if (length(affectedFiles) <= 10) {
+              for (f in affectedFiles) {
+                message(sprintf("  - %s", f))
+              }
+            } else {
+              for (f in head(affectedFiles, 5)) {
+                message(sprintf("  - %s", f))
+              }
+              message(sprintf("  ... and %d more files", length(affectedFiles) - 5))
+            }
+          }
+
+          response <- utils::askYesNo("Do you want to delete these artifacts before proceeding?")
+          if (is.na(response)) {
+            # Cancel:
+            return()
+          } else if (response == TRUE) {
+            # Delete files matching patterns
+            for (pattern in filePatternsToDelete) {
+              files <- list.files(outputFolder, pattern = pattern, full.names = TRUE, recursive = TRUE)
+              if (length(files) > 0) {
+                unlink(files)
+              }
+              # Also try to delete directories matching pattern
+              dirs <- list.dirs(outputFolder, full.names = TRUE, recursive = FALSE)
+              matchingDirs <- dirs[grep(pattern, basename(dirs))]
+              if (length(matchingDirs) > 0) {
+                unlink(matchingDirs, recursive = TRUE)
+              }
+            }
+          }
+        }
+        # Clear cache regardless (old cache may reference deleted files)
+        rm(list = ls(envir = cache), envir = cache)
       }
     }
   }
