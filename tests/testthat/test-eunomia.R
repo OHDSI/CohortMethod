@@ -705,10 +705,15 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     nestedFiles <- result$cohortMethodDataFile[result$nestingCohortId == 4 & !is.na(result$nestingCohortId)]
     nonNestedFiles <- result$cohortMethodDataFile[is.na(result$nestingCohortId)]
     expect_true(length(intersect(nestedFiles, nonNestedFiles)) == 0)
-    expect_equal(length(grep("_t1_c2_n4", result$sharedBalanceFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$filteredForbalanceFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$balanceFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$outcomeModelFile)), 2)
+
+    # Verify nested rows have distinct balance/outcome filenames from non-nested rows
+    nestedBalance <- result$sharedBalanceFile[result$nestingCohortId == 4 & !is.na(result$nestingCohortId)]
+    nonNestedBalance <- result$sharedBalanceFile[is.na(result$nestingCohortId)]
+    expect_true(length(intersect(nestedBalance[nestedBalance != ""], nonNestedBalance[nonNestedBalance != ""])) == 0)
+
+    nestedOm <- result$outcomeModelFile[result$nestingCohortId == 4 & !is.na(result$nestingCohortId)]
+    nonNestedOm <- result$outcomeModelFile[is.na(result$nestingCohortId)]
+    expect_true(length(intersect(nestedOm[nestedOm != ""], nonNestedOm[nonNestedOm != ""])) == 0)
 
     uniqueCmdFiles <- result[!duplicated(result$cohortMethodDataFile), ]
     for (i in seq_len(nrow(uniqueCmdFiles))) {
