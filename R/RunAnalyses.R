@@ -171,6 +171,12 @@ createDefaultMultiThreadingSettings <- function(maxCores) {
 #'                                       [createDefaultMultiThreadingSettings()] functions.
 #' @param cmAnalysesSpecifications       An object of type `CmAnalysesSpecifications` as created using
 #'                                       the `createCmAnalysesSpecifications()`.
+#' @param databaseId                     A unique identifier for the database being used. This is
+#'                                       baked into artifact hashes to prevent accidental reuse of
+#'                                       cached results from a different database. Required.
+#' @param artifactStore                  An object inheriting from [ArtifactStore] used to read and
+#'                                       write cached artifacts. If NULL (default), a
+#'                                       [LocalArtifactStore] backed by `outputFolder` is used.
 #'
 #' @return
 #' A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
@@ -188,7 +194,9 @@ runCmAnalyses <- function(connectionDetails,
                           nestingCohortTable = "cohort",
                           outputFolder = "./CohortMethodOutput",
                           multiThreadingSettings = createMultiThreadingSettings(),
-                          cmAnalysesSpecifications) {
+                          cmAnalysesSpecifications,
+                          databaseId,
+                          artifactStore = NULL) {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
   checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
@@ -202,91 +210,47 @@ runCmAnalyses <- function(connectionDetails,
   checkmate::assertCharacter(outputFolder, len = 1, add = errorMessages)
   checkmate::assertClass(multiThreadingSettings, "CmMultiThreadingSettings", add = errorMessages)
   checkmate::assertR6(cmAnalysesSpecifications, "CmAnalysesSpecifications", add = errorMessages)
+  checkmate::assertCharacter(databaseId, len = 1, min.chars = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   outputFolder <- normalizePath(outputFolder, mustWork = FALSE)
-  cmAnalysesSpecificationsFile <- file.path(outputFolder, "cmAnalysesSpecifications.rds")
-  if (file.exists(cmAnalysesSpecificationsFile)) {
-    oldCmAnalysesSpecifications <- readRDS(cmAnalysesSpecificationsFile)
-    if (!isTRUE(all.equal(oldCmAnalysesSpecifications$toList(), cmAnalysesSpecifications$toList()))) {
-      # Use intelligent invalidation policy to determine what needs to be deleted
-      hasher <- SettingsHasher$new()
-      changedComponents <- hasher$compareSettingsComponents(
-        oldCmAnalysesSpecifications,
-        cmAnalysesSpecifications
-      )
-
-      if (any(as.logical(changedComponents))) {
-        # Determine minimal set of files to delete based on what changed
-        policy <- InvalidationPolicy$new()
-        filePatternsToDelete <- policy$computeInvalidationScope(changedComponents)
-
-        if (length(filePatternsToDelete) > 0) {
-          # Get human-readable message about what will be deleted
-          message(sprintf("Output files already exist in '%s', but the analysis settings have changed.", outputFolder))
-          message(policy$getInvalidationMessage(changedComponents))
-
-          # Show some affected files to user
-          affectedFiles <- c()
-          for (pattern in filePatternsToDelete) {
-            matchedFiles <- list.files(outputFolder, pattern = pattern, full.names = FALSE)
-            affectedFiles <- c(affectedFiles, matchedFiles)
-          }
-
-          if (length(affectedFiles) > 0) {
-            message(sprintf(
-              "Files to be deleted: %d file(s) matching %d pattern(s)",
-              length(affectedFiles),
-              length(filePatternsToDelete)
-            ))
-            if (length(affectedFiles) <= 10) {
-              for (f in affectedFiles) {
-                message(sprintf("  - %s", f))
-              }
-            } else {
-              for (f in head(affectedFiles, 5)) {
-                message(sprintf("  - %s", f))
-              }
-              message(sprintf("  ... and %d more files", length(affectedFiles) - 5))
-            }
-          }
-
-          response <- utils::askYesNo("Do you want to delete these artifacts before proceeding?")
-          if (is.na(response)) {
-            # Cancel:
-            return()
-          } else if (response == TRUE) {
-            # Delete files matching patterns
-            for (pattern in filePatternsToDelete) {
-              files <- list.files(outputFolder, pattern = pattern, full.names = TRUE, recursive = TRUE)
-              if (length(files) > 0) {
-                unlink(files)
-              }
-              # Also try to delete directories matching pattern
-              dirs <- list.dirs(outputFolder, full.names = TRUE, recursive = FALSE)
-              matchingDirs <- dirs[grep(pattern, basename(dirs))]
-              if (length(matchingDirs) > 0) {
-                unlink(matchingDirs, recursive = TRUE)
-              }
-            }
-          }
-        }
-        # Clear cache regardless (old cache may reference deleted files)
-        rm(list = ls(envir = cache), envir = cache)
-      }
-    }
-  }
   if (!dir.exists(outputFolder)) {
     dir.create(outputFolder, recursive = TRUE)
   }
-  saveRDS(cmAnalysesSpecifications, cmAnalysesSpecificationsFile)
+
+  # Initialize artifact store
+  if (is.null(artifactStore)) {
+    artifactStore <- LocalArtifactStore$new(outputFolder)
+  }
+
+  # Check for database ID mismatch against previously cached results
+  databaseIdFile <- "databaseId.rds"
+  if (artifactStore$exists(databaseIdFile)) {
+    previousDatabaseId <- artifactStore$readRDS(databaseIdFile)
+    if (!identical(previousDatabaseId, databaseId)) {
+      stop(sprintf(
+        paste("Database ID mismatch: output folder was previously used with databaseId '%s',",
+              "but now '%s' was provided. To reuse this folder with a different database,",
+              "delete the existing output folder first."),
+        previousDatabaseId,
+        databaseId
+      ))
+    }
+  } else {
+    artifactStore$saveRDS(databaseId, databaseIdFile)
+  }
+
+  # Save specifications for reference
+  artifactStore$saveRDS(cmAnalysesSpecifications, "cmAnalysesSpecifications.rds")
+
   referenceTable <- createReferenceTable(
     cmAnalysisList = cmAnalysesSpecifications$cmAnalysisList,
     targetComparatorOutcomesList = cmAnalysesSpecifications$targetComparatorOutcomesList,
     analysesToExclude = cmAnalysesSpecifications$analysesToExclude,
     outputFolder = outputFolder,
     refitPsForEveryOutcome = cmAnalysesSpecifications$refitPsForEveryOutcome,
-    refitPsForEveryStudyPopulation = cmAnalysesSpecifications$refitPsForEveryStudyPopulation
+    refitPsForEveryStudyPopulation = cmAnalysesSpecifications$refitPsForEveryStudyPopulation,
+    databaseId = databaseId
   )
   referenceTable |>
     select(-"includedCovariateConceptIds", "excludedCovariateConceptIds") |>
@@ -1106,7 +1070,8 @@ createReferenceTable <- function(cmAnalysisList,
                                  analysesToExclude,
                                  outputFolder,
                                  refitPsForEveryOutcome,
-                                 refitPsForEveryStudyPopulation) {
+                                 refitPsForEveryStudyPopulation,
+                                 databaseId = "") {
   # Create all rows per target-comparator-outcome-analysis combination:
   convertAnalysisToTable <- function(analysis) {
     tibble(
@@ -1161,11 +1126,20 @@ createReferenceTable <- function(cmAnalysisList,
     loadArgsId = match(loadArgsJsons, uniqueLoadArgsJsons)
   )
   referenceTable <- inner_join(referenceTable, analysisIdToLoadArgsId, by = "analysisId")
+
+  # Content-addressable hash includes databaseId to prevent cross-database cache reuse
+  referenceTable$loadHash <- vapply(seq_len(nrow(referenceTable)), function(i) {
+    .contentHash(
+      databaseId,
+      loadArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
+      referenceTable$targetId[i],
+      referenceTable$comparatorId[i],
+      referenceTable$nestingCohortId[i]
+    )
+  }, character(1))
+
   referenceTable$cohortMethodDataFile <- .createCohortMethodDataFileName(
-    loadId = referenceTable$loadArgsId,
-    targetId = referenceTable$targetId,
-    comparatorId = referenceTable$comparatorId,
-    nestingCohortId = referenceTable$nestingCohortId
+    loadHash = referenceTable$loadHash
   )
 
   # Add studypop filenames
@@ -1177,14 +1151,17 @@ createReferenceTable <- function(cmAnalysisList,
     studyPopArgsId = match(studyPopArgsJsons, uniqueStudyPopArgsJsons)
   )
   referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsId, by = "analysisId")
-  referenceTable$studyPopFile <- .createStudyPopulationFileName(
-    loadId = referenceTable$loadArgsId,
-    studyPopId = referenceTable$studyPopArgsId,
-    targetId = referenceTable$targetId,
-    comparatorId = referenceTable$comparatorId,
-    nestingCohortId = referenceTable$nestingCohortId,
-    outcomeId = referenceTable$outcomeId
-  )
+
+  # Content-addressable hash for study population files
+  referenceTable$studyPopFile <- vapply(seq_len(nrow(referenceTable)), function(i) {
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      studyPopArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
+      referenceTable$outcomeId[i]
+    )
+    .createStudyPopulationFileName(hash)
+  }, character(1))
 
   # Add PS filenames
   createPsArgsJsons <- lapply(
@@ -1200,15 +1177,17 @@ createReferenceTable <- function(cmAnalysisList,
   noPsIds <- which(uniqueCreatePsArgsJsons == "")
   idxWithPs <- !(referenceTable$psArgsId %in% noPsIds)
   referenceTable$psFile <- ""
-  referenceTable$psFile[idxWithPs] <- .createPsOutcomeFileName(
-    loadId = referenceTable$loadArgsId[idxWithPs],
-    studyPopId = referenceTable$studyPopArgsId[idxWithPs],
-    psId = referenceTable$psArgsId[idxWithPs],
-    targetId = referenceTable$targetId[idxWithPs],
-    comparatorId = referenceTable$comparatorId[idxWithPs],
-    nestingCohortId = referenceTable$nestingCohortId[idxWithPs],
-    outcomeId = referenceTable$outcomeId[idxWithPs]
-  )
+  referenceTable$psFile[idxWithPs] <- vapply(which(idxWithPs), function(i) {
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      studyPopArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
+      createPsArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
+      referenceTable$outcomeId[i]
+    )
+    .createPsFileName(hash)
+  }, character(1))
+
   referenceTable$sharedPsFile <- ""
   if (!refitPsForEveryOutcome) {
     if (refitPsForEveryStudyPopulation) {
@@ -1227,39 +1206,39 @@ createReferenceTable <- function(cmAnalysisList,
           return(TRUE)
         }
       }
-      studyPopArgsEquivalentId <- seq_along(cmAnalysisList)
+      # Compute the canonical (first equivalent) studyPop JSON for hashing
+      studyPopArgsEquivalentIdx <- seq_along(cmAnalysisList)
       for (i in seq_along(cmAnalysisList)) {
         for (j in seq_len(i - 1)) {
           if (equivalent(cmAnalysisList[[i]]$createStudyPopulationArgs,
                          cmAnalysisList[[j]]$createStudyPopulationArgs)) {
-            studyPopArgsEquivalentId[i] <- j
+            studyPopArgsEquivalentIdx[i] <- j
             break
           }
         }
       }
-      analysisIdToStudyPopArgsEquivalentId <- tibble(
-        analysisId = analyses$analysisId,
-        studyPopArgsEquivalentId = studyPopArgsEquivalentId
-      )
-      referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsEquivalentId, by = "analysisId")
-      referenceTable$sharedPsFile[idxWithPs] <- .createPsFileName(
-        loadId = referenceTable$loadArgsId[idxWithPs],
-        studyPopId = referenceTable$studyPopArgsEquivalentId[idxWithPs],
-        psId = referenceTable$psArgsId[idxWithPs],
-        targetId = referenceTable$targetId[idxWithPs],
-        comparatorId = referenceTable$comparatorId[idxWithPs],
-        nestingCohortId = referenceTable$nestingCohortId[idxWithPs]
-      )
+      referenceTable$sharedPsFile[idxWithPs] <- vapply(which(idxWithPs), function(i) {
+        aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+        equivIdx <- studyPopArgsEquivalentIdx[aIdx]
+        hash <- .contentHash(
+          databaseId,
+          referenceTable$loadHash[i],
+          studyPopArgsJsons[[equivIdx]],
+          createPsArgsJsons[[aIdx]]
+        )
+        .createPsFileName(hash)
+      }, character(1))
     } else {
       # One propensity model across all study population settings:
-      referenceTable$sharedPsFile[idxWithPs] <- .createPsFileName(
-        loadId = referenceTable$loadArgsId[idxWithPs],
-        studyPopId = NULL,
-        psId = referenceTable$psArgsId[idxWithPs],
-        targetId = referenceTable$targetId[idxWithPs],
-        comparatorId = referenceTable$comparatorId[idxWithPs],
-        nestingCohortId = referenceTable$nestingCohortId[idxWithPs]
-      )
+      referenceTable$sharedPsFile[idxWithPs] <- vapply(which(idxWithPs), function(i) {
+        aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+        hash <- .contentHash(
+          databaseId,
+          referenceTable$loadHash[i],
+          createPsArgsJsons[[aIdx]]
+        )
+        .createPsFileName(hash)
+      }, character(1))
     }
   }
 
@@ -1281,16 +1260,18 @@ createReferenceTable <- function(cmAnalysisList,
   noStrataIds <- which(uniqueStrataArgsJsons == "")
   idxWithStrata <- !(referenceTable$strataArgsId %in% noStrataIds)
   referenceTable$strataFile <- ""
-  referenceTable$strataFile[idxWithStrata] <- .createStratifiedPopFileName(
-    loadId = referenceTable$loadArgsId[idxWithStrata],
-    studyPopId = referenceTable$studyPopArgsId[idxWithStrata],
-    psId = referenceTable$psArgsId[idxWithStrata],
-    strataId = referenceTable$strataArgsId[idxWithStrata],
-    targetId = referenceTable$targetId[idxWithStrata],
-    comparatorId = referenceTable$comparatorId[idxWithStrata],
-    nestingCohortId = referenceTable$nestingCohortId[idxWithStrata],
-    outcomeId = referenceTable$outcomeId[idxWithStrata]
-  )
+  referenceTable$strataFile[idxWithStrata] <- vapply(which(idxWithStrata), function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      studyPopArgsJsons[[aIdx]],
+      createPsArgsJsons[[aIdx]],
+      strataArgsJsons[[aIdx]],
+      referenceTable$outcomeId[i]
+    )
+    .createStratifiedPopFileName(hash)
+  }, character(1))
 
   # Add shared covariate balance files (per target-comparator-analysis)
   if (refitPsForEveryOutcome) {
@@ -1301,24 +1282,26 @@ createReferenceTable <- function(cmAnalysisList,
       function(x) if (is.null(x$computeSharedCovariateBalanceArgs)) "" else x$computeSharedCovariateBalanceArgs$toJson()
     )
     uniqueSharedBalanceArgsJsons <- unique(sharedBalanceArgsJsons)
+    noSharedBalanceIds <- which(uniqueSharedBalanceArgsJsons == "")
     analysisIdToSharedBalanceArgsId <- tibble(
       analysisId = analyses$analysisId,
       sharedBalanceId = match(sharedBalanceArgsJsons, uniqueSharedBalanceArgsJsons)
     )
     referenceTable <- inner_join(referenceTable, analysisIdToSharedBalanceArgsId, by = "analysisId")
-    noSharedBalanceIds <- which(uniqueSharedBalanceArgsJsons == "")
     idxWithSharedBalance <- !(referenceTable$sharedBalanceId %in% noSharedBalanceIds)
     referenceTable$sharedBalanceFile <- ""
-    referenceTable$sharedBalanceFile[idxWithSharedBalance] <- .createsharedBalanceFileName(
-      loadId = referenceTable$loadArgsId[idxWithSharedBalance],
-      studyPopId = referenceTable$studyPopArgsId[idxWithSharedBalance],
-      psId = referenceTable$psArgsId[idxWithSharedBalance],
-      strataId = referenceTable$strataArgsId[idxWithSharedBalance],
-      sharedBalanceId = referenceTable$sharedBalanceId[idxWithSharedBalance],
-      targetId = referenceTable$targetId[idxWithSharedBalance],
-      comparatorId = referenceTable$comparatorId[idxWithSharedBalance],
-      nestingCohortId = referenceTable$nestingCohortId[idxWithSharedBalance]
-    )
+    referenceTable$sharedBalanceFile[idxWithSharedBalance] <- vapply(which(idxWithSharedBalance), function(i) {
+      aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+      hash <- .contentHash(
+        databaseId,
+        referenceTable$loadHash[i],
+        studyPopArgsJsons[[aIdx]],
+        createPsArgsJsons[[aIdx]],
+        strataArgsJsons[[aIdx]],
+        sharedBalanceArgsJsons[[aIdx]]
+      )
+      .createSharedBalanceFileName(hash)
+    }, character(1))
   }
 
   # Add covariate balance files (per target-comparator-analysis-outcome)
@@ -1342,27 +1325,32 @@ createReferenceTable <- function(cmAnalysisList,
   }
   idxFilter <- referenceTable$balanceId %in% balanceIdsRequiringFiltering
   referenceTable$filteredForbalanceFile <- ""
-  referenceTable$filteredForbalanceFile[idxFilter] <- .createFilterForBalanceFileName(
-    loadId = referenceTable$loadArgsId[idxFilter],
-    balanceId = referenceTable$balanceId[idxFilter],
-    targetId = referenceTable$targetId[idxFilter],
-    comparatorId = referenceTable$comparatorId[idxFilter],
-    nestingCohortId = referenceTable$nestingCohortId[idxFilter]
-  )
+  referenceTable$filteredForbalanceFile[idxFilter] <- vapply(which(idxFilter), function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      balanceArgsJsons[[aIdx]]
+    )
+    .createFilterForBalanceFileName(hash)
+  }, character(1))
+
   noBalanceIds <- which(uniqueBalanceArgsJsons == "")
   idxWithBalance <- !(referenceTable$balanceId %in% noBalanceIds)
   referenceTable$balanceFile <- ""
-  referenceTable$balanceFile[idxWithBalance] <- .createBalanceFileName(
-    loadId = referenceTable$loadArgsId[idxWithBalance],
-    studyPopId = referenceTable$studyPopArgsId[idxWithBalance],
-    psId = referenceTable$psArgsId[idxWithBalance],
-    strataId = referenceTable$strataArgsId[idxWithBalance],
-    balanceId = referenceTable$balanceId[idxWithBalance],
-    targetId = referenceTable$targetId[idxWithBalance],
-    comparatorId = referenceTable$comparatorId[idxWithBalance],
-    nestingCohortId = referenceTable$nestingCohortId[idxWithBalance],
-    outcomeId = referenceTable$outcomeId[idxWithBalance]
-  )
+  referenceTable$balanceFile[idxWithBalance] <- vapply(which(idxWithBalance), function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      studyPopArgsJsons[[aIdx]],
+      createPsArgsJsons[[aIdx]],
+      strataArgsJsons[[aIdx]],
+      balanceArgsJsons[[aIdx]],
+      referenceTable$outcomeId[i]
+    )
+    .createBalanceFileName(hash)
+  }, character(1))
 
   # Add prefiltered covariate files
   preFilterArgJsons <- lapply(
@@ -1394,27 +1382,36 @@ createReferenceTable <- function(cmAnalysisList,
   idxWithPreFilter <- !(referenceTable$prefilterId %in% noPreFilterIds)
 
   referenceTable$prefilteredCovariatesFile <- ""
-  referenceTable$prefilteredCovariatesFile[idxWithPreFilter] <- .createPrefilteredCovariatesFileName(
-    loadId = referenceTable$loadArgsId[idxWithPreFilter],
-    targetId = referenceTable$targetId[idxWithPreFilter],
-    comparatorId = referenceTable$comparatorId[idxWithPreFilter],
-    nestingCohortId = referenceTable$nestingCohortId[idxWithPreFilter],
-    prefilterId = referenceTable$prefilterId[idxWithPreFilter]
-  )
+  referenceTable$prefilteredCovariatesFile[idxWithPreFilter] <- vapply(which(idxWithPreFilter), function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      preFilterArgJsons[[aIdx]]
+    )
+    .createPrefilteredCovariatesFileName(hash)
+  }, character(1))
 
 
   # Add outcome model file names
-  referenceTable <- referenceTable |>
-    mutate(outcomeModelFile = ifelse(.data$fitOutcomeModel,
-                                     .createOutcomeModelFileName(
-                                       folder = .data$analysisFolder,
-                                       targetId = .data$targetId,
-                                       comparatorId = .data$comparatorId,
-                                       nestingCohortId = .data$nestingCohortId,
-                                       outcomeId = .data$outcomeId
-                                     ),
-                                     ""
-    ))
+  outcomeModelArgsJsons <- lapply(cmAnalysisList, function(x) {
+    if (is.null(x$fitOutcomeModelArgs)) "" else x$fitOutcomeModelArgs$toJson()
+  })
+  referenceTable$outcomeModelFile <- ""
+  idxWithOm <- referenceTable$fitOutcomeModel
+  referenceTable$outcomeModelFile[idxWithOm] <- vapply(which(idxWithOm), function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    hash <- .contentHash(
+      databaseId,
+      referenceTable$loadHash[i],
+      studyPopArgsJsons[[aIdx]],
+      createPsArgsJsons[[aIdx]],
+      strataArgsJsons[[aIdx]],
+      outcomeModelArgsJsons[[aIdx]],
+      referenceTable$outcomeId[i]
+    )
+    .createOutcomeModelFileName(referenceTable$analysisFolder[i], hash)
+  }, character(1))
 
   # Some cleanup:
   referenceTable <- referenceTable[, c(
@@ -1479,154 +1476,62 @@ createReferenceTable <- function(cmAnalysisList,
   return(referenceTable)
 }
 
-.f <- function(x) {
-  return(format(x, scientific = FALSE, trim = TRUE))
+# Compute a deterministic content hash from arbitrary inputs.
+# Used to generate stable file names that depend on settings, not position.
+# @param ... Inputs to hash. R6 settings objects are serialized via toList()
+#   with sorted keys for deterministic ordering.
+# @param length Number of hex characters to keep (default 12).
+# @return A character string of `length` hex characters.
+.contentHash <- function(..., length = 12) {
+  parts <- list(...)
+  canonical <- paste(vapply(parts, function(x) {
+    if (is.null(x) || (is.atomic(x) && length(x) == 1 && is.na(x))) {
+      "NULL"
+    } else if (inherits(x, "AbstractSerializableSettings")) {
+      lst <- x$toList()
+      as.character(jsonlite::toJSON(lst[order(names(lst))],
+                                    auto_unbox = TRUE, digits = NA, null = "null"))
+    } else {
+      as.character(jsonlite::toJSON(x, auto_unbox = TRUE, digits = NA, null = "null"))
+    }
+  }, character(1)), collapse = "|")
+  substr(digest::digest(canonical, algo = "sha256", serialize = FALSE), 1, length)
 }
 
-.createTcnSubstring <- function(targetId, comparatorId, nestingCohortId) {
-  subString <- if_else(is.na(nestingCohortId),
-                       sprintf("_t%s_c%s", .f(targetId), .f(comparatorId)),
-                       sprintf("_t%s_c%s_n%s", .f(targetId), .f(comparatorId), .f(nestingCohortId)))
-
-  return(subString)
+.createCohortMethodDataFileName <- function(loadHash) {
+  sprintf("CmData_%s.zip", loadHash)
 }
 
-.createCohortMethodDataFileName <- function(loadId, targetId, comparatorId, nestingCohortId) {
-  name <- sprintf("CmData_l%s%s.zip",
-                  loadId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId))
-  return(name)
+.createPrefilteredCovariatesFileName <- function(hash) {
+  sprintf("Prefilter_%s.zip", hash)
 }
 
-
-.createPrefilteredCovariatesFileName <- function(loadId, targetId, comparatorId, nestingCohortId, prefilterId) {
-  name <- sprintf("Prefilter_l%s%s_p%s.zip",
-                  loadId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  prefilterId)
-  name[prefilterId == -1] <- rep("", sum(prefilterId == -1))
-  return(name)
+.createStudyPopulationFileName <- function(hash) {
+  sprintf("StudyPop_%s.rds", hash)
 }
 
-.createStudyPopulationFileName <- function(loadId,
-                                           studyPopId,
-                                           targetId,
-                                           comparatorId,
-                                           nestingCohortId,
-                                           outcomeId) {
-  name <- sprintf("StudyPop_l%s_s%s%s_o%s.rds",
-                  loadId,
-                  studyPopId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  .f(outcomeId))
-  return(name)
+.createPsFileName <- function(hash) {
+  sprintf("Ps_%s.rds", hash)
 }
 
-.createPsFileName <- function(loadId, studyPopId, psId, targetId, comparatorId, nestingCohortId) {
-  if (is.null(studyPopId)) {
-    name <- sprintf("Ps_l%s_p%s%s.rds",
-                    loadId,
-                    psId,
-                    .createTcnSubstring(targetId, comparatorId, nestingCohortId))
-  } else {
-    name <- sprintf("Ps_l%s_s%s_p%s%s.rds",
-                    loadId,
-                    studyPopId,
-                    psId,
-                    .createTcnSubstring(targetId, comparatorId, nestingCohortId))
-  }
-  return(name)
+.createStratifiedPopFileName <- function(hash) {
+  sprintf("StratPop_%s.rds", hash)
 }
 
-.createPsOutcomeFileName <- function(loadId,
-                                     studyPopId,
-                                     psId,
-                                     targetId,
-                                     comparatorId,
-                                     nestingCohortId,
-                                     outcomeId) {
-  name <- sprintf("Ps_l%s_s%s_p%s%s_o%s.rds",
-                  loadId,
-                  studyPopId,
-                  psId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  .f(outcomeId))
-  return(name)
+.createSharedBalanceFileName <- function(hash) {
+  sprintf("SharedBalance_%s.rds", hash)
 }
 
-.createStratifiedPopFileName <- function(loadId,
-                                         studyPopId,
-                                         psId,
-                                         strataId,
-                                         targetId,
-                                         comparatorId,
-                                         nestingCohortId,
-                                         outcomeId) {
-  name <- sprintf("StratPop_l%s_s%s_p%s%s_s%s_o%s.rds",
-                  loadId,
-                  studyPopId,
-                  psId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  strataId,
-                  .f(outcomeId))
-  return(name)
+.createFilterForBalanceFileName <- function(hash) {
+  sprintf("FilterForBalance_%s.zip", hash)
 }
 
-.createsharedBalanceFileName <- function(loadId,
-                                         studyPopId,
-                                         psId,
-                                         strataId,
-                                         sharedBalanceId,
-                                         targetId,
-                                         comparatorId,
-                                         nestingCohortId) {
-  name <- sprintf("Balance_l%s_s%s_p%s%s_s%s_b%s.rds",
-                  loadId,
-                  studyPopId,
-                  psId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  strataId,
-                  sharedBalanceId)
-  return(name)
+.createBalanceFileName <- function(hash) {
+  sprintf("Balance_%s.rds", hash)
 }
 
-.createFilterForBalanceFileName <- function(loadId,
-                                            balanceId,
-                                            targetId,
-                                            comparatorId,
-                                            nestingCohortId) {
-  name <- sprintf("FilterForBalance_l%s%s_b%s.zip",
-                  loadId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  balanceId)
-  return(name)
-}
-
-.createBalanceFileName <- function(loadId,
-                                   studyPopId,
-                                   psId,
-                                   strataId,
-                                   balanceId,
-                                   targetId,
-                                   comparatorId,
-                                   nestingCohortId,
-                                   outcomeId) {
-  name <- sprintf("Balance_l%s_s%s_p%s%s_s%s_b%s_o%s.rds",
-                  loadId,
-                  studyPopId,
-                  psId,
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  strataId,
-                  balanceId,
-                  .f(outcomeId))
-  return(name)
-}
-
-.createOutcomeModelFileName <- function(folder, targetId, comparatorId, nestingCohortId, outcomeId) {
-  name <- sprintf("om%s_o%s.rds",
-                  .createTcnSubstring(targetId, comparatorId, nestingCohortId),
-                  .f(outcomeId))
-  return(file.path(folder, name))
+.createOutcomeModelFileName <- function(folder, hash) {
+  file.path(folder, sprintf("om_%s.rds", hash))
 }
 
 #' Get file reference
