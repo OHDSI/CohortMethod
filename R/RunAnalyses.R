@@ -1961,9 +1961,14 @@ addEquipoise <- function(referenceTable, outputFolder) {
       filter(.data$sharedPsFile == "" & .data$psFile != "") |>
       distinct(.data$psFile) |>
       pull()
-    equipoise <- bind_rows(lapply(psFiles, getEquipoise))
-    referenceTable <- referenceTable |>
-      left_join(equipoise, by = join_by("psFile"))
+    if (length(psFiles) > 0) {
+      equipoise <- bind_rows(lapply(psFiles, getEquipoise))
+      referenceTable <- referenceTable |>
+        left_join(equipoise, by = join_by("psFile"))
+    } else {
+      referenceTable <- referenceTable |>
+        mutate(equipoise = NA_real_)
+    }
   }
   return(referenceTable)
 }
