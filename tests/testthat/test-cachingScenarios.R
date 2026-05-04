@@ -630,3 +630,282 @@ test_that("Reference table is deterministic across repeated calls", {
   expect_equal(ref1$strataFile, ref2$strataFile)
   expect_equal(ref1$outcomeModelFile, ref2$outcomeModelFile)
 })
+
+
+# ===========================================================================
+# End-to-end disk reuse tests (require Eunomia)
+# These tests verify that artifact files are actually written to and reused
+# from disk, not just that filenames are computed correctly.
+# ===========================================================================
+
+if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
+
+  # Minimal analysis used across all E2E tests: no PS, no matching, simple cox
+  makeEunomiaAnalysis <- function(analysisId = 1) {
+    createCmAnalysis(
+      analysisId = analysisId,
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        firstExposureOnly = TRUE,
+        washoutPeriod = 183,
+        covariateSettings = FeatureExtraction::createCovariateSettings(
+          useDemographicsGender = TRUE,
+          useDemographicsAge = TRUE
+        )
+      ),
+      createStudyPopulationArgs = createCreateStudyPopulationArgs(
+        removeSubjectsWithPriorOutcome = TRUE,
+        minDaysAtRisk = 1,
+        riskWindowStart = 0,
+        startAnchor = "cohort start",
+        riskWindowEnd = 30,
+        endAnchor = "cohort end"
+      ),
+      fitOutcomeModelArgs = createFitOutcomeModelArgs(modelType = "cox")
+    )
+  }
+
+  test_that("E2E: files are actually written to disk", {
+    outputFolder <- tempfile(pattern = "cmCache")
+    on.exit(unlink(outputFolder, recursive = TRUE))
+
+    result <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder,
+      databaseId = "Eunomia",
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = list(makeEunomiaAnalysis()),
+        targetComparatorOutcomesList = list(
+          createTargetComparatorOutcomes(
+            targetId = 1,
+            comparatorId = 2,
+            outcomes = list(createOutcome(outcomeId = 3, outcomeOfInterest = TRUE))
+          )
+        )
+      )
+    )
+
+    # Every non-empty filename in the reference table must exist on disk
+    checkFiles <- function(col) {
+      paths <- result[[col]]
+      paths <- paths[paths != ""]
+      paths <- unique(paths)
+      missing <- paths[!file.exists(file.path(outputFolder, paths))]
+      expect_equal(length(missing), 0,
+                   info = sprintf("Missing %s files: %s", col, paste(missing, collapse = ", ")))
+    }
+
+    checkFiles("cohortMethodDataFile")
+    checkFiles("studyPopFile")
+    checkFiles("outcomeModelFile")
+  })
+
+  test_that("E2E: adding a new outcome reuses CmData and computes only new outcome model", {
+    outputFolder <- tempfile(pattern = "cmCacheReuse")
+    on.exit(unlink(outputFolder, recursive = TRUE))
+
+    analysis <- makeEunomiaAnalysis()
+    tcos_base <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(outcomeId = 3, outcomeOfInterest = TRUE)
+      )
+    )
+    tcos_extended <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(outcomeId = 3, outcomeOfInterest = TRUE),
+        createOutcome(outcomeId = 4, outcomeOfInterest = TRUE)  # NEW outcome
+      )
+    )
+
+    # First run: outcomes [3]
+    result1 <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder,
+      databaseId = "Eunomia",
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = list(analysis),
+        targetComparatorOutcomesList = list(tcos_base)
+      )
+    )
+
+    # Record modification times of existing artifacts after first run
+    cmDataPath <- file.path(outputFolder, result1$cohortMethodDataFile[1])
+    studyPopPath <- file.path(outputFolder, result1$studyPopFile[1])
+    om3Path <- file.path(outputFolder, result1$outcomeModelFile[1])
+
+    expect_true(file.exists(cmDataPath))
+    expect_true(file.exists(studyPopPath))
+    expect_true(file.exists(om3Path))
+
+    mtime_cmData <- file.info(cmDataPath)$mtime
+    mtime_studyPop <- file.info(studyPopPath)$mtime
+    mtime_om3 <- file.info(om3Path)$mtime
+
+    # Brief sleep to ensure mtime would differ if files were rewritten
+    Sys.sleep(1)
+
+    # Second run: add outcome 4
+    result2 <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder,
+      databaseId = "Eunomia",
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = list(analysis),
+        targetComparatorOutcomesList = list(tcos_extended)
+      )
+    )
+
+    # CmData file: same filename, NOT re-written (mtime unchanged)
+    expect_equal(
+      result1$cohortMethodDataFile[1],
+      result2$cohortMethodDataFile[result2$outcomeId == 3]
+    )
+    expect_equal(file.info(cmDataPath)$mtime, mtime_cmData)
+
+    # StudyPop for outcome 3: same filename, NOT re-written
+    expect_equal(
+      result1$studyPopFile[1],
+      result2$studyPopFile[result2$outcomeId == 3]
+    )
+    expect_equal(file.info(studyPopPath)$mtime, mtime_studyPop)
+
+    # Outcome model for outcome 3: same filename, NOT re-written
+    expect_equal(
+      result1$outcomeModelFile[1],
+      result2$outcomeModelFile[result2$outcomeId == 3]
+    )
+    expect_equal(file.info(om3Path)$mtime, mtime_om3)
+
+    # Outcome 4: new outcome model created
+    om4Path <- file.path(outputFolder, result2$outcomeModelFile[result2$outcomeId == 4])
+    expect_true(file.exists(om4Path))
+
+    # Outcome 4's study pop: newly created
+    sp4Path <- file.path(outputFolder, result2$studyPopFile[result2$outcomeId == 4])
+    expect_true(file.exists(sp4Path))
+
+    # New outcome 4 has a DIFFERENT filename than outcome 3
+    expect_false(
+      result2$outcomeModelFile[result2$outcomeId == 3] ==
+        result2$outcomeModelFile[result2$outcomeId == 4]
+    )
+  })
+
+  test_that("E2E: changing settings forces recomputation with new filename", {
+    outputFolder <- tempfile(pattern = "cmCacheInvalidate")
+    on.exit(unlink(outputFolder, recursive = TRUE))
+
+    tcos <- createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(createOutcome(outcomeId = 3, outcomeOfInterest = TRUE))
+    )
+
+    analysis_v1 <- createCmAnalysis(
+      analysisId = 1,
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        firstExposureOnly = TRUE,
+        washoutPeriod = 183,
+        covariateSettings = FeatureExtraction::createCovariateSettings(
+          useDemographicsGender = TRUE,
+          useDemographicsAge = TRUE
+        )
+      ),
+      createStudyPopulationArgs = createCreateStudyPopulationArgs(
+        minDaysAtRisk = 1,
+        riskWindowStart = 0,
+        startAnchor = "cohort start",
+        riskWindowEnd = 30,
+        endAnchor = "cohort end"
+      ),
+      fitOutcomeModelArgs = createFitOutcomeModelArgs(modelType = "cox")
+    )
+
+    analysis_v2 <- createCmAnalysis(
+      analysisId = 1,
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        firstExposureOnly = TRUE,
+        washoutPeriod = 183,
+        covariateSettings = FeatureExtraction::createCovariateSettings(
+          useDemographicsGender = TRUE,
+          useDemographicsAge = TRUE
+        )
+      ),
+      createStudyPopulationArgs = createCreateStudyPopulationArgs(
+        minDaysAtRisk = 30,  # CHANGED: was 1, now 30
+        riskWindowStart = 0,
+        startAnchor = "cohort start",
+        riskWindowEnd = 30,
+        endAnchor = "cohort end"
+      ),
+      fitOutcomeModelArgs = createFitOutcomeModelArgs(modelType = "cox")
+    )
+
+    # First run
+    result_v1 <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder,
+      databaseId = "Eunomia",
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = list(analysis_v1),
+        targetComparatorOutcomesList = list(tcos)
+      )
+    )
+
+    # Record what was created
+    cmDataFile_v1 <- result_v1$cohortMethodDataFile[1]
+    studyPopFile_v1 <- result_v1$studyPopFile[1]
+    omFile_v1 <- result_v1$outcomeModelFile[1]
+
+    expect_true(file.exists(file.path(outputFolder, cmDataFile_v1)))
+    expect_true(file.exists(file.path(outputFolder, studyPopFile_v1)))
+    expect_true(file.exists(file.path(outputFolder, omFile_v1)))
+
+    # Second run with changed study pop args
+    result_v2 <- runCmAnalyses(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      outputFolder = outputFolder,
+      databaseId = "Eunomia",
+      cmAnalysesSpecifications = createCmAnalysesSpecifications(
+        cmAnalysisList = list(analysis_v2),
+        targetComparatorOutcomesList = list(tcos)
+      )
+    )
+
+    cmDataFile_v2 <- result_v2$cohortMethodDataFile[1]
+    studyPopFile_v2 <- result_v2$studyPopFile[1]
+    omFile_v2 <- result_v2$outcomeModelFile[1]
+
+    # CmData: same (load args unchanged), study pop and outcome model: new files
+    expect_equal(cmDataFile_v1, cmDataFile_v2)
+    expect_false(studyPopFile_v1 == studyPopFile_v2)
+    expect_false(omFile_v1 == omFile_v2)
+
+    # New files actually exist on disk
+    expect_true(file.exists(file.path(outputFolder, studyPopFile_v2)))
+    expect_true(file.exists(file.path(outputFolder, omFile_v2)))
+
+    # OLD study pop and outcome model files still on disk (not deleted by new run)
+    expect_true(file.exists(file.path(outputFolder, studyPopFile_v1)))
+    expect_true(file.exists(file.path(outputFolder, omFile_v1)))
+  })
+
+}
