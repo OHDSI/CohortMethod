@@ -31,43 +31,14 @@ fastDuplicated <- function(data, columns) {
   }
 }
 
-#' Create a study population
-#'
-#' @details
-#' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
-#' window, and determining which outcomes fall inside the risk window.
-#'
-#' @template CohortMethodData
-#'
-#' @param population                  If specified, this population will be used as the starting
-#'                                    point instead of the cohorts in the `cohortMethodData` object.
-#' @param outcomeId                   The ID of the outcome. If NULL, no outcome-specific
-#'                                    transformations will be performed.
-#' @param createStudyPopulationArgs   An object of type `CreateStudyPopulationArgs` as created by
-#'                                    the [createCreateStudyPopulationArgs()] function.
-#' @return
-#' A `tibble` specifying the study population. This `tibble` will have the following columns:
-#'
-#' - `rowId`: A unique identifier for an exposure.
-#' - `personSeqId`: The person sequence ID of the subject.
-#' - `cohortStartdate`: The index date.
-#' - `outcomeCount` The number of outcomes observed during the risk window.
-#' - `timeAtRisk`: The number of days in the risk window.
-#' - `survivalTime`: The number of days until either the outcome or the end of the risk window.
-#'
-#' @export
-createStudyPopulation <- function(cohortMethodData,
-                                  population = NULL,
-                                  outcomeId = NULL,
-                                  createStudyPopulationArgs = createCreateStudyPopulationArgs()) {
-  errorMessages <- checkmate::makeAssertCollection()
-  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
-  checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
-  checkmate::assertNumeric(outcomeId, null.ok = TRUE, add = errorMessages)
-  if (!is.null(outcomeId)) checkmate::assertTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
-  checkmate::assertR6(createStudyPopulationArgs, "CreateStudyPopulationArgs", add = errorMessages)
-  checkmate::reportAssertions(collection = errorMessages)
-
+# Internal: Create a base population (outcome-independent)
+#
+# Performs all outcome-independent filtering: risk window creation, censoring,
+# and minimum days-at-risk filtering. This base population can be shared across
+# multiple outcomes that use the same risk window parameters.
+createBasePopulation <- function(cohortMethodData,
+                                 population = NULL,
+                                 createStudyPopulationArgs = createCreateStudyPopulationArgs()) {
   isEnd <- function(anchor) {
     return(grepl("end$", anchor, ignore.case = TRUE))
   }
@@ -82,38 +53,6 @@ createStudyPopulation <- function(cohortMethodData,
   }
   metaData$targetEstimator <- "ate"
 
-  if (createStudyPopulationArgs$removeSubjectsWithPriorOutcome) {
-    if (is.null(outcomeId)) {
-      message("No outcome specified so skipping removing people with prior outcomes")
-    } else {
-      message("Removing subjects with prior outcomes (if any)")
-      outcomes <- cohortMethodData$outcomes |>
-        filter(.data$outcomeId == !!outcomeId) |>
-        collect()
-      if (isEnd(createStudyPopulationArgs$startAnchor)) {
-        outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
-        priorOutcomeRowIds <- outcomes |>
-          filter(
-            .data$daysToEvent > -createStudyPopulationArgs$priorOutcomeLookback &
-              outcomes$daysToEvent < outcomes$daysToCohortEnd + createStudyPopulationArgs$riskWindowStart
-          ) |>
-          pull("rowId")
-      } else {
-        priorOutcomeRowIds <- outcomes |>
-          filter(
-            .data$daysToEvent > -createStudyPopulationArgs$priorOutcomeLookback &
-              .data$daysToEvent < createStudyPopulationArgs$riskWindowStart
-          ) |>
-          pull("rowId")
-      }
-      population <- population |>
-        filter(!(.data$rowId %in% priorOutcomeRowIds))
-      metaData$attrition <- rbind(
-        metaData$attrition,
-        getCounts(population, paste("No prior outcome"))
-      )
-    }
-  }
   # Create risk windows:
   population$riskStart <- rep(createStudyPopulationArgs$riskWindowStart, nrow(population))
   if (isEnd(createStudyPopulationArgs$startAnchor)) {
@@ -168,47 +107,152 @@ createStudyPopulation <- function(cohortMethodData,
       "days at risk"
     )))
   }
-  if (is.null(outcomeId)) {
-    message("No outcome specified so not creating outcome and time variables")
-  } else {
-    # Select outcomes during time at risk
+  attr(population, "metaData") <- metaData
+  ParallelLogger::logDebug("Base population has ", nrow(population), " rows")
+  return(population)
+}
+
+# Internal: Add outcome-specific data to a base population
+#
+# Applies outcome-specific filtering (removeSubjectsWithPriorOutcome) and
+# computes outcome columns (outcomeCount, timeAtRisk, survivalTime, daysToEvent).
+addOutcomeToPopulation <- function(basePopulation,
+                                   cohortMethodData,
+                                   outcomeId,
+                                   removeSubjectsWithPriorOutcome = TRUE,
+                                   priorOutcomeLookback = 99999,
+                                   startAnchor = "cohort start",
+                                   riskWindowStart = 0) {
+  isEnd <- function(anchor) {
+    return(grepl("end$", anchor, ignore.case = TRUE))
+  }
+
+  population <- basePopulation
+  metaData <- attr(population, "metaData")
+
+  if (removeSubjectsWithPriorOutcome) {
+    message("Removing subjects with prior outcomes (if any)")
     outcomes <- cohortMethodData$outcomes |>
       filter(.data$outcomeId == !!outcomeId) |>
       collect()
-    outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
-    outcomes <- outcomes |>
-      filter(
-        .data$daysToEvent >= .data$riskStart &
-          .data$daysToEvent <= .data$riskEnd
-      )
-
-    # Create outcome count column
-    if (nrow(outcomes) == 0) {
-      population$outcomeCount <- rep(0, nrow(population))
+    if (isEnd(startAnchor)) {
+      outcomes <- merge(outcomes, population[, c("rowId", "daysToCohortEnd")])
+      priorOutcomeRowIds <- outcomes |>
+        filter(
+          .data$daysToEvent > -priorOutcomeLookback &
+            outcomes$daysToEvent < outcomes$daysToCohortEnd + riskWindowStart
+        ) |>
+        pull("rowId")
     } else {
-      outcomeCount <- outcomes |>
-        group_by(.data$rowId) |>
-        summarise(outcomeCount = length(.data$outcomeId))
-      population$outcomeCount <- 0
-      population$outcomeCount[match(outcomeCount$rowId, population$rowId)] <- outcomeCount$outcomeCount
+      priorOutcomeRowIds <- outcomes |>
+        filter(
+          .data$daysToEvent > -priorOutcomeLookback &
+            .data$daysToEvent < riskWindowStart
+        ) |>
+        pull("rowId")
     }
-
-    # Create time at risk column
-    population$timeAtRisk <- population$riskEnd - population$riskStart + 1
-
-    # Create survival time column
-    firstOutcomes <- outcomes |>
-      arrange(.data$rowId, .data$daysToEvent) |>
-      filter(!duplicated(.data$rowId))
-    population$daysToEvent <- rep(NA, nrow(population))
-    population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
-    population$survivalTime <- population$timeAtRisk
-    population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
-                                                                                      0] - population$riskStart[population$outcomeCount != 0] + 1
+    population <- population |>
+      filter(!(.data$rowId %in% priorOutcomeRowIds))
+    metaData$attrition <- rbind(
+      metaData$attrition,
+      getCounts(population, paste("No prior outcome"))
+    )
   }
+
+  # Select outcomes during time at risk
+  outcomes <- cohortMethodData$outcomes |>
+    filter(.data$outcomeId == !!outcomeId) |>
+    collect()
+  outcomes <- merge(outcomes, population[, c("rowId", "riskStart", "riskEnd")])
+  outcomes <- outcomes |>
+    filter(
+      .data$daysToEvent >= .data$riskStart &
+        .data$daysToEvent <= .data$riskEnd
+    )
+
+  # Create outcome count column
+  if (nrow(outcomes) == 0) {
+    population$outcomeCount <- rep(0, nrow(population))
+  } else {
+    outcomeCount <- outcomes |>
+      group_by(.data$rowId) |>
+      summarise(outcomeCount = length(.data$outcomeId))
+    population$outcomeCount <- 0
+    population$outcomeCount[match(outcomeCount$rowId, population$rowId)] <- outcomeCount$outcomeCount
+  }
+
+  # Create time at risk column
+  population$timeAtRisk <- population$riskEnd - population$riskStart + 1
+
+  # Create survival time column
+  firstOutcomes <- outcomes |>
+    arrange(.data$rowId, .data$daysToEvent) |>
+    filter(!duplicated(.data$rowId))
+  population$daysToEvent <- rep(NA, nrow(population))
+  population$daysToEvent[match(firstOutcomes$rowId, population$rowId)] <- firstOutcomes$daysToEvent
+  population$survivalTime <- population$timeAtRisk
+  population$survivalTime[population$outcomeCount != 0] <- population$daysToEvent[population$outcomeCount !=
+                                                                                    0] - population$riskStart[population$outcomeCount != 0] + 1
+
   attr(population, "metaData") <- metaData
   ParallelLogger::logDebug("Study population has ", nrow(population), " rows")
   return(population)
+}
+
+#' Create a study population
+#'
+#' @details
+#' Create a study population by enforcing certain inclusion and exclusion criteria, defining a risk
+#' window, and determining which outcomes fall inside the risk window.
+#'
+#' @template CohortMethodData
+#'
+#' @param population                  If specified, this population will be used as the starting
+#'                                    point instead of the cohorts in the `cohortMethodData` object.
+#' @param outcomeId                   The ID of the outcome. If NULL, no outcome-specific
+#'                                    transformations will be performed.
+#' @param createStudyPopulationArgs   An object of type `CreateStudyPopulationArgs` as created by
+#'                                    the [createCreateStudyPopulationArgs()] function.
+#' @return
+#' A `tibble` specifying the study population. This `tibble` will have the following columns:
+#'
+#' - `rowId`: A unique identifier for an exposure.
+#' - `personSeqId`: The person sequence ID of the subject.
+#' - `cohortStartdate`: The index date.
+#' - `outcomeCount` The number of outcomes observed during the risk window.
+#' - `timeAtRisk`: The number of days in the risk window.
+#' - `survivalTime`: The number of days until either the outcome or the end of the risk window.
+#'
+#' @export
+createStudyPopulation <- function(cohortMethodData,
+                                  population = NULL,
+                                  outcomeId = NULL,
+                                  createStudyPopulationArgs = createCreateStudyPopulationArgs()) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(cohortMethodData, "CohortMethodData", add = errorMessages)
+  checkmate::assertDataFrame(population, null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(outcomeId, null.ok = TRUE, add = errorMessages)
+  if (!is.null(outcomeId)) checkmate::assertTRUE(all(outcomeId %% 1 == 0), add = errorMessages)
+  checkmate::assertR6(createStudyPopulationArgs, "CreateStudyPopulationArgs", add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+  basePop <- createBasePopulation(cohortMethodData, population, createStudyPopulationArgs)
+
+  if (is.null(outcomeId)) {
+    message("No outcome specified so not creating outcome and time variables")
+    return(basePop)
+  }
+
+  studyPop <- addOutcomeToPopulation(
+    basePopulation = basePop,
+    cohortMethodData = cohortMethodData,
+    outcomeId = outcomeId,
+    removeSubjectsWithPriorOutcome = createStudyPopulationArgs$removeSubjectsWithPriorOutcome,
+    priorOutcomeLookback = createStudyPopulationArgs$priorOutcomeLookback,
+    startAnchor = createStudyPopulationArgs$startAnchor,
+    riskWindowStart = createStudyPopulationArgs$riskWindowStart
+  )
+  return(studyPop)
 }
 
 #' Get the attrition table for a population

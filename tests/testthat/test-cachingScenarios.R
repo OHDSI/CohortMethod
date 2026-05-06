@@ -633,10 +633,164 @@ test_that("Reference table is deterministic across repeated calls", {
 
 
 # ===========================================================================
-# End-to-end disk reuse tests (require Eunomia)
-# These tests verify that artifact files are actually written to and reused
-# from disk, not just that filenames are computed correctly.
+# Base Population Sharing Tests
+# Verify that the two-phase population architecture correctly shares
+# base populations across outcomes while keeping study populations distinct.
 # ===========================================================================
+
+test_that("Two outcomes with same risk windows share the same basePopFile", {
+  analysis <- makeBasicAnalysis()
+  tcos <- list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(outcomeId = 10, outcomeOfInterest = TRUE),
+        createOutcome(outcomeId = 20, outcomeOfInterest = TRUE)
+      )
+    )
+  )
+  ref <- buildRef(list(analysis), tcos)
+
+  # Same base population (same risk windows for both outcomes)
+  expect_equal(ref$basePopFile[ref$outcomeId == 10],
+               ref$basePopFile[ref$outcomeId == 20])
+  # Different study populations (different outcomeId)
+  expect_true(ref$studyPopFile[ref$outcomeId == 10] !=
+                ref$studyPopFile[ref$outcomeId == 20])
+})
+
+test_that("Per-outcome risk window override creates different basePopFile", {
+  analysis <- makeBasicAnalysis()
+  tcos <- list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(outcomeId = 10, outcomeOfInterest = TRUE),
+        createOutcome(outcomeId = 20, outcomeOfInterest = TRUE,
+                      riskWindowEnd = 60, endAnchor = "cohort start")  # Override default of 30
+      )
+    )
+  )
+  ref <- buildRef(list(analysis), tcos)
+
+  # Different base populations (different risk window end)
+  expect_true(ref$basePopFile[ref$outcomeId == 10] !=
+                ref$basePopFile[ref$outcomeId == 20])
+  # Different study populations too
+  expect_true(ref$studyPopFile[ref$outcomeId == 10] !=
+                ref$studyPopFile[ref$outcomeId == 20])
+})
+
+test_that("Changing priorOutcomeLookback changes studyPopFile but NOT basePopFile", {
+  analysis1 <- createCmAnalysis(
+    analysisId = 1,
+    getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+      covariateSettings = FeatureExtraction::createCovariateSettings(
+        useDemographicsGender = TRUE
+      )
+    ),
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = TRUE,
+      priorOutcomeLookback = 99999,
+      minDaysAtRisk = 1,
+      riskWindowStart = 0,
+      startAnchor = "cohort start",
+      riskWindowEnd = 30,
+      endAnchor = "cohort start"
+    ),
+    fitOutcomeModelArgs = createFitOutcomeModelArgs(modelType = "cox")
+  )
+  analysis2 <- createCmAnalysis(
+    analysisId = 2,
+    getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+      covariateSettings = FeatureExtraction::createCovariateSettings(
+        useDemographicsGender = TRUE
+      )
+    ),
+    createStudyPopulationArgs = createCreateStudyPopulationArgs(
+      removeSubjectsWithPriorOutcome = TRUE,
+      priorOutcomeLookback = 365,
+      minDaysAtRisk = 1,
+      riskWindowStart = 0,
+      startAnchor = "cohort start",
+      riskWindowEnd = 30,
+      endAnchor = "cohort start"
+    ),
+    fitOutcomeModelArgs = createFitOutcomeModelArgs(modelType = "cox")
+  )
+  tcos <- list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(createOutcome(outcomeId = 10, outcomeOfInterest = TRUE))
+    )
+  )
+  ref <- buildRef(list(analysis1, analysis2), tcos)
+
+  row1 <- ref[ref$analysisId == 1, ]
+  row2 <- ref[ref$analysisId == 2, ]
+
+  # Same base population (same risk windows, minDaysAtRisk, etc.)
+  expect_equal(row1$basePopFile, row2$basePopFile)
+  # Different study populations (different priorOutcomeLookback)
+  expect_true(row1$studyPopFile != row2$studyPopFile)
+})
+
+test_that("Shared PS file uses basePopHash (outcome-independent)", {
+  analysis <- makeBasicAnalysis()
+  tcos <- list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(outcomeId = 10, outcomeOfInterest = TRUE),
+        createOutcome(outcomeId = 20, outcomeOfInterest = TRUE)
+      )
+    )
+  )
+  ref <- buildRef(list(analysis), tcos)
+
+  # Shared PS should be the same for both outcomes (based on basePopHash)
+  expect_equal(ref$sharedPsFile[ref$outcomeId == 10],
+               ref$sharedPsFile[ref$outcomeId == 20])
+  # And both should be non-empty
+  expect_true(ref$sharedPsFile[1] != "")
+})
+
+test_that("Adding an outcome preserves all existing filenames", {
+  analysis <- makeBasicAnalysis()
+  tcos1 <- list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(createOutcome(outcomeId = 10, outcomeOfInterest = TRUE))
+    )
+  )
+  tcos2 <- list(
+    createTargetComparatorOutcomes(
+      targetId = 1,
+      comparatorId = 2,
+      outcomes = list(
+        createOutcome(outcomeId = 10, outcomeOfInterest = TRUE),
+        createOutcome(outcomeId = 20, outcomeOfInterest = TRUE)
+      )
+    )
+  )
+
+  ref1 <- buildRef(list(analysis), tcos1)
+  ref2 <- buildRef(list(analysis), tcos2)
+  ref2_o10 <- ref2[ref2$outcomeId == 10, ]
+
+  # All filenames for outcome 10 should be identical
+  expect_equal(ref1$basePopFile, ref2_o10$basePopFile)
+  expect_equal(ref1$cohortMethodDataFile, ref2_o10$cohortMethodDataFile)
+  expect_equal(ref1$studyPopFile, ref2_o10$studyPopFile)
+  expect_equal(ref1$sharedPsFile, ref2_o10$sharedPsFile)
+  expect_equal(ref1$strataFile, ref2_o10$strataFile)
+  expect_equal(ref1$outcomeModelFile, ref2_o10$outcomeModelFile)
+})
 
 if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
@@ -698,6 +852,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     }
 
     checkFiles("cohortMethodDataFile")
+    checkFiles("basePopFile")
     checkFiles("studyPopFile")
     checkFiles("outcomeModelFile")
   })
@@ -739,14 +894,17 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     # Record modification times of existing artifacts after first run
     cmDataPath <- file.path(outputFolder, result1$cohortMethodDataFile[1])
+    basePopPath <- file.path(outputFolder, result1$basePopFile[1])
     studyPopPath <- file.path(outputFolder, result1$studyPopFile[1])
     om3Path <- file.path(outputFolder, result1$outcomeModelFile[1])
 
     expect_true(file.exists(cmDataPath))
+    expect_true(file.exists(basePopPath))
     expect_true(file.exists(studyPopPath))
     expect_true(file.exists(om3Path))
 
     mtime_cmData <- file.info(cmDataPath)$mtime
+    mtime_basePop <- file.info(basePopPath)$mtime
     mtime_studyPop <- file.info(studyPopPath)$mtime
     mtime_om3 <- file.info(om3Path)$mtime
 
@@ -773,6 +931,17 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       result2$cohortMethodDataFile[result2$outcomeId == 3]
     )
     expect_equal(file.info(cmDataPath)$mtime, mtime_cmData)
+
+    # Base population: same filename, NOT re-written (shared across outcomes)
+    expect_equal(
+      result1$basePopFile[1],
+      result2$basePopFile[result2$outcomeId == 3]
+    )
+    expect_equal(
+      result1$basePopFile[1],
+      result2$basePopFile[result2$outcomeId == 4]
+    )
+    expect_equal(file.info(basePopPath)$mtime, mtime_basePop)
 
     # StudyPop for outcome 3: same filename, NOT re-written
     expect_equal(

@@ -323,7 +323,60 @@ runCmAnalyses <- function(connectionDetails,
     ParallelLogger::stopCluster(cluster)
   }
 
-  # Create study populations --------------------------------------
+  # Create base populations (shared across outcomes with same risk windows) ---
+  subset <- referenceTable[!duplicated(referenceTable$basePopFile), ]
+  subset <- subset[subset$basePopFile != "", ]
+  subset <- subset[!file.exists(file.path(outputFolder, subset$basePopFile)), ]
+  if (nrow(subset) != 0) {
+    message("*** Creating base populations ***")
+    createBasePopTask <- function(i) {
+      refRow <- subset[i, ]
+      analysisRow <- ParallelLogger::matchInList(
+        cmAnalysesSpecifications$cmAnalysisList,
+        list(analysisId = refRow$analysisId)
+      )[[1]]
+      createStudyPopulationArgs <- analysisRow$createStudyPopulationArgs
+
+      # Apply per-outcome risk window overrides (these affect the base pop)
+      tco <- ParallelLogger::matchInList(
+        cmAnalysesSpecifications$targetComparatorOutcomesList,
+        list(
+          nestingCohortId = if (is.na(refRow$nestingCohortId)) {NULL} else {refRow$nestingCohortId},
+          comparatorId = refRow$comparatorId,
+          targetId = refRow$targetId
+        )
+      )[[1]]
+      outcome <- ParallelLogger::matchInList(
+        tco$outcomes,
+        list(outcomeId = as.numeric(refRow$outcomeId))
+      )
+      if (!is.null(outcome$riskWindowStart)) {
+        createStudyPopulationArgs$riskWindowStart <- outcome$riskWindowStart
+      }
+      if (!is.null(outcome$startAnchor)) {
+        createStudyPopulationArgs$startAnchor <- outcome$startAnchor
+      }
+      if (!is.null(outcome$riskWindowEnd)) {
+        createStudyPopulationArgs$riskWindowEnd <- outcome$riskWindowEnd
+      }
+      if (!is.null(outcome$endAnchor)) {
+        createStudyPopulationArgs$endAnchor <- outcome$endAnchor
+      }
+      task <- list(
+        cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
+        createStudyPopulationArgs = createStudyPopulationArgs,
+        basePopFile = file.path(outputFolder, refRow$basePopFile)
+      )
+      return(task)
+    }
+    objectsToCreate <- lapply(1:nrow(subset), createBasePopTask)
+    cluster <- ParallelLogger::makeCluster(min(length(objectsToCreate), multiThreadingSettings$createStudyPopThreads))
+    ParallelLogger::clusterRequire(cluster, "CohortMethod")
+    dummy <- ParallelLogger::clusterApply(cluster, objectsToCreate, doCreateBasePopObject)
+    ParallelLogger::stopCluster(cluster)
+  }
+
+  # Create study populations (per-outcome, from base populations) -----------
   subset <- referenceTable[!duplicated(referenceTable$studyPopFile), ]
   subset <- subset[subset$studyPopFile != "", ]
   subset <- subset[!file.exists(file.path(outputFolder, subset$studyPopFile)), ]
@@ -366,10 +419,8 @@ runCmAnalyses <- function(connectionDetails,
         createStudyPopulationArgs$endAnchor <- outcome$endAnchor
       }
       task <- list(
-        cohortMethodDataFile = file.path(
-          outputFolder,
-          refRow$cohortMethodDataFile
-        ),
+        cohortMethodDataFile = file.path(outputFolder, refRow$cohortMethodDataFile),
+        basePopFile = file.path(outputFolder, refRow$basePopFile),
         outcomeId = refRow$outcomeId,
         createStudyPopulationArgs = createStudyPopulationArgs,
         minimizeFileSizes = getOption("minimizeFileSizes"),
@@ -437,7 +488,7 @@ runCmAnalyses <- function(connectionDetails,
             refRow$cohortMethodDataFile
           ),
           args = createPsArgs,
-          createStudyPopulationArgs = analysisRow$createStudyPopulationArgs,
+          basePopFile = file.path(outputFolder, refRow$basePopFile),
           sharedPsFile = file.path(outputFolder, refRow$sharedPsFile)
         )
         return(task)
@@ -750,17 +801,31 @@ doCreateCmDataObject <- function(params) {
   return(NULL)
 }
 
-doCreateStudyPopObject <- function(params) {
+doCreateBasePopObject <- function(params) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
-  args <- list(
+  ParallelLogger::logDebug(sprintf("Calling createBasePopulation() using %s",
+                                   params$cohortMethodDataFile))
+  basePop <- createBasePopulation(cohortMethodData,
+                                  createStudyPopulationArgs = params$createStudyPopulationArgs)
+  saveRDS(basePop, params$basePopFile)
+  return(NULL)
+}
+
+doCreateStudyPopObject <- function(params) {
+  basePop <- readRDS(params$basePopFile)
+  cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
+  ParallelLogger::logDebug(sprintf("Calling addOutcomeToPopulation() using %s for outcomeId %s",
+                                   params$basePopFile,
+                                   params$outcomeId))
+  studyPop <- addOutcomeToPopulation(
+    basePopulation = basePop,
     cohortMethodData = cohortMethodData,
     outcomeId = params$outcomeId,
-    createStudyPopulationArgs = params$createStudyPopulationArgs
+    removeSubjectsWithPriorOutcome = params$createStudyPopulationArgs$removeSubjectsWithPriorOutcome,
+    priorOutcomeLookback = params$createStudyPopulationArgs$priorOutcomeLookback,
+    startAnchor = params$createStudyPopulationArgs$startAnchor,
+    riskWindowStart = params$createStudyPopulationArgs$riskWindowStart
   )
-  ParallelLogger::logDebug(sprintf("Calling createStudyPopulation() using %s for outcomeId %s",
-                                   params$cohortMethodDataFile,
-                                   args$outcomeId))
-  studyPop <- do.call("createStudyPopulation", args)
   if (!is.null(params$minimizeFileSizes) && params$minimizeFileSizes) {
     metaData <- attr(studyPop, "metaData")
     studyPop <- studyPop[, c("rowId", "treatment", "personSeqId", "outcomeCount", "timeAtRisk", "survivalTime")]
@@ -789,20 +854,16 @@ doFitPsModel <- function(params) {
 doFitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
   cohortMethodData <- getCohortMethodData(params$cohortMethodDataFile)
   if (refitPsForEveryStudyPopulation) {
-    args <- list(
-      cohortMethodData = cohortMethodData,
-      createStudyPopulationArgs = params$createStudyPopulationArgs
-    )
-    message("Fitting propensity model across all outcomes (ignore messages about 'no outcome specified')")
-    ParallelLogger::logDebug(sprintf("Calling createPs() for shared PS using %s",
-                                     params$cohortMethodDataFile))
-    studyPop <- do.call("createStudyPopulation", args)
+    # Use base population directly (outcome-independent by construction)
+    basePop <- readRDS(params$basePopFile)
+    ParallelLogger::logDebug(sprintf("Calling createPs() for shared PS using base population %s",
+                                     params$basePopFile))
   } else {
-    studyPop <- NULL
+    basePop <- NULL
   }
   args <- list(
     cohortMethodData = cohortMethodData,
-    population = studyPop,
+    population = basePop,
     createPsArgs = params$args
   )
   ps <- do.call("createPs", args)
@@ -1152,13 +1213,85 @@ createReferenceTable <- function(cmAnalysisList,
   )
   referenceTable <- inner_join(referenceTable, analysisIdToStudyPopArgsId, by = "analysisId")
 
-  # Content-addressable hash for study population files
+  # Compute effective base population args per row (applying per-outcome risk window overrides)
+  # Base pop args include only outcome-independent fields: risk windows, censoring, minDaysAtRisk
+  .getEffectiveBasePopArgsJson <- function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    args <- cmAnalysisList[[aIdx]]$createStudyPopulationArgs
+
+    # Look up per-outcome overrides from targetComparatorOutcomesList
+    tcoMatch <- Filter(function(tco) {
+      tco$targetId == referenceTable$targetId[i] &&
+        tco$comparatorId == referenceTable$comparatorId[i] &&
+        (is.null(tco$nestingCohortId) && is.na(referenceTable$nestingCohortId[i]) ||
+           identical(tco$nestingCohortId, referenceTable$nestingCohortId[i]))
+    }, targetComparatorOutcomesList)
+    if (length(tcoMatch) > 0) {
+      outcomeMatch <- Filter(function(o) o$outcomeId == referenceTable$outcomeId[i],
+                             tcoMatch[[1]]$outcomes)
+      if (length(outcomeMatch) > 0) {
+        outcome <- outcomeMatch[[1]]
+        # Apply risk window overrides that affect the base population
+        baseFields <- list(
+          minDaysAtRisk = args$minDaysAtRisk,
+          maxDaysAtRisk = args$maxDaysAtRisk,
+          riskWindowStart = if (!is.null(outcome$riskWindowStart)) outcome$riskWindowStart else args$riskWindowStart,
+          startAnchor = if (!is.null(outcome$startAnchor)) outcome$startAnchor else args$startAnchor,
+          riskWindowEnd = if (!is.null(outcome$riskWindowEnd)) outcome$riskWindowEnd else args$riskWindowEnd,
+          endAnchor = if (!is.null(outcome$endAnchor)) outcome$endAnchor else args$endAnchor,
+          censorAtNewRiskWindow = args$censorAtNewRiskWindow
+        )
+        return(as.character(jsonlite::toJSON(baseFields[order(names(baseFields))],
+                                            auto_unbox = TRUE, digits = NA, null = "null")))
+      }
+    }
+    # No overrides — use analysis-level args
+    .serializeBasePopArgs(args)
+  }
+
+  # Compute outcome-specific args JSON (removeSubjectsWithPriorOutcome + priorOutcomeLookback)
+  .getOutcomeSpecificArgsJson <- function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
+    args <- cmAnalysisList[[aIdx]]$createStudyPopulationArgs
+    priorOutcomeLookback <- args$priorOutcomeLookback
+    removeSubjectsWithPriorOutcome <- args$removeSubjectsWithPriorOutcome
+
+    # Check for per-outcome priorOutcomeLookback override
+    tcoMatch <- Filter(function(tco) {
+      tco$targetId == referenceTable$targetId[i] &&
+        tco$comparatorId == referenceTable$comparatorId[i] &&
+        (is.null(tco$nestingCohortId) && is.na(referenceTable$nestingCohortId[i]) ||
+           identical(tco$nestingCohortId, referenceTable$nestingCohortId[i]))
+    }, targetComparatorOutcomesList)
+    if (length(tcoMatch) > 0) {
+      outcomeMatch <- Filter(function(o) o$outcomeId == referenceTable$outcomeId[i],
+                             tcoMatch[[1]]$outcomes)
+      if (length(outcomeMatch) > 0 && !is.null(outcomeMatch[[1]]$priorOutcomeLookback)) {
+        priorOutcomeLookback <- outcomeMatch[[1]]$priorOutcomeLookback
+      }
+    }
+    as.character(jsonlite::toJSON(list(
+      removeSubjectsWithPriorOutcome = removeSubjectsWithPriorOutcome,
+      priorOutcomeLookback = priorOutcomeLookback
+    ), auto_unbox = TRUE, digits = NA, null = "null"))
+  }
+
+  basePopArgsJsons <- vapply(seq_len(nrow(referenceTable)), .getEffectiveBasePopArgsJson, character(1))
+  outcomeSpecificArgsJsons <- vapply(seq_len(nrow(referenceTable)), .getOutcomeSpecificArgsJson, character(1))
+
+  # Content-addressable hash for base population files (outcome-independent)
+  referenceTable$basePopHash <- vapply(seq_len(nrow(referenceTable)), function(i) {
+    .contentHash(databaseId, referenceTable$loadHash[i], basePopArgsJsons[i])
+  }, character(1))
+  referenceTable$basePopFile <- .createBasePopulationFileName(referenceTable$basePopHash)
+
+  # Content-addressable hash for study population files (outcome-specific)
   referenceTable$studyPopFile <- vapply(seq_len(nrow(referenceTable)), function(i) {
     hash <- .contentHash(
       databaseId,
-      referenceTable$loadHash[i],
-      studyPopArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
-      referenceTable$outcomeId[i]
+      referenceTable$basePopHash[i],
+      referenceTable$outcomeId[i],
+      outcomeSpecificArgsJsons[i]
     )
     .createStudyPopulationFileName(hash)
   }, character(1))
@@ -1178,52 +1311,26 @@ createReferenceTable <- function(cmAnalysisList,
   idxWithPs <- !(referenceTable$psArgsId %in% noPsIds)
   referenceTable$psFile <- ""
   referenceTable$psFile[idxWithPs] <- vapply(which(idxWithPs), function(i) {
+    aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
     hash <- .contentHash(
       databaseId,
-      referenceTable$loadHash[i],
-      studyPopArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
-      createPsArgsJsons[[match(referenceTable$analysisId[i], analyses$analysisId)]],
+      referenceTable$basePopHash[i],
+      createPsArgsJsons[[aIdx]],
       referenceTable$outcomeId[i]
     )
     .createPsFileName(hash)
   }, character(1))
 
+  # Shared PS: uses basePopHash directly (outcome-independent, replaces equivalent() logic)
   referenceTable$sharedPsFile <- ""
   if (!refitPsForEveryOutcome) {
     if (refitPsForEveryStudyPopulation) {
-      # Find equivalent studyPopArgs, so we can reuse PS over those as well:
-      equivalent <- function(studyPopArgs1, studyPopArgs2) {
-        if (studyPopArgs1$minDaysAtRisk == 0 && studyPopArgs2$minDaysAtRisk == 0) {
-          return(TRUE)
-        } else if (studyPopArgs1$minDaysAtRisk != studyPopArgs2$minDaysAtRisk ||
-                   studyPopArgs1$riskWindowStart != studyPopArgs2$riskWindowStart ||
-                   studyPopArgs1$startAnchor != studyPopArgs2$startAnchor ||
-                   studyPopArgs1$riskWindowEnd != studyPopArgs2$riskWindowEnd ||
-                   studyPopArgs1$endAnchor != studyPopArgs2$endAnchor ||
-                   studyPopArgs1$censorAtNewRiskWindow != studyPopArgs2$censorAtNewRiskWindow) {
-          return(FALSE)
-        } else {
-          return(TRUE)
-        }
-      }
-      # Compute the canonical (first equivalent) studyPop JSON for hashing
-      studyPopArgsEquivalentIdx <- seq_along(cmAnalysisList)
-      for (i in seq_along(cmAnalysisList)) {
-        for (j in seq_len(i - 1)) {
-          if (equivalent(cmAnalysisList[[i]]$createStudyPopulationArgs,
-                         cmAnalysisList[[j]]$createStudyPopulationArgs)) {
-            studyPopArgsEquivalentIdx[i] <- j
-            break
-          }
-        }
-      }
+      # basePopHash already captures equivalence for risk window parameters
       referenceTable$sharedPsFile[idxWithPs] <- vapply(which(idxWithPs), function(i) {
         aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
-        equivIdx <- studyPopArgsEquivalentIdx[aIdx]
         hash <- .contentHash(
           databaseId,
-          referenceTable$loadHash[i],
-          studyPopArgsJsons[[equivIdx]],
+          referenceTable$basePopHash[i],
           createPsArgsJsons[[aIdx]]
         )
         .createPsFileName(hash)
@@ -1264,8 +1371,7 @@ createReferenceTable <- function(cmAnalysisList,
     aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
     hash <- .contentHash(
       databaseId,
-      referenceTable$loadHash[i],
-      studyPopArgsJsons[[aIdx]],
+      referenceTable$basePopHash[i],
       createPsArgsJsons[[aIdx]],
       strataArgsJsons[[aIdx]],
       referenceTable$outcomeId[i]
@@ -1294,8 +1400,7 @@ createReferenceTable <- function(cmAnalysisList,
       aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
       hash <- .contentHash(
         databaseId,
-        referenceTable$loadHash[i],
-        studyPopArgsJsons[[aIdx]],
+        referenceTable$basePopHash[i],
         createPsArgsJsons[[aIdx]],
         strataArgsJsons[[aIdx]],
         sharedBalanceArgsJsons[[aIdx]]
@@ -1342,8 +1447,7 @@ createReferenceTable <- function(cmAnalysisList,
     aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
     hash <- .contentHash(
       databaseId,
-      referenceTable$loadHash[i],
-      studyPopArgsJsons[[aIdx]],
+      referenceTable$basePopHash[i],
       createPsArgsJsons[[aIdx]],
       strataArgsJsons[[aIdx]],
       balanceArgsJsons[[aIdx]],
@@ -1403,8 +1507,7 @@ createReferenceTable <- function(cmAnalysisList,
     aIdx <- match(referenceTable$analysisId[i], analyses$analysisId)
     hash <- .contentHash(
       databaseId,
-      referenceTable$loadHash[i],
-      studyPopArgsJsons[[aIdx]],
+      referenceTable$basePopHash[i],
       createPsArgsJsons[[aIdx]],
       strataArgsJsons[[aIdx]],
       outcomeModelArgsJsons[[aIdx]],
@@ -1425,6 +1528,8 @@ createReferenceTable <- function(cmAnalysisList,
     "outcomeOfInterest",
     "trueEffectSize",
     "cohortMethodDataFile",
+    "basePopFile",
+    "basePopHash",
     "studyPopFile",
     "sharedPsFile",
     "psFile",
@@ -1498,8 +1603,28 @@ createReferenceTable <- function(cmAnalysisList,
   substr(digest::digest(canonical, algo = "sha256", serialize = FALSE), 1, length)
 }
 
+# Serialize only the base-population-relevant fields of a CreateStudyPopulationArgs object.
+# Excludes outcome-specific fields (removeSubjectsWithPriorOutcome, priorOutcomeLookback).
+.serializeBasePopArgs <- function(args) {
+  baseFields <- list(
+    minDaysAtRisk = args$minDaysAtRisk,
+    maxDaysAtRisk = args$maxDaysAtRisk,
+    riskWindowStart = args$riskWindowStart,
+    startAnchor = args$startAnchor,
+    riskWindowEnd = args$riskWindowEnd,
+    endAnchor = args$endAnchor,
+    censorAtNewRiskWindow = args$censorAtNewRiskWindow
+  )
+  as.character(jsonlite::toJSON(baseFields[order(names(baseFields))],
+                                auto_unbox = TRUE, digits = NA, null = "null"))
+}
+
 .createCohortMethodDataFileName <- function(loadHash) {
   sprintf("CmData_%s.zip", loadHash)
+}
+
+.createBasePopulationFileName <- function(hash) {
+  sprintf("BasePop_%s.rds", hash)
 }
 
 .createPrefilteredCovariatesFileName <- function(hash) {
