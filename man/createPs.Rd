@@ -32,7 +32,7 @@ IPTW estimates either the average treatment effect (ate) or average treatment ef
 }
 \examples{
 data(cohortMethodDataSimulationProfile)
-cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
+cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 100)
 ps <- createPs(cohortMethodData, createPsArgs = createCreatePsArgs())
 
 }
