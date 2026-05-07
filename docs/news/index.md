@@ -1,6 +1,19 @@
 # Changelog
 
+## CohortMethod 6.0.2
+
+Bugfixes:
+
+- Fixed error where two study population settings could lead to
+  different populations but were considered equivalent for propensity
+  score fitting, causing errors due to missing persons.
+
+- Fixed error when exposure cohorts were empty and using `maxCohortSize`
+  \> 0.
+
 ## CohortMethod 6.0.1
+
+CRAN release: 2026-03-21
 
 Changes:
 

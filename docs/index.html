@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">CohortMethod</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +55,7 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="cohortmethod">CohortMethod<a class="anchor" aria-label="anchor" href="#cohortmethod"></a>
 </h1></div>
-<p><a href="https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check" class="external-link"><img src="https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg" alt="Build Status"></a> <a href="https://app.codecov.io/github/OHDSI/CohortMethod?branch=main" class="external-link"><img src="https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main" alt="codecov.io"></a></p>
+<p><a href="https://github.com/OHDSI/CohortMethod/actions?query=workflow%3AR-CMD-check" class="external-link"><img src="https://github.com/OHDSI/CohortMethod/workflows/R-CMD-check/badge.svg" alt="Build Status"></a> <a href="https://app.codecov.io/github/OHDSI/CohortMethod?branch=main" class="external-link"><img src="https://codecov.io/github/OHDSI/CohortMethod/coverage.svg?branch=main" alt="codecov.io"></a> <a href="https://cran.r-project.org/package=CohortMethod" class="external-link"><img src="https://www.r-pkg.org/badges/version/CohortMethod" alt="CRAN_Status_Badge"></a> <a href="https://cran.r-project.org/package=CohortMethod" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/CohortMethod" alt="CRAN_Status_Badge"></a></p>
 <p>CohortMethod is part of <a href="https://ohdsi.github.io/Hades/" class="external-link">HADES</a>.</p>
 </div>
 <div class="section level1">
@@ -105,21 +105,20 @@ Covariate balance plot
 <div class="section level1">
 <h1 id="system-requirements">System Requirements<a class="anchor" aria-label="anchor" href="#system-requirements"></a>
 </h1>
-<p>Requires R (version 3.6.0 or higher). Installation on Windows requires <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">RTools</a>. Libraries used in CohortMethod require Java.</p>
+<p>Requires R (version 4.0.0 or higher). Libraries used in CohortMethod require Java.</p>
 </div>
 <div class="section level1">
 <h1 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h1>
 <ol style="list-style-type: decimal">
 <li><p>See the instructions <a href="https://ohdsi.github.io/Hades/rSetup.html" class="external-link">here</a> for configuring your R environment, including RTools and Java.</p></li>
-<li><p>In R, use the following commands to download and install CohortMethod:</p></li>
-</ol>
+<li>
+<p>To install the latest stable version, install from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"ohdsi/CohortMethod"</span><span class="op">)</span></span></code></pre></div>
-<ol start="3" style="list-style-type: decimal">
-<li>Optionally, run this to check if CohortMethod was correctly installed:</li>
-</ol>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"CohortMethod"</span><span class="op">)</span></span></code></pre></div>
+</li>
+<li>
+<p>Optionally, run this to check if CohortMethod was correctly installed:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">connectionDetails</span> <span class="op">&lt;-</span> <span class="fu">createConnectionDetails</span><span class="op">(</span>dbms<span class="op">=</span><span class="st">"postgresql"</span>,</span>
 <span>                                             server<span class="op">=</span><span class="st">"my_server.org"</span>,</span>
@@ -131,6 +130,8 @@ Covariate balance plot
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">?</span><span class="va">createConnectionDetails</span></span></code></pre></div>
 <p>for more details on how to configure your database connection.</p>
+</li>
+</ol>
 </div>
 <div class="section level1">
 <h1 id="user-documentation">User Documentation<a class="anchor" aria-label="anchor" href="#user-documentation"></a>
@@ -186,6 +187,7 @@ Covariate balance plot
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=CohortMethod" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/OHDSI/CohortMethod/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/OHDSI/CohortMethod/issues" class="external-link">Report a bug</a></li>
 <li><a href="http://forums.ohdsi.org" class="external-link">Ask a question</a></li>
