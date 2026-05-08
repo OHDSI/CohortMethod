@@ -118,8 +118,8 @@ jobs:
       - uses: codecov/codecov-action@v6
         if: runner.os == 'Linux'
         with:
-          file: ./cobertura.xml
-          plugin: noop
+          files: ./cobertura.xml
+          plugins: noop
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
