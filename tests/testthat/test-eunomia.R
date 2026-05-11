@@ -238,6 +238,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
           exposureTable = "cohort",
           outcomeTable = "cohort",
           outputFolder = outputFolder1,
+          databaseId = "Eunomia",
           cmAnalysesSpecifications = createCmAnalysesSpecifications(
             cmAnalysisList = cmAnalysisList,
             targetComparatorOutcomesList = targetComparatorOutcomesList,
@@ -374,6 +375,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
           exposureTable = "cohort",
           outcomeTable = "cohort",
           outputFolder = outputFolder2,
+          databaseId = "Eunomia",
           cmAnalysesSpecifications = createCmAnalysesSpecifications(
             cmAnalysisList = cmAnalysisList,
             targetComparatorOutcomesList = targetComparatorOutcomesList,
@@ -384,7 +386,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     )
 
     expect_equal(result$sharedPsFile, c("", ""))
-    expect_equal(result$psFile, c("Ps_l1_s1_p1_t1_c2_o3.rds", "Ps_l1_s1_p1_t1_c2_o4.rds"))
+    expect_true(all(grepl("^Ps_", result$psFile)))
   })
 
   test_that("High correlation covariates", {
@@ -458,6 +460,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       exposureTable = "cohort",
       outcomeTable = "cohort",
       outputFolder = outputFolder3,
+      databaseId = "Eunomia",
       cmAnalysesSpecifications = createCmAnalysesSpecifications(
         cmAnalysisList = cmAnalysisList,
         targetComparatorOutcomesList = targetComparatorOutcomesList
@@ -564,6 +567,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
           exposureTable = "cohort",
           outcomeTable = "cohort",
           outputFolder = outputFolder4,
+          databaseId = "Eunomia",
           cmAnalysesSpecifications = createCmAnalysesSpecifications(
             cmAnalysisList = cmAnalysisList,
             targetComparatorOutcomesList = targetComparatorOutcomesList
@@ -685,6 +689,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
           exposureTable = "cohort",
           outcomeTable = "cohort",
           outputFolder = outputFolder5,
+          databaseId = "Eunomia",
           cmAnalysesSpecifications = createCmAnalysesSpecifications(
             cmAnalysisList = cmAnalysisList,
             targetComparatorOutcomesList = targetComparatorOutcomesList
@@ -695,15 +700,20 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     expect_equal(nrow(result), 4)
     expect_equal(sum(result$nestingCohortId == 4, na.rm = TRUE), 2)
 
-    expect_equal(length(grep("_t1_c2_n4", result$cohortMethodDataFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$studyPopFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$sharedPsFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$psFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$strataFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$sharedBalanceFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$filteredForbalanceFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$balanceFile)), 2)
-    expect_equal(length(grep("_t1_c2_n4", result$outcomeModelFile)), 2)
+    # With content-addressable hashes, nesting cohort produces different hashes
+    # Verify that nested rows have distinct filenames from non-nested rows
+    nestedFiles <- result$cohortMethodDataFile[result$nestingCohortId == 4 & !is.na(result$nestingCohortId)]
+    nonNestedFiles <- result$cohortMethodDataFile[is.na(result$nestingCohortId)]
+    expect_true(length(intersect(nestedFiles, nonNestedFiles)) == 0)
+
+    # Verify nested rows have distinct balance/outcome filenames from non-nested rows
+    nestedBalance <- result$sharedBalanceFile[result$nestingCohortId == 4 & !is.na(result$nestingCohortId)]
+    nonNestedBalance <- result$sharedBalanceFile[is.na(result$nestingCohortId)]
+    expect_true(length(intersect(nestedBalance[nestedBalance != ""], nonNestedBalance[nonNestedBalance != ""])) == 0)
+
+    nestedOm <- result$outcomeModelFile[result$nestingCohortId == 4 & !is.na(result$nestingCohortId)]
+    nonNestedOm <- result$outcomeModelFile[is.na(result$nestingCohortId)]
+    expect_true(length(intersect(nestedOm[nestedOm != ""], nonNestedOm[nonNestedOm != ""])) == 0)
 
     uniqueCmdFiles <- result[!duplicated(result$cohortMethodDataFile), ]
     for (i in seq_len(nrow(uniqueCmdFiles))) {
@@ -819,6 +829,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
           exposureTable = "cohort",
           outcomeTable = "cohort",
           outputFolder = outputFolder6,
+          databaseId = "Eunomia",
           cmAnalysesSpecifications = createCmAnalysesSpecifications(
             cmAnalysisList = cmAnalysisList,
             targetComparatorOutcomesList = targetComparatorOutcomesList,

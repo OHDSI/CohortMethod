@@ -1,3 +1,15 @@
+CohortMethod 6.0.3 (Development)
+================================
+
+Features:
+
+- Added content-addressable artifact caching system that preserves intermediate computation results when adding new outcomes or changing non-critical settings. Filenames are derived from SHA-256 hashes of all parameters that determine their content (including `databaseId`), so changing upstream settings naturally produces new filenames and unchanged settings reuse existing files.
+
+- New `databaseId` parameter (required) in `runCmAnalyses()` prevents accidental reuse of cached results from a different database.
+
+- Pluggable `ArtifactStore` interface with `LocalArtifactStore` default implementation, enabling future custom storage backends (S3, HTTP, etc.).
+
+
 CohortMethod 6.0.2
 ==================
 

@@ -16,7 +16,9 @@ runCmAnalyses(
   nestingCohortTable = "cohort",
   outputFolder = "./CohortMethodOutput",
   multiThreadingSettings = createMultiThreadingSettings(),
-  cmAnalysesSpecifications
+  cmAnalysesSpecifications,
+  databaseId,
+  artifactStore = NULL
 )
 }
 \arguments{
@@ -69,6 +71,14 @@ the \code{\link[=createMultiThreadingSettings]{createMultiThreadingSettings()}} 
 
 \item{cmAnalysesSpecifications}{An object of type \code{CmAnalysesSpecifications} as created using
 the \code{createCmAnalysesSpecifications()}.}
+
+\item{databaseId}{A unique identifier for the database being used. This is
+baked into artifact hashes to prevent accidental reuse of
+cached results from a different database. Required.}
+
+\item{artifactStore}{An object inheriting from \link{ArtifactStore} used to read and
+write cached artifacts. If NULL (default), a
+\link{LocalArtifactStore} backed by \code{outputFolder} is used.}
 }
 \value{
 A tibble describing for each target-comparator-outcome-analysisId combination where the intermediary and
