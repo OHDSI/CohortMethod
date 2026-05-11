@@ -872,16 +872,39 @@ doFitSharedPsModel <- function(params, refitPsForEveryStudyPopulation) {
 }
 
 addPsToStudyPopForSubset <- function(subset, outputFolder) {
-  ps <- readRDS(file.path(outputFolder, subset$sharedPsFile[1]))
+  pid <- Sys.getpid()
+  sharedPsFile <- subset$sharedPsFile[1]
+  ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset: loading sharedPsFile '%s' (%d rows to process)",
+                                  pid, sharedPsFile, nrow(subset)))
+  t0 <- proc.time()[["elapsed"]]
+  ps <- readRDS(file.path(outputFolder, sharedPsFile))
+  ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset: sharedPsFile loaded in %.1f s (nrow=%d, ncol=%d)",
+                                  pid, proc.time()[["elapsed"]] - t0, nrow(ps), ncol(ps)))
+  columnsToKeep <- c("rowId", "treatment", "personSeqId", "cohortStartDate", "propensityScore", "preferenceScore", "iptw")
+  ps <- ps[, intersect(columnsToKeep, colnames(ps))]
+  ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset: ps trimmed to %d columns",
+                                  pid, ncol(ps)))
 
   addToStudyPop <- function(i) {
     refRow <- subset[i, ]
+    ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset [%d/%d]: reading studyPopFile '%s'",
+                                    pid, i, nrow(subset), refRow$studyPopFile))
+    t1 <- proc.time()[["elapsed"]]
     studyPop <- readRDS(file.path(outputFolder, refRow$studyPopFile))
+    ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset [%d/%d]: studyPopFile read in %.1f s (nrow=%d), merging PS",
+                                    pid, i, nrow(subset), proc.time()[["elapsed"]] - t1, nrow(studyPop)))
     studyPop <- addPsToStudyPopulation(studyPop, ps)
+    ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset [%d/%d]: writing psFile '%s'",
+                                    pid, i, nrow(subset), refRow$psFile))
+    t2 <- proc.time()[["elapsed"]]
     saveRDS(studyPop, file.path(outputFolder, refRow$psFile))
+    ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset [%d/%d]: psFile written in %.1f s",
+                                    pid, i, nrow(subset), proc.time()[["elapsed"]] - t2))
     return(NULL)
   }
   plyr::l_ply(1:nrow(subset), addToStudyPop)
+  ParallelLogger::logInfo(sprintf("[pid %d] addPsToStudyPopForSubset: completed all %d rows for sharedPsFile '%s'",
+                                  pid, nrow(subset), sharedPsFile))
 }
 
 addPsToStudyPopulation <- function(studyPopulation, ps) {
