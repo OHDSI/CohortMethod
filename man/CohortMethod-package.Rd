@@ -22,6 +22,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Martijn Schuemie \email{schuemie@ohdsi.org}
   \item Marc Suchard
   \item Patrick Ryan
 }

@@ -906,6 +906,18 @@ logit <- function(p) {
   log(p / (1 - p))
 }
 
+stratifyByRatio <- function(population) {
+  ratios <- population |>
+    filter(.data$treatment == 0) |>
+    group_by(.data$stratumId) |>
+    summarize(ratio = n())
+  population <- population |>
+    inner_join(ratios, by = join_by("stratumId")) |>
+    mutate(stratumId = .data$ratio) |>
+    select(-"ratio")
+  return(population)
+}
+
 #' Match persons by propensity score
 #'
 #' @description
@@ -1014,6 +1026,9 @@ matchOnPs <- function(population,
     result <- as_tibble(result)
     population$stratumId <- result$stratumId
     population <- population[population$stratumId != -1, ]
+    if (matchOnPsArgs$stratifyByRatio) {
+      population <- stratifyByRatio(population)
+    }
   } else {
     f <- function(subset, maxRatio, caliper) {
       subResult <- matchPsInternal(
@@ -1025,6 +1040,9 @@ matchOnPs <- function(population,
       subResult <- as_tibble(subResult)
       subset$stratumId <- subResult$stratumId
       subset <- subset[subset$stratumId != -1, ]
+      if (matchOnPsArgs$stratifyByRatio) {
+        subset <- stratifyByRatio(subset)
+      }
       return(subset)
     }
     results <- plyr::dlply(

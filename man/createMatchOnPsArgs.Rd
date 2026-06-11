@@ -9,6 +9,7 @@ createMatchOnPsArgs(
   caliperScale = "standardized logit",
   maxRatio = 1,
   allowReverseMatch = FALSE,
+  stratifyByRatio = FALSE,
   matchColumns = c(),
   matchCovariateIds = c()
 )
@@ -33,6 +34,9 @@ each person in the treatment arm. A \code{maxRatio} of 0 means no maximum:
 all comparators will be assigned to a target person.}
 
 \item{allowReverseMatch}{Allows n-to-1 matching if target arm is larger}
+
+\item{stratifyByRatio}{When using variable ratio matching, create strata based on matched ratios instead of
+one stratum per matched set?}
 
 \item{matchColumns}{Names or numbers of one or more columns in the \code{data} data.frame
 on which subjects should be stratified prior to matching. No persons

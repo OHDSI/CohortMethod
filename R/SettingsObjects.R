@@ -542,6 +542,8 @@ TruncateIptwArgs <- R6Class(
 #' @param maxRatio                The maximum number of persons in the comparator arm to be matched to
 #'                                each person in the treatment arm. A `maxRatio` of 0 means no maximum:
 #'                                all comparators will be assigned to a target person.
+#' @param stratifyByRatio         When using variable ratio matching, create strata based on matched ratios instead of
+#'                                one stratum per matched set?
 #' @param allowReverseMatch       Allows n-to-1 matching if target arm is larger
 #' @param matchColumns            Names or numbers of one or more columns in the `data` data.frame
 #'                                on which subjects should be stratified prior to matching. No persons
@@ -562,6 +564,7 @@ createMatchOnPsArgs <- function(caliper = 0.2,
                                 caliperScale = "standardized logit",
                                 maxRatio = 1,
                                 allowReverseMatch = FALSE,
+                                stratifyByRatio = FALSE,
                                 matchColumns = c(),
                                 matchCovariateIds = c()) {
   args <- list()
@@ -579,6 +582,7 @@ MatchOnPsArgs <- R6Class(
     caliperScale = NULL,
     maxRatio = NULL,
     allowReverseMatch = NULL,
+    stratifyByRatio = NULL,
     matchColumns = NULL,
     matchCovariateIds = NULL,
     validate = function() {
@@ -587,6 +591,7 @@ MatchOnPsArgs <- R6Class(
       checkmate::assertChoice(self$caliperScale, c("standardized", "propensity score", "standardized logit"), add = errorMessages)
       checkmate::assertInt(self$maxRatio, lower = 0, add = errorMessages)
       checkmate::assertLogical(self$allowReverseMatch, len = 1, add = errorMessages)
+      checkmate::assertLogical(self$stratifyByRatio, len = 1, add = errorMessages)
       checkmate::assertCharacter(self$matchColumns, null.ok = TRUE, add = errorMessages)
       .assertCovariateId(self$matchCovariateIds, null.ok = TRUE, add = errorMessages)
       checkmate::reportAssertions(collection = errorMessages)

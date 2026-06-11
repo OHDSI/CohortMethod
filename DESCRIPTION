@@ -67,6 +67,6 @@ Suggests:
 SystemRequirements: Java
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Encoding: UTF-8
+Config/roxygen2/version: 8.0.0
