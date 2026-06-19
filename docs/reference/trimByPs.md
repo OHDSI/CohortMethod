@@ -51,9 +51,9 @@ data <- data.frame(rowId = rowId,
                    propensityScore = propensityScore,
                    iptw = iptw)
 result1 <- trimByPs(data, createTrimByPsArgs(trimFraction = 0.05))
-#> Trimming removed 96 (9.6%) rows from the target, 99 (9.9%) rows from the comparator in total.
+#> Trimming removed 113 (11.3%) rows from the target, 104 (10.4%) rows from the comparator in total.
 result2 <- trimByPs(data, createTrimByPsArgs(equipoiseBounds = c(0.3, 0.7)))
-#> Trimming removed 597 (59.7%) rows from the target, 592 (59.2%) rows from the comparator in total.
+#> Trimming removed 625 (62.5%) rows from the target, 618 (61.8%) rows from the comparator in total.
 result3 <- trimByPs(data, createTrimByPsArgs(maxWeight = 10))
-#> Trimming removed 51 (5.1%) rows from the target, 49 (4.9%) rows from the comparator in total.
+#> Trimming removed 62 (6.2%) rows from the target, 53 (5.3%) rows from the comparator in total.
 ```

@@ -46,5 +46,5 @@ propensityScore <- c(rnorm(100, mean = 0.4, sd = 0.25), rnorm(100, mean = 0.6, s
 data <- data.frame(treatment = treatment, propensityScore = propensityScore)
 data <- data[data$propensityScore > 0 & data$propensityScore < 1, ]
 computePsAuc(data)
-#> [1] 0.6716202
+#> [1] 0.6727075
 ```

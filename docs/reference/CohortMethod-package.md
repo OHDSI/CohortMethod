@@ -35,6 +35,8 @@ Useful links:
 
 Authors:
 
+- Martijn Schuemie <schuemie@ohdsi.org>
+
 - Marc Suchard
 
 - Patrick Ryan

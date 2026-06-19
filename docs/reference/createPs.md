@@ -55,17 +55,18 @@ relative risk and its confidence intervals. Value Health.
 
 ``` r
 data(cohortMethodDataSimulationProfile)
-cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 1000)
+cohortMethodData <- simulateCohortMethodData(cohortMethodDataSimulationProfile, n = 100)
 #> Generating covariates
 #> Generating treatment variable
 #> Generating cohorts
 #> Generating outcomes after index date
 #> Generating outcomes before index date
 ps <- createPs(cohortMethodData, createPsArgs = createCreatePsArgs())
-#> Removing 1 redundant covariates
+#> Removing 0 redundant covariates
 #> Removing 0 infrequent covariates
 #> Normalizing covariates
-#> Tidying covariates took 4.27 secs
+#> Tidying covariates took 4.89 secs
+#> Warning: All coefficients (except maybe the intercept) are zero. Either the covariates are completely uninformative or completely predictive of the treatment. Did you remember to exclude the treatment variables from the covariates?
 #> Propensity model fitting finished with status OK
-#> Creating propensity scores took 13.8 secs
+#> Creating propensity scores took 5.73 secs
 ```

@@ -1,12 +1,12 @@
-This release brings 2 bugfixes (see NEWS.md)
+This release brings 1 bugfix, addressing the issues noted in CRAN checks (see NEWS.md)
 
 ---
 
 ## Test environments
-* Ubuntu 22.04, R 4.6.0
-* MacOS, R 4.6.0
+* Ubuntu 22.04, most recent R version
+* MacOS, R most recent R version
 * MacOS M3, 4.4.1
-* Windows 10, R 4.6.0
+* Windows 10, R most recent R version
 
 ## R CMD check results
 
