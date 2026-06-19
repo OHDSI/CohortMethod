@@ -1,3 +1,11 @@
+CohortMethod 6.0.3
+==================
+
+Bugfixes:
+
+1. Fixed error caused by `dbplyr  2.6.0` caused `sum` the variable to be confused with `sum` the function. 
+
+
 CohortMethod 6.0.2
 ==================
 

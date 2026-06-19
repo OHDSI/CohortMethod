@@ -120,11 +120,11 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       inner_join(cohortMethodData$overallW, by = c("rowId")) |>
       group_by(.data$covariateId, .data$treatment) |>
       summarise(
-        sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-        mean = sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
-        overallMean = sum(.data$overallWeight * as.numeric(.data$covariateValue), na.rm = TRUE),
-        sumSqr = sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-        overallSumSqr = sum(.data$overallWeight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        sum = base::sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+        mean = base::sum(.data$weight * as.numeric(.data$covariateValue), na.rm = TRUE),
+        overallMean = base::sum(.data$overallWeight * as.numeric(.data$covariateValue), na.rm = TRUE),
+        sumSqr = base::sum(.data$weight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        overallSumSqr = base::sum(.data$overallWeight * as.numeric(.data$covariateValue)^2, na.rm = TRUE),
         .groups = "drop"
       ) |>
       inner_join(cohortMethodData$sumWSqr, join_by("treatment")) |>
@@ -196,9 +196,9 @@ computeMeansPerGroup <- function(cohorts, cohortMethodData, covariateFilter) {
       inner_join(select(cohorts, "rowId", "treatment"), by = "rowId") |>
       group_by(.data$covariateId, .data$treatment) |>
       summarise(
-        sum = sum(as.numeric(.data$covariateValue), na.rm = TRUE),
-        sumSqr = sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE),
-        overallSumWSqr = sum(1 / overallCount^2, na.rm = TRUE),
+        sum = base::sum(as.numeric(.data$covariateValue), na.rm = TRUE),
+        sumSqr = base::sum(as.numeric(.data$covariateValue)^2, na.rm = TRUE),
+        overallSumWSqr = base::sum(1 / overallCount^2, na.rm = TRUE),
         .groups = "drop"
       ) |>
       inner_join(cohortCounts, by = "treatment") |>

@@ -1,8 +1,8 @@
 Package: CohortMethod
 Type: Package
 Title: Comparative Cohort Method with Large Scale Propensity and Outcome Models
-Version: 6.0.2
-Date: 2026-05-07
+Version: 6.0.3
+Date: 2026-05-19
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
@@ -67,6 +67,6 @@ Suggests:
 SystemRequirements: Java
 LinkingTo: Rcpp
 NeedsCompilation: yes
-RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Encoding: UTF-8
+Config/roxygen2/version: 8.0.0
