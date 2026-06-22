@@ -2,7 +2,7 @@ Package: CohortMethod
 Type: Package
 Title: Comparative Cohort Method with Large Scale Propensity and Outcome Models
 Version: 6.0.3
-Date: 2026-05-19
+Date: 2026-06-22
 Authors@R: c(
 	person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
 	person("Marc", "Suchard", role = c("aut")),
