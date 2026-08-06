@@ -350,3 +350,11 @@ outcomeModel <- fitOutcomeModel(
 )
 saveRDS(outcomeModel, file = file.path(folder, "OutcomeModel5.rds"))
 
+rd <- fitOutcomeModel(
+  population = matchedPop,
+  fitOutcomeModelArgs = createComputeRiskDifferenceArgs(
+    timePoint = 365
+  )
+)
+
+

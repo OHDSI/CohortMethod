@@ -874,11 +874,11 @@ createComputeRiskDifferenceArgs <- function(timePoint = 365) {
   for (name in names(formals())) {
     args[[name]] <- get(name)
   }
-  return(FitOutcomeModelArgs$new(typedList = args))
+  return(ComputeRiskDifferenceArgs$new(typedList = args))
 }
 
 ComputeRiskDifferenceArgs <- R6Class(
-  "FitOutcomeModelArgs",
+  "ComputeRiskDifferenceArgs",
   inherit = AbstractSerializableSettings,
   public = list(
     timePoint = NULL,

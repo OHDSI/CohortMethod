@@ -18,6 +18,25 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
   start <- Sys.time()
   riskDifference <- attr(population, "metaData")
 
+  attrition <- inner_join(
+    population |>
+      group_by(.data$treatment) |>
+      summarise(exposuresAtStart = n(),
+                subjectsAtStart = length(unique(personSeqId))),
+    population |>
+      filter(.data$survivalTime >= computeRiskDifferenceArgs$timePoint) |>
+      group_by(.data$treatment) |>
+      summarise(exposuresAtTimePoint = n(),
+                subjectsAtTimePoint = length(unique(personSeqId))),
+    by = join_by("treatment")
+  ) |>
+    mutate(attrition = 1 - (.data$exposuresAtTimePoint / .data$exposuresAtStart))
+  if (any(attrition$attrition > 0.9)) {
+    warning(sprintf("Attrition is %s. More than 90 percent attrition can lead to unstable risk difference estimates",
+            paste(sprintf("%0.1f%%", 100 * attrition$attrition), collapse = " and ")))
+  }
+  riskDifference$attritionAtTimePoint <- attrition
+
   # For now: Use timeEL package to compute risk difference and confidence intervals (using Empirical Likelihood).
   # Not yet supporting stratification or weighting and likelihood profiling.
   result <- tryCatch(
@@ -36,7 +55,7 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
   if (is.character(result)) {
     riskDifference$status <- result
     riskDifference$estimate <- tibble(
-      timePoint = t,
+      timePoint = computeRiskDifferenceArgs$timePoint,
       rd = as.numeric(NA),
       lb95 = as.numeric(NA),
       ub95 = as.numeric(NA),
@@ -46,7 +65,7 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
   } else {
     riskDifference$status <- "OK"
     riskDifference$estimate <- tibble(
-      timePoint = t,
+      timePoint = computeRiskDifferenceArgs$timePoint,
       rd = result$table.Diff["EL", "est."],
       lb95 = result$table.Diff["EL", "lower"],
       ub95 = result$table.Diff["EL", "upper"]
