@@ -61,7 +61,7 @@ determine the hyperparameters of the prior (if applicable). See
 \code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
 }
 \value{
-An object of type \code{ComputeCovariateBalanceArgs}.
+An object of type \code{FitOutcomeModelArgs}.
 }
 \description{
 Create a parameter object for the function \code{\link[=fitOutcomeModel]{fitOutcomeModel()}}

@@ -768,7 +768,7 @@ ComputeCovariateBalanceArgs <- R6Class(
 #'                              [Cyclops::createControl()] for details.
 #'
 #' @return
-#' An object of type `ComputeCovariateBalanceArgs`.
+#' An object of type `FitOutcomeModelArgs`.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "cox",
@@ -822,7 +822,7 @@ FitOutcomeModelArgs <- R6Class(
       checkmate::assertLogical(self$useCovariates, len = 1, add = errorMessages)
       checkmate::assertLogical(self$inversePtWeighting, len = 1, add = errorMessages)
       checkmate::assertLogical(self$bootstrapCi, len = 1, add = errorMessages)
-      checkmate::assert_int(self$bootstrapReplicates, lower = 1, add = errorMessages)
+      checkmate::assertInt(self$bootstrapReplicates, lower = 1, add = errorMessages)
       .assertCovariateId(self$interactionCovariateIds, null.ok = TRUE, add = errorMessages)
       .assertCovariateId(self$excludeCovariateIds, null.ok = TRUE, add = errorMessages)
       .assertCovariateId(self$includeCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -853,6 +853,39 @@ FitOutcomeModelArgs <- R6Class(
         class(self$control) <- "cyclopsControl"
         class(self$prior) <- "cyclopsPrior"
       }
+    }
+  )
+)
+
+#' Create a parameter object for the function [fitOutcomeModel()] for computing the risk difference
+#'
+#' @details
+#' Create an object defining the parameter values.
+#'
+#' @param timePoint The point in time (days relative to index date) at which the cumulative risk difference should be
+#'                  computed.
+#'
+#' @return
+#' An object of type `ComputeRiskDifferenceArgs`.
+#'
+#' @export
+createComputeRiskDifferenceArgs <- function(timePoint = 365) {
+  args <- list()
+  for (name in names(formals())) {
+    args[[name]] <- get(name)
+  }
+  return(FitOutcomeModelArgs$new(typedList = args))
+}
+
+ComputeRiskDifferenceArgs <- R6Class(
+  "FitOutcomeModelArgs",
+  inherit = AbstractSerializableSettings,
+  public = list(
+    timePoint = NULL,
+    validate = function() {
+      errorMessages <- checkmate::makeAssertCollection()
+      checkmate::assertInt(self$timePoint, lower = 1, add = errorMessages)
+      checkmate::reportAssertions(collection = errorMessages)
     }
   )
 )
@@ -941,7 +974,11 @@ CmAnalysis <- R6Class(
       checkmate::assertR6(self$stratifyByPsArgs, "StratifyByPsArgs", null.ok = TRUE, add = errorMessages)
       checkmate::assertR6(self$computeSharedCovariateBalanceArgs, "ComputeCovariateBalanceArgs", null.ok = TRUE, add = errorMessages)
       checkmate::assertR6(self$computeCovariateBalanceArgs, "ComputeCovariateBalanceArgs", null.ok = TRUE, add = errorMessages)
-      checkmate::assertR6(self$fitOutcomeModelArgs, "FitOutcomeModelArgs", null.ok = TRUE, add = errorMessages)
+      if (is(self$fitOutcomeModelArgs, "FitOutcomeModelArgs")) {
+        checkmate::assertR6(self$fitOutcomeModelArgs, "FitOutcomeModelArgs", null.ok = TRUE, add = errorMessages)
+      } else {
+        checkmate::assertR6(self$fitOutcomeModelArgs, "ComputeRiskDifferenceArgs", null.ok = TRUE, add = errorMessages)
+      }
       checkmate::reportAssertions(collection = errorMessages)
       if ((!is.null(self$matchOnPsArgs)) +
           (!is.null(self$matchOnPsAndCovariatesArgs)) +
@@ -956,6 +993,7 @@ CmAnalysis <- R6Class(
         stop("Must create propensity score model to use it for trimming, matching, or stratification")
       }
       if (!is.null(self$fitOutcomeModelArgs) &&
+          is(self$fitOutcomeModelArgs, "FitOutcomeModelArgs") &&
           self$fitOutcomeModelArgs$stratified && (is.null(self$matchOnPsArgs) &
                                                   is.null(self$matchOnPsAndCovariatesArgs) &
                                                   is.null(self$stratifyByPsArgs) &
@@ -995,7 +1033,11 @@ CmAnalysis <- R6Class(
           self$computeCovariateBalanceArgs <- ComputeCovariateBalanceArgs$new(untypedList = self$computeCovariateBalanceArgs)
         }
         if (!is.null(self$fitOutcomeModelArgs)) {
-          self$fitOutcomeModelArgs <- FitOutcomeModelArgs$new(untypedList = self$fitOutcomeModelArgs)
+          if ("modelType" %in% names(self$fitOutcomeModelArgs)) {
+            self$fitOutcomeModelArgs <- FitOutcomeModelArgs$new(untypedList = self$fitOutcomeModelArgs)
+          } else {
+            self$fitOutcomeModelArgs <- ComputeRiskDifferenceArgs$new(untypedList = self$fitOutcomeModelArgs)
+          }
         }
       }
     }

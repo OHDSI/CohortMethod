@@ -19,7 +19,7 @@ potentially filtered by other functions.}
 not using interaction terms.}
 
 \item{fitOutcomeModelArgs}{An object of type \code{FitOutcomeModelArgs} as generated using the
-\code{\link[=createFitOutcomeModelArgs]{createFitOutcomeModelArgs()}} function.}
+\code{\link[=createFitOutcomeModelArgs]{createFitOutcomeModelArgs()}} or \code{\link[=createComputeRiskDifferenceArgs]{createComputeRiskDifferenceArgs()}} functions.}
 }
 \value{
 An object of class \code{OutcomeModel}. Generic function \code{print}, \code{coef}, and

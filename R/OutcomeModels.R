@@ -31,7 +31,7 @@
 #'                              [getDbCohortMethodData()]. Can be omitted if not using covariates and
 #'                              not using interaction terms.
 #' @param fitOutcomeModelArgs   An object of type `FitOutcomeModelArgs` as generated using the
-#'                              [createFitOutcomeModelArgs()] function.
+#'                              [createFitOutcomeModelArgs()] or [createComputeRiskDifferenceArgs()] functions.
 #'
 #' @return
 #' An object of class `OutcomeModel`. Generic function `print`, `coef`, and
@@ -48,8 +48,22 @@ fitOutcomeModel <- function(population,
     checkmate::assertNames(names(cohortMethodData), must.include = c("analysisRef", "cohorts", "covariateRef", "covariates", "outcomes"), add = errorMessages)
   }
   checkmate::assertClass(cohortMethodData, "CohortMethodData", null.ok = TRUE, add = errorMessages)
-  checkmate::assertR6(fitOutcomeModelArgs, "FitOutcomeModelArgs", add = errorMessages)
+  if (is(fitOutcomeModelArgs, "FitOutcomeModelArgs")) {
+    checkmate::assertR6(fitOutcomeModelArgs, "FitOutcomeModelArgs", null.ok = TRUE, add = errorMessages)
+  } else {
+    checkmate::assertR6(fitOutcomeModelArgs, "ComputeRiskDifferenceArgs", null.ok = TRUE, add = errorMessages)
+  }
   checkmate::reportAssertions(collection = errorMessages)
+
+  if (is(fitOutcomeModelArgs, "FitOutcomeModelArgs")) {
+    return(fitRelativeRiskModel(population, cohortMethodData, fitOutcomeModelArgs))
+  } else {
+    return(computeRiskDifference(population, cohortMethodData, fitOutcomeModelArgs))
+  }
+
+}
+
+fitRelativeRiskModel <- function(population, cohortMethodData, fitOutcomeModelArgs) {
   if (fitOutcomeModelArgs$stratified && nrow(population) > 0 && is.null(population$stratumId)) {
     stop("Requested stratified analysis, but no stratumId column found in population. Please use matchOnPs or stratifyByPs to create strata.")
   }

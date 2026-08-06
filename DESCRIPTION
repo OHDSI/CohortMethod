@@ -50,7 +50,8 @@ Imports:
 	EmpiricalCalibration,
 	jsonlite,
 	R6,
-	digest
+	digest,
+	timeEL
 Suggests:
 	testthat,
 	pROC,
