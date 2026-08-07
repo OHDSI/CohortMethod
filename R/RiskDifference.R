@@ -17,25 +17,15 @@
 computeRiskDifference <- function(population, cohortMethodData, computeRiskDifferenceArgs) {
   start <- Sys.time()
   riskDifference <- attr(population, "metaData")
-
-  attrition <- inner_join(
-    population |>
-      group_by(.data$treatment) |>
-      summarise(exposuresAtStart = n(),
-                subjectsAtStart = length(unique(personSeqId))),
-    population |>
-      filter(.data$survivalTime >= computeRiskDifferenceArgs$timePoint) |>
-      group_by(.data$treatment) |>
-      summarise(exposuresAtTimePoint = n(),
-                subjectsAtTimePoint = length(unique(personSeqId))),
-    by = join_by("treatment")
-  ) |>
-    mutate(attrition = 1 - (.data$exposuresAtTimePoint / .data$exposuresAtStart))
-  if (any(attrition$attrition > 0.9)) {
+  riskDifference$outcomeCounts <- getOutcomeCounts(population, "cox")
+  riskDifference$attritionAtTimePoint <- computeAttritionAtTimePoint(
+    population = population,
+    timePoint = computeRiskDifferenceArgs$timePoint
+  )
+  if (any(riskDifference$attritionAtTimePoint$attrition > 0.9)) {
     warning(sprintf("Attrition is %s. More than 90 percent attrition can lead to unstable risk difference estimates",
-            paste(sprintf("%0.1f%%", 100 * attrition$attrition), collapse = " and ")))
+                    paste(sprintf("%0.1f%%", 100 * riskDifference$attritionAtTimePoint$attrition), collapse = " and ")))
   }
-  riskDifference$attritionAtTimePoint <- attrition
 
   # For now: Use timeEL package to compute risk difference and confidence intervals (using Empirical Likelihood).
   # Not yet supporting stratification or weighting and likelihood profiling.
@@ -78,4 +68,50 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
   message(paste("Computing risk difference took", signif(delta, 3), attr(delta, "units")))
   ParallelLogger::logDebug("Risk difference status is: ", riskDifference$status)
   return(riskDifference)
+}
+
+computeAttritionAtTimePoint <- function(population, timePoint) {
+  attrition <- inner_join(
+    population |>
+      group_by(.data$treatment) |>
+      summarise(exposuresAtStart = n(),
+                subjectsAtStart = length(unique(personSeqId))),
+    population |>
+      filter(.data$survivalTime >= timePoint) |>
+      group_by(.data$treatment) |>
+      summarise(exposuresAtTimePoint = n(),
+                subjectsAtTimePoint = length(unique(personSeqId))),
+    by = join_by("treatment")
+  ) |>
+    mutate(attrition = 1 - (.data$exposuresAtTimePoint / .data$exposuresAtStart))
+  return(attrition)
+}
+
+#' @export
+coef.RiskDifference <- function(object, ...) {
+  return(object$estimate$rd)
+}
+
+#' @export
+confint.RiskDifference <- function(object, parm, level = 0.95, ...) {
+  missing(parm) # suppresses R CMD check note
+  if (level != 0.95) {
+    stop("Only supporting 95% confidence interval")
+  }
+  return(c(
+    object$estimate$lb95,
+    object$estimate$ub95
+  ))
+}
+
+#' @export
+print.RiskDifference <- function(x, ...) {
+  d <- x$estimate
+  if (!is.null(d)) {
+    rns <- "treatment"
+    output <- data.frame(d$rd, d$lb95, d$ub95, d$seRd)
+    colnames(output) <- c("Estimate", "lower .95", "upper .95", "se")
+    rownames(output) <- rns
+    printCoefmat(output)
+  }
 }

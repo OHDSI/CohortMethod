@@ -608,7 +608,9 @@ runCmAnalyses <- function(connectionDetails,
         list(analysisId = refRow$analysisId)
       )[[1]]
       args <- analysisRow$fitOutcomeModelArgs
-      args$control$threads <- multiThreadingSettings$outcomeCvThreads
+      if (is(args, "FitOutcomeModelArgs")) {
+        args$control$threads <- multiThreadingSettings$outcomeCvThreads
+      }
       if (refRow$strataFile != "") {
         studyPopFile <- refRow$strataFile
       } else if (refRow$psFile != "") {
@@ -646,7 +648,9 @@ runCmAnalyses <- function(connectionDetails,
         cmAnalysesSpecifications$cmAnalysisList,
         list(analysisId = refRow$analysisId)
       )[[1]]
-      analysisRow$fitOutcomeModelArgs$control$threads <- multiThreadingSettings$outcomeCvThreads
+      if (is(args, "FitOutcomeModelArgs")) {
+        analysisRow$fitOutcomeModelArgs$control$threads <- multiThreadingSettings$outcomeCvThreads
+      }
       prefilteredCovariatesFile <- refRow$prefilteredCovariatesFile
       if (prefilteredCovariatesFile != "") {
         prefilteredCovariatesFile <- file.path(outputFolder, refRow$prefilteredCovariatesFile)
@@ -1312,7 +1316,7 @@ createReferenceTable <- function(cmAnalysisList,
   preFilterArgJsons <- lapply(
     cmAnalysisList,
     function(x) {
-      if (!"fitOutcomeModelArgs" %in% names(x)) {
+      if (!"fitOutcomeModelArgs" %in% names(x) || !is(x$fitOutcomeModelArgS, "FitOutcomeModelArgs")) {
       return("")
       } else if ((x$fitOutcomeModelArgs$useCovariates &
                  (length(x$fitOutcomeModelArgs$excludeCovariateIds) != 0 |

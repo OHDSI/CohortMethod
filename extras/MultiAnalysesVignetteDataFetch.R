@@ -334,12 +334,52 @@ cmAnalysis6 <- createCmAnalysis(
   computeCovariateBalanceArgs = computeCovBalArgs,
   fitOutcomeModelArgs = fitOutcomeModelArgs5
 )
+
+matchOnPsArgs2 <- createMatchOnPsArgs(
+  maxRatio = 1
+)
+
+fitOutcomeModelArgs3 <- createComputeRiskDifferenceArgs(
+  timePoint = 365
+)
+
+cmAnalysis7 <- createCmAnalysis(
+  analysisId = 7,
+  description = "Risk difference at 365",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  matchOnPsArgs = matchOnPsArgs2,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs3
+)
+
+fitOutcomeModelArgs4 <- createComputeRiskDifferenceArgs(
+  timePoint = 180
+)
+
+cmAnalysis8 <- createCmAnalysis(
+  analysisId = 8,
+  description = "Risk difference at 180",
+  getDbCohortMethodDataArgs = getDbCmDataArgs,
+  createStudyPopulationArgs = createStudyPopArgs,
+  createPsArgs = createPsArgs,
+  matchOnPsArgs = matchOnPsArgs2,
+  computeSharedCovariateBalanceArgs = computeSharedCovBalArgs,
+  computeCovariateBalanceArgs = computeCovBalArgs,
+  fitOutcomeModelArgs = fitOutcomeModelArgs4
+)
+
+
 cmAnalysisList <- list(cmAnalysis1,
                        cmAnalysis2,
                        cmAnalysis3,
                        cmAnalysis4,
                        cmAnalysis5,
-                       cmAnalysis6)
+                       cmAnalysis6,
+                       cmAnalysis7,
+                       cmAnalysis8)
 
 saveCmAnalysisList(cmAnalysisList, file.path(folder, "cmAnalysisList.json"))
 saveTargetComparatorOutcomesList(targetComparatorOutcomesList, file.path(folder, "targetComparatorOutcomesList.json"))
