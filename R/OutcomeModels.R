@@ -147,11 +147,17 @@ fitOutcomeModel <- function(population,
           select("rowId", covariateValue = "treatment") |>
           mutate(covariateId = treatmentVarId)
 
-        covariateData <- Andromeda::andromeda(
-          covariates = treatmentCovariate,
-          covariateRef = cohortMethodData$covariateRef
-        )
-        on.exit(close(covariateData))
+        if (length(fitOutcomeModelArgs$interactionCovariateIds) == 0) {
+          # Treatment is the only covariate, so keep it in memory. Creating an Andromeda here opens a
+          # new database connection for every outcome model, which dominates the fitting time.
+          covariateData <- list(covariates = treatmentCovariate)
+        } else {
+          covariateData <- Andromeda::andromeda(
+            covariates = treatmentCovariate,
+            covariateRef = cohortMethodData$covariateRef
+          )
+          on.exit(close(covariateData))
+        }
         prior <- createPrior("none")
       }
 
@@ -247,7 +253,9 @@ fitOutcomeModel <- function(population,
         # Free as much memory as possible before we load data into Andromeda:
         rm(population)
         rm(informativePopulation)
-        Andromeda::flushAndromeda(covariateData)
+        if (Andromeda::isAndromeda(covariateData)) {
+          Andromeda::flushAndromeda(covariateData)
+        }
 
         cyclopsData <- Cyclops::convertToCyclopsData(
           outcomes = outcomes,
