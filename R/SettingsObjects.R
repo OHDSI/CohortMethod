@@ -779,7 +779,7 @@ ComputeCovariateBalanceArgs <- R6Class(
 #'                              See [Cyclops::createControl()].
 #'
 #' @return
-#' An object of type `ComputeCovariateBalanceArgs`.
+#' An object of type `FitOutcomeModelArgs`.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "cox",

@@ -76,7 +76,7 @@ agree up to rounding. \code{timeOrigin = "cohort start"} needs \code{"efficient"
 See \code{\link[Cyclops:createControl]{Cyclops::createControl()}}.}
 }
 \value{
-An object of type \code{ComputeCovariateBalanceArgs}.
+An object of type \code{FitOutcomeModelArgs}.
 }
 \description{
 Create a parameter object for the function \code{\link[=fitOutcomeModel]{fitOutcomeModel()}}
