@@ -115,6 +115,18 @@ test_that("FitOutcomeModelArgs serialization and deserialization", {
   settings <- createFitOutcomeModelArgs()
   settings2 <- FitOutcomeModelArgs$new(json = settings$toJson())
   expect_equal(settings, settings2, tolerance = 0.0001)
+
+  settings <- createFitOutcomeModelArgs(timeOrigin = "cohort start")
+  settings2 <- FitOutcomeModelArgs$new(json = settings$toJson())
+  expect_equal(settings, settings2, tolerance = 0.0001)
+
+  # Settings saved before timeOrigin and coxFitter existed load with the defaults
+  older <- jsonlite::fromJSON(createFitOutcomeModelArgs()$toJson(), simplifyDataFrame = FALSE)
+  older$timeOrigin <- NULL
+  older$coxFitter <- NULL
+  settings2 <- FitOutcomeModelArgs$new(json = jsonlite::toJSON(older, auto_unbox = TRUE, null = "null"))
+  expect_equal(settings2$timeOrigin, "risk window start")
+  expect_equal(settings2$coxFitter, "efficient")
 })
 
 test_that("CmAnalysis serialization and deserialization", {
