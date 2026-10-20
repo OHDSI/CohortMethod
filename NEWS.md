@@ -1,3 +1,15 @@
+CohortMethod (development version)
+==================================
+
+Changes:
+
+1. Adding `timeOrigin` argument to `createFitOutcomeModelArgs()`. With `timeOrigin = "cohort start"`, Cox models count time from cohort start and each subject enters the risk set when their risk window opens (delayed entry). Estimates differ from the default (`"risk window start"`) only when risk windows open at different times after cohort start, e.g. with `startAnchor = "cohort end"`.
+
+2. Adding `coxFitter` argument to `createFitOutcomeModelArgs()`. Cox models use the efficient engine of Cyclops 3.8 by default; `coxFitter = "legacy"` reproduces results of earlier Cyclops versions.
+
+3. Requiring Cyclops 3.8.0.
+
+
 CohortMethod 6.0.3
 ==================
 
