@@ -15,7 +15,7 @@ computeMdrrFromAggregateStats(
 )
 }
 \arguments{
-\item{pTarget}{The fraction of subjects in the target group. Required for Cox models.}
+\item{pTarget}{The fraction of subjects in the target group.}
 
 \item{totalEvents}{The total number of subjects with the outcome (both groups).}
 

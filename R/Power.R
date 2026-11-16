@@ -85,7 +85,7 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
 #' available. This is the computation used by [computeMdrr()]. For Cox models the formula by
 #' Schoenfeld (1983) is used, and for logistic models Wald's z-test is used.
 #'
-#' @param pTarget        The fraction of subjects in the target group. Required for Cox models.
+#' @param pTarget        The fraction of subjects in the target group.
 #' @param totalEvents    The total number of subjects with the outcome (both groups).
 #' @param totalSubjects  The total number of subjects (both groups). Required for logistic models.
 #' @param alpha          Type I error.
@@ -131,12 +131,14 @@ computeMdrrFromAggregateStats <- function(pTarget, totalEvents, totalSubjects, a
     pComparator <- 1 - pTarget
     mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2 / (totalEvents * pTarget * pComparator)))
   } else if (modelType == "logistic") {
+    checkmate::assertNumber(pTarget, lower = 0, upper = 1)
     checkmate::assertCount(totalSubjects)
     if (totalSubjects < totalEvents) {
       stop("totalSubjects (", totalSubjects, ") must be at least totalEvents (", totalEvents, ")")
     }
     pBaseline <- totalEvents / totalSubjects
-    se <- sqrt((1 / (totalEvents * (1 - pBaseline))))
+    # Wald SE of the log odds ratio under the null, with treatment allocation pTarget:
+    se <- sqrt((1 / (totalEvents * (1 - pBaseline) * pTarget * (1 - pTarget))))
     fun <- function(z) {
       pnorm(z - z1MinAlpha) - power
     }

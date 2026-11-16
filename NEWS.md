@@ -5,6 +5,10 @@ Changes:
 
 1. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments.
 
+Bugfixes:
+
+1. The MDRR for logistic outcome models (in `computeMdrr()`, `computeMdrrFromAggregateStats()` and the `mdrr` of `getResultsSummary()`) left the treatment allocation out of the standard error of the log odds ratio, so the MDRR was too small and the MDRR diagnostic passed too easily. It now uses the Wald standard error under the null, `sqrt(1 / (totalEvents * (1 - pBaseline) * pTarget * (1 - pTarget)))`, and requires `pTarget`.
+
 
 CohortMethod 6.0.3
 ==================
