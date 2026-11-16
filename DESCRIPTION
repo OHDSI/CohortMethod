@@ -65,7 +65,7 @@ Suggests:
 	markdown,
 	PSweight
 Remotes:
-	ohdsi/Cyclops@left-censored
+	ohdsi/Cyclops@develop
 SystemRequirements: Java
 LinkingTo: Rcpp
 NeedsCompilation: yes
