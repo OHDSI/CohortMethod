@@ -376,4 +376,11 @@ test_that("Exported attribute conversion helpers round-trip covariate settings",
   expect_equal(converted[[1]]$attr_class, "covariateSettings")
   expect_equal(class(converted[[1]]), "list")
   expect_equal(CohortMethod::.convertMemberToAttr(converted), covariateSettings)
+
+  # Through JSON, as settings objects do. Empty vectors such as includedCovariateIds come back as
+  # empty lists, which .convertEmptyListToLogical() restores:
+  json <- jsonlite::toJSON(converted, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  restored <- CohortMethod::.convertMemberToAttr(jsonlite::fromJSON(json, simplifyDataFrame = FALSE))
+  expect_type(restored[[1]]$includedCovariateIds, "list")
+  expect_equal(CohortMethod::.convertEmptyListToLogical(restored), covariateSettings)
 })

@@ -156,9 +156,10 @@ AbstractSerializableSettings <- R6Class(
 #'
 #' @description
 #' Prepares an object, such as a FeatureExtraction `covariateSettings` object, for conversion to
-#' JSON. Attributes other than names (including the class) become list members with the prefix
-#' `attr_`, and functions are serialized. This is applied recursively. Use
-#' [.convertMemberToAttr()] to restore the object.
+#' JSON. Attributes other than names (including the class) of lists, data frames and other objects
+#' built on lists become list members with the prefix `attr_`, and functions are serialized. This is
+#' applied recursively. Attributes of atomic vectors (for example of a `Date` or a `factor`) are not
+#' preserved. Use [.convertMemberToAttr()] to restore the object.
 #'
 #' @param object  The object to convert.
 #'
@@ -167,8 +168,10 @@ AbstractSerializableSettings <- R6Class(
 #'
 #' @examples
 #' covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE)
-#' converted <- .convertAttrToMember(covariateSettings)
-#' restored <- .convertMemberToAttr(converted)
+#' json <- jsonlite::toJSON(.convertAttrToMember(covariateSettings), auto_unbox = TRUE)
+#' restored <- .convertEmptyListToLogical(
+#'   .convertMemberToAttr(jsonlite::fromJSON(json, simplifyDataFrame = FALSE))
+#' )
 #'
 #' @export
 .convertAttrToMember <- function(object) {
@@ -200,7 +203,9 @@ AbstractSerializableSettings <- R6Class(
 #'
 #' @description
 #' The inverse of [.convertAttrToMember()]: list members with the prefix `attr_` become attributes
-#' (including the class) and serialized functions are restored. This is applied recursively.
+#' (including the class) and serialized functions are restored. This is applied recursively. JSON
+#' turns empty vectors into empty lists; for FeatureExtraction `covariateSettings`, also apply
+#' [.convertEmptyListToLogical()] to the result.
 #'
 #' @param object  The object to convert, for example obtained from JSON with
 #'                `jsonlite::fromJSON(json, simplifyDataFrame = FALSE)`.
@@ -238,6 +243,20 @@ AbstractSerializableSettings <- R6Class(
   return(object)
 }
 
+#' Convert empty lists to empty logical vectors after deserialization
+#'
+#' @description
+#' JSON does not distinguish empty vectors from empty lists, so empty vectors come back from
+#' `jsonlite::fromJSON()` as empty lists. FeatureExtraction `covariateSettings` use empty logical
+#' vectors (for example for `includedCovariateIds`), so apply this after [.convertMemberToAttr()]
+#' to restore them. This is applied recursively.
+#'
+#' @param object  The object to convert.
+#'
+#' @return
+#' The object with every empty list replaced by `logical(0)`.
+#'
+#' @export
 .convertEmptyListToLogical <- function(object) {
   # To mimic FeatureExtraction covariate settings behavior: empty vectors are logical
   if (is.list(object)) {

@@ -15,5 +15,7 @@ The restored object.
 }
 \description{
 The inverse of \code{\link[=.convertAttrToMember]{.convertAttrToMember()}}: list members with the prefix \code{attr_} become attributes
-(including the class) and serialized functions are restored. This is applied recursively.
+(including the class) and serialized functions are restored. This is applied recursively. JSON
+turns empty vectors into empty lists; for FeatureExtraction \code{covariateSettings}, also apply
+\code{\link[=.convertEmptyListToLogical]{.convertEmptyListToLogical()}} to the result.
 }
