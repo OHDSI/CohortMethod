@@ -16,3 +16,10 @@ test_that("minCellValue handles bad inputs", {
   checkmate::expect_data_frame(res)
   expect_true(all(is.na(res$a)))
 })
+
+test_that("Exported enforceMinCellValue handles per-row minimum values", {
+  x <- data.frame(a = c(0.01, 0.02, 0.5, 0))
+  res <- CohortMethod::enforceMinCellValue(x, "a", c(0.05, 0.01, 0.6, 0.1), silent = TRUE)
+  expect_equal(res$a, c(-0.05, 0.02, -0.6, 0))
+  expect_error(CohortMethod::enforceMinCellValue(x, "b", 1), "fieldName")
+})

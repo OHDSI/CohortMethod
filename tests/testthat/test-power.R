@@ -32,3 +32,24 @@ test_that("Logistic regression power calculations", {
 
   expect_equal(power_achieved, power, tolerance = 1e-3)
 })
+
+test_that("Exported computeMdrrFromAggregateStats matches computeMdrr", {
+  set.seed(123)
+  population <- data.frame(
+    personSeqId = 1:1000,
+    treatment = rbinom(1000, 1, 0.3),
+    outcomeCount = rbinom(1000, 1, 0.1),
+    timeAtRisk = 365
+  )
+  for (modelType in c("cox", "logistic")) {
+    mdrr <- CohortMethod::computeMdrrFromAggregateStats(
+      pTarget = mean(population$treatment),
+      totalEvents = sum(population$outcomeCount != 0),
+      totalSubjects = nrow(population),
+      modelType = modelType
+    )
+    expect_equal(mdrr, computeMdrr(population, modelType = modelType)$mdrr)
+  }
+  expect_equal(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 0, totalSubjects = 100), Inf)
+  expect_error(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 10, totalSubjects = 100, modelType = "poisson"))
+})

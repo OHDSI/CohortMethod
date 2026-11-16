@@ -203,7 +203,36 @@ writeToCsv <- function(data, fileName, append = FALSE) {
   readr::write_csv(x = data, file = fileName, append = append)
 }
 
+#' Censor small values in a data frame column
+#'
+#' @details
+#' Censors values that are below a minimum, for example to avoid sharing small cell counts. Non-zero
+#' values below the minimum are replaced by the negative of the minimum (so -5 means "fewer than
+#' 5"), the convention used in the CohortMethod results data model. Zeros and `NA` values are kept.
+#' If all `minValues` are `NA`, the whole column is set to `NA`.
+#'
+#' @param data        A data frame.
+#' @param fieldName   The name of the column to censor.
+#' @param minValues   The minimum value, either a single number or a vector with one value per row
+#'                    of `data` (for example a minimum count divided by a per-row denominator when
+#'                    censoring proportions).
+#' @param silent      If FALSE, a message reports how many values were censored.
+#'
+#' @return
+#' The data frame `data` with the column `fieldName` censored.
+#'
+#' @examples
+#' enforceMinCellValue(data.frame(count = c(0, 3, 10, NA)), "count", 5)
+#'
+#' @export
 enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(data, add = errorMessages)
+  checkmate::assertChoice(fieldName, colnames(data), add = errorMessages)
+  checkmate::assertNumeric(minValues, add = errorMessages)
+  checkmate::assertLogical(silent, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   values <- pull(data, fieldName)
   toCensor <- !is.na(values) & (values < minValues) & (values != 0)
   if (!silent) {

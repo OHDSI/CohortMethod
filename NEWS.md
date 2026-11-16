@@ -1,3 +1,11 @@
+CohortMethod 6.1.0
+==================
+
+Changes:
+
+1. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments.
+
+
 CohortMethod 6.0.3
 ==================
 
