@@ -1130,4 +1130,35 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
 
   })
+
+  test_that("Cohort-based covariates default to the exposure cohort table", {
+    # Regression test: the covariate settings modified by handleCohortCovariateBuilders() used to be
+    # ignored, so a cohort-based covariate without covariateCohortTable was not taken from the
+    # exposure table.
+    covariateSettings <- FeatureExtraction::createCohortBasedCovariateSettings(
+      analysisId = 999,
+      covariateCohorts = data.frame(cohortId = 4, cohortName = "NSAIDs"),
+      startDay = -365,
+      endDay = 0
+    )
+    cohortMethodData <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = 3,
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        removeDuplicateSubjects = "keep all",
+        covariateSettings = covariateSettings
+      )
+    )
+    on.exit(close(cohortMethodData))
+    covariateCount <- cohortMethodData$covariates |>
+      filter(.data$covariateId == 4999) |>
+      count() |>
+      pull()
+    expect_gt(covariateCount, 0)
+  })
 }

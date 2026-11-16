@@ -1,3 +1,13 @@
+CohortMethod 6.1.0
+==================
+
+Bugfixes:
+
+1. Fixed `excludeCovariateIds` of `createFitOutcomeModelArgs()` being ignored (the exclusion filter used `includeCovariateIds`, so combining both arguments removed all covariates).
+
+2. Fixed cohort-based covariate settings without a `covariateCohortTable` not defaulting to the exposure cohort table in `getDbCohortMethodData()`.
+
+
 CohortMethod 6.0.3
 ==================
 
