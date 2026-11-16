@@ -85,9 +85,9 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
 #' available. This is the computation used by [computeMdrr()]. For Cox models the formula by
 #' Schoenfeld (1983) is used, and for logistic models Wald's z-test is used.
 #'
-#' @param pTarget        The fraction of subjects in the target group. Only used for Cox models.
+#' @param pTarget        The fraction of subjects in the target group. Required for Cox models.
 #' @param totalEvents    The total number of subjects with the outcome (both groups).
-#' @param totalSubjects  The total number of subjects (both groups). Only used for logistic models.
+#' @param totalSubjects  The total number of subjects (both groups). Required for logistic models.
 #' @param alpha          Type I error.
 #' @param power          1 - beta, where beta is the type II error.
 #' @param twoSided       Consider a two-sided test?
@@ -99,7 +99,7 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
 #' 39(3), 499-503
 #'
 #' @return
-#' The MDRR, a single number. `Inf` when `totalEvents` is 0.
+#' The MDRR, a single number. `Inf` when `totalEvents` is 0 (for any `modelType`).
 #'
 #' @examples
 #' computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 100, totalSubjects = 1000)
@@ -108,12 +108,13 @@ computeMdrr <- function(population, alpha = 0.05, power = 0.8, twoSided = TRUE, 
 computeMdrrFromAggregateStats <- function(pTarget, totalEvents, totalSubjects, alpha = 0.05, power = 0.8, twoSided = TRUE, modelType = "cox") {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertNumber(pTarget, lower = 0, upper = 1, na.ok = TRUE, add = errorMessages)
-  checkmate::assertNumber(totalEvents, lower = 0, add = errorMessages)
-  checkmate::assertNumber(totalSubjects, lower = 0, na.ok = TRUE, add = errorMessages)
+  checkmate::assertCount(totalEvents, add = errorMessages)
+  checkmate::assertCount(totalSubjects, na.ok = TRUE, add = errorMessages)
   checkmate::assertNumber(alpha, lower = 0, upper = 1, add = errorMessages)
   checkmate::assertNumber(power, lower = 0, upper = 1, add = errorMessages)
   checkmate::assertLogical(twoSided, len = 1, add = errorMessages)
-  checkmate::assertChoice(modelType, c("cox", "logistic"), add = errorMessages)
+  # Other model types are checked after the zero-event case, which returns Inf for any model type:
+  checkmate::assertString(modelType, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
   if (totalEvents == 0) {
@@ -125,10 +126,15 @@ computeMdrrFromAggregateStats <- function(pTarget, totalEvents, totalSubjects, a
     z1MinAlpha <- qnorm(1 - alpha)
   }
   if (modelType == "cox") {
+    checkmate::assertNumber(pTarget, lower = 0, upper = 1)
     zBeta <- -qnorm(1 - power)
     pComparator <- 1 - pTarget
     mdrr <- exp(sqrt((zBeta + z1MinAlpha)^2 / (totalEvents * pTarget * pComparator)))
   } else if (modelType == "logistic") {
+    checkmate::assertCount(totalSubjects)
+    if (totalSubjects < totalEvents) {
+      stop("totalSubjects (", totalSubjects, ") must be at least totalEvents (", totalEvents, ")")
+    }
     pBaseline <- totalEvents / totalSubjects
     se <- sqrt((1 / (totalEvents * (1 - pBaseline))))
     fun <- function(z) {

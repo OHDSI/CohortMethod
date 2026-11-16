@@ -15,11 +15,11 @@ computeMdrrFromAggregateStats(
 )
 }
 \arguments{
-\item{pTarget}{The fraction of subjects in the target group. Only used for Cox models.}
+\item{pTarget}{The fraction of subjects in the target group. Required for Cox models.}
 
 \item{totalEvents}{The total number of subjects with the outcome (both groups).}
 
-\item{totalSubjects}{The total number of subjects (both groups). Only used for logistic models.}
+\item{totalSubjects}{The total number of subjects (both groups). Required for logistic models.}
 
 \item{alpha}{Type I error.}
 
@@ -31,7 +31,7 @@ computeMdrrFromAggregateStats(
 "cox" or "logistic".}
 }
 \value{
-The MDRR, a single number. \code{Inf} when \code{totalEvents} is 0.
+The MDRR, a single number. \code{Inf} when \code{totalEvents} is 0 (for any \code{modelType}).
 }
 \description{
 Compute the minimum detectable relative risk from aggregate statistics

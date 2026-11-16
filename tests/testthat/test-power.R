@@ -53,3 +53,13 @@ test_that("Exported computeMdrrFromAggregateStats matches computeMdrr", {
   expect_equal(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 0, totalSubjects = 100), Inf)
   expect_error(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 10, totalSubjects = 100, modelType = "poisson"))
 })
+
+test_that("computeMdrrFromAggregateStats argument checks", {
+  # Zero events give Inf for any model type, as before the function was exported (runCmAnalyses
+  # passes the outcome model type, which can be "poisson"):
+  expect_equal(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 0, totalSubjects = 100, modelType = "poisson"), Inf)
+  expect_error(CohortMethod::computeMdrrFromAggregateStats(pTarget = NA, totalEvents = 5, totalSubjects = 10), "pTarget")
+  expect_error(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 5, totalSubjects = NA, modelType = "logistic"), "totalSubjects")
+  expect_error(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 10, totalSubjects = 5, modelType = "logistic"), "at least totalEvents")
+  expect_error(CohortMethod::computeMdrrFromAggregateStats(pTarget = 0.5, totalEvents = 5.5, totalSubjects = 10), "totalEvents")
+})

@@ -209,7 +209,8 @@ writeToCsv <- function(data, fileName, append = FALSE) {
 #' Censors values that are below a minimum, for example to avoid sharing small cell counts. Non-zero
 #' values below the minimum are replaced by the negative of the minimum (so -5 means "fewer than
 #' 5"), the convention used in the CohortMethod results data model. Zeros and `NA` values are kept.
-#' If all `minValues` are `NA`, the whole column is set to `NA`.
+#' If all `minValues` are `NA`, the whole column is set to `NA`. Otherwise, non-zero values whose
+#' minimum is `NA` are set to `NA`.
 #'
 #' @param data        A data frame.
 #' @param fieldName   The name of the column to censor.
@@ -232,9 +233,21 @@ enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
   checkmate::assertNumeric(minValues, add = errorMessages)
   checkmate::assertLogical(silent, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
+  if (!length(minValues) %in% c(1, nrow(data))) {
+    stop("minValues must have length 1 or one value per row of data (", nrow(data), "), not ", length(minValues))
+  }
+  if (nrow(data) == 0) {
+    return(data)
+  }
 
   values <- pull(data, fieldName)
   toCensor <- !is.na(values) & (values < minValues) & (values != 0)
+  unknownMin <- is.na(toCensor)
+  toCensor[unknownMin] <- FALSE
+  if (is.integer(values) && !checkmate::testIntegerish(minValues)) {
+    # Tibbles do not convert integer columns to double on assignment the way data frames do:
+    data[[fieldName]] <- as.numeric(values)
+  }
   if (!silent) {
     percent <- round(100 * sum(toCensor) / nrow(data), 1)
     message(
@@ -248,12 +261,15 @@ enforceMinCellValue <- function(data, fieldName, minValues, silent = FALSE) {
     )
   }
 
-  if (all(is.na(toCensor)) || all(is.na(minValues))) {
+  if (all(unknownMin) || all(is.na(minValues))) {
     data[, fieldName] <- NA
-  } else if (length(minValues) == 1) {
-    data[toCensor, fieldName] <- -minValues
   } else {
-    data[toCensor, fieldName] <- -minValues[toCensor]
+    if (length(minValues) == 1) {
+      data[toCensor, fieldName] <- -minValues
+    } else {
+      data[toCensor, fieldName] <- -minValues[toCensor]
+    }
+    data[unknownMin, fieldName] <- NA
   }
   return(data)
 }

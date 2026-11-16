@@ -27,7 +27,8 @@ Censor small values in a data frame column
 Censors values that are below a minimum, for example to avoid sharing small cell counts. Non-zero
 values below the minimum are replaced by the negative of the minimum (so -5 means "fewer than
 5"), the convention used in the CohortMethod results data model. Zeros and \code{NA} values are kept.
-If all \code{minValues} are \code{NA}, the whole column is set to \code{NA}.
+If all \code{minValues} are \code{NA}, the whole column is set to \code{NA}. Otherwise, non-zero values whose
+minimum is \code{NA} are set to \code{NA}.
 }
 \examples{
 enforceMinCellValue(data.frame(count = c(0, 3, 10, NA)), "count", 5)
