@@ -1,3 +1,11 @@
+CohortMethod 6.1.0
+==================
+
+Changes:
+
+1. Exported `AbstractSerializableSettings`, the base class of the settings objects, and the helpers `.convertAttrToMember()` and `.convertMemberToAttr()`, so other packages can define settings objects that serialize to JSON in the same way.
+
+
 CohortMethod 6.0.3
 ==================
 
