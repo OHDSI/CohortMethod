@@ -44,3 +44,37 @@ test_that("No error when plotting KM curves and one cohort is empty", {
   plot <- plotKaplanMeier(population)
   expect_s3_class(plot, "gtable")
 })
+
+test_that("Plotting a precomputed Kaplan-Meier curve", {
+  set.seed(123)
+  population <- tibble(
+    rowId = 1:200,
+    treatment = rep(c(1, 0), 100),
+    outcomeCount = rbinom(200, 1, 0.3),
+    survivalTime = sample.int(500, 200, replace = TRUE)
+  )
+  kaplanMeier <- prepareKaplanMeier(population)
+  plot1 <- plotKaplanMeier(population, dataTable = FALSE)
+  plot2 <- plotKaplanMeier(kaplanMeier = kaplanMeier, dataTable = FALSE)
+  expect_equal(plot2$data, plot1$data)
+
+  plot <- plotKaplanMeier(kaplanMeier = kaplanMeier, censorMarks = TRUE)
+  expect_s3_class(plot, "gtable")
+
+  # A weighted curve, as could be computed by another package:
+  weight <- runif(200)
+  sv <- survfit(Surv(survivalTime, outcomeCount) ~ treatment, population, weights = weight)
+  weightedKm <- tibble(
+    time = sv$time,
+    treatment = rep(c(0, 1), sv$strata),
+    survival = sv$surv,
+    lower = sv$lower,
+    upper = sv$upper,
+    nAtRisk = NA
+  )
+  plot <- plotKaplanMeier(kaplanMeier = weightedKm, dataTable = FALSE)
+  expect_s3_class(plot, "ggplot")
+
+  expect_error(plotKaplanMeier(kaplanMeier = weightedKm, censorMarks = TRUE), "nCensor")
+  expect_warning(plotKaplanMeier(kaplanMeier = weightedKm[0, ]), "empty")
+})
