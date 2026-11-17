@@ -1,9 +1,9 @@
-CohortMethod 6.1.0
-==================
+CohortMethod (development version)
+==================================
 
 Changes:
 
-1. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments.
+1. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments. Inputs that used to return `NA` or `NaN`, or were silently recycled, now stop with an error: in `computeMdrrFromAggregateStats()`, a missing `pTarget`, non-integer counts, and for logistic models a missing `totalSubjects` or one smaller than `totalEvents`; in `enforceMinCellValue()`, a `minValues` whose length is neither 1 nor the number of rows. With zero events the MDRR is still `Inf` for any model type.
 
 Bugfixes:
 
