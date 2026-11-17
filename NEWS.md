@@ -5,6 +5,10 @@ Changes:
 
 1. Added the `kaplanMeier` argument to `plotKaplanMeier()`, to plot a precomputed (for example weighted) Kaplan-Meier curve instead of computing one from the population.
 
+Bugfixes:
+
+1. `plotKaplanMeier()` with `confidenceIntervals = FALSE` and `includeZero = FALSE` no longer drops the curves (the y-axis limits were computed from a column that does not exist).
+
 
 CohortMethod 6.0.3
 ==================

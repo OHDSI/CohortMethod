@@ -47,8 +47,10 @@
 #'                              `population`, for example a weighted curve. A data frame with one row
 #'                              per time point and treatment group, and columns `time` (in days),
 #'                              `treatment` (1 for target, 0 for comparator), `survival`, `lower`,
-#'                              `upper` (the confidence interval), and `nAtRisk`. Rows where `nAtRisk`
-#'                              is not `NA` define the x-axis breaks and the numbers at risk table. If
+#'                              `upper` (the confidence interval), and `nAtRisk`. Include a row at
+#'                              time 0 with survival 1 for each group, so the curves start there.
+#'                              Rows where `nAtRisk` is not `NA` define the x-axis breaks and the
+#'                              numbers at risk table; if all are `NA`, default breaks are used. If
 #'                              `censorMarks = TRUE`, it also needs a column `nCensor` (the number
 #'                              censored at that time).
 #'
@@ -88,6 +90,7 @@ plotKaplanMeier <- function(population,
                            must.include = c("time", "treatment", "survival", "lower", "upper", "nAtRisk",
                                             if (isTRUE(censorMarks)) "nCensor"),
                            add = errorMessages)
+    checkmate::assertSubset(kaplanMeier$treatment, c(0, 1), add = errorMessages)
   }
   checkmate::assertLogical(censorMarks, len = 1, add = errorMessages)
   checkmate::assertLogical(confidenceIntervals, len = 1, add = errorMessages)
@@ -122,6 +125,9 @@ plotKaplanMeier <- function(population,
     filter(!is.na(.data$nAtRisk)) |>
     distinct(.data$time) |>
     pull()
+  if (length(xBreaks) == 0) {
+    xBreaks <- ggplot2::waiver()
+  }
 
   cutoff <- max(data$time)
   xLabel <- "Time in days"
@@ -133,7 +139,7 @@ plotKaplanMeier <- function(population,
   } else if (confidenceIntervals) {
     ylims <- c(min(data$lower), 1)
   } else {
-    ylims <- c(min(data$surv), 1)
+    ylims <- c(min(data$survival), 1)
   }
 
   plot <- ggplot2::ggplot(vizData, ggplot2::aes(

@@ -50,8 +50,10 @@ supported file formats.}
 \code{population}, for example a weighted curve. A data frame with one row
 per time point and treatment group, and columns \code{time} (in days),
 \code{treatment} (1 for target, 0 for comparator), \code{survival}, \code{lower},
-\code{upper} (the confidence interval), and \code{nAtRisk}. Rows where \code{nAtRisk}
-is not \code{NA} define the x-axis breaks and the numbers at risk table. If
+\code{upper} (the confidence interval), and \code{nAtRisk}. Include a row at
+time 0 with survival 1 for each group, so the curves start there.
+Rows where \code{nAtRisk} is not \code{NA} define the x-axis breaks and the
+numbers at risk table; if all are \code{NA}, default breaks are used. If
 \code{censorMarks = TRUE}, it also needs a column \code{nCensor} (the number
 censored at that time).}
 }
