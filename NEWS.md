@@ -1,5 +1,5 @@
-CohortMethod 6.1.0
-==================
+CohortMethod (development version)
+==================================
 
 Changes:
 
