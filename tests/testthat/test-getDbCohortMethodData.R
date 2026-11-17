@@ -1137,7 +1137,7 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     # exposure table.
     covariateSettings <- FeatureExtraction::createCohortBasedCovariateSettings(
       analysisId = 999,
-      covariateCohorts = data.frame(cohortId = 4, cohortName = "NSAIDs"),
+      covariateCohorts = data.frame(cohortId = c(1, 4), cohortName = c("Celecoxib", "NSAIDs")),
       startDay = -365,
       endDay = 0
     )
@@ -1155,10 +1155,13 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
       )
     )
     on.exit(close(cohortMethodData))
-    covariateCount <- cohortMethodData$covariates |>
-      filter(.data$covariateId == 4999) |>
-      count() |>
-      pull()
-    expect_gt(covariateCount, 0)
+    covariates <- cohortMethodData$covariates |>
+      collect()
+    cohorts <- cohortMethodData$cohorts |>
+      collect()
+    # Every row starts in an NSAID cohort on its index date, and only target rows (cohort 1) start
+    # in cohort 1 within the window:
+    expect_setequal(covariates$rowId[covariates$covariateId == 4999], cohorts$rowId)
+    expect_setequal(covariates$rowId[covariates$covariateId == 1999], cohorts$rowId[cohorts$treatment == 1])
   })
 }
