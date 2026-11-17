@@ -62,11 +62,15 @@ fitOutcomeModel <- function(population,
   if (fitOutcomeModelArgs$inversePtWeighting && is.null(population$iptw)) {
     stop("Requested inverse probability weighting, but no IPTW are provided. Use createPs to generate them")
   }
-  if (fitOutcomeModelArgs$varianceEstimator == "robust" &&
-      !"method" %in% names(formals(utils::getS3method("confint", "cyclopsFit")))) {
+  varianceEstimator <- fitOutcomeModelArgs$varianceEstimator
+  if (is.null(varianceEstimator)) {
+    # Settings object saved before varianceEstimator was added
+    varianceEstimator <- if (isTRUE(fitOutcomeModelArgs$bootstrapCi)) "bootstrap" else "profile"
+  }
+  if (varianceEstimator == "robust" && !cyclopsHasRobustVariance()) {
     stop("varianceEstimator = \"robust\" requires a version of Cyclops with confint(method = \"robust\")")
   }
-  ciMethod <- if (fitOutcomeModelArgs$varianceEstimator == "robust") "robust" else "profile"
+  ciMethod <- if (varianceEstimator == "robust") "robust" else "profile"
 
   start <- Sys.time()
   treatmentEstimate <- NULL
@@ -87,6 +91,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- fitOutcomeModelArgs$stratified
   outcomeModel$outcomeModelUseCovariates <- fitOutcomeModelArgs$useCovariates
   outcomeModel$inversePtWeighting <- fitOutcomeModelArgs$inversePtWeighting
+  outcomeModel$outcomeModelVarianceEstimator <- varianceEstimator
   if (fitOutcomeModelArgs$inversePtWeighting) {
     outcomeModel$targetEstimator <- outcomeModel$iptwEstimator
   }
@@ -106,8 +111,13 @@ fitOutcomeModel <- function(population,
       stratified = fitOutcomeModelArgs$stratified,
       inversePtWeighting = fitOutcomeModelArgs$inversePtWeighting,
       modelType = fitOutcomeModelArgs$modelType,
-      addSubjectId = fitOutcomeModelArgs$varianceEstimator != "profile"
+      addSubjectId = varianceEstimator == "robust" || (varianceEstimator == "bootstrap" && cyclopsResamplesSubjects())
     )
+    if (varianceEstimator == "bootstrap" && !cyclopsResamplesSubjects() &&
+        anyDuplicated(population$personSeqId[population$rowId %in% informativePopulation$rowId]) > 0) {
+      warning("This version of Cyclops cannot resample persons, so the bootstrap resamples rows (or strata), ",
+              "treating the rows of one person as independent")
+    }
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
       status <- "NO STRATA WITH BOTH TARGET, COMPARATOR, AS WELL AS THE OUTCOME. CANNOT FIT"
@@ -343,7 +353,7 @@ fitOutcomeModel <- function(population,
           status <- "OK"
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-          if (fitOutcomeModelArgs$varianceEstimator == "bootstrap") {
+          if (varianceEstimator == "bootstrap") {
             bootstrapSummary <- tryCatch(
               {
                 bootstrap <- Cyclops::runBootstrap(fit, fitOutcomeModelArgs$bootstrapReplicates)
@@ -511,6 +521,20 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   return(informativePopulation)
 }
 
+cyclopsHasRobustVariance <- function() {
+  return("method" %in% names(formals(utils::getS3method("confint", "cyclopsFit"))))
+}
+
+cyclopsResamplesSubjects <- function() {
+  return(tryCatch(
+    {
+      Cyclops::createControl(selectorType = "bySubject")
+      TRUE
+    },
+    error = function(e) FALSE
+  ))
+}
+
 modelTypeToCyclopsModelType <- function(modelType, stratified) {
   if (modelType == "logistic") {
     if (stratified) {
@@ -643,6 +667,7 @@ print.OutcomeModel <- function(x, ...) {
   message(paste("Stratified:", x$outcomeModelStratified))
   message(paste("Use covariates:", x$outcomeModelUseCovariates))
   message(paste("Use inverse probability of treatment weighting:", x$inversePtWeighting))
+  message(paste("Variance estimator:", x$outcomeModelVarianceEstimator))
   message(paste("Target estimand:", x$targetEstimator))
   message(paste("Status:", x$outcomeModelStatus))
   if (!is.null(x$outcomeModelPriorVariance) && !is.na(x$outcomeModelPriorVariance)) {

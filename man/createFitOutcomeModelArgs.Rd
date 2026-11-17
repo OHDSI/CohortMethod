@@ -9,7 +9,6 @@ createFitOutcomeModelArgs(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
-  varianceEstimator = "profile",
   bootstrapCi = FALSE,
   bootstrapReplicates = 200,
   interactionCovariateIds = c(),
@@ -19,7 +18,8 @@ createFitOutcomeModelArgs(
   profileBounds = c(log(0.1), log(10)),
   prior = createPrior(priorType = "laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, resetCoefficients = TRUE,
-    startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, noiseLevel = "quiet")
+    startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, noiseLevel = "quiet"),
+  varianceEstimator = "profile"
 )
 }
 \arguments{
@@ -34,11 +34,6 @@ scores)?}
 object in the outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)}
-
-\item{varianceEstimator}{How to compute the standard errors and confidence intervals of the estimates:
-"profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
-sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
-bootstrap that resamples persons). See details.}
 
 \item{bootstrapCi}{Compute confidence interval using bootstrapping instead of likelihood profiling?
 Kept for backward compatibility: \code{bootstrapCi = TRUE} is the same as
@@ -67,6 +62,11 @@ so is not used when \code{useCovariates = FALSE}.}
 \item{control}{The control object used to control the cross-validation used to
 determine the hyperparameters of the prior (if applicable). See
 \code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
+
+\item{varianceEstimator}{How to compute the standard errors and confidence intervals of the estimates:
+"profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
+sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
+bootstrap that resamples persons). See details.}
 }
 \value{
 An object of type \code{ComputeCovariateBalanceArgs}.
@@ -86,10 +86,13 @@ With inverse probability of treatment weighting, the likelihood-profile interval
 (\code{varianceEstimator = "robust"}) is the cluster-robust sandwich variance of \code{\link[Cyclops:vcov.cyclopsFit]{Cyclops::vcov.cyclopsFit()}} with
 \code{type = "robust"}, where all rows of a person (\code{personSeqId}) form one cluster. It has no small-sample
 correction, as \code{survival::coxph(..., cluster = )}. It ignores that the weights were estimated, which
-usually makes it conservative. It is available for unstratified logistic and Poisson models and for
-(stratified) Cox models, and requires a model without regularized covariates (use \code{prior = createPrior("none")}
-when \code{useCovariates = TRUE}). The bootstrap (\code{varianceEstimator = "bootstrap"}) uses
-\code{\link[Cyclops:runBootstrap]{Cyclops::runBootstrap()}}, which resamples persons (or strata, when the Cyclops selector type picks them), and
-does not re-estimate the propensity model. The likelihood profile (\code{profileGrid} or \code{profileBounds}) is that of
-the model likelihood, whatever the variance estimator.
+is usually conservative for ATE weights but need not be for ATT or overlap (ATO) weights. It is available for
+unstratified logistic and Poisson models and for (stratified) Cox models, and requires a model without
+regularized covariates (use \code{prior = createPrior("none")} when \code{useCovariates = TRUE}). The bootstrap
+(\code{varianceEstimator = "bootstrap"}) uses \code{\link[Cyclops:runBootstrap]{Cyclops::runBootstrap()}}, which resamples persons (or strata, when the
+Cyclops selector type picks them), and does not re-estimate the propensity model either. Resampling persons
+needs a Cyclops version with \code{selectorType = "bySubject"} (4.0.1 or later); with an older Cyclops the bootstrap
+resamples rows, with a warning when a person has several rows. The likelihood profile (\code{profileGrid} or
+\code{profileBounds}) and the log likelihood ratio (\code{llr}) of the estimates are those of the model likelihood,
+whatever the variance estimator.
 }

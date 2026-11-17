@@ -746,12 +746,15 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' (`varianceEstimator = "robust"`) is the cluster-robust sandwich variance of [Cyclops::vcov.cyclopsFit()] with
 #' `type = "robust"`, where all rows of a person (`personSeqId`) form one cluster. It has no small-sample
 #' correction, as `survival::coxph(..., cluster = )`. It ignores that the weights were estimated, which
-#' usually makes it conservative. It is available for unstratified logistic and Poisson models and for
-#' (stratified) Cox models, and requires a model without regularized covariates (use `prior = createPrior("none")`
-#' when `useCovariates = TRUE`). The bootstrap (`varianceEstimator = "bootstrap"`) uses
-#' [Cyclops::runBootstrap()], which resamples persons (or strata, when the Cyclops selector type picks them), and
-#' does not re-estimate the propensity model. The likelihood profile (`profileGrid` or `profileBounds`) is that of
-#' the model likelihood, whatever the variance estimator.
+#' is usually conservative for ATE weights but need not be for ATT or overlap (ATO) weights. It is available for
+#' unstratified logistic and Poisson models and for (stratified) Cox models, and requires a model without
+#' regularized covariates (use `prior = createPrior("none")` when `useCovariates = TRUE`). The bootstrap
+#' (`varianceEstimator = "bootstrap"`) uses [Cyclops::runBootstrap()], which resamples persons (or strata, when the
+#' Cyclops selector type picks them), and does not re-estimate the propensity model either. Resampling persons
+#' needs a Cyclops version with `selectorType = "bySubject"` (4.0.1 or later); with an older Cyclops the bootstrap
+#' resamples rows, with a warning when a person has several rows. The likelihood profile (`profileGrid` or
+#' `profileBounds`) and the log likelihood ratio (`llr`) of the estimates are those of the model likelihood,
+#' whatever the variance estimator.
 #'
 #' @param modelType             The type of outcome model that will be used. Possible values are
 #'                              "logistic", "poisson", or "cox".
@@ -761,10 +764,6 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
-#' @param varianceEstimator     How to compute the standard errors and confidence intervals of the estimates:
-#'                              "profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
-#'                              sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
-#'                              bootstrap that resamples persons). See details.
 #' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
 #'                              Kept for backward compatibility: `bootstrapCi = TRUE` is the same as
 #'                              `varianceEstimator = "bootstrap"`.
@@ -784,6 +783,10 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' @param control               The control object used to control the cross-validation used to
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              [Cyclops::createControl()] for details.
+#' @param varianceEstimator     How to compute the standard errors and confidence intervals of the estimates:
+#'                              "profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
+#'                              sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
+#'                              bootstrap that resamples persons). See details.
 #'
 #' @return
 #' An object of type `ComputeCovariateBalanceArgs`.
@@ -793,7 +796,6 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
-                                      varianceEstimator = "profile",
                                       bootstrapCi = FALSE,
                                       bootstrapReplicates = 200,
                                       interactionCovariateIds = c(),
@@ -809,7 +811,8 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                                               startingVariance = 0.01,
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
-                                                              noiseLevel = "quiet")) {
+                                                              noiseLevel = "quiet"),
+                                      varianceEstimator = "profile") {
   if (isTRUE(bootstrapCi) && identical(varianceEstimator, "profile")) {
     varianceEstimator <- "bootstrap"
   }

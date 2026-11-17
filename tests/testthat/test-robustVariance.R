@@ -89,6 +89,9 @@ test_that("Robust variance of main effects and interactions matches coxph(cluste
     outcomeId = 194133,
     createStudyPopulationArgs = createCreateStudyPopulationArgs(minDaysAtRisk = 1)
   )
+  # Pairs of rows share a person, so the clustering matters
+  studyPop$personSeqId <- (studyPop$personSeqId + 1) %/% 2
+  expect_gt(anyDuplicated(studyPop$personSeqId), 0)
   covariateId <- 8532001 # Female
   outcomeModel <- fitOutcomeModel(
     population = studyPop,
@@ -113,6 +116,25 @@ test_that("Robust variance of main effects and interactions matches coxph(cluste
   expect_equal(outcomeModel$outcomeModelmainEffectEstimates$seLogRr, unname(referenceSe[2]), tolerance = 1e-6)
   expect_equal(outcomeModel$outcomeModelInteractionEstimates$logRr, unname(coef(reference)[3]), tolerance = 1e-6)
   expect_equal(outcomeModel$outcomeModelInteractionEstimates$seLogRr, unname(referenceSe[3]), tolerance = 1e-6)
+
+  # Unregularized covariates in the outcome model
+  studyPop$y <- NULL
+  outcomeModel <- fitOutcomeModel(
+    population = studyPop,
+    cohortMethodData = cohortMethodData,
+    fitOutcomeModelArgs = createFitOutcomeModelArgs(
+      modelType = "cox",
+      useCovariates = TRUE,
+      includeCovariateIds = covariateId,
+      prior = createPrior("none"),
+      varianceEstimator = "robust"
+    )
+  )
+  expect_equal(outcomeModel$outcomeModelStatus, "OK")
+  reference <- coxph(Surv(survivalTime, outcomeCount > 0) ~ treatment + x, data = studyPop, cluster = personSeqId,
+                     ties = "breslow")
+  expect_equal(unname(outcomeModel$outcomeModelTreatmentEstimate$logRr), unname(coef(reference)[1]), tolerance = 1e-6)
+  expect_equal(outcomeModel$outcomeModelTreatmentEstimate$seLogRr, sqrt(reference$var[1, 1]), tolerance = 1e-6)
 })
 
 test_that("The bootstrap resamples persons", {
@@ -140,6 +162,20 @@ test_that("The bootstrap resamples persons", {
   reference <- getCyclopsBootstrap(population, subjects = TRUE)
   expect_equal(estimate$seLogRr, reference$std_err)
   expect_equal(c(estimate$logLb95, estimate$logUb95), c(reference$bpi_lower, reference$bpi_upper))
+  # Persons have several rows, so resampling rows gives a different answer
+  rowReference <- getCyclopsBootstrap(population, subjects = FALSE)
+  expect_gt(abs(estimate$seLogRr - rowReference$std_err), 1e-3)
+
+  # A Cyclops that cannot resample persons resamples rows, with a warning
+  local({
+    local_mocked_bindings(cyclopsResamplesSubjects = function() FALSE, .package = "CohortMethod")
+    expect_warning(
+      estimate <- fitEstimate(population, modelType = "cox", inversePtWeighting = TRUE,
+                              varianceEstimator = "bootstrap", bootstrapReplicates = 50),
+      "resamples rows"
+    )
+    expect_equal(estimate$seLogRr, rowReference$std_err)
+  })
 
   # With one row per person, the same as the bootstrap by row of earlier versions
   onePerPerson <- population[!duplicated(population$personSeqId), ]
@@ -148,6 +184,40 @@ test_that("The bootstrap resamples persons", {
   reference <- getCyclopsBootstrap(onePerPerson, subjects = FALSE)
   expect_equal(estimate$seLogRr, reference$std_err)
   expect_equal(c(estimate$logLb95, estimate$logUb95), c(reference$bpi_lower, reference$bpi_upper))
+})
+
+test_that("The bootstrap of stratified models", {
+  for (modelType in c("cox", "logistic")) {
+    estimate <- fitEstimate(population, modelType = modelType, stratified = TRUE, varianceEstimator = "bootstrap",
+                            bootstrapReplicates = 50)
+    expect_true(is.finite(estimate$seLogRr))
+    expect_lt(estimate$logLb95, estimate$logRr)
+    expect_gt(estimate$logUb95, estimate$logRr)
+  }
+})
+
+test_that("Outcome models record their variance estimator", {
+  skip_if_not(robustSupported, "Cyclops without vcov(type = \"robust\")")
+  outcomeModel <- fitOutcomeModel(population, fitOutcomeModelArgs = createFitOutcomeModelArgs(varianceEstimator = "robust"))
+  expect_equal(outcomeModel$outcomeModelVarianceEstimator, "robust")
+  expect_message(print(outcomeModel), "Variance estimator: robust")
+
+  # A settings object saved before varianceEstimator was added
+  for (bootstrapCi in c(FALSE, TRUE)) {
+    oldSettings <- createFitOutcomeModelArgs(bootstrapCi = bootstrapCi, bootstrapReplicates = 50)
+    oldSettings$varianceEstimator <- NULL
+    outcomeModel <- fitOutcomeModel(population, fitOutcomeModelArgs = oldSettings)
+    expect_equal(outcomeModel$outcomeModelStatus, "OK")
+    expect_equal(outcomeModel$outcomeModelVarianceEstimator, if (bootstrapCi) "bootstrap" else "profile")
+  }
+})
+
+test_that("The robust variance stops on a Cyclops without it", {
+  local_mocked_bindings(cyclopsHasRobustVariance = function() FALSE, .package = "CohortMethod")
+  expect_error(
+    fitOutcomeModel(population, fitOutcomeModelArgs = createFitOutcomeModelArgs(varianceEstimator = "robust")),
+    "requires a version of Cyclops"
+  )
 })
 
 test_that("varianceEstimator settings", {
@@ -161,6 +231,8 @@ test_that("varianceEstimator settings", {
   expect_true(settings$bootstrapCi)
   expect_error(createFitOutcomeModelArgs(bootstrapCi = TRUE, varianceEstimator = "robust"), "bootstrapCi")
   expect_error(createFitOutcomeModelArgs(varianceEstimator = "sandwich"), "varianceEstimator")
+  # Positional arguments keep their meaning: the 5th is bootstrapCi
+  expect_equal(createFitOutcomeModelArgs("cox", FALSE, FALSE, TRUE, TRUE)$varianceEstimator, "bootstrap")
 
   expect_error(createFitOutcomeModelArgs(modelType = "logistic", stratified = TRUE, varianceEstimator = "robust"),
                "stratified")
