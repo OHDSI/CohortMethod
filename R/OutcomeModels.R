@@ -62,6 +62,11 @@ fitOutcomeModel <- function(population,
   if (fitOutcomeModelArgs$inversePtWeighting && is.null(population$iptw)) {
     stop("Requested inverse probability weighting, but no IPTW are provided. Use createPs to generate them")
   }
+  if (fitOutcomeModelArgs$varianceEstimator == "robust" &&
+      !"method" %in% names(formals(utils::getS3method("confint", "cyclopsFit")))) {
+    stop("varianceEstimator = \"robust\" requires a version of Cyclops with confint(method = \"robust\")")
+  }
+  ciMethod <- if (fitOutcomeModelArgs$varianceEstimator == "robust") "robust" else "profile"
 
   start <- Sys.time()
   treatmentEstimate <- NULL
@@ -100,7 +105,8 @@ fitOutcomeModel <- function(population,
       population = population,
       stratified = fitOutcomeModelArgs$stratified,
       inversePtWeighting = fitOutcomeModelArgs$inversePtWeighting,
-      modelType = fitOutcomeModelArgs$modelType
+      modelType = fitOutcomeModelArgs$modelType,
+      addSubjectId = fitOutcomeModelArgs$varianceEstimator != "profile"
     )
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
@@ -337,7 +343,7 @@ fitOutcomeModel <- function(population,
           status <- "OK"
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-          if (fitOutcomeModelArgs$bootstrapCi) {
+          if (fitOutcomeModelArgs$varianceEstimator == "bootstrap") {
             bootstrapSummary <- tryCatch(
               {
                 bootstrap <- Cyclops::runBootstrap(fit, fitOutcomeModelArgs$bootstrapReplicates)
@@ -357,7 +363,7 @@ fitOutcomeModel <- function(population,
           } else {
             ci <- tryCatch(
               {
-                confint(fit, parm = treatmentVarId, includePenalty = TRUE)
+                confint(fit, parm = treatmentVarId, includePenalty = TRUE, method = ciMethod)
               },
               error = function(e) {
                 missing(e) # suppresses R CMD check note
@@ -392,7 +398,8 @@ fitOutcomeModel <- function(population,
                 {
                   confint(fit,
                           parm = mainEffectTerms$id, includePenalty = TRUE,
-                          overrideNoRegularization = TRUE
+                          overrideNoRegularization = TRUE,
+                          method = ciMethod
                   )
                 },
                 error = function(e) {
@@ -418,7 +425,7 @@ fitOutcomeModel <- function(population,
             logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
             ci <- tryCatch(
               {
-                confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+                confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE, method = ciMethod)
               },
               error = function(e) {
                 missing(e) # suppresses R CMD check note
@@ -460,7 +467,7 @@ fitOutcomeModel <- function(population,
   return(outcomeModel)
 }
 
-getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType) {
+getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType, addSubjectId = FALSE) {
   population <- rename(population, y = "outcomeCount")
   if (!stratified) {
     population$stratumId <- NULL
@@ -494,6 +501,11 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   }
   if (inversePtWeighting) {
     columns <- c(columns, "weights")
+  }
+  if (addSubjectId) {
+    # Cyclops clusters the robust variance and resamples the bootstrap on subjects
+    informativePopulation$subjectId <- informativePopulation$personSeqId
+    columns <- c(columns, "subjectId")
   }
   informativePopulation <- informativePopulation[, columns]
   return(informativePopulation)

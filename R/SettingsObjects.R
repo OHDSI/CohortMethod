@@ -741,6 +741,18 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' `profileBounds` for an adaptive grid. Both should be defined on the log effect size scale. When both
 #' `profileGrid` and `profileGrid` are `NULL` likelihood profiling is disabled.
 #'
+#' With inverse probability of treatment weighting, the likelihood-profile intervals of
+#' `varianceEstimator = "profile"` treat the weights as frequencies, which can make them too narrow. The robust variance
+#' (`varianceEstimator = "robust"`) is the cluster-robust sandwich variance of [Cyclops::vcov.cyclopsFit()] with
+#' `type = "robust"`, where all rows of a person (`personSeqId`) form one cluster. It has no small-sample
+#' correction, as `survival::coxph(..., cluster = )`. It ignores that the weights were estimated, which
+#' usually makes it conservative. It is available for unstratified logistic and Poisson models and for
+#' (stratified) Cox models, and requires a model without regularized covariates (use `prior = createPrior("none")`
+#' when `useCovariates = TRUE`). The bootstrap (`varianceEstimator = "bootstrap"`) uses
+#' [Cyclops::runBootstrap()], which resamples persons (or strata, when the Cyclops selector type picks them), and
+#' does not re-estimate the propensity model. The likelihood profile (`profileGrid` or `profileBounds`) is that of
+#' the model likelihood, whatever the variance estimator.
+#'
 #' @param modelType             The type of outcome model that will be used. Possible values are
 #'                              "logistic", "poisson", or "cox".
 #' @param stratified            Should the regression be conditioned on the strata defined in the
@@ -749,7 +761,13 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' @param useCovariates         Whether to use the covariates in the `cohortMethodData`
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
+#' @param varianceEstimator     How to compute the standard errors and confidence intervals of the estimates:
+#'                              "profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
+#'                              sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
+#'                              bootstrap that resamples persons). See details.
 #' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
+#'                              Kept for backward compatibility: `bootstrapCi = TRUE` is the same as
+#'                              `varianceEstimator = "bootstrap"`.
 #' @param bootstrapReplicates   When using bootstrapping to compute confidence intervals, how many replicates
 #'                              should be sampled?
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
@@ -775,6 +793,7 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                       stratified = FALSE,
                                       useCovariates = FALSE,
                                       inversePtWeighting = FALSE,
+                                      varianceEstimator = "profile",
                                       bootstrapCi = FALSE,
                                       bootstrapReplicates = 200,
                                       interactionCovariateIds = c(),
@@ -791,6 +810,12 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
                                                               noiseLevel = "quiet")) {
+  if (isTRUE(bootstrapCi) && identical(varianceEstimator, "profile")) {
+    varianceEstimator <- "bootstrap"
+  }
+  if (identical(varianceEstimator, "bootstrap")) {
+    bootstrapCi <- TRUE
+  }
   args <- list()
   for (name in names(formals())) {
     args[[name]] <- get(name)
@@ -806,6 +831,7 @@ FitOutcomeModelArgs <- R6Class(
     stratified = NULL,
     useCovariates = NULL,
     inversePtWeighting = NULL,
+    varianceEstimator = NULL,
     bootstrapCi = NULL,
     bootstrapReplicates = NULL,
     interactionCovariateIds = NULL,
@@ -821,6 +847,7 @@ FitOutcomeModelArgs <- R6Class(
       checkmate::assertLogical(self$stratified, len = 1, add = errorMessages)
       checkmate::assertLogical(self$useCovariates, len = 1, add = errorMessages)
       checkmate::assertLogical(self$inversePtWeighting, len = 1, add = errorMessages)
+      checkmate::assertChoice(self$varianceEstimator, c("profile", "robust", "bootstrap"), add = errorMessages)
       checkmate::assertLogical(self$bootstrapCi, len = 1, add = errorMessages)
       checkmate::assert_int(self$bootstrapReplicates, lower = 1, add = errorMessages)
       .assertCovariateId(self$interactionCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -840,6 +867,15 @@ FitOutcomeModelArgs <- R6Class(
       if (!is.null(self$profileGrid) && !is.null(self$profileBounds)) {
         stop("Can't specify both a grid and bounds for likelihood profiling")
       }
+      if (self$bootstrapCi != (self$varianceEstimator == "bootstrap")) {
+        stop("bootstrapCi = TRUE requires varianceEstimator = \"bootstrap\", and the other way around")
+      }
+      if (self$varianceEstimator == "robust" && self$stratified && self$modelType != "cox") {
+        stop("The robust variance has not been implemented for stratified logistic or Poisson models")
+      }
+      if (self$varianceEstimator == "robust" && self$useCovariates && self$prior$priorType != "none") {
+        stop("The robust variance requires an outcome model without regularized covariates. Use prior = createPrior(\"none\")")
+      }
       if (self$bootstrapCi && !is.null(self$interactionCovariateIds)) {
         stop("Bootstrap confidence intervals has not been implemented for interactions")
       }
@@ -849,6 +885,10 @@ FitOutcomeModelArgs <- R6Class(
     },
     fromList = function(list, requireTyping) {
       super$fromList(list)
+      if (is.null(self$varianceEstimator)) {
+        # Settings saved before varianceEstimator was added
+        self$varianceEstimator <- if (isTRUE(self$bootstrapCi)) "bootstrap" else "profile"
+      }
       if (requireTyping) {
         class(self$control) <- "cyclopsControl"
         class(self$prior) <- "cyclopsPrior"

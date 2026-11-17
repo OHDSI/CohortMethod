@@ -9,6 +9,7 @@ createFitOutcomeModelArgs(
   stratified = FALSE,
   useCovariates = FALSE,
   inversePtWeighting = FALSE,
+  varianceEstimator = "profile",
   bootstrapCi = FALSE,
   bootstrapReplicates = 200,
   interactionCovariateIds = c(),
@@ -34,7 +35,14 @@ object in the outcome model.}
 
 \item{inversePtWeighting}{Use inverse probability of treatment weighting (IPTW)}
 
-\item{bootstrapCi}{Compute confidence interval using bootstrapping instead of likelihood profiling?}
+\item{varianceEstimator}{How to compute the standard errors and confidence intervals of the estimates:
+"profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
+sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
+bootstrap that resamples persons). See details.}
+
+\item{bootstrapCi}{Compute confidence interval using bootstrapping instead of likelihood profiling?
+Kept for backward compatibility: \code{bootstrapCi = TRUE} is the same as
+\code{varianceEstimator = "bootstrap"}.}
 
 \item{bootstrapReplicates}{When using bootstrapping to compute confidence intervals, how many replicates
 should be sampled?}
@@ -72,4 +80,16 @@ Create an object defining the parameter values.
 For likelihood profiling, either specify the \code{profileGrid} for a completely user- defined grid, or
 \code{profileBounds} for an adaptive grid. Both should be defined on the log effect size scale. When both
 \code{profileGrid} and \code{profileGrid} are \code{NULL} likelihood profiling is disabled.
+
+With inverse probability of treatment weighting, the likelihood-profile intervals of
+\code{varianceEstimator = "profile"} treat the weights as frequencies, which can make them too narrow. The robust variance
+(\code{varianceEstimator = "robust"}) is the cluster-robust sandwich variance of \code{\link[Cyclops:vcov.cyclopsFit]{Cyclops::vcov.cyclopsFit()}} with
+\code{type = "robust"}, where all rows of a person (\code{personSeqId}) form one cluster. It has no small-sample
+correction, as \code{survival::coxph(..., cluster = )}. It ignores that the weights were estimated, which
+usually makes it conservative. It is available for unstratified logistic and Poisson models and for
+(stratified) Cox models, and requires a model without regularized covariates (use \code{prior = createPrior("none")}
+when \code{useCovariates = TRUE}). The bootstrap (\code{varianceEstimator = "bootstrap"}) uses
+\code{\link[Cyclops:runBootstrap]{Cyclops::runBootstrap()}}, which resamples persons (or strata, when the Cyclops selector type picks them), and
+does not re-estimate the propensity model. The likelihood profile (\code{profileGrid} or \code{profileBounds}) is that of
+the model likelihood, whatever the variance estimator.
 }

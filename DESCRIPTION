@@ -63,7 +63,8 @@ Suggests:
 	RSQLite,
 	ResultModelManager,
 	markdown,
-	PSweight
+	PSweight,
+	sandwich
 SystemRequirements: Java
 LinkingTo: Rcpp
 NeedsCompilation: yes

@@ -1,3 +1,13 @@
+CohortMethod (development version)
+==================================
+
+Changes:
+
+1. Added the `varianceEstimator` argument to `createFitOutcomeModelArgs()`: `"profile"` (the default, likelihood profiling as before), `"robust"` (Wald intervals from the cluster-robust sandwich variance, clustered on `personSeqId`, from `vcov(type = "robust")` in Cyclops), or `"bootstrap"`. With inverse probability of treatment weighting the profile intervals treat the weights as frequencies, which can make them too narrow; the robust variance does not. It equals `survival::coxph(weights = , cluster = , ties = "breslow")` and `sandwich::vcovCL(type = "HC0", cadjust = FALSE)` (no small-sample correction), is available for (stratified) Cox and unstratified logistic and Poisson models without regularized covariates, and needs a Cyclops version with `vcov(type = "robust")`.
+
+2. `bootstrapCi = TRUE` is kept and is the same as `varianceEstimator = "bootstrap"`. The bootstrap now resamples persons (`personSeqId`) instead of rows, so all rows of a person are resampled together. With one row per person the results are unchanged. Stratified models still resample strata when Cyclops picks them.
+
+
 CohortMethod 6.0.3
 ==================
 
