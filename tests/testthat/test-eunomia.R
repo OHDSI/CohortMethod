@@ -209,7 +209,8 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
     fitOutcomeModelArgs6 <- createFitOutcomeModelArgs(
       modelType = "cox",
-      inversePtWeighting = TRUE
+      inversePtWeighting = TRUE,
+      varianceEstimator = "robust"
     )
     cmAnalysis6 <- createCmAnalysis(
       analysisId = 6,
@@ -258,6 +259,11 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
     analysisSum <- getResultsSummary(outputFolder1)
 
     expect_equal(nrow(analysisSum), 32)
+
+    # Analysis 6 has Wald intervals from the robust variance:
+    robust <- analysisSum[analysisSum$analysisId == 6 & is.finite(analysisSum$seLogRr), ]
+    expect_gt(nrow(robust), 0)
+    expect_equal(log(robust$ci95Lb), robust$logRr - qnorm(0.975) * robust$seLogRr, tolerance = 1e-6)
 
     exportToCsv(outputFolder1, databaseId = "Test")
     cohortMethodResultFile <- file.path(outputFolder1, "export", "cm_result.csv")

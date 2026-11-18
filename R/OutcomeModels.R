@@ -62,6 +62,15 @@ fitOutcomeModel <- function(population,
   if (fitOutcomeModelArgs$inversePtWeighting && is.null(population$iptw)) {
     stop("Requested inverse probability weighting, but no IPTW are provided. Use createPs to generate them")
   }
+  varianceEstimator <- fitOutcomeModelArgs$varianceEstimator
+  if (is.null(varianceEstimator)) {
+    # Settings object saved before varianceEstimator was added
+    varianceEstimator <- if (isTRUE(fitOutcomeModelArgs$bootstrapCi)) "bootstrap" else "profile"
+  }
+  if (varianceEstimator == "robust" && !cyclopsHasRobustVariance()) {
+    stop("varianceEstimator = \"robust\" requires a version of Cyclops with confint(method = \"robust\")")
+  }
+  ciMethod <- if (varianceEstimator == "robust") "robust" else "profile"
   if (fitOutcomeModelArgs$timeOrigin == "cohort start" && nrow(population) > 0 && !"riskStart" %in% colnames(population)) {
     stop("timeOrigin = \"cohort start\" needs the riskStart column of a population from createStudyPopulation()")
   }
@@ -85,6 +94,7 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- fitOutcomeModelArgs$stratified
   outcomeModel$outcomeModelUseCovariates <- fitOutcomeModelArgs$useCovariates
   outcomeModel$inversePtWeighting <- fitOutcomeModelArgs$inversePtWeighting
+  outcomeModel$outcomeModelVarianceEstimator <- varianceEstimator
   outcomeModel$outcomeModelTimeOrigin <- fitOutcomeModelArgs$timeOrigin
   outcomeModel$outcomeModelCoxFitter <- fitOutcomeModelArgs$coxFitter
   if (fitOutcomeModelArgs$inversePtWeighting) {
@@ -106,8 +116,14 @@ fitOutcomeModel <- function(population,
       stratified = fitOutcomeModelArgs$stratified,
       inversePtWeighting = fitOutcomeModelArgs$inversePtWeighting,
       modelType = fitOutcomeModelArgs$modelType,
+      addSubjectId = varianceEstimator == "robust" || (varianceEstimator == "bootstrap" && cyclopsResamplesSubjects()),
       timeOrigin = fitOutcomeModelArgs$timeOrigin
     )
+    if (varianceEstimator == "bootstrap" && !cyclopsResamplesSubjects() &&
+        anyDuplicated(population$personSeqId[population$rowId %in% informativePopulation$rowId]) > 0) {
+      warning("This version of Cyclops cannot resample persons, so the bootstrap resamples rows (or strata), ",
+              "treating the rows of one person as independent")
+    }
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
       status <- "NO STRATA WITH BOTH TARGET, COMPARATOR, AS WELL AS THE OUTCOME. CANNOT FIT"
@@ -347,7 +363,7 @@ fitOutcomeModel <- function(population,
           status <- "OK"
           coefficients <- coef(fit)
           logRr <- coef(fit)[names(coef(fit)) == as.character(treatmentVarId)]
-          if (fitOutcomeModelArgs$bootstrapCi) {
+          if (varianceEstimator == "bootstrap") {
             bootstrapSummary <- tryCatch(
               {
                 bootstrap <- Cyclops::runBootstrap(fit, fitOutcomeModelArgs$bootstrapReplicates)
@@ -367,7 +383,7 @@ fitOutcomeModel <- function(population,
           } else {
             ci <- tryCatch(
               {
-                confint(fit, parm = treatmentVarId, includePenalty = TRUE)
+                confint(fit, parm = treatmentVarId, includePenalty = TRUE, method = ciMethod)
               },
               error = function(e) {
                 missing(e) # suppresses R CMD check note
@@ -402,7 +418,8 @@ fitOutcomeModel <- function(population,
                 {
                   confint(fit,
                           parm = mainEffectTerms$id, includePenalty = TRUE,
-                          overrideNoRegularization = TRUE
+                          overrideNoRegularization = TRUE,
+                          method = ciMethod
                   )
                 },
                 error = function(e) {
@@ -428,7 +445,7 @@ fitOutcomeModel <- function(population,
             logRr <- coef(fit)[match(as.character(interactionTerms$interactionId), names(coef(fit)))]
             ci <- tryCatch(
               {
-                confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE)
+                confint(fit, parm = interactionTerms$interactionId, includePenalty = TRUE, method = ciMethod)
               },
               error = function(e) {
                 missing(e) # suppresses R CMD check note
@@ -471,7 +488,7 @@ fitOutcomeModel <- function(population,
 }
 
 getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType,
-                                     timeOrigin = "risk window start") {
+                                     timeOrigin = "risk window start", addSubjectId = FALSE) {
   population <- rename(population, y = "outcomeCount")
   if (!stratified) {
     population$stratumId <- NULL
@@ -514,8 +531,27 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   if (inversePtWeighting) {
     columns <- c(columns, "weights")
   }
+  if (addSubjectId) {
+    # Cyclops clusters the robust variance and resamples the bootstrap on subjects
+    informativePopulation$subjectId <- informativePopulation$personSeqId
+    columns <- c(columns, "subjectId")
+  }
   informativePopulation <- informativePopulation[, columns]
   return(informativePopulation)
+}
+
+cyclopsHasRobustVariance <- function() {
+  return("method" %in% names(formals(utils::getS3method("confint", "cyclopsFit"))))
+}
+
+cyclopsResamplesSubjects <- function() {
+  return(tryCatch(
+    {
+      Cyclops::createControl(selectorType = "bySubject")
+      TRUE
+    },
+    error = function(e) FALSE
+  ))
 }
 
 modelTypeToCyclopsModelType <- function(modelType, stratified, timeOrigin = "risk window start") {
@@ -654,6 +690,7 @@ print.OutcomeModel <- function(x, ...) {
   message(paste("Stratified:", x$outcomeModelStratified))
   message(paste("Use covariates:", x$outcomeModelUseCovariates))
   message(paste("Use inverse probability of treatment weighting:", x$inversePtWeighting))
+  message(paste("Variance estimator:", x$outcomeModelVarianceEstimator))
   if (identical(x$outcomeModelType, "cox") && !is.null(x$outcomeModelTimeOrigin)) {
     message(paste("Time origin:", x$outcomeModelTimeOrigin))
     message(paste("Cox fitter:", x$outcomeModelCoxFitter))
