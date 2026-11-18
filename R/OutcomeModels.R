@@ -62,6 +62,9 @@ fitOutcomeModel <- function(population,
   if (fitOutcomeModelArgs$inversePtWeighting && is.null(population$iptw)) {
     stop("Requested inverse probability weighting, but no IPTW are provided. Use createPs to generate them")
   }
+  if (fitOutcomeModelArgs$timeOrigin == "cohort start" && nrow(population) > 0 && !"riskStart" %in% colnames(population)) {
+    stop("timeOrigin = \"cohort start\" needs the riskStart column of a population from createStudyPopulation()")
+  }
 
   start <- Sys.time()
   treatmentEstimate <- NULL
@@ -82,6 +85,8 @@ fitOutcomeModel <- function(population,
   outcomeModel$outcomeModelStratified <- fitOutcomeModelArgs$stratified
   outcomeModel$outcomeModelUseCovariates <- fitOutcomeModelArgs$useCovariates
   outcomeModel$inversePtWeighting <- fitOutcomeModelArgs$inversePtWeighting
+  outcomeModel$outcomeModelTimeOrigin <- fitOutcomeModelArgs$timeOrigin
+  outcomeModel$outcomeModelCoxFitter <- fitOutcomeModelArgs$coxFitter
   if (fitOutcomeModelArgs$inversePtWeighting) {
     outcomeModel$targetEstimator <- outcomeModel$iptwEstimator
   }
@@ -100,7 +105,8 @@ fitOutcomeModel <- function(population,
       population = population,
       stratified = fitOutcomeModelArgs$stratified,
       inversePtWeighting = fitOutcomeModelArgs$inversePtWeighting,
-      modelType = fitOutcomeModelArgs$modelType
+      modelType = fitOutcomeModelArgs$modelType,
+      timeOrigin = fitOutcomeModelArgs$timeOrigin
     )
 
     if (sum(informativePopulation$treatment == 1) == 0 || sum(informativePopulation$treatment == 0) == 0) {
@@ -255,7 +261,8 @@ fitOutcomeModel <- function(population,
           addIntercept = (!fitOutcomeModelArgs$stratified && !fitOutcomeModelArgs$modelType == "cox"),
           modelType = modelTypeToCyclopsModelType(
             fitOutcomeModelArgs$modelType,
-            fitOutcomeModelArgs$stratified
+            fitOutcomeModelArgs$stratified,
+            fitOutcomeModelArgs$timeOrigin
           ),
           checkRowIds = FALSE,
           normalize = NULL,
@@ -288,7 +295,8 @@ fitOutcomeModel <- function(population,
               addIntercept = (!fitOutcomeModelArgs$stratified && !fitOutcomeModelArgs$modelType == "cox"),
               modelType = modelTypeToCyclopsModelType(
                 fitOutcomeModelArgs$modelType,
-                fitOutcomeModelArgs$stratified
+                fitOutcomeModelArgs$stratified,
+                fitOutcomeModelArgs$timeOrigin
               ),
               checkSorting = TRUE,
               normalize = NULL,
@@ -308,7 +316,9 @@ fitOutcomeModel <- function(population,
         }
         fit <- tryCatch(
           {
-            Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = fitOutcomeModelArgs$control)
+            control <- fitOutcomeModelArgs$control
+            control$coxFitter <- fitOutcomeModelArgs$coxFitter
+            Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
           },
           error = function(e) {
             e$message
@@ -460,7 +470,8 @@ fitOutcomeModel <- function(population,
   return(outcomeModel)
 }
 
-getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType) {
+getInformativePopulation <- function(population, stratified, inversePtWeighting, modelType,
+                                     timeOrigin = "risk window start") {
   population <- rename(population, y = "outcomeCount")
   if (!stratified) {
     population$stratumId <- NULL
@@ -469,6 +480,11 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   if (modelType == "cox") {
     population$y[population$y != 0] <- 1
     population$time <- population$survivalTime
+    if (timeOrigin == "cohort start") {
+      # Days since cohort start: at risk on days riskStart, ..., riskStart - 1 + survivalTime
+      population$startTime <- population$riskStart - 1
+      population$time <- population$startTime + population$survivalTime
+    }
   } else if (modelType == "logistic") {
     population$y[population$y != 0] <- 1
   }
@@ -492,6 +508,9 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   if (modelType == "poisson" || modelType == "cox") {
     columns <- c(columns, "time")
   }
+  if (modelType == "cox" && timeOrigin == "cohort start") {
+    columns <- c(columns, "startTime")
+  }
   if (inversePtWeighting) {
     columns <- c(columns, "weights")
   }
@@ -499,7 +518,7 @@ getInformativePopulation <- function(population, stratified, inversePtWeighting,
   return(informativePopulation)
 }
 
-modelTypeToCyclopsModelType <- function(modelType, stratified) {
+modelTypeToCyclopsModelType <- function(modelType, stratified, timeOrigin = "risk window start") {
   if (modelType == "logistic") {
     if (stratified) {
       return("clr")
@@ -513,7 +532,11 @@ modelTypeToCyclopsModelType <- function(modelType, stratified) {
       return("pr")
     }
   } else if (modelType == "cox") {
-    return("cox")
+    if (timeOrigin == "cohort start") {
+      return("cox_counting") # rows with (startTime, time]
+    } else {
+      return("cox")
+    }
   } else {
     stop(paste("Unknown model type:", modelType))
   }
@@ -631,6 +654,10 @@ print.OutcomeModel <- function(x, ...) {
   message(paste("Stratified:", x$outcomeModelStratified))
   message(paste("Use covariates:", x$outcomeModelUseCovariates))
   message(paste("Use inverse probability of treatment weighting:", x$inversePtWeighting))
+  if (identical(x$outcomeModelType, "cox") && !is.null(x$outcomeModelTimeOrigin)) {
+    message(paste("Time origin:", x$outcomeModelTimeOrigin))
+    message(paste("Cox fitter:", x$outcomeModelCoxFitter))
+  }
   message(paste("Target estimand:", x$targetEstimator))
   message(paste("Status:", x$outcomeModelStatus))
   if (!is.null(x$outcomeModelPriorVariance) && !is.na(x$outcomeModelPriorVariance)) {
