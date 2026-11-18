@@ -43,6 +43,10 @@ uniformSelect <- function(items, size) {
 #' @param population               A data frame describing the population. This should at least have a
 #'                                 `rowId` column corresponding to the `rowId` column in the
 #'                                 [CohortMethodData] covariates object and a `treatment` column.
+#'                                 An optional `subjectId` column keeps the rows of one subject in
+#'                                 one cross-validation fold of the propensity model (with Cyclops
+#'                                 4.0.1 or later), for example several rows of one person, or the
+#'                                 copies of a person in a bootstrap sample.
 #'                                 If population is not specified, the full population in the
 #'                                 [CohortMethodData] will be used.
 #' @param createPsArgs             And object of type `CreatePsArgs` as created by the
@@ -161,6 +165,8 @@ createPs <- function(cohortMethodData,
     metaData$deletedInfrequentCovariateIds <- attr(covariateData, "metaData")$deletedInfrequentCovariateIds
     metaData$deletedRedundantCovariateIds <- attr(covariateData, "metaData")$deletedRedundantCovariateIds
 
+    # Cyclops reads its outcome columns from here, including the optional subjectId (the unit of the
+    # cross-validation folds):
     covariateData$outcomes <- population |>
       rename(y = "treatment") |>
       arrange(.data$rowId)
