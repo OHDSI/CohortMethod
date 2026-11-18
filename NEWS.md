@@ -1,3 +1,41 @@
+CohortMethod (development version)
+==================================
+
+Changes:
+
+1. Adding `timeOrigin` argument to `createFitOutcomeModelArgs()`. With `timeOrigin = "cohort start"`, Cox models count time from cohort start and each subject enters the risk set when their risk window opens (delayed entry). Estimates differ from the default (`"risk window start"`) only when risk windows open at different times after cohort start, e.g. with `startAnchor = "cohort end"`.
+
+2. Adding `coxFitter` argument to `createFitOutcomeModelArgs()`. Cox models use the efficient engine of Cyclops 3.8 by default; `coxFitter = "legacy"` reproduces results of earlier Cyclops versions.
+
+3. Requiring Cyclops 3.8.0.
+
+4. `createPs()` keeps all rows with the same `subjectId` (an optional column of `population`) in one cross-validation fold of the propensity model, for example several rows of one person, or the copies of a person in a bootstrap sample. This needs Cyclops 4.0.1 or later; earlier versions ignore the column for logistic regression. Populations from CohortMethod have no `subjectId` column, so their fits do not change.
+
+5. Added the `varianceEstimator` argument (the last argument) to `createFitOutcomeModelArgs()`: `"profile"` (the default, likelihood profiling as before), `"robust"` (Wald intervals from the cluster-robust sandwich variance, clustered on `personSeqId`, from `vcov(type = "robust")` in Cyclops), or `"bootstrap"`. With inverse probability of treatment weighting the profile intervals treat the weights as frequencies, which can make them too narrow; the robust variance does not. It equals `survival::coxph(weights = , cluster = , ties = "breslow")` and `sandwich::vcovCL(type = "HC0", cadjust = FALSE)` (no small-sample correction), is available for (stratified) Cox and unstratified logistic and Poisson models without regularized covariates. The likelihood profile and `llr` stay those of the model likelihood. The outcome model records and prints its variance estimator.
+
+6. `bootstrapCi = TRUE` is kept and is the same as `varianceEstimator = "bootstrap"`. The bootstrap now resamples persons (`personSeqId`) instead of rows, so all rows of a person are resampled together. With one row per person the results are unchanged. Stratified models still resample strata when Cyclops picks them.
+
+7. Because the settings objects gained a field, `runCmAnalyses()` sees an output folder created by an earlier version as having different analysis settings, and asks whether to delete its files.
+
+8. Requiring Cyclops 4.0.2, which has `vcov(type = "robust")` and resamples persons in the bootstrap.
+
+5. Added the `kaplanMeier` argument to `plotKaplanMeier()`, to plot a precomputed (for example weighted) Kaplan-Meier curve instead of computing one from the population.
+
+5. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments. Inputs that used to return `NA` or `NaN`, or were silently recycled, now stop with an error: in `computeMdrrFromAggregateStats()`, a missing `pTarget`, non-integer counts, and for logistic models a missing `totalSubjects` or one smaller than `totalEvents`; in `enforceMinCellValue()`, a `minValues` whose length is neither 1 nor the number of rows. With zero events the MDRR is still `Inf` for any model type.
+
+6. The MDRR for logistic outcome models (in `computeMdrr()`, `computeMdrrFromAggregateStats()` and the `mdrr` of `getResultsSummary()`) left the treatment allocation out of the standard error of the log odds ratio, so the MDRR was too small and the MDRR diagnostic passed too easily. It now uses the Wald standard error under the null, `sqrt(1 / (totalEvents * (1 - pBaseline) * pTarget * (1 - pTarget)))`, and requires `pTarget`.
+
+7. Exported `AbstractSerializableSettings`, the base class of the settings objects, and the helpers `.convertAttrToMember()`, `.convertMemberToAttr()` and `.convertEmptyListToLogical()`, so other packages can define settings objects that serialize to JSON in the same way.
+
+Bugfixes:
+
+1. `plotKaplanMeier()` with `confidenceIntervals = FALSE` and `includeZero = FALSE` no longer drops the curves (the y-axis limits were computed from a column that does not exist).
+
+1. Fixed `excludeCovariateIds` of `createFitOutcomeModelArgs()` being ignored (the exclusion filter used `includeCovariateIds`, so combining both arguments removed all covariates).
+
+2. Fixed cohort-based covariate settings without a `covariateCohortTable` not defaulting to the exposure cohort table in `getDbCohortMethodData()`.
+
+
 CohortMethod 6.0.3
 ==================
 

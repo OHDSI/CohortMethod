@@ -115,6 +115,18 @@ test_that("FitOutcomeModelArgs serialization and deserialization", {
   settings <- createFitOutcomeModelArgs()
   settings2 <- FitOutcomeModelArgs$new(json = settings$toJson())
   expect_equal(settings, settings2, tolerance = 0.0001)
+
+  settings <- createFitOutcomeModelArgs(timeOrigin = "cohort start")
+  settings2 <- FitOutcomeModelArgs$new(json = settings$toJson())
+  expect_equal(settings, settings2, tolerance = 0.0001)
+
+  # Settings saved before timeOrigin and coxFitter existed load with the defaults
+  older <- jsonlite::fromJSON(createFitOutcomeModelArgs()$toJson(), simplifyDataFrame = FALSE)
+  older$timeOrigin <- NULL
+  older$coxFitter <- NULL
+  settings2 <- FitOutcomeModelArgs$new(json = jsonlite::toJSON(older, auto_unbox = TRUE, null = "null"))
+  expect_equal(settings2$timeOrigin, "risk window start")
+  expect_equal(settings2$coxFitter, "efficient")
 })
 
 test_that("CmAnalysis serialization and deserialization", {
@@ -324,4 +336,63 @@ test_that("CmAnalysesSpecifications serialization and deserialization", {
   settings$analysesToExclude <- data.frame(targetId = 1)
   settings2 <- CmAnalysesSpecifications$new(json = settings$toJson())
   expect_equal(settings, settings2, tolerance = 1e-4)
+})
+
+test_that("Exported AbstractSerializableSettings can be inherited from outside the package", {
+  TestSettings <- R6::R6Class(
+    "TestSettings",
+    inherit = CohortMethod::AbstractSerializableSettings,
+    public = list(
+      threshold = NULL,
+      object = NULL,
+      validate = function() {
+        checkmate::assertNumber(self$threshold)
+      },
+      toList = function() {
+        asList <- super$toList()
+        asList$object <- CohortMethod::.convertAttrToMember(self$object)
+        return(asList)
+      },
+      fromList = function(list, requireTyping) {
+        super$fromList(list)
+        if (requireTyping) {
+          self$object <- CohortMethod::.convertMemberToAttr(list$object)
+        }
+      }
+    )
+  )
+  object <- structure(list(a = 1, b = "x"), class = "testClass", note = "y")
+  settings <- TestSettings$new(typedList = list(threshold = 0.5, object = object))
+  settings2 <- TestSettings$new(json = settings$toJson())
+  expect_equal(settings2$threshold, 0.5)
+  expect_equal(settings2$object, object)
+  expect_equal(settings, settings2)
+
+  settings3 <- TestSettings$new(untypedList = jsonlite::fromJSON(settings$toJson(), simplifyDataFrame = FALSE))
+  expect_equal(settings, settings3)
+
+  expect_error(TestSettings$new(typedList = list(threshold = "a")))
+  expect_error(TestSettings$new(), "Must provide")
+})
+
+test_that("Exported attribute conversion helpers round-trip covariate settings", {
+  covariateSettings <- list(
+    FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE),
+    FeatureExtraction::createCohortBasedCovariateSettings(
+      analysisId = 999,
+      covariateCohorts = data.frame(cohortId = 3, cohortName = "Feature cohort")
+    )
+  )
+  converted <- CohortMethod::.convertAttrToMember(covariateSettings)
+  expect_equal(converted[[1]]$attr_fun, "getDbDefaultCovariateData")
+  expect_equal(converted[[1]]$attr_class, "covariateSettings")
+  expect_equal(class(converted[[1]]), "list")
+  expect_equal(CohortMethod::.convertMemberToAttr(converted), covariateSettings)
+
+  # Through JSON, as settings objects do. Empty vectors such as includedCovariateIds come back as
+  # empty lists, which .convertEmptyListToLogical() restores:
+  json <- jsonlite::toJSON(converted, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  restored <- CohortMethod::.convertMemberToAttr(jsonlite::fromJSON(json, simplifyDataFrame = FALSE))
+  expect_type(restored[[1]]$includedCovariateIds, "list")
+  expect_equal(CohortMethod::.convertEmptyListToLogical(restored), covariateSettings)
 })

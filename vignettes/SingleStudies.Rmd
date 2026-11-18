@@ -775,6 +775,23 @@ if (folderExists) {
 }
 ```
 
+## Choosing the time origin and the Cox fitter
+
+By default, a Cox model measures each subject's time from the start of their risk window. With `timeOrigin = "cohort start"`, time is measured from cohort start instead, and each subject enters the risk set when their risk window opens (delayed entry). When every risk window opens at the same time after cohort start, the two give the same estimate. They differ when risk windows open at different times, for example with `startAnchor = "cohort end"`: subjects are then compared at the same time since cohort start, rather than at the same time since their own risk window opened.
+
+```{r eval=FALSE}
+outcomeModel <- fitOutcomeModel(
+  population = matchedPop,
+  fitOutcomeModelArgs = createFitOutcomeModelArgs(
+    modelType = "cox",
+    stratified = TRUE,
+    timeOrigin = "cohort start"
+  )
+)
+```
+
+Cox models use the efficient engine of `Cyclops` 3.8 by default. `coxFitter = "legacy"` uses the engine of earlier `Cyclops` versions, to reproduce earlier results. Estimates agree up to rounding, and `timeOrigin = "cohort start"` needs the efficient engine.
+
 ## Inspecting the outcome model
 
 We can inspect more details of the outcome model:

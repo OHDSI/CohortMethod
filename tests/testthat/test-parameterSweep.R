@@ -292,18 +292,21 @@ test_that("Outcome functions", {
                      estimator = estimator
                    ))
     for (modelType in c("logistic", "poisson", "cox")) {
-      outcomeModel <- fitOutcomeModel(
-        population = ps,
-        cohortMethodData = cohortMethodData,
-        fitOutcomeModelArgs = createFitOutcomeModelArgs(
-          modelType = modelType,
-          stratified = FALSE,
-          useCovariates = FALSE,
-          inversePtWeighting = TRUE
+      for (varianceEstimator in c("profile", "robust")) {
+        outcomeModel <- fitOutcomeModel(
+          population = ps,
+          cohortMethodData = cohortMethodData,
+          fitOutcomeModelArgs = createFitOutcomeModelArgs(
+            modelType = modelType,
+            stratified = FALSE,
+            useCovariates = FALSE,
+            inversePtWeighting = TRUE,
+            varianceEstimator = varianceEstimator
+          )
         )
-      )
-      expect_s3_class(outcomeModel, "OutcomeModel")
-      lbs <- c(lbs, confint(outcomeModel)[1])
+        expect_s3_class(outcomeModel, "OutcomeModel")
+        lbs <- c(lbs, confint(outcomeModel)[1])
+      }
     }
   }
 

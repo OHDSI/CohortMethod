@@ -37,9 +37,47 @@ library(Cyclops)
   }
 }
 
+#' Abstract base class for serializable settings objects
+#'
+#' @description
+#' Base class of all CohortMethod settings objects (for example the object created by
+#' [createCreatePsArgs()]). It provides conversion to and from lists and JSON, so other packages
+#' can define settings objects that behave the same way by inheriting from it.
+#'
+#' @details
+#' A class inheriting from this class defines its settings as public fields (initialized to `NULL`)
+#' and must implement a `validate()` method that stops with an error if the settings are invalid.
+#' If a field holds an object that does not survive the round trip through JSON (for example a
+#' nested settings object, or an object with a class or other attributes), the class should also
+#' override `toList()` and `fromList()` to convert that field, for example using
+#' [.convertAttrToMember()] and [.convertMemberToAttr()].
+#'
+#' @examples
+#' MySettings <- R6::R6Class(
+#'   "MySettings",
+#'   inherit = AbstractSerializableSettings,
+#'   public = list(
+#'     threshold = NULL,
+#'     validate = function() {
+#'       checkmate::assertNumber(self$threshold)
+#'     }
+#'   )
+#' )
+#' settings <- MySettings$new(typedList = list(threshold = 0.5))
+#' json <- settings$toJson()
+#' MySettings$new(json = json)
+#'
+#' @export
 AbstractSerializableSettings <- R6Class(
   "AbstractSerializableSettings",
   public = list(
+    #' @description
+    #' Create a new settings object. Exactly one of the arguments must be provided.
+    #'
+    #' @param typedList    A named list where all values already have the correct type.
+    #' @param untypedList  A named list where values still need to be converted to the correct type,
+    #'                     for example as obtained by `jsonlite::fromJSON()`.
+    #' @param json         A JSON string, as created by the `toJson()` method.
     initialize = function(typedList, untypedList, json) {
       if (!missing(typedList)) {
         # Initialize with list where objects already have correct type
@@ -59,12 +97,20 @@ AbstractSerializableSettings <- R6Class(
       self$fromList(args, requireTyping)
       self$validate()
     },
+    #' @description
+    #' Convert the settings to a list that can be converted to JSON.
+    #'
+    #' @return A named list.
     toList = function() {
       # Using is(x, "environment") instead of is.environment(x) because former is FALSE for R6 objects.
       asList <- Filter(function(x) !is.function(x) & !is(x, "environment"), as.list(self))
       asList <- .recurseToList(asList)
       return(asList)
     },
+    #' @description
+    #' Convert the settings to JSON.
+    #'
+    #' @return A JSON string.
     toJson  = function() {
       jsonlite::toJSON(
         self$toList(),
@@ -73,6 +119,12 @@ AbstractSerializableSettings <- R6Class(
         null = "null"
       )
     },
+    #' @description
+    #' Set the fields of the settings object from a list. Called by the constructor.
+    #'
+    #' @param list           A named list. Elements that are not fields of the object are ignored.
+    #' @param requireTyping  Do values need to be converted to the correct type? Subclasses use this to
+    #'                       restore nested objects.
     fromList = function(list, requireTyping) {
       for (name in names(list)) {
         if (name %in% names(self)) {
@@ -100,6 +152,28 @@ AbstractSerializableSettings <- R6Class(
   }
 }
 
+#' Convert an object's attributes to list members for serialization
+#'
+#' @description
+#' Prepares an object, such as a FeatureExtraction `covariateSettings` object, for conversion to
+#' JSON. Attributes other than names (including the class) of lists, data frames and other objects
+#' built on lists become list members with the prefix `attr_`, and functions are serialized. This is
+#' applied recursively. Attributes of atomic vectors (for example of a `Date` or a `factor`) are not
+#' preserved. Use [.convertMemberToAttr()] to restore the object.
+#'
+#' @param object  The object to convert.
+#'
+#' @return
+#' The converted object.
+#'
+#' @examples
+#' covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE)
+#' json <- jsonlite::toJSON(.convertAttrToMember(covariateSettings), auto_unbox = TRUE)
+#' restored <- .convertEmptyListToLogical(
+#'   .convertMemberToAttr(jsonlite::fromJSON(json, simplifyDataFrame = FALSE))
+#' )
+#'
+#' @export
 .convertAttrToMember <- function(object) {
   if (is.function(object)) {
     return(list(serialized_code = as.character(serialize(object, NULL))))
@@ -125,6 +199,21 @@ AbstractSerializableSettings <- R6Class(
   return(object)
 }
 
+#' Restore an object's attributes from list members after deserialization
+#'
+#' @description
+#' The inverse of [.convertAttrToMember()]: list members with the prefix `attr_` become attributes
+#' (including the class) and serialized functions are restored. This is applied recursively. JSON
+#' turns empty vectors into empty lists; for FeatureExtraction `covariateSettings`, also apply
+#' [.convertEmptyListToLogical()] to the result.
+#'
+#' @param object  The object to convert, for example obtained from JSON with
+#'                `jsonlite::fromJSON(json, simplifyDataFrame = FALSE)`.
+#'
+#' @return
+#' The restored object.
+#'
+#' @export
 .convertMemberToAttr <- function(object) {
   if (is.list(object)) {
     if (length(object) > 0) {
@@ -154,6 +243,20 @@ AbstractSerializableSettings <- R6Class(
   return(object)
 }
 
+#' Convert empty lists to empty logical vectors after deserialization
+#'
+#' @description
+#' JSON does not distinguish empty vectors from empty lists, so empty vectors come back from
+#' `jsonlite::fromJSON()` as empty lists. FeatureExtraction `covariateSettings` use empty logical
+#' vectors (for example for `includedCovariateIds`), so apply this after [.convertMemberToAttr()]
+#' to restore them. This is applied recursively.
+#'
+#' @param object  The object to convert.
+#'
+#' @return
+#' The object with every empty list replaced by `logical(0)`.
+#'
+#' @export
 .convertEmptyListToLogical <- function(object) {
   # To mimic FeatureExtraction covariate settings behavior: empty vectors are logical
   if (is.list(object)) {
@@ -741,6 +844,19 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' `profileBounds` for an adaptive grid. Both should be defined on the log effect size scale. When both
 #' `profileGrid` and `profileGrid` are `NULL` likelihood profiling is disabled.
 #'
+#' With inverse probability of treatment weighting, the likelihood-profile intervals of
+#' `varianceEstimator = "profile"` treat the weights as frequencies, which can make them too narrow. The robust variance
+#' (`varianceEstimator = "robust"`) is the cluster-robust sandwich variance of [Cyclops::vcov.cyclopsFit()] with
+#' `type = "robust"`, where all rows of a person (`personSeqId`) form one cluster. It has no small-sample
+#' correction, as `survival::coxph(..., cluster = )`. It ignores that the weights were estimated, which
+#' is usually conservative for ATE weights but need not be for ATT or overlap (ATO) weights. It is available for
+#' unstratified logistic and Poisson models and for (stratified) Cox models, and requires a model without
+#' regularized covariates (use `prior = createPrior("none")` when `useCovariates = TRUE`). The bootstrap
+#' (`varianceEstimator = "bootstrap"`) uses [Cyclops::runBootstrap()], which resamples persons (or strata, when the
+#' Cyclops selector type picks them), and does not re-estimate the propensity model either. The likelihood profile (`profileGrid` or
+#' `profileBounds`) and the log likelihood ratio (`llr`) of the estimates are those of the model likelihood,
+#' whatever the variance estimator.
+#'
 #' @param modelType             The type of outcome model that will be used. Possible values are
 #'                              "logistic", "poisson", or "cox".
 #' @param stratified            Should the regression be conditioned on the strata defined in the
@@ -750,6 +866,8 @@ ComputeCovariateBalanceArgs <- R6Class(
 #'                              object in the outcome model.
 #' @param inversePtWeighting    Use inverse probability of treatment weighting (IPTW)
 #' @param bootstrapCi           Compute confidence interval using bootstrapping instead of likelihood profiling?
+#'                              Kept for backward compatibility: `bootstrapCi = TRUE` is the same as
+#'                              `varianceEstimator = "bootstrap"`.
 #' @param bootstrapReplicates   When using bootstrapping to compute confidence intervals, how many replicates
 #'                              should be sampled?
 #' @param interactionCovariateIds  An optional vector of covariate IDs to use to estimate interactions
@@ -766,9 +884,24 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' @param control               The control object used to control the cross-validation used to
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              [Cyclops::createControl()] for details.
+#' @param timeOrigin            For Cox models, the origin of the time scale. With `"risk window start"`
+#'                              (default) each subject's time starts at the start of their risk window.
+#'                              With `"cohort start"` time is counted from cohort start, and each subject
+#'                              enters the risk set at the start of their risk window (delayed entry).
+#'                              The two give the same estimates when every risk window starts at the
+#'                              same time after cohort start, and differ when they don't (e.g. with
+#'                              `startAnchor = "cohort end"`).
+#' @param coxFitter             For Cox models, the Cyclops engine: `"efficient"` (default) or `"legacy"`,
+#'                              the engine of Cyclops 3.7 for reproducing earlier results. Estimates
+#'                              agree up to rounding. `timeOrigin = "cohort start"` needs `"efficient"`.
+#'                              See [Cyclops::createControl()].
+#' @param varianceEstimator     How to compute the standard errors and confidence intervals of the estimates:
+#'                              "profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
+#'                              sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
+#'                              bootstrap that resamples persons). See details.
 #'
 #' @return
-#' An object of type `ComputeCovariateBalanceArgs`.
+#' An object of type `FitOutcomeModelArgs`.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "cox",
@@ -790,7 +923,16 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                                               startingVariance = 0.01,
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
-                                                              noiseLevel = "quiet")) {
+                                                              noiseLevel = "quiet"),
+                                      timeOrigin = "risk window start",
+                                      coxFitter = "efficient",
+                                      varianceEstimator = "profile") {
+  if (isTRUE(bootstrapCi) && identical(varianceEstimator, "profile")) {
+    varianceEstimator <- "bootstrap"
+  }
+  if (identical(varianceEstimator, "bootstrap")) {
+    bootstrapCi <- TRUE
+  }
   args <- list()
   for (name in names(formals())) {
     args[[name]] <- get(name)
@@ -806,6 +948,7 @@ FitOutcomeModelArgs <- R6Class(
     stratified = NULL,
     useCovariates = NULL,
     inversePtWeighting = NULL,
+    varianceEstimator = NULL,
     bootstrapCi = NULL,
     bootstrapReplicates = NULL,
     interactionCovariateIds = NULL,
@@ -815,12 +958,18 @@ FitOutcomeModelArgs <- R6Class(
     profileBounds = NULL,
     prior = NULL,
     control = NULL,
+    # Defaults, so settings saved before these fields existed still validate
+    timeOrigin = "risk window start",
+    coxFitter = "efficient",
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
       checkmate::assertChoice(self$modelType, c("logistic", "poisson", "cox"), add = errorMessages)
+      checkmate::assertChoice(self$timeOrigin, c("risk window start", "cohort start"), add = errorMessages)
+      checkmate::assertChoice(self$coxFitter, c("efficient", "legacy"), add = errorMessages)
       checkmate::assertLogical(self$stratified, len = 1, add = errorMessages)
       checkmate::assertLogical(self$useCovariates, len = 1, add = errorMessages)
       checkmate::assertLogical(self$inversePtWeighting, len = 1, add = errorMessages)
+      checkmate::assertChoice(self$varianceEstimator, c("profile", "robust", "bootstrap"), add = errorMessages)
       checkmate::assertLogical(self$bootstrapCi, len = 1, add = errorMessages)
       checkmate::assert_int(self$bootstrapReplicates, lower = 1, add = errorMessages)
       .assertCovariateId(self$interactionCovariateIds, null.ok = TRUE, add = errorMessages)
@@ -840,15 +989,34 @@ FitOutcomeModelArgs <- R6Class(
       if (!is.null(self$profileGrid) && !is.null(self$profileBounds)) {
         stop("Can't specify both a grid and bounds for likelihood profiling")
       }
+      if (self$bootstrapCi != (self$varianceEstimator == "bootstrap")) {
+        stop("bootstrapCi = TRUE requires varianceEstimator = \"bootstrap\", and the other way around")
+      }
+      if (self$varianceEstimator == "robust" && self$stratified && self$modelType != "cox") {
+        stop("The robust variance has not been implemented for stratified logistic or Poisson models")
+      }
+      if (self$varianceEstimator == "robust" && self$useCovariates && self$prior$priorType != "none") {
+        stop("The robust variance requires an outcome model without regularized covariates. Use prior = createPrior(\"none\")")
+      }
       if (self$bootstrapCi && !is.null(self$interactionCovariateIds)) {
         stop("Bootstrap confidence intervals has not been implemented for interactions")
       }
       if (self$bootstrapCi && self$useCovariates) {
         stop("Bootstrap confidence intervals has not been implemented for models including other covariates")
       }
+      if (self$modelType != "cox" && (self$timeOrigin != "risk window start" || self$coxFitter != "efficient")) {
+        stop("timeOrigin and coxFitter only apply to Cox models")
+      }
+      if (self$timeOrigin == "cohort start" && self$coxFitter == "legacy") {
+        stop("timeOrigin = \"cohort start\" needs coxFitter = \"efficient\"")
+      }
     },
     fromList = function(list, requireTyping) {
       super$fromList(list)
+      if (is.null(self$varianceEstimator)) {
+        # Settings saved before varianceEstimator was added
+        self$varianceEstimator <- if (isTRUE(self$bootstrapCi)) "bootstrap" else "profile"
+      }
       if (requireTyping) {
         class(self$control) <- "cyclopsControl"
         class(self$prior) <- "cyclopsPrior"
