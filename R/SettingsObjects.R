@@ -37,9 +37,47 @@ library(Cyclops)
   }
 }
 
+#' Abstract base class for serializable settings objects
+#'
+#' @description
+#' Base class of all CohortMethod settings objects (for example the object created by
+#' [createCreatePsArgs()]). It provides conversion to and from lists and JSON, so other packages
+#' can define settings objects that behave the same way by inheriting from it.
+#'
+#' @details
+#' A class inheriting from this class defines its settings as public fields (initialized to `NULL`)
+#' and must implement a `validate()` method that stops with an error if the settings are invalid.
+#' If a field holds an object that does not survive the round trip through JSON (for example a
+#' nested settings object, or an object with a class or other attributes), the class should also
+#' override `toList()` and `fromList()` to convert that field, for example using
+#' [.convertAttrToMember()] and [.convertMemberToAttr()].
+#'
+#' @examples
+#' MySettings <- R6::R6Class(
+#'   "MySettings",
+#'   inherit = AbstractSerializableSettings,
+#'   public = list(
+#'     threshold = NULL,
+#'     validate = function() {
+#'       checkmate::assertNumber(self$threshold)
+#'     }
+#'   )
+#' )
+#' settings <- MySettings$new(typedList = list(threshold = 0.5))
+#' json <- settings$toJson()
+#' MySettings$new(json = json)
+#'
+#' @export
 AbstractSerializableSettings <- R6Class(
   "AbstractSerializableSettings",
   public = list(
+    #' @description
+    #' Create a new settings object. Exactly one of the arguments must be provided.
+    #'
+    #' @param typedList    A named list where all values already have the correct type.
+    #' @param untypedList  A named list where values still need to be converted to the correct type,
+    #'                     for example as obtained by `jsonlite::fromJSON()`.
+    #' @param json         A JSON string, as created by the `toJson()` method.
     initialize = function(typedList, untypedList, json) {
       if (!missing(typedList)) {
         # Initialize with list where objects already have correct type
@@ -59,12 +97,20 @@ AbstractSerializableSettings <- R6Class(
       self$fromList(args, requireTyping)
       self$validate()
     },
+    #' @description
+    #' Convert the settings to a list that can be converted to JSON.
+    #'
+    #' @return A named list.
     toList = function() {
       # Using is(x, "environment") instead of is.environment(x) because former is FALSE for R6 objects.
       asList <- Filter(function(x) !is.function(x) & !is(x, "environment"), as.list(self))
       asList <- .recurseToList(asList)
       return(asList)
     },
+    #' @description
+    #' Convert the settings to JSON.
+    #'
+    #' @return A JSON string.
     toJson  = function() {
       jsonlite::toJSON(
         self$toList(),
@@ -73,6 +119,12 @@ AbstractSerializableSettings <- R6Class(
         null = "null"
       )
     },
+    #' @description
+    #' Set the fields of the settings object from a list. Called by the constructor.
+    #'
+    #' @param list           A named list. Elements that are not fields of the object are ignored.
+    #' @param requireTyping  Do values need to be converted to the correct type? Subclasses use this to
+    #'                       restore nested objects.
     fromList = function(list, requireTyping) {
       for (name in names(list)) {
         if (name %in% names(self)) {
@@ -100,6 +152,28 @@ AbstractSerializableSettings <- R6Class(
   }
 }
 
+#' Convert an object's attributes to list members for serialization
+#'
+#' @description
+#' Prepares an object, such as a FeatureExtraction `covariateSettings` object, for conversion to
+#' JSON. Attributes other than names (including the class) of lists, data frames and other objects
+#' built on lists become list members with the prefix `attr_`, and functions are serialized. This is
+#' applied recursively. Attributes of atomic vectors (for example of a `Date` or a `factor`) are not
+#' preserved. Use [.convertMemberToAttr()] to restore the object.
+#'
+#' @param object  The object to convert.
+#'
+#' @return
+#' The converted object.
+#'
+#' @examples
+#' covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE)
+#' json <- jsonlite::toJSON(.convertAttrToMember(covariateSettings), auto_unbox = TRUE)
+#' restored <- .convertEmptyListToLogical(
+#'   .convertMemberToAttr(jsonlite::fromJSON(json, simplifyDataFrame = FALSE))
+#' )
+#'
+#' @export
 .convertAttrToMember <- function(object) {
   if (is.function(object)) {
     return(list(serialized_code = as.character(serialize(object, NULL))))
@@ -125,6 +199,21 @@ AbstractSerializableSettings <- R6Class(
   return(object)
 }
 
+#' Restore an object's attributes from list members after deserialization
+#'
+#' @description
+#' The inverse of [.convertAttrToMember()]: list members with the prefix `attr_` become attributes
+#' (including the class) and serialized functions are restored. This is applied recursively. JSON
+#' turns empty vectors into empty lists; for FeatureExtraction `covariateSettings`, also apply
+#' [.convertEmptyListToLogical()] to the result.
+#'
+#' @param object  The object to convert, for example obtained from JSON with
+#'                `jsonlite::fromJSON(json, simplifyDataFrame = FALSE)`.
+#'
+#' @return
+#' The restored object.
+#'
+#' @export
 .convertMemberToAttr <- function(object) {
   if (is.list(object)) {
     if (length(object) > 0) {
@@ -154,6 +243,20 @@ AbstractSerializableSettings <- R6Class(
   return(object)
 }
 
+#' Convert empty lists to empty logical vectors after deserialization
+#'
+#' @description
+#' JSON does not distinguish empty vectors from empty lists, so empty vectors come back from
+#' `jsonlite::fromJSON()` as empty lists. FeatureExtraction `covariateSettings` use empty logical
+#' vectors (for example for `includedCovariateIds`), so apply this after [.convertMemberToAttr()]
+#' to restore them. This is applied recursively.
+#'
+#' @param object  The object to convert.
+#'
+#' @return
+#' The object with every empty list replaced by `logical(0)`.
+#'
+#' @export
 .convertEmptyListToLogical <- function(object) {
   # To mimic FeatureExtraction covariate settings behavior: empty vectors are logical
   if (is.list(object)) {
