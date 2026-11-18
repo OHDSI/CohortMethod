@@ -243,7 +243,7 @@ getDbCohortMethodData <- function(connectionDetails,
     cohortTable = cohortTable,
     cohortTableIsTemp = TRUE,
     rowIdField = "row_id",
-    covariateSettings = getDbCohortMethodDataArgs$covariateSettings
+    covariateSettings = covariateSettings
   )
   ParallelLogger::logDebug(
     "Fetched covariates total count is ",
