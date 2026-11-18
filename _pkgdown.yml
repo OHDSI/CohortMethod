@@ -103,6 +103,10 @@ reference:
       Various helper functions
     contents:
       - checkCmInstallation
+      - AbstractSerializableSettings
+      - .convertAttrToMember
+      - .convertMemberToAttr
+      - .convertEmptyListToLogical
 
 navbar:
   structure:
