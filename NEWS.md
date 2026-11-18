@@ -11,6 +11,8 @@ Changes:
 
 4. `createPs()` keeps all rows with the same `subjectId` (an optional column of `population`) in one cross-validation fold of the propensity model, for example several rows of one person, or the copies of a person in a bootstrap sample. This needs Cyclops 4.0.1 or later; earlier versions ignore the column for logistic regression. Populations from CohortMethod have no `subjectId` column, so their fits do not change.
 
+5. Added the `kaplanMeier` argument to `plotKaplanMeier()`, to plot a precomputed (for example weighted) Kaplan-Meier curve instead of computing one from the population.
+
 5. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments. Inputs that used to return `NA` or `NaN`, or were silently recycled, now stop with an error: in `computeMdrrFromAggregateStats()`, a missing `pTarget`, non-integer counts, and for logistic models a missing `totalSubjects` or one smaller than `totalEvents`; in `enforceMinCellValue()`, a `minValues` whose length is neither 1 nor the number of rows. With zero events the MDRR is still `Inf` for any model type.
 
 6. The MDRR for logistic outcome models (in `computeMdrr()`, `computeMdrrFromAggregateStats()` and the `mdrr` of `getResultsSummary()`) left the treatment allocation out of the standard error of the log odds ratio, so the MDRR was too small and the MDRR diagnostic passed too easily. It now uses the Wald standard error under the null, `sqrt(1 / (totalEvents * (1 - pBaseline) * pTarget * (1 - pTarget)))`, and requires `pTarget`.
@@ -18,6 +20,8 @@ Changes:
 7. Exported `AbstractSerializableSettings`, the base class of the settings objects, and the helpers `.convertAttrToMember()`, `.convertMemberToAttr()` and `.convertEmptyListToLogical()`, so other packages can define settings objects that serialize to JSON in the same way.
 
 Bugfixes:
+
+1. `plotKaplanMeier()` with `confidenceIntervals = FALSE` and `includeZero = FALSE` no longer drops the curves (the y-axis limits were computed from a column that does not exist).
 
 1. Fixed `excludeCovariateIds` of `createFitOutcomeModelArgs()` being ignored (the exclusion filter used `includeCovariateIds`, so combining both arguments removed all covariates).
 

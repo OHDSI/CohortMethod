@@ -44,3 +44,47 @@ test_that("No error when plotting KM curves and one cohort is empty", {
   plot <- plotKaplanMeier(population)
   expect_s3_class(plot, "gtable")
 })
+
+test_that("Plotting a precomputed Kaplan-Meier curve", {
+  set.seed(123)
+  population <- tibble(
+    rowId = 1:200,
+    treatment = rep(c(1, 0), 100),
+    outcomeCount = rbinom(200, 1, 0.3),
+    survivalTime = sample.int(500, 200, replace = TRUE)
+  )
+  kaplanMeier <- prepareKaplanMeier(population)
+  plot1 <- plotKaplanMeier(population, dataTable = FALSE)
+  plot2 <- plotKaplanMeier(kaplanMeier = kaplanMeier, dataTable = FALSE)
+  expect_equal(plot2$data, plot1$data)
+
+  plot <- plotKaplanMeier(kaplanMeier = kaplanMeier, censorMarks = TRUE)
+  expect_s3_class(plot, "gtable")
+
+  # Without confidence intervals, the y axis goes down to the lowest survival:
+  plot <- plotKaplanMeier(kaplanMeier = kaplanMeier, confidenceIntervals = FALSE, dataTable = FALSE)
+  expect_equal(ggplot2::layer_scales(plot)$y$limits, c(min(kaplanMeier$survival), 1))
+
+  # A weighted curve, as could be computed by another package:
+  weight <- runif(200)
+  sv <- survfit(Surv(survivalTime, outcomeCount) ~ treatment, population, weights = weight)
+  weightedKm <- tibble(
+    time = c(0, 0, sv$time),
+    treatment = c(0, 1, rep(c(0, 1), sv$strata)),
+    survival = c(1, 1, sv$surv),
+    lower = c(1, 1, sv$lower),
+    upper = c(1, 1, sv$upper),
+    nAtRisk = NA
+  )
+  plot <- plotKaplanMeier(kaplanMeier = weightedKm, dataTable = FALSE)
+  expect_s3_class(plot, "ggplot")
+  steps <- ggplot2::layer_data(plot, 2)
+  expect_equal(min(steps$x), 0)
+  expect_equal(steps$y[steps$x == 0], c(1, 1))
+  expect_equal(nrow(steps), nrow(weightedKm))
+  expect_gt(length(ggplot2::layer_scales(plot)$x$get_breaks()), 1)
+  expect_error(plotKaplanMeier(kaplanMeier = mutate(weightedKm, treatment = treatment + 1)), "treatment")
+
+  expect_error(plotKaplanMeier(kaplanMeier = weightedKm, censorMarks = TRUE), "nCensor")
+  expect_warning(plotKaplanMeier(kaplanMeier = weightedKm[0, ]), "empty")
+})
