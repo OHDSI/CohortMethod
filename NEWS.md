@@ -3,7 +3,15 @@ CohortMethod (development version)
 
 Changes:
 
-1. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments. Inputs that used to return `NA` or `NaN`, or were silently recycled, now stop with an error: in `computeMdrrFromAggregateStats()`, a missing `pTarget`, non-integer counts, and for logistic models a missing `totalSubjects` or one smaller than `totalEvents`; in `enforceMinCellValue()`, a `minValues` whose length is neither 1 nor the number of rows. With zero events the MDRR is still `Inf` for any model type.
+1. Adding `timeOrigin` argument to `createFitOutcomeModelArgs()`. With `timeOrigin = "cohort start"`, Cox models count time from cohort start and each subject enters the risk set when their risk window opens (delayed entry). Estimates differ from the default (`"risk window start"`) only when risk windows open at different times after cohort start, e.g. with `startAnchor = "cohort end"`.
+
+2. Adding `coxFitter` argument to `createFitOutcomeModelArgs()`. Cox models use the efficient engine of Cyclops 3.8 by default; `coxFitter = "legacy"` reproduces results of earlier Cyclops versions.
+
+3. Requiring Cyclops 3.8.0.
+
+4. `createPs()` keeps all rows with the same `subjectId` (an optional column of `population`) in one cross-validation fold of the propensity model, for example several rows of one person, or the copies of a person in a bootstrap sample. This needs Cyclops 4.0.1 or later; earlier versions ignore the column for logistic regression. Populations from CohortMethod have no `subjectId` column, so their fits do not change.
+
+5. Exported `computeMdrrFromAggregateStats()`, to compute the MDRR from counts only, and `enforceMinCellValue()`, to censor small values with the convention of the results data model. Both now validate their arguments. Inputs that used to return `NA` or `NaN`, or were silently recycled, now stop with an error: in `computeMdrrFromAggregateStats()`, a missing `pTarget`, non-integer counts, and for logistic models a missing `totalSubjects` or one smaller than `totalEvents`; in `enforceMinCellValue()`, a `minValues` whose length is neither 1 nor the number of rows. With zero events the MDRR is still `Inf` for any model type.
 
 Bugfixes:
 
