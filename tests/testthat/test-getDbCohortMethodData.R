@@ -1130,4 +1130,38 @@ if (!isFALSE(tryCatch(find.package("Eunomia"), error = function(e) FALSE))) {
 
 
   })
+
+  test_that("Cohort-based covariates default to the exposure cohort table", {
+    # Regression test: the covariate settings modified by handleCohortCovariateBuilders() used to be
+    # ignored, so a cohort-based covariate without covariateCohortTable was not taken from the
+    # exposure table.
+    covariateSettings <- FeatureExtraction::createCohortBasedCovariateSettings(
+      analysisId = 999,
+      covariateCohorts = data.frame(cohortId = c(1, 4), cohortName = c("Celecoxib", "NSAIDs")),
+      startDay = -365,
+      endDay = 0
+    )
+    cohortMethodData <- getDbCohortMethodData(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = "main",
+      exposureTable = "cohort",
+      outcomeTable = "cohort",
+      targetId = 1,
+      comparatorId = 2,
+      outcomeIds = 3,
+      getDbCohortMethodDataArgs = createGetDbCohortMethodDataArgs(
+        removeDuplicateSubjects = "keep all",
+        covariateSettings = covariateSettings
+      )
+    )
+    on.exit(close(cohortMethodData))
+    covariates <- cohortMethodData$covariates |>
+      collect()
+    cohorts <- cohortMethodData$cohorts |>
+      collect()
+    # Every row starts in an NSAID cohort on its index date, and only target rows (cohort 1) start
+    # in cohort 1 within the window:
+    expect_setequal(covariates$rowId[covariates$covariateId == 4999], cohorts$rowId)
+    expect_setequal(covariates$rowId[covariates$covariateId == 1999], cohorts$rowId[cohorts$treatment == 1])
+  })
 }
