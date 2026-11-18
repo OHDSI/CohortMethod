@@ -750,9 +750,7 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' unstratified logistic and Poisson models and for (stratified) Cox models, and requires a model without
 #' regularized covariates (use `prior = createPrior("none")` when `useCovariates = TRUE`). The bootstrap
 #' (`varianceEstimator = "bootstrap"`) uses [Cyclops::runBootstrap()], which resamples persons (or strata, when the
-#' Cyclops selector type picks them), and does not re-estimate the propensity model either. Resampling persons
-#' needs a Cyclops version with `selectorType = "bySubject"` (4.0.1 or later); with an older Cyclops the bootstrap
-#' resamples rows, with a warning when a person has several rows. The likelihood profile (`profileGrid` or
+#' Cyclops selector type picks them), and does not re-estimate the propensity model either. The likelihood profile (`profileGrid` or
 #' `profileBounds`) and the log likelihood ratio (`llr`) of the estimates are those of the model likelihood,
 #' whatever the variance estimator.
 #'

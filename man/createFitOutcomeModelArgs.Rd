@@ -105,9 +105,7 @@ is usually conservative for ATE weights but need not be for ATT or overlap (ATO)
 unstratified logistic and Poisson models and for (stratified) Cox models, and requires a model without
 regularized covariates (use \code{prior = createPrior("none")} when \code{useCovariates = TRUE}). The bootstrap
 (\code{varianceEstimator = "bootstrap"}) uses \code{\link[Cyclops:runBootstrap]{Cyclops::runBootstrap()}}, which resamples persons (or strata, when the
-Cyclops selector type picks them), and does not re-estimate the propensity model either. Resampling persons
-needs a Cyclops version with \code{selectorType = "bySubject"} (4.0.1 or later); with an older Cyclops the bootstrap
-resamples rows, with a warning when a person has several rows. The likelihood profile (\code{profileGrid} or
+Cyclops selector type picks them), and does not re-estimate the propensity model either. The likelihood profile (\code{profileGrid} or
 \code{profileBounds}) and the log likelihood ratio (\code{llr}) of the estimates are those of the model likelihood,
 whatever the variance estimator.
 }
