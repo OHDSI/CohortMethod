@@ -17,6 +17,10 @@ createPs(
 \item{population}{A data frame describing the population. This should at least have a
 \code{rowId} column corresponding to the \code{rowId} column in the
 \link{CohortMethodData} covariates object and a \code{treatment} column.
+An optional \code{subjectId} column keeps the rows of one subject in
+one cross-validation fold of the propensity model (with Cyclops
+4.0.1 or later), for example several rows of one person, or the
+copies of a person in a bootstrap sample.
 If population is not specified, the full population in the
 \link{CohortMethodData} will be used.}
 

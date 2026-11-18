@@ -3,11 +3,21 @@ CohortMethod (development version)
 
 Changes:
 
-1. Added the `varianceEstimator` argument (the last argument) to `createFitOutcomeModelArgs()`: `"profile"` (the default, likelihood profiling as before), `"robust"` (Wald intervals from the cluster-robust sandwich variance, clustered on `personSeqId`, from `vcov(type = "robust")` in Cyclops), or `"bootstrap"`. With inverse probability of treatment weighting the profile intervals treat the weights as frequencies, which can make them too narrow; the robust variance does not. It equals `survival::coxph(weights = , cluster = , ties = "breslow")` and `sandwich::vcovCL(type = "HC0", cadjust = FALSE)` (no small-sample correction), is available for (stratified) Cox and unstratified logistic and Poisson models without regularized covariates, and needs a Cyclops version with `vcov(type = "robust")`. The likelihood profile and `llr` stay those of the model likelihood. The outcome model records and prints its variance estimator.
+1. Adding `timeOrigin` argument to `createFitOutcomeModelArgs()`. With `timeOrigin = "cohort start"`, Cox models count time from cohort start and each subject enters the risk set when their risk window opens (delayed entry). Estimates differ from the default (`"risk window start"`) only when risk windows open at different times after cohort start, e.g. with `startAnchor = "cohort end"`.
 
-2. `bootstrapCi = TRUE` is kept and is the same as `varianceEstimator = "bootstrap"`. The bootstrap now resamples persons (`personSeqId`) instead of rows, so all rows of a person are resampled together. With one row per person the results are unchanged. Stratified models still resample strata when Cyclops picks them. Resampling persons needs Cyclops 4.0.1 or later (`selectorType = "bySubject"`); with an older Cyclops the bootstrap resamples rows as before, with a warning when a person has several rows.
+2. Adding `coxFitter` argument to `createFitOutcomeModelArgs()`. Cox models use the efficient engine of Cyclops 3.8 by default; `coxFitter = "legacy"` reproduces results of earlier Cyclops versions.
 
-3. Because the settings objects gained a field, `runCmAnalyses()` sees an output folder created by an earlier version as having different analysis settings, and asks whether to delete its files.
+3. Requiring Cyclops 3.8.0.
+
+4. `createPs()` keeps all rows with the same `subjectId` (an optional column of `population`) in one cross-validation fold of the propensity model, for example several rows of one person, or the copies of a person in a bootstrap sample. This needs Cyclops 4.0.1 or later; earlier versions ignore the column for logistic regression. Populations from CohortMethod have no `subjectId` column, so their fits do not change.
+
+5. Added the `varianceEstimator` argument (the last argument) to `createFitOutcomeModelArgs()`: `"profile"` (the default, likelihood profiling as before), `"robust"` (Wald intervals from the cluster-robust sandwich variance, clustered on `personSeqId`, from `vcov(type = "robust")` in Cyclops), or `"bootstrap"`. With inverse probability of treatment weighting the profile intervals treat the weights as frequencies, which can make them too narrow; the robust variance does not. It equals `survival::coxph(weights = , cluster = , ties = "breslow")` and `sandwich::vcovCL(type = "HC0", cadjust = FALSE)` (no small-sample correction), is available for (stratified) Cox and unstratified logistic and Poisson models without regularized covariates, and needs a Cyclops version with `vcov(type = "robust")`. The likelihood profile and `llr` stay those of the model likelihood. The outcome model records and prints its variance estimator.
+
+6. `bootstrapCi = TRUE` is kept and is the same as `varianceEstimator = "bootstrap"`. The bootstrap now resamples persons (`personSeqId`) instead of rows, so all rows of a person are resampled together. With one row per person the results are unchanged. Stratified models still resample strata when Cyclops picks them. Resampling persons needs Cyclops 4.0.1 or later (`selectorType = "bySubject"`); with an older Cyclops the bootstrap resamples rows as before, with a warning when a person has several rows.
+
+7. Because the settings objects gained a field, `runCmAnalyses()` sees an output folder created by an earlier version as having different analysis settings, and asks whether to delete its files.
+
+8. Requiring Cyclops 4.0.2, which has `vcov(type = "robust")` and resamples persons in the bootstrap.
 
 
 CohortMethod 6.0.3

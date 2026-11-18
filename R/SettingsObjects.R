@@ -783,13 +783,24 @@ ComputeCovariateBalanceArgs <- R6Class(
 #' @param control               The control object used to control the cross-validation used to
 #'                              determine the hyperparameters of the prior (if applicable). See
 #'                              [Cyclops::createControl()] for details.
+#' @param timeOrigin            For Cox models, the origin of the time scale. With `"risk window start"`
+#'                              (default) each subject's time starts at the start of their risk window.
+#'                              With `"cohort start"` time is counted from cohort start, and each subject
+#'                              enters the risk set at the start of their risk window (delayed entry).
+#'                              The two give the same estimates when every risk window starts at the
+#'                              same time after cohort start, and differ when they don't (e.g. with
+#'                              `startAnchor = "cohort end"`).
+#' @param coxFitter             For Cox models, the Cyclops engine: `"efficient"` (default) or `"legacy"`,
+#'                              the engine of Cyclops 3.7 for reproducing earlier results. Estimates
+#'                              agree up to rounding. `timeOrigin = "cohort start"` needs `"efficient"`.
+#'                              See [Cyclops::createControl()].
 #' @param varianceEstimator     How to compute the standard errors and confidence intervals of the estimates:
 #'                              "profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
 #'                              sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
 #'                              bootstrap that resamples persons). See details.
 #'
 #' @return
-#' An object of type `ComputeCovariateBalanceArgs`.
+#' An object of type `FitOutcomeModelArgs`.
 #'
 #' @export
 createFitOutcomeModelArgs <- function(modelType = "cox",
@@ -812,6 +823,8 @@ createFitOutcomeModelArgs <- function(modelType = "cox",
                                                               tolerance = 2e-07,
                                                               cvRepetitions = 10,
                                                               noiseLevel = "quiet"),
+                                      timeOrigin = "risk window start",
+                                      coxFitter = "efficient",
                                       varianceEstimator = "profile") {
   if (isTRUE(bootstrapCi) && identical(varianceEstimator, "profile")) {
     varianceEstimator <- "bootstrap"
@@ -844,9 +857,14 @@ FitOutcomeModelArgs <- R6Class(
     profileBounds = NULL,
     prior = NULL,
     control = NULL,
+    # Defaults, so settings saved before these fields existed still validate
+    timeOrigin = "risk window start",
+    coxFitter = "efficient",
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
       checkmate::assertChoice(self$modelType, c("logistic", "poisson", "cox"), add = errorMessages)
+      checkmate::assertChoice(self$timeOrigin, c("risk window start", "cohort start"), add = errorMessages)
+      checkmate::assertChoice(self$coxFitter, c("efficient", "legacy"), add = errorMessages)
       checkmate::assertLogical(self$stratified, len = 1, add = errorMessages)
       checkmate::assertLogical(self$useCovariates, len = 1, add = errorMessages)
       checkmate::assertLogical(self$inversePtWeighting, len = 1, add = errorMessages)
@@ -884,6 +902,12 @@ FitOutcomeModelArgs <- R6Class(
       }
       if (self$bootstrapCi && self$useCovariates) {
         stop("Bootstrap confidence intervals has not been implemented for models including other covariates")
+      }
+      if (self$modelType != "cox" && (self$timeOrigin != "risk window start" || self$coxFitter != "efficient")) {
+        stop("timeOrigin and coxFitter only apply to Cox models")
+      }
+      if (self$timeOrigin == "cohort start" && self$coxFitter == "legacy") {
+        stop("timeOrigin = \"cohort start\" needs coxFitter = \"efficient\"")
       }
     },
     fromList = function(list, requireTyping) {

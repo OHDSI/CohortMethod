@@ -19,6 +19,8 @@ createFitOutcomeModelArgs(
   prior = createPrior(priorType = "laplace", useCrossValidation = TRUE),
   control = createControl(cvType = "auto", seed = 1, resetCoefficients = TRUE,
     startingVariance = 0.01, tolerance = 2e-07, cvRepetitions = 10, noiseLevel = "quiet"),
+  timeOrigin = "risk window start",
+  coxFitter = "efficient",
   varianceEstimator = "profile"
 )
 }
@@ -63,13 +65,26 @@ so is not used when \code{useCovariates = FALSE}.}
 determine the hyperparameters of the prior (if applicable). See
 \code{\link[Cyclops:createControl]{Cyclops::createControl()}} for details.}
 
+\item{timeOrigin}{For Cox models, the origin of the time scale. With \code{"risk window start"}
+(default) each subject's time starts at the start of their risk window.
+With \code{"cohort start"} time is counted from cohort start, and each subject
+enters the risk set at the start of their risk window (delayed entry).
+The two give the same estimates when every risk window starts at the
+same time after cohort start, and differ when they don't (e.g. with
+\code{startAnchor = "cohort end"}).}
+
+\item{coxFitter}{For Cox models, the Cyclops engine: \code{"efficient"} (default) or \code{"legacy"},
+the engine of Cyclops 3.7 for reproducing earlier results. Estimates
+agree up to rounding. \code{timeOrigin = "cohort start"} needs \code{"efficient"}.
+See \code{\link[Cyclops:createControl]{Cyclops::createControl()}}.}
+
 \item{varianceEstimator}{How to compute the standard errors and confidence intervals of the estimates:
 "profile" (likelihood profiling), "robust" (Wald intervals from the cluster-robust
 sandwich variance, clustered on person), or "bootstrap" (percentile intervals from a
 bootstrap that resamples persons). See details.}
 }
 \value{
-An object of type \code{ComputeCovariateBalanceArgs}.
+An object of type \code{FitOutcomeModelArgs}.
 }
 \description{
 Create a parameter object for the function \code{\link[=fitOutcomeModel]{fitOutcomeModel()}}
