@@ -11,6 +11,12 @@ Changes:
 
 4. `createPs()` keeps all rows with the same `subjectId` (an optional column of `population`) in one cross-validation fold of the propensity model, for example several rows of one person, or the copies of a person in a bootstrap sample. This needs Cyclops 4.0.1 or later; earlier versions ignore the column for logistic regression. Populations from CohortMethod have no `subjectId` column, so their fits do not change.
 
+Bugfixes:
+
+1. Fixed `excludeCovariateIds` of `createFitOutcomeModelArgs()` being ignored (the exclusion filter used `includeCovariateIds`, so combining both arguments removed all covariates).
+
+2. Fixed cohort-based covariate settings without a `covariateCohortTable` not defaulting to the exposure cohort table in `getDbCohortMethodData()`.
+
 
 CohortMethod 6.0.3
 ==================
