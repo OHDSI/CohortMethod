@@ -1059,9 +1059,9 @@ Outcome <- R6Class(
     endAnchor = NULL,
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
-      checkmate::assertNumeric(self$outcomeId, add = errorMessages)
+      checkmate::assertNumeric(self$outcomeId, len = 1, add = errorMessages)
       checkmate::assertTRUE(all(self$outcomeId %% 1 == 0), add = errorMessages)
-      checkmate::assertLogical(self$outcomeOfInterest, add = errorMessages)
+      checkmate::assertLogical(self$outcomeOfInterest, len = 1, add = errorMessages)
       checkmate::assertNumeric(self$trueEffectSize, len = 1, null.ok = TRUE, add = errorMessages)
       checkmate::assertInt(self$riskWindowStart, null.ok = TRUE, add = errorMessages)
       checkmate::assertInt(self$riskWindowEnd, null.ok = TRUE, add = errorMessages)
@@ -1131,10 +1131,10 @@ TargetComparatorOutcomes <- R6Class(
     includedCovariateConceptIds = NULL,
     validate = function() {
       errorMessages <- checkmate::makeAssertCollection()
-      checkmate::assertNumeric(self$targetId, add = errorMessages)
-      checkmate::assertNumeric(self$comparatorId, add = errorMessages)
+      checkmate::assertNumeric(self$targetId, len = 1, add = errorMessages)
+      checkmate::assertNumeric(self$comparatorId, len = 1, add = errorMessages)
       checkmate::assertTRUE(all(c(self$targetId, self$comparatorId) %% 1 == 0), add = errorMessages)
-      checkmate::assertNumeric(self$nestingCohortId, null.ok = TRUE, add = errorMessages)
+      checkmate::assertNumeric(self$nestingCohortId, len = 1, null.ok = TRUE, add = errorMessages)
       checkmate::assertList(self$outcomes, min.len = 1, add = errorMessages)
       for (i in seq_along(self$outcomes)) {
         checkmate::assertR6(self$outcomes[[i]], "Outcome", add = errorMessages)
