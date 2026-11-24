@@ -38,7 +38,10 @@
 #' @param outcomeCvThreads               The number of parallel threads to use for the cross-
 #'                                       validation when estimating the hyperparameter for the outcome
 #'                                       model. Note that the total number of CV threads at one time
-#'                                       could be `fitOutcomeModelThreads * outcomeCvThreads`.
+#'                                       could be `fitOutcomeModelThreads * outcomeCvThreads`. Cox
+#'                                       models also use these threads in the final fit, which helps
+#'                                       mainly with many covariates under a Laplace prior; results
+#'                                       are identical to one thread.
 #' @param calibrationThreads             The number of parallel threads to use for empirical calibration.
 #'
 #' @return

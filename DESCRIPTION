@@ -29,7 +29,7 @@ BugReports: https://github.com/OHDSI/CohortMethod/issues
 Depends:
 	R (>= 4.1.0),
 	DatabaseConnector (>= 6.0.0),
-	Cyclops (>= 3.6.0),
+	Cyclops (>= 4.0.2),
 	FeatureExtraction  (>= 3.0.0),
 	Andromeda (>= 0.6.3)
 Imports:
@@ -63,7 +63,10 @@ Suggests:
 	RSQLite,
 	ResultModelManager,
 	markdown,
-	PSweight
+	PSweight,
+	sandwich
+Remotes:
+	ohdsi/Cyclops@develop
 SystemRequirements: Java
 LinkingTo: Rcpp
 NeedsCompilation: yes
