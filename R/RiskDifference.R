@@ -15,9 +15,16 @@
 # limitations under the License.
 
 computeRiskDifference <- function(population, cohortMethodData, computeRiskDifferenceArgs) {
+  if ("stratumId" %in% colnames(population) && length(unique(population$stratumId)) != nrow(population) / 2) {
+    stop("Risk difference currently only supports 1-on-1 matching")
+  }
+
   start <- Sys.time()
   riskDifference <- attr(population, "metaData")
-  riskDifference$outcomeCounts <- getOutcomeCounts(population, "cox")
+  riskDifference$outcomeModelType <- "risk difference"
+  riskDifference$populationCounts <-getCounts(population, "Population count")
+  riskDifference$outcomeCounts <-  getOutcomeCounts(population, "cox")
+  riskDifference$timePoint <- computeRiskDifferenceArgs$timePoint
   riskDifference$attritionAtTimePoint <- computeAttritionAtTimePoint(
     population = population,
     timePoint = computeRiskDifferenceArgs$timePoint
@@ -29,18 +36,17 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
 
   # For now: Use timeEL package to compute risk difference and confidence intervals (using Empirical Likelihood).
   # Not yet supporting stratification or weighting and likelihood profiling.
-  result <- tryCatch(
-    {
-      timeEL::TwoSampleKaplanMeier(
-        time = population$survivalTime,
-        status = population$outcomeCount > 0,
-        group = population$treatment,
-        t = computeRiskDifferenceArgs$timePoint
-      )
-    },
-    error = function(e) {
-      e$message
-    }
+  result <- tryCatch(  {
+    timeEL::TwoSampleKaplanMeier(
+      time = population$survivalTime,
+      status = population$outcomeCount > 0,
+      group = population$treatment,
+      t = computeRiskDifferenceArgs$timePoint
+    )
+  },
+  error = function(e) {
+    e$message
+  }
   )
   if (is.character(result)) {
     riskDifference$status <- result
@@ -62,8 +68,17 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
     ) |>
       mutate(seRd = (.data$ub95 - .data$lb95) / (2 * qnorm(0.975)))
   }
+  riskDifference$outcomeModelTreatmentEstimate <- tibble(
+    logRr =  riskDifference$estimate$rd,
+    seLogRr = riskDifference$estimate$seRd,
+    llr = NA_real_
+  )
+  riskDifference$timeAtRisk <- computeTimeAtRiskAtTimePoint(
+    population = population,
+    timePoint = computeRiskDifferenceArgs$timePoint
+  )
 
-  class(riskDifference) <- "RiskDifference"
+    class(riskDifference) <- "RiskDifference"
   delta <- Sys.time() - start
   message(paste("Computing risk difference took", signif(delta, 3), attr(delta, "units")))
   ParallelLogger::logDebug("Risk difference status is: ", riskDifference$status)
@@ -71,20 +86,39 @@ computeRiskDifference <- function(population, cohortMethodData, computeRiskDiffe
 }
 
 computeAttritionAtTimePoint <- function(population, timePoint) {
-  attrition <- inner_join(
-    population |>
-      group_by(.data$treatment) |>
-      summarise(exposuresAtStart = n(),
-                subjectsAtStart = length(unique(personSeqId))),
-    population |>
-      filter(.data$survivalTime >= timePoint) |>
-      group_by(.data$treatment) |>
-      summarise(exposuresAtTimePoint = n(),
-                subjectsAtTimePoint = length(unique(personSeqId))),
-    by = join_by("treatment")
-  ) |>
+  attrition <- population |>
+    group_by(.data$treatment) |>
+    summarise(exposuresAtStart = n(),
+              subjectsAtStart = length(unique(personSeqId))) |>
+    inner_join(
+      population |>
+        filter(.data$survivalTime >= timePoint) |>
+        group_by(.data$treatment) |>
+        summarise(exposuresAtTimePoint = n(),
+                  subjectsAtTimePoint = length(unique(personSeqId))),
+      by = join_by("treatment")
+    ) |>
     mutate(attrition = 1 - (.data$exposuresAtTimePoint / .data$exposuresAtStart))
   return(attrition)
+}
+
+computeTimeAtRiskAtTimePoint <- function(population, timePoint) {
+  timeAtRisk <- population |>
+    mutate(survivalTime = if_else(.data$survivalTime > timePoint, timePoint, .data$survivalTime))
+
+  timeAtRiskTarget <- timeAtRisk |>
+    filter(treatment == 1) |>
+    summarise(timeAtRisk = sum(.data$survivalTime)) |>
+    pull()
+  timeAtRiskComparator <- timeAtRisk |>
+    filter(treatment == 0) |>
+    summarise(timeAtRisk = sum(.data$survivalTime)) |>
+    pull()
+  result <- tibble(
+    targetDays = timeAtRiskTarget,
+    comparatorDays = timeAtRiskComparator
+  )
+  return(result)
 }
 
 #' @export

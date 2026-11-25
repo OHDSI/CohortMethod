@@ -1138,7 +1138,7 @@ createReferenceTable <- function(cmAnalysisList,
   createPsArgsJsons <- lapply(
     cmAnalysisList,
     function(x) if (is.null(x$createPsArgs)) "" else x$createPsArgs$toJson()
-    )
+  )
   uniqueCreatePsArgsJsons <- unique(createPsArgsJsons)
   analysisIdToPsArgsId <- tibble(
     analysisId = analyses$analysisId,
@@ -1219,7 +1219,7 @@ createReferenceTable <- function(cmAnalysisList,
       if (is.null(x$truncateIptwArgs)) "" else x$truncateIptwArgs$toJson(),
       if (is.null(x$matchOnPsArgs)) "" else x$matchOnPsArgs$toJson(),
       if (is.null(x$stratifyByPsArgs)) "" else x$stratifyByPsArgs$toJson()
-  ))
+    ))
   uniqueStrataArgsJsons <- unique(strataArgsJsons)
   analysisIdToStrataArgsId <- tibble(
     analysisId = analyses$analysisId,
@@ -1317,21 +1317,21 @@ createReferenceTable <- function(cmAnalysisList,
     cmAnalysisList,
     function(x) {
       if (!"fitOutcomeModelArgs" %in% names(x) || !is(x$fitOutcomeModelArgS, "FitOutcomeModelArgs")) {
-      return("")
+        return("")
       } else if ((x$fitOutcomeModelArgs$useCovariates &
-                 (length(x$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
-                  length(x$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
-      length(x$fitOutcomeModelArgs$interactionCovariateIds) != 0) {
+                  (length(x$fitOutcomeModelArgs$excludeCovariateIds) != 0 |
+                   length(x$fitOutcomeModelArgs$includeCovariateIds) != 0)) |
+                 length(x$fitOutcomeModelArgs$interactionCovariateIds) != 0) {
         return(jsonlite::toJSON(list(
-        useCovariates = x$fitOutcomeModelArgs$useCovariates,
-        excludeCovariateIds = x$fitOutcomeModelArgs$excludeCovariateIds,
-        includeCovariateIds = x$fitOutcomeModelArgs$includeCovariateIds,
-        interactionCovariateIds = x$fitOutcomeModelArgs$interactionCovariateIds
-      )))
+          useCovariates = x$fitOutcomeModelArgs$useCovariates,
+          excludeCovariateIds = x$fitOutcomeModelArgs$excludeCovariateIds,
+          includeCovariateIds = x$fitOutcomeModelArgs$includeCovariateIds,
+          interactionCovariateIds = x$fitOutcomeModelArgs$interactionCovariateIds
+        )))
       } else {
         return("")
       }
-  })
+    })
   uniquePreFilterArgsJsons <- unique(preFilterArgJsons)
   analysisIdToFilterArgsId <- tibble(
     analysisId = analyses$analysisId,
@@ -1676,13 +1676,26 @@ summarizeResults <- function(referenceTable,
     }
     totalSubjects <- outcomeModel$populationCounts$targetExposures + outcomeModel$populationCounts$comparatorExposures
     totalEvents <- outcomeModel$outcomeCounts$targetOutcomes + outcomeModel$outcomeCounts$comparatorOutcomes
-    pTarget <- outcomeModel$populationCounts$targetExposures / totalSubjects
-    mdrr <- computeMdrrFromAggregateStats(
-      pTarget = pTarget,
-      totalEvents = totalEvents,
-      totalSubjects = totalSubjects,
-      modelType = outcomeModel$outcomeModelType
-    )
+    if (outcomeModel$outcomeModelType %in% c("cox", "logistic")) {
+      pTarget <- outcomeModel$populationCounts$targetExposures / totalSubjects
+      mdrr <- computeMdrrFromAggregateStats(
+        pTarget = pTarget,
+        totalEvents = totalEvents,
+        totalSubjects = totalSubjects,
+        modelType = outcomeModel$outcomeModelType
+      )
+    } else {
+      if (subset$strataFile[i] == "") {
+        mdrr <- NA_real_
+      } else {
+        population <- readRDS(file.path(outputFolder, subset$strataFile[i]))
+        mdrd <- computeMdrd(
+          population = population,
+          t = outcomeModel$timePoint
+        )
+        mdrr <- mdrd$mdrd
+      }
+    }
     row <- subset[i, ] |>
       select(
         "analysisId",
@@ -1716,16 +1729,17 @@ summarizeResults <- function(referenceTable,
                   select("targetOutcomes", "comparatorOutcomes"))
     row <- row |>
       mutate(
-        rr = if (is.null(coefficient)) NA else exp(coefficient),
-        ci95Lb = if (is.null(coefficient)) NA else exp(ci[1]),
-        ci95Ub = if (is.null(coefficient)) NA else exp(ci[2]),
+        rr = if (is.null(coefficient)) NA else if (outcomeModel$outcomeModelType == "risk difference") coefficient else exp(coefficient),
+        ci95Lb = if (is.null(coefficient)) NA else if (outcomeModel$outcomeModelType == "risk difference") ci[1] else  exp(ci[1]),
+        ci95Ub = if (is.null(coefficient)) NA else if (outcomeModel$outcomeModelType == "risk difference") ci[2] else exp(ci[2]),
         p = !!p,
         oneSidedP = !!oneSidedP,
         logRr = if (is.null(coefficient)) NA else coefficient,
         seLogRr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$seLogRr,
         llr = if (is.null(coefficient)) NA else outcomeModel$outcomeModelTreatmentEstimate$llr,
         mdrr = !!mdrr,
-        targetEstimator = outcomeModel$targetEstimator
+        targetEstimator = outcomeModel$targetEstimator,
+        modelType = outcomeModel$outcomeModelType
       ) |>
       mutate(generalizabilityMaxSdm = if_else(.data$targetEstimator == "att",
                                               .data$maxTargetSdm,
@@ -1797,6 +1811,7 @@ summarizeResults <- function(referenceTable,
            "comparatorDays",
            "targetOutcomes",
            "comparatorOutcomes",
+           "modelType",
            "rr",
            "ci95Lb",
            "ci95Ub",
@@ -2061,9 +2076,10 @@ calibrateGroup <- function(group) {
       model <- EmpiricalCalibration::convertNullToErrorModel(null)
     }
     calibratedCi <- EmpiricalCalibration::calibrateConfidenceInterval(model = model, logRr = group$logRr, seLogRr = group$seLogRr)
-    group$calibratedRr <- exp(calibratedCi$logRr)
-    group$calibratedCi95Lb <- exp(calibratedCi$logLb95Rr)
-    group$calibratedCi95Ub <- exp(calibratedCi$logUb95Rr)
+    needsExp <- group$modelType[1] != "risk difference"
+    group$calibratedRr <-  if (needsExp) exp(calibratedCi$logRr) else calibratedCi$logRr
+    group$calibratedCi95Lb <- if (needsExp) exp(calibratedCi$logLb95Rr) else calibratedCi$logLb95Rr
+    group$calibratedCi95Ub <- if (needsExp) exp(calibratedCi$logUb95Rr) else calibratedCi$logUb95Rr
     group$calibratedP <- calibratedP$p
     group$calibratedOneSidedP <- calibratedOneSidedP$p
     group$calibratedLogRr <- calibratedCi$logRr

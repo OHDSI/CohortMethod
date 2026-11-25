@@ -104,6 +104,37 @@ computeMdrrFromAggregateStats <- function(pTarget, totalEvents, totalSubjects, a
   return(mdrr)
 }
 
+computeMdrd <- function(population,
+                        t,
+                        alpha =0.05,
+                        power = 0.8,
+                        twoSided = TRUE) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertDataFrame(population, add = errorMessages)
+  checkmate::assertInt(t, lower = 1, add = errorMessages)
+  checkmate::assertNumber(alpha, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertNumber(power, lower = 0, upper = 1, add = errorMessages)
+  checkmate::assertLogical(twoSided, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
+  population <- population |>
+    mutate(y = if_else(population$outcomeCount > 0, 1, 0))
+  kmPool <- survival::survfit(survival::Surv(survivalTime, y) ~ 1, data = population)
+  s <- summary(kmPool, times = t, extend = TRUE)
+  se <- 2 * s$std.err
+  zAlpha <- stats::qnorm(if (twoSided) 1 - alpha / 2 else 1 - alpha)
+  zBeta <- stats::qnorm(power)
+  mdrd <- (zAlpha + zBeta) * se
+  result <- data.frame(
+    t = t,
+    atRiskPersons = s$n.risk,
+    totalOutcomes = s$n.event,
+    mdrd = mdrd,
+    se = se
+  )
+  return(result)
+}
+
 #' Get the distribution of follow-up time
 #'
 #' @details

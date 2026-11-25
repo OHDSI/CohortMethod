@@ -14,3 +14,5 @@ docs
 ^cran-comments.md$
 ^CRAN-SUBMISSION$
 .vscode
+^\.positai$
+^\.claude$
